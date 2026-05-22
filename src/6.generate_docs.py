@@ -1663,6 +1663,8 @@ def update_sidebar(
     if os.path.exists(sidebar_path):
         with open(sidebar_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
+    # 模板文件可能没有末尾换行；先规整，避免新日期被拼到 Daily Papers 同一行。
+    lines = [line if line.endswith("\n") else f"{line}\n" for line in lines]
 
     daily_idx = -1
     for i, line in enumerate(lines):
