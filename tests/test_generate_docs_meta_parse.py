@@ -193,6 +193,37 @@ class GenerateDocsMetaParseTest(unittest.TestCase):
             for phrase in forbidden_phrases:
                 self.assertNotIn(phrase, content)
 
+    def test_update_sidebar_removes_initial_empty_daily_placeholder(self):
+        with tempfile.TemporaryDirectory() as d:
+            sidebar_path = Path(d) / "_sidebar.md"
+            sidebar_path.write_text(
+                "\n".join(
+                    [
+                        "* <a class=\"dpr-sidebar-root-link\" href=\"#/\">首页</a>",
+                        "* Daily Papers",
+                        "  * 暂无日报，完成首次工作流后会自动生成",
+                        "* Other",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            self.mod.update_sidebar(
+                str(sidebar_path),
+                "20260522",
+                [("202605/22/test-paper", "Test Paper", [("score", "9.0")])],
+                [],
+                {"202605/22/test-paper": "why it matters"},
+                "2026-05-22",
+            )
+
+            content = sidebar_path.read_text(encoding="utf-8")
+            self.assertNotIn("暂无日报", content)
+            self.assertIn("2026-05-22 <!--dpr-date:20260522-->", content)
+            self.assertIn("Test Paper", content)
+            self.assertIn("* Other", content)
+
 
 if __name__ == "__main__":
     unittest.main()

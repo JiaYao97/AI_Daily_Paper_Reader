@@ -1646,6 +1646,13 @@ def update_sidebar(
             payload["evidence"] = safe_evidence
         return html.escape(json.dumps(payload, ensure_ascii=False), quote=True)
 
+    def is_initial_empty_daily_placeholder(line: str) -> bool:
+        text = str(line or "").strip()
+        if text.startswith(("* ", "- ")):
+            text = text[2:].strip()
+        text = text.strip("*_` ").rstrip("。.")
+        return "暂无日报" in text and "首次工作流" in text
+
     effective_label = (date_label or "").strip() or format_date_str(date_str)
     # 用隐藏 marker 做稳定定位，避免“展示标题”变更导致无法覆盖更新
     marker = f"<!--dpr-date:{date_str}-->"
@@ -1723,7 +1730,7 @@ def update_sidebar(
         line = lines[i]
         if line.startswith("* "):
             break
-        if lines[i].startswith("    * [日报]("):
+        if lines[i].startswith("    * [日报](") or is_initial_empty_daily_placeholder(lines[i]):
             del lines[i]
             continue
         i += 1
