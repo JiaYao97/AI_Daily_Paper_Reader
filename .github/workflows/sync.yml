@@ -38,7 +38,41 @@ jobs:
         run: |
           git config --global merge.ours.driver true
 
-      # 3. 运行同步 Action
+      # 3. 先备份 Fork 用户的运行态文件，避免上游模板同步覆盖已生成内容
+      - name: Backup protected runtime files
+        run: |
+          backup="$RUNNER_TEMP/dpr-runtime-backup"
+          rm -rf "$backup"
+          mkdir -p "$backup"
+
+          copy_path() {
+            local path="$1"
+            [ -e "$path" ] || return 0
+            mkdir -p "$backup/$(dirname "$path")"
+            cp -a "$path" "$backup/$path"
+          }
+
+          for path in \
+            config.yaml \
+            docs/config.yaml \
+            docs/README.md \
+            docs/_sidebar.md \
+            docs/_home_notice.md \
+            docs/_home_promo.md \
+            archive
+          do
+            copy_path "$path"
+          done
+
+          shopt -s nullglob
+          for path in docs/[0-9]* docs/assets/figures; do
+            copy_path "$path"
+          done
+
+          echo "Backed up protected runtime paths:"
+          find "$backup" -mindepth 1 -maxdepth 4 | sort | head -n 80 || true
+
+      # 4. 运行同步 Action
       - name: Sync upstream changes
         id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
@@ -53,7 +87,57 @@ jobs:
           # 默认行为其实就是 merge，但为了保险起见，不要开启 'hard_reset' 类的选项
           test_mode: false
 
-      # 4. 如果同步失败（比如有冲突），打印错误
+      # 5. 同步成功后恢复运行态文件；若上游模板覆盖了 docs/archive，会追加一次保护性提交
+      - name: Restore protected runtime files
+        if: success()
+        run: |
+          backup="$RUNNER_TEMP/dpr-runtime-backup"
+          if [ ! -d "$backup" ] || [ -z "$(find "$backup" -mindepth 1 -print -quit)" ]; then
+            echo "No protected runtime files to restore."
+            exit 0
+          fi
+
+          cp -a "$backup/." .
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          paths=()
+          for path in \
+            config.yaml \
+            docs/config.yaml \
+            docs/README.md \
+            docs/_sidebar.md \
+            docs/_home_notice.md \
+            docs/_home_promo.md \
+            archive
+          do
+            [ -e "$path" ] && paths+=("$path")
+          done
+
+          shopt -s nullglob
+          for path in docs/[0-9]* docs/assets/figures; do
+            [ -e "$path" ] && paths+=("$path")
+          done
+
+          if [ "${#paths[@]}" -eq 0 ]; then
+            echo "No restored paths exist after sync."
+            exit 0
+          fi
+
+          git add -A -- "${paths[@]}"
+          if git diff --cached --quiet; then
+            echo "Protected runtime files were unchanged."
+            exit 0
+          fi
+
+          git commit -m "[chore] restore fork runtime files after upstream sync"
+          branch="${GITHUB_REF_NAME:-main}"
+          git fetch origin "$branch"
+          git rebase -X theirs "origin/$branch"
+          git push origin HEAD:"$branch"
+
+      # 6. 如果同步失败（比如有冲突），打印错误
       - name: Sync check
         if: failure()
         run: |
