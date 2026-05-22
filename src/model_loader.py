@@ -22,6 +22,7 @@ _DEFAULT_REMOTE_TIMEOUT_SECONDS = 60
 _DEFAULT_REMOTE_EMBED_ENDPOINT = "https://embed.zwwen.online/embed"
 # 当前服务使用固定 API key 接入。
 _DEFAULT_REMOTE_EMBED_API_KEY = "26932a86d772001af60cbd9d2c162bfda3a90e094f797f3d6806f6077478b27a"
+_REMOTE_DEVICE_ALIASES = {"remote"}
 
 
 def _log_default(message: str) -> None:
@@ -30,6 +31,14 @@ def _log_default(message: str) -> None:
 
 def is_remote_embedding_enabled() -> bool:
   return bool(str(_DEFAULT_REMOTE_EMBED_ENDPOINT or "").strip())
+
+
+def normalize_local_embedding_device(device: str | None) -> str:
+  """把远程占位符转换为 PyTorch 可识别的本地 fallback 设备。"""
+  text = str(device or "").strip()
+  if not text or text.lower() in _REMOTE_DEVICE_ALIASES:
+    return "cpu"
+  return text
 
 
 class RemoteSentenceTransformer:
@@ -58,7 +67,7 @@ class RemoteSentenceTransformer:
     self.timeout = max(int(timeout or _DEFAULT_REMOTE_TIMEOUT_SECONDS), 1)
     self.default_batch_size = max(int(default_batch_size or 1), 1)
     self.max_seq_length = None
-    self.local_device = str(local_device or "cpu")
+    self.local_device = normalize_local_embedding_device(local_device)
     self.local_retries = local_retries
     self.local_providers = local_providers
     self._local_model = None
@@ -328,6 +337,8 @@ def load_sentence_transformer(
     ("modelscope", MODELSCOPE_ENDPOINT),
   ),
 ):
+  requested_device = str(device or "").strip() or "cpu"
+  local_device = normalize_local_embedding_device(requested_device)
   remote_endpoint = _DEFAULT_REMOTE_EMBED_ENDPOINT
   remote_api_key = _DEFAULT_REMOTE_EMBED_API_KEY
   if allow_remote and remote_endpoint:
@@ -340,27 +351,30 @@ def load_sentence_transformer(
         f"回退默认 {_DEFAULT_REMOTE_TIMEOUT_SECONDS}"
       )
       remote_timeout = _DEFAULT_REMOTE_TIMEOUT_SECONDS
+    device_note = f"device={requested_device}"
+    if local_device != requested_device:
+      device_note += f" local_fallback_device={local_device}"
     log(
       f"[INFO] 使用远程 embedding 服务：model={model_name} "
-      f"endpoint={str(remote_endpoint).strip()} timeout={remote_timeout}s device={device}"
+      f"endpoint={str(remote_endpoint).strip()} timeout={remote_timeout}s {device_note}"
     )
     return RemoteSentenceTransformer(
       model_name=model_name,
       endpoint=str(remote_endpoint).strip(),
       api_key=remote_api_key,
       timeout=remote_timeout,
-      local_device=device,
+      local_device=local_device,
       local_retries=retries,
       local_providers=providers,
       log=log,
     )
 
   if remote_endpoint and not allow_remote:
-    log(f"[INFO] 已禁用远程 embedding，强制使用本地模型：{model_name} (device={device})")
+    log(f"[INFO] 已禁用远程 embedding，强制使用本地模型：{model_name} (device={local_device})")
 
   return _load_local_sentence_transformer(
     model_name,
-    device=device,
+    device=local_device,
     retries=retries,
     log=log,
     providers=providers,
@@ -378,6 +392,11 @@ def _load_local_sentence_transformer(
     ("modelscope", MODELSCOPE_ENDPOINT),
   ),
 ):
+  requested_device = str(device or "").strip() or "cpu"
+  device = normalize_local_embedding_device(requested_device)
+  if requested_device != device:
+    log(f"[WARN] 本地 embedding 不支持 device={requested_device}，已改用 device={device}。")
+
   if retries is None:
     env_retries = os.getenv("LLM_EMBED_MODEL_RETRIES")
     if env_retries is None:

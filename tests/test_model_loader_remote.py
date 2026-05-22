@@ -126,6 +126,30 @@ class RemoteSentenceTransformerTest(unittest.TestCase):
             "26932a86d772001af60cbd9d2c162bfda3a90e094f797f3d6806f6077478b27a",
         )
 
+    def test_load_sentence_transformer_uses_cpu_fallback_for_remote_device_alias(self):
+        model = load_sentence_transformer("BAAI/bge-small-en-v1.5", device="remote")
+        self.assertTrue(getattr(model, "is_remote", False))
+        self.assertEqual(model.local_device, "cpu")
+
+    @patch("src.model_loader._load_local_sentence_transformer")
+    @patch("src.model_loader.requests.post")
+    def test_remote_device_alias_falls_back_to_local_cpu_when_remote_request_fails(
+        self,
+        mock_post,
+        mock_load_local,
+    ):
+        mock_post.side_effect = requests.exceptions.Timeout("remote timeout")
+        local_model = MagicMock()
+        local_model.encode.return_value = np.asarray([[0.1, 0.2]], dtype=np.float32)
+        mock_load_local.return_value = local_model
+
+        model = load_sentence_transformer("BAAI/bge-small-en-v1.5", device="remote")
+        arr = model.encode(["a"], convert_to_numpy=True, normalize_embeddings=True, batch_size=2)
+
+        mock_load_local.assert_called_once()
+        self.assertEqual(mock_load_local.call_args.kwargs["device"], "cpu")
+        self.assertEqual(arr.shape, (1, 2))
+
     @patch("src.model_loader._load_local_sentence_transformer")
     def test_load_sentence_transformer_can_force_local(self, mock_load_local):
         local_model = MagicMock()
@@ -138,6 +162,21 @@ class RemoteSentenceTransformerTest(unittest.TestCase):
         )
 
         mock_load_local.assert_called_once()
+        self.assertIs(model, local_model)
+
+    @patch("src.model_loader._load_local_sentence_transformer")
+    def test_load_sentence_transformer_normalizes_remote_device_when_force_local(self, mock_load_local):
+        local_model = MagicMock()
+        mock_load_local.return_value = local_model
+
+        model = load_sentence_transformer(
+            "BAAI/bge-small-en-v1.5",
+            device="remote",
+            allow_remote=False,
+        )
+
+        mock_load_local.assert_called_once()
+        self.assertEqual(mock_load_local.call_args.kwargs["device"], "cpu")
         self.assertIs(model, local_model)
 
 
