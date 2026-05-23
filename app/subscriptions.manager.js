@@ -1007,26 +1007,49 @@ window.SubscriptionsManager = (function () {
                 </div>
                 <button id="arxiv-admin-open-workflow-panel-btn" class="arxiv-tool-btn dpr-settings-primary-btn" type="button">打开工作流面板</button>
               </div>
-              <div class="dpr-settings-card dpr-workflow-guide-card">
-                <div class="dpr-workflow-guide-step">
-                  <span>1</span>
+              <div class="dpr-workflow-settings-layout">
+                <div class="dpr-settings-card dpr-workflow-hero-card">
+                  <div class="dpr-workflow-hero-icon">▶</div>
                   <div>
-                    <h3>保存配置</h3>
-                    <p>先保存检索配置，避免工作流读取到旧的 config.yaml。</p>
+                    <h3>从配置到报告，一条清晰路径</h3>
+                    <p>先确认检索配置已保存，再触发抓取任务；运行中可在面板里追踪最近记录、当前状态和每个 Job 步骤。</p>
                   </div>
                 </div>
-                <div class="dpr-workflow-guide-step">
-                  <span>2</span>
-                  <div>
-                    <h3>触发任务</h3>
-                    <p>在快速使用中运行常用抓取，或打开工作流面板执行同步、重置等任务。</p>
+                <div class="dpr-settings-card dpr-workflow-guide-card">
+                  <div class="dpr-workflow-guide-step">
+                    <span>1</span>
+                    <div>
+                      <h3>保存配置</h3>
+                      <p>检索配置页右下角保存后，workflow 才会读取最新的 config.yaml。</p>
+                    </div>
+                  </div>
+                  <div class="dpr-workflow-guide-step">
+                    <span>2</span>
+                    <div>
+                      <h3>选择入口</h3>
+                      <p>常用抓取走“快速使用”，同步和危险操作保留在对应设置页，避免误触。</p>
+                    </div>
+                  </div>
+                  <div class="dpr-workflow-guide-step">
+                    <span>3</span>
+                    <div>
+                      <h3>查看进度</h3>
+                      <p>工作流面板聚合最近运行和执行过程，失败时可直接跳转 GitHub Actions。</p>
+                    </div>
                   </div>
                 </div>
-                <div class="dpr-workflow-guide-step">
-                  <span>3</span>
-                  <div>
-                    <h3>观察进度</h3>
-                    <p>工作流面板会展示最近运行和执行过程，失败时可直接跳转 GitHub Actions。</p>
+                <div class="dpr-workflow-metric-grid">
+                  <div class="dpr-settings-card dpr-workflow-mini-card">
+                    <strong>日报抓取</strong>
+                    <span>抓取 → 召回 → 重排 → 生成 docs</span>
+                  </div>
+                  <div class="dpr-settings-card dpr-workflow-mini-card">
+                    <strong>同步代码</strong>
+                    <span>仅 Fork 仓库可用，面板会自动提示状态</span>
+                  </div>
+                  <div class="dpr-settings-card dpr-workflow-mini-card">
+                    <strong>危险重置</strong>
+                    <span>保留二次确认，入口仍在危险设置中</span>
                   </div>
                 </div>
               </div>
@@ -1054,11 +1077,25 @@ window.SubscriptionsManager = (function () {
                 </div>
                 <button id="arxiv-open-secret-setup-btn" class="arxiv-tool-btn dpr-settings-primary-btn" type="button">打开密钥配置</button>
               </div>
-              <div class="dpr-settings-card dpr-secret-card">
-                <div class="dpr-secret-status-orb">🔐</div>
-                <div>
-                  <h3>访问模式：<span id="dpr-settings-access-mode">未初始化</span></h3>
-                  <p>完整权限可读写 config.yaml、触发 workflow，并启用大模型对话；游客模式仅支持阅读。</p>
+              <div class="dpr-secret-settings-grid">
+                <div class="dpr-settings-card dpr-secret-card dpr-secret-card--hero">
+                  <div class="dpr-secret-status-orb">🔐</div>
+                  <div>
+                    <h3>访问模式：<span id="dpr-settings-access-mode">未初始化</span></h3>
+                    <p>完整权限可读写 config.yaml、触发 workflow，并启用大模型对话；游客模式仅支持阅读。</p>
+                  </div>
+                </div>
+                <div class="dpr-settings-card dpr-secret-info-card">
+                  <span>GitHub Token</span>
+                  <strong>保存配置与触发 workflow</strong>
+                </div>
+                <div class="dpr-settings-card dpr-secret-info-card">
+                  <span>工作流大模型</span>
+                  <strong>改写、筛选、速览与总结</strong>
+                </div>
+                <div class="dpr-settings-card dpr-secret-info-card">
+                  <span>聊天模型</span>
+                  <strong>可复用工作流 API 或单独配置</strong>
                 </div>
               </div>
             </section>
