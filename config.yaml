@@ -26,54 +26,78 @@ subscriptions:
     diff_threshold_pct: 15
   keyword_recall_mode: or
   intent_profiles:
-    - tag: SR
-      description: 符号回归
+    - tag: 气膜
+      description: 气膜冷却相关论文
       enabled: true
-      daily_paper_limit: 10
+      paper_sources:
+        - arxiv
+      deep_daily_paper_limit: 10
+      quick_daily_paper_limit: 10
       keywords:
-        - keyword: symbolic regression
-          keyword_cn: 符号回归
-          query: fundamental principles and methods of symbolic regression
-        - keyword: genetic programming
-          keyword_cn: 遗传编程
-          query: evolutionary algorithms and genetic programming for symbolic regression
-        - keyword: mathematical expression discovery
-          keyword_cn: 数学表达式发现
-          query: automated discovery of mathematical expressions from data
-        - keyword: equation discovery
-          keyword_cn: 方程发现
-          query: algorithms for scientific equation discovery and modeling
-        - keyword: interpretable machine learning
-          keyword_cn: 可解释机器学习
-          query: interpretability and transparency of symbolic regression models
-        - keyword: PySR
-          keyword_cn: PySR库
-          query: high-performance symbolic regression libraries and tools
-        - keyword: symbolic transformer
-          keyword_cn: 符号Transformer
-          query: neural symbolic regression using transformer architectures
-        - keyword: physics-informed regression
-          keyword_cn: 物理启发回归
-          query: incorporating physical constraints into symbolic regression
+        - keyword: film cooling
+          keyword_cn: 气膜冷却
+          query: film cooling
+        - keyword: film cooling effectiveness
+          keyword_cn: 冷却效率
+          query: cooling effectiveness
+        - keyword: jet
+          keyword_cn: 射流
+          query: coolant jet
+        - keyword: Heat transfer
+          keyword_cn: 换热
+          query: heat transfer
+        - keyword: numerical simulation
+          keyword_cn: 数值模拟
+          query: numerical simulation of film cooling
+        - keyword: flow field prediction
+          keyword_cn: 流场预测
+          query: flow field prediction
       intent_queries:
-        - query: state of the art symbolic regression algorithms
-          query_cn: 最先进的符号回归算法
+        - query: film cooling research progress
+          query_cn: 气膜冷却研究进展
           enabled: true
           source: manual
           note: ''
-        - query: comparison between symbolic regression and neural networks
-          query_cn: 符号回归与神经网络的对比
+        - query: film cooling optimization
+          query_cn: 气膜冷却优化
           enabled: true
           source: manual
           note: ''
-        - query: applications of symbolic regression in physics and engineering
-          query_cn: 符号回归在物理与工程中的应用
+        - query: film cooling experimental study
+          query_cn: 气膜冷却实验研究
           enabled: true
           source: manual
           note: ''
-        - query: how to handle noisy data in symbolic regression
-          query_cn: 符号回归如何处理噪声数据
+        - query: Data driven method for flow field prediction and reconstruction
+          query_cn: 数据驱动方法在流场预测与重构中的应用
           enabled: true
           source: manual
           note: ''
-      updated_at: '2026-03-02T03:40:27.571Z'
+      updated_at: '2026-05-24T04:36:40.642Z'
+source_backends:
+  arxiv:
+    papers_table: arxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_arxiv_papers_exact
+    vector_rpc_exact: match_arxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_arxiv_papers_bm25
+    sync_table: arxiv_sync_status
+    sync_success_value: success
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
+  biorxiv:
+    papers_table: biorxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_biorxiv_papers_exact
+    vector_rpc_exact: match_biorxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_biorxiv_papers_bm25
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
