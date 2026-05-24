@@ -1,0 +1,142 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-010.webp",
+      "caption": "Figure 1: System overview. Top: The compilation pipeline transforms Scheme source through AST and ANF representations into a frozen DirectModule in under 150µs. Bottom: During training, the frozen module computes the known physics component exactly, while a trainable MLP learns a residual correction. Gradients flow through both paths to train the residual model while the compiled physics module remains fixed (Corollary 4).",
+      "page": 3,
+      "index": 10,
+      "width": 798,
+      "height": 279
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-014.webp",
+      "caption": "Figure 2: Compilation pipeline. A Scheme expression is parsed, flattened into ANF, lowered to a compute graph, and compiled into a topologically ordered instruction sequence. The resulting DirectModule evaluates the sequence for both scalar and batched tensor inputs.",
+      "page": 4,
+      "index": 14,
+      "width": 918,
+      "height": 538
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-001.webp",
+      "caption": "Table 1: Feynman equation coefficient learning. Compiled and hand-coded models (1–3 params) produce identical MSE (“C/HC” columns). Both achieve orders-of-magnitude improvement over the MLP baseline (∼12,700 params) on extrapolation.",
+      "page": 6,
+      "index": 1,
+      "width": 598,
+      "height": 424
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-006.webp",
+      "caption": "Figure 3: Feynman equation coefficient learning results. Top left: In-distribution MSE across benchmark equations; compiled and hand-coded hybrid models usually closely match and generally outperform the MLP baseline. Top right: Extrapolation MSE evaluated over a 5× training range, where hybrid models usually show stronger generalization than the MLP baseline. Middle left: True vs. learned coefficient values. Middle right: Relative coefficient recovery error on a log scale; most coefficients are recovered accurately, but several small-magnitude parameters show large relative recovery errors. Bottom left: Parameter count comparison on a log scale, showing that compiled hybrids use far fewer trainable parameters than the MLP baseline. Bottom right: Hybrid improvement ratio over the MLP for in-distribution and extrapolation settings; most equations show substantial improvement, though not uniformly across all cases.",
+      "page": 7,
+      "index": 6,
+      "width": 902,
+      "height": 902
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-013.webp",
+      "caption": "Table 3: Damped pendulum ODE results (unforced). The compiled model with 2 parameters achieves 731× better in-distribution MSE than the 8,706-parameter MLP. The transcendental sin operation creates an accuracy gap that additional MLP capacity cannot close. The PINN recovers g/L with 41% error; compiled/hand-coded achieve identical results.",
+      "page": 8,
+      "index": 13,
+      "width": 648,
+      "height": 204
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-016.webp",
+      "caption": "Figure 4: Lotka–Volterra predator-prey ODE. Row 1: In-distribution trajectory fit for prey (left) and predator (right) with 2% observation noise. Row 2: 5× extrapolation beyond the training horizon (red dashed line); the PINN fails to preserve oscillatory dynamics and collapses to an incorrect nearly constant trajectory. Row 3, left: Test loss curves with parameter counts in parentheses. Row 3, right: Trajectory MSE across in-distribution, 2×, and 5× extrapolation; purely learned baselines can achieve competitive or lower trajectory MSE despite lacking interpretable parameters. Row 4, left: Parameter recovery for the compiled known-structure model, showing true vs. learned values of α, β, δ, γ. Row 4, right: Ranked 5× extrapolation MSE across all models. The PINN achieves low test loss but poor long-horizon extrapolation, suggesting that it fits the training-window objective without learning the underlying ODE structure.",
+      "page": 9,
+      "index": 16,
+      "width": 976,
+      "height": 1102
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-008.webp",
+      "caption": "Table 4: 1D heat equation PDE results. Hard-constrained models recover α to machine precision (0.00% error, 1 param); the PINN (8,578 params) shows 93% error. Exp. 2 adds an unknown source term.",
+      "page": 10,
+      "index": 8,
+      "width": 832,
+      "height": 298
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-007.webp",
+      "caption": "Figure 5: Lotka-Volterra phase-space trajectories under 5× extrapolation. Ground truth, compiled known-structure model (4 parameters), hybrid model (259 parameters), MLP (8,642 parameters), Neural ODE (8,642 parameters), handcoded model (4 parameters), and PINN (8,582 parameters). The compiled known-structure, hybrid, and hand-coded models preserve the qualitative limit-cycle structure, while the purely learned baselines show increasing distortion or phase-space mismatch under extrapolation.",
+      "page": 10,
+      "index": 7,
+      "width": 976,
+      "height": 488
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-002.webp",
+      "caption": "Figure 6: Damped pendulum ODE, Scenario 2: compiled gravitational structure with learned dynamics. Top left: In-distribution angle trajectory fit for the hybrid, MLP, and Neural ODE models. Top right: In-distribution angular velocity trajectory fit. Middle left: 5× extrapolation angle trajectories; the compiled hybrid extrapolates more stably than the MLP and Neural ODE baselines, though all learned models drift outside the training horizon. Middle right: Trajectory MSE comparison across in-distribution, 2×, and 5× extrapolation for all three models. Bottom left: Test loss comparison: the hybrid model achieves the lowest test loss, reaching the 10−4 range, while the MLP and Neural ODE remain near 10−2. Bottom right: Parameter recovery for the hybrid model’s learned g/L, compared with the true value; the learned value remains far from the true value, illustrating the credit-assignment issue discussed in the text.",
+      "page": 11,
+      "index": 2,
+      "width": 976,
+      "height": 881
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-015.webp",
+      "caption": "Figure 7: 1D heat equation PDE. Top left: Thermal diffusivity α recovery: compiled and hand-coded converge to the true value (0.01) within hundreds of epochs. Top right: Test loss curves for Experiment 1 (diffusion only): compiled/handcoded (1 param) reach machine precision (10−15); PINN (8,578 params) stalls at 10−1; MLP (9,674 params) reaches 10−2. Bottom left: Interpolation vs. extrapolation bar chart: compiled/hand-coded show no degradation under extrapolation. Bottom right: Experiment 2 (diffusion + source): compiled and hand-coded hybrids both outperform the pure MLP by 100×.",
+      "page": 12,
+      "index": 15,
+      "width": 976,
+      "height": 696
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-011.webp",
+      "caption": "Table 5: Compositional generalization. Compiled and hand-coded chains both achieve exactly zero MSE at all depths and evaluation ranges. Neural chains can accumulate large errors, especially in degree-amplifying chains (up to 5.9× 109). The compiled vs. hand-coded equivalence confirms that the compiler’s composition mechanism introduces no error beyond what manual function composition achieves.",
+      "page": 13,
+      "index": 11,
+      "width": 980,
+      "height": 338
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-012.webp",
+      "caption": "Figure 8: 3D vector mechanics. Left: Gravitational constant G recovery: compiled and hand-coded converge identically to G = 6.675 (true G = 6.674, 0.02% error). Center: Experiment 1 (pure gravity) test loss: compiled and hand-coded (1 param each) reach test MSE ∼ 10−6; the MLP (8,899 params) plateaus at ∼4, a 2.5× 106× gap. Right: Experiment 2 (gravity + drag) test loss: compiled and hand-coded hybrids both outperform the pure MLP baseline.",
+      "page": 13,
+      "index": 12,
+      "width": 979,
+      "height": 267
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-009.webp",
+      "caption": "Figure 9: Compositional generalization. Top left: In-distribution composition error vs. chain depth: compiled and hand-coded chains maintain zero error at all depths while neural chains accumulate errors. Top center: Extrapolation (4× range) error vs. depth: neural error amplifies dramatically with composition depth, particularly under extrapolation. Top right: Worst-case absolute error (in-distribution) per chain: compiled/hand-coded remain at machine epsilon. Bottom left: Per-module neural approximation error (training loss for each of the 8 operations). Bottom center: Error amplification factor (neural MSE / compiled MSE) for in-distribution and extrapolation. Bottom right: Example chain (sin → square → add_one → sqrt_abs) showing the function computed by the composition.",
+      "page": 14,
+      "index": 9,
+      "width": 976,
+      "height": 542
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-003.webp",
+      "caption": "Table 6: Computational cost summary. Compilation is a one-time cost under 150µs. The DirectModule adds negligible overhead compared to hand-coded PyTorch at batch size 1, and at batch size 10K the per-sample cost drops to nanoseconds. Training overhead for hybrid models is 2.5–3.8× vs. a pure MLP, modest relative to the accuracy gains.",
+      "page": 15,
+      "index": 3,
+      "width": 756,
+      "height": 443
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-004.webp",
+      "caption": "Figure 10: Parameter recovery error comparison for experiments with PINN baselines. Compiled and hand-coded models (hard constraints) produce identical results in every case. PINNs (soft constraints) show 7–93% error where compiled models achieve <1%. The gap is most dramatic for the heat equation (0.0% vs. 92.7%) and pendulum (0.08% vs. 41.1%). Note log scale.",
+      "page": 15,
+      "index": 4,
+      "width": 711,
+      "height": 408
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-017.webp",
+      "caption": "Table 7: Feynman equations: Scheme source and compiled module statistics.",
+      "page": 20,
+      "index": 17,
+      "width": 644,
+      "height": 359
+    },
+    {
+      "url": "assets/figures/arxiv/2605.22498v1/fig-005.webp",
+      "caption": "Table 10: Vector and matrix operations (selected). All use dim=-1/dim=-2 for batch compatibility.",
+      "page": 21,
+      "index": 5,
+      "width": 690,
+      "height": 237
+    }
+  ]
+}
