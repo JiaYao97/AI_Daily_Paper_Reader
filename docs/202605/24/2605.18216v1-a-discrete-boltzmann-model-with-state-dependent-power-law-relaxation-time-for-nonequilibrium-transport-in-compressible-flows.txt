@@ -1,0 +1,1838 @@
+Title: A discrete Boltzmann model with state-dependent power-law relaxation time for nonequilibrium transport in compressible flows
+
+URL Source: https://arxiv.org/pdf/2605.18216v1
+
+Published Time: Tue, 19 May 2026 02:48:29 GMT
+
+Number of Pages: 38
+
+Markdown Content:
+This draft was prepared using the LaTeX style file belonging to the Journal of Fluid Mechanics 1
+
+# A discrete Boltzmann model with state-dependent power-law relaxation time for nonequilibrium transport in compressible flows 
+
+Demei Li 1, Zhongyi He 1, Huilin Lai 1†, Yanbiao Gan 2‡, Hailong Liu 3,Pengfei Lin 4,5 
+
+> 1
+
+School of Mathematics and Statistics, Fujian Normal University, Key Laboratory of Analytical Mathematics and Applications (Ministry of Education), Fujian Key Laboratory of Analytical Mathematics and Applications (FJKLAMA), Center for Applied Mathematics of Fujian Province (FJNU), 350117 Fuzhou, China 
+
+> 2
+
+Hebei Key Laboratory of Trans-Media Aerial Underwater Vehicle, North China Institute of Aerospace Engineering, 065000 Langfang, China 
+
+> 3
+
+Laoshan Laboratory, 266237 Qingdao, People’s Republic of China 
+
+> 4
+
+State Key Laboratory of Earth System Numerical Modeling and Application, Institute of Atmospheric Physics, Chinese Academy of Sciences, 100029 Beijing, China 
+
+> 5
+
+College of Earth and Planetary Sciences, University of Chinese Academy of Sciences, 100049 Beijing, China (Received xx; revised xx; accepted xx) 
+
+Thermodynamic nonequilibrium effects play a central role in momentum and energy transport in compressible flows. In conventional BGK kinetic models, the relaxation time τ is taken as a constant, which neglects the dependence of the relaxation process on local macroscopic states. To overcome this limitation, we develop a discrete Boltzmann model with a density- and temperature-dependent power-law relaxation time, termed DTRT-DBM, in which τ = τ0(ρ/ρ 0)a(T /T 0)b. This formulation extends the discrete Boltzmann framework to flows with spatially varying nonequilibrium intensity. The model is validated by the Sod shock tube and by analytical solutions for viscous stress and heat flux, demonstrating accurate recovery of both macroscopic wave structures and nonequilibrium quantities across shock waves, rarefaction waves, and contact disconti-nuities. On this basis, phase diagrams of viscous stress and heat flux are constructed to examine how these quantities depend on the power-law exponents a and b. The extrema of these quantities depend exponentially on the model parameters and exhibit regime-dependent behaviour. The roles of a and b are not symmetric: the nonequilibrium response is more sensitive to a when density gradients dominate, but more sensitive to b when temperature gradients dominate. Within the parameter range and flow configurations 
+
+† hllai@fjnu.edu.cn 
+
+‡ gan@nciae.edu.cn 
+
+> arXiv:2605.18216v1 [physics.flu-dyn] 18 May 2026
+
+2 Li, He, Lai, Gan, Liu and Lin 
+
+examined here, higher-order viscous stress increases the growth rate of the total viscous-stress extremum, whereas higher-order heat flux reduces the growth rate of the total heat-flux extremum. These results show that the proposed model can capture different higher-order nonequilibrium responses in compressible flows and provides a framework for the modelling and analysis of multiscale nonequilibrium processes. 
+
+1. Introduction 
+
+Thermodynamic nonequilibrium is a defining feature of many compressible flows in extreme and high-energy-density environments. It arises from both strong spatial gradients of macroscopic fields, such as density, temperature, velocity, and composition, and the mismatch between rapid hydrodynamic evolution and finite molecular relaxation. Under shock compression, intense shear, interfacial instability, strong heating, or chemical reaction, the local state can reorganize on very short spatial and temporal scales, leaving the particle distribution far from local Maxwellian equilibrium. Meanwhile, collisional relaxation, dissipation, and energy exchange feed back on the macroscopic response. Nonequilibrium behaviour therefore results from the continuous interplay between flow evolution and local relaxation, which determines its intensity, structure, and dynamics. Such effects are central to many applications. In hypersonic re-entry flows, strong aerodynamic heating induces molecular dissociation and vibrational relaxation within the shock layer, and the resulting thermochemical nonequilibrium directly affects aerothermal loads and thermal-protection design (He et al. 2025 a; Xiong et al. 2025; Varma & Zhong 2025; Steer et al. 2026; Cao et al. 2024). In combustion and detonation, nonequilibrium interactions between chemical kinetics and fluid motion govern flame propagation and detonation-wave stability (Li et al. 2026; Yu et al. 2025; Lipkowicz et al. 2025; Ullman 
+
+et al. 2025; Barwey et al. 2025). Similar issues also arise in inertial confinement fusion and ablation-driven hydrodynamic instability, where nonequilibrium transport strongly influences compression performance, energy localization, and interfacial perturbation growth (Zhou et al. 2025; Yan et al. 2025; Wang et al. 2009, 2010, 2012, 2013; Zhang 
+
+et al. 2020). A predictive description of such systems therefore requires more than the recovery of macroscopic conservation laws. It also requires a model that explicitly links local relaxation to the evolving macroscopic state, so that nonequilibrium transport can be represented realistically rather than through a constant relaxation time. Numerical simulation has become a major tool for investigating nonequilibrium fluid systems (Sun et al. 2019; Boccelli et al. 2024). By the scale of description, numerical methods may be classified as macroscopic, microscopic, or mesoscopic (Guo et al. 2025; He et al. 2025 b; Wu et al. 2025; Xu & Zhang 2019; Xu et al. 2025). Macroscopic methods, represented by the Euler and Navier–Stokes (NS) equations, rely on the continuum assumption and near-equilibrium closure, which limits their ability to describe strongly nonequilibrium transport in shock waves, interfacial instabilities, and rarefied flows A DBM for thermodynamic nonequilibrium transport 3(Bernardini et al. 2023; Ding et al. 2022; Morgan et al. 2017). Microscopic methods, such as molecular dynamics, resolve nonequilibrium processes directly through intermolecular interactions, but remain prohibitively expensive for large-scale systems (Mao et al. 2023; Klíma & Kolafa 2018; Li et al. 2021; Xu & Zhang 2019). Mesoscopic methods provide an effective compromise by offering coarse-grained kinetic descriptions that bridge the macroscopic and microscopic scales (Sun et al. 2025). Representative mesoscopic approaches include the gas-kinetic scheme (GKS) (Xu et al. 
+
+2005; Sun et al. 2021), the unified gas-kinetic scheme (UGKS) (Zhu et al. 2017), the discrete unified gas-kinetic scheme (DUGKS) (Guo & Xu 2021), the discrete velocity method (DVM) (Yang et al. 2019, 2022), the lattice Boltzmann method (LBM) (Succi 2018; Tran et al. 2022; Latt et al. 2020; Zhan et al. 2025; Wang et al. 2022; Fei et al. 2024; Yang et al. 2025; Hou et al. 2025), and the discrete Boltzmann method (DBM) (Zhang 
+
+et al. 2022; Sun et al. 2024; Song et al. 2024, 2025; Xu et al. 2012, 2018; Xu & Zhang 2019; Xu et al. 2024; Lai et al. 2026). Among them, LBM has been widely used for multiphase flows, reactive flows, micro- and nanoscale flows, and hydrodynamic instabilities because it is efficient, local, and flexible for complex boundaries and multicomponent systems (Tayyab et al. 2021; Wei et al. 2018; Wang et al. 2020; Sawant et al. 2022; Huang et al. 
+
+2024; Vienne et al. 2024; Hosseini et al. 2024). However, LBM is designed mainly to recover macroscopic variables and their evolution. Building on the kinetic framework of LBM, DBM extends the description to thermodynamic nonequilibrium by enforcing the moment relations required for nonequilibrium modelling and retaining higher-order non-conserved moments (Xu et al. 2018; Xu & Zhang 2019; Xu et al. 2024). Since the pioneering work of Xu et al. (Xu et al. 2012), DBM has developed into a systematic framework for detecting, describing, and analysing nonequilibrium effects in complex flows. Subsequent work has extended DBM to multiphase systems, combustion, reactive flows, droplet coalescence, and hydrodynamic instabilities (Xu et al. 2024; Huang et al. 
+
+2025; Sun et al. 2025; Li et al. 2022; Chen et al. 2024). DBM has also advanced towards higher-order nonequilibrium modelling. Chapman– Enskog multiscale expansion has enabled DBM models that capture second- and third-order thermodynamic nonequilibrium effects (Gan et al. 2018). Multiple-relaxation-time (MRT) DBM formulations with source terms have further enabled coupled descriptions of flow, reaction, and nonequilibrium effects in combustion and detonation, including three-dimensional configurations (Lin & Luo 2019; Ji et al. 2021, 2022). Even so, existing DBM formulations still do not fully recover realistic transport behaviour. In many models, the relaxation time is prescribed as a constant, so the relaxation process is decoupled from the local thermodynamic state. This simplification ignores how variations in density, temperature, and pressure affect nonequilibrium dissipation and transport, and therefore cannot capture the distinct transport responses induced by strongly non-uniform driving, such as shock heating, interfacial cooling, or ablative evaporation. Both experiments and theory support the need for state-dependent relaxation. Mil-4 Li, He, Lai, Gan, Liu and Lin 
+
+likan and White showed through vibrational-relaxation experiments that the relaxation time correlates empirically with temperature, pressure, and molecular characteristic temperature (Millikan & White 1963). More recently, Streicher et al. showed that, in multicomponent systems, temperature evolution, pressure non-ideality, and concentra-tion variations all significantly affect relaxation-time dynamics, especially under extreme conditions (Streicher et al. 2020). These findings indicate that a physically meaningful kinetic model must move beyond the constant-relaxation-time assumption and establish an explicit relation between relaxation and macroscopic variables. One way to improve physical consistency is to adopt the MRT framework, which assigns independent relaxation times to different kinetic moments. This strategy increases the flexibility of the kinetic description (Liang et al. 2017; Lin et al. 2021; Lin 2023; Chen et al. 
+
+2024). However, most MRT formulations still prescribe constant relaxation times, and MRT-DBM introduces multiple free parameters for different moment channels, whose sensitivity and selection criteria remain problem dependent and often unclear (Liang 
+
+et al. 2017; Lin et al. 2021; Lin 2023; Chen et al. 2024; Zhang et al. 2025). In practice, this feature often requires repeated case-by-case tuning and reduces the transparency of physical interpretation. A different approach has been developed within unified gas-kinetic frameworks, such as gas-kinetic unified algorithm and direct simulation BGK method, in which the relaxation time is coupled more directly to flow characteristics. In these methods, the relaxation time is usually related quantitatively to macroscopic variables, molecular models and local flow-regime features, allowing nonequilibrium effects to be represented across different regimes (Hu et al. 2021; Li et al. 2020 a,b; Wu et al. 2021). Such models have shown good predictive capability in multiscale flows. At the same time, their relaxation-time formulations may involve multiple parameters and functional dependencies tailored to specific physical settings. For the present purpose, where the aim is to construct a com-pact DBM formulation and to examine the separate effects of density and temperature on nonequilibrium transport, it is useful to adopt a simpler state-dependent form. This consideration motivates the power-law relaxation-time model introduced below. A related route has been developed within unified gas-kinetic frameworks, such as the gas-kinetic unified algorithm (GKUA) and the direct simulation BGK (DSBGK) method, where the relaxation time is coupled more directly to flow characteristics. In these methods, the relaxation time is usually related quantitatively to macroscopic variables, molecular models and local flow-regime features, allowing nonequilibrium effects to be represented across different regimes (Hu et al. 2021; Li et al. 2020 a,b; Wu et al. 
+
+2021). These models have shown good predictive capability in multiscale flows. Their relaxation-time formulations may, however, involve several parameters and functional dependencies tailored to specific physical settings. For the present work, which aims to construct a compact DBM formulation and to examine the separate effects of density and A DBM for thermodynamic nonequilibrium transport 5temperature on nonequilibrium transport, a simpler state-dependent form is desirable. This consideration motivates the power-law relaxation-time model introduced below. We therefore develop a discrete Boltzmann model with a density- and temperature-dependent power-law relaxation time, termed DTRT-DBM. In this model, the relaxation time is prescribed as τ = τ (ρ, T ) = τ0 (ρ/ρ 0)a (T /T 0)b. This form preserves the simplicity and analytical tractability of the BGK framework while allowing the local relaxation process to vary with the macroscopic state. It therefore provides a compact kinetic framework for describing thermodynamic nonequilibrium in compressible flows with spatially varying density and temperature. The remainder of the paper is organized as follows. Section 2 presents the construction of the density- and temperature-dependent relaxation-time DBM. Section 3 validates the model using analytical solutions and benchmark problems. Section 4 analyses the nonequilibrium characteristics captured by the model and examines how the state-dependent relaxation time affects different transport channels. Section 5 summarizes the main conclusions and outlines possible extensions. 
+
+2. Discrete Boltzmann modelling with a state-dependent power-law relaxation time 
+
+To model nonequilibrium transport while retaining analytical tractability, we start from the Boltzmann equation with a simplified collision operator. A series of such operators have been proposed, including the BGK, ES-BGK, Shakhov, Rykov, and Liu models (Holway 1966; Shakhov 1968; Liu 1990; Rykov et al. 2008). Among them, the classical BGK model approximates the collision term by assuming that the distribution function relaxes towards the local equilibrium distribution with a single relaxation time: 
+
+∂tf + v · ∇f = − 1
+
+τ (f − f eq ) . (2.1) Here, τ is the relaxation time, which characterizes the rate at which the system ap-proaches equilibrium, and f eq is the Maxwellian equilibrium distribution: 
+
+f eq = ρ
+
+2πRT 
+
+( 12πnRT 
+
+)1/2
+
+exp 
+
+[
+
+− |v − u|2
+
+2RT − η2
+
+2nRT 
+
+]
+
+. (2.2) Here, ρ, v, u, and T denote the local density, particle velocity, flow velocity, and temperature, respectively; R is the gas constant; n is the number of additional degrees of freedom associated with molecular rotation or vibration; and η is a free parameter introduced to represent these additional degrees of freedom. In the classical BGK model, the relaxation process evolves on a fixed timescale. To describe its dependence on the local thermodynamic state, we prescribe the relaxation time in the power-law form 
+
+τ = τ (ρ, T ) = τ0
+
+( ρρ0
+
+)a ( TT0
+
+)b
+
+. (2.3) 6 Li, He, Lai, Gan, Liu and Lin 
+
+Here, τ0 is the reference relaxation time, while ρ0 and T0 are the reference density and temperature, respectively. The exponents a and b determine how the relaxation time varies with density and temperature. Substituting Eq. (2.3) into the collision term yields the continuous DTRT Boltzmann equation: 
+
+∂tf + v · ∇f = − 1
+
+τ (ρ, T ) (f − f eq ) . (2.4) After velocity discretization, the corresponding discrete equation becomes 
+
+∂tfi + vi · ∇fi = − 1
+
+τ (ρ, T ) (fi − f eq i ) . (2.5) The next step is to discretize the velocity space. Because particle velocities are con-tinuously distributed over an unbounded phase space, whereas numerical computation can only be performed on a finite set of discrete velocities, the discrete velocity model must preserve the kinetic moments required by the target hydrodynamic description. In this sense, velocity-space discretization is the key step in DBM construction. To ensure kinetic consistency, the discrete velocity set must satisfy the moment-matching relation 
+
+∑
+
+> i
+
+fiΨ (vi, η i) = Mm,n =
+
+∫ ∫ 
+
+f Ψ (v, η ) dv dη, (2.6) where 
+
+Ψ (vi, η i) = 
+
+[
+
+1, vi, 12
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) , vivi, · · · 
+
+]T
+
+. (2.7) In practical DBM construction, the discrete equilibrium distribution is determined by requiring it to reproduce a prescribed set of equilibrium kinetic moments exactly on the finite velocity set. The corresponding equilibrium moment constraints read 
+
+∑
+
+> i
+
+f eq i Ψ ′ (vi, η i) = Meq m,n =
+
+∫ ∫ 
+
+f eq Ψ ′(v, η ) dv dη. (2.8) Here, Ψ ′ (vi, η i) denotes the set of basis functions associated with the retained higher-order moments. The number and order of these moments determine both the depth of nonequilibrium description and the order of the recovered hydrodynamic equations. For example, retaining the first five groups of kinetic moments, M0 − M3,1, is sufficient to recover the Euler equations; retaining the first seven groups, M0 − M4,2, allows recovery of the NS equations; and retaining the first nine groups, M0 − M5,3, enables recovery of the Burnett equations. The analytical expressions of the first nine groups of kinetic moments required at the Burnett level are given in appendix A. Once the required moment set is specified, the equilibrium distribution function can be obtained from the moment constraints in matrix form: 
+
+M = C · f eq , (2.9) which gives 
+
+f eq = C −1 · M. (2.10) A DBM for thermodynamic nonequilibrium transport 7Here, f eq = (f eq  
+
+> 1
+
+, f eq  
+
+> 2
+
+, f eq  
+
+> 3
+
+, · · · , f eq  
+
+> 25
+
+)T and M = (M0, M1, M2,0, · · · , M5,3)T =(M0, M 1x, M 1y , · · · , M 5,3yyy )T is the moment vector of f eq i . The matrix C =(c1, c2, c3, · · · , c25 ) is a 25 × 25 coefficient matrix, where 
+
+ci =
+
+[
+
+1, v ix , v iy , · · · , 12
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+)viy viy viy 
+
+]T
+
+. (2.11) This inverse-matrix method guarantees the completeness of the equilibrium distribution function at the level of the retained moments and provides the basis for high-order recoverability. Since the present procedure follows the standard DBM construction, the resulting DTRT-DBM remains structurally compatible with conventional BGK-DBM while incorporating state-dependent relaxation. With the discrete kinetic model established, Chapman–Enskog (CE) multiscale analy-sis can be used to examine its hydrodynamic recoverability. The introduction of τ (ρ, T )
+
+does not alter the form of the conservation laws, but it modifies the constitutive relations through the state dependence of the transport coefficients. The corresponding generalized hydrodynamic equations are 
+
+∂tρ + ∇ · (ρu) = 0 , (2.12) 
+
+∂t(ρu) + ∇ · (ρuu + P I + ∆∗
+
+> 2
+
+) = 0 , (2.13) 
+
+∂t(ρe ) + ∇ · [(ρe + P )u + ∆∗ 
+
+> 2
+
+· u + ∆∗
+
+> 3,1
+
+] = 0 . (2.14) Here, P = ρRT is the pressure, e = cv T + u2/2 is the specific total energy, and cv =(n+2) R/ 2 is the specific heat at constant volume. ∆∗ 
+
+> 2
+
+and ∆∗ 
+
+> 3,1
+
+denote the non-organized momentum flux (NOMF) and non-organized energy flux (NOEF), respectively. At first order in the CE expansion, the constitutive relations reduce to the NS forms: 
+
+∆∗(1) 2 = −μ
+
+[
+
+∇u + ( ∇u)T − 2
+
+n + 2 I∇ · u
+
+]
+
+, (2.15) 
+
+∆∗(1) 3,1 = −κ∇T. (2.16) The corresponding viscosity and thermal conductivity are 
+
+μ(ρ, T ) = P τ (ρ, T ), (2.17) 
+
+κ(ρ, T ) = cpP τ (ρ, T ), (2.18) where cp = ( n + 4) R/ 2 is the specific heat at constant pressure. Therefore, once τ =
+
+τ (ρ, T ) is introduced, the transport coefficients inherit the same state dependence. At second order in the CE expansion, Burnett-level corrections arise and account for higher-order nonequilibrium transport. In the present DTRT-DBM, the analytical expressions for the second-order components of the non-organized momentum flux ∆∗
+
+> 2
+
+and non-organized energy flux ∆∗ 
+
+> 3,1
+
+are given in appendix B. Although CE analysis provides a convenient test of hydrodynamic recoverability, it should be emphasized that DBM is not defined by the CE procedure alone. In DBM, 8 Li, He, Lai, Gan, Liu and Lin 
+
+the physical description is ultimately provided by the extended hydrodynamic equations (EHEs), which include not only the evolution equations for conserved quantities but also the explicit dynamics of selected non-conserved quantities, thereby directly characterizing the departure of the system from local equilibrium (Xu et al. 2012, 2018; Xu & Zhang 2019; Xu et al. 2024). In complex systems, nonlinearity and nonequilibrium are often much more pronounced than can be adequately represented by macroscopic indicators such as the Knudsen number, spatial gradients, or other continuum-level measures alone. DBM retains these traditional indicators, but further constructs a systematic framework for describing nonequilibrium through higher-order non-conserved kinetic moments: 
+
+∆∗ 
+
+> m,n
+
+= M∗ 
+
+> m,n
+
+(f − f eq )= ∑
+
+> i
+
+( 12
+
+)1−δm,n 
+
+(fi − f eq i ) v∗ 
+
+> i
+
+v∗ 
+
+> i
+
+· · · v∗
+
+> i
+
+︸ ︷︷ ︸
+
+> n
+
+(v∗2 
+
+> i
+
++ η2
+
+> i
+
+) m−n 
+
+> 2
+
+. (2.19) Here, m denotes the tensor order before contraction, and n denotes the order after contraction, while v∗ 
+
+> i
+
+= vi −u is the particle peculiar velocity relative to the macroscopic flow velocity. The corresponding kinetic moments M∗ 
+
+> m,n
+
+are central moments. Through the nonequilibrium measures ∆∗
+
+> m,n
+
+, DBM can characterize both hydrodynamic nonequi-librium effects (HNEs) and thermodynamic nonequilibrium effects (TNEs), thereby providing a mesoscopic perspective on departures from equilibrium. Within this framework, we further introduce a multidimensional indicator vector to summarize the nonequilibrium state from multiple perspectives: 
+
+ST N E = {∆∗, |∆|, |∇u|, |∇ρ|, |∇T |, τ 0, a, b, Kn, · · · } . (2.20) This indicator system incorporates local nonequilibrium measures, global nonequilibrium intensity, macroscopic gradient features, and model parameters into a unified framework, thus providing a mesoscopic basis for nonequilibrium analysis and feature identification in complex flows (Xu et al. 2018; Zhang et al. 2022). 
+
+3. Model Validation 
+
+This section validates the DTRT-DBM at both the macroscopic and mesoscopic levels. We first examine its ability to recover the canonical wave structures of the Sod shock tube problem, namely the shock wave, contact discontinuity, and rarefaction wave. We then assess its accuracy in describing nonequilibrium quantities by comparing numerical and analytical results for viscous stress and heat flux. 3.1. Numerical framework and discrete velocity model 
+
+As a theoretical framework for model construction and for analysing complex physical fields, DBM specifies only the essential physical constraints of the problem and does not prescribe particular discretization schemes in time, space, or velocity. In the present work, A DBM for thermodynamic nonequilibrium transport 9 
+
+> Figure 1. Discrete velocity set of the D2V25 model.
+
+spatial derivatives are computed with a fifth-order weighted essentially non-oscillatory (WENO) finite-difference scheme to suppress spurious oscillations near steep gradients (Jiang & Shu 1996), while temporal integration is performed with a second-order implicit– explicit Runge–Kutta scheme (Ascher et al. 1997). The accuracy and efficiency of DBM also depend critically on phase-space discretiza-tion. In particular, the discrete velocity set (DVS) should satisfy the requirements of symmetry, full rank, and sufficient diversity in both speed and direction (He et al. 2025 b). To balance accuracy and stability, all simulations in this work employ the two-dimensional 25-velocity model (D2V25), shown in figure 1. The D2V25 discrete velocity set is defined as follows (He et al. 2025 b): 
+
+(vix , v iy ) = 
+
+
+
+c(0 , 0) , i = 1 
+
+cyc : c(±1, 0) , 2 ⩽ i ⩽ 5
+
+c(±1, ±1) , 6 ⩽ i ⩽ 9
+
+cyc : c(±3, 0) , 10 ⩽ i ⩽ 13 
+
+c(±3, ±3) , 14 ⩽ i ⩽ 17 
+
+cyc : c(±2, ±1) , 18 ⩽ i ⩽ 25 .
+
+(3.1) The auxiliary variable is specified as follows: ηi = 4 η0 for 1 ⩽ i ⩽ 2, ηi = 3 η0 for i = 3 ,
+
+ηi = 2 η0 for i = 4 , ηi = η0 for i = 5 and 14 ⩽ i ⩽ 17 , and ηi = 0 otherwise. Here, “cyc” denotes cyclic permutation, and c and η0 are free parameters. With suitable choices of these parameters, the matrix C remains invertible, and numerical stability and efficiency are improved. 10 Li, He, Lai, Gan, Liu and Lin 
+
+3.2. Macroscopic validation: one-dimensional Sod shock tube 
+
+The Sod shock tube problem is a standard benchmark for assessing a model’s ability to capture strong discontinuities and multi-wave propagation. It contains the three canonical wave structures of a shock wave, a contact discontinuity, and a rarefaction wave, and is therefore well suited to validating the macroscopic accuracy of the present model. The initial conditions are {
+
+(ρ, T, u x, u y )|L = (1 .0, 1.0, 0.0, 0.0) ,
+
+(ρ, T, u x, u y )|R = (0 .125 , 0.8, 0.0, 0.0) . (3.2) Here, the subscripts “ L” and “ R” denote the left and right states, respectively. The computational grid is Nx × Ny = 1000 × 4, with ∆x = ∆y = 10 −3 and ∆t = 10 −4. The remaining model parameters are τ0 = 5 × 10 −5, ρ0 = T0 = 1 .0, c = 1 .05 , and η0 = 1 .0.Periodic boundary conditions are imposed in the y-direction. At the left boundary in the x-direction, we prescribe 
+
+fi, −1,t = fi, 0,t = f (0) 
+
+> i, 1,t =0
+
+, (3.3) which implies 
+
+(ρ, T, u x, u y )−1,t = ( ρ, T, u x, u y )0,t = ( ρ, T, u x, u y )1,t =0 . (3.4) The same equilibrium boundary treatment is applied at the right boundary: 
+
+fi,N x+2 ,t = fi,N x+1 ,t = f (0) 
+
+> i,N x,t =0
+
+, (3.5) 
+
+(ρ, T, u x, u y )Nx+2 ,t = ( ρ, T, u x, u y )Nx+1 ,t = ( ρ, T, u x, u y )Nx,t =0 . (3.6) The relaxation time is prescribed by equation (2.3), where a and b determine its depen-dence on the local macroscopic state. 3.2.1. Weak-dissipation case: agreement with the Riemann solution 
+
+Figure 2 compares the DTRT-DBM results at t = 0 .1 with the exact Riemann solution for a = b = 10 . The numerical profiles of density, pressure, velocity, and temperature agree closely with the exact solution. The rarefaction wave, contact discontinuity, and shock wave are all captured accurately without spurious oscillations. For this case, the relaxation time is 
+
+τ = τ0
+
+( ρρ0
+
+)a ( TT0
+
+)b
+
+= τ0ρ10 T 10 = τ0P 10 .
+
+Figure 2(b) shows that the pressure remains below 1.0 throughout the computational domain. Hence, τ ≪ τ0. The nonequilibrium effect is therefore weak, and the flow remains close to the Euler limit. 3.2.2. Strong-dissipation case: enhanced nonequilibrium effects 
+
+Figure 3 compares the numerical macroscopic profiles at t = 0.1 with the exact Riemann solution for a = b = −3. The density and pressure deviate from the exact A DBM for thermodynamic nonequilibrium transport 11 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0             
+
+> 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0
+> 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0
+> 0.30 0.15 0.00 0.15 0.30 0.5 1.0 1.5
+> DBM
+> Exact
+> r
+> x
+> (b)
+> P
+> x
+> (d) (c) (a)
+> u
+> x
+> x
+> T
+> x
+
+Figure 2. Comparison of the DTRT-DBM results with the exact Riemann solution for the Sod shock tube at t = 0 .1 with a = 10 and b = 10 : (a) density, (b) pressure, (c) velocity, and (d) temperature. 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0              
+
+> 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0
+> 0.30 0.15 0.00 0.15 0.30 0.0 0.5 1.0
+> 0.30 0.15 0.00 0.15 0.30 0.5 1.0 1.5
+> DBM
+> Exact
+> r
+> x
+> (b)
+> P
+> x
+> u
+> x
+> x
+> (a)
+> T
+> x
+> (c) (d)
+
+Figure 3. Comparison of the DTRT-DBM results with the exact Riemann solution for the Sod shock tube at t = 0 .1 with a = −3 and b = −3: (a) density, (b) pressure, (c) velocity, and (d) temperature. 
+
+Riemann solution near the discontinuities, as shown in figures 3(a,b). More pronounced deviations appear in the velocity and temperature profiles in figures 3(c,d), where both the shock front and the contact discontinuity are visibly broadened. The corresponding 12 Li, He, Lai, Gan, Liu and Lin Kn     
+
+> T
+> 0.000 0.007 0.014
+> Kn
+> r
+> Kn
+> r
+> 300 450 600 750 900 0.000 0.004 0.008
+> Kn
+> P
+> x
+> Kn
+> P
+
+Figure 4. Profile of the local Knudsen numbers calculated from T , ρ and P along the line 
+
+y = 0 .5Ly at t = 0 .1 for a = −3 and b = −3.
+
+relaxation time is 
+
+τ = τ0P −3.
+
+In the initial right state, P = 0 .1, and hence τ = 10 3τ0. In low-pressure regions, the local state causes τ to increase substantially, thereby enhancing nonequilibrium transport and smoothing the flow field. By contrast, in high-pressure regions, τ decreases dynamically, so that local dissipation weakens and steep gradients are better preserved. This spatial variation in the relaxation time produces different broadening widths and displacement magnitudes for the rarefaction wave, contact discontinuity, and shock wave. Figure 4 shows the corresponding profile of the local Kn along the line y = 0 .5Ly .The local Kn reaches the order of 0.1, indicating that the flow lies outside the range of validity of the Euler equations. This test shows that the DTRT-DBM can represent state-dependent dissipative effects in strongly nonequilibrium regimes. 3.3. Mesoscopic validation: nonequilibrium quantities 
+
+We next validate the nonequilibrium description of the DTRT-DBM by comparing numerical and analytical solutions for viscous stress and heat flux. These tests assess the mesoscopic accuracy of the model and examine whether the state-dependent relaxation time can correctly represent the corresponding nonequilibrium transport. A DBM for thermodynamic nonequilibrium transport 13 0 100 200 0.000 0.004 0.008                                                   
+
+> D2V25 DBM
+> *(1) 2xx
+> *(1) 2xx
+> +
+> *(2) 2xx
+> x
+> (a)
+> a=1
+> a=0
+> a=1.5
+> a=2
+> b=2b=1b=1b=3
+> 0100 200 0.000 0.005 0.010
+> x
+> (b)
+> 0100 200 0.000 0.008 0.016
+> x
+> (c)
+> 0100 200 0.000 0.013 0.026
+> x
+> (d)
+> 0100 200 0.000 0.005 0.010
+> x
+> (e)
+> 0100 200 0.000 0.007 0.014
+> x
+> (f)
+> 0100 200 0.00 0.01 0.02
+> x
+> (g)
+> 0100 200 0.000 0.018 0.036
+> x
+> (h)
+> 0100 200 0.000 0.008 0.016
+> x
+> (i)
+> 0100 200 0.00 0.01 0.02
+> x
+> (j)
+> 0100 200 0.000 0.015 0.030
+> x
+> (k)
+> 0100 200 0.000 0.027 0.054
+> x
+> (l)
+> 0100 200 0.00 0.01 0.02
+> x
+> (m)
+> 0100 200 0.000 0.012 0.024
+> x
+> (n)
+> 0100 200 0.000 0.019 0.038
+> x
+> (o)
+> 0100 200 0.000 0.032 0.064
+> x
+> (p)
+
+Figure 5. Profiles of viscous stress along the centreline y = 0 .5Ly at t = 0 .04 for different parameter combinations (a = −1, 0, 1.5, 2; b = −2, −1, 1, 3) . DTRT-DBM results are compared with the corresponding analytical solutions. 
+
+3.3.1. Viscous stress 
+
+To verify the accuracy of the DTRT-DBM in describing viscous stress, we prescribe the initial conditions as 
+
+ρ(x, y ) = ρL + ρR
+
+2 − ρL − ρR
+
+2 tanh 
+
+( x − (Nx∆x )/2
+
+Lρ
+
+)
+
+, (3.7) 
+
+ux(x, y ) = −u0 tanh 
+
+( x − (Nx∆x )/2
+
+Lu
+
+)
+
+, uy = 0 . (3.8) Here, ρL = 1 , ρR = 2 , TL = TR = 1 , and Lρ = Lu = 20 . The remaining parameters are 
+
+∆x = ∆y = 0 .002 , ∆t = 5 × 10 −5, c = 1 .05 , η0 = 1 .0, γ = 2 , u0 = 0 .5, τ0 = 5 × 10 −4,and ρ0 = T0 = 1 .Figure 5 shows viscous-stress profiles along the centreline at t = 0 .04 for different pa-rameter combinations (a = −1, 0, 1.5, 2; b = −2, −1, 1, 3) , together with the correspond-ing analytical solutions. In all cases, the numerical results agree well with the second-order analytical solutions. This agreement holds not only in weakly nonequilibrium states but 14 Li, He, Lai, Gan, Liu and Lin 
+
+also when second-order nonequilibrium effects become significant. These results confirm that the DTRT-DBM remains accurate over a wide range of nonequilibrium conditions. (i) Dependence of the interfacial nonequilibrium structure on a and b.As shown in figure 5, the viscous stress exhibits a typical double-peak structure. The left peak, located approximately at x = 50 ∼ 100 , is higher, whereas the right peak, located approximately at x = 100 ∼ 150 , is lower. This asymmetry arises because the parameters a and b modify the spatial distribution of τ . In the present case, the density is higher on the right-hand side. As a increases, τ rises more strongly on the right, and the right peak is enhanced accordingly. By contrast, increasing b affects the left peak more strongly and further enlarges the difference between the two peaks. Therefore, when a
+
+is relatively large and b is relatively small, the two peaks approach each other; when a
+
+is relatively small and b is relatively large, the right peak weakens and the interfacial asymmetry becomes more pronounced. Thus, the observed interfacial structure reflects how the local relaxation time varies with the model parameters. To quantify the difference between the two peaks, we introduce the logarithmic asym-metry index 
+
+D = ln 
+
+∣∣∣∣
+
+∆L ∆R 
+
+∣∣∣∣ . (3.9) Here, ∆L and ∆R denote the left and right peak values, respectively. The condition 
+
+D = 0 indicates that the two peaks are symmetric in magnitude; D > 0 indicates that the left peak is larger; and D < 0 indicates that the right peak is larger. A larger |D|
+
+corresponds to a stronger asymmetry.    
+
+> Table 1. Values of the logarithmic asymmetry index Dfor the double-peak viscous-stress structure under different parameter combinations.
+
+b = −2 b = −1 b = 1 b = 3 
+
+a = −1 1.31 1.43 1.71 2.00 
+
+a = 0 0.80 0.93 1.23 1.54 
+
+a = 1 .5 0.86 0.24 0.55 0.80 
+
+a = 2 −0.13 0.02 0.31 0.53 
+
+To clarify how the nonequilibrium intensity varies with a and b at different orders, we introduce the relative nonequilibrium intensity index RTNE . Figure 6 shows four representative viscous-stress profiles, and table 2 lists the corresponding RTNE values and nonequilibrium states.    
+
+> Table 2. Relative nonequilibrium intensity RTNE and the corresponding nonequilibrium states for viscous stress under different parameter combinations.
+
+A DBM for thermodynamic nonequilibrium transport 15 0 50 100 150 200 0.0000 0.0045 0.0090                           
+
+> D2V25 DBM
+> *(1) 2xx
+> *(1) 2xx
+> +
+> *(2) 2xx
+> x
+> (a) a=1, b=2
+> (70, 0.007) (126, 0.002) (75, 0.050) (123, 0.009)
+> 050 100 150 200 0.000 0.035 0.070
+> x
+> (b) a=0, b=5
+> 0100 200 0.000 0.013 0.026
+> x
+> (c) a=2, b=1
+> (72, 0.020) (125, 0.019) (75, 0.055) (123, 0.030)
+> 050 100 150 200 0.000 0.035 0.070
+> x
+> (d) a=2, b=4
+
+Figure 6. Profiles of ∆∗
+
+2xx along the centreline y = 0 .5Ly at t = 0 .04 for four representative cases: (a) a = −1, b = −2; (b) a = 0 , b = 5 ; (c) a = 2 , b = −1; and (d) a = 2 , b = 4 .
+
+Parameter Combination RTNE Relative Nonequilibrium State in the System 
+
+a = −1, b = −2 0 Zero Relative Nonequilibrium 
+
+a = 0 , b = 5 0.15 Weak Relative Nonequilibrium 
+
+a = 2 , b = −1 0.5 Moderate Relative Nonequilibrium 
+
+a = 2 , b = 4 1.1 Strong Relative Nonequilibrium Figure 6 and table 2 show that, when both a and b are small, the overall viscous-stress intensity remains low and first-order nonequilibrium effects dominate ( RT N E =0). When one parameter is large and the other is small, their effects on the relative nonequilibrium intensity become competitive: the smaller parameter suppresses the nonequilibrium level, whereas the larger one enhances the local transport response. The system then lies in a weak-to-moderate relative nonequilibrium state. When both a
+
+and b increase simultaneously, their combined effect becomes significant. The relaxation rate becomes strongly non-uniform in space, leading to a marked increase in viscous-stress nonequilibrium. In this case, RT N E reaches 1.1, corresponding to a strong relative 16 Li, He, Lai, Gan, Liu and Lin 0 100 200 0.000 0.006 0.012                                                   
+
+> D2V25 DBM
+> *(1) 3,1 x
+> *(1) 3,1x
+> +
+> *(2) 3,1 x
+> x
+> (a)
+> 0100 200 0.000 0.009 0.018
+> x
+> (b)
+> 0100 200 0.00 0.02 0.04
+> x
+> (c)
+> 0100 200 0.00 0.03 0.06
+> x
+> (d)
+> 0100 200 0.000 0.006 0.012
+> x
+> (e)
+> 0100 200 0.00 0.01 0.02
+> x
+> (f)
+> 0100 200 0.000 0.025 0.050
+> x
+> (g)
+> 0100 200 0.000 0.035 0.070
+> x
+> (h)
+> 0100 200 0.000 0.008 0.016
+> x
+> (i)
+> 0100 200 0.000 0.013 0.026
+> x
+> (j)
+> 0100 200 0.00 0.03 0.06
+> x
+> (k)
+> 0100 200 0.00 0.04 0.08
+> x
+> (l)
+> 0100 200 0.000 0.008 0.016
+> x
+> (m)
+> 0100 200 0.000 0.015 0.030
+> x
+> (n)
+> 0100 200 0.000 0.035 0.070
+> x
+> (o)
+> 0100 200 0.00 0.05 0.10
+> x
+> (p)
+> b=0b=1.5 b=4b=5
+> a=1
+> a=0
+> a=1.5
+> a=2
+
+Figure 7. Profiles of heat flux along the centreline y = 0 .5Ly at t = 0 .0075 for different parameter combinations (a = −1, 0, 1.5, 2; b = 0 , 1.5, 4, 5) . DTRT-DBM results are compared with the corresponding analytical solutions. 
+
+nonequilibrium state. These results show how different parameter combinations are reflected in the nonequilibrium state of the system. 3.3.2. Heat flux 
+
+To verify the accuracy of the model in describing heat flux, we use the same initial conditions as in section 3.3.1, but with ρL = ρR = 1 , TL = 1 .5, TR = 1 , ∆x = ∆y = 0 .003 ,and u0 = 1 .2. Figure 7 shows heat flux profiles along the centreline at t = 0 .0075 for 16 parameter combinations (a = −1, 0, 1.5, 2; b = 0 , 1.5, 4, 5) . In all cases, the numerical and analytical solutions agree well, confirming that the model accurately captures heat flux nonequilibrium. (i) Dependence of the interfacial nonequilibrium structure on a and b.The heat flux also exhibits a double-peak structure. The right peak, located approx-imately at x = 100 ∼ 150 , is positive and larger in magnitude, whereas the left peak, located approximately at x = 50 ∼ 100 , is negative and smaller in magnitude. The corresponding values of D are listed in table 3. A DBM for thermodynamic nonequilibrium transport 17    
+
+> Table 3. Values of the logarithmic asymmetry index Dfor the double-peak heat flux structure under different parameter combinations.
+
+b = 0 b = 1 .5 b = 4 b = 5 
+
+a = −1 −2.29 −2.31 −2.69 −3.50 
+
+a = 0 −2.40 −2.36 −2.78 −3.82 
+
+a = 1 .5 −2.49 −2.53 −2.90 −3.91 
+
+a = 2 −2.54 −2.55 −2.92 −4.07 
+
+Table 3 shows that the heat flux asymmetry increases continuously as the parameters vary. All values of D are negative, indicating that the magnitude of the left peak remains smaller than that of the right peak. As a increases, the right peak is slightly enhanced, whereas the left peak changes only weakly. As b increases, the right peak is enhanced much more strongly, and the asymmetry between the two peaks is amplified markedly. When both a and b are large, their combined effect is strongest: the right peak rises markedly, the left peak weakens further, and |D| reaches a maximum of 4.07 .This behaviour is consistent with the initial temperature distribution. Since TL = 1 .5
+
+and TR = 1 .0, heat is transported from left to right. The right peak therefore attains a larger magnitude, whereas the left peak remains negative. The parameter b increases the thermal conductivity more strongly and thereby makes the right peak significantly larger than the left peak. (ii) Dependence of the relative nonequilibrium intensity on a and b.   
+
+> Table 4. Relative nonequilibrium intensity RTNE and the corresponding nonequilibrium states for heat flux under different parameter combinations.
+
+Parameter Combination RT N E Relative Nonequilibrium State in the System 
+
+a = −1, b = 1 0 Zero Relative Nonequilibrium 
+
+a = −1, b = 4 0.6 Moderate Relative Nonequilibrium 
+
+a = 2 , b = 1 .5 0.2 Weak Relative Nonequilibrium 
+
+a = 2 , b = 5 1.1 Strong Relative Nonequilibrium To clarify the effects of a and b on the relative nonequilibrium intensity of heat flux, figure 8 shows four representative distributions, and table 4 lists the corresponding RT N E 
+
+values. These results show that, when both a and b are small (a = −1, b = 1) , the overall heat flux nonequilibrium remains weak, first-order nonequilibrium effects dominate, and 
+
+RTNE ≈ 0. When one parameter is large and the other is small, as in (a = −1, b = 4) or 18 Li, He, Lai, Gan, Liu and Lin 0 50 100 150 200 0.000 0.009 0.018                              
+
+> D2V25 DBM
+> *(1) 3,1 x
+> *(1) 3,1 x
+> +
+> *(2) 3,1 x
+> x
+> (a) a=1, b=1
+> (104, 0.001) (81, 0.001) (103, 0.035) (78, 0.002) (78, 0.002) (103, 0.035) (78, 0.002) (102, 0.024) (102, 0.061) (71, 0.003)
+> 050 100 150 200 0.000 0.022 0.044
+> x
+> (b) a=1, b=4
+> 050 100 150 200 0.000 0.015 0.030
+> x
+> (c) a=2, b=1.5
+> 050 100 150 200 0.00 0.05 0.10
+> x
+> (d) a=2, b=5
+
+Figure 8. Profiles of ∆∗
+
+3,1x along the centreline y = 0 .5Ly at t = 0 .0075 for four representative cases: (a) a = −1, b = 1 ; (b) a = −1, b = 4 ; (c) a = 2 , b = 1 .5; and (d) a = 2 , b = 5 .
+
+(a = 2 , b = 1 .5) , their effects on RTNE become competitive: the larger parameter enhances nonequilibrium, whereas the smaller one suppresses it. The system then remains in a weak-to-moderate nonequilibrium state, with the effect of b being more pronounced. When both a and b increase simultaneously, as in (a = 2 , b = 5) , their combined effect becomes significant, the heat flux magnitude increases, and RTNE reaches 1.1,corresponding to a strong relative nonequilibrium state. Overall, the DTRT-DBM provides accurate descriptions of both macroscopic flow evolution and nonequilibrium effects. The results in this section show that the model can capture both the nonequilibrium measures and the relative nonequilibrium intensity of the flow over a wide range of parameter combinations. The physical mechanisms underlying these behaviours are analysed further through nonequilibrium phase diagrams in the next section. 
+
+4. Nonequilibrium phase diagrams 
+
+This section examines how the density exponent a and the temperature exponent 
+
+b influence the nonequilibrium characteristics through the state-dependent relaxation time. The analysis is based on phase diagrams of the extrema of two representative nonequilibrium quantities, viscous stress and heat flux, together with the corresponding variations of the fitted slopes with the relaxation parameters. A DBM for thermodynamic nonequilibrium transport 19     
+
+> Figure 9. Phase diagram of the extremum of total viscous stress as a function of bfor different values of a. Brown solid lines denote linear fits in the first-order-TNE-dominated regime, whereas red dashed lines denote linear fits in the second-order-TNE-dominated regime.
+
+4.1. Viscous stress 
+
+4.1.1. Phase diagram of the total viscous stress  
+
+> Table 5. Linear-fit coefficients for the phase diagram of the extremum of total viscous stress.
+
+k1 b1 k2 b2
+
+a = −3 0.173 −5.295 / /
+
+a = −1 0.207 −4.743 / /
+
+a = 0 0.214 −4.421 / /
+
+a = 1 0.176 −4.164 0.221 −4.157 
+
+a = 1 .5 0.145 −3.962 0.227 −3.912 
+
+a = 2 0.122 −3.701 0.230 −3.676 
+
+Figure 9 presents the phase diagram of the extremum of total viscous stress, and table 5 lists the corresponding linear-fit coefficients. For each fixed a, the logarithm of the extremum varies approximately linearly with b within each regime, implying an exponential dependence of the nonequilibrium intensity on b, consistent with the analytical expression for viscous stress. The brown solid lines denote linear fits in the first-order-TNE-dominated regime, with coefficients k1 and b1, whereas the red dashed lines denote linear fits in the second-order-TNE-dominated regime, with coefficients k2
+
+and b2. The main features are discussed below. 20 Li, He, Lai, Gan, Liu and Lin 
+
+(i) Combined and competing effects of a and b
+
+At the reference point (a, b ) = (0 , 0) , the relaxation time is constant, τ = τ0. Relative to this point, the phase diagram can be divided into four quadrants. In the third quadrant (a < 0, b < 0) , both exponents reduce the relaxation time relative to the reference state in the region controlling the extremum. As a result, the nonequilib-rium extremum remains below the reference value, and first-order nonequilibrium effects dominate. In the second and fourth quadrants, (a > 0, b < 0) and (a < 0, b > 0) , the effects of a
+
+and b on the relaxation time oppose each other. In the second quadrant (a > 0, b < 0) ,an increase in density tends to lengthen the relaxation time, whereas an increase in temperature tends to shorten it. In the fourth quadrant (a < 0, b > 0) , the trend is reversed: an increase in density tends to shorten the relaxation time, whereas an increase in temperature tends to lengthen it. In these quadrants, the nonequilibrium extremum may lie above or below the reference value, depending on which contribution is dominant. In the first quadrant (a > 0, b > 0) , increasing both a and b lengthens the relaxation time and progressively enhances second-order nonequilibrium effects. The system then enters a strong relative nonequilibrium state, with RT N E reaching 0.35 . This indicates that the coupling between the state-dependent relaxation time and the thermodynamic gradients has entered a nonlinear regime, so that the data no longer follow a single linear relation. (ii) Two-stage variation with the relaxation parameters Figure 9 also shows that the extremum of total viscous stress depends on b in a clear two-stage manner. When a = −3, −1, 0, ln 
+
+(
+
+∆∗(1)+(2) 2xx −max 
+
+)
+
+increases approximately linearly with b, indicating that first-order TNE still dominates and that the nonequilibrium response remains relatively mild. When a = 1 , 1.5, 2, however, a turning point appears as b increases. This turning point indicates a shift in the dominant mechanism from first-order to second-order TNE, together with a transition from a near-linear response regime to a strongly nonlinear one. At the same time, the turning point moves to lower values of b as a increases, indicating that second-order nonequilibrium is activated more readily. Specifically, the turning point is located at approximately b ≈ 2 for a = 1 , moves to b ≈ 1 for a = 1 .5, and shifts further to b ≈ 0 for a = 2 . Thus, increasing a reduces the value of b at which the system enters the second-order-dominated regime. A DBM for thermodynamic nonequilibrium transport 21 Linear Fitting ln( 
+
+> *(2) 2xx-max
+> )=k
+> 2,1
+> b+b
+> 2,1
+
+Figure 10. Phase diagrams of the logarithms of the extrema of first- and second-order viscous stresses as functions of b for different values of a: (a) first-order viscous stress; (b) second-order viscous stress. Lines denote linear fits. 
+
+4.1.2. Phase diagrams of the first- and second-order viscous stresses 
+
+Table 6. Linear-fit coefficients for the phase diagram of the extremum of first-order viscous stress. 
+
+k1,1 b1,1
+
+a = −3 0.191 −5.135 
+
+a = −1 0.221 −4.755 
+
+a = 0 0.233 −4.431 
+
+a = 1 0.243 −4.075 
+
+a = 1 .5 0.243 −3.863 
+
+a = 2 0.246 −3.638 
+
+Table 7. Linear-fit coefficients for the phase diagram of the extremum of second-order viscous stress. 
+
+k2,1 b2,1
+
+a = 0 0.511 −8.428 
+
+a = 1 0.397 −7.015 
+
+a = 1 .5 0.383 −6.407 
+
+a = 2 0.375 −5.754 
+
+Figure 10 shows the logarithms of the extrema of the first- and second-order viscous stresses as functions of b for different values of a, together with the corresponding linear 22 Li, He, Lai, Gan, Liu and Lin 
+
+fits. Tables 6 and 7 list the corresponding fit coefficients for figure 10(a,b). Several features are evident. (i) Both ln 
+
+(
+
+∆∗(1) 2xx −max 
+
+)
+
+and ln 
+
+(
+
+∆∗(2) 2xx −max 
+
+)
+
+increase approximately linearly with b,indicating that the extrema of the first- and second-order viscous stresses grow exponen-tially with b.(ii) Neither the first-order nor the second-order component exhibits clear staged behaviour. The two-stage behaviour of the total quantity must therefore arise from the coupling between contributions of different orders. (iii) The coefficient k1,1 increases approximately linearly with a, for example as k1,1 ≈
+
+0.01 a + 0 .23 . This trend indicates that first-order viscous stress becomes more sensitive to the state-dependent relaxation time as a increases. (iv) By contrast, k2,1 decreases gradually as a increases. When a = 0 , the second-order viscous stress is extremely small in the low-b region. Its background level is therefore low, so its relative increase with increasing b appears steeper. As a increases, second-order viscous stress is activated earlier and its background level rises significantly. A smaller slope does not imply weaker second-order nonequilibrium. Instead, it reflects a higher background level of second-order viscous stress. Overall, increasing a and b
+
+strengthens second-order nonequilibrium and progressively shifts the system from first-order dominance to second-order dominance. Comparison of the first- and second-order phase diagrams shows that the fitted slope for second-order viscous stress is consistently larger than that for first-order viscous stress. This indicates that second-order nonequilibrium is more sensitive to b and that the combined effect of a and b becomes more pronounced at larger a. Comparing the total quantity in figure 9 with its components in figure 10(a,b) shows that neither component exhibits staged behaviour, whereas the total quantity does. This demonstrates that the staged behaviour of the total quantity originates from coupling between contributions of different orders. 4.1.3. Phase diagrams of slope variation 
+
+Figure 11 summarizes the slope information from tables 5–7 and shows how the nonequilibrium growth rates of viscous stresses of different orders vary with a. Here, 
+
+k1 and k2 denote the slopes of the total-viscous-stress phase diagram in figure 9 for the first- and second-order-dominated regimes, respectively, whereas k1,1 and k2,1 denote the slopes of the first- and second-order viscous-stress phase diagrams in figure 10. The main observations are as follows. (i) k1,1 increases with a and then gradually saturates. The first-order viscous stress is associated mainly with the velocity gradient. Increasing a lengthens the relaxation time, enhances the nonequilibrium extremum, and therefore increases k1,1. As the system gradually shifts from first-order to second-order dominance, however, the first-order contribution saturates and the growth of k1,1 slows. A DBM for thermodynamic nonequilibrium transport 23 3 2 1 0 1 20.1 0.2 0.3 0.4 0.5 
+
+> k
+> a
+> k
+> 1
+> k
+> 2
+> k
+> 1,1
+> k
+> 2,1
+
+Figure 11. Variation with a of the linear-fit slopes for the extrema of viscous stresses of different orders, namely k1, k2, k1,1, and k2,1.
+
+(ii) k2,1 decreases overall as a increases. When a < 0, the system is dominated by first-order nonequilibrium and the second-order contribution is nearly zero. Once a becomes positive, the second-order contribution is activated. As a continues to increase, second-order TNE becomes stronger, but its relative growth with increasing b becomes less steep, which is reflected in the gradual decrease of k2,1.(iii) The slope k1 of the first-order-dominated branch of the total viscous-stress phase diagram first increases and then decreases with a. When a < 0, first-order nonequilibrium dominates, and k1 increases together with k1,1. When a > 0, however, k1 starts to decrease. Two factors account for this behaviour. First, the growing second-order contribution partially offsets the increase of the total extremum near the end of the first regime, thereby reducing k1. Beyond the turning point, the same contribution becomes dominant and drives the second branch, so that 
+
+k2 remains larger than k1.Second, the relaxation time τ has a dual effect. When a < 0, τ is small and mainly increases the nonequilibrium intensity. When a > 0, τ becomes larger and broadens the interface more strongly, so the growth of the extremum slows and k1 decreases. (iv) The slope k2 of the second-order-dominated branch increases slowly with a. The second-order-dominated branch is governed mainly by higher-order nonlinear transport contributions. Although k2,1 decreases, coupling between the residual first-order contri-bution and the second-order term still produces a net enhancement, so that the total slope k2 increases slowly. This reflects the coupling between macroscopic and mesoscopic nonequilibrium processes. (v) The ratio k2 ≈ 2k1 is approached only at large a. In the ideal limit of fully dominant 24 Li, He, Lai, Gan, Liu and Lin     
+
+> Figure 12. Phase diagram of the extremum of total heat flux as a function of afor different values of b. Brown solid lines denote linear fits in the first-order-TNE-dominated regime, whereas red dashed lines denote linear fits in the second-order-TNE-dominated regime.
+
+second-order nonequilibrium, the second-order term carries exponents 2a and 2b, so one expects k2 ≈ 2k1. Figure 11 shows that this ratio approaches 2 only gradually at large a,indicating that the second-order contribution remains nonlinear and therefore deviates from the ideal limit. 4.2. Heat flux 
+
+We next analyse the phase-diagram characteristics of the extrema of heat-flux nonequi-librium under the same initial conditions as in section 3.3.2. 4.2.1. Phase diagram of the extrema of total heat flux nonequilibrium  
+
+> Table 8. Linear-fit coefficients for the phase diagram of the extremum of total heat flux.
+
+k1 b1 k2 b2
+
+b = −3 0.154 −5.136 / /
+
+b = −1 0.180 −4.511 / /
+
+b = 0 0.187 −4.170 / /
+
+b = 1 0.190 −3.811 0.177 −3.803 
+
+b = 2 0.194 −3.431 0.168 −3.436 
+
+b = 3 0.195 −3.038 0.151 −3.076 
+
+Figure 12 and table 8 summarize the phase diagram of the extremum of total heat flux and its linear-fit coefficients. The main observations are as follows. A DBM for thermodynamic nonequilibrium transport 25 Linear Fitting of the Second Stage :
+
+> ln(
+> *(2) 3,1 x-max
+> )=k
+> 2,2
+> a+b
+> 2,2
+> ln(
+> *(2) 3,1 x-max
+> )
+> a
+
+Figure 13. Phase diagrams of the extrema of first- and second-order heat fluxes as functions of a for different values of b: (a) first-order heat flux; (b) second-order heat flux. Lines denote linear fits. 
+
+(i) Combined and competing effects of a and b
+
+Taking (a, b ) = (0 , 0) as the reference point, figure 12 shows that the nonequilibrium intensity exhibits distinct behaviour in the four quadrants. In the third quadrant (a < 
+
+0, b < 0) , first-order nonequilibrium effects remain dominant, and the extremum stays below the reference value. In the second and fourth quadrants, (a > 0, b < 0) and 
+
+(a < 0, b > 0) , the effects of a and b compete, and the nonequilibrium extremum may lie above or below the reference value. In the first quadrant (a > 0, b > 0) , the combined action of a and b markedly increases the extremum, and second-order heat-flux effects gradually become dominant, with RT N E reaching 0.58 .(ii) Two-stage variation with the relaxation parameters As in the viscous-stress case, the extremum of total heat flux also shows a clear two-stage variation with the parameters, indicating that the system can shift from a regime dominated by first-order heat flux to one dominated by second-order heat flux. Unlike the viscous-stress case in the present configuration, however, the second-order heat flux does not continue to amplify the total nonequilibrium. Instead, once the second-order contribution becomes dominant within the parameter range examined here, the growth rate of the total-heat-flux extremum decreases. Moreover, b strongly influences the location of the turning point associated with this transition. As b increases, the turning point shifts towards smaller values of a, indicating that second-order heat-flux nonequilibrium is activated more readily: for b = 1 , the turning point is located at approximately a ≈ 1; for b = 2 , it moves to a ≈ 0; and for b = 3 , it shifts further to 
+
+a ≈ − 1. Thus, increasing b reduces the value of a at which the system enters the second-order-dominated regime. Comparison of figures 9 and 12 further shows that, although a
+
+and b enter the analytical expressions symmetrically, their effective influences are not the same in a given flow state. Under the present conditions, viscous stress is more sensitive to a, whereas heat flux is more sensitive to b.26 Li, He, Lai, Gan, Liu and Lin 
+
+4.2.2. Phase diagrams of the first- and second-order heat flux nonequilibrium  
+
+> Table 9. Linear-fit coefficients for the phase diagram of the extremum of first-order heat flux.
+
+k1,1 b1,1
+
+b = −1 0.185 −4.521 
+
+b = 0 0.192 −4.174 
+
+b = 1 0.199 −3.811 
+
+b = 2 0.203 −3.436 
+
+b = 3 0.208 −3.053 
+
+b = 4 0.209 −2.648 
+
+b = 5 0.211 −2.265  
+
+> Table 10. Linear-fit coefficients for the two-stage phase diagram of the extremum of second-order heat flux.
+
+k2,1 b2,1 k2,2 b2,2
+
+b = 0 0.190 −8.322 0.530 −8.696 
+
+b = 1 0.204 −7.301 0.547 −7.700 
+
+b = 2 0.224 −6.458 0.553 −6.767 
+
+b = 3 0.242 −5.552 0.672 −5.980 
+
+b = 4 0.282 −4.621 0.703 −5.030 
+
+b = 5 0.314 −3.709 0.721 −4.105 
+
+(i) Trend of the first-order heat flux Figure 13(a) shows the logarithm of the extremum of first-order heat flux as a function of a for different values of b, and table 9 lists the corresponding fit coefficients. The results show that ln 
+
+(
+
+∆∗(1) 3,1x−max 
+
+)
+
+increases approximately linearly with a, indicating that the first-order heat flux grows exponentially with a. The curves depend only weakly on b,and the fitted slope increases only slightly, so the overall growth remains smooth and stable. (ii) Two-stage variation of the second-order heat flux Figure 13(b) shows the logarithm of the extremum of second-order heat flux as a function of a for different values of b, and table 10 lists the corresponding fit coefficients. Although ln 
+
+(
+
+∆∗(2) 3,1x−max 
+
+)
+
+varies approximately linearly with a overall, a clear two-stage behaviour appears in the later regime, where the slope increases markedly. This indicates A DBM for thermodynamic nonequilibrium transport 27 3.0 1.5 0.0 1.5 3.0 4.5 0.2 0.4 0.6 0.8 
+
+> k
+> 1
+> k
+> 2
+> k
+> 1,1
+> k
+> 2,1
+> k
+> 2,2
+> b
+> k
+
+Figure 14. Variation with b of the linear-fit slopes for the extrema of heat fluxes of different orders, namely k1, k2, k1,1, k2,1, and k2,2.
+
+that increasing a accelerates the growth of second-order heat flux and progressively makes it dominant. (iii) Coupling effects and the decrease in the growth rate of total heat flux Together with figures 12 and 13(a,b), these results show that the staged behaviour of total heat-flux nonequilibrium originates from the competitive coupling between the first- and second-order heat fluxes. In the first-order-dominated stage, the total heat flux increases approximately linearly, reflecting ordinary gradient-driven energy transport. Once the second-order contribution becomes appreciable, nonlinear coupling is strengthened. Although the second-order heat flux grows more rapidly, the growth rate of the total heat flux decreases. 4.2.3. Phase diagrams of slope variation 
+
+Figure 14 summarizes the slope information from tables 8–10 and shows how the nonequilibrium growth rates of heat fluxes of different orders evolve with b. Here, k1
+
+and k2 denote the slopes of the total-heat-flux phase diagram in figure 12 for the first-and second-order-dominated regimes, respectively. The coefficient k1,1 is the slope of the first-order heat-flux phase diagram in figure 13(a), whereas k2,1 and k2,2 are the slopes of the two stages in the second-order heat-flux phase diagram in figure 13(b). (i) The first-order heat-flux slope k1,1 remains nearly constant. The weak dependence of k1,1 on b indicates that first-order heat flux is governed mainly by gradient-driven energy transport. (ii) The slope k1 of the first-order-dominated branch increases slightly with b and then approaches a plateau. As b increases, the relaxation time becomes longer, and weak second-order effects are partially activated, acting cooperatively with the first-order term. 28 Li, He, Lai, Gan, Liu and Lin 
+
+However, no strong additional contribution has yet formed, and the system remains in a nearly linear regime. (iii) The slope k2 of the second-order-dominated branch decreases as b increases. Unlike the viscous-stress case, k2 for heat flux decreases with increasing b. This indicates that, for the heat-flux configuration considered here, second-order nonlinear coupling strengthens in the strongly nonequilibrium regime. Although the nonequilibrium intensity continues to increase, its growth rate decreases as the second-order heat-flux contribution becomes stronger. (iv) The slopes k2,1 and k2,2 of second-order heat flux both increase with b. As b
+
+increases, second-order nonequilibrium becomes more pronounced, and both k2,1 and k2,2
+
+increase accordingly. When a is small, the second-order contribution has not yet fully developed. When a is large, nonlinear coupling is fully activated, leading to k2,2 > k 2,1.In this regime, the combined effect of a and b becomes more evident in the evolution of heat-flux nonequilibrium. 4.3. Summary 
+
+The phase diagrams of viscous stress and heat flux show how the relaxation parameters 
+
+a and b affect nonequilibrium transport in a systematic and channel-dependent manner. Through the state-dependent power-law relaxation time, different parameter combina-tions lead to different nonequilibrium intensities and can progressively shift the system from a first-order linear nonequilibrium regime to a second-order nonlinear one within the parameter range considered here. The two transport channels, however, respond differently. Under the present conditions, the second-order viscous-stress contribution increases the growth rate of the extremum of the total viscous stress, whereas the second-order heat-flux contribution reduces the growth rate of the extremum of the total heat flux. Higher-order nonequilibrium contributions therefore affect the overall nonequilibrium response in different ways in different transport channels. This difference in behaviour does not imply that higher-order viscous stress simply en-hances nonequilibrium whereas higher-order heat flux suppresses it. Instead, it originates from the different ways in which the higher-order momentum flux and higher-order energy flux act back on their respective driving gradients. In the viscous-stress case considered here, the higher-order momentum flux is significantly amplified by the τ 2-type state-dependent terms and is activated mainly in the interfacial region where the first-order viscous-stress peak is located. It is therefore co-located with the original nonequilibrium momentum flux. Within the present parameter range, this amplification effect outweighs the weakening caused by velocity-gradient smoothing, leading to an increased growth rate of the extremum of the total viscous stress. By contrast, in the heat-flux case, although the higher-order energy flux also increases with the relaxation parameters, its enhancement more directly promotes thermal redistribution and smoothing of the local temperature gradient, thereby weakening the ∇T that drives the continued rapid growth A DBM for thermodynamic nonequilibrium transport 29 of the heat flux. As a result, the extremum of the total heat flux still increases with the relaxation parameters, but its growth rate progressively decreases. 
+
+5. Conclusions and outlook 
+
+Within the framework of the discrete Boltzmann method (DBM), we have developed a discrete Boltzmann model with a density- and temperature-dependent power-law relax-ation time (DTRT-DBM), in which the constant relaxation time of the conventional BGK model is generalized to a state-dependent form. This formulation allows the relaxation rate to vary with density and temperature while retaining the structural simplicity and physical interpretability of DBM. It thereby establishes an explicit coupling between macroscopic states, mesoscopic relaxation, and nonequilibrium transport processes, and provides a framework for modelling nonequilibrium flows with spatially varying local states. One-dimensional compressible-flow benchmarks show that the model accurately recov-ers macroscopic conservation laws, remains numerically stable, and captures nonequilib-rium quantities effectively. On this basis, we construct phase diagrams of nonequilibrium extrema and growth slopes for two representative quantities, viscous stress and heat flux, and systematically analyse how the model parameters a and b affect the intensity and structural variation of nonequilibrium. The results show that the nonequilibrium peaks increase exponentially with the model parameters and exhibit clear regime-dependent behaviour. Under suitable conditions, the system shifts from first-order linear dominance to second-order nonlinear dominance, highlighting the cross-scale nonequilibrium char-acteristics captured by the power-law-dependent relaxation-time formulation. The nonequilibrium phase diagrams further show that the relaxation parameters a
+
+and b jointly affect both viscous stress and heat flux, and that both quantities depend exponentially on these parameters. When both parameters are sufficiently large, the extrema display clear stage-dependent variation, indicating a shift in the governing nonequilibrium transport mechanism from low-order to high-order dominance. More specifically, under the flow configurations and parameter range considered here, the emergence of second-order viscous stress increases the growth rate of the total viscous-stress extremum, whereas the emergence of second-order heat flux reduces the growth rate of the total heat-flux extremum. These results show that, within the present DTRT-DBM framework and for the conditions considered here, higher-order nonequilibrium contributions affect different transport channels in different ways. At present, the model considers only the dependence of τ on ρ and T , and the validation and mechanistic analysis remain focused mainly on one-dimensional cases. In more complex settings, the relaxation process may also be influenced by pressure, velocity shear, strain rate, or coupling to external forces (Li et al. 2020 a,b; Wu et al. 30 Li, He, Lai, Gan, Liu and Lin 
+
+2021). Incorporating these effects should further enhance the generality and predictive capability of the model. Future work may proceed in two directions. One is to develop more general dynamic relaxation-time forms with multi-parameter coupling, and to combine them with more complex collision models or source terms associated with external fields, so as to achieve a more detailed description of multiple dissipation mechanisms. The other is to extend the DTRT-DBM to two- and three-dimensional strong-gradient flows and coupled mul-tiphysics configurations, where its ability to recover realistic transport processes and capture nonequilibrium effects across scales can be further assessed in physically relevant settings. 
+
+Acknowledgements 
+
+This work was supported by the National Natural Science Foundation of China (Grant Nos. U2242214 and 11875001), the Hebei Outstanding Youth Science Foundation (Grant No. A2023409003), the Natural Science Foundation of Fujian Province (Grant No. 2026J001415), and the Fujian Provincial Special Funds for Education and Research in Provincial Units (Grant No. K3-949). 
+
+Appendix A. Kinetic Moment Relations 
+
+M0 = ∑
+
+> i
+
+f eq i = ρ (A 1) 
+
+M1 = ∑
+
+> i
+
+f eq i vi = ρu, (A 2) 
+
+M2,0 = ∑
+
+> i
+
+12 f eq i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) = 12 ρ [(n + 2) RT + u2] (A 3) 
+
+M2 = ∑
+
+> i
+
+f eq vivi = ρ(RT I + uu ), (A 4) 
+
+M3,1 = ∑
+
+> i
+
+12 f eq i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vi = 12 ρu [(n + 4) RT + u2] , (A 5) 
+
+M3 = ∑
+
+> i
+
+f eq i vivivi = ρ [( uαδβγ + uβ δαγ + uγ δαβ ) eαeβ eγ RT + uuu ] , (A 6) 
+
+M4,2 = ∑
+
+> i
+
+12 f eq i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vivi = ρ
+
+[( n + 4 2 RT + u2
+
+2
+
+)
+
+RT I +
+
+( n + 6 2 RT + u2
+
+2
+
+)
+
+uu 
+
+]
+
+,
+
+(A 7) A DBM for thermodynamic nonequilibrium transport 31 
+
+M4 = ∑
+
+> i
+
+f eq i vivivivi = ρ [R2T 2 (δαβ δγλ + δαγ δβλ + δαλ δβγ ) eαeβ eγ eλ
+
++ RT (uαuβ δγλ + uαuγ δβλ + uαuλδβγ + uβ uγ δαλ + uβ uλδαγ 
+
++uγ uλδαβ ) eαeβ eγ eλ + uuuu ] ,
+
+(A 8) 
+
+M5,3 = ∑
+
+> i
+
+12 f eq i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vivivi = ρ
+
+[( n + 8 2 RT + u2
+
+2
+
+)
+
+uuu 
+
++
+
+( n + 6 2 RT + u2
+
+2
+
+)
+
+(uαδβγ + uβ δαγ + uγ δαβ ) eαeβ eγ RT 
+
+]
+
+.
+
+(A 9) 
+
+Appendix B. Second-order Constitutive Relations 
+
+For the DTRT model, the second-order components of the non-organized momentum flux ∆∗ 
+
+> 2
+
+and the non-organized energy flux ∆∗ 
+
+> 3,1
+
+are given by 
+
+∆∗(2) 2xx = − 2Rτ 20
+
+(n + 2) 2ρ
+
+( ρρ0
+
+)2a ( TT0
+
+)2b
+
+(F1 + F2 + F3) , (B 1) 
+
+∆∗(2) 2xy = τ 20
+
+( ρρ0
+
+)2a ( TT0
+
+)2b (
+
+− ρRT n + 2 F4 + F5
+
+)
+
+, (B 2) 
+
+∆∗(2) 2yy = 2Rτ 20
+
+(n + 2) 2ρ
+
+( ρρ0
+
+)2a ( TT0
+
+)2b
+
+(F6 + F7 + F8) , (B 3) 
+
+∆∗(2) 3,1x = τ 20 R2Tn + 2 
+
+( ρρ0
+
+)2a ( TT0
+
+)2b
+
+(F9 + F10 + F11 + F12 + F13 ) , (B 4) 
+
+∆∗(2) 3,1y = 4τ 20 R2Tn + 2 
+
+( ρρ0
+
+)2a ( TT0
+
+)2b
+
+(F14 + F15 + F16 + F17 + F18 ) , (B 5) The expressions for F1 − F18 are listed in table 11. Table 11: Grouped analytical expressions for the second-order constitutive terms in the DTRT-DBM No. Analytical expression 
+
+F1 − 2( n + 1) ρ2T u x∂2
+
+> x
+
+ux − nρ 2T u y ∂2 
+
+> xy
+
+ux − (n + 2) ρ2T u x∂2 
+
+> y
+
+ux
+
+− (n + 2) ρ2T u y ∂2
+
+> x
+
+uy − nρ 2T u x∂2 
+
+> xy
+
+uy − 2( n + 1) ρ2T u y ∂2 
+
+> y
+
+uy
+
++ ( n + 1)( n + 2) ρRT 2∂2
+
+> x
+
+ρ − (n + 2) ρRT 2∂2 
+
+> y
+
+ρ
+
+− (n + 1)( n + 2) RT 2(∂xρ)2 + ( n + 2) RT 2(∂y ρ)232 Li, He, Lai, Gan, Liu and Lin 
+
+F2 − ρT 
+
+{
+
+(n + 2)( a + 1) uy ∂xuy − 2( a + 1) ux∂y uy
+
++ ( n + 2)( a + 1) uy ∂y ux + ( n + 1) ∂xρ
+
+[
+
+(n + 2) aR∂ xT
+
++ 2( a + 1) ux∂xux
+
+]}
+
++ ρT 
+
+{
+
+−(n + 2)( a + 1) ux∂xuy + a(n + 2) R∂ y T
+
+− (a + 1) 
+
+[
+
+2( n + 1) uy ∂y uy + ( n + 2) ux∂y ux − 2uy ∂xux
+
+]}
+
+∂y ρF3 − ρ2
+
+{
+
+2( n + 2) 
+
+[ 12 (b + 1) ∂y T u x + 12 (b + 1) ∂xT u y + T ∂ y ux
+
+]
+
+∂xuy
+
+− (n + 2)( b + 1) R(∂y T )2
+
++ ( b + 1) 
+
+[
+
+2( n + 1) uy ∂y uy + ( n + 2) ux∂y ux − 2uy ∂xux
+
+]
+
+∂y T
+
++
+
+[
+
+n(a + 1) + 2 a + 2 b + 4 
+
+]
+
+T (∂y uy
+
+)2
+
++
+
+[
+
+−2( b + 1) ∂xT u x − (4 + an 2 + [2a + 2 b + 4 ]n)T ∂ xux
+
+]
+
+∂y uy
+
++ ( n + 2) 2T (∂y ux
+
+)2 + ( n + 2)( b + 1) ∂xT u y ∂y ux
+
++ ( n + 1) 
+
+[
+
+(n + 2)( b + 1) R(∂xT )2 + 2( b + 1) ∂xT u x∂xux
+
+− ([ a − 1]n + 2 a + 2 b)T (∂xux
+
+)2]}
+
+F4
+
+[
+
+(na + 2 a + 2 b + 4) ∂y ux + ( na + 2 a + 2 b − 2n)∂xuy
+
+]
+
+∂xux
+
++ ( na + 2 a + 2 b − 2n)∂y uy ∂y ux + ( na + 2 a + 2 b + 4) ∂y uy ∂xuy
+
+F5 2( b + 1) ρR 2∂xT ∂ y T − 2R2T 2∂2 
+
+> xy
+
+ρ + aR 2T (∂xρ∂ y T + ∂y ρ∂ xT )
+
++ 2 R2T 2 ∂xρ∂ y ρρF6 2( n + 1) ρ2T u x∂2
+
+> x
+
+ux + nρ 2T u y ∂2 
+
+> xy
+
+ux + ( n + 2) ρ2T u x∂2 
+
+> y
+
+ux
+
++ ( n + 2) ρ2T u y ∂2
+
+> x
+
+uy + nρ 2T u x∂2 
+
+> xy
+
+uy + 2( n + 1) ρ2T u y ∂2 
+
+> y
+
+uy
+
++ ( n + 2) ρRT 2∂2
+
+> x
+
+ρ − (n + 2)( n + 1) ρRT 2∂2 
+
+> y
+
+ρ
+
+− (n + 2) RT 2(∂xρ)2 + ( n + 2)( n + 1) RT 2(∂y ρ)2A DBM for thermodynamic nonequilibrium transport 33 
+
+F7 − ρT 
+
+{
+
+−(n + 2)( a + 1) uy ∂y ux + a(n + 2) R∂ xT
+
+− 2( a + 1) 
+
+[
+
+(n + 1) ux∂xux + 12 (n + 2) uy ∂xuy − ux∂y uy
+
+]}
+
+∂xρ
+
++ ρT 
+
+{
+
+(n + 2)( a + 1) ux∂y ux − 2( a + 1) uy ∂xux
+
++ ( n + 2)( a + 1) ux∂xuy + ( n + 1) 
+
+[
+
+a(n + 2) R∂ y T
+
++ 2( a + 1) uy ∂y uy
+
+]}
+
+∂y ρF8 − ρ2
+
+{
+
+−2( n + 2) 
+
+[ 12 (b + 1) ∂xT u y + 12 (b + 1) ∂y T u x + T ∂ xuy
+
+]
+
+∂y ux
+
++ ( n + 2)( b + 1) R(∂xT )2
+
+− (b + 1) 
+
+[
+
+2( n + 1) ux∂xux + ( n + 2) uy ∂xuy − 2ux∂y uy
+
+]
+
+∂xT
+
+−
+
+[
+
+(a + 1) n + 2 a + 2 b + 4 
+
+]
+
+T (∂xux
+
+)2
+
++
+
+[
+
+2( b + 1) ∂y T u y + (4 + an 2 + [2a + 2 b + 4 ]n)T ∂ y uy
+
+]
+
+∂xux
+
+− (n + 2) 2T (∂xuy
+
+)2 − (n + 2)( b + 1) ∂y T u x∂xuy
+
+− (n + 1) 
+
+[
+
+(n + 2)( b + 1) R(∂y T )2 + 2( b + 1) ∂y T u y ∂y uy
+
+− ([ a − 1]n + 2 a + 2 b)T (∂y uy
+
+)2]}
+
+F9 ρT 
+
+[
+
+(n + 2) ∂2
+
+> x
+
+uy + ( n − 2) ∂2 
+
+> y
+
+uy − 4∂2 
+
+> xy
+
+ux
+
+]
+
+F10 
+
+12 ρ
+
+{[
+
+an 2 + (6 a + 2 b + 4) n + 8 a + 12 b + 24 
+
+]
+
+∂xux
+
++
+
+[
+
+(a − 2) n2 + (6 a − 2b − 16) n + 8 a + 4 b − 8
+
+]
+
+∂y uy
+
+}
+
+∂y TF11 − 2aT (n + 1) ∂y ρ∂ y uy
+
+F12 − 12 ρ(n + 2) 
+
+[
+
+(b + 2) ∂y ux + ( b + n + 6) ∂xuy
+
+]
+
+∂xTF13 − aT 
+
+2
+
+[
+
+−2∂y ρ∂ xux + ∂xρ(n + 2) (∂y ux + ∂xuy
+
+)]
+
+F14 ρT 
+
+[
+
+− 14 (n + 2) ∂2
+
+> x
+
+uy − 14 (n − 2) ∂2 
+
+> y
+
+uy + ∂2 
+
+> xy
+
+ux
+
+]
+
+F15 
+
+18 ρ
+
+{[
+
+(a − 2) n2 + (6 a − 2b − 16) n + 8 a + 4 b − 8
+
+]
+
+∂y uy
+
++
+
+[
+
+an 2 + (6 a + 2 b + 4) n + 8 a + 12 b + 24 
+
+]
+
+∂xux
+
+}
+
+∂y TF16 − 12 aT ∂ y ρ(n + 1) ∂y uy34 Li, He, Lai, Gan, Liu and Lin 
+
+F17 − 14 (n + 2) ρ
+
+[
+
+(b + 2) ∂y ux + ( b + n + 6) ∂xuy
+
+]
+
+∂xTF18 − 14 aT 
+
+[
+
+−2∂y ρ∂ xux + ∂xρ(n + 2) (∂y ux + ∂xuy
+
+)]
+
+Declaration of interests 
+
+The authors report no conflict of interest. 
+
+Author ORCIDs 
+
+D. Li, https://orcid.org/0000-0003-3726-9815 Z. He, https://orcid.org/0009-0000-7232-8329 H. Lai, https://orcid.org/0000-0001-5978-5736 Y. Gan, https://orcid.org/0000-0002-0191-9022 H. Liu, https://orcid.org/0000-0002-8780-0398 P. Lin, https://orcid.org/0000-0003-2361-0066 
+
+REFERENCES Ascher, U. M., Ruuth, S. J. & Spiteri, R. J. 1997 Implicit-explicit Runge–Kutta methods for time-dependent partial differential equations. Appl. Numer. Math. 25 (2-3), 151–167. 
+
+Barwey, S., Ullman, M., Bielawski, R. & Raman, V. 2025 Chemical timescale effects on detonation convergence. Comput. Fluids 289 , 106550. 
+
+Bernardini, M., Modesti, D., Salvadore, F., Sathyanarayana, S., Posta, G. Della & Pirozzoli, S. 2023 STREAmS-2.0: Supersonic turbulent accelerated Navier–Stokes solver version 2.0. Comput. Phys. Commun. 285 , 108644. 
+
+Boccelli, S., Kaufmann, W., Magin, T. E. & McDonald, J. G. 2024 Numerical simulation of rarefied supersonic flows using a fourth-order maximum-entropy moment method with interpolative closure. J. Comput. Phys. 497 , 112631. 
+
+Cao, F., Tang, Z. L., Zhu, C. C. & He, X. L. 2024 Data-driven hierarchical collaborative optimization method with multi-fidelity modeling for aerodynamic optimization. Aerosp. Sci. Technol. 150 , 109206. 
+
+Chen, F., Xu, A. G., Song, J. H., Gan, Y. B., Zhang, Y. D. & Guan, N. 2024 Surface tension effects on Rayleigh–Taylor instability in nonideal fluids: A multiple-relaxation-time discrete Boltzmann study. Sci. China Phys. Mech. Astron. 67 (12), 124611. 
+
+Ding, H. B., Zhang, Y., Sun, C. Q., Yang, Y. & Wen, C. 2022 Numerical simulation of supersonic condensation flows using Eulerian–Lagrangian and Eulerian wall film models. 
+
+Energy 258 , 124833. 
+
+Fei, L. L., Derome, D. & Carmeliet, J. 2024 Pore-scale study on the effect of heterogeneity on evaporation in porous media. J. Fluid Mech. 983 , A6. 
+
+Gan, Y. B., Xu, A. G., Zhang, G. C., Zhang, Y. D. & Succi, S. 2018 Discrete Boltzmann trans-scale modeling of high-speed compressible flows. Phys. Rev. E 97 (5), 053312. 
+
+Guo, Q. H., Gan, Y. B., Yang, B., Wu, Y. H., Lai, H. L. & Xu, A. G. 2025 Thermodynamic nonequilibrium effects in three-dimensional high-speed compressible flows: Multiscale modeling and simulation via the discrete Boltzmann method. Phys. Fluids 37 (4), 046117. 
+
+Guo, Z. L. & Xu, K. 2021 Progress of discrete unified gas-kinetic scheme for multiscale flows. 
+
+Adv. Aerodyn. 3 (1), 6. 
+
+He, S., Zhao, W., Dong, X. Y., Zhang, Z. Z., Wang, J. Y., Yang, X. L., Zhang, S. Y., Hao, J. A. & Sun, K. 2025 a Analysis of aerodynamic heating modes in thermochemical nonequilibrium flow for hypersonic reentry. Energies 18 (13), 3417. A DBM for thermodynamic nonequilibrium transport 35 
+
+He, Z. Y., Gan, Y. B., Yang, B., Li, D. M., Lai, H. L. & Xu, A. G. 2025 b Multiscale thermodynamic nonequilibrium effects in Kelvin–Helmholtz instability and their relative importance. Phys. Fluids 37 (3), 034131. 
+
+Holway, L. H. 1966 New statistical models for kinetic theory: methods of construction. Phys. Fluids 9 (9), 1658–1673. 
+
+Hosseini, S. A., Boivin, P., Thévenin, D. & Karlin, I. 2024 Lattice Boltzmann methods for combustion applications. Prog. Energy Combust. Sci. 102 , 101140. 
+
+Hou, G. X., Fei, L. L., Lin, C. D. & Yan, W. W. 2025 Lattice Boltzmann modeling of droplet impact on moving superhydrophobic wall. Phys. Fluids 37 (4), 043306. 
+
+Hu, W. Q., Li, Z. H., Peng, A. P. & Jiang, X. Y. 2021 A Gas-Kinetic Unified Algorithm for Non-Equilibrium Polyatomic Gas Flows Covering Various Flow Regimes. Commun. Comput. Phys. 30 (1), 144–189. 
+
+Huang, H. Y., Jin, K., Li, K., Li, H. & Zheng, X. J. 2024 An implicit lattice Boltzmann method for simulations of compressible plasma kinetics. Phys. Fluids 36 (8), 086128. 
+
+Huang, W. H., Lin, C. D., Su, X. L. & Li, J. 2025 Discrete Boltzmann method with chemical reactive mechanism for reacting flows. Appl. Therm. Eng. p. 128524. 
+
+Ji, Y., Lin, C. D. & Luo, K. H. 2021 Three-dimensional multiple-relaxation-time discrete Boltzmann model of compressible reactive flows with nonequilibrium effects. AIP Adv. 
+
+11 (4), 045217. 
+
+Ji, Y., Lin, C. D. & Luo, K. H. 2022 A three-dimensional discrete Boltzmann model for steady and unsteady detonation. J. Comput. Phys. 455 , 111002. 
+
+Jiang, G. S. & Shu, C. W. 1996 Efficient implementation of weighted ENO schemes. J. Comput. Phys. 126 (1), 202–228. 
+
+Klíma, M. & Kolafa, J. 2018 Direct molecular dynamics simulation of nucleation during supersonic expansion of gas to a vacuum. J. Chem. Theory Comput. 14 (5), 2332–2340. 
+
+Lai, H. L., Xu, H., Lin, C. D. & Li, D. M. 2026 Influence of relaxation time on the two-dimensional Kelvin–Helmholtz instability under dual-mode perturbations. J. Fluid Mech. 
+
+1030 , A13. 
+
+Latt, J., Coreixas, C., Bény, J. & Parmigiani, A. 2020 Efficient supersonic flow simulations using lattice Boltzmann methods based on numerical equilibria. Phil. Trans. R. Soc. A 
+
+378 (2175). 
+
+Li, C. Y., Li, H. Y., Law, C. K. & Liang, W. K. 2026 Facilitated hydrogen/air flame propagation using ozone stratification. Combust. Flame 287 , 114861. 
+
+Li, H. W., Xu, A. G., Zhang, G. & Shan, Y. M. 2022 Rayleigh–Taylor instability under multi-mode perturbation: Discrete Boltzmann modeling with tracers. Commun. Theor. Phys. 74 (11), 115601. 
+
+Li, J., Cai, C. P. & Li, Z. H. 2020 a Efficient DSBGK simulations of the low speed thermal transpiration gas flows through micro-channels. Int. Commun. Heat Mass Transf. 119 ,104924. 
+
+Li, Y. X., Hekmatifar, M., Sun, Y. L. & others 2021 Evaluation the vibrational behavior of carbon nanotubes in different sizes and chiralities and argon flows at supersonic velocity using molecular dynamics simulation. J. Mol. Liq. 339 , 116796. 
+
+Li, Z.H., Hu, W.Q., Peng, A.P., Wu, J.L. & Lee, C.H. 2020 b Gas-kinetic unified algorithm for plane external force-driven flows covering all flow regimes by modeling of Boltzmann equation. Int. J. Numer. Methods Fluids 92 (8), 922–949. 
+
+Liang, H., Shi, B. C. & Chai, Z. H. 2017 An efficient phase-field-based multiple-relaxation-time lattice Boltzmann model for three-dimensional multiphase flows. Comput. Math. Appl. 73 (7), 1524–1538. 
+
+Lin, C. D. 2023 A multi-relaxation-time discrete Boltzmann model of compressible nonequilibrium reactive flows. In J. Phys. Conf. Ser. , , vol. 2478, p. 022014. IOP Publishing. 
+
+Lin, C. D. & Luo, K. H. 2019 Discrete Boltzmann modeling of unsteady reactive flows with nonequilibrium effects. Phys. Rev. E 99 (1), 012142. 
+
+Lin, C. D., Luo, K. H., Xu, A. G., Gan, Y. B. & Lai, H. L. 2021 Multiple-relaxation-time discrete Boltzmann modeling of multicomponent mixture with nonequilibrium effects. 
+
+Phys. Rev. E 103 (1), 013305. 36 Li, He, Lai, Gan, Liu and Lin 
+
+Lipkowicz, J. T., Crane, J., Shi, X., Wlokas, I., Wang, H. & Kempf, A. M. 2025 Cellular stability of hydrogen–oxygen detonation. Combust. Flame 281 , 114417. 
+
+Liu, G. J. 1990 A method for constructing a model form for the Boltzmann equation. Phys. Fluids A 2 (2), 277–280. 
+
+Mao, Q., Feng, M. Y., Jiang, X. Z., Ren, Y. H., Luo, K. H. & van Duin, A. C. T. 2023 Classical and reactive molecular dynamics: Principles and applications in combustion and energy systems. Prog. Energy Combust. Sci. 97 , 101084. 
+
+Millikan, R. C. & White, D. R. 1963 Systematics of vibrational relaxation. J. Chem. Phys. 
+
+39 (12), 3209–3213. 
+
+Morgan, B. E., Olson, B. J., White, J. E. & McFarland, J. A. 2017 Self-similarity of a Rayleigh–Taylor mixing layer at low Atwood number with a multimode initial perturbation. J. Turbul. 18 (10), 973–999. 
+
+Rykov, V. A., Titarev, V. A. & Shakhov, E. M. 2008 Shock wave structure in a diatomic gas based on a kinetic model. Fluid Dyn. 43 (2), 316–326. 
+
+Sawant, N., Dorschner, B. & Karlin, I. V. 2022 Consistent lattice Boltzmann model for reactive mixtures. J. Fluid Mech. 941 , A62. 
+
+Shakhov, E. M. 1968 Generalization of the Krook kinetic relaxation equation. Fluid Dyn. 3 (5), 95–96. 
+
+Song, J. H., Miao, L., Chen, F., Gan, Y. B., Xu, A. G. & Li, L. X. 2025 Discrete Boltzmann modeling of Kelvin–Helmholtz instability in plasma. Phys. Fluids 37 (3), 036137. 
+
+Song, J. H., Xu, A. G., Miao, L., Chen, F., Liu, Z. P., Wang, L. F., Wang, N. F. & Hou, X. 2024 Plasma kinetics: discrete Boltzmann modeling and Richtmyer–Meshkov instability. Phys. Fluids 36 (1), 016107. 
+
+Steer, J., Clarke, J., Collen, P. L., McGilvray, M. & di Mare, L. 2026 Non-equilibrium thermochemistry in real shock tubes. J. Fluid Mech. 1032 , A51. 
+
+Streicher, J. W., Krish, A. & Hanson, R. K. 2020 Vibrational relaxation time measurements in shock-heated oxygen and air from 2000 K to 9000 K using ultraviolet laser absorption. 
+
+Phys. Fluids 32 (8), 086101. 
+
+Succi, S. 2018 The lattice Boltzmann equation: for complex states of flowing matter . Oxford university press. 
+
+Sun, D., Qu, F., Liu, C. Y., Yao, F. Z. & Bai, J. Q. 2021 Numerical study of the suction flow control of the supersonic boundary layer transition in a framework of gas-kinetic scheme. 
+
+Aerosp. Sci. Technol. 109 , 106397. 
+
+Sun, G., Gan, Y., Yang, B. & others 2025 Droplet coalescence kinetics: Coalescence mechanisms and thermodynamic non-equilibrium effects under isothermal and non-isothermal conditions. Front. Phys. 20 (6), 061201. 
+
+Sun, G. L., Gan, Y. B., Xu, A. G. & Shi, Q. F. 2024 Droplet coalescence kinetics: Thermodynamic non-equilibrium effects and entropy production mechanism. Phys. Fluids 
+
+36 (3), 032109. 
+
+Sun, X., Huang, W., Ou, M., Zhang, R. R. & Li, S. B. 2019 A survey on numerical simulations of drag and heat reduction mechanism in supersonic/hypersonic flows. Chin. J. Aeronaut. 32 (4), 771–784. 
+
+Tayyab, M., Zhao, S. & Boivin, P. 2021 Lattice Boltzmann modeling of a turbulent bluff-body stabilized flame. Phys. Fluids 33 (3), 031701. 
+
+Tran, S. B. Q., Leong, F. Y., Le, Q. T. & Le, D. V. 2022 Lattice Boltzmann Method for high Reynolds number compressible flow. Comput. Fluids 249 , 105701. 
+
+Ullman, M., Bielawski, R. & Raman, V. 2025 Thermodynamic trajectories in detonations with stratified reactant mixtures. Combust. Flame 277 , 114173. 
+
+Varma, A. R. & Zhong, X. L. 2025 Hypersonic boundary-layer receptivity to free-stream acoustic waves with thermochemical non-equilibrium effects. J. Fluid Mech. 1013 , A16. 
+
+Vienne, L., Giauque, A. & Lévêque, E. 2024 Hybrid lattice Boltzmann method for turbulent nonideal compressible fluid dynamics. Phys. Fluids 36 (11), 116138. 
+
+Wang, L. F., Ye, W. H., Don, W.-S., Sheng, Z. M., Li, Y. J. & He, X. T. 2010 Formation of large-scale structures in ablative Kelvin–Helmholtz instability. Phys. Plasmas 17 (12), 122308. 
+
+Wang, L. F., Ye, W. H. & He, X. T. 2012 Density gradient effects in weakly nonlinear ablative Rayleigh–Taylor instability. Phys. Plasmas 19 (1), 012706. A DBM for thermodynamic nonequilibrium transport 37 
+
+Wang, L. F., Ye, W. H. & Li, Y. J. 2009 Numerical investigation on the ablative Kelvin– Helmholtz instability. Europhys. Lett. 87 (5), 54005. 
+
+Wang, L. F., Ye, W. H., Zhang, W. Y. & He, X. T. 2013 Numerical investigation of nonlinear ablative single-mode Rayleigh–Taylor instability in the presence of preheating. Phys. Scr. 
+
+155 (1), 014018. 
+
+Wang, Z. D., Wei, Y. K. & Qian, Y. H. 2020 A simple direct heating thermal immersed boundary-lattice Boltzmann method for its application in incompressible flow. Comput. Math. Appl. 80 (6), 1633–1649. 
+
+Wang, Z. D., Wei, Y. K. & Qian, Y. H. 2022 A novel thermal lattice Boltzmann model with heat source and its application in incompressible flow. Appl. Math. Comput. 427 , 127167. 
+
+Wei, Y. K., Yang, H., Dou, H. S., Lin, Z., Wang, Z. D. & Qian, Y. H. 2018 A novel two-dimensional coupled lattice Boltzmann model for thermal incompressible flows. Appl. Math. Comput. 339 , 556–567. 
+
+Wu, J. L., Li, Z. H., Zhang, Z. B. & Peng, A. P. 2021 On derivation and verification of a kinetic model for quantum vibrational energy of polyatomic gases in the gas-kinetic unified algorithm. J. Comput. Phys. 435 , 109938. 
+
+Wu, Y. H., Gan, Y. B., Xu, A. G. & Yang, B. 2025 Stability analysis of discrete Boltzmann simulation for supersonic flows: Influencing factors, coupling mechanisms, and optimization strategies. Phys. Fluids 37 (7), 076165. 
+
+Xiong, R., Han, Y. F. & Cao, W. 2025 Improved two-temperature model of hypersonic thermochemical nonequilibrium flows with correction of non-Boltzmann effect for air. 
+
+Phys. Fluids 37 (7), 077141. 
+
+Xu, A. G., Zhang, D. J. & Gan, Y. B. 2024 Advances in the kinetics of heat and mass transfer in near-continuous complex flows. Front. Phys. 19 (4), 42500. 
+
+Xu, A. G., Zhang, G. C., Gan, Y. B., Chen, F. & Yu, X. J. 2012 Lattice Boltzmann modeling and simulation of compressible flows. Front. Phys. 7, 582–600. 
+
+Xu, A. G., Zhang, G. C. & Zhang, Y. D. 2018 Discrete Boltzmann modeling of compressible flows. Kinet. Theory pp. 450–458. 
+
+Xu, A. G. & Zhang, Y. D. 2019 Complex Media Kinetics . Beijing Sci. Tech. Press. 
+
+Xu, H., Lin, C. D. & Lai, H. L. 2025 Influence of phase difference and amplitude ratio on Kelvin–Helmholtz instability with dual-mode interface perturbations. Phys. Fluids 37 (1), 016132. 
+
+Xu, K., Mao, M. & Tang, L. 2005 A multidimensional gas-kinetic BGK scheme for hypersonic viscous flow. J. Comput. Phys. 203 (2), 405–421. 
+
+Yan, Z., Chen, Z., Li, J. W., Wang, L. F., Li, Z. Y., Zhang, C., Ge, F. J., Wu, J. F. & Zhang, W. Y. 2025 Hydrodynamic instability growth of the fuel–ablator interface induced by rippled rarefaction waves in inertial confinement fusion implosion experiments. Matter Radiat. Extremes 10 (5), 057602. 
+
+Yang, L. M., Shu, C., Wu, J., Liu, Y. Y. & Shen, X. 2022 An efficient discrete velocity method with inner iteration for steady flows in all flow regimes. Phys. Fluids 34 (2), 027110. 
+
+Yang, L. M., Shu, C., Yang, W. M. & Wu, J. 2019 An improved three-dimensional implicit discrete velocity method on unstructured meshes for all Knudsen number flows. J. Comput. Phys. 396 , 738–760. 
+
+Yang, Y., Tu, J., Shan, M. L., Zhang, Z. J., Chen, C. & Li, H. X. 2025 Acoustic cavitation dynamics of bubble clusters near solid wall: A multiphase lattice Boltzmann approach. 
+
+Ultrason. Sonochem. 114 , 107261. 
+
+Yu, C. K., Kinkhabwala, B., Wu, C. W., Eckart, S. & Koch, T. 2025 Numerical investigation on spark ignition and flame kernel formation of lean premixed hydrogen/air flame under ICE condition. Automot. Engine Technol. 10 (1), 17. 
+
+Zhan, C. J., Liu, X., Chai, Z. H. & Shi, B. C. 2025 A thermodynamically consistent and conservative diffuse-interface model for gas/liquid-liquid-solid flows. J. Comput. Phys. 
+
+532 , 113949. 
+
+Zhang, D. J., Xu, A. G., Zhang, Y. D., Gan, Y. B. & Li, Y. J. 2022 Discrete Boltzmann modeling of high-speed compressible flows with various depths of non-equilibrium. Phys. Fluids 34 (8), 086104. 
+
+Zhang, H. S., Betti, R., Yan, R. & Aluie, H. 2020 Nonlinear bubble competition of the 38 Li, He, Lai, Gan, Liu and Lin 
+
+multimode ablative Rayleigh–Taylor instability and applications to inertial confinement fusion. Phys. Plasmas 27 (12), 122701. 
+
+Zhang, W. H., Kuang, S. B., Chai, Z. H. & Shi, B. C. 2025 Thirteen-velocity three-dimensional multiple-relaxation-time lattice Boltzmann model for incompressible Navier– Stokes equations. Adv. Appl. Math. Mech. 17 (4), 1037–1062. 
+
+Zhou, Y., Sadler, J. D. & Hurricane, O. A. 2025 Instabilities and mixing in inertial confinement fusion. Annu. Rev. Fluid Mech. 57 , 197–225. 
+
+Zhu, Y. J., Zhong, C. W. & Xu, K. 2017 Unified gas-kinetic scheme with multigrid convergence for rarefied flow study. Phys. Fluids 29 (9), 096102.
