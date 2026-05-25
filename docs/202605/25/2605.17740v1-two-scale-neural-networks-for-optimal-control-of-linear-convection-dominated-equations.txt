@@ -1,0 +1,1456 @@
+Title: Two-scale neural networks for optimal control of linear convection-dominated equations
+
+URL Source: https://arxiv.org/pdf/2605.17740v1
+
+Published Time: Tue, 19 May 2026 02:05:37 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+TWO-SCALE NEURAL NETWORKS FOR OPTIMAL CONTROL OF LINEAR CONVECTION-DOMINATED EQUATIONS    
+
+> SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG
+> Abstract. We propose a two-scale neural network method for optimal control problems governed by convection-dominated convection–diffusion–reaction equations. Building on two-scale architectures devel-oped for singularly perturbed forward problems, we augment the spatial input with suitably rescaled fea-tures that become increasingly important as the diffusion coefficient becomes small. The approach employs separate neural networks for the state and adjoint state variables of the optimality system, reflecting the fact that these quantities develop sharp layers in different parts of the domain due to opposite convection fields. By choosing different center points for the two networks, the architecture naturally aligns with the layer location of each variable. We present two formulations of the method, one based on the first-order optimality conditions and another using penalization of the PDE constraint, and combine them with a suc-cessive training strategy that gradually decreases the diffusion coefficient toward its target value. Numerical experiments on benchmark problems illustrate the effectiveness and behavior of the proposed approach.
+> Keywords : PDE-constrained optimization, convection-dominated, physics-guided machine learning, opti-mality system, curriculum learning.
+
+1. Introduction 
+
+Optimal control problems (OCPs) constrained by partial differential equations (PDEs) provide a mathe-matical framework for selecting inputs that steer a physical system toward a desired state while accounting for control cost. They arise in aerodynamics, shape optimization, biology, economics, and many other areas, and have been studied extensively in numerical analysis and optimization [18, 26, 36]. In a typical tracking-type formulation, the state satisfies a PDE constraint, and the objective balances the mismatch between the state and a target profile against a regularization term for the control. We consider OCPs governed by convection-dominated convection-diffusion-reaction equations. When the diffusion parameter ε > 0 is small, the state equation is singularly perturbed: solutions may be smooth in much of the domain but develop thin boundary or interior layers with width related to ε. The optimal con-trol setting introduces an additional structural difficulty. The first-order optimality system couples the state equation to an adjoint equation whose convection direction is reversed. Consequently, the state and adjoint can develop layers in different parts of the domain, often near opposite inflow/outflow boundaries. A nu-merical method must therefore approximate coupled variables with different layer locations while preserving the optimality relation among state, adjoint, and control. The focus of this work is to explore whether explicitly enforcing the first-order optimality system improves physics-informed neural network (PINN) approximations for such singularly perturbed OCPs. In classical PDE-constrained optimization, adjoint equations encode first-order sensitivity information and provide the standard route to optimality conditions. In a PINN setting, however, one can either train networks against the residuals of the state-adjoint optimality system or avoid the adjoint equation by penalizing the PDE con-straint directly in the objective. These choices lead to different residual structures, optimization landscapes, and layer-resolution demands. The convection-dominated regime provides a natural test case because the adjoint equation is not merely an additional equation; it carries layer information transported in the opposite direction from the state. 1.1. Existing approaches and limitations. Classical discretizations for convection-dominated equations are shaped by a balance among stability, layer resolution, and interior accuracy. Standard Galerkin finite element methods on quasi-uniform meshes may exhibit spurious oscillations near sharp layers, motivating stabilized schemes such as streamline-upwind/Petrov–Galerkin methods [20, 8], edge-average finite element methods [1, 43], local projection stabilization [24], and discontinuous Galerkin methods [14, 19]. For OCPs,  
+
+> Date : May 19, 2026.
+> 1
+> arXiv:2605.17740v1 [math.NA] 18 May 2026 2SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG
+
+the discretization must also be consistent with the state-adjoint-control structure, leading to the well-known distinction between optimize-then-discretize and discretize-then-optimize approaches. Weak imposition of boundary conditions, as in discontinuous Galerkin methods [25, 27] and Nitsche’s method [33], can improve interior accuracy, but physical boundary layers may be ignored when ε is far less than the mesh size [25]. HDG methods for convection-dominated OCPs have also been developed [13, 29, 30]. These results highlight a persistent tradeoff: choices that stabilize the computation or improve interior behavior do not necessarily resolve the singular layers themselves. Deep learning methods provide a mesh-free alternative, but they do not remove the layer-resolution difficulty. PINN-type methods for layer problems can be viewed broadly as either layer-informed or layer-agnostic. Layer-informed approaches use explicit knowledge of the layer location or type [17, 37, 38]. Layer-agnostic approaches instead seek mechanisms for representing sharp gradients without prescribing where they occur, including curriculum learning [10, 9, 46], adaptive loss weighting [41], and architectures designed for steep transitions [17]. The present work adopts the layer-agnostic viewpoint: large gradients are expected, but their locations are not built into the method. For deep learning approaches to OCPs, an equally important distinction is whether adjoint equations are enforced explicitly. Non-adjoint formulations impose the PDE constraint through penalties or re-lated constrained-learning mechanisms, including adversarial and adaptive-weight strategies [11] and value-function/control approximation methods [16]. Adjoint-based formulations incorporate first-order optimality information directly, with applications to error estimation [15], PINN stability [34], shape optimization [40, 44], and staged training [3]; see also the review [39]. What remains unclear is how this formulation choice affects PINN training for convection-dominated OCPs, where the state and adjoint equations trans-port layers in opposite directions. This gap motivates the comparison in this paper. 1.2. Current work: contributions and significance. The paper compares two PINN formulations for convection-dominated OCPs within a common two-scale continuation framework. The optimality-condition formulation approximates the state and adjoint with separate networks and trains them against the residuals of the first-order optimality system. The penalization formulation enforces the PDE constraint through a penalty term and does not introduce the adjoint equation explicitly. Placing these formulations in the same computational framework isolates the effect of adjoint enforcement in a singularly perturbed training problem. The common framework is based on the two-scale construction of [46]. The network input is augmented with rescaled features depending on the diffusion coefficient ε, and training proceeds by decreasing ε toward the target value. This continuation strategy is compatible with relatively lightweight collocation point distributions [32]. Separate two-scale networks are used for variables whose layers may occur in different locations: state and adjoint in the optimality-condition formulation, and state and control in the penalization formulation. Thus the method remains layer-location-agnostic while allowing each variable to be represented with its own rescaled coordinates. The main contribution lies in the formulation-level study of PINNs for singularly perturbed optimality systems. The comparison addresses whether enforcing the adjoint equation supplies useful training structure beyond what is obtained from penalizing the PDE constraint. This question is specific to OCPs and becomes especially relevant in the convection-dominated regime, where the adjoint carries layer information distinct from that of the state. The contributions are summarized as follows: (i) A PINN framework is developed for convection-dominated OCPs in two formulations: an optimality-condition formulation that enforces the state equation, adjoint equation, and optimality, and a penalization formulation that avoids the explicit adjoint equation. (ii) A controlled comparison is carried out between adjoint-based and non-adjoint PINN formulations for singularly perturbed OCPs whose state and adjoint equations have opposite convection directions and distinct layer structures. (iii) The two-scale architecture of [46] is adapted from scalar singularly perturbed equations to coupled optimality systems. Separate two-scale networks represent variables with different layer locations, a setting distinct from two-scale neural networks for systems of ordinary differential equations [45]. PINNS-OCP 3
+
+(iv) A successive training strategy in the diffusion parameter is adapted to the OCP setting. Starting from a moderate value ε0, the diffusion coefficient is decreased toward the target value, with each stage warm-started from the previous one. The numerical results indicate that, within this common two-scale setting, explicit enforcement of the first-order optimality system yields smaller residuals and improved accuracy compared with penalization-based training. The results support the view that, for convection-dominated OCPs, the adjoint equation provides useful structure for PINN training rather than serving only as an analytical optimality device. 1.3. Outline of the paper. The remainder of the paper is organized as follows. Section 2 presents the OCP under consideration, derives the first-order optimality system, and introduces the penalization reformulation. Section 3 reviews physics-informed neural networks and the two-scale neural network architecture. Section 4 presents the proposed two-scale neural network method for OCPs in both the optimality-condition and penalization formulations, together with the successive training algorithm for small ε. Section 5 reports numerical experiments on benchmark problems. Section 6 concludes with a summary and discussion. 2. An optimal control problem 
+
+This section considers a linear-quadratic optimal control problem constrained by a convection-dominated convection-diffusion-reaction equation. This model problem admits two numerical difficulties that are central in singularly perturbed optimal control: the state and adjoint may develop layers in different parts of the domain, and the choice of PINN loss determines how these layers enter the training problem: (2.1) (¯ y, ¯u) = argmin 
+
+> (y,u )
+
+J(y, u ),
+
+subject to the state equation (2.2) −ε∆y + ζ · ∇ y + cy = f + u in Ω , y = 0 on ∂Ω,
+
+with the cost functional 
+
+J(y, u ) = 1
+
+2 ‖y − yd‖2 
+
+> L2(Ω)
+
++ β
+
+2 ‖u‖2
+
+> L2(Ω)
+
+.(2.3) Here ε > 0 is the diffusion parameter, yd ∈ L2(Ω) is the desired state, f ∈ L2(Ω) is a source term, 
+
+ζ ∈ [W 1,∞(Ω)] n is the convective field, c ∈ L∞(Ω) is nonnegative, β > 0 is a regularization constant, and Ω ⊂ R2 is a bounded open polygonal domain with Lipschitz boundary ∂Ω. The state and control are sought in H10 (Ω) and L2(Ω), respectively. Throughout, we assume (2.4) c − 1
+
+2 ∇ · ζ ≥ c0 > 0for some constant c0, which ensures (2.2) is well-posed [2, 27]. When ε ≪ | ζ|, solutions may contain sharp outflow boundary layers and, depending on the data and geometry, interior layers aligned with characteristic curves of ζ. The layer widths are problem dependent and vanish as ε → 0, so standard PINN training can under-resolve the regions that dominate the residual. 2.1. First-order optimality condition. The minimizer of (2.1) is characterized by the first-order opti-mality system [26, 36]. Introducing an adjoint state p ∈ H10 (Ω) gives 
+
+−ε∆p − ζ · ∇ p + ( c − ∇ · ζ)p = y − yd, in Ω , p = 0 on ∂Ω,(2.5a) 
+
+p + βu = 0 , in Ω ,(2.5b) 
+
+−ε∆y + ζ · ∇ y + cy = f + u in Ω , y = 0 on ∂Ω.(2.5c) The adjoint equation (2.5a) is again a convection-diffusion-reaction equation, but its convection field is −ζ
+
+rather than + ζ. Consequently, the adjoint develops layers in locations dual to those of the state. For PINN discretizations this dual-layer structure is not only a resolution issue; it also affects whether the loss explicitly enforces the adjoint equation or recovers the control through penalization. This observation motivates the formulation comparison and the double two-scale architecture introduced below. 4 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Eliminating u from (2.5b) gives the coupled state-adjoint system 
+
+−ε∆p − ζ · ∇ p + ( c − ∇ · ζ)p = y − yd, in Ω , p = 0 on ∂Ω,(2.6a) 
+
+−ε∆y + ζ · ∇ y + cy + 1
+
+β p = f in Ω , y = 0 on ∂Ω.(2.6b) Define the operator L : H10 (Ω) −→ H−1(Ω) by 
+
+Ly = −ε∆y + ζ · ∇ y + cy. 
+
+Its formal adjoint in L2(Ω) with respect to the standard inner product is 
+
+L∗p = −ε∆p − ζ · ∇ p + ( c − ∇ · ζ)p, 
+
+so (2.6) reads 
+
+L∗p − y = −yd, in Ω , p = 0 on ∂Ω,(2.7a) 
+
+Ly + 1
+
+β p = f in Ω , y = 0 on ∂Ω.(2.7b) 2.2. Penalization. An alternative route is to approximate (2.1) by penalization (cf. [26, Chapter 5, Section 3] and [4]). This formulation is attractive for PINNs because it avoids writing the adjoint equation explicitly, but it shifts the numerical burden to penalty parameter selection. Let α = {α1, α 2} with αi > 0 for i = 1 , 2, and define the penalized cost (2.8) Jα(y, u ) = J(y, u ) + α1‖L y − u − f ‖2 
+
+> L2(Ω)
+
++ α2‖y‖2
+
+> L2(∂Ω)
+
+,
+
+and the penalized problem (2.9) (¯ yα, ¯uα) = argmin  
+
+> (y,u )∈H10(Ω) ×L2(Ω)
+
+Jα(y, u ).
+
+In (2.8), the first penalty measures the strong-form PDE residual in Ω, while the second measures violation of the homogeneous Dirichlet condition on ∂Ω. Thus the constrained problem is replaced by an unconstrained minimization over ( y, u ), a convenient form for neural network training but one whose accuracy depends on the penalty weights. The following theorem can be found in [26, Chapter 5, Section 3] and [4, Theorem 3.3]. 
+
+Theorem 2.1. As α = {α1, α 2} → ∞ , we have 
+
+(2.10) min  
+
+> (y,u )∈H10(Ω) ×L2(Ω)
+
+Jα(y, u ) → min  
+
+> (y,u )∈H10(Ω) ×L2(Ω)
+
+J(y, u ).
+
+Moreover, 
+
+(2.11) ¯yα → ¯y in H10 (Ω) , ¯uα → ¯u in L2(Ω) .
+
+Remark 2.2 . The penalization formulation avoids explicit enforcement of the adjoint equation and extends naturally to nonlinear state equations (cf. [26]). 3. Physics-informed neural networks 
+
+This section recalls the neural-network and PINN notation used later, then reviews the two-scale PINN architecture of [46]. The emphasis is on the features that are needed for singular perturbations: residual evaluation by automatic differentiation and input enrichment by a stretched coordinate. 3.1. Neural Networks and PINNs. A feedforward neural network of L layers with input x ∈ Rn0 is defined recursively as 
+
+a0(x) = x(3.1a) 
+
+al(x) = σ(W l al−1(x) + bl), 1 ≤ l < L, (3.1b) 
+
+aNN (x) = W LaL−1(x) + bL
+
+(3.1c) where W l ∈ Rnl×nl−1 and bl ∈ Rnl are the weights and biases of layer l, and σ is a nonlinear activation function applied componentwise (e.g, tanh or rectified linear unit (ReLU)). We write Nθ (x) := aN N (x) with parameters θ = {W ℓ, b ℓ}Lℓ=1 . Figure 1 shows a 3-layer network with two hidden layers of five neurons each. PINNS-OCP 5
+
+> x1
+> x2
+> x3
+> a31
+> a32
+
+Figure 1. Deep neural networks Given a boundary value problem (3.2) Dw = g(x) in Ω , Bw = h(x) on ∂Ω,
+
+with differential operators D and B, the PINN approximation wθ (x) := Nθ (x) is obtained by minimizing the loss (3.3) Jd(θ) = 1
+
+NcNc∑
+
+> k=1
+
+|g(xkr ) − D wθ (xkr )|2 + α
+
+NbNb∑
+
+> k=1
+
+|h(xkb ) − B wθ(xkb )|2,
+
+where {xkr }Nc 
+
+> k=1
+
+⊂ Ω are interior collocation points, {xkb }Nb 
+
+> k=1
+
+⊂ ∂Ω are boundary collocation points, and 
+
+α ≥ 0 is the weight balancing the PDE residual against the boundary loss. The differential operators are evaluated by automatic differentiation. We use the Adam optimizer [23] to minimize Jd(θ). 3.2. Two-scale PINNs. For singularly perturbed PDEs, the approximation space should represent both the outer solution and rapid variation inside thin layers. The two-scale neural network of [46] addresses this by augmenting the physical input x with two additional features that encode the small parameter ε.Let Ω ⊂ Rd be the spatial domain and let xc ∈ Rd be a chosen center (typically the geometric center of Ω or a point near the layer when the location of large gradients is known a priori). Let γ < 0 be a fixed scaling exponent. The two-scale network takes the augmented vector (x, ε γ (x − xc), ε γ ) ∈ R2d+1 
+
+as input, where εγ (x − xc) ∈ Rd is the rescaled coordinate around xc, and εγ supplies the magnitude of the small parameter. The forward network is defined as in (3.1), with this enriched input: 
+
+a0(x, ε γ (x − xc), ε γ ) = [ x, ε γ (x − xc), ε γ ](3.4a) 
+
+al(x, ε γ (x − xc), ε γ ) = σ(W lal−1(x, ε γ (x − xc), ε γ ) + bl), 1 ≤ l < L, (3.4b) 
+
+aNN (x, ε γ (x − xc), ε γ ) = W LaL−1(x, ε γ (x − xc), ε γ ) + bL.(3.4c) We denote the resulting network by Nθ (x, ε γ (x − xc), ε γ ). The PINN loss is then defined as in (3.3) with 
+
+wθ (x) := Nθ(x, ε γ (x − xc), ε γ ). Figure 2 shows the architecture with γ = −1 and two output variables. The rescaled feature has two complementary effects. First, the chain rule gives 
+
+∂
+
+∂x j
+
+Nθ (x, ε γ (x − xc), ε γ ) = ∂Nθ
+
+∂x j
+
++ εγ ∂Nθ
+
+∂(εγ (xj − xc,j )) ,
+
+where the first term is the derivative through the physical input and the second is the derivative through the rescaled input. With γ < 0 and ε ≪ 1, the factor εγ is large, so the network can produce derivatives of order εγ to match large derivatives that occur within boundary or interior layers of the singularly perturbed PDE. Second, by analogy with the matched method of asymptotic expansions, the solution near a layer admits an inner expansion in a stretched coordinate. For a layer at xc, the stretched coordinate has the form ( x − xc)/ε μ for some problem-dependent μ > 0. In the convection-diffusion setting one typically has 
+
+μ = 1 
+
+> 2
+
+or μ = 1. The two-scale network exposes this stretched coordinate directly through its rescaled input 
+
+εγ (x − xc), with γ = −μ. The appropriate combination of x and the stretched coordinate is learned during training, so no explicit asymptotic decomposition is required. The scalar feature εγ gives the network direct access to the value of ε, independently of x. This is useful when the solution has an ε-dependent amplitude that does not vary spatially and during successive training, where ε changes between stages. 6 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+The center xc determines where the rescaled coordinate εγ (x − xc) is small. If the layer location is unknown, xc may be chosen as the geometric center of Ω, allowing the first hidden layer to learn an effective offset. If the layer location is known a priori, xc can be placed near the layer so that the rescaled coordinate is small where the solution varies rapidly. Section 4 uses this layer-informed choice separately for the state and adjoint/control networks. 
+
+Figure 2. Two-scale neural network 
+
+> x
+> x−xc
+> ε
+> ε−1
+> a31
+> a32
+
+4. Double Two-scale PINNs for Optimal Control Problems 
+
+This section presents the PINN methodology for (2.1). The construction is organized around two choices that are consequential for singularly perturbed optimal control systems. The first is architectural: the state and the adjoint, or the state and the control, are represented by separate two-scale networks so that their stretched coordinates can be centered near different layer regions. The second is variational: training is based either on the first-order optimality system of Section 2.1 or on the penalized formulation of Section 2.2. This organization makes the formulation choice explicit and separates it from the continuation strategy used for small ε.4.1. Double neural networks. The same architectural principle is used for both formulations. Although a single two-scale network with two outputs could represent both the state y and the adjoint p (or the control 
+
+u), such a representation uses one center for variables whose layers generally occur in different locations. We therefore use separate two-scale networks: 
+
+yθy (x) = N yθy
+
+(x, ε γ (x − xyc ), ε γ ),(4.1) 
+
+wθw (x) = N wθw
+
+(x, ε γ (x − xwc ), ε γ ),(4.2) where w = p in the optimality-condition formulation of Section 2.1 and w = u in the penalization formulation of Section 2.2. The two networks share the value of γ but have different centers xyc and xwc .Separate networks with separate centers reflect the dual-layer structure identified in Section 2. By (2.5b), the control satisfies u = −p/β and therefore inherits the layer structure of p. The state equation (2.5c) has convection field + ζ, whereas the adjoint equation (2.5a) has convection field −ζ. Following [35], the layers of a convection-diffusion problem are determined by the convection field, and reversing the convection moves the layers to dual locations. A single two-scale network with one center cannot place the rescaled coordinate εγ (x − xc) near both layer regions simultaneously. The double-network architecture addresses this mismatch directly: each network has its own center, chosen so that the rescaled coordinate is small near the layer of the corresponding variable. In the experiments we set (4.3) xyc = xoutflow , xwc = xinflow ,
+
+where xoutflow and xinflow are points on the outflow and inflow boundaries of the state problem. The two networks have separate parameters but are trained through a coupled loss. With L hidden layers of width W , the resulting architecture is (2 d + 1 , W, W, . . . , W, 1) for each network. The parameter count is therefore twice that of a single shared network of the same depth and width, a cost that is offset by the ability to place the stretched coordinates at different layer locations. PINNS-OCP 7
+
+4.2. Solving the first-order optimality system. The first formulation trains directly on the reduced first-order optimality system (2.6). This loss treats the state and adjoint equations symmetrically and recovers the control from p + βu = 0 after training. We define the loss function (4.4) Jod (θy , θ p) = Rstate (θy , θ p) + Radj (θy , θ p) + By(θy ) + Bp(θp),
+
+where each term corresponds to the residual of a different equation in the optimality system, evaluated at collocation points. The interior residual terms are 
+
+Rstate (θy , θ p) = 1
+
+NcNc∑
+
+> k=1
+
+∣∣Lyθy (xkr ) + 1 
+
+> β
+
+pθp (xkr ) − f (xkr )∣∣2,(4.5) 
+
+Radj (θy , θ p) = 1
+
+NcNc∑
+
+> k=1
+
+∣∣L∗pθp (xkr ) − yθy (xkr ) + yd(xkr )∣∣2,(4.6) and the boundary terms are (4.7) By (θy ) = αy
+
+NbNb∑
+
+> k=1
+
+∣∣yθy (xkb )∣∣2, Bp(θp) = αp
+
+NbNb∑
+
+> k=1
+
+∣∣pθp (xkb )∣∣2,
+
+with weights αy , α p > 0 chosen to balance the boundary loss against the interior loss. {xkr }Nc 
+
+> k=1
+
+⊂ Ω and 
+
+{xkb }Nb 
+
+> k=1
+
+⊂ ∂Ω are collocation points. The training problem is (4.8) (θ∗ 
+
+> y
+
+, θ ∗
+
+> p
+
+) = argmin  
+
+> (θy,θ p)
+
+Jod (θy , θ p),
+
+and the optimal control is recovered as uθ∗ 
+
+> p
+
+= −pθ∗ 
+
+> p
+
+/β . The PDE residuals in (4.5)–(4.6) are evaluated pointwise via automatic differentiation. 4.3. Solving the penalized problem. The second formulation trains on the penalized problem (2.9). Since this problem involves the state y and control u directly, the two networks represent y and w = u. This loss is closer to an unconstrained optimization problem, but the PDE and boundary conditions are enforced through finite penalty weights. The loss function is a direct discretization of the penalized cost functional (2.8): (4.9) Jpd (θy , θ u) = T (θy, θ u) + α1 Rpen (θy , θ u) + α2 By(θy ),
+
+where the tracking term, the PDE-residual penalty term, and the boundary penalty term are 
+
+T (θy , θ u) = 1
+
+2NcNc∑
+
+> k=1
+
+[∣∣yθy (xkr ) − yd(xkr )∣∣2 + β∣∣uθu (xkr )∣∣2]
+
+,(4.10) 
+
+Rpen (θy , θ u) = 1
+
+NcNc∑
+
+> k=1
+
+∣∣Lyθy (xkr ) − uθu (xkr ) − f (xkr )∣∣2,(4.11) 
+
+By (θy ) = 1
+
+NbNb∑
+
+> k=1
+
+∣∣yθy (xkb )∣∣2.(4.12) The training problem is (4.13) (θ∗ 
+
+> y
+
+, θ ∗
+
+> u
+
+) = argmin  
+
+> (θy,θ u)
+
+Jpd (θy , θ u).
+
+Similar to Theorem 2.1, as α1, α 2 → ∞ the solution of (4.13) may approach the solution of the original constrained problem (2.1), under mild assumptions on the collocation points in the loss function, e.g. [22]. In practice, α1 and α2 are chosen large but finite, balancing the strength of the constraint enforcement against numerical conditioning of the loss. The two formulations therefore test different ways of incorporating the optimal control structure into a PINN. The optimality formulation enforces the adjoint equation explicitly and recovers the control by post-processing, at the cost of a coupled state-adjoint residual. The penalized formulation avoids the adjoint 8 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+equation and is structurally simpler, but its accuracy depends on penalty weights and conditioning. The numerical experiments in Section 5 compare these tradeoffs. 4.4. Training the double neural networks. We use the Adam optimizer [23] to minimize Jod or Jpd over the combined parameters ( θy , θ w). We describe the procedure for the optimality formulation; the penalty case is analogous. Since the two networks are separate but their losses are coupled, the gradients of Jod with respect to θy
+
+and θp are (4.14) ∂J od
+
+∂θ y
+
+= ∂R state 
+
+∂θ y
+
++ ∂R adj 
+
+∂θ y
+
++ ∂B y
+
+∂θ y
+
+, ∂J od
+
+∂θ p
+
+= ∂R state 
+
+∂θ p
+
++ ∂R adj 
+
+∂θ p
+
++ ∂B p
+
+∂θ p
+
+.
+
+A key feature of (4.14) is that ∂J od /∂θ y depends on the parameters θp of the adjoint network (through Rstate ), and conversely ∂J od /∂θ p depends on θy . Even though we maintain two separate networks, their parameter updates cannot be decoupled. We train the two networks simultaneously rather than alternately. At each training/optimization step, the gradients in (4.14) are computed for both sets of parameters by automatic differentiation in JAX [5], and θy and θp are updated in the same Adam step. This preserves the coupling structure of the optimality system within the training/optimizer dynamics. 4.5. Successive training for small ε. For small ε, the state and adjoint layers become thin relative to the domain scale, and the residual landscape becomes strongly localized near the layers. Direct training at the target value of ε can therefore stagnate unless the initialization and collocation set already resolve the relevant layer structure. Following [46], we use a successive training strategy. Instead of training at the target ε from scratch, the networks are trained along a sequence of intermediate diffusion parameters, 
+
+ε0 > ε 1 > · · · > ε K = ε, 
+
+using the trained parameters at εk to initialize the problem at εk+1 . The starting value ε0 is chosen so that the layer is resolved by a standard PINN; we typically take ε0 = 10 −1. The reduction factor ℓ > 1 determines the continuation path through εk+1 = max( εk/ℓ, ε ); values ℓ ∈ [2 , 10] work well in our experiments. At each stage k, we additionally apply a residual-based adaptive refinement (RAR) strategy [31, 42]: after a fixed number of training/optimizer iterations, we evaluate the PDE residuals at a candidate set of points and add the points with the largest residuals to the collocation set. This concentrates collocation effort in the layer region as the layer narrows. RAR can be performed periodically during optimization. Algorithm 1 summarizes the full procedure. The successive training algorithm combines continuation in 
+
+ε, warm-starting from the previous stage, and adaptive refinement of the collocation set. In the numerical tests, this combination is essential for the smallest diffusion parameters considered; it should be viewed as a stabilization strategy for training rather than as a replacement for resolving the layers. 5. Numerical experiments 
+
+This section examines how the formulation choice affects two-scale PINN training for convection-dominated optimal control. The comparison uses the optimality-system loss (4.4) and the penalized loss (4.9), with separate networks for the state and for the adjoint or control. In all experiments, we use epoch = 80000, 
+
+Nc = 150 × 150 interior collocation points xr , and Nb = 250 × 4 boundary collocation points xb. Interior collocation points are sampled uniformly, while boundary points are sampled either uniformly or from a beta distribution depending on the layer geometry. For the parameters αy and αp in (4.7), we take (5.1) αy = αp =
+
+
+
+1000 , epoch < 10000 ,
+
+5000 , 10000 ≤ epoch < 30000 ,
+
+10000 , otherwise .
+
+For the parameters α1 and α2 in (4.9), we take (5.2) α1 =
+
+
+
+100 , epoch < 10000 ,
+
+500 , 10000 ≤ epoch < 30000 ,
+
+1000 , otherwise 
+
+α2 =
+
+
+
+1000 , epoch < 10000 ,
+
+5000 , 10000 ≤ epoch < 30000 ,
+
+10000 , otherwise .PINNS-OCP 9
+
+Algorithm 1 Successive training of double two-scale PINNs  
+
+> 1:
+
+Input: Initial dataset D, target parameter ε, initial parameter ε0, reduction factor ℓ > 1 
+
+> 2:
+
+Output: Trained network parameters θy , θ p 
+
+> 3:
+
+Initialization:  
+
+> 4:
+
+Set εk ← ε0 
+
+> 5:
+
+Initialize neural networks yθy , p θp with random parameters  
+
+> 6:
+
+Construct two-scale feature mapping x 7 → (x, ε γk (x − xc), ε γk ) 
+
+> 7:
+
+while εk ≥ ε do  
+
+> 8:
+
+(Training step)  
+
+> 9:
+
+Train ( yθy , p θp ) by minimizing Jod (θy , θ p) using the Adam optimizer with a decaying learning rate  
+
+> 10:
+
+(Residual-based refinement)  
+
+> 11:
+
+Sample candidate points in the domain  
+
+> 12:
+
+Evaluate PDE residuals and select points with largest values  
+
+> 13:
+
+Add high-residual points to dataset D 
+
+> 14:
+
+(Continuation)  
+
+> 15:
+
+εk+1 ← max ( εk/ℓ, ε ) 
+
+> 16:
+
+Update εk ← εk+1  
+
+> 17:
+
+Update two-scale feature mapping with new εk 
+
+> 18:
+
+Initialize next stage with current ( θy , θ p) 
+
+> 19:
+
+end while 
+
+All examples use three hidden layers with 100 neurons per hidden layer. Unless stated otherwise, all param-eters are identical across experiments. The computations are performed on WPI’s Turing research cluster using one H200 GPU. 
+
+Example 5.1 (Exponential Boundary Layer [25, 27]) . For the first test, take Ω = (0 , 1) 2, c = 1, and 
+
+ζ = [ √2/2, √2/2] t. The exact solutions of (2.7) are y = η(x1 )η(x2) and p = η(1 − x1)η(1 − x2), where η(·)is defined by (5.3) η(z) = z3 − e z−1 
+
+> ε
+
+− e−1/ε 
+
+1 − e−1/ε , ∀z ∈ R.
+
+The state y has boundary layers near x1 = 1 and x2 = 1, while the adjoint p has boundary layers near x1 = 0 and x2 = 0 [25]. We first set ε = 0.01. Boundary points on all four sides are sampled from the beta distribution 
+
+f (x; 0 .5, 0.5), which concentrates points near the corners (0 , 0) and (1 , 1) where the boundary layers oc-cur. We adopt the beta distribution instead of a uniform distribution because it is known that boundary layers develop near the outflow boundaries. Therefore, a denser sampling near these corner points improves the resolution of the layers. Figure 3 illustrates the collocation set; blue dots denote interior points and red dots denote boundary points. 
+
+Table 1. Training Time Comparison for Example 5.1 
+
+Cost function (4.4) Cost function (4.9) 
+
+Training Time(s) 378.63 234.36 Figure 4 compares the losses (4.4) and (4.9) through training histories and L1 errors against the exact solutions. Figures 5 and 6 show the corresponding solution profiles and error maps. Both formulations capture the state boundary layer without visible spurious oscillations. The penalized loss (4.9), however, is less accurate for the control/adjoint variable near the boundary, whereas the optimality loss (4.4) gives smaller errors. This difference is consistent with the structure of the losses: (4.4) enforces both the state and adjoint equations, including boundary conditions for both y and p, while (4.9) enforces the state boundary condition 10 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Figure 3. Collocation points for Example 5.1           
+
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0 0 0 0  0  0  0   0
+
+directly and relies on penalty weights to recover the control behavior. Table 1 shows the corresponding cost: (4.4) requires more training time because it contains the coupled optimality residuals. We next set ε = 5 × 10 −4 and apply the successive training strategy in Algorithm 1. Figure 7 shows that the network predictions resolve the exponential boundary layers without visible spurious oscillations. The absolute errors for both y and p are of order 10 −3. This experiment supports the use of two-scale continuation as a practical training strategy for small diffusion, while leaving open the question of how best to tune continuation and refinement for still smaller values of ε.
+
+Example 5.2 (Interior Layer [25, 27]) . For the second test, take Ω = (0 , 1) 2, c = 1, ζ = [1 , 0] t, and ε = 0 .01. The exact solution of (2.7) is (5.4) y = (1 − x1)3 arctan( x2 − 0.5
+
+ε ) and p = x1(1 − x1)x2(1 − x2).
+
+The exact state y has an interior layer along the line x2 = 0 .5 for small ε.Boundary points are sampled uniformly on each side of the square. Figure 8 compares the two losses through training histories and L1 errors, while Figures 9 and 10 show solution profiles and error maps. Table 2 reports the corresponding training times. With the optimality loss (4.4), the two-scale architecture resolves the interior layer in y and accurately approximates the smooth adjoint solution p, with errors of order 10 −3.With the penalized loss (4.9), the approximation of the control variable u does not converge in this test, consistent with the boundary-layer example. 
+
+Table 2. Training Time Comparison for Example 5.2 
+
+Cost function (4.4) Cost function (4.9) 
+
+Training Time(s) 372.11 229.98 
+
+Example 5.3 (Parabolic Boundary Layers [35]) . For the final test, take Ω = (0 , 1) 2, c = 1, ζ = [1 , 0] t, and 
+
+ε = 0 .01, with yd = 1 and f = 1. No closed-form solution is available. The state y has an exponential bound-ary layer at the outflow boundary x1 = 1 and parabolic boundary layers at the characteristic boundaries 
+
+x2 = 0 and x2 = 1, while the adjoint state p and control u have an exponential boundary layer at x1 = 0. Boundary points are sampled uniformly on all four sides. Because no exact solution is available, reference solutions are computed on a structured mesh with meshsize h = 2 −7 using the edge-average finite element (EAFE) method [43, 21]. EAFE stabilizes convection-dominated discretizations, captures boundary layers, and has theoretical convergence guarantees. Figure 11 compares the neural network predictions with the corresponding EAFE solutions, and Table 3 reports the training times for the two losses. The qualitative behavior is consistent with the first two tests: the two-scale representation captures the layer structure, while the formulation choice affects the accuracy of the adjoint/control approximation. PINNS-OCP 11 
+
+Figure 4. Training loss and L1 errors comparison for Example 5.1         
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+
+ 
+
+> 0  
+> 0  
+> 0 0
+> 0 
+> 0 
+>   
+> 
+> 
+
+(a) Training loss comparison         
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+
+ 
+
+> 0  
+> 0  
+>   
+> 
+> 
+
+(b) L1 error com-parison for the state variable         
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+
+    
+
+> 0  
+> 0  
+> 0  
+> 0 0
+> 
+> ! 
+> " 
+
+(c) L1 error compar-ison for the adjoint state variable or the control variable 
+
+Figure 5. NN predictions vs Exact solutions using (4.4) for Example 5.1 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+(a) NN Solution for 
+
+y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+(b) Exact Solution for y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 000 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+(c) Absolute Error for y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+(d) NN Solution for 
+
+p
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+0  
+
+(e) Exact Solution for p
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 000 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+(f) Absolute Error for p
+
+6. Concluding remarks 
+
+This work studies PINN formulation choice and two-scale continuation for elliptic distributed optimal control problems constrained by convection-dominated equations. The method extends the two-scale PINN 12 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Figure 6. NN predictions vs Exact solutions using (4.9) for Example 5.1                                                   
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> (a) NN Solution for
+> y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> (b) Exact Solution for y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 00
+> 0 0
+> 0 0
+> 0 0
+> 0 0
+> (c) Absolute Error for y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 
+> 0 0
+> 0 
+> 0 
+> 0 
+> (d) NN Solution for
+> p=−u
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> (e) Exact Solution for p=−u
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 00
+> 0 0
+> 0 0
+> 0 
+> 0 0
+> 0 
+> 0 0
+> 0 
+> (f) Absolute Error for p=−u
+
+Table 3. Training Time Comparison for Example 5.3 
+
+Cost function (4.4) Cost function (4.9) 
+
+Training Time(s) 364.76 221.81 architecture of [46] from single equations to coupled optimality systems and penalized optimal control for-mulations. Separate two-scale networks are used for the state and for the adjoint or control, so that their stretched coordinates can be centered near different layer regions. Simultaneous training preserves the cou-pling in the optimality-system formulation, while continuation in ε provides a practical way to train in more singular regimes. The experiments indicate that the optimality-system loss is more reliable for recovering the adjoint/control in the tested layer-dominated regimes, whereas the penalized loss is simpler but more sensitive to penalty choices. This conclusion is empirical and problem dependent. Its role is to clarify the tradeoff between enforcing the adjoint equation and relying on penalization, rather than to rule out penalized PINNs for broader classes of optimal control problems. Several extensions remain natural. For nonlinear state equations, such as the Navier–Stokes equations, the corresponding adjoint systems are more involved; linearization offers one possible route, as discussed in [12]. State and control constraints can also be incorporated. Classical numerical methods for such constrained problems have been developed in [27, 28, 6, 7], but pointwise state constraints remain computationally de-manding. PINN formulations based on either penalization or optimality systems provide a flexible framework PINNS-OCP 13 
+
+Figure 7. NN predictions vs Exact solutions using (4.4) for Example 5.1 with ε = 5 × 10 −4                                            
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> (a) NN Solution for
+> y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> (b) Exact Solution for y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 000
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 0
+> (c) Absolute Error for y
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> (d) NN Solution for
+> p
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> (e) Exact Solution for p
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 000
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 0
+> (f) Absolute Error for p
+
+for investigating these problems, and their stability and accuracy in singularly perturbed regimes are topics for future work. 
+
+Funding statement 
+
+There is no funding for this research. 
+
+Declaration of competing interest 
+
+The authors declare that they have no known competing financial interests or personal relationships that could have influenced the work reported in this manuscript. This research was conducted independently, without any commercial or financial support that could be construed as a potential conflict of interest. All authors have reviewed and approved the final version of the manuscript and agree with its submission. The authors affirm that the work represents their original research, has not been published previously, and is not under consideration elsewhere. 
+
+Data availability statements 
+
+The code and data that support the findings of this study are available on request from the corresponding author. 14 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Figure 8. Training loss and L1 errors comparison for Example 5.2         
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+> 
+> 0  
+> 0  
+> 0  
+> 0 0
+> 0 
+> 0 
+> 0 
+>   
+> 
+> 
+
+(a) Training loss comparison         
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+> 
+> 0  
+> 0  
+>   
+> 
+> 
+
+(b) L1 error com-parison for the state variable            
+
+> 00000 0000 0000 0000 0000 0000 0000 0000
+> 
+> 0  
+> 0  
+> 0  
+> 
+> ! 
+> " 
+
+(c) L1 error compar-ison for the adjoint state variable or the control variable 
+
+Figure 9. NN predictions vs Exact solutions using (4.4) for Example 5.2 
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+  
+
+ 0 
+
+0  
+
+0 0 
+
+0  
+
+ 0 
+
+  
+
+(a) NN Solution for 
+
+y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+  
+
+ 0 
+
+0  
+
+0 0 
+
+0  
+
+ 0 
+
+  
+
+(b) Exact Solution for y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 000 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+0 00 
+
+(c) Absolute Error for y
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 00 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+(d) NN Solution for 
+
+p = −u
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 00 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+0 0 
+
+(e) Exact Solution for p = −u
+
+0 0 
+
+0  
+
+0  
+
+0  
+
+0  
+
+ 0 
+
+0 0 0  0  0  0   0 
+
+0 0000 
+
+0 000 
+
+0 000 
+
+0 00 
+
+0 000 
+
+0 00 
+
+0 000 
+
+0 00 
+
+(f) Absolute Error for p = −u
+
+Declaration of generative AI and AI-assisted technologies in the manuscript preparation 
+
+During the preparation of this manuscript, the authors used generative AI-based tools solely for language polishing, proofreading, and improving the clarity and readability of the text. The authors affirm that they PINNS-OCP 15 
+
+Figure 10. NN predictions vs Exact solutions using (4.9) for Example 5.2 
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+>  
+>  0
+> 0 
+> 0 0
+> 0 
+>  0
+>  
+
+(a) NN Solution for 
+
+y
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+>  
+>  0
+> 0 
+> 0 0
+> 0 
+>  0
+>  
+
+(b) Exact Solution for y
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 000
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 0
+
+(c) Absolute Error for y
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 0
+> 0 0
+> 0 00
+> 0 0
+> 0 0
+> 0 
+> 0 0
+
+(d) NN Solution for 
+
+p = −u
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 00
+> 0 0
+> 0 0
+> 0 0
+> 0 0
+> 0 0
+> 0 0
+
+(e) Exact Solution for p = −u
+
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0
+> 0 0 0  0  0  0   0
+> 0 00
+> 0 0
+> 0 0
+> 0 
+> 0 0
+
+(f) Absolute Error for p = −u
+
+take full responsibility for the content of the manuscript. All scientific ideas, methodologies, algorithms, experimental designs, benchmark tests, and conclusions presented in this work were conceived, developed, and validated by the authors. The use of AI tools did not influence the scientific content or the interpretation of the results. 
+
+References 
+
+[1] J. H. Adler, C. Cavanaugh, X. Hu, A. Huang, and N. Trask. A stable mimetic finite-difference method for convection-dominated diffusion equations. SIAM Journal on Scientific Computing , 45(6):A2973–A3000, 2023. [2] B. Ayuso and L. D. Marini. Discontinuous Galerkin methods for advection-diffusion-reaction problems. SIAM Journal on Numerical Analysis , 47(2):1391–1420, 2009. [3] J. Barry-Straume, A. Sarshar, A. A. Popov, and A. Sandu. Physics-informed neural networks for PDE-constrained opti-mization and control. Communications on Applied Mathematics and Computation , pages 1–24, 2025. [4] M. Bergounioux. A penalization method for optimal control of elliptic problems with state constraints. SIAM Journal on Control and Optimization , 30(2):305–323, 1992. [5] J. Bradbury, R. Frostig, P. Hawkins, M. J. Johnson, Y. Katariya, C. Leary, D. Maclaurin, G. Necula, A. Paszke, J. Van-derPlas, S. Wanderman-Milne, and Q. Zhang. JAX: composable transformations of Python+NumPy programs, 2018. [6] S. C. Brenner, S. Liu, and L.-Y. Sung. A p1 finite element method for a distributed elliptic optimal control problem with a general state equation and pointwise state constraints. Computational Methods in Applied Mathematics , 21(4):777–790, 2021. [7] S. C. Brenner, S. Liu, and L.-Y. Sung. Multigrid methods for an elliptic optimal control problem with pointwise state constraints. Results in Applied Mathematics , 17:100356, 2023. 16 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Figure 11. Comparison between NN predictions and EAFE solutions using (4.4) for Ex-ample 5.3        
+
+> 0 0 0  0  0  0   0 0 0
+> 0 
+> 0 
+> 0 
+> 0   0 
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+
+(a) NN Solution for 
+
+y using (4.4)        
+
+> 0 0 0  0  0  0   0 0 0
+> 0 
+> 0 
+> 0 
+> 0   0 
+> 0 0
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+> 0 
+
+(b) EAFE Solution for y       
+
+> 0 0 0  0  0  0   0 0 0
+> 0 
+> 0 
+> 0 
+> 0   0 
+> 0 000
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+> 0 00
+
+(c) Absolute Error for y       
+
+> 0 0 0  0  0  0   0 0 0
+> 0 
+> 0 
+> 0 
+> 0   0 
+> 0 
+> 0 0
+> 0 
+> 0 0
+> 0 
+> 0 0
+> 0 0
+> 0 00
+
+(d) NN Solution for p
+
+using (4.9)        
+
+> 0 0 0  0  0  0   0 0 0
+> 0 
+> 0 
+> 0 
+> 0   0 
+> 0 
+> 0 0
+> 0 
+> 0 0
+> 0 
+> 0 0
+> 0 0
+> 0 00
+
+(e) EAFE Solution for p      
+
+> 0 0 0  0  0  0   0  0 0
+> 0 
+> 0 
+> 0 
+> 0 
+>  0 
+> 0 000
+> 0 00
+> 0 00
+> 0 0
+> 0 00
+
+(f) Absolute Error for p
+
+[8] A. N. Brooks and T. J. Hughes. Streamline upwind/petrov-galerkin formulations for convection dominated flows with par-ticular emphasis on the incompressible navier-stokes equations. Computer Methods in Applied Mechanics and Engineering ,32(1):199–259, 1982. [9] F. Cao, F. Gao, X. Guo, and D. Yuan. Physics-informed neural networks with parameter asymptotic strategy for learning singularly perturbed convection-dominated problem. Computers & Mathematics with Applications , 150:229–242, 2023. [10] F. Cao, F. Gao, D. Yuan, and J. Liu. Multistep asymptotic pre-training strategy based on pinns for solving steep boundary singular perturbation problems. Computer Methods in Applied Mechanics and Engineering , 431:117222, 2024. [11] Y. Cao, C. C. So, Y. Dai, S. P. Yung, and J.-M. Wang. Adversarial physics-informed neural networks with hard constraints for optimal control of PDEs. Journal of Computational Physics , page 114307, 2025. [12] E. Casas, M. Mateos, and J.-P. Raymond. Error estimates for the numerical approximation of a distributed control problem for the steady-state navier–stokes equations. SIAM Journal on Control and Optimization , 46(3):952–982, 2007. [13] G. Chen, W. Hu, J. Shen, J. R. Singler, Y. Zhang, and X. Zheng. An HDG method for distributed control of convection diffusion PDEs. Journal of Computational and Applied Mathematics , 343:643–661, 2018. [14] B. Cockburn and C.-W. Shu. The local discontinuous galerkin method for time-dependent convection-diffusion systems. 
+
+SIAM Journal on Numerical Analysis , 35(6):2440–2463, 1998. [15] Y. Dai, B. Jin, R. C. Sau, and Z. Zhou. Solving elliptic optimal control problems via neural networks and optimality system. Advances in Computational Mathematics , 51(4):31, 2025. [16] J.-L. Dupret and D. Hainaut. Deep learning for high-dimensional continuous-time stochastic optimal control without explicit solution. Operations Research , 2026. [17] Z. Gao and M. Yang. More consistent accuracy PINN via alternating easy-hard training. arXiv:2512.17607 , 2025. [18] M. Hinze, R. Pinnau, M. Ulbrich, and S. Ulbrich. Optimization with PDE constraints . Springer Science & Business Media, 2008. [19] P. Houston, C. Schwab, and E. S¨ uli. Discontinuous hp-finite element methods for advection-diffusion-reaction problems. 
+
+SIAM Journal on Numerical Analysis , 39(6):2133–2163, 2002. PINNS-OCP 17 
+
+[20] T. J. R. Hughes and A. N. Brooks. Multi-dimensional upwind scheme with no crosswind diffusion. 1979. [21] S. Jeong, S. Lee, and S. Liu. A monotone finite element method for an elliptic distributed optimal control problem with a convection-dominated state equation. arXiv:2510.27167 , 2025. [22] B. Jin, R. Sau, L. Yin, and Z. Zhou. Solving elliptic optimal control problems using physics informed neural networks. 
+
+arXiv:2308.11925 , 2023. [23] D. P. Kingma and J. Ba. Adam: A method for stochastic optimization. arXiv:1412.6980 , 2017. [24] P. Knobloch and G. Lube. Local projection stabilization for advection-diffusion-reaction problems: One-level vs. two-level approach. Applied Numerical Mathematics , 59(12):2891–2907, 2009. [25] D. Leykekhman and M. Heinkenschloss. Local error analysis of discontinuous Galerkin methods for advection-dominated elliptic linear-quadratic optimal control problems. SIAM Journal on Numerical Analysis , 50(4):2012–2038, 2012. [26] J. L. Lions. Optimal Control of Systems Governed by Partial Differential Equations . Springer, 1971. [27] S. Liu and V. Simoncini. Multigrid preconditioning for discontinuous Galerkin discretizations of an elliptic optimal control problem with a convection-dominated state equation. Journal of Scientific Computing , 101(3):79, 2024. [28] S. Liu, Z. Tan, and Y. Zhang. Discontinuous galerkin methods for an elliptic optimal control problem with a general state equation and pointwise state constraints. Journal of Computational and Applied Mathematics , 437:115494, 2024. [29] S. Liu and J. Zhang. A balancing domain decomposition by constraints preconditioner for a hybridizable discontinuous Galerkin discretization of an elliptic optimal control problem. arXiv:2504.02072 , 2025. [30] S. Liu and J. Zhang. Convergence analysis of a balancing domain decomposition method for an elliptic optimal control problem with HDG discretizations. ESAIM: Mathematical Modelling and Numerical Analysis , 2026. [31] L. Lu, X. Meng, Z. Mao, and G. E. Karniadakis. Deepxde: A deep learning library for solving differential equations. SIAM Review , 63(1):208–228, 2021. [32] M. M¨ unzer and C. Bard. A curriculum-training-based strategy for distributing collocation points during physics-informed neural network training. arXiv:2211.11396 , 2022. [33] J. Nitsche. ¨Uber ein variationsprinzip zur l¨ osung von dirichlet-problemen bei verwendung von teilr¨ aumen, die keinen randbe-dingungen unterworfen sind. In Abhandlungen aus dem mathematischen Seminar der Universit¨ at Hamburg , volume 36, pages 9–15. Springer, 1971. [34] R. D. Nzoyem Ngueguin, D. A. Barton, and T. Deakin. A comparison of mesh-free differentiable programming and data-driven strategies for optimal control under pde constraints. In Proceedings of the SC ’23 Workshops of the International Conference on High Performance Computing, Network, Storage, and Analysis , SC-W’23, page 21–28, New York, NY, USA, 2023. Association for Computing Machinery. [35] H.-G. Roos, M. Stynes, and L. Tobiska. Robust numerical methods for singularly perturbed differential equations: convection-diffusion-reaction and flow problems . Springer, 2008. [36] F. Tr¨ oltzsch. Optimal Control of Partial Differential Equations: Theory, Methods, and Applications , volume 112. American Mathematical Soc., 2010. [37] S. Wang, P. Zhao, Q. Ma, and T. Song. General-kindred physics-informed neural network to the solutions of singularly perturbed differential equations. Physics of Fluids , 36(11), 2024. [38] S. Wang, P. Zhao, and T. Song. Aspinn: An asymptotic strategy for solving singularly perturbed differential equations. 
+
+arXiv:2409.13185 , 2024. [39] X. Wang, Y. Dou, X. Yi, Y. Zhang, X. Li, B. Li, H. Peng, L. Wang, and K. L. Teo. When optimal control meets neural network: A comprehensive survey. Archives of Computational Methods in Engineering , pages 1–56, 2026. [40] X. Wang, P. Yin, B. Zhang, and C. Yang. AONN-2: An adjoint-oriented neural network method for PDE-constrained shape optimization. Journal of Computational Physics , 513:113160, 2024. [41] Y. Wang, C. Xu, M. Yang, and J. Zhang. Less emphasis on hard regions: curriculum learning of PINNs for singularly perturbed convection-diffusion-reaction problems. East Asian Journal on Applied Mathematics , 14(1):104–123, 2024. [42] C. Wu, M. Zhu, Q. Tan, Y. Kartha, and L. Lu. A comprehensive study of non-adaptive and residual-based adaptive sampling for physics-informed neural networks. Computer Methods in Applied Mechanics and Engineering , 403:115671, 2023. [43] J. Xu and L. Zikatanov. A monotone finite element scheme for convection-diffusion equations. Mathematics of Computation ,68(228):1429–1446, 1999. [44] P. Yin, G. Xiao, K. Tang, and C. Yang. AONN: An adjoint-oriented neural network method for all-at-once solutions of parametric optimal control problems. SIAM Journal on Scientific Computing , 46(1):C127–C153, 2024. [45] Q. Zhuang, T. Wang, R. Wanjiku, M. Bani-Yaghoub, and Z. Zhang. Two-scale neural networks for singularly perturbed dynamical systems with multiple parameters. arXiv:2605.02799 , 2026. [46] Q. Zhuang, C. Z. Yao, Z. Zhang, and G. E. Karniadakis. Two-scale neural networks for partial differential equations with small parameters. Communications in Computational Physics , 38(3):603–629, 2025. 18 SIJING LIU, MARCUS SARKIS, YI ZHANG, AND ZHONGQIANG ZHANG 
+
+Sijing Liu, Department of Mathematical Sciences, Worcester Polytechnic Institute, 100 Institute Road, Worces-ter, MA 01609 
+
+Email address : sliu13@wpi.edu 
+
+Marcus Sarkis, Department of Mathematical Sciences, Worcester Polytechnic Institute, 100 Institute Road, Worcester, MA 01609 
+
+Email address : msarkis@wpi.edu 
+
+Yi Zhang, Department of Mathematics and Statistics, The University of North Carolina at Greensboro, 1400 Spring Garden Street, Greensboro, NC 27412 
+
+Email address : y zhang7@uncg.edu 
+
+Zhongqiang Zhang, Department of Mathematical Sciences, Worcester Polytechnic Institute, 100 Institute Road, Worcester, MA 01609 
+
+Email address : zzhang7@wpi.edu
