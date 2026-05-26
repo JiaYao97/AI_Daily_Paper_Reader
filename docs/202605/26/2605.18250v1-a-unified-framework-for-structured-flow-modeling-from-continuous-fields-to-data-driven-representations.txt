@@ -1,0 +1,436 @@
+Title: A Unified Framework for Structured Flow Modeling: From Continuous Fields to Data-Driven Representations
+
+URL Source: https://arxiv.org/pdf/2605.18250v1
+
+Published Time: Tue, 19 May 2026 02:23:11 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+# A Unified Framework for Structured Flow Modeling: From Continuous Fields to Data-Driven Representations 
+
+# Diego Casadei 
+
+Fly High Engineering AG , Badenerstrasse 13, 5200 Brugg AG, Switzerland 
+
+# 18 May 2026 
+
+Abstract 
+
+Many dynamical systems can be described in terms of structured flows combin-ing source/sink behavior, cyclic dynamics, and topology-constrained transport. These features arise across a wide range of domains, including physical, engineered, and data-driven systems. This work provides a unified perspective on such systems by connecting continuous formulations based on the Helmholtz-Hodge decomposition with discrete and data-driven representations. We review the recently proposed Graph Vector Field (GVF) framework, which enables a decomposition of complex dynamics into gradient, curl, and harmonic com-ponents on simplicial complexes, offering both expressivity and interpretability. We then introduce a hierarchy of alternative modeling approaches, including parametric conditional models, linear graph dynamical systems, and reduced Hodge representa-tions, which trade expressive power for computational tractability and reduced data requirements. A key contribution of this work is a cross-domain validation strategy that lever-ages datasets from well-understood physical systems to verify model correctness and assess robustness independently of the target application domain. This approach enables a systematic evaluation of the trade-offs between model complexity, inter-pretability, and predictive performance. The resulting framework supports an iterative modeling methodology in which highly expressive models are used as diagnostic tools to identify dominant mecha-nisms, guiding the construction of simplified models tailored to practical constraints. This work highlights the broad applicability of structured flow modeling and provides a foundation for scalable and interpretable analysis of complex dynamical systems. 
+
+1
+
+> arXiv:2605.18250v1 [physics.data-an] 18 May 2026
+
+# Contents 
+
+1 Introduction 32 Continuous Flow Decomposition 53 Computational Representations 74 Graph Vector Field (GVF) Framework 8
+
+4.1 Mathematical Representation of the GVF . . . . . . . . . . . . . . . . . . . . . 94.2 Advantages and Limitations of GVF . . . . . . . . . . . . . . . . . . . . . . . . 10 
+
+5 Alternative Modeling Approaches 11 
+
+5.1 Parametric Conditional Models . . . . . . . . . . . . . . . . . . . . . . . . . . . 11 5.2 Linear Graph Dynamical Models . . . . . . . . . . . . . . . . . . . . . . . . . . 12 5.3 Reduced Hodge and Cycle-Basis Models . . . . . . . . . . . . . . . . . . . . . . 13 5.4 Time Evolution . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15 5.5 Model Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 
+
+6 Model Validation 17 7 Verification Datasets and Cross-Domain Applicability 19 
+
+7.1 Water Distribution Networks . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 7.2 Electrical Power Networks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 7.3 Continuous Fluid Systems . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 7.4 Lower-Priority Domains . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21 7.5 Applicability to the Four System Classes . . . . . . . . . . . . . . . . . . . . . 21 
+
+8 Conclusion 21 A Unified Notation 22 B Dynamic Evolution for Continuous Systems 23 C Introducing Metric Information 24 
+
+21 Introduction 
+
+Many dynamical systems can be described in terms of flows that exhibit source/sink behavior, cyclic dynamics, and transport constrained by the underlying topology. Such structured flows arise across a wide range of domains, including physical systems gov-erned by conservation laws, engineered networks with predefined connectivity, and data-driven systems in which interactions must be inferred. Despite their diversity, these systems share common mathematical features that suggest the possibility of a unified modeling framework. These systems may be grouped in different classes, accoding to how the flow is con-strained and represented: 1. Network-constrained systems with predefined topology; 2. Continuous physical systems requiring discretization; 3. Data-driven systems where topology is inferred; 4. Engineered multi-agent systems with dynamically evolving topology. The first class includes network-constrained systems, which are discrete by nature and have predefined connections, like pipelines (water, gas, oil), electrical grids, traffic and transport networks, communication networks and the whole Internet, sensor net-works, and possibly also supply chains. While their topology may change, this is a lo-cal perturbation affecting a minor fraction of the overall network. Moreover, flow laws may be known from physics, like Kirchoff laws for electrical networks, or be inferred from broad principles, acting like conservation laws (e.g. cars don’t disappear between to crossroads). The second class includes continuous systems, which need to be discretized for compu-tational purposes to obtain e.g. a tractable finite element model (FEM). Examples include fluid dynamics (oceans, atmosphere, climate), heat transfer (conduction, convection, and irradiation), plasma physics (space weather, tokamak), elastic systems (stress, strain), and transport in porous media. The dynamics of such systems is naturally described by partial differential equations (PDEs) and their mapping onto a discrete mesh is not unique, as it is well known by the practicioners, who tune FEM nodes to achieve the most reliable results. The third class of systems includes networks that arise from the data themselves, rather than being the result of a deterministic optimization, or emerging from intrinsic topological properties. Examples include biological systems (metabolic networks, physi-ology), brain connectivity, epidemiology, social systems, human interaction networks and financial flows. When topology emerges from the data, the resulting graph needs to be interpreted, which is not always a simple task. For example, an edge connecting two nodes may represent statistical or causal relationships. The fourth class may include system described by a topology that is actively changing and controlled, like robot or drone swarms, fleets of autonomous vehicles, and distributed control systems. In these cases, the topology is part of the control problem and links appear and disappear intentionally. Feedback loops are the central focus of such systems. Whereas all these classes include gradient-driven, curl-driven, and topology-constrained components, they do not exhibit all three components equally. For example, heat flow in 3rigid mechanical structures happens mainly by conduction, which is gradient-driven but has no curl contribution. The impact of topology depends on the various materials and is minimal for a perfectly homogeneous system. In contrast, the curl component is very relevant for a fluid (vorticity exists also when no net flow is present), and the topology plays an important role too. The gradient contribution for electrical grids is the dominant factor, but curl and topology components are also important. The three components play a role in social systems, where sometimes they may be difficult to interpret. In particular, links do not represent a physical flow in social systems. Instead, they may represent correlation, influence, proximity, probability of interaction, or inferred re-lationships, depending on the nodes they connect. Therefore, when computing the curl one sums over quantities whose semantics are ambiguous. This is sharp contrast with the meaning of a non-zero curl in physics (local rotation or current circulation, measurable) and in a traffic network (circulation in a closed loop of the graph, consistent with a conser-vation law and unambiguous). How do we interpret an influence loop A → B → C → A in human interactions? Is it a feedback loop (plausible), a cyclical behavior (maybe), incon-sistency in data (also possible!), a statistical artifact (very possible)? There is no unique interpretation. Moreover, there is nothing like a conservation law in social systems, con-trary to the flow of physical systems. Another delicate point is that many “loops” in social systems are actually temporal cycles, not structural cycles. Curl only models instantaneous spatial loops, which may be nonexistent or irrelevant compared to temporal dynamics. Curl may be meaningful when there are true feedback mechanisms, but its interpretation is context-dependent. In other words, curl has a direct mechanistic interpretation grounded in conservation laws in physical systems. In data-driven systems, it remains mathematically well-defined but its interpretation depends on how interactions are modeled and may reflect feedback, inconsistency, or statistical artifacts. The issue is not mathematical; it is semantic.            
+
+> Class Description Examples Network-constrained Fixed or slowly varying topology Pipelines, power grids, traffic Continuous systems PDE-based, require discretization Fluids, climate, plasma Data-driven networks Topology inferred from data Biology, epidemiology, finance Multi-agent systems Dynamic, controlled topology Swarms, robotics
+> Table 1: Classes of systems exhibiting structured flows.
+
+Can we find a unified way of modeling all the systems summarized in table 1, arising from diverse domains? Ideally, the model should also be easy to interpret and be compu-tationally tractable. This is the challenge addressed in this article. We will first address the mathematical aspects of continuous systems and then focus on meaningful compu-tational representations. As we will see, the recent Graph Vector Field (GVF) frame-work recently published by Coletti and Fallucchi [1] provides a very general approach to achieve a unified treatment of multimodal data, ensuring intrinsic interpretability and explicit decomposition in the three components discussed above. On the other hand, its computational complexity and non-trivial topology construction require careful attention on discretization choices. Therefore, we will explore possible alternatives that, at the potential price of reduced dynamic fidelity, possess advantages at least as intermediate steps toward the full power of GVF. 4The objective of this work is to investigate whether a unified and computationally tractable modeling framework can be established for such systems. We first review the mathematical foundations of flow decomposition in continuous domains and examine their discrete counterparts. We then analyze the Graph Vector Field (GVF) framework as a general and expressive approach to modeling structured flows from data. Recognizing the practical limitations of highly expressive models, we introduce a hierarchy of reduced and alternative representations, and propose a cross-domain validation strategy based on well-understood physical systems. This approach enables a systematic exploration of the trade-offs between model complexity, interpretability, and predictive performance. 
+
+# 2 Continuous Flow Decomposition 
+
+Continuous systems are often expressed as vector fields, possibly obtained from suitable scalar potentials with the help of the gradient ( ∇) and curl ( ∇× ) differential operators. Both of them model local effects — sources are connected to the divergence ∇· , and rota-tions or vortices are connected to the curl ∇× — but not the global structure. The latter is captured by the vector Laplacian operator ∆ = ∇ (∇· ) − ∇ × (∇× ) as briefly summarized here. Consider a d-dimensional real-valued vector field 
+
+F(x, t) : Ω ⊂ Rd → Rd (1) representing the flow of a conserved or transported quantity (e.g., mass, charge, energy) over a domain Ω. Typical governing equations relate the divergence and the curl of the field to sources, sinks, and internal dynamics: 
+
+∇ · F = ρ, ∇ × F = ω, (2) where the scalar ρ represents a source (if ρ > 0) or sink (if ρ < 0), and the vector ω
+
+characterizes local circulation. If we consider a field h with zero divergence and zero curl, then its Laplacian vector is clearly also zero: 
+
+∇ · h = 0 and ∇ × h = 0 ⇒ ∆h = 0, (3) This field h only models non-local aspects. In other words, it captures the global fea-tures and the constraints imposed by the topology of the space, on which the differential operators act locally. Because the components of the null vector are all zero, the previ-ous equation implies that each component hi of the field h separately satisfies Laplace’s equation ∆hi = 0, where ∆ = ∇·∇ is the scalar Laplace operator. The solutions of Laplace’s equation are the harmonic functions, which therefore model the global structure of the field. Fields whose vector Laplacian is null cannot be expressed as derivatives of potentials. They encode degrees of freedom that are not locally generated but globally constrained. In domains with non-trivial topology (e.g., containing holes or handles), such harmonic fields correspond to flows that persist along independent cycles. Their dimension is deter-mined by topological invariants (e.g., Betti numbers), linking the existence of harmonic components directly to the global structure of the domain [2]. 5When sufficiently regular, vector fields admit a decomposition in terms of scalar and vector potentials. The Helmholtz-Hodge decomposition 1 states that, under appropriate boundary conditions, 
+
+F = ∇ φ + ∇ × A + h = Fgrad + Fcurl + Fharm (4) where φ(x, t) is a scalar potential, A(x, t) is a vector potential, and h(x, t) is a vector harmonic field satisfying ∇ · h = 0 and ∇ × h = 0. This decomposition separates the flow into three independent components: • the gradient component Fgrad (x, t) = ∇ φ is associated with sources and sinks, and is driven by local imbalances; • the curl component Fcurl (x, t) = ∇ × A is associated with local circulation, and rep-resents cyclic or feedback dynamics; • the harmonic component Fharm (x, t) = h is constrained by the topology of the do-main. Note that we treat time as an external parameter t governing the evolution of the system. At each time t, the field F(x, t) admits a Helmholtz-Hodge decomposition into gradient, curl, and harmonic components. The differential operators involved act only on spatial variables, while the underlying potentials and components are time-dependent. The harmonic component h(x, t) is not determined by local sources or circulation, but by the global topology of the domain Ω. In particular, its dimension is related to the number of independent cycles (holes) in the domain [2]. In general, topology imposes constraints on admissible flows, defining global pathways that cannot be removed by local modifications. For example, consider a flow confined in a toroidal domain. Even in the absence of sources ( ρ = 0) and local circulation ( ω = 0), a non-zero flow can persist along the toroidal direction. Such a flow cannot be expressed as either a gradient or a curl and is therefore captured by the harmonic component.           
+
+> Component Mathematical Property Interpretation Gradient ∇φsource/sink Curl ∇ × Aloops / feedback Harmonic kernel of Laplacian topology constraints
+> Table 2: Continuous decomposition of flow fields.
+
+This decomposition, summarized in table 2, provides a natural framework for model-ing flows across domains. However, its practical application requires selecting a computa-tional representation of the domain and the vector field, which may involve discretization or reduced-order modeling. The choice of representation influences both the expressivity and the interpretability of the resulting model.     
+
+> 1The Helmholtz decomposition is the special case h=0and is applicable in classical electrodynamics with the boundary condition that the fields decay at infinity. Here we are interested into bounded domains, where the harmonic component is relevant.
+
+63 Computational Representations 
+
+The continuous formulation described in the previous section provides a general and domain-independent description of structured flows. However, practical modeling, simu-lation, and inference require a finite representation. This necessitates a transition from continuous fields to discrete or reduced-order computational models. Continuous systems governed by partial differential equations are commonly dis-cretized using numerical methods such as finite element methods (FEM), finite volume methods, or finite difference schemes [3, 4]. In such approaches, the domain Ω is approx-imated by a mesh, and the vector field is represented by values on nodes (or vertices) and links (or edges). A key aspect is that this discretization is not unique: different mesh choices may lead to different numerical properties and interpretations of the same underlying system. This is well known in FEM practice, where both the placement of nodes and the choice of elements influence accuracy, stability, and convergence. From the perspective of flow decomposition, discretization also determines how gra-dient, curl, and topology-constrained components are represented. In particular, the dis-crete analogs of divergence and curl depend on the structure of the mesh. An alternative mathematical representation consists in modeling the system as a graph G = (V , E), where vertices in the set V represent spatial locations or entities, and edges in E represent admissible interactions or transport pathways. This representation is natural for network-constrained systems, but it may also be constructed from contin-uous systems via discretization or from data via inference. In graph-based models, flows are typically represented on edges, and discrete analogs of gradient and divergence oper-ators can be defined using incidence matrices [5]. Graph representations offer computational efficiency and conceptual simplicity, but they introduce modeling choices related to the definition of nodes and links, which may affect interpretability. Moreover, they only capture pairwise relations. Graphs only make use of zero-dimensional (nodes) and one-dimensional entities (links). Including higher-dimensional elements like triangles and tetrahedra, they can be ex-tended to simplicial complexes, which can be used to model higher-order interactions. This also enables the definition of discrete exterior calculus operators and a direct analog of the Helmholtz-Hodge decomposition in a discrete setting [5]. Simplicial complex representations are particularly useful when interactions cannot be fully captured by pairwise relations, and when higher-order cycles play a role in the system dynamics. Therefore, simplicial complexes offer a very attractive representation for the modeling of complex systems, which is able to accommodate all families summa-rized in table 1 above. This is an important aspect, which motivated Coletti and Fallucchi [1] to formulate an approach, the Graph Vector Field (GVF), capable of addressing health-risk dynamics that cannot be fully captured by mathematical graphs. However, simplicial complexes may easily become computationally intractable. In many applications, especially when computational resources are limited or when interpretability is a priority, an attractive alternative is provided by reduced-order mod-els aiming to capture the dominant components of the flow using a small number of parameters or basis functions. Examples include: low-dimensional parametric represen-tations, linear dynamical systems, reduced Hodge decompositions based on cycle bases, 7probabilistic models with structured dependencies. Compared to GVF, summarized in the next section, such approaches trade expressive power for tractability and may serve as intermediate steps toward more complex models, like the GVF approach. Note that the choice of computational representation is not merely technical, but has direct implications for (1) the resolution at which the system is described, (2) the topol-ogy of the resulting model, and (3) the interpretation of gradient, curl, and harmonic components. In particular, different discretizations or graph constructions may lead to different topological structures, and therefore to different decompositions of the same underlying continuous system. This highlights the importance of carefully designing the mapping from data or physical domains to computational representations. 
+
+# 4 Graph Vector Field (GVF) Framework 
+
+Coletti and Fallucchi [1] consider the problem of health risk assessment based on digital data provided by heterogeneous sources. These include an individual’s medical history captured in electronic health records (EHR), real-time physiological parameters moni-tored by wearable devices (typically over long durations) or diagnostic medical devices (typically over shorter periods), location information inferred from smartphones, envi-ronmental data from meteorological infrastructure, and genetic information. When avail-able, spatiotemporal epidemiological data describing disease incidence across geographi-cal regions may also be incorporated. Such datasets are inherently complex, combining static individual-specific informa-tion (e.g., genetic data) with dynamic variables that evolve over time. The latter include longitudinal measurements such as location and physiological signals, which are often irregularly sampled, noisy, incomplete, or partially unreliable. Individuals interact with their environment (e.g., weather conditions, epidemiological context) and with other indi-viduals (e.g., through co-location). However, the nature and strength of these interactions are not directly observed in the data and must be inferred from indirect evidence. This indirect and partially latent structure poses significant challenges for modeling and in-terpretation. A key assumption in Coletti and Fallucchi [1] is that the complexity of such systems cannot be adequately captured by simple graphs restricted to pairwise interactions, and that higher-order structures, represented by simplicial complexes, are required to model multi-way interactions (e.g., triangles). A second requirement is the ability to represent feedback loops, rather than only source-to-sink flows. Finally, the authors emphasize the need to capture situations in which risk cannot be mitigated by local interventions alone, but is instead constrained by the global structure of the system. To address these requirements, Coletti and Fallucchi [1] propose a framework based on the discrete representation of vector fields and their Helmholtz-Hodge decomposition (4), implemented via discrete exterior calculus on simplicial complexes. This approach, termed Graph Vector Field (GVF), provides a unified representation of gradient, curl, and topology-constrained components in a data-driven setting. This formulation naturally connects to classical vector field decomposition, while extending it to data-driven and multimodal settings. 84.1 Mathematical Representation of the GVF 
+
+The GVF framework provides a data-driven representation of complex systems by mod-eling interactions as a time-dependent vector field defined on a simplicial complex. At each time t, the system is represented by a simplicial complex K(t), whose nodes corre-spond to entities (e.g., individuals), and whose higher-order simplices encode multi-way interactions inferred from the data. A vector field F(t) is defined on the edges of K(t), representing the flow of a quantity of interest (e.g., health risk) between connected entities. This edge-based representation allows the model to capture directional and distributed interactions across the system. The central idea of GVF is to decompose F(t) using a discrete Helmholtz-Hodge decom-position: 
+
+F(t) = Fgrad (t) + Fcurl (t) + Fharm (t), (5) where: • Fgrad (t) is a gradient component derived from a scalar potential defined on nodes, capturing source-to-sink behavior; • Fcurl (t) is a curl component defined on higher-order simplices, capturing local cir-culation and feedback loops; • Fharm (t) is a harmonic component, lying in the kernel of the discrete Laplacian, capturing global constraints imposed by the topology of K(t). The decomposition is implemented using discrete exterior calculus, which provides discrete analogs of gradient, divergence, and curl operators on simplicial complexes. This allows the model to separate local, cyclic, and global contributions to the flow in a math-ematically consistent way. The basic ingredients for the discretization of a vector field F are the mapping be-tween continuous and discrete representations — 0-forms (scalars) become node values, 1-forms (vectors) become edge values, 2-forms become face values — and the representa-tion of differential operators as matrix multiplications: 
+
+Fgrad = B⊤ 
+
+> 1
+
+ϕ (6) 
+
+Fcurl = B2 ψ (7) 
+
+Fharm = Hα (8) Similar to equation (5), in which the vector field is written as the sum of three components with the same dimensionality, the discrete representation of the three components above involves arrays with the same number e of elements, equal to the number of edges in the graph. In equation (6), B1 is the ( n × e) node-edge incidence matrix, acting on the scalar field ϕ represented as an array of n nodal values, and the result is an array of e edge values. The matrix B2 is the ( e × f ) edge-face incidence matrix, acting on the 2-form ψ
+
+represented as an array of f face values, and the result from equation (7) is also an array of e edge values. 2 Finally, also equation (8) results into an array of e edge values: H is        
+
+> 2The incidence matrices B1and B2encode only the topology and orientation of the simplicial complex. Their entries take values in {−1,0,+1}, reflecting the signed incidence between simplices. Metric informa-tion, if required, is introduced separately through weighting operators as shown in appendix C.
+
+9an ( e × b1) matrix whose columns span the harmonic subspace ker L1 = ker B1 ∩ ker B⊤ 
+
+> 2
+
+,which is the kernel of the discrete 1-Hodge Laplacian 
+
+L1 = B⊤ 
+
+> 1
+
+B1 + B2 B⊤ 
+
+> 2
+
+(9) The array of coefficients α in equation (8) has dimension b1, the first Betti number of the simplicial complex, which counts the number of independent cycles in the simplicial complex, i.e., loops that are not boundaries of higher-order simplices. 3
+
+# 4.2 Advantages and Limitations of GVF 
+
+As summarized above, the mathematical representation of GVF provides a unified treat-ment of multimodal data with intrinsic interpretability, owing to the explicit decompo-sition into gradient, curl, and harmonic components. This is particularly relevant to health risk modeling, as each component may be associated with a different class of risk-mitigation interventions [1]. A gradient-dominated flow may be attenuated by acting on sources, for example by reducing environmental exposure. In contrast, risk sustained by feedback loops may be mitigated by disrupting one or more links in the cycle, e.g. through targeted pharmacological interventions. When neither approach is effective, mitigation may require modifying the underlying interaction structure, for instance by introducing environmental or social barriers. In the implementation described by Coletti and Fallucchi [1], the vector field F(t) is learned from data through a parameterized model that integrates heterogeneous inputs (e.g., physiological, environmental, and contextual data). The resulting decomposition yields interpretable components associated with different mechanisms driving the sys-tem dynamics, which constitutes a significant advantage. From a mathematical perspective, GVF provides a natural and expressive framework for representing complex dynamical systems. From a scientific standpoint, however, its effectiveness depends on the validity of the underlying hypothesis, namely that health-risk dynamics can be meaningfully represented as an edge flow on a graph or simplicial complex. This assumption is context- and application-dependent, and does not constitute a general property of the method itself, which remains well-founded mathematically. When predictive performance is a primary objective, GVF may be less attractive than simpler models that focus on dominant effects rather than capturing all components of the dynamics. Such reduced models may achieve better generalization, require less data, and be easier to validate. From an implementation perspective, GVF entails combinatorial complexity, a strong dependence on discretization choices, and non-trivial topology construction. These as-pects can significantly impact development effort and computational cost. Moreover, the large number of degrees of freedom in a full GVF model may require substantial amounts of data for reliable training. 4 This may represent a practical limitation for the application of this otherwise elegant and interpretable framework. This observation motivates the exploration of reduced-order and alternative modeling approaches, discussed in the following section. 
+
+> 3A loop is said to be “filled” if it bounds a 2-simplex (a face), in which case it does not contribute to the first Betti number.
+> 4The Helmholtz–Hodge decomposition provides an optimal representation of a given flow field, but does not guarantee that such a field can be reliably inferred from noisy, heterogeneous data.
+
+10 5 Alternative Modeling Approaches 
+
+We consider here a set of alternative modeling approaches to GVF that are computation-ally simpler and, depending on the application, may be sufficient to capture the dominant effects. This is not intended as a criticism of the GVF framework, which is mathemati-cally well-founded and offers both interpretability and the ability to learn its components from data, but rather reflects a pragmatic perspective. In many practical settings — such as modeling the spread of an infectious disease to produce timely forecasts and action-able insights — computational efficiency and data requirements are critical constraints. In such cases, a simpler model that yields a timely and robust approximation may be preferable to a more expressive approach whose estimation and validation require sub-stantial resources. 
+
+# 5.1 Parametric Conditional Models 
+
+A possible approach to modeling structured flows, often used to model complex physical systems, consists in specifying a low-dimensional parametric representation in which the relationships between variables are explicitly encoded, rather than inferred from data. In this framework, the system is described by a set of variables whose interactions are modeled through parametric functions, possibly with hierarchical or conditional depen-dencies. These relationships are defined based on prior knowledge of the system, implic-itly assuming that the dominant mechanisms governing the dynamics can be captured by a limited number of parametric dependencies. In contrast to GVF, which seeks to infer both the structure of interactions and the as-sociated flow field from data, parametric conditional models assume that the main mech-anisms governing the system are known a priori and can be expressed through a small number of parameters. For instance, one may write the evolution of a d-dimensional state variable x(t) as 
+
+x(t + 1) = f ¡x(t), θ(x(t)) ¢, (10) where the parameters encoded in the k-dimensional vector θ may themselves depend on other variables, capturing conditional dependencies in a structured way. From the perspective of flow decomposition, the gradient, curl, and topology-constrained components are not derived from a learned field on a discrete structure, but are instead encoded implicitly in the functional form of the model. For example, source-driven effects may be represented through potential-like terms, feedback mechanisms through cyclic dependencies between variables, and global constraints through explicit coupling terms. This approach leads to a fundamentally different modeling philosophy. Rather than learning a high-dimensional representation of the system, including its topology, from data, one imposes a simplified structure that captures the dominant mechanisms. As a consequence, the number of degrees of freedom to be estimated is significantly reduced. The reduction in model complexity has important practical implications. In partic-ular, parametric conditional models (1) require substantially less training data, (2) are less sensitive to noise and missing observations, (3) are easier to interpret and validate, and (4) can be evaluated and calibrated with limited computational resources. These advantages come at the cost of reduced expressive power. By construction, the model may not capture fine-grained interactions or emergent structures that are not explicitly encoded. Therefore, the suitability of this approach depends on the extent to 11 which the dominant dynamics of the system can be described by a small number of well-chosen parameters. In settings where data are scarce, noisy, or partially observed, and where the underly-ing mechanisms are reasonably well understood, parametric conditional models provide a viable and often effective alternative to more expressive data-driven approaches such as GVF. The necessary condition for this approach is that the dominant mechanisms driving the system dynamics are known. However, this assumption is often not satisfied for many of the systems listed in Table 1. As will be discussed in the following, a possible heuristic strategy to uncover these mechanisms is to use GVF as a diagnostic tool, by systematically assessing how well the observed data can be explained by gradient, curl, and topology-constrained components. 
+
+# 5.2 Linear Graph Dynamical Models 
+
+A complementary approach consists in representing the system dynamics through lin-ear evolution models defined on a graph. In this framework, the state of the system is represented by a vector x(t) ∈ Rn, whose components correspond to variables associated with the nodes of a graph. The temporal evolution may be for example implemented as a Markov process, with a system of linear equations connecting the current to the previous state: 
+
+x(t + 1) = A x(t) + u(t) (11) Here, A ∈ Rn×n is a matrix encoding interactions between nodes, and u(t) represents external inputs or forcing terms. 5
+
+The matrix A may be constrained by the graph structure, for example by enforcing that Ai j ̸ = 0 only if there exists an edge between nodes i and j. Additional structure may be imposed, such as symmetry, sparsity, or conservation constraints, depending on the application. In many cases, A is related to graph operators such as the adjacency matrix or the graph Laplacian [5]. From the perspective of flow modeling, linear graph dynamical systems provide an implicit representation of transport and interaction processes. Gradient-like effects cor-respond to diffusive or dissipative terms, often modeled through Laplacian operators, while cyclic or feedback behavior may arise from asymmetric or non-normal components of A. However, unlike GVF, these components are not explicitly separated, but are in-stead embedded in the structure of the evolution operator. The limitations of such linear representations in capturing complex dynamics and higher-order interactions are also discussed in Coletti and Fallucchi [1]. Compared to parametric conditional models, linear graph dynamical models adopt a different philosophy. While parametric models explicitly encode the functional form of in-teractions based on prior knowledge, linear graph models infer a global interaction struc-ture directly from data through the matrix A, typically without imposing strong prior constraints beyond sparsity or topology. In other words, whereas parametric models at-tribute specific roles to individual mechanisms, linear graph models capture aggregate 
+
+> 5When time evolution is derived from a continuity equation, (11) takes the form (19) from section 5.4 below. Details are provided in appendix B.
+
+12 interactions without explicitly separating their underlying causes. As a result, they of-fer greater flexibility than fully specified parametric models, but at the cost of reduced interpretability of individual mechanisms. From a practical perspective, linear graph models provide a significant reduction in complexity compared to GVF. The dynamics are governed by a single matrix, leading to a relatively small number of parameters and enabling efficient estimation from data. Furthermore, linear systems are well understood, allowing for stability analysis, spectral characterization, and, in some cases, closed-form solutions. The main limitation of this approach is its restricted expressive power. Linear models may fail to capture nonlinear interactions, higher-order dependencies, and explicit topo-logical constraints that are naturally represented in GVF. As a result, they are best suited for systems in which the dominant behavior can be approximated by linear interactions around an operating point. Despite these limitations, linear graph dynamical models provide a useful intermedi-ate representation between fully data-driven approaches such as GVF and highly struc-tured parametric models. They offer a favorable trade-off between expressivity, inter-pretability, and computational efficiency, particularly in settings where data are limited and rapid inference is required. 
+
+# 5.3 Reduced Hodge and Cycle-Basis Models 
+
+A natural intermediate approach between fully expressive frameworks such as GVF and simpler linear or parametric models consists in retaining the structural decomposition of flows while reducing the dimensionality of the representation. This can be achieved by restricting the Helmholtz-Hodge decomposition to a low-dimensional basis of relevant components. In the discrete setting, the decomposition of an edge-based field F ∈ Re can be written as 
+
+F(t) = B⊤ 
+
+> 1
+
+ϕ(t) + B2 ψ(t) + Hα(t), (12) where B1 and B2 are incidence matrices, and H spans the harmonic subspace of dimension 
+
+b1. While this representation is exact, the dimensions of ϕ, ψ, and α scale with the num-ber of nodes, faces, and independent cycles, respectively, which may become prohibitive in large systems. Here we present a procedure to decrease the dimensionality of this model, based on singular value decomposition (SVD). The procedure first performs a change of basis, then discards the basis elements not associated with strong enough patterns Starting from the full discrete Helmholtz–Hodge decomposition (12) we define the three component fields 
+
+Fg(t) = B⊤ 
+
+> 1
+
+ϕ(t), Fc(t) = B2 ψ(t), Fh(t) = Hα(t). (13) A reduced representation can be obtained by collecting representative snapshots 6 of each  
+
+> 6No need to take all available data. It is necessary and sufficient to take a subset that captures the relevant dynamics. The quality of the reduced model depends more on the representativeness of the chosen dataset than on its size.
+
+13 component and applying a singular value decomposition separately: 
+
+Xg = £Fg(t1) Fg(t2) · · · ¤ = Ug Σg V⊤ 
+
+> g
+
+,
+
+Xc = £Fc(t1) Fc(t2) · · · ¤ = Uc Σc V⊤ 
+
+> c
+
+,
+
+Xh = £Fh(t1) Fh(t2) · · · ¤ = Uh Σh V⊤ 
+
+> h
+
+.
+
+(14) The columns of Ug, Uc, and Uh define orthonormal bases for the dominant gradient, curl, and harmonic flow patterns observed in the training data. Each column of Ug is an orthonormal basis vector spanning the space of edge flows, ordered by decreasing con-tribution to the variance of the data, and represents a recurring structure in the data. The matrices Σg = diag( σg,1 , σg,2 , . . . ), Σc = diag( σc,1 , σc,2 , . . . ), and Σh = diag( σh,1 , σh,2 , . . . )are diagonal, and their elements are the singular values of Xg, Xc, and Xh, respectively. Finally, the rows of the matrices Vg, Vc, and Vh are indexed by the snapshot time index 
+
+j, which correspond to the time samples t j. For example, from the first equation in (14) one obtains Fg(t j) = Prg 
+
+> k=1
+
+Ug, k σg, kVg, jk , where rg is the rank. Now the gradient component can be written in terms of a new basis: 
+
+Fg = B⊤ 
+
+> 1
+
+ϕ = Ug ag with ag = U⊤ 
+
+> g
+
+B⊤ 
+
+> 1
+
+ϕ = (B1 Ug)⊤ ϕ (15) with similar expressions for the curl and harmonic components. At this stage, we are still considering the full (non-truncated) SVD representation, in which the decomposition is exact. Our next goal is to identify the most important basis vectors and ignore the others, to reduce the model dimensionality. Singular values are real numbers sorted in decreasing order ( σg,1 ≥ σg,2 ≥ . . . ≥ 0 re-flecting the sampled data) and, to reduce the model dimensionality, we select the small-est set of Kg such that the cumulative singular-value energy exceeds ηg = 0.9 (a different threshold may also be used): PKg 
+
+> k=1
+
+σ2g, k
+
+Pk σ2g, k
+
+≥ ηg (16) We proceed the same way also for the curl and harmonic components. Keeping only the first Kg, Kc, and Kh columns of Ug, Uc, and Uh, respectively, gives the reduced model 
+
+F(t) ≈ Ug,red ag(t) + Uc,red ac(t) + Uh,red ah(t), (17) where ag(t), ac(t), and ah(t) are the reduced components. The thresholds ηg, ηc, ηh may be then varied to assess the sensitivity of the results to model reduction. After truncation, the representation (17) becomes approximate. This provides a practical reduction procedure. First, the full model is run on con-trolled or representative data and the three decomposed components are recorded. Sec-ond, separate SVDs are performed on the gradient, curl, and harmonic snapshot matri-ces. Third, the dominant modes are retained according to a chosen energy threshold. Finally, the reduced model is trained and evaluated for different thresholds. If lowering the threshold does not significantly affect the prediction or decomposition metrics, the reduced basis is considered sufficient; otherwise, additional modes are retained. This approach avoids learning the full high-dimensional field directly. Instead, it rep-resents the field in a reduced basis learned from data, significantly reducing the number 14 of degrees of freedom. The reduced basis provides a data-driven approximation of the im-age of the discrete differential operators, capturing the dominant flow patterns actually observed in the representative subset of data chosen for the SVD. From a modeling perspective, reduced Hodge representations retain the key inter-pretability advantages of the full decomposition, as each component is still associated with a specific physical or structural mechanism (source/sink, circulation, topology). How-ever, they do not aim to reconstruct all fine-grained details of the flow, and therefore may miss localized or higher-order effects. Overall, reduced Hodge and cycle-basis models provide a principled compromise be-tween expressivity and tractability. They preserve the conceptual clarity of the Helmholtz-Hodge decomposition while enabling practical implementation in settings where data are limited and computational resources are constrained. In particular, this approach enables systematic exploration of model robustness through repeated evaluation on syn-thetic datasets, which is often impractical for higher-dimensional models. 
+
+# 5.4 Time Evolution 
+
+The GVF framework, as introduced above, provides a decomposition of the vector field 
+
+F(t) at a given time t, but does not by itself define the temporal evolution of the sys-tem. In contrast to parametric conditional models and linear graph dynamical systems, which explicitly specify an evolution rule linking states at successive time steps, GVF is inherently an instantaneous representation. The same remark applies to reduced Hodge models, which inherit the decomposition structure of GVF but do not, in general, specify the time evolution unless an explicit dynamical law is introduced. More precisely, temporal loops that take a shorter time than the sampling time ∆t
+
+leave their “imprint” on the GVF topology, while those lasting longer than the sampling time ∆t are not captured by the underlying geometrical structure. They need to be de-scribed by an explicit time evolution relationship. For example, a dynamical model consistent with a continuous physical system is obtained by coupling the flow field with a conservation equation describing the local trasport of some quantity. Its differential form states that the time derivative of the local density x equals the sum of the source term s — which represents a sink if negative — and of the net inflow of that quantity, given by minus the divergence of its current: 
+
+∂x
+
+∂t = s − ∇ · J (18) (the current J models the local outward flow). The discretized version of the inflow −∇ · J at each node is the matrix product B1 F,where B1 is the same node-edge incidence matrix featuring in equation (6) above. 7 Its elements 8 are ( B1)ve = + 1 if edge e enters node v; −1 if edge e leaves node; or 0 other-wise. Therefore, the continuity equation governing the time evolution of the model can be written in a discrete form as 
+
+x(t + 1) = x(t) + ∆t [s(t) + B1 F(t)] (19) where s is an external source.   
+
+> 7The transposed B1matrix is used for the discrete gradient in equation (6).
+> 8For the pure topology. Metric needs introduction of weights as shown in appendix C.
+
+15 Model Complexity Interpretability Expressivity Dimensionality Parametric low high medium very low Linear very low medium low low Reduced medium high medium-high medium GVF high high high high                  
+
+> Table 3: Comparison of modeling approaches.
+> Model Structure Topology Learning Parametric imposed a priori fixed, implicit parameters Linear learned globally fixed matrix Reduced learned + decomposed explicit, reduced coefficients GVF learned + decomposed explicit, learned whole field
+> Table 4: Comparison of modeling approaches (continued).
+
+In GVF the field F(t) is itself decomposed into gradient, curl, and harmonic compo-nents. This provides a structured representation of the driving mechanisms, while the evolution equation above governs the temporal dynamics. This separation between spa-tial structure and temporal evolution allows the modeler to independently design the dynamical law and the decomposition of underlying mechanisms. 
+
+# 5.5 Model Analysis 
+
+Compared to GVF, the parametric conditional model described above represents a funda-mentally different approach, as it does not rely on an explicit topological representation inferred from data. In contrast, linear graph models and reduced Hodge representations may be viewed as constrained or simplified instances of the GVF framework. In particular, GVF can be interpreted as a general model from which simpler repre-sentations may be derived by restricting the functional space or the underlying topology. For example, linear graph dynamical models correspond to a representation in which in-teractions are encoded in a single operator without explicit decomposition, while reduced Hodge models retain the decomposition but restrict it to a low-dimensional basis. This observation suggests a practical strategy for model analysis. Starting from a full GVF implementation, one may selectively restrict or suppress individual components of the decomposition to assess their relative contribution. For instance, setting the curl component to zero removes cyclic interactions, yielding a purely gradient-driven model, while removing the gradient component emphasizes circulation and topology-driven ef-fects. Similarly, restricting the harmonic component suppresses contributions associated with global topological constraints. Appendix A provides a unified notation that supports this analysis. In addition to component-wise analysis, the complexity of the underlying topological representation may be varied. For example, one may reduce the number of higher-order simplices to limit the space of admissible circulations, or simplify the graph structure to focus on dominant interactions. Such controlled simplifications provide a systematic way to evaluate the sensitivity of the model to topological assumptions and to identify the 16 minimal structure required to capture the observed dynamics. Overall, this hierarchical perspective enables the use of GVF not only as a predictive model, but also as a diagnostic tool for understanding the relative importance of gradient, curl, and topology-constrained components in complex systems. This approach is analo-gous to ablation studies in machine learning, where the impact of individual components is evaluated by selectively disabling them. This ablation-based exploration can also be used as a tool for hypothesis generation. By systematically restricting GVF components and topology, one may identify dominant mechanisms that govern the observed dynamics. Such insights can guide the design of custom parametric models that encode these mechanisms explicitly, potentially improv-ing predictive performance while reducing model complexity. This strategy may be par-ticularly valuable in applications where the iterative modeling–prediction–intervention loop must operate under tight time and data constraints. Figure 1 schematically repre-sents how this task may be iteratively approaced. 
+
+# 6 Model Validation 
+
+The performance of a predictive model depends on several key factors, among which the mathematical formulation, the implementation, and the training data play central roles. The previous sections have addressed the mathematical aspects, highlighting that the GVF framework provides a general and expressive representation capable, in principle, of adapting to a wide variety of systems. It was also noted that such expressivity may exceed practical requirements, and that reduced or alternative models may be preferable depending on the application. In this context, GVF itself may be used as an exploratory tool to identify the appropriate level of model complexity. For the remainder of this sec-tion, we therefore assume that the mathematical formulation is adequate. The next critical aspect is the correctness of the implementation. Before expecting meaningful insights or reliable predictions, it is necessary to verify that the model has been implemented without flaws. A standard approach consists in evaluating the model on datasets generated from systems whose behavior is well understood. In such cases, the expected outcomes are known, and the ability of the model to recover key features provides a direct validation of the implementation. Before entering into details, it is worthwhile to clarify the notion of “correctness” for data-driven models. In systems engineering, a distinction is made between verification ,which concerns compliance with specifications, and validation , which concerns the fitness for the intended purpose. Verification addresses the question “Did we build the system right?”, whereas validation asks “Did we build the right system?” In the present context, which involves models whose parameters are inferred from data, this distinction requires some adaptation. Verification applies naturally to the mathematical formulation and to its implementation. However, the resulting system operates with parameters learned from data, and these parameters are not subject to explicit requirements; their correctness can only be assessed in statistical terms. This motivates a further distinction between structural verification and behavioral verification . Structural verification ensures that the model is implemented correctly, including the consistency of equations, operators, and decomposition. Behavioral veri-fication, on the other hand, evaluates whether the model exhibits the expected behav-17 Full GVF 
+
+> maximum expressivity
+
+Reduced Hodge 
+
+> truncated decomposition
+
+Linear Graph Model 
+
+> single evolution operator
+
+Parametric Conditional 
+
+> mechanisms encoded a priori
+> restrict basis
+> drop / merge components
+> define coupling
+> higher expressivity
+> lower complexity
+
+Component-wise ablation       
+
+> Starting from the full GVF, selectively suppress components no gradient no curl no harmonic gradient only (sources off) (loops off) (topology off) (reduced field)
+
+Topology simplification 
+
+> reduce graph complexity remove selected faces retain only dominant cycles
+> analyze sensitivity
+
+Dominant mechanisms identified 
+
+> determine which components and structures drive the observed dynamics
+
+Custom parametric model 
+
+> encode identified mechanisms with few trainable parameters
+> model reduction
+
+Data Model 
+
+(choose complexity) Prediction and evaluation Action / intervention 
+
+Iterative modeling–prediction–intervention loop 
+
+Figure 1: Hierarchy of reduced models and ablation-based analysis starting from a full GVF representation. Restricting the decomposition basis, simplifying the topology, or suppressing individual components can reveal dominant mechanisms and guide the construction of compact parametric models. 
+
+ior when applied to controlled datasets with known ground truth. In particular, when trained on data generated from simple, well-understood systems, the model should cor-rectly identify and reconstruct the relevant components, such as gradient, curl, and har-monic contributions. Only after these verification steps have been successfully completed can the model be applied to the system of interest. Even then, full validation may remain out of reach, due to the inherent limitations of real-world data, which may be noisy, biased, incomplete, or scarce, and to possible mismatches between model assumptions and reality. Nev-ertheless, verification provides an important guarantee: if the model fails to produce 18 meaningful results on real data, the most likely cause lies in the data rather than in the formulation or implementation of the model. This raises a central question to the practical deployment of data-driven models: what constitutes an appropriate training dataset for model verification? Ideally, such verification datasets should be derived from systems for which the under-lying dynamics are fully specified, either analytically or through high-fidelity simulation, and for which sufficient data can be generated. In practice, this condition is not always met in the target application domain. Therefore, it is essential to identify alternative systems and datasets that can serve as proxies for validation purposes. Once both the mathematical formulation and the implementation have been validated against controlled datasets, the model can be applied to the system of interest. If, at this stage, the model fails to provide relevant insights or accurate predictions, the most likely cause lies in the limitations of the training data, rather than in the formulation or implementation of the model. Two common issues may arise: insufficient data quantity or insufficient data qual-ity. In the case of data scarcity, a practical strategy consists in adopting a simpler model with fewer degrees of freedom, thereby reducing the amount of data required for reli-able estimation. The expected loss in fidelity can be quantified in advance by evaluating the simplified model on controlled datasets, using the same ablation-based methodology described in the previous section. This provides an a priori assessment of the trade-off between model complexity and predictive accuracy. In contrast, limited data quality represents a more fundamental challenge, as it can-not be easily compensated by model simplification. Improving data quality typically requires significant effort in data acquisition, preprocessing, and validation. For this reason, it is crucial to establish the correctness of the model using independent and well-characterized datasets before investing resources in improving the quality of the target data. The central objective is therefore to identify suitable systems and datasets for model verification. Systems governed by well-established physical laws are particularly attrac-tive in this respect, as they provide a clear ground truth and often allow for the genera-tion of large, high-quality datasets through simulation. When such datasets are publicly available, they offer a practical and efficient means to validate both the implementation and the behavior of the model under controlled conditions. This separation between model validity and data limitations is essential to avoid mis-attributing model failure to incorrect causes. 
+
+# 7 Verification Datasets and Cross-Domain Applicabil-ity 
+
+The verification strategy outlined above requires datasets generated from systems whose governing mechanisms are sufficiently well understood. The ideal dataset should satisfy the following requirements: • the underlying topology or geometry is known; • the governing dynamics are physically or analytically well characterized; 19 • ground truth is available either directly or through simulation; • the dataset is sufficiently large to test model robustness; • the computational cost is compatible with repeated experiments. No single dataset is expected to be universal across all classes of systems introduced in Section 1. Nevertheless, some benchmark domains are particularly well suited for verifying models based on gradient, curl, and topology-constrained flow decomposition. We consider in primis water distribution networks, which are probably the first source to look at, electrical power grids, good for controlled generation of source/sink and loop-flow scenarios, and fluid systems for which there is direct connection with the Helmholtz-Hodge decomposition. 
+
+# 7.1 Water Distribution Networks 
+
+Water distribution networks represent the most attractive first verification domain. They are network-constrained systems with known topology, physically interpretable flows, sources, sinks, pressure gradients, loops, and topology- dependent transport paths. More-over, hydraulic simulators such as EPANET [6] can generate controlled scenarios in which the ground truth is known. Two datasets are especially relevant. LeakDB [7] is a leakage diagnosis benchmark containing many artificially generated but realistic leakage scenarios on water distribu-tion networks, together with scoring tools for algorithmic comparison. DiTEC-WDN [8] is a larger spatiotemporal graph dataset containing multiple water distribution networks and simulated hydraulic scenarios. These datasets are well suited for testing whether a model can recover source-like anomalies, distinguish propagation from circulation, and identify the topological features required to explain the observed flow. 
+
+# 7.2 Electrical Power Networks 
+
+Electrical grids provide a second strong benchmark class. Their topology is known, sources and sinks correspond to generators and loads, and the governing equations are well established. Standard benchmark systems are available through MATPOWER [9] and PGLib-OPF [10]. Power networks are particularly useful for testing source/sink balance, propagation over a fixed network, and loop-flow effects in meshed grids. Compared with water net-works, however, they may require additional scenario generation to produce time-dependent datasets suitable for training and behavioral verification. 
+
+# 7.3 Continuous Fluid Systems 
+
+Continuous fluid systems provide the most direct connection to the classical Helmholtz-Hodge decomposition. Public simulation databases such as the Johns Hopkins Turbu-lence Database [11] and DNS [12] provide access to high-fidelity velocity and pressure fields generated by direct numerical simulation. 20 These datasets are valuable for testing the continuous-to-discrete transition, includ-ing the effects of discretization, mesh resolution, and field sampling. However, they are computationally heavier than water or power-network datasets and are therefore better suited as a second-stage benchmark. 
+
+# 7.4 Lower-Priority Domains 
+
+Traffic, pedestrian, and multi-agent trajectory datasets are useful for testing models in noisy, data-driven, or controlled-agent settings. Examples include vehicle trajectory datasets such as NGSIM [13] and multi-agent visual datasets such as the Stanford Drone Dataset [14]. These datasets are valuable for assessing robustness and practical appli-cability, but they are less ideal for primary verification because the ground truth mecha-nism generating the observed dynamics is only partially known. 
+
+# 7.5 Applicability to the Four System Classes 
+
+Water distribution networks and electrical grids are therefore recommended as primary verification domains. They offer the best compromise between physical interpretability, accessibility, ground truth, and computational tractability. Continuous fluid datasets should be used to test the connection with the underlying continuous theory, while data-driven and multi-agent datasets should be reserved for later validation and robustness studies. This tiered strategy separates implementation verification from application valida-tion. A model should first demonstrate correct behavior on controlled systems with known dynamics. Only then should it be applied to target domains in which data are scarce, noisy, sensitive, or only partially interpretable.                 
+
+> System class Best verification domain Ground truth Main limitation Network-constrained Water networks, power grids Strong Domain-specific laws Continuous systems Fluid simulations Strong Computational cost Data-driven networks Epidemiology, finance, social data Weak–medium Ambiguous semantics Multi-agent systems Traffic, swarms, trajectories Medium Behavioral complexity
+> Table 5: Candidate verification domains for the four classes of structured-flow systems.
+
+# 8 Conclusion 
+
+This work has addressed the problem of modeling dynamical systems governed by struc-tured flows, characterized by gradient-driven, curl-driven, and topology-constrained com-ponents. Starting from the continuous formulation based on the Helmholtz-Hodge de-composition, we have examined how such systems can be represented computationally through discrete structures, with particular focus on the Graph Vector Field (GVF) frame-work proposed by Coletti and Fallucchi [1]. GVF provides a mathematically consistent and highly expressive representation that unifies multimodal data and explicitly separates the underlying mechanisms driving sys-tem dynamics. This decomposition offers a strong interpretability advantage, enabling 21 the identification of source-driven effects, feedback loops, and global topological con-straints. However, this expressive power comes at the cost of increased computational complexity, non-trivial topology construction, and significant data requirements. To address these limitations, we have proposed a hierarchy of alternative modeling approaches, including parametric conditional models, linear graph dynamical systems, and reduced Hodge representations. These approaches trade expressivity for tractabil-ity, offering practical solutions in settings where data are limited or rapid inference is required. Importantly, we have shown that these models can be interpreted as restricted instances of the GVF framework, enabling a unified perspective across different levels of complexity. A central contribution of this work is the proposed strategy for model assessment, based on a clear separation between structural verification, behavioral verification, and domain-specific validation. By leveraging datasets from well-understood physical sys-tems, it is possible to evaluate the correctness and robustness of a model independently of the target application domain. This cross-domain validation approach mitigates the risks associated with data scarcity, noise, and ambiguity in real-world datasets. The resulting framework supports an iterative modeling strategy in which GVF may be used as a diagnostic tool to identify dominant mechanisms, guiding the construction of reduced or parametric models tailored to the problem at hand. This approach enables a principled trade-off between model fidelity, interpretability, and computational efficiency. Future work should focus on the systematic application of this methodology to bench-mark datasets, the quantitative comparison of model classes under controlled conditions, and the extension of the framework to domains with highly dynamic or partially observed topologies. In particular, understanding the role of topology construction and its impact on model performance remains a key open question. Overall, structured flow modeling provides a unifying perspective across a wide range of domains, and the combination of expressive frameworks such as GVF with pragmatic reduced-order models offers a promising path toward scalable and interpretable data-driven modeling. 
+
+# A Unified Notation 
+
+Let K be a simplicial complex with n nodes, e oriented edges, and f oriented faces. We denote by B1 ∈ Rn×e and B2 ∈ Re× f the node-edge and edge-face incidence matrices. With the convention (B1)ve =
+
+
+
+−1, if edge e leaves node v
+
++1, if edge e enters node v
+
+0, otherwise (20) the matrix produc B1 F represents the net inflow induced by the edge flow F at each node. An edge-based flow field F(t) ∈ Re can be decomposed as 
+
+F(t) = B⊤ 
+
+> 1
+
+ϕ(t) + B2 ψ(t) + Hα(t) (21) where ϕ(t) ∈ Rn is a scalar potential on nodes, ψ(t) ∈ Rf is a 2-form on faces, α(t) ∈ Rb1
+
+with the integer b1 being the first Betti number of the complex, and H ∈ Re×b1 is a matrix whose columns span the harmonic subspace. 22 The harmonic subspace is defined as the kernel of the discrete 1-Hodge Laplacian 
+
+L1 = B⊤ 
+
+> 1
+
+B1 + B2B⊤ 
+
+> 2
+
+such that im( H) = ker L1.A reduced Hodge model is obtained by replacing the full bases with truncated ones as illustrated in section 5.3 and resulting in equation (17), that is 
+
+F(t) ≈ Ug,red ag(t) + Uc,red ac(t) + Uh,red ah(t), (22) where the matrices Ug,red ∈ Re×Kg , Uc,red ∈ Re×Kc , and Uh,red ∈ Re×Kh , have reduced dimen-sionality compared to the full model: Kg ≪ n, Kc ≪ f , and Kh ≤ b1.Absorbing these three matrices into a single matrix W ∈ Re×m — losing the decompo-sition into gradient, curl, and harmonic components, and keeping only pairwise interac-tions among a sufficiently high number of nodes — one gets the field representation used in a linear graph model: 
+
+F(t) = W x(t) (23) where x(t) ∈ Rm is an array representing the state of m vertices. 9
+
+The absence of simplicial complex structure means that this model does not contain higher-order interactions that only exist when multiple nodes are jointly active and can-not be reduced to a linear combination of pairwise interactions. High-order interactions are essential only when effects require joint presence of multi-ple agents with context-dependent interactions and/or group-level constraints. Examples in which they are needed include social contagion (triadic closure), biochemical reactions (multi-molecule chemistry), and coordination in multi-agent systems. Another possible way to reduce the dimensionality of the model without adopting a linear graph representation is to encode the dynamics in a parametric model. When the underlying system is known, this allows to encode the three components explicitly in a parametric form using suitable functions: 
+
+F(t; c) = B⊤ 
+
+> 1
+
+g(x(t); θ, c) + B2 c(x(t); θ, c) + H h(x(t); θ, c) (24) where θ represents an array of parameters learned or fitted with the data, and c includes other context parameters that are observed or prescribed and act as external inputs to the model. 
+
+# B Dynamic Evolution for Continuous Systems 
+
+To obtain a time-dependent dynamical system, the edge flow must be coupled to a node-state evolution equation. In the continuous case, the continuity equation for a locally conserved quantity q is 
+
+∂x
+
+∂t + ∇ · J = s (25) where J = qv is the flux of quantity q with velocity v and s is an external generator of 
+
+q per unit time and per unit volume (i.e. a source or a sink of q). This is the same as equation (18). With the node-edge incidence matrix defined by equation (20) above, the corresponding discrete-time evolution is dx
+
+dt = B1 F(t) + s(t), (26)       
+
+> 9The number of vertices mmay be chosen in the range from Kgto n— the lower the better — to optimize the performance of the resulting model.
+
+23 or, after time discretization, 
+
+x(t + ∆t) = x(t) + ∆t B1 F(t) + ∆t s(t) (27) which is the same as equation (19) above. Here, F may be represented in the form (21) for GVF, as (22) for a reduced Hodge model, as (23) for a linear graph model, or as (24) in the case of a parametric conditional model. If the underlying domain is inherently continuous, the operators approximate differ-ential operators, and the functions converge to smooth fields, then as the mesh size goes to zero in a parametric conditional model equation (19) essentially becomes a partial differential equation encapsulating both time evolution and conservation. Note that the GVF formulation provides a decomposition of a discrete flow field, but does not by itself define a partial differential equation. The latter arises only when the flow is coupled with an evolution law, typically through a conservation equation. Inserting equation (21) into (19) and remembering that the divergence of a curl is null (the discrete version is B1 B2 = 0) and that the harmonic component is divergence-free (or 
+
+B1 H = 0), we get the discrete analog of a partial differential equation: 
+
+x(t + ∆t) = x(t) + ∆t {B1 [B⊤ 
+
+> 1
+
+ϕ(t) + B2 ψ(t) + Hα(t)] + s(t)}
+
+= x(t) + ∆t [B1 B⊤ 
+
+> 1
+
+ϕ(t) + s(t)] 
+
+= x(t) + ∆t [B1 Fgrad + s(t)] (28) where B1 B⊤ 
+
+> 1
+
+is the discrete Laplacian operator and the last result is obtained by inserting equation (6). Therefore, it is the gradient component Fgrad of our vector field that drives the dynamics of a system obeying a continuity equation, as expressed in equation (27). 
+
+# C Introducing Metric Information 
+
+In weighted or geometric settings, the Euclidean inner products are replaced by mass ma-trices or discrete Hodge star operators. The incidence matrices still encode the topology, while the Hodge star operators encode the metric properties of the system. Let M0 ∈ Rn×n, M1 ∈ Re×e, and M2 ∈ Rf × f be positive definite mass matrices (discrete Hodge star operators) defining the inner products on node-, edge-, and face-based quan-tities, respectively. The incidence matrices B1 and B2 remain purely topological, with entries in {−1, 0, +1}, while geometry and physical properties are encoded in M0, M1, and 
+
+M2 as metric information such as lengths, areas, volumes, conductances, or capacities. They are typically diagonal. The weighted Helmholtz-Hodge decomposition of an edge field becomes: 
+
+F = B⊤ 
+
+> 1
+
+ϕ + M−11 B2 M2 ψ + h (29) with the harmonic component defined by the weighted conditions 
+
+B1 M1 h = 0, B⊤ 
+
+> 2
+
+h = 0. (30) Equivalently, h belongs to the kernel of the weighted 1-Hodge Laplacian: 
+
+L(w)1 = M−11 B⊤ 
+
+> 1
+
+M0 B1 + M−11 B2 M2 B⊤ 
+
+> 2
+
+. (31) 24 The node weights in M0 represent volume around node (fluid system), or storage ca-pacity (heat capacity in thermal systems; population size in epidemiology). Edge weights in M1 represent how easily flow moves along edges, like electrical conductance, hydraulic conductance, or mobility (diffusion). Face weights in M2 represent area (face area in fluid; surface element in electromagnetic system) or strength surfaces (coupling between loops in transport systems). In practice, the metric ( M0, M1, and M2) tells the decomposition which flows are “ex-pensive” or “easy” along different edges, while topology ( B1 and B2) defines what is con-nect to what. 
+
+# References 
+
+[1] Silvano Coletti and Francesca Fallucchi. Graph vector field: A unified framework for multimodal health risk assessment from heterogeneous wearable and environ-mental data streams, 2026. URL https://arxiv.org/abs/2603.28115 .[2] Allen Hatcher. Algebraic Topology . Cambridge University Press, 2002. [3] Thomas J. R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis . Prentice Hall, 1987. [4] Klaus-Jürgen Bathe. Finite Element Procedures, 2nd Ed. Pearson Education, 2014. [5] Lek-Heng Lim. Hodge laplacians on graphs. SIAM Review , 62(3):685–715, 2020. doi: 10.1137/18M1223101. [6] US Environmental Protection Agency. EPANET: Application for Modeling Drink-ing Water Distribution Systems. URL https://www.epa.gov/water-research/ epanet .[7] S. G. Vrachimis, M. S. Kyriakou, D. G. Eliades, and M. M. Polycarpou. LeakDB: A benchmark dataset for leakage diagnosis in water distribution networks. In Proc. of WDSA / CCWI Joint Conference , volume 1, 2018. URL https://github.com/ KIOS-Research/LeakDB .[8] Huy Truong, Andrés Tello, Alexander Lazovik, and Victoria Degeler. Ditec-wdn: A large-scale dataset of hydraulic scenarios across multiple water distribution net-works, 2025. URL https://huggingface.co/datasets/rugds/ditec-wdn .[9] Matpower: Power system simulation package. URL https://matpower.org/ .[10] Power Grid Lib: Benchmarks for Optimal Power Flow. URL https://github.com/ power-grid-lib/pglib-opf .[11] Johns hopkins turbulence database. URL https://turbulence.idies.jhu.edu/ home .[12] Yi Li, Eric Perlman, Minping Wan, Yunke Yang, Charles Meneveau, Randal Burns, Shiyi Chen, Alexander Szalay, and Gregory Eyink. A public turbulence database cluster and applications to study lagrangian evolution of velocity increments in 25 turbulence. Journal of Turbulence , 9:1–29, 2008. ISSN 1468-5248. doi: 10.1080/ 14685240802376389. [13] U.S. Department of Transportation Federal Highway Administration. Next Genera-tion Simulation (NGSIM) Vehicle Trajectories and Supporting Data, 2016. [14] A. Robicquet, A. Sadeghian, A. Alahi, and S. Savarese. Learning social etiquette: Human trajectory prediction in crowded scenes. In European Conference on Com-puter Vision (ECCV) , 2016. URL https://cvgl.stanford.edu/projects/uav_ data/ . Stanford Drone Dataset (SDD). 26
