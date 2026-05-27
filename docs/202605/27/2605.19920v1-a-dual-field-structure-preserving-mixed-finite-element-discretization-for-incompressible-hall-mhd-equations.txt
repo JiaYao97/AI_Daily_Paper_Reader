@@ -1,0 +1,2544 @@
+Title: A dual-field structure-preserving mixed finite element discretization for incompressible Hall MHD equations
+
+URL Source: https://arxiv.org/pdf/2605.19920v1
+
+Published Time: Wed, 20 May 2026 01:21:44 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+# A dual-field structure-preserving mixed finite element discretization for incompressible Hall MHD equations 
+
+Yi Zhang a,b, ∗
+
+> aSchool of Mathematics and Computing Science, Guilin University of Electronic Technology, Guilin, China
+> bCenter for Applied Mathematics of Guangxi (GUET), Guilin, China
+
+Abstract 
+
+In this paper, a novel dual-field structure-preserving mixed finite element discretization for incompressible Hall MHD equations is introduced. The discretization satisfies pointwise conservation of mass, magnetic Gauss’s law, and conservation of current density. It also obeys a discrete energy law that exactly captures the energy dissipation in the dissipative case and reduces to conservation of energy in the ideal case. Numerical experiments demonstrate the temporal and spatial accuracy, as well as the properties of structure-preservation, are provided. 
+
+Keywords: Hall MHD, structure preservation, dual-field discretization, mixed finite element method 
+
+1. Introduction 
+
+1.1. The Hall MHD model 
+
+In R3, we consider a bounded, contractible subdomain Ω of a Lipschitz boundary ∂Ω. In a space-time domain, Ω × (0 , T ], a dimensionless mixed form of three-dimensional incompressible Hall MHD equations (hereinafter referred to as the Hall MHD equations) is written as, [1, 2], 
+
+∂tu + ω × u + R−1 
+
+> f
+
+∇ × ω − cj × B + ∇P = f in Ω × (0 , T ] ,(1a) 
+
+ω = ∇ × u in Ω × (0 , T ] ,(1b) 
+
+∇ · u = 0 in Ω × (0 , T ] ,(1c) 
+
+j = ∇ × B in Ω × (0 , T ] ,(1d) 
+
+∂tB + ∇ × E = 0 in Ω × (0 , T ] ,(1e) 
+
+R−1 
+
+> m
+
+j − (E + u × B) + hj × B = 0 in Ω × (0 , T ] ,(1f) where ∂t := ∂∂t . It governs the dynamics of fluid velocity u, vorticity ω, electric current density j,magnetic flux density B, total pressure P := 12 u · u + p (with p being the static pressure), and electric field strength E, subject to an external body force f , initial conditions u(x, 0) = u0 and B(x, 0) = B0,and proper boundary conditions. Four dimensionless parameters are the fluid Reynolds number Rf , the coupling number for Lorentz force c, the magnetic Reynolds number Rm, and the strength factor of Hall effect h. It is clear that when h = 0 , (1) reduces to incompressible MHD equations. The Hall MHD equations involve two subsystems, namely the incompressible Navier-Stokes equations, (1a) - (1c), and Maxwell equations with Hall effect, (1d) - (1f), which are nonlinear because of the fluid convection term, ω × u in (1a), and the Hall effect term, hj × B in (1f). They are coupled through additional nonlinear terms, cj × B in (1a) and u × B in (1f), which represent Lorentz force and electromotive force, respectively. The Maxwell part in the Hall MHD equations can also be written as the magnetic induction (or Helmholtz) equation with the Hall effect, i.e., (2) ∂tH + R−1 
+
+> m
+
+∆H − ∇ × (u × H) + h∇ × (( ∇ × H) × H) = 0,  
+
+> ∗Corresponding author
+> Email address: zhangyi_aero@hotmail.com (Yi Zhang)
+> arXiv:2605.19920v1 [math.NA] 19 May 2026
+
+where H is the magnetic field strength, which, in a dimensionless form, satisfies 1
+
+(3) B = H.
+
+If we combine (1d) - (1f) and eliminate E and j, we can get the same magnetic induction equation (2) but for B, which also implies (3). Also see (2) of [2]. In the present work, we group (1) and (2) and work on a system written as 
+
+∂tu + ω × u + R−1 
+
+> f
+
+∇ × ω − cj × H + ∇P = f in Ω × (0 , T ] ,(4a) 
+
+ω = ∇ × u in Ω × (0 , T ] ,(4b) 
+
+∇ · u = 0 in Ω × (0 , T ] ,(4c) 
+
+j = ∇ × B in Ω × (0 , T ] ,(4d) 
+
+∂tB + ∇ × E = 0 in Ω × (0 , T ] ,(4e) 
+
+R−1 
+
+> m
+
+j − (E + u × H) + hj × H = 0 in Ω × (0 , T ] ,(4f) 
+
+∂tH + R−1 
+
+> m
+
+∆H − ∇ × (u × H) + h∇ × (( ∇ × H) × B) = 0 in Ω × (0 , T ] ,(4g) where we have used (3) to replace B by H in nonlinear terms cj × H, u × H, hj × H, and to replace the second H in term h∇ × (( ∇ × H) × B) by B.It seems that we have complicated the formulation by adding one additional variable and one equation, namely H and (4g), compared to (1). But we will show that, under a carefully designed temporal discretization to a weak formulation of (4), we can linearize the system while preserving some important structures of it. The formulation (4) is mainly inspired by the dual-field method initially proposed for incompressible Navier-Stokes equations in [3] and then extended to the MHD model in [4], where dual representations of solutions are sought. Taking the velocity field u in [3] as an example, under a mixed finite element framework, instead of choosing between seeking uh ∈ H(curl) or seeking uh ∈ H(div) , the authors decide to solve for two variables, u1 
+
+> h
+
+∈ H(curl) and u2 
+
+> h
+
+∈ H(div) , i.e., the dual representations of uh, in dual systems. By doing so, the nature of u ∈ H(curl) ∩ H(div) is captured in an implicit sense. And the dual systems can be linearized by borrowing information from each other and are then solved in a leapfrog-type temporal scheme. With the present formulation (4), having evolution equations for both 
+
+B and H, we are able to build a dual-field discretization for the magnetic field, which in turn leads to a linearized structure-preserving scheme for the incompressible Hall MHD equations. The relation between 
+
+B and H and other structures behind (4) is clearer in differential forms. See Appendix A for a brief explanation. Compared to existing dual-field methods [3, 4], the present method has an obvious difference that it uses a strong form having dual variables present already, i.e. B and H in (4). While the existing dual-field methods use strong forms without dual variables, see [3, (9)] and [4, (2.2)], and the sense of being dual-field comes later with the spatial discretization employing two mixed weak formulations that are dual to each other. We will come back to this point when the weak formulation of the present work is introduced in Section 2. In this work, we will restrict the mixed weak formulation and its analysis to homogeneous boundary conditions, (5) P = 0 , u × n = 0, B × n = H × n = 0 on ∂Ω × (0 , T ].
+
+And it will also be shown that it is possible to extend the mixed weak formulation to general boundary conditions. Finally, to close the problem, intial conditions, u0, B0 and H0(= B0), are supplemented to (4). In the incompressible Hall MHD equations, the divergence-free condition of u, i.e., (4c), implies the incompressibility of the fluid. And if the initial condition B0 satisfies ∇ · B0 = 0 , the evolution equation of B, (4e), will ensure that ∇ · B = 0 in Ω × (0 , T ], which is Gauss’ law of magnetism. From (4d) and the property ∇ · ∇ × (·) ≡ 0, we know that ∇ · j = 0 , which represents conservation of current density derived from the law of conservation of charge. Furthermore, under boundary conditions of (5), one can 
+
+> 1In differential forms, they are a pair of dual forms which are connected by the Hodge-star operator. See Appendix A.
+
+2easily prove that the Hall MHD model satisfies an energy law, (6) ∂tE = ∂t (K + M) = −R−1
+
+> f
+
+Z
+
+> Ω
+
+ω · ω dΩ 
+
+| {z }
+
+> (i)
+
+−cR−1
+
+> m
+
+Z
+
+> Ω
+
+j · j dΩ 
+
+| {z }
+
+> (ii)
+
++
+
+Z
+
+> Ω
+
+f · u dΩ 
+
+| {z }
+
+> (iii)
+
+,
+
+where the terms at the right-hand side represent (i) the dissipation due to fluid viscosity, (ii) the dissipation due to magnetic resistance, and (iii) the contribution of the external body force. And 
+
+K := 12
+
+Z
+
+> Ω
+
+u · u dΩ , M := c
+
+2
+
+Z
+
+> Ω
+
+B · B dΩ 
+
+are the (total) fluid kinetic energy and the (total) magnetic energy, respectively. And E := K + M is called the total energy. In the ideal case, i.e., Rf = Rm → +∞ and f = 0, this energy law obviously implies conservation of energy, 
+
+∂tE = 0 .
+
+1.2. A brief literature survey on structure-preserving methods towards the Hall MHD model 
+
+The MAC method, originated from the work of Harlow and Welch [5], is usually referred to as the first structure-preserving method. Then the mixed finite element method [6, 7, 8, 9] opened up a new era of structure-preserving methods in the family of finite element methods. More recently, structure-preserving frameworks such as the mimetic framework introduced by Bochev and Hyman [10] and the discrete exterior calculus (DEC) [11] have also received successes. They use differential forms instead of the classic vector calculus as the mathematical language, respect geometric representations behind physical variables, and have a tight link to Tonti’s discovery that reveals the analogies between differential geometry and algebraic topology in the modeling of physics [12]. Having a similar flavour, the finite element exterior calculus (FEEC) [13, 14], bridging the mixed finite element method to differential forms, has also become a powerful tool for structure-preserving discretizations and has furthermore promoted the popularity of the mixed finite element method in the field of structure-preserving methods. The benefit on numerical stability of structure-preserving numerical methods for MHD problems was first exposed in the methods conserving magnetic Gauss’s law [15]. Afterwards, for a long time, satisfying magnetic Gauss’s law at the discrete level exactly becomes a major track in this field, and various methods have been developed which can be classified into, for example, potential-based methods [16, 17], divergence-cleaning methods [18, 19], constrained transport methods [20, 21], Lagrange multiplier (or augmented) methods [22, 23], etc. Besides magnetic Gauss’s law, other structures embedded in the MHD model, like conservation of mass (pointwise incompressibility of the fluid), conservation of current density, the energy law (conservation of energy in the ideal case or an energy stability in a weaker sense), conservation of (cross- and magnetic-) helicity (in the ideal case), are also of great interest. And the mixed finite element method is undoubtedly a very successful framework for designing numerical schemes that conserve multiple structures of the MHD model. For example, Hu et al. [24] have proposed a mixed finite element method that preserves cross- and magnetic-helicity, energy, and magnetic Gauss’s law for incompressible MHD equations. For incompressible MHD of a variable fluid density, Gawlik and Gay-Balmaz have introduced a mixed finite element method that preserves energy, cross-helicity (when the fluid density is constant), and magnetic-helicity, total squared density, pointwise incompressibility, and magnetic Gauss’s law in [25]. These methods usually lead to big nonlinear systems which are expensive to solve. To linearize the problem, Zhang and Su [26] introduce a structure-preserving discretization which decouples the problem using the mixed finite element method and the FEEC for the incompressible MHD model. This method has a first-order temporal accuracy. A temporally second-order dual-field mixed finite element method that linearizes the problem and satisfies conservation of mass, magnetic Gauss’s law, conservation of current density, conservation of energy, and conservation of magnetic and fluid helicity is proposed in [4]. A technique that can decouple and linearize the problem while keeping a second-order temporal ac-curacy is the scalar auxiliary variable (SAV) method [27, 28]. Implemented together with the mixed finite element method, the SAV method has received sucesses for incompressible Navier-Stokes equations [29] and Navier-Stokes equations related coupled problems like the Navier–Stokes–Poisson–Nernst–Planck (NSPNP) system [30] and the MHD problem [31]. These implementations usually possess an uncondi-tional (modified) energy stability instead of a discrete energy law (or conservation of energy in the ideal case) because of the introduction of the auxiliary variable. 3The development of structure-preserving discretizations for the Hall MHD model is only very recent. Representative contributions are the work of Laakmann et al. [1] and the work of Guo et al. [2]. They both employ the finite element method, and the latter also uses the SAV method. Their differences from the method presented in this paper will be clarified in the coming subsection. 
+
+1.3. Objective and outline of the paper 
+
+This paper reports a new linearized mixed finite element discretization of the Hall MHD model. The method is structure-preserving; it satisfies pointwise conservation of mass, magnetic Gauss’s law, and conservation of current density. Additionally, it preserves a canonical discrete energy law exactly by construction. It is different from (better or worse than) the existing structure-preserving methods for the Hall MHD problem [1, 2] mainly in the following aspects. 
+
+• The present method is simpler in the sense that it employs a dual-field formulation and only uses the mixed finite element method under a carefully designed temporal scheme, in addition to no other techniques. 
+
+• Compared to the method in [1], the present method is linear and does not depend on projections. And it by construction preserves an exact discrete energy law instead of an unconditional energy stability as in [2]. 
+
+• However, the present method does not conserve a hybrid helicity as [1] does, see (3.7), (3.8) therein. And it does not decouple the problem as [2] does, such that the computation will be more expensive. The remainder of the paper is organized as follows. In Section 2, we introduce preliminaries, the semi-discrete formulation and its properties. Its fully discrete version and the properties follow in Section 3. Supportive numerical experiments are presented in Section 4. Finally, conclusions are drawn in Section 5. 
+
+2. A spatially discrete weak formulation 
+
+2.1. Function spaces 
+
+Let ⟨· , ·⟩ Ω denote the L2-inner product over the domain Ω. The well-known Hilbert complex of Sobolev spaces is 
+
+R ,→ H1(Ω) ∇
+
+−→ H(Ω; curl) ∇× 
+
+−→ H(Ω; div) ∇· 
+
+−→ L2(Ω) −→ 0.
+
+The finite-dimensional spaces used in this work are 
+
+G ⊂ H1(Ω) , C ⊂ H(Ω; curl) , D ⊂ H(Ω; div) , S ⊂ L2(Ω) ,
+
+which also form a Hilbert complex, (7) R ,→ G ∇
+
+−→ C ∇× 
+
+−→ D ∇· 
+
+−→ S −→ 0.
+
+And we will use C0 to denote the subspace C0 := {ah |ah ∈ C, ah × n = 0 on ∂Ω } where n is the outward unit normal vector. To adapt to the nonlinear terms of the Hall MHD model, the finite-dimensional spaces should also satisfy one additional regularity that the integrability of the trilinear term, (8) A(αh, βh, γh) := ⟨αh × βh, γh⟩Ω , ∀αh, βh, γh ∈ C or D,
+
+is guaranteed. Note that A is skew-symmetric with respect to any two of the three entries. 42.2. Formulation 
+
+In this subsection, we present a spatially discrete formulation of the Hall MHD model. Its propesties are analyzed in coming subsections. For a concise presentation, hereinafter, we call a spatially discrete object a semi-discrete one and omit the temporal part, i.e., ×(0 , T ], in the notations of space-time domains. We consider the following semi-discrete weak formulation of the mixed system (4) under homogeneous boundary conditions (5). Given f ∈ L2(Ω) 3, seek (uh, ωh, P h, Eh, Bh, jh, Hh) ∈ D × C × S × C × D ×
+
+C × C0, such that 
+
+⟨∂tuh, vh⟩Ω + A (ωh, uh, vh) + R−1 
+
+> f
+
+⟨∇ × ωh, vh⟩Ω(9a) 
+
+−cA (jh, Hh, vh) − ⟨ Ph, ∇ · vh⟩Ω = ⟨f , vh⟩Ω ∀vh ∈ D,
+
+⟨ωh, wh⟩Ω − ⟨ uh, ∇ × wh⟩Ω = 0 ∀wh ∈ C,(9b) 
+
+⟨∇ · uh, q h⟩Ω = 0 ∀qh ∈ S, (9c) 
+
+⟨jh, eh⟩Ω − ⟨ Bh, ∇ × eh⟩Ω = 0 ∀eh ∈ C,(9d) 
+
+⟨∂tBh, bh⟩Ω + ⟨∇ × Eh, bh⟩Ω = 0 ∀bh ∈ D,(9e) 
+
+R−1 
+
+> m
+
+⟨jh, Jh⟩Ω − ⟨ Eh, Jh⟩Ω − A (uh, Hh, Jh) + hA (jh, Hh, Jh) = 0 ∀Jh ∈ C,(9f) 
+
+⟨∂tHh, gh⟩Ω + R−1 
+
+> m
+
+⟨∇ × Hh, ∇ × gh⟩Ω − A (uh, Hh, ∇ × gh)(9g) 
+
++hA (∇ × Hh, Bh, ∇ × gh) = 0 ∀gh ∈ C0,
+
+subject to initial conditions u0
+
+> h
+
+, B0
+
+> h
+
+, H0
+
+> h
+
+. Homogeneous boundary conditions P = 0 , u × n = 0, and 
+
+B × n = 0 are included as natural boundary conditions through boundary integral terms that have vanished in (9a), (9b), and (9d), respectively. For Hh, the boundary condition H × n = 0 is an essential boundary condition and is enforced through space C0. For an extension of the formulation (9) to general boundary conditions, see Appendix B. The analysis is sensitive to boundary conditions, and, in this work, we restrict our analysis to (9), i.e., the formulation for homogeneous boundary conditions (5), only. Different to existing dual-field methods employing two weak formualations that are dual to each other, see for example [3, (13a) - (13c), (13d) - (13f)] and [4, (2.4), (2.5)], the present work uses only one weak formulation (9) that already involves a pair of dual variables, i.e. Bh and Hh, and thus is more concise. 
+
+2.3. Incompressibility, magnetic Gauss’s law, and conservation of current density 
+
+In (9), since we have selected uh ∈ D, the Hilbert complex (7) ensures that the divergence operator maps uh to S surjectively; (9c) guarantees pointwise divergence-free condition for uh,(10) ∇ · uh = 0 .
+
+Namely, the incompressibility is preserved by the formulation. Meanwhile, because we are working with a contractible domain Ω and the image of ∇× on C coincides with the kernel of ∇· on D, (9e) ensures that the time derivative of Bh must be divergence-free, which is saying that, if the initial condition B0
+
+> h
+
+is divergence-free, we have magnetic Gauss law pointwise satisfied, i.e. 
+
+∇ · Bh = 0 .
+
+Due to the same reason, for Hh ∈ C, if we define jh = ∇ × Hh to be the dual-field of charge density, it satisfies conservation of current density, (11) ∇ · jh = 0 ,
+
+Note that magnetic Gauss’s law is only weakly satisfied by Hh ∈ C. A proof can be found in [32] where the same magnetic induction equation as (2) is used. Meanwhile, for jh ∈ C and Bh ∈ D,Ampere’s law (4d) can only be satisfied in a weak sense through integration by parts (9d). As a result, conservation of current density is only weakly satisfied by jh. It is a common phenomenon for dual-fied methods that a certain structure is preserved only by one of the dual-fields [3, 4]. 52.4. Energy law 
+
+The semi-discrete (total) energy is defined as 
+
+Eh := Kh + Mh
+
+where 
+
+Kh := 12 ⟨uh, uh⟩Ω , Mh := c
+
+2 ⟨Bh, Bh⟩Ω
+
+are the kinetic part of the fluid and the magnetic part of the electromagnetic field, respectively. To analyze the time derivative of the semi-discrete energy for the formulation (9), we start with (9a), which holds ∀vh ∈ D and thus must hold for uh ∈ D, namely, (12) ⟨∂tuh, uh⟩Ω + A (ωh, uh, uh) + R−1 
+
+> f
+
+⟨∇ × ωh, uh⟩Ω − cA (jh, Hh, uh) − ⟨ Ph, ∇ · uh⟩Ω = ⟨f , uh⟩Ω .
+
+The second term and the fourth term in (12) then vanish because of the skew-symmetry of the trilinear operator A and the incompressibility (10), respectively. As a result, we have (13) ⟨∂tuh, uh⟩Ω + R−1 
+
+> f
+
+⟨∇ × ωh, uh⟩Ω − cA (jh, Hh, uh) = ⟨f , uh⟩Ω .
+
+We also know from (9b) that, if we select wh to be ωh ∈ C,
+
+⟨uh, ∇ × ωh⟩Ω = ⟨ωh, ωh⟩Ω .
+
+Inserting this equation into (13) finally leads to an expression of the time derivative of the semi-discrete fluid kinetic energy, (14) ∂tKh = ⟨∂tuh, uh⟩Ω = −R−1 
+
+> f
+
+⟨ωh, ωh⟩Ω + cA (jh, Hh, uh) + ⟨f , uh⟩Ω .
+
+Next, since (9d) holds ∀eh ∈ C, it must hold for Eh ∈ C, i.e., 
+
+⟨jh, Eh⟩Ω − ⟨ Bh, ∇ × Eh⟩Ω = 0 .
+
+Meanwhile, since (9e) holds ∀bh ∈ D, it must holds for Bh ∈ D, i.e., 
+
+⟨∂tBh, Bh⟩Ω + ⟨∇ × Eh, Bh⟩Ω = 0 .
+
+These two equations together imply (15) ⟨∂tBh, Bh⟩Ω + ⟨jh, Eh⟩Ω = 0 .
+
+We now select Jh in (9f) to be jh ∈ C and obtain (16) R−1 
+
+> m
+
+⟨jh, jh⟩Ω − ⟨ Eh, jh⟩Ω − A (uh, Hh, jh) + hA (jh, Hh, jh) = 0 .
+
+Note that A (jh, Hh, jh) = 0 because of the skew-symmetry of the trilinear operator A; Hall effect has no influence to the mangetic energy. Using (15) and (16), we can obtain an expression for the time derivative of the semi-discrete magnetic energy, (17) ∂tMh = c ⟨∂tBh, Bh⟩Ω = −cR−1 
+
+> m
+
+⟨jh, jh⟩Ω + cA (uh, Hh, jh) .
+
+With (14) and (17), we can finally find the time derivative of the semi-discrete energy, (18) ∂tEh = ∂tKh + ∂tMh = −R−1 
+
+> f
+
+⟨ωh, ωh⟩Ω − cR−1 
+
+> m
+
+⟨jh, jh⟩Ω + ⟨f , uh⟩Ω ,
+
+which is consistent with the energy law at the continuous level, (6). Moreover, at the ideal limit, Rf =
+
+Rm → ∞ and f = 0, (18) shows the proposed formulation preserves conservation of energy, 
+
+∂tEh = 0 .
+
+Note that in (18) the two trilinear terms, i.e. cA (jh, Hh, uh) and cA (uh, Hh, jh), have canceled out. This cancellation implies the exchange between fluid kinetic energy Kh and magnetic energy Mh is exactly captured, which is a key for the derivation of the semi-discrete energy law (18). In more detail, 6this cancellation (as well as the elimination of the influence on the magnetic energy due to the Hall effect in (16)) is because of the skew-symmetry of the trilinear operator with respect to the first and the third entries. In other words, having Bh or its dual variable Hh as the second entry in these terms does not matter; it will result in the same semi-discrete energy law (18). This, in fact, is a major factor that has encouraged us to introduce dual variables for the magnetic field. By doing so, without a violation of the energy law, we additionally obtain conservation of current density (11) and, more importantly, can design a temporal scheme, as will be explained in the next section, that linearizes the fully discrete formulation while maintaining the conservation properties. We can define a second semi-discrete magnetic energy using Hh as 
+
+fMh := c
+
+2 ⟨Hh, Hh⟩Ω .
+
+By selecting gh in (9g) to be Hh ∈ C0, we have 
+
+⟨∂tHh, Hh⟩Ω + R−1 
+
+> m
+
+⟨∇ × Hh, ∇ × Hh⟩Ω − A (uh, Hh, ∇ × Hh) + hA (∇ × Hh, Bh, ∇ × Hh) = 0 .
+
+We can now once again use the skew-symmetry of the trilinear operator to eliminate the fourth term, which leads to an expression of the time derivative of fMh written as (19) ∂t fMh = c ⟨∂tHh, Hh⟩Ω = −cR−1 
+
+> m
+
+⟨jh, jh⟩Ω + cA (uh, Hh, jh) ,
+
+where jh = ∇ × Hh. (19) shows that fMh has a comparable expression for the dissipation rate over time as Mh, cf. (17). However, jh ∈ D is different from jh ∈ C; they are a pair of dual variables of current density. Therefore, it is not guaranteed that A (uh, Hh, jh) cancels out A (jh, Hh, uh) at the discrete level. As a result, we are not able to derive a semi-discrete energy law as (18) for Kh + fMh from the proposed formulation. 
+
+3. The fully discrete scheme 
+
+Let a set of increasing time instants be (20) 
+
+n
+
+t0, t 12 , t 1, t 1+ 12 , t 2, t 2+ 12 , · · · , t k−1, t t− 12 , t k, t k+ 12 , · · · 
+
+o
+
+,
+
+where t0 = 0 , for k ∈ { 1, 2, 3, · · · } , tk − tk−1 = ∆t is a positive constant, and tk− 12 = tk−1 + tk
+
+2 . We use a superscript to denote the evaluation of a variable at a certain time instant, i.e., for example, 
+
+ukh := uh
+
+ x, t k .
+
+We now propose a leapfrog-type temporal discretization for (9) and the resulting fully discrete scheme reads as follows: Over the time sequence (20), given f ∈ L2(Ω) 3 and 
+
+
+
+u0
+
+> h
+
+, ω0
+
+> h
+
+, B0
+
+> h
+
+, j0
+
+> h
+
+, H 12
+
+> h
+
+
+
+∈ D × C ×
+
+D × C × C0, for k = 1 , 2, 3, · · · , successively, (step 1 ) seek 
+
+
+
+ukh, ωkh, P k− 12 
+
+> h
+
+, Ek− 12 
+
+> h
+
+, Bkh , jkh
+
+
+
+∈ D×C×S×C×D×C, such that, ∀ (vh, wh, q h, eh, bh, Jh) ∈
+
+7D × C × S × C × D × C,
+
+*
+
+ukh − uk−1
+
+> h
+
+∆t , vh
+
++
+
+> Ω
+
++ A ωk−1 
+
+> h
+
+, uk−1 
+
+> h
+
++ ukh
+
+2 , vh
+
+!
+
++ R−1
+
+> f
+
+*
+
+∇ × ωk−1 
+
+> h
+
++ ωkh
+
+2 , vh
+
++
+
+> Ω
+
+(21a) 
+
+−cA jk−1 
+
+> h
+
++ jkh
+
+2 , Hk− 12 
+
+> h
+
+, vh
+
+!
+
+−
+
+D
+
+P k− 12 
+
+> h
+
+, ∇ · vh
+
+E
+
+> Ω
+
+=
+
+D
+
+f k− 12 , vh
+
+E
+
+> Ω
+
+,
+
+ωkh, wh Ω − ukh, ∇ × wh Ω = 0 ,(21b) 
+
+∇ · ukh, q h Ω = 0 ,(21c) 
+
+jkh , eh Ω − Bkh , ∇ × eh Ω = 0 ,(21d) *
+
+Bkh − Bk−1
+
+> h
+
+∆t , bh
+
++
+
+> Ω
+
++
+
+D
+
+∇ × Ek− 12 
+
+> h
+
+, bh
+
+E
+
+> Ω
+
+= 0 ,(21e) 
+
+R−1
+
+> m
+
+*
+
+jk−1 
+
+> h
+
++ jkh
+
+2 , Jh
+
++
+
+> Ω
+
+−
+
+D
+
+Ek− 12 
+
+> h
+
+, Jh
+
+E
+
+> Ω
+
+(21f) 
+
+−A uk−1 
+
+> h
+
++ ukh
+
+2 , Hk− 12 
+
+> h
+
+, Jh
+
+!
+
++ hA jk−1 
+
+> h
+
++ jkh
+
+2 , Hk− 12 
+
+> h
+
+, Jh
+
+!
+
+= 0 ,
+
+(step 2 ) seek Hk+ 12 
+
+> h
+
+∈ C0, such that, ∀gh ∈ C0,(22) 
+
+*
+
+Hk+ 12 
+
+> h
+
+− Hk− 12
+
+> h
+
+∆t , gh
+
++
+
+> Ω
+
++ R−1
+
+> m
+
+*
+
+∇ × Hk− 12 
+
+> h
+
++ Hk+ 12
+
+> h
+
+2 , ∇ × gh
+
++
+
+> Ω
+
+−A ukh, Hk− 12 
+
+> h
+
++ Hk+ 12
+
+> h
+
+2 , ∇ × gh
+
+!
+
++ hA Hk− 12 
+
+> h
+
++ Hk+ 12
+
+> h
+
+2 , Bkh , ∇ × gh
+
+!
+
+= 0 ,
+
+untill tk+ 12 > T or any other critieron is reached. It is seen that, to start the iterations, we need to know 
+
+
+
+u0
+
+> h
+
+, ω0
+
+> h
+
+, B0
+
+> h
+
+, j0
+
+> h
+
+, H 12
+
+> h
+
+
+
+∈ D × C × D × C × C0
+
+in advance. Among them, u0 
+
+> h
+
+and B0 
+
+> h
+
+are given initial conditions, ω0 
+
+> h
+
+and j0 
+
+> h
+
+can be computed through (23) ω0
+
+> h
+
+, wh Ω = u0
+
+> h
+
+, ∇ × wh Ω ∀wh ∈ C,
+
+and (24) j0
+
+> h
+
+, eh Ω = B0
+
+> h
+
+, ∇ × eh Ω ∀eh ∈ C,
+
+respectively, and H 12 
+
+> h
+
+can be computed by solving (25) 
+
+2
+
+*
+
+H 12 
+
+> h
+
+− H0
+
+> h
+
+∆t , gh
+
++
+
+> Ω
+
++ R−1
+
+> m
+
+*
+
+∇ × H0 
+
+> h
+
++ H 12
+
+> h
+
+2 , ∇ × gh
+
++
+
+> Ω
+
+−A u0
+
+> h
+
+, H0 
+
+> h
+
++ H 12
+
+> h
+
+2 , ∇ × gh
+
+!
+
++ hA H0 
+
+> h
+
++ H 12
+
+> h
+
+2 , B0
+
+> h
+
+, ∇ × gh
+
+!
+
+= 0 ∀gh ∈ C0,
+
+where H0 
+
+> h
+
+is also a known initial condition. Once ω0
+
+> h
+
+, j0 
+
+> h
+
+and H 12 
+
+> h
+
+are computed, regular iterations, i.e. (21) and (22) for k = 1 , 2, · · · , can be performed untill tk+ 12 > T or any other critieron is reached; see Fig. 1 for an illustration of the overall time-advancing scheme. So far, we can see a first argument of introducing dual variables of the magnetic field for the proposed scheme; it is to linearize the nonlinear terms that involve the magnetic field while maintaining a second-order accuracy for the temporal discretization of them. In more detail, under this leapfrog-type time-advancing scheme, a step can borrow known information that temporally is at its mid-point from the other step. For example, at the kth iteration, (step 1) (21) first borrows Hk− 12 
+
+> h
+
+, i.e. the output of (step 2) (22) at the (k − 1) st iteration, and then (step 82) (22) borrows Bkh and ukh, outputs of (step 1) (21) at the current iteration. By doing so, the employed second-order implicit-mid-point integrator, instead of, for instance, a first-order explicit Euler integrator, can result in linearized terms in the fully discrete formulations. The time-advancing scheme introduced in this section is easily reusable for the formulation of general boundary conditions in Appendix B. 
+
+
+
+u0
+
+> h
+
+B0
+
+> h
+
+H0
+
+> h
+
+
+
+> (23)(24)(25)
+
+−→ 
+
+
+
+ω0
+
+> h
+
+j0
+
+> h
+
+H 12
+
+> h
+
+
+
+> (21)
+
+−→ 
+
+
+
+u1
+
+> h
+
+ω1
+
+> h
+
+B1
+
+> h
+
+j1
+
+> h
+
+
+
+> (22)
+
+−→ H 32
+
+> h
+> (21)
+
+−→ 
+
+
+
+u2
+
+> h
+
+ω2
+
+> h
+
+B2
+
+> h
+
+j2
+
+> h
+
+
+
+> (22)
+
+−→ H 52 
+
+> h
+
+−→ · · ·                            
+
+> Figure 1: An illustration of the proposed time-advancing scheme. First, using initial conditions, we comptue ω0
+> h,j0
+> h,H12
+> h
+> through (23), (24), (25), respectively. Next, for k= 1 ,2,3,· · · , successively, we compute (step 1) (21) at the kth integer time-step from tk−1to tkand (step 2) (22) at the kth half-integer time-step from tk−12
+> to tk+12
+> in a leapfrog-type scheme untill tk+12> T or any other critieron is reached. For a certain k, (step 1) and (step 2) combined is call the kth iteration.
+
+3.1. Properties of the fully discrete scheme 
+
+Although linearizing the problem is beneficial, whether it preserves the desired structures is a more important question. In this section, we study it for the proposed leapfrog-type time-advancing scheme. For the same reasons as in Section 2.3, except that this time in the context of the fully discrete level, we can easily derive that, if ∇ · B0 
+
+> h
+
+= 0 ,(26) ∇ · ukh = ∇ · Bkh = ∇ · jk− 12 
+
+> h
+
+= ∇ · jk+ 12 
+
+> h
+
+= 0 , k ∈ { 1, 2, 3, · · · } ,
+
+where, for example, jk− 12 
+
+> h
+
+= ∇ × Hk− 12 
+
+> h
+
+. This implies the proposed scheme preserves the incompressibility of the fluid, magnetic Gauss’s law, and conservation of current density at the fully discrete level. Now we study the behavior of the discrete energy for the fully discrete scheme at the kth iteration, 
+
+k ∈ { 1, 2, 3, · · · } . The fully discrete energy at the time instant tl, l ∈ { 0, 1, 2, · · · } , is defined as 
+
+Elh := Klh + Mlh
+
+where 
+
+Klh := 12 ulh, ulh Ω , Mlh := c
+
+2 Blh, Blh Ω
+
+are the kinetic part of the fluid and the magnetic part of the electromagnetic field, respectively. We first take (21a) that holds ∀vh ∈ D and, thus, must hold for uk−1 
+
+> h
+
++ ukh
+
+2 ∈ D,(27) 
+
+*
+
+ukh − uk−1
+
+> h
+
+∆t , uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
++ R−1
+
+> f
+
+*
+
+∇ × ωk−1 
+
+> h
+
++ ωkh
+
+2 , uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
+−cA jk−1 
+
+> h
+
++ jkh
+
+2 , Hk− 12 
+
+> h
+
+, uk−1 
+
+> h
+
++ ukh
+
+2
+
+!
+
+=
+
+*
+
+f k− 12 , uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
+,
+
+where we have dropped the zeroed terms A ωk−1 
+
+> h
+
+, uk−1 
+
+> h
+
++ ukh
+
+2 , uk−1 
+
+> h
+
++ ukh
+
+2
+
+!
+
+and 
+
+*
+
+P k− 12 
+
+> h
+
+, ∇ · uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
+for the skew-symmetry of the trilinear operator and the incompressibility (26), respectively. Note that analyses before (27) do not request that the initial condition u0 
+
+> h
+
+is strictly divergence-free (which com-monly is the case). And, if ∇ · u0
+
+> h
+
+̸ = 0 , (27) and relations dependent will not be valid for k = 1 . Similarly, from (21b) and (23), we must have 
+
+*
+
+ωk−1 
+
+> h
+
++ ωkh
+
+2 , ωk−1 
+
+> h
+
++ ωkh
+
+2
+
++
+
+> Ω
+
+=
+
+*
+
+uk−1 
+
+> h
+
++ ukh
+
+2 , ∇ × ωk−1 
+
+> h
+
++ ωkh
+
+2
+
++
+
+> Ω
+
+9for the linearity of the inner product. With this equation, (27) can be rewritten as 
+
+*
+
+ukh − uk−1
+
+> h
+
+∆t , uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
++ R−1
+
+> f
+
+*
+
+ωk−1 
+
+> h
+
++ ωkh
+
+2 , ωk−1 
+
+> h
+
++ ωkh
+
+2
+
++
+
+> Ω
+
+−cA jk−1 
+
+> h
+
++ jkh
+
+2 , Hk− 12 
+
+> h
+
+, uk−1 
+
+> h
+
++ ukh
+
+2
+
+!
+
+=
+
+*
+
+f k− 12 , uk−1 
+
+> h
+
++ ukh
+
+2
+
++
+
+> Ω
+
+,
+
+which further leads to (28) Kkh − K k−1
+
+> h
+
+∆t = −R−1
+
+> f
+
+D
+
+ωk− 12 , ωk− 12
+
+E
+
+> Ω
+
+− cA
+
+
+
+jk− 12 , Hk− 12 
+
+> h
+
+, uk− 12
+
+
+
++
+
+D
+
+f k− 12 , uk− 12
+
+E
+
+> Ω
+
+,
+
+where we have employed the overlined notations to denote the averaged discrete variables using the mid-point rule, i.e., αk− 12 
+
+> h
+
+= αk−1 
+
+> h
+
++ αkh
+
+2 . Notice the difference between αk− 12 
+
+> h
+
+and αk− 12 
+
+> h
+
+:= α(x, t k− 12 ).Next, taking (21e), we can obtain 
+
+*
+
+Bkh − Bk−1
+
+> h
+
+∆t , Bk−1 
+
+> h
+
++ Bkh
+
+2
+
++
+
+> Ω
+
++
+
+*
+
+∇ × Ek− 12 
+
+> h
+
+, Bk−1 
+
+> h
+
++ Bkh
+
+2
+
++
+
+> Ω
+
+= 0 
+
+as Bk−1 
+
+> h
+
++ Bkh
+
+2 ∈ D. Moreover, from (21d) and (24), we can arrive at 
+
+*
+
+jk−1 
+
+> h
+
++ jkh
+
+2 , Ek− 12
+
+> h
+
++
+
+> Ω
+
+=
+
+*
+
+jk−1 
+
+> h
+
++ jkh
+
+2 , ∇ × Ek− 12
+
+> h
+
++
+
+> Ω
+
+.
+
+These two equations togerther reveal (29) 
+
+*
+
+Bkh − Bk−1
+
+> h
+
+∆t , Bk−1 
+
+> h
+
++ Bkh
+
+2
+
++
+
+> Ω
+
+= −
+
+*
+
+jk−1 
+
+> h
+
++ jkh
+
+2 , Ek− 12
+
+> h
+
++
+
+> Ω
+
+.
+
+Then we revisit (21f) that holds ∀Jh ∈ C and thus must hold for jk−1 
+
+> h
+
++ jkh
+
+2 , which gives (30) 
+
+R−1
+
+> m
+
+*
+
+jk−1 
+
+> h
+
++ jkh
+
+2 , jk−1 
+
+> h
+
++ jkh
+
+2
+
++
+
+> Ω
+
+−
+
+*
+
+Ek− 12 
+
+> h
+
+, jk−1 
+
+> h
+
++ jkh
+
+2
+
++
+
+> Ω
+
+−A uk−1 
+
+> h
+
++ ukh
+
+2 , Hk− 12 
+
+> h
+
+, jk−1 
+
+> h
+
++ jkh
+
+2
+
+!
+
++ hA jk−1 
+
+> h
+
++ jkh
+
+2 , Hk− 12 
+
+> h
+
+, jk−1 
+
+> h
+
++ jkh
+
+2
+
+!
+
+= 0 
+
+With (29) and (30), we can find a discrete time rate of change for the discrete magnetic energy that reads (31) Mkh − M k−1
+
+> h
+
+∆t = −cR−1
+
+> m
+
+D
+
+jk− 12 
+
+> h
+
+, jk− 12
+
+> h
+
+E
+
+> Ω
+
+− cA
+
+
+
+uk− 12 
+
+> h
+
+, Hk− 12 
+
+> h
+
+, jk− 12
+
+> h
+
+
+
+.
+
+Finally, combining (28) and (31), we end up with a discrete time rate of change for the fully discrete energy, namely a fully discrete energy law, (32) Ekh − E k−1
+
+> h
+
+∆t = −R−1
+
+> f
+
+D
+
+ωk− 12 
+
+> h
+
+, ωk− 12
+
+> h
+
+E
+
+> Ω
+
+− cR−1
+
+> m
+
+D
+
+jk− 12 
+
+> h
+
+, jk− 12
+
+> h
+
+E
+
+> Ω
+
++
+
+D
+
+f k− 12 , uk− 12
+
+E
+
+> Ω
+
+,
+
+wheres terms −cA
+
+
+
+jk− 12 , Hk− 12 
+
+> h
+
+, uk− 12
+
+
+
+from (28) and −cA
+
+
+
+uk− 12 
+
+> h
+
+, Hk− 12 
+
+> h
+
+, jk− 12
+
+> h
+
+
+
+from (31) have can-celed each other due to the skew-symmetry of the trilinear operator; the exchange between the fluid kinetic energy and magnetic energy is exactly captured in the fully discrete scheme. We usually have the freedom to define discrete energy and its dissipation law differently at the discrete level using variables at mixed time instants or in modified formats. The discrete energy law (32), in the 10 author’s opinion, is the most canonical counterpart of the continuous version (18) under comparable tem-poral schemes. And we arrive at (32) by construction; it does not depend on exact numerical integrations for computing the inner product and the trilinear terms. The fully discrete energy law (32) is in line with the semi-discrete energy law (18) and the energy law of the strong form (6). Namely, the proposed scheme exactly captures the dissipation in the dissipative case and preserves conservation of energy in the ideal case. One may doubt the necessity of introducing the dual variable Hh and its weak evolution equation (i.e. the weak magnetic induction equation) (9g); solving the Maxwell’s part (9d) - (9f) directly on the half-integer time steps, i.e., as the step 2 of a iteration, see (22), can also linearize the systems and leads to the same discrete energy law under a similar leapfrog-type time-advancing scheme. This is true, but it solves for Eh, Bh, and jh at the half-integer time steps and thus will cause more computational difficulties than solving the single-variable-valued magnetic induction equation. Not to mention that conservation of current density can be only satisfied by the dual variable, jh, of current density. 
+
+3.2. Algebraic form 
+
+Suppose 
+
+dim C = C, dim C0 = C0, dim D = D, and dim S = S.
+
+Let sets 
+
+σ1, σ2, · · · , σC ,
+
+n
+
+σ10 , σ20 , · · · , σC0
+
+> 0
+
+o
+
+, τ 1, τ 2, · · · , τ D , and χ1, χ 2, · · · , χ S ,
+
+be bases of C, C0, D, and S, respectively. For elements in these spaces, their column vectors of expansion coefficients under these bases are denoted with the sign ⃗ ·, for example, 
+
+ωkh = σ1 σ2 · · · σC⃗ω k ∈ C.
+
+Now we can rewrite the fully discrete scheme, (21) and (22), in an algebraic form as follows: Over time sequence (20), given f ∈ L2(Ω) 3 and 
+
+⃗u 0,⃗ ω 0,⃗ B 0,⃗ j 0,⃗ H 12
+
+
+
+∈ RD × RC × RD × RC × RC0 , for 
+
+k = 1 , 2, 3, · · · , successively, (step 1 ) seek 
+
+⃗u k,⃗ ω k,⃗ P k− 12 ,⃗ E k− 12 ,⃗ B k,⃗ j k
+
+
+
+∈ RD×RC×RS×RC×RD×RC, such that, ∀
+
+⃗v,⃗ ω,⃗ q,⃗ e,⃗ b,⃗ J 
+
+
+
+∈
+
+RD × RC × RS × RC × RD × RC,(33) 
+
+ 
+
+> 1
+> ∆t
+
+MD + 12 Ak−1  
+
+> ω12Rf
+
+MD C −DTMS 0 0 − c 
+
+> 2
+
+Ak− 12
+
+> H
+
+−CTMD MC 0 0 0 0
+
+MS D 0 0 0 0 00 0 0 0 −CTMD MC
+
+0 0 0 MD C 1 
+
+> ∆t
+
+MD 0
+
+> 12
+
+
+
+Ak− 12
+
+> H
+
+T
+
+0 0 −MC 0 12Rm MC + h 
+
+> 2
+
+Ak− 12
+
+> H
+
+⃗u k⃗w k⃗P k− 12⃗Ek− 12⃗Bk⃗jk
+
+
+
+=
+
+  1 
+
+> ∆t
+
+MD − 12 Ak−1
+
+> ω
+
+⃗u k−1 − 12Rf MD C⃗ω k−1 + c 
+
+> 2
+
+Ak− 12
+
+> H
+
+⃗ jk−1 + f k− 12
+
+000 
+
+> 1
+> ∆t
+
+MD⃗ Bk−1
+
+− 12
+
+
+
+Ak− 12
+
+> H
+
+T⃗u k−1 −
+
+ 12Rm MC + h 
+
+> 2
+
+Ak− 12
+
+> H
+
+⃗jk−1
+
+
+
+,
+
+(step 2 ) seek ⃗ Hk+ 12 ∈ RC0 , such that, ∀⃗g ∈ R C0 ,(34) 
+
+ 1
+
+∆t MC0 + 12Rm
+
+CT 
+
+> 0
+
+MD C0 − 12 CT 
+
+> 0
+
+Ak 
+
+> u
+
++ h
+
+2 CT 
+
+> 0
+
+Ak
+
+> B
+
+⃗Hk+ 12
+
+=
+
+ 1
+
+∆t MC0 − 12Rm
+
+CT 
+
+> 0
+
+MD C0 + 12 CT 
+
+> 0
+
+Ak 
+
+> u
+
+− h
+
+2 CT 
+
+> 0
+
+Ak
+
+> B
+
+⃗Hk− 12 ,
+
+untill tk+ 12 > T or any other critieron is reached. 11 The involved notations also include the symmetric mass matrices MC , MC0 , MD and MS of C, C0,
+
+D and S, respectively. For example, the entry at the ith row and the jth column of MC is 
+
+MC |i,j = σi, σj 
+
+> Ω
+
+, i, j ∈ { 1, 2, · · · , C} .
+
+Matrices C, C0, D are the discrete curl and divergence operators on C, C0 and D, respectively. And 
+
+f k− 12 is a column vector whose ith entry is 
+
+f k− 12
+
+> i
+
+=
+
+D
+
+f k− 12 , τ iE
+
+> Ω
+
+, i ∈ { 1, 2, · · · , D} .
+
+The matrices with respect to the trilinear terms are Ak−1 
+
+> ω
+
+, Ak− 12 
+
+> H
+
+, Ak− 12 
+
+> H
+
+, Ak 
+
+> u
+
+and Ak 
+
+> B
+
+whose entries can be computed by 
+
+Ak−1 
+
+> ω
+
+= A  ωk−1 
+
+> h
+
+, τ i, τ j  , i, j ∈ { 1, 2, · · · , D} ,
+
+Ak− 12 
+
+> H
+
+= A
+
+
+
+σi, Hk− 12 
+
+> h
+
+, τ j 
+
+, i ∈ { 1, 2, · · · , C} , j ∈ { 1, 2, · · · , D}
+
+Ak− 12 
+
+> H
+
+= A
+
+
+
+σi, Hk− 12 
+
+> h
+
+, σj 
+
+, i, j ∈ { 1, 2, · · · , C} ,
+
+Ak 
+
+> u
+
+= A  ukh, σi
+
+> 0
+
+, τ j  , i ∈ { 1, 2, · · · , C0} , j ∈ { 1, 2, · · · , D} ,
+
+Ak 
+
+> B
+
+= A  σi
+
+> 0
+
+, Bkh , τ j  , i ∈ { 1, 2, · · · , C0} , j ∈ { 1, 2, · · · , D} .
+
+We can also derive the algebraic forms, 
+
+MC⃗ω 0 = CTMD⃗u 0,
+
+MC⃗ j0 = CTMD⃗ B0,
+
+ 2
+
+∆t MC0 + 12Rm
+
+CT 
+
+> 0
+
+MD C0 − 12 CT 
+
+> 0
+
+A0 
+
+> u
+
++ h
+
+2 CT 
+
+> 0
+
+A0
+
+> B
+
+⃗H 12 =
+
+ 2
+
+∆t MC0 − 12Rm
+
+CT 
+
+> 0
+
+MD C0 + 12 CT 
+
+> 0
+
+A0 
+
+> u
+
+− h
+
+2 CT 
+
+> 0
+
+A0
+
+> B
+
+⃗H0,
+
+of the systems, (23) - (25), respectively, for ⃗ω 0,⃗ j0 and ⃗ H 12 that should be solved ahead of regular iterations subject to known initial conditions ⃗u 0,⃗ B0 and ⃗ H0. Recall the over time-advancing scheme in Fig. 1. We may take the time to reflect upon the algebraic form (33). If we regard (33) as a standard Ax = b
+
+form, in its A matrix we can see a clear coupled structure of the Navier-Stokes part and the Maxwell part; the top-left Navier-Stokes part is coupled with the bottom-right Maxwell part through the trilinear terms with respect to jh, Hh and uh whose algebraic representations now have their places at the top-right and bottom-left corners of A.
+
+4. Numerical tests 
+
+In this section, we present three numerical tests: a temporal accuracy test, a spatial accuracy test, and a test for the structure-preserving properties. We use mimetic spectral spaces [33, 34, 35] as our finite-dimensional spaces. Any other set of finite-dimensional spaces that satisfies the discrete Hilbert complex (7) and the regularity (8) works. The programme is coded in Python. The source code and all data are available on request. 
+
+4.1. Temporal accuracy test 
+
+For a given set of parameters Rf , Rm, c and h, we consider manufactured expressions, 
+
+u1 =
+
+
+
+cos x sin y sin z e t
+
+sin x cos y sin z e t
+
+−2 sin x sin y cos z e t
+
+ , E′ 
+
+> 1
+
+=
+
+
+
+sin x cos y e t
+
+− sin y cos z e t
+
+− cos x sin z e t
+
+ , B01 = 0, and P1 = sin x sin y sin z e −t.
+
+From them, we compute B1, j1 and E1 using equations (4e), (4d) and (4f), i.e., 
+
+B1 = −
+
+Z T
+
+> 0
+
+∇ × E′ 
+
+> 1
+
+dt, j1 = ∇ × B1, E1 = R−1 
+
+> m
+
+j1 − u1 × B1 + hj1 × B1,
+
+12 and we will find that E1̸ = E′
+
+> 1
+
+. To balance the equations, we introduce an extra magnetic source term 
+
+m1 := ∇ × (E1 − E′
+
+> 1
+
+) such that 
+
+∂tB1 + ∇ × E1 = m1.
+
+This is common in tests of numerical methods for (Hall) MHD problems (also see [2, Section 4.1]) since it is usually very difficult to construct a set of manufactured solutions free of a magnetic source term. Discrete formulations with the magnetic source term can be easily derived accordingly. Finally, the manufactured solutions used in this test are (37) u1, ω1, P1, E1, B1, j1,
+
+subject to source terms, i.e. the external body force f1 and the magnetic source m1. Expressions of ω1
+
+and f1 can be calculated through (4b) and (4a), respectively. The space-time domain is selected to be Ω1 × (0 , T 1] := [0 , 2π]3 × (0 , 1] . One can prove that, on this domain, boundary conditions (5) and the divergence-free condition of the initial condition B01 are satisfied by the manufactured solutions (37). A mesh of K3 uniform cubic elements is employed, and 
+
+h = 2πK is the element edge length. We use N to indicate the degree of the finite-dimensional spaces. Errors of solutions at the last iteration, i.e. the kth iteration whose tk+ 12 > T 1, are measured in different norms. In Fig. 2, we present some results of the temporal accuracy test for N = 3 , K = 6 , Rf = Rm = c =
+
+h = 1 , and ∆t ∈  19 , 110 , · · · , 114 . These results show that a second-order accuracy is observed for all temporal derivative-related variables, Bkh , Hk+ 12 
+
+> h
+
+, and ukh.10 −1     
+
+> 7×10 −29×10 −2
+
+∆t            
+
+> 3×10 −4
+> 4×10 −4
+> 6×10 −4
+> ∥∥Bkh
+> ∥∥H(div)-error
+> 210 −1
+> 7×10 −29×10 −2
+
+∆t          
+
+> 2×10 −3
+> 3×10 −3
+> ∥∥∥Hk+12
+> h
+> ∥∥∥H(curl)-error
+> 210 −1
+> 7×10 −29×10 −2
+
+∆t                            
+
+> 2×10 −5
+> 3×10 −5
+> ∥∥ukh
+> ∥∥H(div)-error
+> 2
+> Figure 2: Results of the temporal accuracy test for N= 3 ,K= 6 ,Rf=Rm=c=h= 1 , and ∆t ∈19,110 ,· · · ,114 .
+
+4.2. Spatial accuacy test 
+
+We use the same configuration as in Section 4.1 but with different spatial parameters for this test. Some results for Rf = Rm = c = h = 1 and N ∈ { 1, 2} under different h-refinements are shown in Fig. 3. The time interval is selected to be ∆t = 1100 to avoid the interference of the temporal error. Optimal spatial convergence rates are observed in these results. 
+
+4.3. Structure-preservation test 
+
+To test the properties of structure-preservation, we select initial conditions to be (38) B02 = u02 =
+
+
+
+z(z − 1) cos πx sin πy z(1 − z) sin πx cos πy 
+
+0
+
+ .
+
+The computational space-time domain is Ω2 × (0 , T 2] := [0 , 1] 3 × (0 , 1] . A uniform mesh of K3 cubic elements is firstly generated in a reference domain Ωref := [0 , 1] 3 of a Cartesian coordinate system (r, s, t ).13 3 × 10 −1 4 × 10 −1 5 × 10 −1
+
+h          
+
+> 10 0
+> 10 1
+> ∥∥ukh
+> ∥∥H(div)-error  12
+> N= 1
+> N= 2 3×10 −14×10 −15×10 −1
+
+h        
+
+> 10 0
+> 10 1
+> ∥∥ωkh
+> ∥∥H(curl)-error  123×10 −14×10 −15×10 −1
+
+h        
+
+> 10 0
+> ∥∥∥Hk+12
+> h
+> ∥∥∥H(curl)-error  123×10 −14×10 −15×10 −1
+
+h        
+
+> 10 0
+> 10 1
+> ∥∥Ekh
+> ∥∥H(curl)-error  123×10 −14×10 −15×10 −1
+
+h        
+
+> 10 0
+> ∥∥Bkh
+> ∥∥H(div)-error  123×10 −14×10 −15×10 −1
+
+h                               
+
+> 10 0
+> ∥∥jkh
+> ∥∥L2-error  12Figure 3: Results of the spatial accuracy test for Rf=Rm=c=h= 1 ,∆=1100 and N∈ { 1,2}.For N= 1 ,
+> K∈ { 16 ,18 ,· · · ,26 }. And for N= 2 ,K∈ { 12 ,14 ,16 ,18 }.
+
+This mesh is then transformed into Ω2 under a nonlinear mapping, (39) 
+
+
+
+x = r + 12 c sin 2 πr sin 2 πs sin 2 πt y = s + 12 c sin 2 πr sin 2 πs sin 2 πt z = t + 12 c sin 2 πr sin 2 πs sin 2 πt .
+
+An illustration of this mesh can be found in Fig. 4, where its two-dimensional version, which more clearly illustrates the distortion of the mapping, is also shown. We use Gauss quadrature for the numerical integration in this paper. The metric behind (39) cannot be captured by Gauss quadrature; the numerical integration is not exact. With initial conditions (38), on the mesh of K = 9 , the simulation employing the present method is executed under the boundary conditions (5) and a zero external body force for parameters Rf = Rm = 100 and c = h = 1 with finite-dimensional spaces of a degree N = 2 .In Fig. 5, some results of the structure-preservation test are shown. From them, we can see that the discrete energy law (32) and pointwise structures of conservation of mass, magnetic Gauss law, and conservation of current density are all satisfied to the machine precision during the simulation. Due to the fact that no exact numerical integration is used during the simulation, these results support the claim that the present method is structure-preserving by construction. 
+
+5. Conclusions 
+
+This work presents a novel linear structure-preserving mixed finite element discretization of the in-compressible Hall MHD problem. The scheme satisfies pointwise incompressibility of the fluid, magnetic Gauss’s law, and conservation of current density. It also obeys an energy law by construction such that it captures the energy dissipation exactly in the dissipative case and preserves conservation of energy in the ideal case. The method is easy to implement in the sense that it only uses the mixed finite element method together with a carefully designed temporal scheme. Further work of this method includes the extension to conservation of a hybrid helicity and a temporally decoupling scheme that decouples the Navier-Stokes part from the Maxwell part of the Hall MHD model. 14 Figure 4: Left: An illustration of the mesh used in the structure-preservation test for K = 3 . Right: The two-dimensional version of the mesh for K = 15 that more clearly illustrates the distortion in the mesh. 0.0 0.2 0.4 0.6 0.8 1.0
+
+tk
+
+−14 
+
+−13 
+
+−12 
+
+−11 log 10 
+
+> (∣ ∣∣∣
+> Ekh − E k−1
+> h
+> ∆t  + Dk−12
+> h
+> ∣∣∣∣)
+
+0.0 0.2 0.4 0.6 0.8 1.0
+
+tk
+
+−14 .5
+
+−14 .4
+
+−14 .3
+
+−14 .2
+
+−14 .1
+
+−14 .0log 10 
+
+> (∥ ∥∇ ·  ukh
+> ∥∥L2
+> )
+
+0.0 0.2 0.4 0.6 0.8 1.0
+
+tk
+
+−12 .56 
+
+−12 .54 
+
+−12 .52 
+
+−12 .50 log 10 
+
+> (∥ ∥∇ ·  Bkh
+> ∥∥L2
+> )
+
+0.0 0.2 0.4 0.6 0.8 1.0
+
+tk
+
+−14 .0
+
+−13 .8
+
+−13 .6
+
+−13 .4
+
+−13 .2
+
+−13 .0log 10 
+
+> (∥ ∥∥∇ ·  jk+12
+> h
+> ∥∥∥L2
+> )
+
+Figure 5: Some results of the structure-preservation test for K = 9 , N = 2 , Rf = Rm = 100 and c = h = 1 . We have introduced Dk− 12 
+
+> h
+
+:= R−1
+
+> f
+
+
+
+ωk− 12 
+
+> h
+
+, ωk− 12
+
+> h
+
+
+
+> Ω
+
++ cR−1
+
+> m
+
+
+
+jk− 12 
+
+> h
+
+, jk− 12
+
+> h
+
+
+
+> Ω
+
+to represent the dissipation rate of energy, c.f. (32). 
+
+Acknowledgments 
+
+This work is supported by the Natural Science Foundation of Guangxi under grant number 2024JJB110005. The author acknowledges dr. Andrea Brugnoli, dr. Artur Palha, dr. Deepesh Toshniwal and dr. Marc Gerritsma for helpful discussions. 
+
+References 
+
+[1] F. Laakmann, K. Hu, P. E. Farrell, Structure-preserving and helicity-conserving finite element approximations and preconditioning for the Hall MHD equations, Journal of Computational Physics 492 (2023) 112410. 
+
+15 [2] S. Guo, L. Mei, W. Yan, A linearly implicit spectral scheme for the three-dimensional Hall-MHD system, SIAM Journal on Scientific Computing 46 (5) (2024) B752–B783. [3] Y. Zhang, A. Palha, M. Gerritsma, L. G. Rebholz, A mass-, kinetic energy- and helicity-conserving mimetic dual-field discretization for three-dimensional incompressible Navier-Stokes equations, part I: Periodic do-mains, Journal of Computational Physics 451 (2022) 110868. [4] S. Mao, R. Xi, An incompressibility, div B=0 preserving, current density, helicity, energy-conserving finite element method for incompressible MHD systems, Journal of Computational Physics 538 (2025) 114130. [5] F. H. Harlow, J. E. Welch, et al., Numerical calculation of time-dependent viscous incompressible flow of fluid with free surface, Physics of fluids 8 (12) (1965) 2182. [6] P. A. Raviart, J. M. Thomas, A mixed finite element method for 2nd order elliptic problems, Mathematical Aspects of the Finite Element Method, Lecture Notes in Mathematics 606 (1977) 292–315. [7] J. C. Nédélec, Mixed finite elements in R3, Numer. Math. 35 (1980) 315–341. [8] D. Boffi, F. Brezzi, M. Fortin, Mixed Finite Element Methods and Applications, Springer, 2013. [9] D. N. Arnold, A. Logg, Periodic table of the finite elements, Siam News 47 (9) (2014). [10] P. B. Bochev, J. M. Hyman, Principles of mimetic discretizations of differential operators, in: Compatible spatial discretizations, Springer, 2006, pp. 89–119. [11] A. N. Hirani, Discrete exterior calculus, California Institute of Technology, 2003. [12] E. Tonti, The mathematical structure of classical and relativistic physics, Vol. 10, Springer, 2013. [13] D. N. Arnold, R. S. Falk, R. Winther, Finite element exterior calculus, homological techniques, and applica-tions, Acta numerica 15 (2006) 1–155. [14] D. Arnold, R. Falk, R. Winther, Finite element exterior calculus: from Hodge theory to numerical stability, Bulletin of the American mathematical society 47 (2) (2010) 281–354. [15] J. Brackbill, D. Barnes, The effect of nonzero ∇ · B on the numerical solution of the magnetohydrodynamic equations, Journal of Computational Physics 35 (3) (1980) 426–430. [16] R. Hiptmair, L. Li, S. Mao, W. Zheng, A fully divergence-free finite element method for magnetohydrody-namic equations, Mathematical Models and Methods in Applied Sciences 28 (04) (2018) 659–695. [17] Q. Ding, X. Long, S. Mao, R. Xi, Second order unconditionally convergent fully discrete scheme for incom-pressible vector potential MHD system, Journal of Scientific Computing 100 (2024). [18] G. Tóth, The ∇ · B = 0 constraint in shock-capturing magnetohydrodynamics codes, Journal of Computa-tional Physics 161 (2) (2000) 605–652. [19] D. S. Balsara, J. Kim, A comparison between divergence-cleaning and staggered-mesh formulations for nu-merical magnetohydrodynamics, The Astrophysical Journal 602 (2) (2004) 1079. [20] C. R. Evans, J. F. Hawley, Simulation of magnetohydrodynamic flows: A constrained transport method, The Astrophysical Journal 332 (1988) 659–677. [21] X. Zhang, H. Su, X. Li, A fully discrete finite element method for a constrained transport model of the incompressible MHD equations, ESAIM: M2AN 57 (5) (2023) 2907–2930. [22] T. Heister, M. Mohebujjaman, L. G. Rebholz, Decoupled, unconditionally stable, higher order discretizations for MHD flow simulation, Journal of Scientific Computing 71 (2017) 21–43. [23] J. Droniou, L. Yemm, A hybrid high-order scheme for the stationary, incompressible magnetohydrodynamics equations, IMA Journal of Numerical Analysis 44 (1) (2023) 262–296. [24] K. Hu, Y.-J. Lee, J. Xu, Helicity-conservative finite element discretization for incompressible MHD systems, Journal of Computational Physics 436 (2021) 110284. [25] E. S. Gawlik, F. Gay-Balmaz, A finite element method for MHD that preserves energy, cross-helicity, magnetic helicity, incompressibility, and div · B = 0 , Journal of Computational Physics 450 (2022) 110847. [26] X. Zhang, H. Su, A decoupled, unconditionally energy-stable and structure-preserving finite element scheme for the incompressible MHD equations with magnetic-electric formulation, Computers & Mathematics with Applications 146 (2023) 45–59. [27] J. Shen, J. Xu, J. Yang, The scalar auxiliary variable (SAV) approach for gradient flows, Journal of Compu-tational Physics 353 (2018) 407–416. [28] J. Shen, J. Xu, J. Yang, A new class of efficient and robust energy stable schemes for gradient flows, SIAM Review 61 (3) (2019) 474–506. [29] L. Lin, Z. Yang, S. Dong, Numerical approximation of incompressible Navier-Stokes equations based on an auxiliary energy variable, Journal of Computational Physics 388 (2019) 1–22. [30] M. Pan, S. Liu, W. Zhu, F. Jiao, D. He, A linear, second-order accurate, positivity-preserving and uncon-ditionally energy stable scheme for the Navier–Stokes–Poisson–Nernst–Planck system, Communications in Nonlinear Science and Numerical Simulation 131 (2024) 107873. [31] G.-D. Zhang, X. He, X. Yang, A fully decoupled linearized finite element method with second-order temporal accuracy and unconditional energy stability for incompressible MHD equations, Journal of Computational Physics 448 (2022) 110752. [32] Y. Zhang, A. Palha, A. Brugnoli, D. Toshniwal, M. Gerritsma, Decoupled structure-preserving discretization of incompressible MHD equations with general boundary conditions, arXiv:2410.23973 (2025). 
+
+16 [33] J. Kreeft, M. Gerritsma, Mixed mimetic spectral element method for Stokes flow: A pointwise divergence-free solution, Journal of Computational Physics 240 (2013) 284–309. [34] A. Palha, P. P. Rebelo, R. Hiemstra, J. Kreeft, M. Gerritsma, Physics-compatible discretization techniques on single and dual grids, with application to the Poisson equation of volume forms, Journal of Computational Physics 257 (2014) 1394–1422. [35] Y. Zhang, J. Fisser, M. Gerritsma, A hybrid mimetic spectral element method for three-dimensional linear elasticity problems., Journal of Computational Physics 433 (2021) 110179. 
+
+Appendix A. Differential forms of Hall MHD equations 
+
+The Hall MHD equations, (1), can be written in differential forms as 
+
+∂tu2 + ω1 ∧ ⋆u 2 + R−1 
+
+> f
+
+dω1 − cj1 ∧ ⋆B 2 + d ∗P 3 = f 2,(A.1a) 
+
+ω1 = d ∗u2,(A.1b) 
+
+du2 = 0 3,(A.1c) 
+
+j1 = d ∗B2,(A.1d) 
+
+∂tB2 + d E1 = 0 2,(A.1e) 
+
+R−1 
+
+> m
+
+j1 −  E1 + ⋆  ⋆u 2 ∧ ⋆B 2 + h ⋆  j1 ∧ ⋆B 2 = 0 1,(A.1f) where the variables, i.e. u, ω, P , E, B j , f of (1), are now expressed as differential forms (or simply forms), u2, ω1, P 3, E1, B2, j1 and f 2. The superscript, for example, k of αk, denotes that the form is a 
+
+k-form. Other notations are wedge product ∧, Hodge-⋆ operator, exterior derivative d, and codifferential 
+
+d∗. We use 0k to express a zero-valued k-form. In three dimensions (d = 3) , we have, for k ∈ { 0, 1, 2, 3},(A.2) ⋆A k = Ad−k, ⋆ ⋆ A k = Ak,
+
+and, for l ∈ { 1, 2, 3},(A.3) d∗Bl = ( −1) d(l+1)+1 ⋆ d ⋆ B l.
+
+We now introduce the following dual forms, (A.4) H1 = ⋆B 2, E2 = ⋆E 1, j2 = ⋆j 1.
+
+And if we apply a Hodge-⋆ to (A.1e), we obtain 
+
+∂t ⋆ B 2 + ⋆ d ⋆ E 2 = ⋆02,
+
+i.e., from (A.3) and (A.4), (A.5) ∂tH1 + d ∗E2 = 0 1.
+
+Similarly, we can apply a Hodge-⋆ to (A.1f) and, according to (A.2) and (A.4), get (A.6) R−1 
+
+> m
+
+j2 −  E2 +  ⋆u 2 ∧ H1 + h  j1 ∧ H1 = 0 2.
+
+We also know from (A.1d), i.e., j1 = d ∗B2, that 
+
+j1 (A.3) 
+
+= ⋆ d ⋆ B 2 (A.4) 
+
+= ⋆ dH1,
+
+and 
+
+j2 (A.4) 
+
+= ⋆j 1 = ⋆ ⋆ dH1 (A.2) 
+
+= dH1.
+
+Thus, (A.6) can be written as (A.7) E2 = R−1 
+
+> m
+
+dH1 − ⋆u 2 ∧ H1 + h  ⋆dH1 ∧ H1 .
+
+17 Combining (A.5) and (A.7) finally leads to an evolution equation for H1,(A.8) ∂tH1 + R−1 
+
+> m
+
+d∗dH1 − d∗  ⋆u 2 ∧ H1 + h d∗  ⋆dH1 ∧ H1 = 0 1.
+
+Grouping (A.1) and (A.8) and using H1 = ⋆B 2, we get a version of (4) in differential forms, 
+
+∂tu2 + ω1 ∧ ⋆u 2 + R−1 
+
+> f
+
+dω1 − cj1 ∧ H1 + d ∗P 3 = f 2,ω1 = d ∗u2,
+
+du2 = 0 3,j1 = d ∗B2,∂tB2 + d E1 = 0 2,R−1 
+
+> m
+
+j1 −  E1 + ⋆  ⋆u 2 ∧ H1 + h ⋆  j1 ∧ H1 = 0 1,∂tH1 + R−1 
+
+> m
+
+d∗dH1 − d∗  ⋆u 2 ∧ H1 + h d∗  ⋆dH1 ∧ ⋆B 2 = 0 1.
+
+Appendix B. The formulation for general boundary conditions 
+
+Let Γ ˆP , Γˆu , {Γbu, Γbω }, and Γ bB , Γ bE be three partitions of the complete boundary ∂Ω, i.e., for example, Γ ˆP ∩ Γˆu = ∂Ω, Γ ˆP ∪ Γˆu = ∅. A general setting of boundary conditions for the Hall MHD equations (4) is (B.1) 
+
+(
+
+P = ˆP on Γ ˆP
+
+u · n = ˆ u on Γˆu
+
+,
+
+(u × n = bu on Γbu
+
+ω × n = bω on Γbω
+
+,
+
+(B × n = H × n = bB on Γ bB
+
+E × n = bE on Γ bE
+
+.
+
+When Γˆu = Γ bω = Γ bE = ∅, ˆP = 0 , and bu = bB = 0, it becomes the particular configuration (5). Under the general setting of boundary conditions (B.1), and let T be the trace operator, the mixed weak formulation (9) is now given in a version for general boundary conditions as follows. Given 
+
+fh ∈ D and boundary conditions ˆP ∈ T H1(Ω , Γ ˆP ), ˆu ∈ T H(Ω; div , Γ ˆP ), bu ∈ T H(Ω; curl , Γbu), bω ∈T H(Ω; curl , Γbu), bB ∈ T H(Ω; curl , Γ bB ), and bE ∈ T H(Ω; curl , Γ bE ), seek (uh, ωh, P h, Eh, Bh, jh, Hh) ∈
+
+D × C × S × C × D × C × C, such that 
+
+⟨∂tuh, vh⟩Ω + A (ωh, uh, vh) + R−1 
+
+> f
+
+⟨∇ × ωh, vh⟩Ω
+
+−cA (jh, Hh, vh) − ⟨ Ph, ∇ · vh⟩Ω = ⟨fh, vh⟩Ω −
+
+D ˆP , vh · n
+
+E 
+
+> ΓˆP
+
+, ∀vh ∈ D,
+
+⟨ωh, wh⟩Ω − ⟨ uh, ∇ × wh⟩Ω = − ⟨ bu, wh⟩Γ bu , ∀wh ∈ C,
+
+⟨∇ · uh, q h⟩Ω = 0 , ∀qh ∈ S, 
+
+⟨jh, eh⟩Ω − ⟨ Bh, ∇ × eh⟩Ω = −
+
+D bB, eh
+
+E
+
+> ΓcB
+
+, ∀eh ∈ C,
+
+⟨∂tBh, bh⟩Ω + ⟨∇ × Eh, bh⟩Ω = 0 , ∀bh ∈ D,R−1 
+
+> m
+
+⟨jh, Jh⟩Ω − ⟨ Eh, Jh⟩Ω − A (uh, Hh, Jh) + hA (jh, Hh, Jh) = 0 , ∀Jh ∈ C,
+
+⟨∂tHh, gh⟩Ω + R−1 
+
+> m
+
+⟨∇ × Hh, ∇ × gh⟩Ω − A (uh, Hh, ∇ × gh)+hA (∇ × Hh, Bh, ∇ × gh) = 
+
+D bE, gh
+
+E 
+
+> ΓbE
+
+, ∀gh ∈ C,
+
+subject to boundary conditions uh · n = ˆ u on Γˆu, ω × n = bω on Γbω , E × n = bE on Γ bE , and H × n = bB
+
+on Γ bB , and initial conditions u0
+
+> h
+
+, B0
+
+> h
+
+, and H0
+
+> h
+
+. It is clear that, when Γˆu = Γ bω = Γ bE = ∅, ˆP = 0 , and 
+
+bu = bB = 0, it reduces to the formulation (9). 18

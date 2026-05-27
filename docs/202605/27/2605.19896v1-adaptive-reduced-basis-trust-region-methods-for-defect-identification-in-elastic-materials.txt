@@ -1,0 +1,2689 @@
+Title: Adaptive Reduced-Basis Trust-Region Methods for Defect Identification in Elastic Materials
+
+URL Source: https://arxiv.org/pdf/2605.19896v1
+
+Published Time: Wed, 20 May 2026 01:20:36 GMT
+
+Number of Pages: 44
+
+Markdown Content:
+# Adaptive Reduced-Basis Trust-Region Methods for Defect Identification in Elastic Materials 
+
+## Benedikt Klein 1* , Mario Ohlberger 1 and Thomas Schuster 21Applied Mathematics: Institute for Analysis and Numerics, University of M¨ unster, Einsteinstr. 62, M¨ unster, 48149, Germany. 
+
+2Department of Mathematics, Saarland University, Campus, Saarbr¨ ucken, 66123, Germany. *Corresponding author(s). E-mail(s): benedikt.klein@uni-muenster.de; Contributing authors: mario.ohlberger@uni-muenster.de; thomas.schuster@num.uni-sb.de; 
+
+Abstract 
+
+Monitoring the integrity of elastic structures using ultrasonic waves requires the efficient identification of material parameters from measured surface dis-placements. The displacement field is governed by Cauchy’s equation of motion, i.e., an elastic wave equation. Consequently, defect localization leads to a high-dimensional spatial parameter identification problem for a hyperbolic system with given initial and boundary conditions. Stable parameter reconstructions typically rely on regularization techniques such as the iteratively regularized Gauss– Newton method (IRGNM). However, its practical application is computationally demanding due to the high-dimensional nature of the problem. To address this bottleneck, we propose a reduced-order modeling approach that simultaneously reduces the state and parameter spaces using adaptively con-structed reduced-basis spaces. This yields online-efficient surrogate models for both the forward and adjoint evaluations required in derivative-based optimiza-tion. To ensure reliability, the IRGNM iteration is embedded into an adaptive, trust-region framework that provides accuracy of the reduced-order approxima-tions. The approach extends our recent contributions in [1, 2], which focus on elliptic and parabolic problems, to the hyperbolic setting. We demonstrate the reliability and effectiveness of the method for defect detection through numerical experiments. 
+
+Keywords: parameter identification, model reduction, inverse problems, hyperbolic PDEs, Gauss-Newton methods 
+
+1 
+
+> arXiv:2605.19896v1 [math.NA] 19 May 2026 MSC Classification: 35R30 , 35K90 , 65M32 , 35K57
+
+# 1 Introduction 
+
+Detecting defects or impurities in (hyper)elastic materials is crucial in many indus-trial sectors, for example, in aerospace and biomedicine. In recent decades, a variety of Structural Health Monitoring (SHM) systems have been developed, enabling non-destructive defect detection. These systems typically consist of a set of actuators and sensors attached to the surface of the structure, cf. [3, 4]. The basic idea is that actua-tors generate waves that propagate through the material and interact with defects, for example, through reflection and scattering, before being measured by sensors. Based on these measurements, spatially distributed material parameters are reconstructed to infer the presence and location of defects. In this work, we restrict our attention to the reconstruction of the stored energy function of a linear elastic material characterized by a spatially distributed parameter field. In particular, our objective is to recover spatial variations of the Lam´ e parameters relative to a homogeneous background to identify deviations indicative of defects. 
+
+Defect detection in elastic materials. We briefly review related approaches for defect detection and parameter identification in elasticity. Dynamic Load Monitor-ing (DLM), i.e., the reconstruction of time-dependent loads from measurement data in order to infer structural damage, constitutes an important class of inverse prob-lems in structural health monitoring; see, e.g., [5–11]. General overviews on inverse elasticity and elasticity imaging are given in [12–15]. Classical model order reduction approaches applied to structural health monitoring have been investigated in [16, 17] and recently generalized to a multi-fidelity surrogate modeling approach in [18]. In recent years, machine-learning-based approaches for the identification of elastic mate-rial parameters and constitutive relations have gained increasing attention, cf. [19–23]. At the same time, iterative methods for nonlinear inverse parameter identification in hyperelastic materials have been investigated in [24–26]. In this setting, wave propa-gation is described by nonlinear hyperbolic systems, for which uniqueness results have been established in [27]. A major challenge shared by many of these approaches is the high computational cost arising from the repeated solution of large-scale forward problems during the iter-ative reconstruction process. In particular, accurate simulations of wave propagation phenomena require fine finite element discretizations and, consequently, large compu-tational resources. Consequently, practical implementations often rely either on coarse discretizations, which may deteriorate reconstruction quality, or on early stopping of the iterative schemes, leading to insufficient parameter reconstructions. The present work addresses this challenge by combining iterative parameter identification with adaptive reduced-order modeling techniques to significantly reduce computational complexity while maintaining reconstruction accuracy. 
+
+Trust-region reduced-basis parameter identification. In the present work, we focus on iteratively regularized Gauss–Newton-type methods (IRGNM) for inverse 2parameter identification problems. Such methods have been extensively studied from both mathematical and numerical perspectives, see, e.g., [28–35]. To alleviate the computational challenges discussed above, we incorporate Model order reduction (MOR) techniques into the iterative reconstruction procedure. Reduced-order model-ing approaches for accelerating inverse problems have previously been investigated in [36–40]. The main idea of MOR is to replace the high-dimensional full-order model by a low-dimensional surrogate that accurately approximates the forward and, if required, the associated adjoint problems. General introductions to MOR can be found in [41, 42]. The present work extends the adaptive trust-region reduced-basis framework intro-duced in [1, 2] to inverse parameter identification problems constrained by Cauchy’s equation of motion from continuum mechanics, cf. [43]. A central component of the approach is the iterative construction of low-dimensional reduced spaces using snapshot-based techniques such as proper orthogonal decomposition (POD) [44–46]. In contrast to classical reduced-basis methods relying on globally constructed approx-imation spaces, the reduced models are generated adaptively within the trust-region iteration. More precisely, solution snapshots corresponding to the current parameter iterates are used to incrementally enrich the reduced spaces, yielding surrogate models that accurately capture the local behavior of the full-order system. The trust-region framework controls the optimization by restricting parameter updates to regions in which the reduced-order model provides sufficiently accurate approximations. In this way, the proposed approach significantly reduces computational cost while maintaining reconstruction accuracy for large-scale inverse problems in elasticity. 
+
+Main result. This work introduces a novel simulation framework for defect iden-tification in elastic materials by applying error aware trust-region methods combined with reduced-basis surrogates to inverse problems governed by hyperbolic PDEs. The proposed approach combines parameter and state reduction for the reconstruction of spatially distributed parameter fields, demonstrated by the identification of the stored energy function of an elastic material. A central contribution of this work is the extension of the trust-region-Iteratively Regularized Gauss Newton Methods frame-work to inverse problems constrained by hyperbolic PDEs. In this context, we derive an a posteriori error estimator for the reduced-order model. Although the estima-tor is found to be overly conservative for direct use within the optimization loop, it provides a rigorous error control mechanism for the reduced formulation. More-over, we consider observation operators representing realistic sensor measurements rather than assuming full-state observations. Numerical experiments demonstrate that the proposed approach significantly reduces computational cost while maintain-ing reconstruction accuracy compared to standard finite-element-based optimization methods. The numerical experiments are enabled by a substantial extension of the existing pyMOR -based software framework [47], including support for full-order models implemented in deal.II [48]. 
+
+Organization of the article. In Section 2.1, the problem of identifying mate-rial parameters in (hyper)elastic materials is formulated. In particular, we specify the assumptions on the stored energy function that guarantee well-posedness of the result-ing inverse problem. In Sections 2.2 and 2.3, the IRGNM formulation for this inverse 3problem is developed, and the corresponding linearized primal and adjoint problems required for the numerical solution are stated. Section 3.1 presents the discretization of the governing equations as a first-order system using a generalized implicit time-stepping scheme. Based on this discretization, reduced-basis surrogates are derived in Section 3.2, where the full-order state and parameter spaces are replaced by their reduced counterparts. In particular, the strategy for constructing these spaces is intro-duced, and an a posteriori error estimator is derived. Section 4 briefly recalls the TR-IRGNM method introduced in [2] and outlines the integration of the reduced-basis reduced-order models into it. Finally, numerical examples are presented in Section 5, followed by concluding remarks and a discussion of the numerical results. 
+
+# 2 Inverse Problem for Hyperelastic Wave Equations 
+
+## 2.1 Parametrized Forward Problem 
+
+In this work, we consider inverse problems for Cauchy’s equation in the theory of elastic materials. 
+
+ρ(x) ∂2 
+
+> t
+
+u(t, x) − ∇ · ∇ Y Cq
+
+ x, Ju (t, x) = l(t, x),
+
+posed in a bounded open Lipschitz domain Ω ⊂ R3 over a time interval [0 , T ]. Here, 
+
+ρ ∈ L∞(Ω , R>0) denotes the mass density, and l : [0 , T ] × Ω → R3 is the external body force. The function C = C(x, Y ), with Y ∈ R3×3 and det Y > 0, is called the stored energy function of the material. The derivative ∇Y is taken with respect to the components of Y , and Ju (t, x) denotes the Jacobian matrix of u(t, x). For given initial data u0 ∈ H2(Ω; R3) and u1 ∈ H1(Ω; R3), we consider mixed homogeneous boundary conditions on ∂Ω. Let Γ ⊂ ∂Ω be a nonempty, relatively open subset, with positive surface measure. On Γ, the body is fixed, while it can move freely on ∂Ω \ Γ. Thus, the displacement field u : [0 , T ] × Ω → R3 satisfies the following initial–boundary value problem (IBVP): 
+
+ρ(x) ∂2 
+
+> t
+
+u(t, x) − ∇ · ∇ Y Cq
+
+ x, Ju (t, x) = l(t, x) in (0 , T ) × Ω, (2.1) 
+
+u(t, x) = 0 on (0 , T ) × Γ, (2.2) 
+
+∇Y Cq
+
+ x, Ju (t, x) · n = 0 on (0 , T ) × (∂Ω \ Γ) , (2.3) 
+
+u(0 , x) = u0, ∂tu(0 , x) = u1 in Ω . (2.4) To obtain a parametrized formulation of the inverse problem, we adopt a struc-tured representation of the stored energy function inspired by [25–27, 49]. Specifically, we assume that Cq (x, Y ) admits an affine decomposition with respect to a finite-dimensional parameter vector q, and satisfies suitable regularity, symmetry, and a G˚ arding-type coercivity conditions. This setting enables a reduced representation of the material law and provides the foundation for the proposed reconstruction method. 4Assumption 2.1 (Adapted from [25, 26]) . Let the stored energy function be given by 
+
+Cq (x, Y ) = C0(x, Y ) + 
+
+> NQ
+
+X
+
+> p=1
+
+qp Cp(x, Y ), (2.5) 
+
+where the parameter vector q := ( q1, . . . , q NQ ) is identified as an element in the discrete parameter space 
+
+Q := RNQ .
+
+Assume that for all q ∈ Qad , we have Cq ∈ C 4 Ω × R3×3 and, the map Y 7 →∇Y Cq (x, Y ) is linear for all x ∈ Ω. Moreover, we impose the major symmetry 
+
+condition 
+
+∂Yij ∂Ykl Cp(x, Y ) = ∂Ykl ∂Yij Cp(x, Y ), (2.6) 
+
+to hold for all p = 0 , . . . , N Q, i, j, k, l = 1 , 2, 3, and (x, Y ) ∈ Ω × R3×3. Additionally, we demand that for each p = 1 , . . . , N Q, there exist constants κp, μ p > 0 such that 
+
+κp ∥Y ∥2 
+
+> F
+
+≤ ∇ Y Cp(x, Y ) : Y ≤ μp ∥Y ∥2 
+
+> F
+
+(2.7) 
+
+for all x ∈ Ω and Y ∈ R3×3 symmetric, i.e., Y ⊤ = Y , where ∥ · ∥ F denotes the Frobenius norm induced by the inner product 
+
+⟨⟨ A|B⟩⟩ := tr( A⊤B) for A, B ∈ R3×3.
+
+We denote κ := ( κ0, . . . , κ NQ ), μ := ( μ0, . . . , μ NQ ) and define the set of admissible parameters Qad such that 
+
+Qad ⊂ q ∈ Q qp > 0 ∀p, q ⊤κ ≥ ˜κ, q ⊤μ ≤ ˜μ , (2.8) 
+
+for some fixed constants ˜κ > 0 and ˜μ > 0. We furthermore assume that the mass density is homogeneous, i.e. ρ(x) = ρ > 0 for all x ∈ Ω.
+
+We consider the weak formulation of (2.1)–(2.4). To this end, we introduce the vector-valued spaces 
+
+V := H1Γ(Ω; R3) := {v ∈ H1(Ω; R3) | v|Γ = 0 } and H := L2(Ω; R3),
+
+which form the Gelfand triple V , → H , → V ′. We define the operator A(q) : V → V ′
+
+by 
+
+⟨A(q)u, v ⟩V ′,V := 
+
+Z
+
+> Ω
+
+∇Y Cq
+
+ x, Ju (x) : Jv (x) dx, ∀u, v ∈ V, (2.9) we obtain the weak formulation of (2.1)–(2.4). For l ∈ H1(0 , T ; H), u0 ∈ H2(Ω; R3)satisfying the compatibility conditions 
+
+u0 = 0 on Γ , ∇Y Cq
+
+ x, Ju 0(x) · n = 0 on ∂Ω \ Γ,
+
+5u1 ∈ V , and q ∈ Qad , find u such that 
+
+⟨ρ∂ 2 
+
+> t
+
+u(t) + A(q)u(t), v ⟩V ′,V = ⟨l(t), v ⟩V ′,V ,u(0) = u0, ∂ tu(0) = u1, (2.10) for all v ∈ V and for almost all t ∈ (0 , T ). We seek a solution u such that 
+
+u ∈ W (0 , T ) := H1(0 , T ; V ) ∩ H2(0 , T ; H).
+
+Under Assumption 2.1, problem (2.10) admits a unique solution in W (0 , T ) for suffi-ciently smooth ∂Ω, u0, u1, and l; cf. [49, Lemma 2.3 & Corollary 2.5] and [50, Theorem 30.4]. Note that, for all q ∈ Qad , the operator A(q) ∈ L (V, V ′) induces a continuous, symmetric bilinear form satisfying 
+
+⟨A(q)v, v ⟩V ′,V + αq ∥v∥2 
+
+> H
+
+≥ αq ∥v∥2 
+
+> V
+
+,
+
+with αq = q⊤κ. We therefore define the solution operator 
+
+S : Qad → W (0 , T ), u(q) := S(q),
+
+and refer to u(q) as the primal state . We assume that S is continuously Fr´ echet dif-ferentiable. This holds under additional regularity assumptions on ∂Ω, u0, u1, and l,as well as further structural conditions on Cq beyond Assumption 2.1; cf. [26]. In general, the state u(q) is not directly observable through physical measurements. We therefore introduce an observation space 
+
+C := L2(0 , T ; C),
+
+where C is a real Hilbert space. We consider an injective, linear, and bounded observation operator C ∈ L (L2(0 , T ; V ), C ). For simplicity, we assume that C is time-independent. Thus, it can equivalently be interpreted as an operator C ∈ L (V, C )acting pointwise in time via ( Cu)( t) = ( Cu)( t) for all u ∈ L2(0 , T ; V ) and t ∈ (0 , T ). A suitable observation operator is, for instance, the canonical embedding 
+
+Cid : W (0 , T ) ,→ L2(0 , T ; V ) , Cid v = v, (2.11) which corresponds to full knowledge of the displacement field. Note that Cid is a bounded linear operator. This follows, for example, from the Poincar´ e inequality. In practical applications, however, measurements are usually only available on the surface of the material. Following [25, 49], we model the measurement process by sensors that average the displacement field over small portions of the boundary ∂Ω. To this end, we define the operator 
+
+Csens : W (0 , T ) → L2 0, T ; RNc 
+
+6by  Csens v(t) = 
+
+
+
+⟨gc, T [v(t)] ⟩L2(∂Ω; R3)
+
+
+
+> c=1 ,...,N c
+
+=
+
+Z 
+
+> ∂Ω
+
+⟨gc(ξ), v (t, ξ )⟩R3 dξ 
+
+
+
+> c=1 ,...,N c
+
+.
+
+(2.12) Here, T : H1(Ω; R3) → H1/2(∂Ω; R3) denotes the trace operator, Nc is the number of sensors, and gc ∈ L2(∂Ω; R3), c = 1 , . . . , N c, are weighting functions that localize the measurements to small regions of ∂Ω. The inverse problem is therefore stated as: Given ( l, u 0, u 1) and some noise-contaminated data yδ ∈ C , a parameter vector q ∈ Qad has to be identified such that it best fits the data yδ , i.e., solving the minimization problem min J(q) := 12 ∥F (q) − yδ ∥2 
+
+> C
+
+subject to (s.t.) q ∈ Qad , (IP )where F : Qad → C with F = C ◦ S will be called the forward operator. Throughout the work, we assume that the measurement deviates from the exact data ye ∈ range( F)at most by a known noise level δ > 0
+
+∥ye − yδ ∥C ≤ δ, 
+
+and that a unique qe ∈ Qad exists, fitting exact data ye, i.e. 
+
+F(qe) = ye in C . (2.13) 
+
+## 2.2 Iteratively-regularized Gauss-Newton method (IRGNM) 
+
+We aim to solve ( IP ) using the iteratively regularized Gauss-Newton method (IRGNM), cf. [31, 51]. During the IRGNM the current parameter q(i) ∈ Qad is iteratively updated, by some update directions d(i) ∈ Q, such that 
+
+q(i+1) := q(i) + d(i) ∈ Qad ,
+
+starting from q(0) ∈ Qad , sufficiently close to the exact solution qe ∈ Qad . The update directions d(i) ∈ Q are computed as solutions to 
+
+d(i) := arg min ˜J(d; q(i), α (i)) s.t. q(i) + d ∈ Qad , ( fIP α)where ˜J denotes the linearization of the objective, regularized by a Tikhonov term ˜J(d; q(i), α (i)) := 12 ∥F (q(i)) + F′(q(i))d − yδ ∥2 
+
+> C
+
++ α(i)
+
+2 ∥q(i) + d − q◦∥2
+
+> Q
+
+.
+
+with regularization center q◦ ∈ Q. The regularization parameter α(i) > 0 is chosen a posteriori at each iteration. More precisely, α(i) is adjusted iteratively by repeatedly 7solving ( fIP α) until 
+
+θJ (q(i)) ≤ 2 ˜J(d(i); q(i), 0) = ∥F ′(q(i))d(i) + F(q(i)) − yδ ∥2 
+
+> C
+
+≤ ΘJ(q(i)), (2.14) is satisfied for 0 < θ < Θ < 2. As stopping criteria, we use the so-called discrepancy principle : the iteration is stopped after i∗(δ, y δ ) steps provided 
+
+J(qi∗(δ,y δ )) ≤ 12 (τ δ )2 ≤ J(q(i)), i = 0 , ..., i ∗(δ, y δ ) − 1. (2.15) The parameter τ > 1 reflects that we cannot expect the discrepancy to be lower than the noise in the given data. 
+
+## 2.3 Realization of the IRGNM 
+
+For the implementation of a numerical procedure, efficient access to the derivatives of J and ˜J is required. We will compute them by a standard adjoint argument. Let 
+
+A(q)′ ∈ L (V, V ′) denote the adjoint operator of A(q), i.e. 
+
+⟨A(q)′p, u ⟩V ′,V = ⟨A(q)u, p ⟩V ′,V (2.16) for all u, p ∈ V and q ∈ Q. The adjoint equation associated with the objective in ( IP )is given for q ∈ Qad as 
+
+⟨ρ∂ 2 
+
+> t
+
+p(t) + A(q)′p(t), v ⟩V ′,V = −⟨C u(t) − yδ (t), Cv⟩C
+
+p(T ) = 0 , ∂ tp(T ) = 0 in H, (2.17) for all v ∈ V and f.a.a. (for almost all) t ∈ (0 , T ). Under Assumption 2.1, for every 
+
+u ∈ W (0 , T ) there exists a unique adjoint state 
+
+p ∈ H1(0 , T ; H) ∩ L2(0 , T ; V ), ∂2 
+
+> t
+
+p ∈ L2(0 , T ; V ′),
+
+satisfying (2.17) f.a.a. t ∈ (0 , T ). By Assumption 2.1, the mapping q 7 → A(q) is affine and therefore Fr´ echet differentiable in q. It can thus be written as 
+
+A(q) = A0 +
+
+> NQ
+
+X
+
+> p=1
+
+qpAp, (2.18) where A0, A p ∈ L (V, V ′). We introduce the shorthand notation 
+
+∂q A(d) := ∂q A(q)[ d] = 
+
+> NQ
+
+X
+
+> p=1
+
+dpAp and ∂uA(q)˜ u := ∂u(A(q)u)[˜ u] = A(q)˜ u. 
+
+8The adjoint operators ( ∂q A(d)) ′ and ( ∂uA(q)) ′ ∈ L (V, V ′) are defined analogously to (2.16). Thus, if u and p denote the primal and adjoint state corresponding to q, the gradient at q in the direction e ∈ Q is given as 
+
+⟨∇ J(q), e ⟩Q =
+
+Z T
+
+> 0
+
+⟨(∂q A(e)) ′u(t), p (t)⟩V ′,V dt. (2.19) Let u(i) = S(q(i)) ∈ W (0 , T ) be the state corresponding to the current iterate 
+
+q(i) ∈ Qad . The iterates are updated according to 
+
+q(i+1) = q(i) + d(i) ∈ Qad , (2.20) where d(i) solves the strictly convex optimization problem ( fIP α) for some regulariza-tion parameter α(i) > 0. The update d(i) is optimal if and only if 
+
+d(i) = PQad 
+
+h
+
+q(i) + d(i) − ∇ d ˜J(d(i); q(i), α (i))
+
+i
+
+− q(i),
+
+where PQad : Q → Qad denotes the projection onto the non-empty, closed convex set 
+
+Qad ⊂ Q, defined by 
+
+PQad (x) := arg min ∥x − y∥Q s.t. y ∈ Qad , (2.21) cf. [52]. For solving the linearized problem ( fIP α), efficient evaluation to the gradient of the linearized objective is additionally required. To this end, we introduce the linearized system for the state derivative ˜ u := ∂q u(q)[ d] ∈ L2(0 , T ; V ) in direction 
+
+d ∈ Q and the associated adjoint state ˜ p ∈ L2(0 , T ; V ): 
+
+⟨ρ∂ 2 
+
+> t
+
+˜u(t) + ∂uA(q)˜ u(t), v ⟩V ′,V + ⟨∂q A(d)u(t), v ⟩V ′,V = 0 ,
+
+⟨ρ∂ 2 
+
+> t
+
+˜p(t) + ( ∂uA(q)) ′ ˜p(t), v ⟩V ′,V + ⟨C  u(t) + ˜ u(t) − yδ (t), Cv⟩C = 0 , (2.22) for all v ∈ V and f.a.a. t ∈ (0 , T ), where u = S(q). The initial and terminal conditions are given by ˜u(0) = ∂t ˜u(0) = 0 , ˜p(T ) = ∂t ˜p(T ) = 0 in H. 
+
+Under Assumption 2.1, this system admits a unique solution satisfying ˜u ∈ W (0 , T ), ˜p ∈ H1(0 , T ; H) ∩ L2(0 , T ; V ), ∂2 
+
+> t
+
+˜p ∈ L2(0 , T ; V ′).
+
+The gradient of the linearized objective ˜J(d; q, α ) in direction e ∈ Q is given by 
+
+⟨∇ d ˜J(d; q, α ), e ⟩Q =
+
+Z T
+
+> 0
+
+⟨(∂q A(e)) ′u(t), ˜p(t)⟩V ′,V dt + α⟨q + d − q◦, e ⟩Q. (2.23) 93 Numerical models 
+
+Our goal is not to apply the Iteratively Regularized Gauss Newton Methods (IRGNM) directly with a standard full-order model (FOM), such as the one obtained by the finite element method, since solving such models is typically computationally too expensive. This is particularly critical in the multi-query setting of IRGNM, where the (linearized) state and adjoint equations must be solved repeatedly for many parameter update directions. Instead, we employ the trust-region IRGNM (TR-IRGNM), introduced in [2]. Its main advantage over the classical FOM-IRGNM is the use of iteratively constructed reduced bases (RB) models, which replace the FOM in most computations, while the latter is only used to enrich the reduced models. Under Assumption 2.1, the methodology and definitions remain largely analogous to those in [2], since the equations are linear both in the state and in the parameter. The main difference is that we consider hyperbolic equations, which requires adapting both the numerical solution procedure for discretized PDEs and the corresponding aposteriori error estimators. 
+
+## 3.1 Finite Element model 
+
+The function spaces introduced in Section 2.3 are approximated by the finite-dimensional subspaces 
+
+Vh := span {φ1, . . . , φ NV } ⊂ V, Ch := span {c1, . . . , c NC } ⊂ C, 
+
+with respective dimensions NV , N C ∈ N. We identify Hh := Vh ⊂ H. Similarly, we set 
+
+Qh := Q, N Q := NQ and Qad ,h := Qad 
+
+and denote the basis of Qh by {q1, . . . , q NQ }. The corresponding discrete operators are defined by 
+
+MQ := ( ⟨qi, q j ⟩Q)i,j ∈{ 1,...,N Q} , MV := ( ⟨φi, φ j ⟩V )i,j ∈{ 1,...,N V } ,
+
+MH := ( ⟨φi, φ j ⟩H )i,j ∈{ 1,...,N V } , MC := ( ⟨ci, c j ⟩C )i,j ∈{ 1,...,N C } ,
+
+Lh(t) := ( ⟨l(t), φ j ⟩V ′,V )j∈{ 1,...,N V } for t ∈ (0 , T ),
+
+Ah(qh) := ( ⟨A(qh)φj , φ i⟩V ′,V )i,j ∈{ 1,...,N V } for qh ∈ Qh.
+
+We also introduce an equidistant temporal grid with uniform time steps 
+
+{0 =: t0 < t 1 < · · · < t K := T } ⊂ [0 , T ], ∆t := tk − tk−1
+
+for all k ∈ K := {1, . . . , K }. We write v = [ v1, . . . , v K ] ∈ V Kh for a discrete trajectory with values in Vh, where V Kh denotes the product space of Vh. In the following, we identify v with its DoF-matrix v = [ v1, . . . , vK ] ∈ RNV ×K where vk = PNV 
+
+> i=1
+
+vki φi. We 10 equip these spaces with the discrete inner products 
+
+⟨v, w ⟩Vh := v⊤MV w and ⟨v, w ⟩V Kh
+
+:= ∆ t
+
+> K
+
+X
+
+> k=1
+
+⟨vk, w k⟩Vh (3.24) respectively. Analogous definitions apply to the spaces Hh, Qh and Ch.We employ a generalized trapezoidal rule for the temporal discretization. For a fixed parameter ζ ∈ [0 , 1], the coefficient matrices uh, ˙uh ∈ RNV ×K associated with the discrete states uh, ˙uh ∈ V Kh for qh ∈ Qh are obtained as the unique solution of the state system 1∆t ρMH ( ˙ ukh − ˙uk−1 
+
+> h
+
+) + Ah(qh)( ζukh + (1 − ζ)uk−1 
+
+> h
+
+) = ζLkh + (1 − ζ)Lk−1 
+
+> h
+
+,
+
+1∆t ρMH (ukh − uk−1 
+
+> h
+
+) = ζρ MH ˙ukh + (1 − ζ)ρMH ˙uk−1 
+
+> h
+
+,
+
+for all k ∈ K, subject to the initial conditions 
+
+u0 
+
+> h
+
+:= (( u0, φ j )V )j∈{ 1,...,N V } and ˙ u0 
+
+> h
+
+:= (( u1, φ j )V )j∈{ 1,...,N V } ,
+
+and Lkh := Lh(tk). Reformulation yields 
+
+ρMH ˙ukh = ρMH ˙uk−1 
+
+> h
+
+− ∆tAh(qh)uk−1+ ζh + ∆ tRk−1+ ζ 
+
+> 1,h
+
+,
+
+Sh(qh, ζ )ukh = Sh(qh, ζ − 1) uk−1 
+
+> h
+
++ ρ∆tMH ˙uk−1 
+
+> h
+
++ ζ∆tRk−1+ ζ 
+
+> 1,h
+
+, (3.25) for all k ∈ K with 
+
+uk−1+ ζh := ζukh + (1 − ζ)uk−1 
+
+> h
+
+,
+
+Sh(qh, χ ) := ρMH + (∆ t)2ζχ Ah(qh),
+
+Rk−1+ ζ 
+
+> 1,h
+
+:= ζLkh + (1 − ζ)Lk−1 
+
+> h
+
+.
+
+Remark 3.1. For implementation purposes, we solve the reformulated system for the intermediate state uk−1+ ζh rather than ukh. The state ukh is then recovered explicitly via 
+
+ukh = 1
+
+ζ
+
+ uk−1+ ζh − (1 − ζ)uk−1
+
+> h
+
+.
+
+The discretized solution operator Sh : Qad ,h → V Kh is defined by assigning to each qh ∈ Qh the solution to (3.25). We define the discrete observation operator 
+
+Ch : Vh → Ch by assigning to vh ∈ Vh the vector wh = Chvh defined as 
+
+wh := M −1 
+
+> C
+
+(⟨C vh, c j ⟩C )j∈{ 1,...,N C } .
+
+11 The discrete forward operator is given as Fh := Ch ◦ S h : QK 
+
+> ad ,h
+
+→ CKh , with Fh(qkh) = 
+
+Chukh for all k ∈ K. Analogously, we define yδh ∈ CKh as 
+
+yδ,k h := M −1
+
+> C
+
+ ⟨yδ (tk), c j ⟩C
+
+  
+
+> j∈{ 1,...,N C}
+
+for k ∈ K.
+
+We also introduce the discrete (bi)linear forms 
+
+Ch := ( ⟨C hφj , Chφi⟩Ch )i,j ∈{ 1,...,N V } , Cy δ,k h := 
+
+
+
+⟨C hφj , y δ,k h ⟩Ch
+
+
+
+> 1≤j≤NV
+
+for k ∈ K,c1(yδh) := ∆ t
+
+> K
+
+X
+
+> k=1 12
+
+ yδ,k h
+
+> ⊤
+
+MC yδ,k h
+
+.
+
+Then, for Sh(qh) = uh with qh ∈ Qh, the discrete objective functional is given by 
+
+Jh(qh) := ∆t
+
+2
+
+> K
+
+X
+
+> k=1
+
+∥F h(qh)k − yδ,k h ∥2 
+
+> Ch
+
+,
+
+= c1(yδh) + ∆ t
+
+> K
+
+X
+
+> k=1 12
+
+ uk⊤ 
+
+> h
+
+Chukh
+
+ −  uk⊤ 
+
+> h
+
+Cy δ,k h
+
+.
+
+(3.26) Therefore, the discrete gradient ∇Jh(qh) ∈ Qh of (3.26) is component-wise given by 
+
+∇Jh(qh) = ∆ t
+
+> K
+
+X
+
+> k=1
+
+M −1 
+
+> Q
+
+Bh(ukh)⊤pkh
+
+where ph ∈ RNV ×K denote the DoF-Matrix of the discrete adjoint and 
+
+Bh(ukh) :=  ⟨Aj ukh, φ i⟩V ′,V 
+
+  
+
+> i∈{ 1,...,N V},j ∈{ 1,...,N Q}
+
+∈ RNV ×NQ ,
+
+where Aj are the operators introduced in (2.18). The discrete adjoint system can be solved analogously to the state system. The vectors ph and ˙ph ∈ RNV ×K are the unique solutions of 
+
+ρMH ˙pkh = ρMH ˙pk+1  
+
+> h
+
+− ∆tA⊤ 
+
+> h
+
+(qh)pk+1 −ζh + ∆ tRk+1 −ζ 
+
+> 2,h
+
+(uh)
+
+S⊤ 
+
+> h
+
+(qh, ζ )pkh = S⊤ 
+
+> h
+
+(qh, ζ − 1) pk+1  
+
+> h
+
++ ρ∆tMH ˙pk+1  
+
+> h
+
++ ζ∆tRk+1 −ζ 
+
+> 2,h
+
+(uh). (3.27) for all k ∈ { 0, . . . , K − 1} with terminal conditions pKh = ˙ pKh = 0 and 
+
+pk+1 −ζh := ζpkh + (1 − ζ)pk+1  
+
+> h
+
+,
+
+Rk+1 −ζ 
+
+> 2,h
+
+(uh) := ζ(Cy δ,k h − Chukh) + (1 − ζ)( Cy δ,k +1  
+
+> h
+
+− Chuk+1  
+
+> h
+
+).
+
+12 Similarly, for given parameters qh ∈ Qh and direction dh ∈ Qh, the coefficients of the linearized state and adjoint functions ˜ uh, ˙˜uh, ˜ph, ˙˜ph ∈ RNV ×K are calculated as solutions to the system 
+
+ρMH ˙˜ukh = ρMH ˙˜uk−1 
+
+> h
+
+− ∆tAh(qh)˜ uk−1+ ζh + ∆ tRk+1 −ζ 
+
+> 3,h
+
+(uh, dh),
+
+Sh(qh, ζ )˜ ukh = Sh(qh, ζ − 1)˜ uk−1 
+
+> h
+
++ ρ∆tMH ˙˜uk−1 
+
+> h
+
++ ζ∆tRk+1 −ζ 
+
+> 3,h
+
+(uh, dh), (3.28) for all k ∈ K and 
+
+ρMH ˙˜pkh = ρMH ˙˜pk+1  
+
+> h
+
+− ∆tA⊤ 
+
+> h
+
+(qh)˜ pk+1 −ζh + ∆ tRk+1 −ζ 
+
+> 4,h
+
+(uh),
+
+S⊤ 
+
+> h
+
+(qh, ζ )˜ pkh = S⊤ 
+
+> h
+
+(qh, ζ − 1)˜ pk+1  
+
+> h
+
++ ρ∆tMH ˙˜pk+1  
+
+> h
+
++ ζ∆tRk+1 −ζ 
+
+> 4,h
+
+(uh). (3.29) for all k ∈ { 0, . . . , K − 1}, subject to the initial and terminal conditions ˜u0 
+
+> h
+
+= ˙˜u0 
+
+> h
+
+= ˜ pKh = ˙˜pKh = 0,
+
+where we define ˜uk−1+ ζh := ζ ˜ukh + (1 − ζ)˜ uk−1 
+
+> h
+
+,
+
+˜pk+1 −ζh := ζ ˜pkh + (1 − ζ)˜ pk+1  
+
+> h
+
+,
+
+Rk−1+ ζ 
+
+> 3,h
+
+(uh, dh) := −ζBh(ukh)dh − (1 − ζ)Bh(uk−1 
+
+> h
+
+)dh,
+
+Rk+1 −ζ 
+
+> 4,h
+
+(uh) := ζ(C ˜yδ,k h − Ch ˜ukh) + (1 − ζ)( C ˜yδ,k +1  
+
+> h
+
+− Ch ˜uk+1  
+
+> h
+
+).
+
+with C ˜yδ,k h := Cy δ,k h − Chukh. The regularized linearization of Jh(qh) for α > 0 is given by 
+
+eJh(dh; qh, α ) := c2(˜ yδh) + ∆ t
+
+> K
+
+X
+
+> k=1
+
+h 12 ˜uk⊤ 
+
+> h
+
+Ch ˜ukh − ˜uk⊤ 
+
+> h
+
+C ˜yδ,k h
+
+i
+
++ αc 3(˜ q◦,h ) + α  12 d⊤ 
+
+> h
+
+MQdh − d⊤ 
+
+> h
+
+MQ ˜q◦,h 
+
+ ,
+
+where ˜ uh is the linearized state associated to qh and dh and the constant terms are defined by ˜ q◦,h := q◦,h − qh,
+
+c2(˜ yδh) := c1(yδh) + ∆ t
+
+> K
+
+X
+
+> k=1 12
+
+ uk⊤ 
+
+> h
+
+Chukh
+
+ −  uk⊤ 
+
+> h
+
+Cy δ,k h
+
+,c3(˜ q◦,h ) := 12 ˜q⊤◦,h MQ ˜q◦,h .
+
+The gradient of the discrete linearized objective function is then given by 
+
+∇d eJh(dh; qh, α ) = ∆ t
+
+> K
+
+X
+
+> k=1
+
+M −1 
+
+> Q
+
+Bh(ukh)⊤ ˜pkh + α(dh − ˜q◦,h ).
+
+13 The FOM-IRGNM solves the discretized optimization problem corresponding to ( IP ), defined as min Jh(qh) s.t. qh ∈ Qad ,h . (IP h)The procedure is completely analogous to that described in Section 2.2. The updates 
+
+d(i) 
+
+> h
+
+∈ Qh are computed by iteratively solving 
+
+d(i) 
+
+> h
+
+:= arg min eJh(dh; q(i) 
+
+> h
+
+, α (i)) s.t. q(i) 
+
+> h
+
++ dh ∈ Qad ,h , ( fIP α,h )until 
+
+θJ h(q(i) 
+
+> h
+
+) ≤ 2 eJh(d(i) 
+
+> h
+
+; q(i) 
+
+> h
+
+, 0) ≤ ΘJh(q(i) 
+
+> h
+
+), (3.30) is satisfied for the selected α(i). The update is then accepted, and the next iterate is defined by q(i+1)  
+
+> h
+
+:= q(i) 
+
+> h
+
++ d(i) 
+
+> h
+
+.
+
+## 3.2 Reduced-Basis model 
+
+As discussed above, we aim to replace the FOM by a reduced-order model (ROM) obtained by projecting the system equations onto reduced-basis spaces, which is a natural choice for model order reduction in the multi-query setting of the IRGNM. Following [1, 2], we employ a combined reduction of the parameter and state spaces, since the high dimensionality of the parameter space poses significant challenges to established methods, which typically only a reduce in the state space. This com-bined approach is particularly well suited for achieving an efficient offline–online decomposition. We therefore introduce the reduced state and parameter spaces 
+
+Vr = span( ˜ φ1, . . . , ˜φnV ) ⊂ Vh, Qr = span(˜ q1, . . . , ˜qnQ ) ⊂ Qh,
+
+with dimensions nQ ≪ NQ and nV ≪ NV given. Analogously to the FOM, we identify 
+
+Hr := Vr and denote the basis matrices as ΨQ ∈ RNQ×nQ , ΨV ∈ RNV ×nV and assume that the bases are orthonormal with respect to the corresponding inner products, i.e., 
+
+Ψ⊤ 
+
+> V
+
+MV ΨV = InV and Ψ⊤
+
+> Q
+
+MQΨQ = InQ .
+
+The corresponding reduced operators are given by 
+
+MQ,r := InQ , MV,r := InV , MH,r := Ψ⊤ 
+
+> V
+
+MH ΨV .
+
+For qr ∈ Qr , which we identify with its coefficient vector qr ∈ RnQ , the reduced operator Ar (qr ) admits an affine decomposition 
+
+Ar (qr ) = Ar, 0 +
+
+> nQ
+
+X
+
+> j=1
+
+qr,j Ar,j ,
+
+where 
+
+Ar, 0 := Ψ⊤ 
+
+> V
+
+Ah, 0ΨV and Ar,j := Ψ⊤ 
+
+> V
+
+Ah(˜ qj )ΨV − Ar, 0.
+
+14 The matrices Ar, 0 and Ar,j can be precomputed during the construction of the reduced-basis model (offline phase) and subsequently reused during the parameter inference (online phase). Since the reduced parameter space Qr is typically of much lower dimension than Qh, evaluating this affine decomposition is significantly cheaper than assembling the full-order matrix Ah(qr ). Given a reduced parameter qr ∈ Qr , the RB approximation ur of the state is obtained by solving the primal system (3.31), projected to the reduced state space Vr .The corresponding system is given by 
+
+ρMH,r ˙ukr = ρMH,r ˙uk−1 
+
+> r
+
+− ∆tAr (qr )uk−ζr + ∆ tRk−ζ 
+
+> 1,r
+
+,
+
+Sr (qr , ζ )ukr = Sr (qr , ζ − 1) uk−1 
+
+> r
+
++ ∆ tρ MH,r ˙uk−1 
+
+> r
+
++ ζ∆tRk−ζ 
+
+> 1,r
+
+, (3.31) for all k ∈ K, subject to initial conditions u0 
+
+> r
+
+:= Ψ⊤ 
+
+> V
+
+u0 
+
+> h
+
+and ˙ u0 
+
+> r
+
+:= Ψ⊤ 
+
+> V
+
+˙u0
+
+> h
+
+, where 
+
+uk−ζr := ζukr + (1 − ζ)uk−1
+
+> r
+
+Sr (qr , χ ) := ρMH,r + (∆ t)2ζχ Ar (qr )
+
+Rk−ζ 
+
+> 1,r
+
+:= Ψ⊤ 
+
+> V
+
+Rk−ζ 
+
+> 1,h
+
+.
+
+The RB approximation of the adjoint pr is obtained analogously by projecting the adjoint system (3.27) onto Vr . For a direction dr ∈ Qr , the RB approximations of the linearized state and adjoint, denoted by ˜ ur and ˜ pr , are computed in a similar manner. We write ur = Sr (qr ) and define Fr = Ch ◦ S r : Qad ,r → CKh , where the set of reduced admissible parameters Qad ,r ⊂ Qr is defined as 
+
+Qad ,r := {qr ∈ Qr | ΨQqr ∈ Qad ,h } . (3.32) The reduced objective for qr ∈ QKr is thus given by 
+
+Jr (qr ) := c1(yδh) + ∆ t
+
+> K
+
+X
+
+> k=1 12
+
+ uk⊤ 
+
+> r
+
+Cr ukr
+
+ −  uk⊤ 
+
+> r
+
+Cy δ,k 
+
+> r
+
+ (3.33) where 
+
+Cr = Ψ⊤ 
+
+> V
+
+ChΨV , Cy δ,k r = Ψ⊤ 
+
+> V
+
+Cy δ,k h ∀k ∈ K.
+
+The associated discrete gradient is given by 
+
+∇Jr (qr ) = ∆ t
+
+> K
+
+X
+
+> k=1
+
+Br (ukr )⊤pkr , where Br (ukr ) := Ψ⊤ 
+
+> V
+
+Bh(ukr )ΨQ ∈ RnV ×nQ .
+
+Note that Sr is well-defined and that the online evaluation of Jr (qr ) does not require any full-order computations. The reduced optimization problem can thus be stated as min Jr (qr ) s.t. qr ∈ Qad ,r . (IP r )15 We further define ˜ qr, 0 = Ψ⊤
+
+> Q
+
+MQ ˜qh, 0, C ˜yδ,k r = Cy δ,k r − Cr ukr and the constant terms 
+
+c2(˜ yδr ) := c1(yδh) + ∆ t
+
+> K
+
+X
+
+> k=1 12
+
+ uk⊤ 
+
+> r
+
+Cr ukr
+
+ −  uk⊤ 
+
+> r
+
+Cy δ,k r
+
+, c 3(˜ q◦,r ) := 12 ˜q⊤◦,r ˜q◦,r .
+
+The linearized reduced objective eJr is defined as 
+
+eJr (dr ; qr , α ) := c2(˜ yδr ) + ∆ t
+
+> K
+
+X
+
+> k=1
+
+ 12 ˜uk⊤ 
+
+> r
+
+Cr ˜ukr − ˜uk⊤ 
+
+> r
+
+C ˜yδ,k r
+
+
+
++ αc 3(˜ q◦,r ) + α  12 d⊤ 
+
+> r
+
+dr − d⊤ 
+
+> r
+
+˜q◦,r 
+
+ ,
+
+where we have used MQ,r = InQ . The reduced linearized subproblem is thus given by 
+
+d(i) 
+
+> r
+
+:= arg min ˜Jr (dr ; q(i) 
+
+> r
+
+, α (i)) s.t. q(i) 
+
+> r
+
++ dr ∈ Qad ,r . ( fIP α,r )The discrepancy principle for 0 < θ < Θ < 2 is given by 
+
+θJ r (q(i) 
+
+> r
+
+) ≤ 2 eJr (d(i) 
+
+> r
+
+; q(i) 
+
+> r
+
+, 0) ≤ ΘJr (q(i) 
+
+> r
+
+). (3.34) The coefficients of eJr at qr ∈ Qad ,r are computed as 
+
+∇d eJr (dr ; qr , α ) = ∆ t
+
+> K
+
+X
+
+> k=1
+
+Br (ukr )⊤ ˜pkr + α(dr − ˜q◦,r ).
+
+3.2.1 Error estimation 
+
+In this section, we derive an a posteriori error estimator for the reduced objective Jr .More precisely, we seek a estimator ∆J : Qr × R≥0 → R≥0
+
+such that, for all qr ∈ Qr holds 
+
+|Jh(qr ) − Jr (qr )| ≤ ∆J (qr , J r (qr )) . (3.35) The key step is the derivation of an error estimator for the reduced state ur . To derive the state estimator, we adapt standard techniques from reduced-basis theory. To this end, for k ∈ K, q ∈ Qh, and u, ˙u ∈ V Kh , we introduce the primal residual operator 
+
+rk
+
+> pr
+
+(u, ˙u; q) ∈ V ′ 
+
+> h
+
+defined by 
+
+rk
+
+> pr
+
+(u, ˙u; q) = Rk−1+ ζ 
+
+> 1,h
+
+− Ah(q)uk−1+ ζ − 1∆t ρMH
+
+  ˙uk − ˙uk−1 ∈ RNV . (3.36) 16 Based on this residual formulation, an a posteriori error estimate in the discrete energy norm can be derived. The proof follows closely the arguments of [53, 54] and is given in detail in Appendix A.1. 
+
+Theorem 3.2. 
+
+Let (ukh, ˙ukh) and (ukr , ˙ukr ), for k ∈ K, denote the solutions to (3.25) and (3.31) ,respectively, for qr ∈ Qad ,r and ζ ≥ 12 . Define the errors 
+
+ek := ukh − ukr ∈ Vh, ˙ek := ˙ ukh − ˙ukr ∈ Hh.
+
+Then the following a posteriori error estimate holds: 
+
+> K
+
+X
+
+> k=1
+
+∥ek∥2
+
+> E
+
+! 12
+
+≤ ∆pr (qr ), (3.37) 
+
+where the energy norm is defined by 
+
+∥ek∥2 
+
+> E
+
+= ( ˙ ek)⊤Mh ˙ek + ( ek)⊤Ah(qr )ek.
+
+The right-hand side is given by 
+
+∆pr (qr ) = 2 
+
+
+
+> K
+
+X
+
+> k=1
+
+∆t
+
+> k
+
+X
+
+> k′=1
+
+∥rk′
+
+> pr
+
+(ur , ˙ur ; qr )∥H′
+
+> h
+
+!2
+
+> 12
+
+.
+
+Using Theorem 3.2, an error estimator in the sense of (3.35) can be derived directly by elementary calculations, cf. [55, 56]. The proof is provided in Appendix A.2. 
+
+Theorem 3.3. 
+
+Let the assumptions of Theorem 3.2 hold, and let Jh(qr ) and Jr (qr ) denote the objective functionals corresponding to uh and ur , respectively. Then the estimate (3.35) holds with 
+
+∆J (qr , J r (qr )) := ∥C∥ 2
+
+> L(V,C )
+
+2aqr
+
+˜∆pr (qr ) 2 + ∥C∥ L(V,C )
+
+ 2Jr (qr )
+
+aqr
+
+ 12
+
+˜∆pr (qr ), (3.38) 
+
+where 
+
+˜∆pr (qr ) := ∆t
+
+> K
+
+X
+
+> k=1
+
+(ek)⊤Ah(qr )ek
+
+! 12
+
+≤ ∆pr (qr ),
+
+and 
+
+aqr = ˜κC2
+
+> P
+
+> 0,
+
+with CP > 0 denoting the Poincar´ e constant and ˜κ > 0 the constant from Assumption 2.1. 
+
+17 4 Trust-Region IRGNM 
+
+The central idea of the trust-region approach is to replace the full-order optimization problem ( IP h) by a sequence of surrogate problems. These surrogate problems employ approximations of the full-order objective while restricting the admissible set to (local) trust regions T (i) ⊂ Q, thereby ensuring the (local) reliability of the surrogate. Such approaches have been successfully applied to a variety of problems, in particular to PDE-constrained optimization [36, 56–60]. We therefore employ the IRGNM outlined in Section 3.1 to solve a sequence of trust-region subproblems of the form 
+
+q(i+1)  
+
+> r
+
+:= arg min   
+
+> qr∈T(i)
+
+J(i) 
+
+> r
+
+(qr ), (4.39) where i ∈ I := {0, . . . , i ∗
+
+> h
+
+(δ, y δ ) − 1}, such that for i∗
+
+> h
+
+(δ, y δ ) the full-order discrepancy principle is satisfied for some τ > 1, that is (compare (2.15)), 
+
+Jh(qi∗  
+
+> h(δ,y δ)
+> r
+
+) ≤ 12 (τ δ )2 ≤ Jh(q(i) 
+
+> r
+
+), i ∈ I.
+
+As surrogates J(i) 
+
+> r
+
+, we employ RB-reduced-order model (ROM)s, as constructed in Section 3.2, associated with iteratively enriched reduced state V (i) 
+
+> r
+
+⊂ Vh and reduced parameter spaces Q(i) 
+
+> r
+
+⊂ Qh. After each subproblem, the reduced spaces are updated to locally adapt the surrogate to Jh. Details on the construction of these spaces are provided in Section 4.1. The subproblems are solved by applying the IRGNM, with the (approximate) solu-tion of the previous subproblem as an initial guess and combined with a backtracking procedure to enforce the trust region; see [2, Section 4.1] for details. For each subprob-lem, this procedure yields a sequence of parameters converging to a local minimizer of 
+
+J(i) 
+
+> r
+
+in T (i). We denote the resulting sequence by {q(i,l ) 
+
+> r
+
+}L(i) 
+
+> l=0
+
+⊂ Q(i) 
+
+> r
+
+, with q(i, 0)  
+
+> r
+
+= q(i−1)  
+
+> r
+
+.The IRGNM iteration is terminated once the reduced discrepancy principle is satisfied, i.e., 
+
+J(i)
+
+> r
+
+ q(i,l )
+
+> r
+
+ < 12 ˜τ 2 ˜δ(i)2, (4.40) where ˜δ(i) ≥ δ and ˜ τ > 1, or when the iterates approach the boundary of the trust region sufficiently closely. The choice of the trust region is crucial for the efficiency of the algorithm. Although various definitions are possible, we employ a standard radius-based trust region, i.e., 
+
+T (i) := 
+
+
+
+qr ∈ Q(i) 
+
+> ad ,r
+
+R(i)(qr ) := ∥qr − q(i) 
+
+> r
+
+∥Qr ≤ η(i)
+
+
+
+,
+
+for some radius 0 < η (i) ≤ ηmax , where Q(i) 
+
+> ad ,r
+
+denotes the admissible parameter set for 
+
+Q(i) 
+
+> r
+
+, cf. (3.32). 
+
+Remark 4.1. In contrast to other existing RB trust-region approaches, we do not employ an error-aware trust region, although a theoretically sound a posteriori error 
+
+18 estimator for J(i) 
+
+> r
+
+has been derived in Section 3.2. While estimator-based trust regions are theoretically appealing, residual-based a posteriori error estimators are known to considerably overestimate the true error. This behavior has been observed for elliptic and parabolic problems and is even more pronounced in the hyperbolic setting consid-ered here [1, 2, 56, 60]. As a consequence, the resulting trust regions become overly conservative, leading to a substantial increase in both offline and online computa-tional costs. Preliminary numerical experiments confirm this effect and indicate that an estimator-driven trust-region strategy is not practically viable for the problems under consideration. Despite this, note that the radius-based trust region still provides implicit control of the error ∆J (qr , J r (qr )) , since both Jh and Jr are continuous. Hence, there exists a constant C > 0 such that 
+
+∆J (qr , J r (qr )) ≤ CR(i)(qr ).
+
+An important caveat in the use of RB-based surrogates within a trust-region frame-work is that the trust region constraint alone does not guarantee a decrease in the full-order objective. In particular, especially in flat regions of the solution manifold, for some i < i ∗
+
+> h
+
+(δ, y δ ) − 1, 
+
+Jh(q(i+1)  
+
+> r
+
+) > J h(q(i) 
+
+> r
+
+),
+
+since the trust-region only ensures that Jh and Jr agree up to an error ϵJ ≥ 0. Therefore, a solution of (4.39) returned by the IRGNM using the surrogate is treated as a trial solution q(i) 
+
+> trial ,r
+
+. It must then be verified that 
+
+Jh(q(i) 
+
+> trial ,r
+
+) < J h(q(i) 
+
+> r
+
+), (4.41) and the iterate is only accepted if (4.41) is satisfied, i.e., q(i+1)  
+
+> r
+
+= q(i) 
+
+> trial ,r
+
+. A direct eval-uation of (4.41) is computationally expensive, since it requires at least one full-order model evaluation. Therefore, the practical implementation employs a more efficient strategy. First, sufficient and necessary conditions for (4.41) are checked, requiring only evaluations of the surrogate model. The decay condition (4.41) is evaluated using the full-order model only if these criteria are inconclusive; see [2, Section 4.1] for details. This strategy was originally introduced in [57]. If q(i) 
+
+> trial ,r
+
+is rejected, i.e., if (4.41) fails, the trust region is shrunk by setting 
+
+η(i+1) = β3η(i),
+
+with β3 ∈ (0 , 1), and the subproblem (4.39) is solved again starting from q(i) 
+
+> r
+
+. If, q(i)
+
+> trial ,r
+
+is accepted as q(i+1)  
+
+> r
+
+, the trust region is enlarged by setting 
+
+η(i+1) = min 
+
+
+
+ηmax , β −13 η(i)
+
+
+
+,
+
+19 provided that 
+
+ϱ(i) := Jh
+
+ q(i)
+
+> r
+
+ − Jh
+
+ q(i+1) 
+
+> r
+
+
+
+J(i)
+
+> r
+
+ q(i)
+
+> r
+
+ − J(i)
+
+> r
+
+ q(i+1) 
+
+> r
+
+ ≥ β2, with β2 ∈  34 , 1 ,
+
+Otherwise, it is kept unchanged. 
+
+## 4.1 Enrichment Strategy 
+
+A key component of the TR-IRGNM is the construction of low-dimensional reduced spaces Q(i) 
+
+> r
+
+and V (i) 
+
+> r
+
+that maintain high approximation accuracy. In this work, we employ an adaptive enrichment strategy in which the reduced bases are iteratively expanded using full-order snapshots obtained during the optimization. This yields nested sequences of spaces: 
+
+Q(0)  
+
+> r
+
+⊂ Q(1)  
+
+> r
+
+⊂ · · · ⊂ Qi∗  
+
+> h(δ,y δ)
+> r
+
+⊂ Qh, V (0)  
+
+> r
+
+⊂ V (1)  
+
+> r
+
+⊂ · · · ⊂ V i∗  
+
+> h(δ,y δ)
+> r
+
+⊂ Vh.
+
+The choice of enrichment snapshots is guided by the structure of the optimization problem. We initialize the parameter reduced space as 
+
+Q(0)  
+
+> r
+
+:= span 
+
+n
+
+q(0)  
+
+> r
+
+, q ◦,h , ∇Jh
+
+ q(0) 
+
+> r
+
+o
+
+.
+
+During the enrichment process, we additionally include full-order gradients ∇Jh
+
+ q(i)
+
+> r
+
+,since they represent directions of steepest descent and thus capture the most rele-vant local sensitivities of the objective functional. For the state space, we incorporate the corresponding primal and adjoint states uh
+
+ q(i)
+
+> r
+
+ and ph
+
+ q(i)
+
+> r
+
+. This construction ensures that, for all i ∈ I, hold 
+
+q(i) 
+
+> r
+
+∈ Q(i) 
+
+> r
+
+, Jh
+
+ q(i)
+
+> r
+
+ = J(i)
+
+> r
+
+ q(i)
+
+> r
+
+ and ∇Jh
+
+ q(i)
+
+> r
+
+ = ∇J(i)
+
+> r
+
+ q(i)
+
+> r
+
+, (4.42) ensuring first-order consistency of the surrogate at q(i) 
+
+> r
+
+. In particular, this construction implies q(i) 
+
+> r
+
+∈ T (i), hence T (i)̸ = ∅, guarantying the well-posedness of the trust-region procedure. To limit the growth of the reduced state space and avoid the accumulation of irrel-evant basis vectors, we apply POD to retain the most relevant components from the collected snapshots up to a prescribed tolerance ϵPOD,V > 0, cf. [44, 45]. In practice, we employ hierarchical approximate POD (HaPOD) to enhance computational effi-ciency [46]. We refer to [2] for a detailed description of the enrichment procedure. The combination of adaptive enrichment and the trust-region framework yields the TR-IRGNM algorithm, whose main steps are summarized in Algorithm 1. 20 Algorithm 1: TR-IRGNM 
+
+Data: Noise level δ, discrepancy parameter τ, ˜τ > 1, initial guess q(0)  
+
+> r
+
+∈ Q, tolerance for enlargement of the radius β2 ∈ [3 /4, 1), shrinking factor β3 ∈ (0 , 1) and maximal trust region-radius ηmax > 0.  
+
+> 1
+
+Set i = 0 and initialize the RB-ROM using Q(0)  
+
+> r
+
+:= span( {q(0)  
+
+> r
+
+, q ◦,h , ∇Jh(q(0)  
+
+> r
+
+)}) and 
+
+V (0)  
+
+> r
+
+:= span( {uh(q(0)  
+
+> r
+
+), p h(q(0)  
+
+> r
+
+)}).  
+
+> 2
+
+while Jh(q(i) 
+
+> r
+
+) > 12 τ 2δ2 do  
+
+> 3
+
+Solve ( IP r ) for q(i) 
+
+> trial ,r
+
+. 
+
+> 4
+
+if Jh(q(i) 
+
+> trial ,r
+
+) ≥ Jh(q(i) 
+
+> r
+
+) then  
+
+> 5
+
+Reject trial step, set q(i+1)  
+
+> r
+
+:= q(i) 
+
+> r
+
+, keep Q(i) 
+
+> r
+
+and V (i) 
+
+> r
+
+and shrink radius 
+
+η(i+1) := β3η(i). 
+
+> 6
+
+else  
+
+> 7
+
+Accept the trial step as q(i+1)  
+
+> r
+
+:= q(i) 
+
+> trial ,r
+
+, update Q(i) 
+
+> r
+
+and V (i) 
+
+> r
+
+at q(i+1)  
+
+> r
+
+. 
+
+> 8
+
+if ϱ(i) > β 2 then  
+
+> 9
+
+Enlarge radius η(i+1) := min 
+
+
+
+ηmax , β −13 η(i)
+
+. 
+
+> 10
+
+else  
+
+> 11
+
+Keep the trust-region radius unchanged, η(i+1) := η(i). 
+
+> 12
+
+i ← i + 1. 
+
+# 5 Numerical experiments 
+
+## 5.1 Setup 
+
+To assess the potential and limitations of the TR-IRGNM method combined with reduced-basis surrogates, we consider the inverse problem of identifying defects on the surface of a thin plate composed of a Cauchy elastic material [43, 61]. The goal is to reconstruct spatially distributed parameter fields corresponding to the Lam´ ecoefficients from (artificial) measurement data. For our numerical experiments, we consider a thin plate of dimensions 6 .7 mm × 1 m × 1 m, which is fixed along the boundaries in y- and z-directions. The computational domain is defined as Ω = [−0.1, 0.1] × [−15 , 15] × [−15 , 15]. The Dirichlet boundary is set as Γ := {(x, y, z ) ∈ ∂Ω | y = ±15 or z = ±15 } .
+
+We aim to simulate the displacement field u over the time interval [0 , T ], with T ≈
+
+533 μs. For the implementation, a rescaled time interval [0 , T ] = [0 , 16] is used. The plate is discretized using 4 × 60 × 60 trilinear finite elements on an equidistant grid with nodes ( xi, y j , z k), i = 1 , . . . , N x, j = 1 , . . . , N y , and k = 1 , . . . , N z . This yields a finite element space Vh with Nh = 55815 degrees of freedom. For the temporal discretization, the interval [0 , 16] is partitioned into 64 equidistant time steps. Spatial integrals are approximated using Gauss-Lobatto quadrature. For time integration, we employ the ζ-scheme with ζ = 0 .5, corresponding to the Crank-Nicolson method. 21 Following [24, 25], we model the stored energy function as 
+
+C(x, Y ) = 
+
+> Nx
+
+X
+
+> i=0
+> Ny
+
+X
+
+> j=0
+> Nz
+
+X
+
+> k=0
+
+qijk νijk (x) ˆC(Y ),
+
+with coefficients qijk > 0. Here, ˆC(Y ) denotes an isotropic stored energy density. The functions νijk are linear tensor-product B-splines used for the finite element discretization. They form a partition of unity, i.e., 
+
+X
+
+> i,j,k
+
+νijk (x) = 1 , x ∈ Ω.
+
+To model the elastic material, we adopt the standard linear elastic model. The stored energy density is then given by ˆC(Y ) = λ
+
+2 [tr( Y )] 2 + μ∥Ysym ∥2 
+
+> F
+
+,
+
+where 
+
+Ysym := 12 (Y + Y ⊤),
+
+and λ, μ > 0 are the Lam´ e parameters. For the material parameters, we choose 
+
+λ = 2 .18 ×10 10 N m −2 and μ = 1.12 ×10 10 N m −2. The density is set to ρ =2.70 ×10 3 kg m −3, cf. [61]. A defect in the material is represented by qijk ̸ = 1. Since only delamination at the upper surface is considered, we impose 
+
+qijk = 1 , for all i ≥ 1, j, k, 
+
+i.e., only coefficients associated with the upper layer may vary. Hence, the parameters of interest reduce to 
+
+qp := q0jk , p = 1 , . . . , N Q, NQ := Ny Nz = 3721 .
+
+It can be verified directly that C(x, Y ) satisfies Assumption 2.1. In particular, the inequalities (2.7) hold for ˆC(Y ) with 
+
+κp = 2 μ, μp = 3 λ + 2 μ. 
+
+Thus, we can define the set of admissible parameters as 
+
+Qad := q ∈ Q 10 −20 ≤ qp ≤ 10 20 for all p = 1 , . . . , N Q .
+
+22 y
+
+−0.5 m 0.5 m 
+
+1 ly
+
+z
+
+−0.5 m 0.5 m 
+
+1 lz
+
+t
+
+0.5
+
+17 μs
+
+lt
+
+533 μs
+
+Fig. 1 : Spatial and temporal factor functions ly , lz , and lt of the excitation signal in the lateral ( y, z ) and temporal ( t) domains, adapted from [25]. Our goal is to reconstruct the full parameter field q0jk by exciting the plate broadband signal of the form 
+
+l(t, x, y, z ) = lt(t)ly (y)lz (z)
+
+100
+
+
+
+emitted at the center of the plate the induced displacement field measured, cf. [25]. The functions lt, l y , l z are shown in Figure 1. We consider three different observation scenarios. As a first benchmark example we assume that the full displacement field is observed ( Experiment 1 ), i.e., the observation operator Cid is given by the canonical embedding (2.11). As a second class of experiments ( Experiment 2 ), the parameters are reconstructed from partial measurements of the displacement field on the upper surface ( x = −0.1). These measurements are modeled by the observation operator (2.12), where gc ∈ L2(∂Ω; R3) denotes the finite-element basis functions associated with the corresponding boundary vertices. Hence, sensors are placed at 
+
+{(x, y, z ) | x = −0.1, (y, z ) ∈ E}.
+
+We consider two sensor configurations: 
+
+(a) Grid configuration : Sensors are placed on a regular grid overing the measure-ment surfaces uniformly. The index set is 
+
+Egrid := {− 14 , −10 , . . . , 10 , 14 } × {− 14 , −10 , . . . , 10 , 14 },
+
+resulting in Nc = 64 measurement points. 
+
+(b) Edge–only configuration : Sensors are placed along the boundary lines of the surface. In this case Nc = 4 · 28, with 
+
+Eedge :=  {− 14 , 14 } × {− 14 , . . . , 14 } ∪  {− 14 , . . . , 14 } × {− 14 , 14 }.
+
+23 −0.5 0 0.5
+
+## −0.5
+
+## 0
+
+## 0.5
+
+## z [m] 
+
+> y [m]
+
+## Egrid 
+
+## −0.5 0 0.5
+
+## z [m] 
+
+## Eedge 
+
+Fig. 2 : Sensor configurations at x = −0.1 in the y–z cross-section: uniform grid arrangement Egrid (left) and edge-only arrangement Eedge (right), showing the spatial distribution of measurement points. 
+
+## 5.2 Experiments 
+
+The synthetic noisy measurements are generated by first computing the exact solution 
+
+ue 
+
+> h
+
+∈ V Kh corresponding to qe 
+
+> h
+
+∈ Qh, and then adding uniformly distributed random noise ξ ∈ CKh \ { 0} with magnitude δ > 0. Specifically, we define 
+
+yδ := Chue 
+
+> h
+
++ δ ξ
+
+∥ξ∥CKh
+
+.
+
+For each experiment, we compare the full-order IRGNM (FOM-IRGNM) and the trust-region IRGNM (TR-IRGNM), using ϵPOD,V = 10 −3 as POD-tolerance in the enrichment. In all setups, the reconstruction uses q(0) ≡ 1 as an initial guess, corre-sponding to a defect-free plate. This also serves as the reference parameter for the Tikhonov regularization term, i.e., q◦ ≡ 1. The regularization constant is initialized as 10 −5. For all experiments, we fix θ = 0 .4 and Θ = 1 .95, which control the adaptive update of the regularization parameter α > 0. For the trust-region strategy, we choose 
+
+η(0) = 0 .5, ηmax = 2 , β2 = 0 .75 , β3 = 0 .5.
+
+The discretized linearized problems ( fIP α,h ) and ( fIP α,r ) were solved by a projected gradient descent method. The step size was selected via a Barzilai–Borwein-type line search [62]. The optimization procedure was terminated when the first-order optimality condition was satisfied, when a maximum of 250 iterations was reached, or when the relative change in the objective fell below 10 −4. The parameter fields obtained from the FOM-IRGNM are denoted by qFOM := q(i∗(δ,y δ ))  
+
+> h
+
+, and those obtained from the TR-IRGNM by qTR := q(i∗(δ,y δ ))  
+
+> r
+
+.24 −0.5 0.0 0.5
+
+z [m] 
+
+−0.50.00.5
+
+> y [m]
+
+# I
+
+−0.5 0.0 0.5
+
+z [m] 
+
+# II 
+
+0.51.01.52.0Fig. 3 : Exact parameter qe for a large square-shaped inclusion located in {− 0.1} × 
+
+[−10 , −5] × [−10 , 10]. The parameter takes the constant value ˜ q; Left: stiff inclusion with ˜ q = 2 .0. Right: soft inclusion with ˜ q = 0 .5. The construction of the computational grid and the assembly of the full-order matrices are implemented in C++ using the finite element library deal.II (ver-sion 9.6.0) [48]. The time-stepping solver and the optimization and model order reduction algorithms are implemented in Python using the pyMOR framework [47]. The source code is available at [63]. All experiments were conducted on the PALMA II high-performance computing cluster at the University of M¨ unster, funded by the Ger-man Research Foundation (DFG, INST 211/667-1). Computations were performed on nodes equipped with Intel Skylake Gold 6140 CPUs clocked at 2.30 GHz and 92 GB RAM. 
+
+## 5.3 Large Inclusion 
+
+In the first example, we consider a single large rectangular inclusion embedded into an otherwise homogeneous material. We set qijk = ˜ q for all indices i, j, k such that the support of νijk is contained in {− 0.1}× [−10 , −5] ×[−10 , 10], see Figure 3. We compare two scenarios in which the material properties within this region are modified: in the first case (I), the material is locally stiffened with ˜ q = 2 .0, whereas in the second case (II), it is softened with ˜ q = 0 .5. In both cases, we assume a relative noise level of 1%, i.e., 
+
+δ = 10 −2 ∥C hue
+
+> h
+
+∥CKh .
+
+We choose τ = 1 .1 for Experiments 1 and 2(a), and τ = 2 .0 for Experiment 2(b). All runs satisfy the stopping criterion (2.15). Figures B.1 and B.2 show the reconstructed parameters for the stiff (I) and soft (II) inclusion, respectively, obtained with FOM-IRGNM (left) and TR-IRGNM (mid-dle), together with the corresponding difference field (right) for the various data sets. Table 1 summarizes the corresponding performance metrics. In particular, the relative 25 reconstruction error in the Qh-norm, 
+
+∥qFOM − qTR ∥Qh
+
+∥qFOM ∥Qh
+
+,
+
+as well as the total runtime and the resulting speed-up relative to the full-order IRGNM. Furthermore, we report the number of full-order solves of the (linearized) PDE, the final dimensions of the reduced parameter and state spaces ( nQ, n V ), the number of outer IRGNM iterations, and the total number of inner iterations accumulated over all outer iterations. The influence of the available data on the quality of the reconstructed parameter field is clearly visible. When the full displacement field is observed (Experiment 1), both the position and shape of the large inclusion, as well as the local values of the Lam´ e coefficients, are reconstructed with high accuracy. In contrast, reconstructions based on sensor measurements exhibit noticeable artifacts. While the general location of the inclusion can still be identified, its shape and the values of the reconstructed parameter field deviate significantly. In particular, for the sensor grid, the artifacts appear to be random, which suggests that they are primarily induced by noise. This indicates that the choice τ = 1 .1 in the stopping criterion may already be too small. The relative errors reported in Table 1 (Column 3) show that, across all experiments, the parameter fields reconstructed by the trust-region approach closely match those obtained with the full-order IRGNM. The relative reconstruction error in the Qh-norm remains below 5% for all runs. It can thus be concluded that these artifacts are                                                                                                                              
+
+> Setup Method Qhrel. err. time [s] speed-up #FOM sol. nQnVo. iter. tot. iter.
+> Experiment 1: C=Cid
+> IFOM –50114 –1393 ––24 24 TR 2.16e-02 6161 8.13 66 16 1004 16 45 II FOM –34282 –1018 ––18 18 TR 2.18e-02 3020 11.35 35 9842 834
+> Experiment 2 (a): C=Csensors , E =Egrid
+> IFOM –59838 –1502 ––28 28 TR 4.43e-02 6369 9.39 78 19 800 19 61 II FOM –45358 –1181 ––21 21 TR 2.57e-02 3173 14.29 53 12 646 12 44
+> Experiment 2 (b): C=Csensors , E =Eedge
+> IFOM –44101 –1310 ––27 27 TR 2.17e-02 6076 7.26 68 15 924 15 58 II FOM –33677 –1059 ––22 22 TR 1.76e-02 2569 13.11 45 10 569 10 46
+
+Table 1 : Comparison of FOM-IRGNM and trust-region (TR)-IRGNM for large inclu-sions. Reported are relative errors in Qh, runtimes, speed-ups, number of FOM solves, reduced dimensions ( nQ, n V ), and iteration counts. 26 −0.50.00.5
+
+> y [m]
+> qe
+
+I II III 
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.50.00.5
+
+> y [m]
+> qTR
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.5 0.0 0.5
+
+z [m] 
+
+> 1.00 1.50 2.00 2.50 3.00
+> 0.98 1.00 1.03 1.05 1.08 1.10 1.12
+> 1.00 1.50 2.00 2.50 3.00
+> 0.95 1.00 1.05 1.10
+> 1.00 1.50 2.00 2.50 3.00
+> 0.98 1.00 1.02 1.04 1.06 1.08
+
+Fig. 4 : Exact parameter field qe (top) and reconstructed parameter fields qTR (bot-tom) by TR-IRGNM for the point defect problems. not caused by the RB surrogate. This suggests that the trust-region strategy provides sufficiently accurate surrogate control for reliable parameter reconstruction. Regarding the computational time, TR-IRGNM is generally faster than FOM-IRGNM primarily due to the reduced number of full-order PDE solves. In fact, the majority of full-order solves can be attributed to the computation of the primal and adjoint snapshots uh(q(i) 
+
+> r
+
+) and ph(q(i) 
+
+> r
+
+). The observed speed-ups range between 7 .16 and 14 .29, with larger gains observed for the soft inclusion (II) than for the hard one (I). Compared with the pure online efficiency of standalone RB-ROMs, these speed-ups are relatively modest, as such methods often achieve speed-ups of the order 
+
+O(10 1) to O(10 2).However, such a comparison is not entirely appropriate, since TR-IRGNM does not involve a distinct offline phase. Instead, the trust-region optimization alternates between offline phases (re-adaptation of the RB-ROM) and online phases (execution of the Gauss–Newton iterations). When compared to other trust-region-type optimization methods, the observed speed-ups appear to be reasonable [1, 2, 58, 59]. Moreover, we observe here, and discuss further in Section 5.5, that the achieved speed-ups are negatively correlated with the total number of iterations. This behavior is to be expected: a larger number of iterations required for convergence leads to more frequent updates of the RB-ROM and, consequently, to higher reduced-basis dimensions. This, in turn, both increases the cost of the offline phases and slows down the online evaluation. 27 Setup Method Qh rel. err. time [s] speed-up #FOM sol. nQ nV o. iter. tot. iter.                                                                                                                                                                       
+
+> Experiment 1: C=Cid
+> IFOM –12039 –329 ––66TR 3.70e-03 854 14.09 18 4282 410 II FOM –11787 –325 ––66TR 4.15e-03 1145 10.29 22 5332 514 III FOM –7574 –225 ––44TR 2.16e-03 711 10.65 14 3229 36
+> Experiment 2 (a): C=Csensors , E =Egrid
+> IFOM –11046 –374 ––66TR 3.41e-03 1074 10.28 21 5272 511 II FOM –18079 –495 ––11 11 TR 2.53e-03 1139 15.87 22 5272 515 III FOM –14215 –378 ––66TR 4.64e-03 754 18.84 17 4236 410
+> Experiment 2 (b): C=Csensors , E =Eedge
+> IFOM –14238 –466 ––11 11 TR 2.75e-03 672 21.17 14 3198 314 II FOM –13425 –472 ––12 12 TR 3.38e-03 612 21.91 14 3198 315 III FOM –12674 –420 ––99TR 2.02e-03 712 17.80 14 3198 312
+
+Table 2 : Comparison of FOM-IRGNM and TR-IRGNM for point defect problems. Metrics are as in Table 1. 
+
+## 5.4 Point defect 
+
+As a second example, we investigate the performance of the TR-IRGNM in scenar-ios inspired by [24, 25, 49], namely configurations with highly localized defects. To this end, we consider three configurations of defects. For the early stopping we have considered again τ = 1 .1 for Experiments 1 and 2(a), and τ = 2 .0 for Experiment 2(b). For the first setup I, we introduce two localized inclusions. The first inclusion is assigned the value 3 .0 and is centered at (5 .0, 0.0), while the second has value 2 .0 at (−9.0, −1.0). The inclusions are constructed according to the following rule: a sin-gle central node is assigned the full inclusion value, while its eight directly adjacent neighboring nodes are assigned values halfway between the inclusion value and the background value. This yields a small transition region around each inclusion, thereby yielding a localized but smooth transition to the background. The remaining configu-rations are constructed analogously. In setup II, we consider a single defect centered at (1 .0, −1.0) with value 3 .0. In setup III, we consider three defects located at (1 .0, −10 .0), (−5.0, 7.0), and (8 .0, 9.0), all assigned the value 3 .0. All runs converged with respect to the prescribed stopping criteria. Figure 4 shows the exact parameter fields qe for the three setups (top) and the corresponding recon-structed parameter fields (bottom) obtained using TR-IRGNM using boundary sensor 28 −0.5 0.0 0.5                    
+
+> z[m]
+> −0.50.00.5
+> y [m]
+> δrel .= 0 .0
+> −0.50.00.5
+> z[m]
+> δrel .= 1 .0·10 −3
+> −0.50.00.5
+> z[m]
+> δrel .= 5 .0·10 −3
+> −0.50.00.5
+> z[m]
+> δrel .= 1 .0·10 −2
+> 0.75 1.00 1.25 1.50 1.75 2.00
+> 0.75 1.00 1.25 1.50 1.75 2.00
+> 0.90 1.00 1.10 1.20 1.30 1.40
+> 1.00 1.05 1.10
+
+Fig. 5 : Reconstructed parameter fields for different relative noise levels obtained by TR-IRGNM. measurements (Experiment 2(b)). Additionally, the reconstructions for setup I based on full-field and grid sensor data are shown in Figure B.3. The corresponding plots for the other setups are omitted, since the qualitative behavior is consistent across all three cases. Table 2 reports the same metrics as in the previous section. The observations for the point-defect configurations are largely consistent with those obtained for the large inclusions. However, TR-IRGNM performs slightly better in this regime: the relative errors with respect to FOM-IRGNM are smaller than in Section 5.3 (below 1%), while for Experiments 2(a) and 2(b) higher speedups are achieved, reaching up to 21 .91. This improvement can be attributed to the smaller number of iterations required for convergence, which reduces the relative cost of the offline phase and results in smaller final reduced-basis dimensions. 
+
+## 5.5 Dependence on noise level 
+
+As a final experiment, we investigate the performance of the TR-IRGNM for different noise levels. As a benchmark, we consider setup I for the detection of point defects introduced in the previous section. The noise level is set as 
+
+δ = δrel . ∥C hue
+
+> h
+
+∥CKh ,
+
+with δrel . ∈ { 0, 10 −3, 5 · 10 −3, 10 −2} and τ = 2 .0. Larger noise levels were also tested, however, in these cases the discrepancy principle was already satisfied at the initial iterate q(0)  
+
+> r
+
+.We employ edge sensor measurements (Experiment 2(b)) and compare the perfor-mance of the FOM-IRGNM and the TR-IRGNM. All runs were terminated after 24 hours if convergence had not been achieved earlier. For δrel . ∈ { 10 −3, 5 · 10 −3, 10 −2},both methods converged. For δrel . = 0, neither method converged within the allot-ted time. Consequently, the speed-up values reported in Table 3 are meaningful only for δrel . ∈ { 5 · 10 −3, 10 −2}. For δrel . = 10 −3, the reported value represents an upper bound, and for δrel . = 0 no meaningful speed-up can be assigned. Figure 5 shows the reconstructed parameter fields obtained with the TR-IRGNM. As expected, the reconstruction quality improves as the noise level decreases: the two point defects become more sharply localized and the local Lam´ e parameters converge 29 δrel . Method Qh rel. err. time [s] speed-up #FOM sol. nQ nV o. iter. tot. iter. 0.0 FOM – 80577 – 2622 – – 45 45 TR 1.49e-02 86122 – 229 57 2216 56 303 1e-3 FOM – 57591 – 1798 – – 34 34 TR 5.21e-03 18907 3.05 130 32 1213 32 161 5e-3 FOM – 23121 – 789 – – 18 18 TR 7.70e-03 1185 19.50 22 5 268 5 30 1e-2 FOM – 14195 – 466 – – 11 11 TR 2.75e-03 605 23.45 14 3 198 3 14 
+
+Table 3 : Comparison of FOM-IRGNM and TR-IRGNM for a point defect, setup I, with varying relative noise levels δrel . ∈ { 0, 10 −3, 5 · 10 −3, 10 −2}.toward their true values. However, Table 3 shows that the computational efficiency of the TR-IRGNM deteriorates as the noise level decreases. To further analyse this behaviour, Fig. 6 shows the objective functional J∗(q(i) 
+
+> ∗
+
+)plotted against both the total number of iterations (a) and the total runtime (b). During the early iterations, the TR-IRGNM achieves a reduction in the objective comparable to that of the FOM-IRGNM. However, as the optimization progresses, the two methods diverge: the TR-IRGNM exhibits progressively smaller decreases in the objective, while the FOM-IRGNM maintains a more consistent convergence rate. In addition, the runtime per outer iteration of TR-IRGNM increases substantially over the course of the optimization. Although the initial iterations are significantly faster compared to FOM-IRGNM, this advantage gradually diminishes over the itera-tions. Combined with progressively smaller reductions in the objective functional per iteration, this results in a gradual loss of efficiency of TR - IRGNM. In particular, for low noise levels where many iterations are required to reach convergence, TR-IRGNM eventually becomes less efficient than FOM-IRGNM, in terms of convergence rate and computational cost. 0 40 80 120 160 200 240 280 Total iterations                        
+
+> 10 −10
+> 10 −9
+> 10 −8
+> J∗(q(i)
+> ∗ )
+> (a) J∗(q(i)
+> ∗) vs. iterations
+> 020000 40000 60000 80000 Runtime [s]
+> 10 −10
+> 10 −9
+> 10 −8
+> J∗(q(i)
+> ∗ )
+> (b) J∗(q(i)
+> ∗) vs. runtime
+> TR FOM δrel .= 0 δrel .= 1 .0·10 −3δrel .= 5 .0·10 −3δrel .= 1 .0·10 −2
+
+Fig. 6 : Objective J∗(q(i) 
+
+> ∗
+
+) plotted against total iterations (a) and against runtime (b). The colors indicate noise levels, while line styles and markers distinguish TR and FOM. 30 0 40 80 120 160 200 240 280 Total iterations                
+
+> 10 −15
+> 10 −12
+> 10 −9
+> 10 −6
+> 10 −3
+> Error
+> (a) Objective error ( δrel .= 0)
+> 0612 18 24 30 36 42 48 54 Outer iterations
+> 0
+> 250
+> 500
+> 750
+> 1000
+> 1250
+> 1500
+> 1750
+> 2000
+> 2250 dim  Vr
+> (b) Reduced state-space dimension ( δrel .= 0)
+> Jr∆J
+> real ∆J
+> real /J rdim Vr
+
+Fig. 7 : (a) For the noise-free case δrel . = 0, the reduced objective Jr together with the corresponding absolute and relative errors. (b) For the noise-free case δrel . = 0, the evolution of the reduced state-space dimension dim Vr over the outer iterations. First, the reduced parameter space contains only a limited number of admissible decay directions compared to the full-order space. Consequently, the objective func-tional exhibits a less pronounced decrease per iteration in the TR-IRGNM than in the corresponding FOM-IRGNM. In other words, the reduced model restricts the set of feasible update directions, thereby limiting the achievable reduction of the objec-tive functional in each iteration. The second effect is related to the state reduction for hyperbolic problems. It is well known that standard Galerkin-based reduced-basis methods face intrinsic difficulties for wave-like or transport-dominated dynamics, since the associated solution manifolds typically exhibit slow decay of the Kolmogorov 
+
+n-width [64, 65]. Consequently, a comparatively large number of basis functions is required to obtain an accurate reduced-order approximation over larger regions of the parameter space, and the relevant dynamics cannot be represented efficiently in a low-dimensional reduced space. To support this heuristic interpretation, Figure 7(a) shows the absolute error 
+
+|Jh(q(i,l ) 
+
+> r
+
+) − Jr (q(i,l ) 
+
+> r
+
+)| =: ∆ J
+
+> real
+
+,
+
+together with the corresponding relative error ∆ J
+
+> real
+
+/J r (q(i,l ) 
+
+> r
+
+) for the run with δrel . = 0. Figure 7(b) shows the evolution of the reduced state-space dimension dim V (i) 
+
+> r
+
+over the outer iterations. Figure 7(a) shows that the relative objective error decreases sharply immediately after enrichment with the local snapshots uh(q(i) 
+
+> h
+
+) and ph(q(i) 
+
+> h
+
+), but sub-sequently increases again to a similar level (around 10 −1) as the iterates move away from the corresponding snapshot parameter. Importantly, no systematic decrease of the relative error can be observed within the considered range of reduced dimensions. This indicates that the local enrichments do not yield a globally accurate surrogate model, since the reduced state space remains insufficiently rich to capture the domi-nant dynamics over the explored parameter region. As a consequence, additional basis enrichment provides only local improvements in approximation quality, as can be 31 observed in Figure 7(b). In each enrichment step, approximately 30 − 40 new vectors are added to the reduced basis. No saturation can be observed, indicating that a sub-stantial fraction of the newly generated snapshots is still required at every enrichment step in order to accurately represent the evolving local dynamics. 
+
+# 6 Conclusion & Outlook 
+
+In this work, we have extended the numerical methodology introduced in [1, 2], which employs adaptive reduced bases reduced-order models within a trust-region-based IRGNM procedure, to inverse problems governed by Cauchy’s equation in (hyper)elastic materials. To the best of our knowledge, this is the first application of this framework to hyperbolic PDE-constrained problems. Numerical experiments motivated by Structural Health Monitoring demonstrate the feasibility of the proposed approach across a range of defect scenarios. Significant reductions in computational cost are achieved while maintaining reconstruction accu-racy comparable to those of the full-order IRGNM, both for full-state observations and for sensor-based measurements. The trust-region mechanism provides reliable error control, ensuring close agreement between reduced and full-order solutions and accurate recovery of the main features of the parameter field. These findings underline the potential of the approach for more complex appli-cations and real-time monitoring pipelines. At the same time, they reveal intrinsic limitations of classical reduced-basis methods, which restrict achievable speed-ups in more demanding regimes. Future work will therefore focus on the development of more expressive surrogate models, for instance based on data-driven or machine learning techniques, as well as on establishing rigorous convergence guarantees for the proposed framework. 
+
+# Statements and declarations 
+
+Funding. Benedikt Klein and Mario Ohlberger acknowledge funding from the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) under Ger-many’s Excellence Strategy – EXC 2044/2 – 390685587, Mathematics M¨ unster: Dynamics–Geometry–Structure. 
+
+Competing interests. The authors have no relevant financial or non-financial interests to disclose. 
+
+# References 
+
+[1] Kartmann, M., Keil, T., Ohlberger, M., Volkwein, S., Kaltenbacher, B.: Adap-tive reduced basis trust region methods for parameter identification problems. Computational Science and Engineering 1(3) (2024) https://doi.org/10.1007/ s44207-024-00002-z 32 [2] Kartmann, M., Klein, B., Ohlberger, M., Schuster, T., Volkwein, S.: Adap-tive reduced basis trust region methods for parabolic inverse problems. Inverse Problems 41 (12), 125006–36 (2025) https://doi.org/10.1088/1361-6420/ae2a66 [3] Giurgiutiu, V.: Structural Health Monitoring with Piezoelectric Wafer Active Sensors, Second edition. edn. Academic Press Elsevier, Amsterdam (2014). https: //doi.org/10.1016/C2013-0-00155-7 [4] Lammering, R., Grabbert, U., Sinapius, M., Schuster, T., Wierach, P. (eds.): Lamb-Wave Based Structural Health Monitoring in Polymer Composites. Research Topics in Aerospace. Springer, Cham (2018). https://doi.org/10.1007/ 978-3-319-49715-0 [5] Yang, S., Li, P., Guo, M., Liao, S., Wu, H.: Study on dynamic load monitoring of an enhanced stress absorption layer. Frontiers in Materials 7, 148 (2020) https: //doi.org/10.3389/fmats.2020.00148 [6] Jadamba, B., Khan, A.A., Oberai, A.A., Sama, M.: First-order and second-order adjoint methods for parameter identification problems with an application to the elasticity imaging inverse problem. Inverse Problems in Science and Engineering 
+
+25 (12), 1768–1787 (2017) https://doi.org/10.1080/17415977.2017.1289195 [7] Sun, Y., Luo, L., Chen, K., Qin, X., Zhang, Q.: A time-domain method for load identification using moving weighted least square technique. Computers & Structures 234 (2020) https://doi.org/10.1016/j.compstruc.2020.106254 [8] Soman, R., Ostachowicz, W.: Kalman filter based load monitoring in beam like structures using fibre-optic strain sensors. Sensors 19 (1), 103 (2019) https://doi. org/10.3390/s19010103 [9] Patel, D., Tibrewala, R., Vega, A., Dong, L., Hugenberg, N., Oberai, A.A.: Cir-cumventing the solution of inverse problems in mechanics through deep learning: application to elasticity imaging. Comput. Methods Appl. Mech. Engrg. 353 ,448–466 (2019) https://doi.org/10.1016/j.cma.2019.04.045 [10] Iele, A., Leone, M., Consales, M., Persiano, G.V., Brindisi, A., Ameduri, S., Concilio, A., Ciminello, M., Apicella, A., Bocchetto, F., Cusano, A.: Load mon-itoring of aircraft landing gears using fiber optic sensors. Sensors and Actuators A: Physical 281 , 31–41 (2018) https://doi.org/10.1016/j.sna.2018.08.023 [11] Tashakori, S., Baghalian, A., Unal, M., Fekrmandi, H., Seny¨ urek, V., McDaniel, D., Tansel, I.N.: Contact and non-contact approaches in load monitoring appli-cations using surface response to excitation method. Measurement 89 , 197–203 (2016) https://doi.org/10.1016/j.measurement.2016.04.013 [12] Bonnet, M., Constantinescu, A.: Inverse problems in elasticity. Inverse Problems 
+
+21 (2) (2005) https://doi.org/10.1088/0266-5611/21/2/R01 33 [13] Fedele, R., Placidi, L., Fabbrocino, F.: A review of inverse problems for gener-alized elastic media: formulations, experiments, synthesis. Continuum Mechan-ics and Thermodynamics 36 (6), 1413–1453 (2024) https://doi.org/10.1007/ s00161-024-01314-3 [14] Jankowski, L.: Off-line identification of dynamic loads. Structural and Multidisciplinary Optimization 37 , 609–623 (2009) https://doi.org/10.1007/ s00158-008-0249-0 [15] Zhang, Q., Jankowski, L., Duan, Z.: Identification of coexistent load and damage. Structural and Multidisciplinary Optimization 41 , 243–253 (2010) https://doi. org/10.1007/s00158-009-0421-1 [16] Taddei, T., Penn, J.D., Yano, M., Patera, A.T.: Simulation-based classification; a model-order-reduction approach for structural health monitoring. Arch. Comput. Methods Eng. 25 (1), 23–45 (2018) https://doi.org/10.1007/s11831-016-9185-0 [17] Bigoni, C., Hesthaven, J.S.: Simulation-based anomaly detection and damage localization: an application to structural health monitoring. Comput. Methods Appl. Mech. Engrg. 363 , 112896–30 (2020) https://doi.org/10.1016/j.cma.2020. 112896 [18] Torzoni, M., Manzoni, A., Mariani, S.: A multi-fidelity surrogate model for struc-tural health monitoring exploiting model order reduction and artificial neural networks. Mechanical Systems and Signal Processing 197 (2023) https://doi.org/ 10.1016/j.ymssp.2023.110376 [19] Chen, C.-T., Gu, G.X.: Physics-informed deep-learning for elasticity: forward, inverse, and mixed problems. Advanced Science 10 (18), 2300439 (2023) https: //doi.org/10.1002/advs.202300439 [20] Ni, B., Gao, H.: A deep learning approach to the inverse problem of modulus identification in elasticity. Mrs Bulletin 46 , 19–25 (2021) https://doi.org/10.1557/ s43577-020-00006-y [21] Bhattacharya, K., Cao, L., Stepaniants, G., Stuart, A., Trautner, M.: Learning memory and material dependent constitutive laws. arXiv preprint arXiv:2502.05463 (2025) https://doi.org/10.48550/arXiv.2502.05463 [22] Bhattacharya, K., Cao, L., Stuart, A.: Optimal experimental design for reliable learning of history-dependent constitutive laws. Comput. Methods Appl. Mech. Engrg. 457 , 119022 (2026) https://doi.org/10.1016/j.cma.2026.119022 [23] Ghajari, M., Sharif-Khodaei, Z., Aliabadi, M.H., Apicella, A.: Identification of impact force for smart composite stiffened panels. Smart Materials and Structures 
+
+22 (8) (2013) https://doi.org/10.1088/0964-1726/22/8/085014 34 [24] Klein, R., Schuster, T., Wald, A.: Sequential subspace optimization for recovering stored energy functions in hyperelastic materials from time-dependent data, 165– 190 (2021) https://doi.org/10.1007/978-3-030-57784-1 6 [25] Seydel, J., Schuster, T.: Identifying the stored energy of a hyperelastic struc-ture by using an attenuated landweber method. Inverse Problems 33 (12), 124004 (2017) https://doi.org/10.1088/1361-6420/aa8d91 [26] Seydel, J., Schuster, T.: On the linearization of identifying the stored energy function of a hyperelastic material from full knowledge of the displacement field. Mathematical Methods in the Applied Sciences 40 (1), 183–204 (2017) https:// doi.org/10.1002/mma.3979 [27] Woestehoff, A., Schuster, T.: Uniqueness and stability result for cauchy’s equation of motion for a certain class of hyperelastic materials. Applicable Analysis 94 (8), 1561–1593 (2015) https://doi.org/10.1080/00036811.2014.940519 [28] Hanke, M.: A regularizing Levenberg-Marquardt scheme with applications to inverse groundwater filtration problems. Inverse Problems 13 (1), 79–95 (1997) https://doi.org/10.1088/0266-5611/13/1/007 [29] Langer, S., Hohage, T.: Convergence analysis of an inexact iteratively regularized Gauss-Newton method under general source conditions. J. Inverse Ill-Posed Probl. 
+
+15 (3), 311–327 (2007) https://doi.org/10.1515/jiip.2007.017 [30] Kaltenbacher, B., Kirchner, A., Vexler, B.: Goal oriented adaptivity in the IRGNM for parameter identification in PDEs: II. all-at-once formulations. Inverse Problems 30 (2), 045002 (2014) https://doi.org/10.1088/0266-5611/30/4/045002 [31] Kaltenbacher, B., Kirchner, A., Veljovi´ c, S.: Goal oriented adaptivity in the IRGNM for parameter identification in PDEs: I. reduced formulation. Inverse Problems 30 (4), 045001 (2014) https://doi.org/10.1088/0266-5611/30/4/045001 [32] Kaltenbacher, B., Souza, M.L.: Convergence and adaptive discretization of the IRGNM Tikhonov and the IRGNM Ivanov method under a tangential cone con-dition in Banach space. Numerische Mathematik 140 , 449–478 (2018) https: //doi.org/10.1007/s00211-018-0971-5 [33] Kaltenbacher, B., Nguyen, T.T.N., Scherzer, O.: The tangential cone condi-tion for some coefficient identification model problems in parabolic PDEs. In: Time-dependent Problems in Imaging and Parameter Identification, pp. 121–163. Springer, Cham (2021). https://doi.org/10.1007/978-3-030-57784-1 5 [34] Kaltenbacher, B., Schuster, T., Wald, A.: Time-dependent Problems in Imaging and Parameter Identification. Springer, Heidelberg (2021). https://doi.org/10. 1007/978-3-030-57784-1 35 [35] Kaltenbacher, B., Nguyen, T.T.N., Wald, A., Schuster, T.: Parameter identifi-cation for the Landau–Lifshitz–Gilbert equation in magnetic particle imaging. Time-dependent Problems in Imaging and Parameter Identification, 377–412 (2021) https://doi.org/10.1007/978-3-030-57784-1 13 [36] Lieberman, C., Willcox, K., Ghattas, O.: Parameter and state model reduction for large-scale statistical inverse problems. SIAM Journal on Scientific Computing 
+
+32 (5), 2523–2542 (2010) https://doi.org/10.1137/090775622 [37] Himpe, C., Ohlberger, M.: Data-driven combined state and parameter reduction for inverse problems. Adv. Comput. Math. 41 (5), 1343–1364 (2015) https://doi. org/10.1007/s10444-015-9420-5 [38] Gubisch, M., Volkwein, S.: Proper orthogonal decomposition for linear-quadratic optimal control. Model reduction and approximation: theory and algorithms 
+
+15 (1) (2017) https://doi.org/10.1137/1.9781611974829.ch1 [39] Ghattas, O., Willcox, K.: Learning physics-based models from data: perspectives from inverse problems and model reduction. Acta Numer. 30 , 445–554 (2021) https://doi.org/10.1017/S0962492921000064 [40] Yao, B., Luo, D., Cao, L., Kovachki, N., O’Leary-Roseberry, T., Ghattas, O.: Derivative-informed fourier neural operator: Universal approximation and appli-cations to PDE-constrained optimization. arXiv preprint arXiv:2512.14086 (2025) https://doi.org/10.48550/arXiv.2512.14086 [41] Benner, P., Cohen, A., Ohlberger, M., Willcox, K. (eds.): Model Reduction and Approximation. Theory and Algorithms. Computational Science & Engineer-ing, vol. 15, p. 412. Society for Industrial and Applied Mathematics (SIAM), Philadelphia, PA (2017). https://doi.org/10.1137/1.9781611974829 [42] Quarteroni, A., Manzoni, A., Negri, F.: Reduced Basis Methods for Partial Dif-ferential Equations: An Introduction. Springer, Cham (2015). https://doi.org/10. 1007/978-3-319-15431-2 [43] Holzapfel, G.A.: Nonlinear Solid Mechanics: A Continuum Approach for Engi-neering Science. John Wiley & Sons, Chichester, England (2002) [44] Haasdonk, B., Ohlberger, M.: Reduced basis method for finite volume approx-imations of parametrized linear evolution equations. Mathematical Modelling and Numerical Analysis 42 (2), 277–302 (2008) https://doi.org/10.1051/m2an: 2008001 [45] Haasdonk, B.: Convergence rates of the POD-greedy method. ESAIM Math. Model. Numer. Anal. 47 (3), 859–873 (2013) https://doi.org/10.1051/m2an/ 2012045 36 [46] Himpe, C., Leibner, T., Rave, S.: Hierarchical approximate proper orthogonal decomposition. SIAM Journal on Scientific Computing 40 (5), 3267–3292 (2018) https://doi.org/10.1137/16M1085413 [47] Milk, R., Rave, S., Schindler, F.: pyMOR – Generic algorithms and interfaces for model order reduction. SIAM Journal on Scientific Computing 38 , 194–216 (2016) https://doi.org/10.1137/15M1026614 [48] Africa, P.C., Arndt, D., Bangerth, W., Blais, B., Fehling, M., Gassm¨ oller, R., Heister, T., Heltai, L., Kinnewig, S., Kronbichler, M., Maier, M., Munch, P., Schreter-Fleischhacker, M., Thiele, J.P., Turcksin, B., Wells, D., Yushutin, V.: The deal.II library, version 9.6. Journal of Numerical Mathematics 32 (4), 369–380 (2024) https://doi.org/10.1515/jnma-2024-0137 [49] Binder, F., Sch¨ opfer, F., Schuster, T.: Defect localization in fibre-reinforced com-posites by computing external volume forces from surface sensor measurements. Inverse Problems 31 (2), 025006 (2015) https://doi.org/10.1088/0266-5611/31/2/ 025006 [50] Wloka, J.: Partial Differential Equations. Cambridge Studies in Advanced Math-ematics. Cambridge University Press, Cambridge, UK (1987). https://doi.org/10. 1017/CBO9781139171755 [51] Kaltenbacher, B., Sch¨ opfer, F., Schuster, T.: Iterative methods for nonlinear ill-posed problems in banach spaces: convergence and applications to parameter identification problems. Inverse Problems 25 (6), 065003 (2009) https://doi.org/ 10.1088/0266-5611/25/6/065003 [52] Nocedal, J., Wright, S.J.: Numerical Optimization, 2nd edn. Springer Series in Operations Research and Financial Engineering. Springer, New York (2006). https://doi.org/10.1007/978-0-387-40065-5 [53] Glas, S., Patera, A.T., Urban, K.: A reduced basis method for the wave equation. International Journal of Computational Fluid Dynamics 34 (2), 139–146 (2020) https://doi.org/10.1080/10618562.2019.1686486 [54] Bernardi, C., S¨ uli, E.: Time and space adaptivity for the second-order wave equation. Mathematical Models and Methods in Applied Sciences 15 (02), 199–225 (2005) https://doi.org/10.1142/S0218202505000339 [55] Qian, E., Grepl, M., Veroy, K., Willcox, K.: A certified trust region reduced basis approach to PDE-constrained optimization. SIAM Journal on Scientific Computing 39 (5), 434–460 (2017) https://doi.org/10.1137/16M1081981 [56] Klein, B., Ohlberger, M.: Multi-fidelity learning of reduced order models for parabolic PDE constrained optimization. Adv. Comput. Math. 52 (2), 19–36 (2026) https://doi.org/10.1007/s10444-026-10296-6 37 [57] Yue, Y., Meerbergen, K.: Accelerating optimization of parametric linear systems by model order reduction. SIAM J. Optim. 23 (2), 1344–1370 (2013) https://doi. org/10.1137/120869171 [58] Keil, T., Mechelli, L., Ohlberger, M., Schindler, F., Volkwein, S.: A non-conforming dual approach for adaptive trust-region reduced basis approximation of PDE-constrained parameter optimization. ESAIM: Mathematical Modelling and Numerical Analysis 55 (3), 1239–1269 (2021) https://doi.org/10.1051/m2an/ 2021019 [59] Keil, T., Ohlberger, M.: A relaxed localized trust-region reduced basis approach for optimization of multiscale problems. ESAIM: Mathematical Modelling and Numerical Analysis 58 (1), 79–105 (2024) https://doi.org/10.1051/m2an/ 2023089 [60] Banholzer, S., Keil, T., Mechelli, L., Ohlberger, M., Schindler, F., Volkwein, S.: An adaptive projected newton non-conforming dual approach for trust-region reduced basis approximation of PDE-constrained parameter optimization. arXiv preprint arXiv:2012.11653 (2020) https://doi.org/10.48550/arXiv.2012.11653 [61] Lechleiter, A., Schlasche, J.W.: Identifying Lam´ e parameters from time-dependent elastic wave measurements. Inverse Problems in Science and Engineer-ing 25 (1), 2–26 (2017) https://doi.org/10.1080/17415977.2015.1132713 [62] Azmi, B., Bernreuther, M.: On the nonmonotone linesearch for a class of infinite-dimensional nonsmooth problems. arXiv (2023) https://doi.org/10.48550/arXiv. 2303.01878 [63] Klein, B., Ohlberger, M., Schuster, T.: Source code to “Adaptive Reduced-Basis Trust-Region Methods for Defect Identification in Elastic Materials”. Zenodo (2026). https://doi.org/10.5281/zenodo.20274435 [64] Greif, C., Urban, K.: Decay of the Kolmogorov N-width for wave problems. Applied Mathematics Letters 96 , 216–222 (2019) https://doi.org/10.1016/j.aml. 2019.05.013 [65] Arbes, F., Greif, C., Urban, K.: The Kolmogorov N-width for linear trans-port: Exact representation and the influence of the data. arXiv preprint arXiv:2305.00066 (2023) https://doi.org/10.48550/arXiv.2305.00066 38 A Proofs 
+
+## A.1 Proof of Theorem 3.2 
+
+Proof. The proof follows a standard discrete energy argument; see, e.g., [53, 54]. For brevity, we introduce the notation 
+
+ek−1+ ζ := (1 − ζ)ek−1 + ζe k, ˙ek−1+ ζ := (1 − ζ) ˙ ek−1 + ζ ˙ek.
+
+Since the full-order solution satisfies the primal scheme exactly and the reduced solution satisfies the reduced scheme, the error satisfies, for all k ∈ K,1∆t MH ( ˙ ek − ˙ek−1) + Ah(qr )ek−1+ ζ = rk
+
+> pr
+
+(ur , ˙ur ; qr ),
+
+1∆t (ek − ek−1) = ˙ ek−1+ ζ .
+
+(A.43) We test the first equation in (A.43) with ˙ ek−1+ ζ and use the second equation to rewrite the stiffness term: ( ˙ ek−1+ ζ )⊤Ah(qr )ek−1+ ζ = ( ek−1+ ζ )⊤Ah(qr ) ˙ ek−1+ ζ = 1∆t (ek−1+ ζ )⊤Ah(qr )( ek−ek−1).
+
+This yields the energy balance 1∆t ( ˙ ek−1+ ζ )⊤MH ( ˙ ek− ˙ek−1)+ 1∆t (ek−1+ ζ )⊤Ah(qr )( ek−ek−1) = ( ˙ ek−1+ ζ )⊤rk
+
+> pr
+
+(ur , ˙ur ; qr ).
+
+(A.44) Next, we use the identity 
+
+ (1 − ζ)x + ζy ⊤B(y − x) = 12
+
+ ∥y∥2 
+
+> B
+
+− ∥ x∥2
+
+> B
+
+ +
+
+
+
+ζ − 12
+
+
+
+∥y − x∥2 
+
+> B
+
+,
+
+which holds for any symmetric positive semidefinite matrix B. Since ζ ≥ 12 , this implies 
+
+ (1 − ζ)x + ζy ⊤B(y − x) ≥ 12
+
+ ∥y∥2 
+
+> B
+
+− ∥ x∥2
+
+> B
+
+. (A.45) Applying (A.45) with 
+
+B = MH , x = ˙ ek−1, y = ˙ ek,
+
+and with 
+
+B = Ah(qr ), x = ek−1, y = ek,
+
+we obtain from (A.44) 12∆ t
+
+
+
+∥ ˙ek∥2 
+
+> MH
+
+− ∥ ˙ek−1∥2 
+
+> MH
+
++ ∥ek∥2  
+
+> Ah(qr)
+
+− ∥ ek−1∥2 
+
+> Ah(qr)
+
+
+
+≤ ( ˙ ek−1+ ζ )⊤rk
+
+> pr
+
+(ur , ˙ur ; qr ).
+
+39 Introducing the energy norm 
+
+∥ek∥2 
+
+> E
+
+:= ∥ ˙ek∥2 
+
+> MH
+
++ ∥ek∥2 
+
+> Ah(qr)
+
+,
+
+this yields 12∆ t
+
+ ∥ek∥2 
+
+> E
+
+− ∥ ek−1∥2
+
+> E
+
+ ≤ ( ˙ ek−1+ ζ )⊤rk
+
+> pr
+
+(ur , ˙ur ; qr ). (A.46) By duality, we estimate the right-hand side as ( ˙ ek−1+ ζ )⊤rk
+
+> pr
+
+(ur , ˙ur ; qr ) ≤ ∥ rk
+
+> pr
+
+(ur , ˙ur ; qr )∥H′ 
+
+> h
+
+∥ ˙ek−1+ ζ ∥Hh .
+
+Using ˙ek−1+ ζ = (1 − ζ) ˙ ek−1 + ζ ˙ek,
+
+and ζ ∈ [1 /2, 1], we obtain 
+
+∥ ˙ek−1+ ζ ∥Hh ≤ (1 − ζ)∥ ˙ek−1∥Hh + ζ∥ ˙ek∥Hh ≤ ∥ ek−1∥E + ∥ek∥E .
+
+Inserting this into (A.46) yields 
+
+∥ek∥2 
+
+> E
+
+− ∥ ek−1∥2 
+
+> E
+
+≤ 2∆ t ∥rk
+
+> pr
+
+(ur , ˙ur ; qr )∥H′
+
+> h
+
+ ∥ek−1∥E + ∥ek∥E
+
+.
+
+Using the identity 
+
+a2 − b2 = ( a − b)( a + b),
+
+with a = ∥ek∥E and b = ∥ek−1∥E , we obtain (∥ek∥E − ∥ ek−1∥E )( ∥ek∥E + ∥ek−1∥E ) ≤ 2∆ t ∥rk
+
+> pr
+
+(ur , ˙ur ; qr )∥H′ 
+
+> h
+
+(∥ek∥E + ∥ek−1∥E ).
+
+If ∥ek∥E + ∥ek−1∥E = 0, the estimate is trivial. Otherwise, dividing by this term yields 
+
+∥ek∥E − ∥ ek−1∥E ≤ 2∆ t ∥rk
+
+> pr
+
+(ur , ˙ur ; qr )∥H′ 
+
+> h
+
+.
+
+Since e0 = 0 and ˙ e0 = 0, we have ∥e0∥E = 0, and summation over k′ = 1 , . . . , k gives 
+
+∥ek∥E ≤ 2∆ t
+
+> k
+
+X
+
+> k′=1
+
+∥rk′
+
+> pr
+
+(ur , ˙ur ; qr )∥H′ 
+
+> h
+
+. (A.47) Finally, squaring (A.47), summing over k = 1 , . . . , K , and taking the square root yields 
+
+> K
+
+X
+
+> k=1
+
+∥ek∥2
+
+> E
+
+!1/2
+
+≤ 2
+
+
+
+> K
+
+X
+
+> k=1
+
+∆t
+
+> k
+
+X
+
+> k′=1
+
+∥rk′
+
+> pr
+
+(ur , ˙ur ; qr )∥H′
+
+> h
+
+!2
+
+> 1/2
+
+.
+
+This proves (3.37). 40 A.2 Proof of Theorem 3.3 
+
+Proof. We write 
+
+Jh(qr ) − Jr (qr ) = ∆ t
+
+> K
+
+X
+
+> k=1
+
+ 12 (ek)⊤Chek + ( ek)⊤Ch
+
+ ukr − yδ,k h
+
+
+
+≤ ∆t
+
+> K
+
+X
+
+> k=1
+
+" ∥C∥ 2
+
+> L(V,C )
+
+2 ∥ek∥2 
+
+> Vh
+
++ ∥C ukr − yδ,k h ∥Ch ∥ek∥Vh
+
+#
+
+.
+
+By the G˚ arding inequality (2.1), the Poincar´ e inequality, and Assumption 2.1, there holds 
+
+∥v∥2 
+
+> V
+
+≤ 1
+
+aqr
+
+⟨A(qr )v, v ⟩V ′,V , aqr = ˜ κ/C 2 
+
+> P
+
+> 0.
+
+Hence, 
+
+∥ek∥2 
+
+> Vh
+
+≤ 1
+
+aqr
+
+(ek)⊤Ah(qr )ek.
+
+Applying Cauchy–Schwarz and using the definition of Jr (qr ) yields (3.38). 41 B Reconstructed parameter fields 
+
+## B.1 Large Inclusions −0.50.00.5
+
+> y [m] 1
+
+qFOM qTR qFOM − qTR 
+
+−0.50.00.5
+
+> y [m] 2(a)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.50.00.5
+
+> y [m] 2(b)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.5 0.0 0.5
+
+z [m] 
+
+> 0.50 0.75 1.00 1.25 1.50 1.75 2.00
+> 0.50 0.75 1.00 1.25 1.50 1.75 2.00
+> -0.20 -0.10 0.00 0.10
+> 0.50 1.00 1.50 2.00 2.50
+> 0.50 1.00 1.50 2.00 2.50
+> -0.20 0.00 0.20 0.40
+> 0.75 1.00 1.25 1.50 1.75 2.00 2.25
+> 0.75 1.00 1.25 1.50 1.75 2.00 2.25
+> -0.10 -0.05 0.00 0.05 0.10
+
+Large Inclusion I 
+
+Fig. B.1 : Reconstructed parameter field for the large inclusion I (stiffened case, ˜q = 2 .0). Rows correspond to Experiments 1, 2(a), and 2(b), while columns show the parameter fields obtained by FOM-IRGNM, qFOM , TR-IRGNM, qTR , and their dif-ference. 42 −0.50.00.5
+
+> y [m] 1
+
+qFOM qTR qFOM − qTR 
+
+−0.50.00.5
+
+> y [m] 2(a)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.50.00.5
+
+> y [m] 2(b)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.5 0.0 0.5
+
+z [m] 
+
+> 0.40 0.60 0.80 1.00 1.20
+> 0.40 0.60 0.80 1.00 1.20
+> -0.10 0.00 0.10 0.20
+> 0.20 0.40 0.60 0.80 1.00 1.20
+> 0.20 0.40 0.60 0.80 1.00 1.20
+> -0.20 -0.10 0.00 0.10
+> 0.20 0.40 0.60 0.80 1.00 1.20
+> 0.20 0.40 0.60 0.80 1.00 1.20
+> -0.15 -0.10 -0.05 0.00 0.05 0.10
+
+Large Inclusion II Fig. B.2 : Reconstructed parameter field for the large inclusion II (softened case, ˜q = 0 .5). Rows correspond to Experiments 1, 2(a), and 2(b), while columns show the parameter fields obtained by FOM-IRGNM, qFOM , TR-IRGNM, qTR , and their difference. 43 B.2 Point defects −0.50.00.5
+
+> y [m] 1
+
+qFOM qTR qFOM − qTR 
+
+−0.50.00.5
+
+> y [m] 2(a)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.50.00.5
+
+> y [m] 2(b)
+
+−0.5 0.0 0.5
+
+z [m] 
+
+−0.5 0.0 0.5
+
+z [m] 
+
+> 0.95 1.00 1.05 1.10 1.15 1.20 1.25 1.30
+> 0.95 1.00 1.05 1.10 1.15 1.20 1.25 1.30
+> -0.04 -0.02 0.00 0.02 0.04
+> 0.95 1.00 1.05 1.10 1.15 1.20
+> 0.95 1.00 1.05 1.10 1.15 1.20
+> -0.01 0.00 0.01 0.02 0.03 0.04
+> 1.00 1.05 1.10 1.15
+> 1.00 1.05 1.10 1.15
+> -0.02 -0.01 0.00 0.01 0.02 0.03
+
+Point defect I 
+
+Fig. B.3 : Reconstructed parameter field for point defect setup I. Rows correspond to Experiments 1, 2(a), and 2(b), while columns show the parameter fields obtained by FOM-IRGNM, qFOM , TR-IRGNM, qTR , and their difference. 44

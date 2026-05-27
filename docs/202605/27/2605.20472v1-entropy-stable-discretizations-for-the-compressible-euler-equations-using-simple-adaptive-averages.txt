@@ -1,0 +1,464 @@
+Title: Entropy-stable discretizations for the compressible Euler equations using simple adaptive averages
+
+URL Source: https://arxiv.org/pdf/2605.20472v1
+
+Published Time: Thu, 21 May 2026 00:15:56 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# ENTROPY -STABLE DISCRETIZATIONS FOR THE COMPRESSIBLE 
+
+# EULER EQUATIONS USING SIMPLE ADAPTIVE AVERAGES ∗
+
+A P REPRINT 
+
+Carlo De Michele 
+
+Gran Sasso Science Institute (GSSI) L’Aquila, Italy 
+
+carlo.demichele@gssi.it 
+
+Ayaboe K. Edoh 
+
+Amentum — Edwards Air Force Base CA 93524, USA 
+
+ayaboe.edoh@us.amentum.com 
+
+May 19, 2026 
+
+## ABSTRACT 
+
+Entropy stabilization of the compressible Euler system is achieved by adapting the averages that are applied to the density and internal energy variables. The approach achieves non-linear robustness despite the use of simplified symmetric means (e.g., arithmetic, geometric, or harmonic evaluations), including their related expansions for asymptotic entropy conservation. The proposed formulation works via centralized convective terms and can naturally adhere to additional structures of the flow equations such as kinetic-energy- and pressure-equilibrium-preservation. 
+
+Keywords Compressible flow · Entropy stability · Kinetic-energy-preserving · Pressure-equilibrium-preserving 
+
+## 1 Introduction 
+
+Numerical simulations of compressible flows—especially in under-resolved turbulent or transitional regimes—remain a challenge in computational fluid dynamics. In this context, discretizations that respect the physical principle of an entropy inequality, consistent with the second law of thermodynamics, have been of great interest for ensuring non-linear robustness and physical fidelity [1, 2, 3]. Traditionally, entropy stabilization is achieved by appending tailored dissipative terms to the baseline semi-discretization [4, 5, 6]. Instead, the present work proposes a novel framework for achieving entropy stability (ES) by locally adapting the central averages employed within the inviscid fluxes of the compressible Euler equations. Iso-lating such choices to the density and internal energy interface reconstructions allows to identify simple ES conditions which rely on employing averages (e.g., arithmetic, geometric, harmonic) that are strictly above or below the loga-rithmic means typically used to recover EC schemes [7, 8, 9]. The resulting methodology is comprised of central flux averages of the inviscid terms, which suggests a dispersive-type mechanism within the primary equations, rather than a dissipative one. The formulation can furthermore be made to satisfy critical additional structures such as kinetic-energy-preservation (KEP) [10, 11, 12, 13] and pressure-equilibrium-preservation (PEP) [14, 15], properties typically not preserved by traditional ES dissipation. The new concept is leveraged herein to develop entropy-stable extensions for the class of asymptotically entropy-conservative (AEC) schemes [16, 15]. Also a regularization strategy for sharp gradients (e.g., shocks) is presented. 
+
+## 2 Problem Formulation 
+
+The current work considers the compressible Euler equations written in a semi-discrete flux conservative form. For simplicity of the present development, we consider a uniform grid in one dimension with spacing h and locations xi,along with second-order two-point fluxes. Extension to mult-dimensions is then straightforward by tensor products. For a generic quantity ϕ, we define the two-point backward-difference operator as δ−ϕ = ( ϕi − ϕi−1) and the 
+
+> ∗
+
+Distribution Statement A: Approved for Public Release; Distribution is Unlimited. AFRL-2026-2473. 
+
+> arXiv:2605.20472v1 [physics.flu-dyn] 19 May 2026
+
+ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT 
+
+forward-difference operator as δ+ϕ = ( ϕi+1 − ϕi). We furthermore identify the arithmetic mean ϕ = ( ϕi+1 + ϕi)/2,the geometric mean ϕG = √ϕi+1 ϕi and the harmonic mean ϕH =
+
+(
+
+ϕG)2
+
+/ϕ .The form of the baseline conservative one-dimensional semi-discretization assumed herein is 
+
+∂tq+∂xf (q) = 0 → ddt
+
+[ ρρu ρE 
+
+]
+
+> i
+
++ 1
+
+h ·δ−
+
+[ Fρ
+
+Fρu 
+
+FρE 
+
+]
+
+> i
+
+= 0 , with 
+
+
+
+Fρ|i = ρ ⋆u
+
+Fρu |i = Fρ|i · u + p
+
+FρE |i = Fρ|i · ( uiui+1  
+
+> 2
+
++ e #)
+
++ 12 (piui+1 + pi+1 ui)
+
+(1) The above corresponds to the conservative variables for a single-component gas, q = [ ρ, ρu, ρE ]T, whose temporal evolution is driven by derivatives of the associated fluxes, F. These are written in terms of the density ρ, the velocity 
+
+u, the pressure p, and the total energy per unit mass E, which is composed of kinetic and internal energy, E = ( e + κ)
+
+with κ = u2/2. Assuming a calorically perfect gas, the internal energy and pressure are related to the temperature 
+
+T as e = eref + cv T , p = ρRT = ( γ − 1) · ρe , where cv and cp are the constant specific heats at constant volume and pressure, γ = cp/c v is the specific heat ratio, and cp − cv = R with R being the gas constant. In Eq. (1), the convective components of the inviscid fluxes are F| ci = [ Fρ, Fρu , FρE =ρ(e+κ)]|ci = ( ρ ⋆u) · [1 , u , (e # + κG)] , where 
+
+ρ ⋆ and e # remain to be specified. The flux schemes considered in the present work are assumed to satisfy the KEP structure with respect to the convective part of the momentum flux [17] in addition to the notion of energy consistency [18, 19], such that the total energy flux is constructed to be compatible with the implied discrete kinetic energy equation plus the internal energy evolution. Working within this specific family of KEP and energy-consistent flux averages, the convective fluxes for mass and internal energy still remain free to be defined with respect to ρ ⋆ and e #. This offers the possibility of imposing additional structural properties such as pressure-equilibrium preservation. The present work aims to construct a class of schemes that is not only KEP and PEP but also entropy stable (ES) for a calorically perfect gas via the judicious selection of ρ ⋆ and e #, in the sense that the method satisfies a discrete form of the physical entropy inequality upon integration over the domain, 
+
+ddt
+
+∫
+
+> Ω
+
+ρs ≥ 0 with s − sref = cv log T − R log ρ (CPG) 
+
+= cv log e − R log ρ . (2) 
+
+## 3 Entropy error analysis 
+
+A discrete form of the entropy integration of Eq. (2) is given by 
+
+h · ∑
+
+> i
+
+( ddt ρs 
+
+)
+
+> i
+
+=
+
+> ∑
+> i
+
+[(s−cp)·δ−Fρ + 1 
+
+> T·
+
+(δ−Fcρe +p·δ−u)] i
+
+︷ ︸︸ ︷
+
+− ∑
+
+> i
+
+[
+
+(cv log e − R log ρ − cp) · δ−(ρ ⋆u) + cv
+
+e · δ− (ρ ⋆e #u) + pT · δ−u
+
+]
+
+> i
+
+(3) where the above leverages the fact that the discretization is KEP as well as energy consistent in both its convective and pressure contributions (see also [9] for details). Applying the summation-by-parts identity and ignoring boundary terms (i.e., a · δ−b = −b · δ+a) gives the following sufficient point-wise conditions for entropy stability: 
+
+[R u · (δ+ρ − ρ ⋆ · δ+ log ρ) + cv ρ ⋆u · (e # · δ+e−1 − δ+ log e−1)]  
+
+> i
+
+≥ 0 implies 
+
+⇐=
+
+
+
+(u (δ + log ρ)i) · [ρlog − ρ ⋆] ≥ 0
+
+(−u (δ+e−1)
+
+> i
+
+) · [eH log − e #] ≥ 0
+
+(4) where ρlog ≜ δ+ρ/δ + log ρ and eH log ≜ δ+ log e−1/δ +e−1 are the definitions of the logarithmic means. Entropy conservation is thus achieved by setting ρ ⋆ = ρlog and e # = eH log , which would then have Eq. (1) correspond to the EC scheme of Ranocha [20]. However, choosing to have each term in Eq. (4) be positive recovers an ES scheme. An ES flux can thus be obtained through an appropriate local choice of the averages used in the numerical fluxes for density and internal energy; depending on the sign of the product between the velocity and the thermodynamic gradients, one needs to use a mean that is either larger (·) >
+
+or smaller (·) <
+
+than the one enforcing EC. Table 1 summarizes a selection guide for the entropy-stabilizing averages, furthermore leveraging the fact that 
+
+sgn( u δ + log ρ) = sgn( u δ +ρ) and sgn (−u δ +e−1) = sgn( u δ +e) in order to evaluate any additional jumps in terms of the native set ρ and e. The present work leverages the well-known chain of mean inequalities [16] 
+
+ϕH ≤ ϕH log ≤ ϕG ≤ ϕlog ≤ ϕ as a starting point for proposing simple adaptive density and internal energy 2ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT 
+
+sgn( u δ +e) > 0 sgn( u δ +e) < 0sgn( u δ +ρ) > 0 ρ ⋆ = ρ <,e # = e <
+
+ρ ⋆ = ρ <,e # = e >
+
+sgn( u δ +ρ) < 0 ρ ⋆ = ρ >,e # = e <
+
+ρ ⋆ = ρ >,e # = e >
+
+Table 1: Local choices of interpolating means for density and internal energy ensuring an ES discretization. The 
+
+ϕ < and ϕ > indicate means respectively smaller and larger than those required to obtain an EC scheme, i.e., ρlog and 
+
+(1 /e log 
+
+)−1.averages for entropy stability. Specifically, we consider including modifying functions M that act on the classical means according to a two-point jump variable, such as ⟨ϕ⟩ = ( δϕ/ 2ϕ). These functions are consistent with unity (i.e., 
+
+lim ⟨ϕ⟩→ 0 M → 1) and are formulated such as to remain strictly above or below the target logarithmic mean. Here we consider the following configuration: 
+
+ρ < = ρH · M <log 
+
+> H
+
+(
+
+or ρG · M <log 
+
+> G
+
+)
+
+ρ > = ρ · M >log 
+
+> A
+
+e < = eH · M <H log  
+
+> H
+
+e > = e · M >H log 
+
+> A
+
+(
+
+or eG · M >H log 
+
+> G
+
+)
+
+. (5) These methods may furthermore be made to maintain pressure equilibrium by enforcing (PEP requirements) M>log  
+
+> A
+
+· M <H log  
+
+> H
+
+= 1 M>H log  
+
+> A
+
+· M <log  
+
+> H
+
+= 1 M>H log  
+
+> G
+
+· M <log  
+
+> G
+
+= 1 . (6) In other words, achieving PEP requires the combinations ( ρ <, e >) and ( ρ >, e <) to be compatible such that 
+
+ρ ⋆ρ−1 # = 1 [15], in the PEP configuration of constant velocity and pressure, with other combinations of the variables not corresponding to a PEP discretization 2.The proposed adaptation process modifies the central averages employed within the convective terms and thus can be understood as achieving entropy stability through dispersive-like mechanisms. Another interpretation is that the modifying function works to bias the reconstruction such that ϕ < or ϕ > moves within the mean’s interval [ϕi, ϕ i+1 ],assuming that M is appropriately bounded. The present dynamic procedure for structure-preservation fits in with other proposed methods that seek to recover entropy stability by leveraging otherwise non-EC discretizations [12, 21]. Also, the dependence on thermodynamic jumps and the adjective velocity bares resemblance to the ES scheme of Eq. (146) in [22]. And while this work focuses on the Euler equations, the proposed concept is straightforwardly extendable to other equations 3.
+
+3.1 Entropy stable implementation of AEC schemes 
+
+This section applies this proposed ES framework to the class of AEC expansions, noting and leveraging their one-sided approximation to the logarithmic means while identifying appropriate pairings for also maintaining PEP. AEC schemes offer a practical way of approximating the logarithmic means by enhancing classical averages with a polynomial series written in terms of the jump variable ⟨ϕ⟩,
+
+ϕ >log   
+
+> A,AEC (N)
+
+= ϕ · P −1 
+
+> α,N
+
+ϕ <log   
+
+> H,AEC (N)
+
+= ϕH · (Pβ,N /Pα,N ) ϕ <log   
+
+> G,AEC (N)
+
+= ϕG · P −1
+
+> γ,N
+
+ϕ >H log   
+
+> A,AEC (N)
+
+= ϕ · (Pβ,N /Pα,N )−1 ϕ <H log   
+
+> H,AEC (N)
+
+= ϕH · P α,N ϕ >H log   
+
+> G,AEC (N)
+
+= ϕG · P γ,N 
+
+(7) where we identify the following associated polynomial functions: 
+
+Pα,N = ∑Nn=0  
+
+> ⟨ϕ⟩2n
+> 2n+1
+
+, Pβ,N = ∑Nn=0 ⟨ϕ⟩2n Pγ,N =
+
+[∑Nn=0 
+
+(∑nm=0 (−1) m(1/2
+
+> m
+
+) · 12( n−m)+1 
+
+)
+
+⟨ϕ⟩2n
+
+]
+
+. (8) In this way, the P functions are specific renditions of the modifying functions M previously mentioned in Eq. (5). Such AEC schemes (also referred to as KEEP(N) methods)—of which various have been proposed [16, 15, 24, 25]— approach the logarithmic means as N → ∞ . However a nominal application of such schemes for finite expansions 
+
+> 2
+
+The combinations of ( ρ <, e <) and ( ρ >, e >) do not occur when assuming PEP because δ+ρ and δ+e cannot have the same sign. 
+
+> 3
+
+The ES condition for the Burgers flux f (u) = 12 u2 would be (u2 ⋆ − u2|EC ) · δ+u ≥ 0, where u2|EC ≜ 23 u2 + 13 u2G is the Heronian average yielding entropy conservation [23]. For entropy stability, one can thus adapt between simple means (e.g., arithmetic and geometric) for u2 ⋆ based on the sign of the scalar’s gradient. 
+
+3ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT       
+
+> (a) Variation of pressure at time t= 5 .(b) Density at time t= 5 .(c) Time evolution of the global entropy.
+
+Figure 1: Simulation of a density wave using the ES AEC schemes with a varying number of expansion terms N .does not guarantee strict entropy conservation or stability. This can be addressed by employing the adaptive ES procedure proposed in the previous section, which would leverage the fact that the AEC schemes strictly remain on one side of the target logarithmic mean. This observation stems from the fact that the polynomial functions of Eq. (8) are comprised of even powers with semi-definite coefficients; combined with the established convergence as N → ∞ ,then this establishes the one-sided requirement for the AEC schemes 4.
+
+Remark 1. Practical algorithms for evaluating logarithmic means typically reduce to an AEC-type scheme for small values of ⟨ϕ⟩ [7]. Without the solution-dependent adaptivity proposed herein, such procedures are technically indefi-nite in their entropy stability, although the consequences of this may be minimal due to the resulting violations being tied to very small jumps. An entropy stable implementation of the AEC schemes is therefore possible via 
+
+ρ < = ρ <log  
+
+> H,AEC (N)
+
+(
+
+or ρ <log  
+
+> G,AEC (N)
+
+)
+
+, ρ > = ρ >log  
+
+> A,AEC (N)
+
+,e < = e <H log  
+
+> H,AEC (N)
+
+, e > = e >H log  
+
+> A,AEC (N)
+
+(
+
+or e >H log  
+
+> G,AEC (N)
+
+) , (9) while employing the adaptivity guidelines of Table 1. PEP is furthermore enforced due to the necessary requirements of the associated modifying functions from Eq. (6) being satisfied. Assuming a N level expansion, then Eq. (4) suggests the entropy stabilization terms to take the form ∼ ∑ 
+
+> n>N
+
+|(δρ )2n+1 | and ∼ ∑ 
+
+> n>N
+
+|(δ1/T )2n+1 |. This differs notably from standard ES mechanisms which induce even power gradients within the entropy balance law. 
+
+## 4 Results 
+
+In this section, two benchmark tests are used to evaluate whether the proposed method yields positive entropy produc-tion and preserves pressure equilibrium. Additionally, its potential in mitigating oscillations in the presence of shocks is examined. Both tests will use 2-order accurate fluxes and high-order time integration with small time-stepping (e.g., a fourth-order Runge–Kutta time integrator with CFL = 0 .01 ) to mitigate temporal discretization error effects. 
+
+Density wave The first test is that of a density wave in a 1D periodic domain Ω = [0 , 1] with initial conditions as in [16]: (ρ, u, p )0 = (1 + exp (sin (2 πx )) , 1, 1) , meaning that the density wave loops with a period equal to 1. We evaluate the ES version of the AEC schemes using a varying number of expansion terms, ranging from N = 0 
+
+to N = 3 . A key objective of this test is to verify the PEP property. As shown in Fig. 1a, this property is upheld, in agreement with theoretical predictions. For all variations of our proposed AEC scheme tested here, the pressure remains constant at its initial value, exhibiting only a machine-precision roundoff error on the order of 10 −14 after five full loops. Examining the density profile at t = 5 in Fig. 1b, we observe that the wave’s amplitude is slightly reduced for the N = 0 formulation; on the other hand, the profiles produced by all other schemes ( N ≥ 1) are virtually indistinguishable. Finally, we assess the schemes’ performance regarding entropy production, which is a primary focus of our proposed methodology. As established in the theoretical framework, entropy production is expected to be                     
+
+> 4For the rational function Pαβ,N ≜(Pβ,N /Pα,N ), then one can prove that Pαβ,N +1 >Pαβ,N by forming (Pαβ,N +1 −Pαβ,N )·(Pα,N +1 · P α,N )and manipulating terms to show its positivity.
+
+4ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT 0 0.5 110 -8 
+
+> 10 -6
+> 10 -4
+> 10 -2
+
+(a) Global entropy evolution. 0 0.5 100.2 0.4 0.6 0.8 11.2 (b) Density (ρ)0 0.5 100.5 11.5 (c) Velocity (u)0 0.5 100.2 0.4 0.6 0.8 11.2 (d) Pressure (p)
+
+Figure 2: Sod shock tube results, comparing baseline EC with EC-LF stabilization and the proposed adaptive averaging with Msc .strictly positive, and our numerical results confirm this behavior. Figure 1c illustrates the time evolution of the relative global entropy variation with respect to the initial global value, defined as ερs = (∫  
+
+> Ω
+
+ρs dΩ ) /(∫  
+
+> Ω
+
+ρ0s0 dΩ ) − 1. This metric highlights how the number of expansion terms N can be used to calibrate the amount of entropy produced. Notably, at time t = 5 , the relative entropy variation decreases by several orders of magnitude, dropping from 10 −2
+
+for N = 0 down to 10 −9 for N = 3 .
+
+Sod shock tube The second test case is the 1D Sod shock tube [26] with initial conditions (ρ, u, p )left = (1 , 0, 1) 
+
+for x ≤ L/ 2 and (ρ, u, p )right = (0 .125 , 0, 0.1) for x > L/ 2, discretized with 200 uniform grid points across the domain length L. In terms of the proposed procedure, We employ the density and internal energy averages as the modified arithmetic and harmonic means of Eq. (5) with adaptation according to Table 1. In order to achieve mol-lification of sharp gradients, the modifying functions are designed to move the averages away from the logarith-mic means, thus increasing the entropy stabilization 5. We consider the function Msc (ϕ) = [1 + 2 · (log r)2] with 
+
+r ≜ (max {ϕi, ϕ i+1 }/ min {ϕi, ϕ i+1 }) ≥ 1 for shock capturing, which increases penalization for larger jumps. We note that other functions are possible but that no formal attempt has been made to optimize Msc , which may constitute a line of future research. In order to further enforce PEP per Eq. (6), we choose Msc = M>log  
+
+> A
+
+= M>H log  
+
+> A
+
+=1/M<log  
+
+> H
+
+= 1 /M<H log  
+
+> H
+
+. The novel ES regularization is then compared to the EC flux of Ranocha as well as an ES rendition recovered by adding a standard local Lax–Friedrich (LF) dissipation [27], which yields entropy stability for two-point fluxes but lacks further structures such as energy consistency and PEP. Also included is a LF solution calculated on a 2000 point grid, which is taken as a notional reference. Figure 2a confirms the global entropy stability of the ES methods, with the nominal LF method showing greater regularization. Meanwhile Figs. 2b–2d plot solu-tions at the final time t = 0 .2tc and show how the new approach successfully reduces noise throughout the domain compared to the baseline EC Ranocha method, including capturing the shock at x/L ∼ 0.85 and contact disconti-nuity at x/L ∼ 0.65 . Notably, the new method outperforms the LF dissipation through the expansion fan region (x/L ∈ [0 .25 , 0.45] ) as well at the contact discontinuity; impressively, it is comparable to the LF solution on the fine grid in these areas. However the new procedure exhibits Gibbs oscillations near the shock, perhaps indicative of its dispersive mechanisms for entropy stability. Future work can investigate improving such shock capturing performance through the careful design of the modifying function, Msc .
+
+## 5 Conclusions 
+
+A new procedure for recovering entropy stable discretizations for the compressible Euler equation has been developed. By adapting the density and internal energy reconstructions based on local products of the velocity and key thermody-namic gradients, we recover provable point-wise stabilization to the entropy dynamics. Additionally, the formulation naturally satisfies KEP and can be made to maintain PEP. Herein, the strategy is used to yield an entropy-stable im-plementation of the AEC schemes as well as a novel strategy for shock regularization. By employing central averages within the convective fluxes, the proposed methodology is distinctly different from traditional dissipation-based ES techniques. 
+
+> 5
+
+As an alternative to achieving ES by modifying the simple means, one can modify the native EC logarithmic means directly (albeit with the caveat from Remark 1) as ρ > = ρlog · M , ρ < = ρlog /M, e > = e H log · M , and e < = e H log /M, with 
+
+M(ϕi, ϕ i+1 ) ≥ 1 . This structure also maintains PEP (i.e., ρ ⋆ρ−1 # = 1) .
+
+5ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT 
+
+Several refinements and extensions to the new schemes are of interest to explore within the context of compressible flows, including: accounting for overall stability purely through the density averaging, application of the fluxes as alternative ES boundary conditions and interface coupling for multi-element/block configurations [28, 29], and further refinement of the shock-capturing modifying function Msc . Extension to multi-component and non-ideal gases is also of interest and stems directly from the current development [30, 31, 32]. While the present note has focused on two-point fluxes, extension to high-order via flux-differencing [33, 23] is possible and would require one to account for the sign of the difference coefficients; this implies an asymmetric two-point flux, where the ES contribution can nevertheless be made to maintain the desired order provided that a sufficiently accurate expansion of the means is employed. 
+
+## Acknowledgments 
+
+AE acknowledges funding for this work from the Air Force Office of Scientific Research (AFOSR) (program officers: Drs. Chiping Li, Fariba Farhoo, and Justin Koo) under contract No. 25RQCOR004, as well as Amentum under contract No. FA9300-20-F-9801. 
+
+## References 
+
+[1] G. J. Gassner, A. R. Winters, D. A. Kopriva, Split form nodal discontinuous Galerkin schemes with summation-by-parts property for the compressible Euler equations, J. Comput. Phys. 327 (2016) 39–66. [2] D. Rojas, R. Boukharfane, L. Dalcin, D. C. Del Rey Fernández, H. Ranocha, D. E. Keyes, M. Parsani, On the robustness and performance of entropy stable collocated discontinuous Galerkin methods, J. Comput. Phys. 426 (2021) 109891. [3] A. Aiello, A. Palumbo, C. De Michele, G. Coppola, Impact of structure-preserving discretizations on com-pressible wall-bounded turbulence of thermally perfect gases, 2026. doi: 10.48550/arXiv.2602.17781 .
+
+arXiv:2602.17781 .[4] A. K. Edoh, Conservative correction procedures utilizing artificial dissipation operators, J. Comput. Phys. 504 (2024) 112880. [5] J. Chan, An artificial viscosity approach to high order entropy stable discontinuous Galerkin methods, J. Comput. Phys. 543 (2025) 114380. [6] A. Bercik, D. A. C. Penner, D. W. Zingg, Stable volume dissipation for high-order finite-difference and spectral-element methods with the summation-by-parts property, J. Sci. Comput. 107 (2026) 28. [7] F. Ismail, P. L. Roe, Affordable, entropy-consistent Euler flux functions II: Entropy production at shocks, J. Com-put. Phys. 228 (2009) 5410–5436. [8] H. Ranocha, Comparison of some entropy conservative numerical fluxes for the Euler equations, J. Sci. Comput. 76 (2018) 216–242. [9] C. De Michele, A. K. Edoh, G. Coppola, Finite-difference compatible entropy-conserving schemes for the compressible Euler equations, J. Comput. Phys. (2025) 114262. [10] A. Jameson, Formulation of kinetic energy preserving conservative schemes for gas dynamics and direct numer-ical simulation of one-dimensional viscous compressible flow in a shock tube using entropy and kinetic energy preserving schemes, J. Sci. Comput. 34 (2008) 188–208. [11] A. E. P. Veldman, A general condition for kinetic-energy preserving discretization of flow transport equations, J. Comput. Phys. 398 (2019) 108894. [12] G. Coppola, F. Capuano, S. Pirozzoli, L. de Luca, Numerically stable formulations of convective terms for turbulent compressible flows, J. Comput. Phys. 382 (2019) 86–104. [13] A. K. Edoh, A new kinetic-energy-preserving method based on the convective rotational form, J. Comput. Phys. 454 (2022) 110971. [14] N. Shima, Y. Kuya, Y. Tamaki, S. Kawai, Preventing spurious pressure oscillations in split convective form discretization for compressible flows, J. Comput. Phys. 427 (2021) 110060. [15] C. De Michele, G. Coppola, Novel pressure-equilibrium and kinetic-energy preserving fluxes for compressible flows based on the harmonic mean, J. Comput. Phys. 518 (2024) 113338. [16] C. De Michele, G. Coppola, Asymptotically entropy-conservative and kinetic-energy preserving numerical fluxes for compressible Euler equations, J. Comput. Phys. 492 (2023) 112439. 6ES discretizations for the compressible Euler equations using simple adaptive averages A P REPRINT 
+
+[17] A. Jameson, The construction of discretely conservative finite volume schemes that also globally conserve energy or entropy, J. Sci. Comput. 34 (2008) 152–187. [18] Y. Kuya, K. Totani, S. Kawai, Kinetic energy and entropy preserving schemes for compressible flows by split convective forms, J. Comput. Phys. 375 (2018) 823–853. [19] C. De Michele, G. Coppola, Numerical treatment of the energy equation in compressible flows simulations, Comput. Fluids 250 (2023) 105709. [20] H. Ranocha, G. Gassner, Preventing pressure oscillations does not fix local linear stability issues of entropy-based split-form high-order schemes, Commun. Appl. Math. Comput. 4 (2022) 880–903. [21] D. Doehring, J. Chan, H. Ranocha, M. Schlottke-Lakemper, M. Torrilhon, G. Gassner, Volume term adaptiv-ity for discontinuous Galerkin schemes, 2026. URL: https://arxiv.org/abs/2603.24189 . doi: 10.48550/ arXiv.2603.24189 . arXiv:2603.24189 .[22] M. Artiano, H. Ranocha, On affordable high-order entropy-conservative/stable and well-balanced methods for nonconservative hyperbolic systems, 2026. doi: 10.48550/ARXIV.2603.18978 .[23] T. C. Fisher, M. H. Carpenter, High-order entropy stable finite difference schemes for nonlinear conservation laws: Finite domains, J. Comput. Phys. 252 (2013) 518–557. [24] Y. Tamaki, Y. Kuya, S. Kawai, Comprehensive analysis of entropy conservation property of non-dissipative schemes for compressible flows: KEEP scheme redefined, J. Comput. Phys. 468 (2022) 111494. [25] S. Kawai, S. Kawai, Logarithmic mean approximation in improving entropy conservation in KEEP scheme with pressure equilibrium preservation property for compressible flows, J. Comput. Phys. 530 (2025) 113897. [26] G. A. Sod, A survey of several finite difference methods for systems of nonlinear hyperbolic conservation laws, J. Comput. Phys. 27 (1978) 1–31. [27] P. Chandrashekar, Kinetic energy preserving and entropy stable finite volume schemes for compressible Euler and NavierStokes equations, Commun. Comput. Phys. 14 (2013) 12521286. [28] M. Svärd, H. Özcan, Entropy-stable schemes for the Euler equations with far-field and wall boundary conditions, J. Sci. Comput. 58 (2014) 61–89. [29] A. R. Winters, D. A. Kopriva, J. Nordström, Numerical boundary flux functions that give provable bounds for nonlinear initial boundary value problems with open boundaries, J. Comput. Phys. 559 (2026) 114891. [30] A. Aiello, C. De Michele, G. Coppola, Entropy conservative discretization of compressible Euler equations with an arbitrary equation of state, J. Comput. Phys. 528 (2025) 113836. [31] A. Aiello, C. De Michele, G. Coppola, Formulation of entropy-conservative discretizations for compressible flows of thermally perfect gases, 2026. doi: 10.48550/arXiv.2507.08115 . arXiv:2507.08115 .[32] R. Klein, B. Sanderse, P. Costa, R. Pecnik, R. Henkes, Generalized Tadmor conditions and structure-preserving numerical fluxes for the compressible flow of real gases, 2026. doi: 10.48550/arXiv.2603.15112 .
+
+arXiv:2603.15112 .[33] S. Pirozzoli, Generalized conservative approximations of split convective derivative operators, J. Comput. Phys. 229 (2010) 7180–7190. 7
