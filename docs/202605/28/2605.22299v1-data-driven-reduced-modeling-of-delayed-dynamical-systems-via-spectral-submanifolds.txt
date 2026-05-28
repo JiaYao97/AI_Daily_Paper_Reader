@@ -1,0 +1,2093 @@
+Title: Data-Driven Reduced Modeling of Delayed Dynamical Systems via Spectral Submanifolds
+
+URL Source: https://arxiv.org/pdf/2605.22299v1
+
+Published Time: Fri, 22 May 2026 01:14:10 GMT
+
+Number of Pages: 52
+
+Markdown Content:
+# Data-Driven Reduced Modeling of Delayed Dynamical Systems via Spectral Submanifolds (Submitted to Chaos) 
+
+Giacomo Abbasciano 1, Gergely Buza 1, George Haller 1, :
+
+> 1
+
+Department of Mechanical and Process Engineering, ETH Zurich, 8092 Zurich, Switzerland 
+
+# Abstract 
+
+We show how the recent extension of spectral submanifold (SSM) theory to delay differential equations (DDEs) enables data-driven model reduction of nonlinear delay systems. First, using a scalar DDE with a single discrete delay, we compare equation-based and data-driven SSM reductions, to illustrate the need for the latter. We then use the same algorithm to obtain purely data-driven, SSM-reduced, delay-free ODE models for several nonlinear delayed systems. Our approach requires no information about the form of the underlying DDE, or about the number and magnitude of the delays it contains. Our SSM-reduced, low-dimensional models remain predictive even for chaotic dynamics. We also illustrate the use of parametric SSM-reduction to capture bifurcations in systems with both distributed and discrete delays. Finally we extend the theoretical underpinning of delayed SSM-reductions to non-autonomous systems with periodic delays, and apply these results to experimental data from a control system with feedback delay and quantization. 
+
+> †Corresponding author: georgehaller@ethz.ch
+
+1
+
+> arXiv:2605.22299v1 [math.DS] 21 May 2026
+
+# 1 Introduction 
+
+Many systems in nature and engineering exhibit dynamics that depend on past states. In epidemiology, the spread of diseases is delayed by the incubation time (Al-Tuwairqi & Al-Harbi [1]), and delays in vaccine production can destabilize the disease-free equilibrium. In autonomous vehicle control (Szaksz et al. [2], Szaksz et al. [3], Orosz & Moln´ ar [4]), delays arise from human reaction times. More generally, feedback-control systems involve delays due to measurement, computation, and zero-order hold (ZOH) effects (St´ ep´ an et al. [5], Insperger & St´ ep´ an [6], Vizi & St´ ep´ an [46], Insperger et al. [47]). Such delays can often be neglected without compromising model performance. Indeed, for sufficiently small delays, the dominant dynamics remain close to those of the corresponding delay-free system. More specifically, as shown in (Buza & Haller [7]), the spectrum of the delayed system retains the eigenvalues of the undelayed system, which remain dominant for small delays, while infinitely many additional eigenval-ues originate from the leftmost part of the complex plane, whose associated dynamics decay rapidly. This explains the effectiveness of low-dimensional models and linear controllers that do not account for small delays, enabling the construction of such low-dimensional yet accurate models for computational cost re-duction. However, as the delay increases, the additional eigenvalues move toward the imaginary axis and may become dominant, eliminating the spectral gap between delay-induced and undelayed eigenvalues. These may then cross the imaginary axis, leading to bifurcations that are absent in the undelayed system (Insperger et al. [47]). At the same time, delay differential equations (DDEs) are inherently infinite-dimensional, because their phase space is the Banach space of continuous history functions. Consequently, they can exhibit richer dynamics than ordinary differential equations (ODEs) of the same nominal dimension. Indeed, even scalar delay equations may display chaotic dynamics (Mackey & Glass [8]). Beyond delay effects, nonlinearizable phenomena, such as the coexistence of isolated steady states and bifurcations, are ubiquitous in applied sciences and engineering. Spectral submanifolds (SSMs) enable the construction of mathematically justified reduced models for such nonlinearizable dynamics on the slowest family of low-dimensional, normally attracting invariant manifolds emanating from a hyperbolic fixed point. These manifolds form a family whose members all have the same dimension and are tangent to a direct sum of dominant eigenspaces at the fixed point, i.e., to a slow spectral subspace (see (Haller [9], Haller & Ponsioen [10], Cenedese et al. [11])). Prior work based on SSM has analyzed and modeled such behaviors in systems including turbulent flows (Kasz´ as & Haller [12], Kasz´ as & Haller [13]), fluid sloshing (Cenedese et al. [11], Ax˚ as et al. [14]), nonsmooth dynamics (Bettini et al. [15], Morsy et al. [52], Abbasciano et al. [16]), control of soft robots (Alora et al. [17], Alora et al. [18], Alora et al. [53], Kaundinya et al. [54], Bettini et al. [19]), alongside global and local bifurcations (Abbasciano et al. [16], King et al. [20]). Equation-driven approaches for nonlinear delay systems have been extensively employed. Most per-tinent to this work, classic center-manifold reduction (St´ ep´ an & Haller [21], Diekmann et al. [22]) has recently been formally extended to SSMs directly in the function space (Szaksz et al. [42]), without the need for discretization of the delay equation. A rigorous existence and regularity result for such SSMs in delay systems has subsequently been established in (Buza & Haller [7]). Despite their inter-pretability, equation-driven SSM-reduction is computationally demanding and therefore typically limited to low-dimensional systems, as the cost increases with both the SSM dimension and the polynomial order desired to parametrize the manifold and reduced dynamics. Moreover, equation-driven SSM reduction requires full knowledge of the governing equations, parameters, and delays, which is often unavailable in real-world applications. These limitations of equation-driven model reduction motivate the development of data-driven meth-ods for modeling delay systems. Approaches such as neural delay differential equations (NDDEs) and SINDy-based (Brunton et al. [23]) methods have been successfully applied to systems with multiple dis-crete delays (Ji & Orosz [24], Ji & Orosz [25], Breda et al. [26], Pecile et al. [27], Sandoz et al. [28]). These methods are formulated under different assumptions on the available prior knowledge about the delays. For instance, when the number and magnitude of the delays are not known a priori, E-SINDy estimates the delay magnitudes from data after specifying an upper bound on their number (Breda et al. [26]). In 2the absence of any prior knowledge of the number of delays, P-SINDy instead estimates the maximum delay directly from data. This leads to a trajectory-based formulation that focuses on reproducing the observed trajectory and extending the simulation beyond the measurement window, rather than explicitly identifying the right-hand side of the system (Breda et al. [26]). In addition, these approaches rely on the explicit form of the DDE to select basis functions. The choice of these functions may in turn strongly impact the performance of the algorithm (Breda et al. [26]). This restriction is particularly relevant when the full dynamics include non-polynomial terms, such as those in the Mackey–Glass equation (Breda et al. [26]). Finally, NDDEs provide a neural-network-based framework and likewise require delay values to be identified from data when they are not known a priori (Ji & Orosz [24], Ji & Orosz [25], Breda et al. [26]). Here, we show how SSM-based reduction can be extended to data-driven settings for DDEs. This approach enables the modeling of nonlinear phenomena, including coexisting isolated steady states and bifurcations, directly from observed data. In particular, the specific form of the DDE plays no role and number and magnitude of the delays need not be a priori known. As long as the delayed system has class C1 governing equations, SSMs always exist with at least C1 regularity and are tangent to finite-dimensional slow spectral subspaces in the infinite-dimensional phase space of generally unknown DDE. In order to handle control applications with ZOH effects, we also prove an extension of the SSM results of (Buza & Haller [7]) to systems with periodic delays. This paper is organized as follows. Section 2 recalls the settings for nonlinear autonomous DDEs and the main theoretical results on their SSMs, and extends the theory to periodically delayed DDEs. Section 3 presents the data-driven procedures used for SSM-based model reduction, with particular emphasis on the estimation of the quantities required directly from data. Section 4 demonstrates the proposed methodology through a sequence of examples. It begins by comparing equation-driven and data-driven SSM reductions for the Hutchinson equation, thereby motivating the need for data-driven approaches. The section then applies data-driven SSM reduction to numerically simulated systems of increasing complexity, including single-delay systems with limit cycles, multiple-delay systems exhibiting chaotic dynamics, and a distributed-delay system with multiple saddle-node bifurcations of limit cycles, analyzed through parametric SSMs. Finally, the theoretical extension to periodically delayed DDEs is illustrated on experimental data involving delay and quantization effects typical of digital controllers. 
+
+# 2 Existence of SSMs for nonlinear DDEs 
+
+In this section, we provide a high-level overview of delay differential equations on infinite-dimensional spaces, and introduce the relevant theory, following (Pazy [29], Diekmann et al. [22]), before recalling the main results of (Buza & Haller [7]) on the existence and regularity of SSMs in delay systems. Finally, we show how these results can be applied to justify and carry out data-driven SSM-reduction in such systems. 
+
+2.1 Analogies between ODEs and differential equations on infinite dimensional spaces 
+
+We recall the notion of strongly continuous semigroups (Pazy [29]), fundamental to the study of linear evolutionary systems on Banach spaces (in particular, delay equations). In finite dimensions, they coincide with matrix exponentials arising from first-order linear ODEs. This extends naturally to a Banach space 
+
+X. Specifically, if A P LpXq is bounded, the Cauchy problem 
+
+9x “ Ax, xp0q “ x0,
+
+admits the unique solution 
+
+xptq “ etA x0 “
+
+> 8
+
+ÿ
+
+> k“0
+
+tk
+
+k! Akx0, t P R.
+
+For unbounded operators, typical in PDEs and DDEs, this representation may fail and solutions may exist only for t ě 0. It is therefore preferable to describe the dynamics via solution operators, leading 3to the notion of strongly continuous semigroups, namely a family of linear operators T : r0, 8q Ñ LpXq
+
+satisfying 
+
+T p0q “ I, T pt ` sq “ T ptqT psq, t, s ě 0,
+
+and lim  
+
+> tÓ0
+
+}T ptqx ´ x} “ 0, for all x P X. (1) The classical notion of continuous dependence on time and initial conditions are encoded in (1) and in the boundedness of T ptq, respectively. The infinitesimal generator A : dom pAq Ñ X of the semigroup T ptq is the linear operator defined on dom pAq .
+
+“
+
+"
+
+x P X
+
+ˇˇˇˇ lim  
+
+> τÓ0
+
+T pτ qx ´ xτ exists 
+
+*
+
+,
+
+as 
+
+Ax .
+
+“ lim  
+
+> τÓ0
+
+T pτ qx ´ xτ , x P dom pAq.
+
+The fundamental qualitative behavior of solutions to nonlinear ordinary differential equations induced by vector fields on open subsets of Rn is classically described through the notion of the flow map. In the setting of Banach spaces, we have to distinguish the forward time direction which leads to the notion of a semiflow. Indeed, the backward initial value problem is usually not well posed: backward solutions do not exist, or may fail to be unique (Diekmann et al. [22]). To introduce the concept of a semiflow following (Buza & Haller [7]), we let X be a Banach space. A family of maps tφtutě0, φt : X Ñ X, is called a semiflow on X if 
+
+φ0 “ id X ,φt ˝ φs “ φt`s for all t, s ą 0,
+
+and tφtutě0 is jointly continuous in space and time. It is known that DDEs, under mild assumptions, generate semiflows (Diekmann et al. [22]). 
+
+2.2 Existence of SSMs for nonlinear autonomous DDEs 
+
+We briefly recall the setting for nonlinear autonomous delay differential equations and the main results from (Buza & Haller [7]) that will be used in the examples below. We consider the phase space 
+
+X :“ Cpr´ τ, 0s; Rnq,
+
+namely the Banach space of continuous Rn-valued functions on r´ τ, 0s, with the supremum norm 
+
+} ¨ } X :“ } ¨ } 8,
+
+where τ ą 0 represents the maximal delay and n P N. Let O Ă X be an open set, and let f : O Ñ Rn be locally Lipschitz continuous. On X, we study autonomous delay differential equations of the form 
+
+9xptq “ f pxtq, (2a) 
+
+x0 “ u. (2b) Here, for each t, the history segment xt P X is defined by xtpϑq “ xpt ` ϑq, ϑ P r´ τ, 0s, while u P O is the prescribed initial datum. A solution of (2) is a map 
+
+x : r´ τ, t ˚q Ñ Rn, t˚ P p 0, 8q Y t8u ,
+
+such that (2b) is satisfied, x is continuously differentiable on p0, t ˚q, and (2a) holds throughout that interval. In addition, the right derivative of xptq at t “ 0 must exist and coincide with f px0q. Classic 4well-posedness results (Diekmann et al. [22]) show that, when f is locally Lipschitz, every initial condition 
+
+u P O gives rise to a unique solution of (2). We write tφtutě0 for the semiflow induced by (2). Assume now that the semiflow φ has an equilibrium at the origin, i.e., 0 P O and f p0q “ 0. Let A
+
+be the infinitesimal generator of the semigroup t Þ Ñ Dφ tp0q, and let Σ Ă σpAq be a nonempty bounded set of the spectrum with associated spectral projection PΣ. For simplicity, we also assume that f is of class Ck for some k ě 1. We will use the notation σpAq for the spectrum of a linear operator A, we will denote by PΣ the spectral projection associated with a bounded spectral subset Σ Ă σpAq and its image by im pPΣq.
+
+Theorem 1. (Buza & Haller [7]). Suppose that a spectral subset Σ is of the form Σ “ t λ P σpAq | 
+
+Re λ ě γu for some γ P R. Then, there exists a neighbourhood U Ă O of the stationary state 0 P O and a locally invariant (under the semiflow φ) Cℓ manifold W Σ Ă U (an SSM) tangent to the spectral subspace 
+
+im pPΣq at 0. Here the integer 1 ď ℓ ď k is determined by the spectral gap condition 
+
+sup Re pσpAqz Σq ă ℓ inf Re Σ . (3) 
+
+Moreover, W Σ attracts trajectories that remain in U at an exponential rate of γ, synchronized along the leaves of a C0 foliation. 
+
+Trajectories approaching an attracting SSM synchronize exponentially fast with trajectories on the SSM. For each on-SSM trajectory, the off-SSM initial conditions that converge to it most rapidly form its stable fiber. These fibers define a foliation over the SSM that is invariant under the semiflow, although individual leaves need not be invariant (Szalai [30], Haller [31], Bettini et al. [32], Bettini et al. [33]). We emphasize that the sole assumption for the existence of a C1 SSM W Σ is f being C1. A more detailed and precise treatment can be found in (Buza & Haller [7]). 
+
+2.3 Existence of SSMs for nonlinear nonautonomous DDEs with periodic delay 
+
+We now recall the setting for nonautonomous DDEs with periodic delay and state the corresponding existence and regularity result. Its proof, together with further details, is provided in Appendix C. This result will be applied to a control example in which the periodic delay arises from ZOH. Let X :“ Cpr´ τ, 0s; Rnq; here τ ą 0 denotes the maximal delay and n P N. Let O Ă X denote an open set containing the origin. We consider systems of the form 
+
+9xptq “ f pt, x tq, t ě s P R (4a) 
+
+xs “ u, (4b) for f : RˆO Ñ Rn continuous, time-periodic, i.e., f pt`p, u q “ f pt, u q for some p ą 0 and all pt, u q P RˆO,and f pt, 0q “ 0 for all t P R. This last requirement is usually achieved by mapping a nontrivial periodic orbit to the origin via a time-periodic change of coordinates. We suppose moreover that f pt, ¨q is f pt, ¨q 
+
+is Ck with k ě 1 for all t P R. We shall also suppose pt, u q Þ Ñ Dj
+
+> 2
+
+f pt, u q is continuous for all j ď k.Equation (4) determines a time-dependent semiflow S : DpSq Ñ X (see (80)-(81)). We denote by U
+
+its linear part and by σpU q the associated Floquet spectrum. To make the statement more concise, we set, for a subset V Ă O,
+
+UpV q “ ␣pt, s, u q P DpSq ˇˇ Spr t, s s ˆ t su ˆ t uuq Ă V (,
+
+and Us,u pV q “ t t P r s, 8q | p t, s, u q P UpV qu . Moreover, let us denote 
+
+X “ XΣptq ‘ XΣ1 ptq :“ im pPΣptqq ‘ ker pPΣptqq , t P R,
+
+with projection PΣ as in Proposition 1. 
+
+Theorem 2. Let Σ “ t λ P σpU q | | λ| ą γu for some γ ą 0, γ R | σpU q| . The following hold. 
+
+5(i) (Invariant manifold) There exists an open neighbourhood V Ă O of 0 and a continuous family of 
+
+C1 submanifolds W Σ 
+
+> t
+
+Ă V tangent to XΣptq at 0, which is locally invariant under S: If u P W Σ 
+
+> s
+
+,then Spt, s ; uq P W Σ 
+
+> t
+
+for all pt, s, u q P UpV q.
+
+(ii) (Smoothness) If k ą 1, the smoothness of W Σ 
+
+> t
+
+is Cℓ for all t P R, where ℓ is the maximal ℓ ď k for which 
+
+psup |σpU qz Σ|q ă p inf |Σ|q ℓ
+
+holds. 
+
+(iii) (Attractivity) There exist a continuous maps πt : V Ñ W Σ 
+
+> t
+
+, t P R, such that 
+
+πt ˝ Spt, s ; uq “ Spt, s ; πspuqq , for all pt, s, u q P UpV q. (5) 
+
+Moreover, for any u P U and s P R, there exists C ą 0 such that 
+
+|Spt, s ; uq ´ Spt, s ; πspuqq| ă Ce pt´sq ln pγq{ p, for all t P Us,u pV q. (6) 
+
+The preimages tπ´1 
+
+> t
+
+pwqu wPW Σ 
+
+> t
+
+are Lipschitz submanifolds foliating V for each t P R.
+
+2.4 Data-driven approximation of SSMs of nonlinear autonomous DDEs with bounded delay 
+
+We leverage the existence of finite-dimensional SSMs in the phase space of a DDE to construct data-driven approximations of such manifolds and their topologically conjugate reduced dynamics. Based on Takens’ theorem (Takens [34]), a diffeomorphic copy of a d´dimensional smooth manifold is embedded with probability one in a finite-dimensional delay embedding space Rk via delayed nondegenerate observables of dimension k ą 2d.Specifically, time series of observables are used through the SSMLearn algorithm (Cenedese et al. [11]) to reconstruct a manifold at ϑ “ 0, that is, at the present time, together with its ϑ-independent reduced dynamics. The result is a low-dimensional system of ODEs that captures the dominant behavior after transient decay to the SSM, which takes place exponentially fast along the stable foliation over the attracting invariant manifold (Buza & Haller [7]). As an advantage, reduction to an SSM enables backward-time advection of initial conditions, now represented as finite-dimensional vectors rather than history functions. This is not possible in the full phase space of a DDE, where the solution operator defines only a forward semiflow, since backward-time advection would require specifying future histories as initial conditions. An overview of data-driven SSM modeling for autonomous systems via delay embedding is provided in Appendix A. 
+
+# 3 Methodology 
+
+We describe the data-driven procedures used in this paper to construct SSM-reduced models of delayed dynamical systems. Since the phase space of a delay differential equation (DDE) is infinite dimensional and is therefore not accessible from measurements, the reduction is performed in a finite-dimensional delay-coordinate embedding space constructed from observed time series. Within this space, we identify an SSM, learn the reduced dynamics, and validate the resulting model using trajectory prediction errors or, in the presence of chaotic dynamics, invariant quantities. 
+
+3.1 Correlation dimension estimation from data 
+
+For systems exhibiting chaotic dynamics, the dimension of the reduced model must be sufficiently high to embed the chaotic invariant set of interest. We estimate the fractal dimension of the attractor from data using the correlation dimension m introduced by (Grassberger & Procaccia [35]). Since the full phase space of a DDE is infinite dimensional, we first construct a delay-coordinate embedding from a 6scalar observable x, following (Takens [34]), and then estimate the correlation dimension in the resulting finite-dimensional delay-embedding space. Choosing the embedding dimension k to be at least twice the SSM dimension d, ensures that the SSM W Ă X can be embedded into the delay space (Takens [34]). Furthermore, assuming the chaotic attractor is contained in one of the SSMs in X, once in the delay embedding space we invoke (Sauer et al. [36]) to ensure that an orthogonal projection embeds the attractor into a d-dimensional spectral subspace, provided that d ą 2m. This condition determines the sufficient, not necessary, dimension of the SSM. Given N embedded data points xi, the correlation integral is defined as 
+
+Cplq “ 1
+
+N 2 # ␣pi, j q : 1 ď j ă i ď N, }xi ´ xj }2 ă l( .
+
+For sufficiently small l, the correlation integral scales as 
+
+Cplq „ lm, l Ñ 0.
+
+Hence, m is estimated via linear regression as the slope of the approximately linear scaling region in the log-log plane plog l, log Cplqq .It suffices to carry out this computation in the delay-embedding space, since (Sauer et al. [36]) guarantees that the delay coordinate map F preserves the correlation dimension m of the attractor A in 
+
+X, i.e., dim pF pAqq “ dim pAq.We compare the correlation dimension estimated from trajectories in the delay-embedding space with that estimated after orthogonal projection onto the reduced coordinates to verify that no topological information is lost during the projection (Kasz´ as & Haller [13]). 
+
+3.2 Lyapunov exponent estimation from data 
+
+In the presence of chaotic dynamics, we estimate the leading Lyapunov exponent from data in order to validate the SSM-reduced model. The procedure follows (Nastac et al. [37]), as also used in (Kasz´ as & Haller [13]). The leading Lyapunov exponent quantifies the average exponential separation rate of nearby trajectories, and its reciprocal provides an estimate of the predictability horizon of a chaotic solution. Consider an autonomous system of the form (2a), with initial conditions x0 and x˚ 
+
+> 0
+
+of the form (2b), both close to the attractor. Let 
+
+εp0q “ x˚ 
+
+> 0
+
+´ x0, δp0q “ } εp0q} X
+
+be the initial perturbation and its norm in the phase space X. The evolution of the perturbation can be locally approximated by 
+
+εptq “ Dφ tpx0qεp0q.
+
+Thus 
+
+δptq “ } x˚ptq ´ xptq} X « } Dφ tpx0qp x˚ 
+
+> 0
+
+´ x0q} X .
+
+For sufficiently small perturbations, the dominant exponential growth rate is characterized by 
+
+δptq « δp0qeλt ,
+
+where λ denotes the leading Lyapunov growth rate. If λ ą 0, nearby trajectories separate exponentially due to a stretching mechanism, while the folding mechanism of the chaotic attractor keeps trajectories bounded in a compact set. For DDEs, distances in the full phase space are generally unavailable from data. We therefore compute separations in the delay-coordinate embedding space Rk, using the Euclidean norm. (Sauer et al. [36]) justifies estimating the Lyapunov exponent from the image F pAq of the attractor A. To estimate the leading Lyapunov exponent, we first advect an initial condition until the trajectory reaches the chaotic 7attractor. Denoting this state by xptCh q, we then reset the time origin to tCh “ t0. We initialize N
+
+nearby trajectories, typically N « 50, in a small neighborhood of xptCh q. For the full DDE, we prescribe these initial conditions as constant history functions with values chosen in a small ball around xptCh q. All trajectories are then advanced forward in time. For each pair of trajectories 1 ď j ă i ď N , we compute the separation 
+
+δij ptq “ } xiptq ´ xj ptq} 2
+
+in the delay-embedding space. The mean normalized separation is then defined as 
+
+δptq
+
+δp0q “ 1
+
+Nt
+
+ÿ
+
+> pi,j q
+
+δij ptq
+
+δij p0q ,
+
+where Nt is the number of trajectory pairs. The leading Lyapunov exponent is obtained by linear regression of log 
+
+´ δptq
+
+> δp0q
+
+¯
+
+against t, restricted to the initial time interval over which the separation grows approximately exponentially. For validation, we apply the same procedure both to trajectories generated by the full system, when the equations are available, and to trajectories predicted by the SSM-reduced model. When only experimental data are available, this estimation becomes more challenging because one usually has limited control over the initialization of nearby trajectories, especially for DDEs, whose initial conditions are history functions. 
+
+3.3 Invariant measure estimation via probability density functions 
+
+To further validate SSM-reduced models in the presence of chaotic dynamics, we compare statistical properties of the chaotic attractor. In particular, we estimate probability density functions (PDFs) of training trajectories in the reduced space and use them to estimate a physically relevant invariant measure of the chaotic attractor, following (Liu et al. [38], Xu et al. [39]). Agreement between the PDFs obtained from the full system and from the SSM-reduced model indicates that the reduced dynamics reproduces the long-term statistical behavior of the original system, even when test trajectory prediction is no longer meaningful due to high sensitivity to initial conditions. 
+
+3.4 Systematic data-driven SSM reduction for autonomous DDEs 
+
+We now summarize the data-driven procedure used to construct SSM-reduced models for autonomous DDEs with bounded delay. 
+
+Step 1) Verification of the hypothesis of Theorem 1. For autonomous DDEs of the form introduced in Section 2.2, we first verify the assumptions of Theorem 1. This theorem guarantees the existence of a finite-dimensional invariant manifold emanating from an equilibrium in the infinite-dimensional phase space X, tangent to the selected spectral subspace. As long as the delayed system has class C1 governing equations, low-dimensional SSMs always exist with at least C1 regularity. This follows from the fact that we can always choose the spectral subset Σ in Theorem 1 containing the rightmost eigenvalues associated to eigenvectors spanning the spectral subspace im pPΣq at 0 with eq. (3) satisfied with ℓ “ 1. 
+
+Step 2) Selection of the SSM dimension. The slow SSM dimension d is determined by the selected slow spectral subspace associated with Σ. This is therefore determined by the configuration of the rightmost eigenvalues in the complex plane. In equation-free settings, this information may be inferred from data using, for example, spectrograms or the observed behavior of trajectories. For chaotic behaviour, assuming the chaotic attractor is contained in one of the SSMs in X, once in the delay embedding space we invoke (Sauer et al. [36]) to ensure that an orthogonal projection embeds the attractor into a d-dimensional spectral subspace, provided that d ą 2m.8Step 3) Assessment of SSM smoothness. After selecting d, the smoothness of the SSM can be estimated from data by comparing the reduced dynamics on a d-dimensional SSM with that on a larger d˚-dimensional SSM, where d˚ ą d. The enlarged spectral set Σ ˚ includes the slowest real eigenvalue or complex-conjugate pair outside Σ. The spectral gap can then be estimated from the real parts of the eigenvalues inferred from the reduced models. The smoothness of the SSM is ℓ respecting the spectral gap condition (3). If unstable eigenvalues are present, the selected spectral subspace must include all unstable directions for an SSM to be attracting. If Σ contains only unstable eigenvalues, then the corresponding SSM coincides with the (strong) unstable manifold, it is thus unique, and it is as smooth as the full system by Theorem 1. We emphasize that the smoothness of the SSM is not required explicitly for the data-driven SSM reduction to be carried out. Indeed, both the SSM parametrization and the reduced dynamics are approximated directly from data using multivariate polynomial regression in SSMLearn (Cenedese et al. [11]). Consequently, no Taylor expansion needs to be computed. 
+
+Step 4) Delay-coordinate embedding. Since the full phase space X is infinite dimensional and therefore inaccessible from data, we construct a finite-dimensional delay-coordinate embedding from the available observables, as in (20). This yields data in a delay-embedding space Rk, with k ą 2d. In this space, we seek an embedded SSM ČWpEq that is diffeomorphic to an SSM WpEq Ă X, whose existence has been established in Step 1, by (Takens [34]) as detailed in Appendix A.1. 
+
+Step 5) Selection of the SSM polynomial approximation order. The θ “ 0 slice of an SSM, cor-responding to the current-time component of history functions in X, is identified in the delay-embedding space by multivariate polynomial regression, as detailed in Appendix A.2. When the delay-embedding lag ∆ t is small, trajectories in Rk tend to flatten (Haller et al. [40]), which often makes linear manifold approximations accurate. Indeed, for a delay-embedded scalar time series 
+
+yptq “ 
+
+¨˚˚˚˚˝
+
+sptq
+
+spt ` ∆tq
+
+...
+
+spt ` p k ´ 1q∆tq
+
+˛‹‹‹‹‚P Rk,
+
+a Taylor expansion around ∆ t “ 0 gives 
+
+yptq “ 
+
+> m
+
+ÿ
+
+> ℓ“0
+
+∆tℓ
+
+ℓ! spℓqptqvℓ ` O
+
+´
+
+pk ´ 1qm`1∆tm`1¯
+
+, vℓ “
+
+¨˚˚˚˚˝
+
+0ℓ
+
+1ℓ
+
+...
+
+pk ´ 1qℓ
+
+˛‹‹‹‹‚.
+
+Therefore, up to an error of order O`pk ´ 1qm`1∆tm`1˘, the trajectory lies in the subspace Pm “
+
+span tv0, v1, . . . , vmu Ď Rk. This yields a hierarchy of linear approximating subspaces, P0 Ă P1 Ă¨ ¨ ¨ Ă Rk. In particular, the first-order approximation gives 
+
+yptq “ sptqv0 ` ∆t 9sptqv1 ` O
+
+´
+
+pk ´ 1q2∆t2¯
+
+,
+
+so for sufficiently small ∆ t, the embedded trajectory lies close to the two-dimensional plane 
+
+P1 “ span 
+
+$’’’’’&’’’’’%¨˚˚˚˚˝
+
+11...1
+
+˛‹‹‹‹‚,
+
+¨˚˚˚˚˝
+
+01...
+
+k ´ 1
+
+˛‹‹‹‹‚,/////./////-
+
+.
+
+For larger embedding lags, higher-dimensional linear subspaces may be required to obtain more accurate approximations. 9Step 6) Learning the reduced dynamics. The reduced dynamics is approximated from data in the reduced space using multivariate polynomial regression, or radial basis function (RBF) interpo-lation in the presence of chaotic dynamics when this yields better performance, as detailed in Appendix A.3. The graph-style parametrization of the SSM provides a one-to-one lifting from the reduced coordinates to the delay-coordinate embedding space. This avoids introducing artificial self-intersections in the reconstructed manifold and thereby preserves the uniqueness of solutions for smooth autonomous DDEs (Diekmann et al. [22]). When polynomial reduced dynamics are used, the polynomial order nred is selected together with the SSM approximation order nSSM by minimizing the normalized mean trajectory error (NMTE) on test data. For a test trajectory ytest and its SSM-based prediction ymodel , the NMTE is defined (Cenedese et al. [11]) as NMTE pnSSM ‹, n red ‹q “ 1
+
+Np}y}max 
+
+> Np
+
+ÿ
+
+> j“1
+
+›››yj
+
+> test
+
+ptj q ´ yj
+
+> model
+
+ptj ; nSSM ‹, n red ‹q
+
+››› .
+
+The selected orders are then 
+
+pnSSM , n red q “ arg min 
+
+> nSSM ‹,n red ‹
+
+NMTE pnSSM ‹, n red ‹q,
+
+where Np is the number of points of the time series. Too high polynomials lead to overfitting, while too low polynomials lead to underfitting. For chaotic systems, short-time trajectory prediction is not a reliable validation criterion due to high sensitivity to initial conditions. In that case, nred 
+
+is selected based on the ability of the reduced model to reproduce the statistics of the chaotic attractor, as presented in the next Step 7). 
+
+Step 7) Validation of the SSM-reduced model. For nonchaotic dynamics, model quality is assessed using the NMTE on test trajectories. Each test trajectory is orthogonally projected onto the reduced coordinates to approximate the base point of the leaf of the foliation, the reduced initial condition is advected under the learned reduced dynamics, and the resulting prediction is lifted back to the delay-coordinate embedding space using the learned SSM parametrization. For better approximation of leaves’ base points see the works (Bettini et al. [32]) on linear oblique projections, and (Bettini et al. [33]) on nonlinear oblique projections. For chaotic dynamics, pointwise trajectory prediction is meaningful only over short times because of sensitive dependence on initial conditions. Therefore, we validate the reduced model by comparing PDFs of training trajectories in the reduced coordinates, comparing leading Lyapunov exponents, and qualitatively assessing whether test trajectories of the reduced model reconstruct the chaotic attractor in the delay-coordinate embedding space. 
+
+3.5 Systematic data-driven SSM reduction for nonautonomous DDEs with periodic delay 
+
+For nonautonomous DDEs with periodic delay, the data-driven reduction procedure is performed in a Poincar´ e section. In this section, the dynamics is described by an autonomous discrete-time map, i.e. the Poincar´ e map. The reduction procedure is therefore analogous to Steps 1)–7) above for autonomous DDEs, with the following modifications. 
+
+Step 1) The assumptions of Theorem 2 are verified instead of those of Theorem 1. For C1 periodic-delay DDEs, this theorem guarantees the existence of a time-periodic family of C1 SSMs tangent to a time-periodic family of slow spectral subspaces. 
+
+Step 2) The smoothness of the SSM is estimated using the eigenvalues of the discrete map approximating the Poincar´ e map, rather than the eigenvalues of a continuous-time SSM-reduced model. 10 Step 6) The reduced dynamics in the Poincar´ e section is learned as a discrete-time reduced map. As in the autonomous case, this map may be approximated using either polynomial regression or radial basis function interpolation. 
+
+# 4 Data-driven SSM reduction for delay differential equations 
+
+In this section, we apply Theorem 1 to examples of increasing complexity drawn from (Breda et al. [26], Szaksz et al. [2], Buza & Haller [7]). We begin with the Hutchinson equation (Hutchinson [41], Breda et al. [26]), a scalar DDE with a single discrete delay that exhibits a stable limit cycle for a suitable choice of parameters. For this system, we first derive an SSM-reduced model through the formal equation-driven calculations of (Szaksz et al. [42]), based on (Diekmann et al. [22]), as detailed in Appendix B.1. We then show in Appendix B.2 that this result is equivalent to the equation-based formulation of (Buza & Haller [7]), which relies on the rigorous results summarized in Theorem 1. The equation-driven SSM reduction is used here only as a benchmark to identify the limitations that the data-driven approach aims to overcome. We therefore compare the equation-driven results with a data-driven SSM reduction obtained by applying SSMLearn (Cenedese et al. [11]) directly to trajectories generated by the governing equations, following the procedure outlined in Section 3. This comparison highlights the limitations of equation-based SSM reduction and motivates the use of data-driven SSM methods. We then analyze several numerically simulated systems with multiple discrete and distributed bounded delays, including examples exhibiting chaotic dynamics. We find that the SSM-based approach captures both local and global bifurcations, consistently with the results reported in (Abbasciano et al. [16], King et al. [20]). These examples also illustrate some limitations of existing data-driven reduction approaches for DDEs discussed in (Breda et al. [26]). In particular, we obtain SSM-reduced ODE-models with predictive power, without prior knowledge of the specific form of the DDE, including the number and magnitude of discrete and distributed delays. Finally, we apply Theorem 2, the new theoretical result established in this paper for nonautonomous DDEs with periodic delay, to experimental control data affected by ZOH and quantization effects. 
+
+4.1 Hutchinson DDE - Equation-driven vs. data-driven reduced modeling 
+
+A powerful equation-driven reduction method in the context of DDEs have been developed in (Diekmann et al. [22]) and extended to SSMs in (Szaksz et al. [42]), whose existence for DDEs has recently been rigorously established by (Buza & Haller [7]). Two equivalent approaches have been proposed by (Szaksz et al. [42]) and (Buza & Haller [7]) to compute finite-dimensional SSMs emanating from equilibria of delay equations in an infinite dimensional phase space. The core idea is to approximate the solution of the invariance PDE via arbitrarily high-order truncated Taylor expansions. This leads to homological equations, that can be solved as linear algebraic systems whose solutions yield the coefficients of both the SSM parametrization and the reduced dynamics up to the desired polynomial order. These constructions require sufficient smoothness of the DDE right-hand side and generic nonresonance conditions on the spectrum of the linearization, as detailed in (Szaksz et al. [42], Buza & Haller [7]). However, the amount of computations required by these equation-driven SSM reduction approaches is high and increases rapidly with both the dimension of the SSM and the truncation order, as the number of coefficients grows combinatorially. We apply both methods to the Hutchinson delay system, as detailed in Appendix B, reducing it to a two-dimensional (2D) SSM to motivate the need for data-driven methods in real-world applications, where the underlying equations are unknown and parameter estimation is uncertain. The Hutchinson DDE is of the form 
+
+x1ptq “ r x ptq
+
+ˆ
+
+1 ´ xpt ´ τ q
+
+K
+
+˙
+
+. (7) as discussed in (Hutchinson [41]). After shifting the equilibrium x˚ “ K to the origin, the state at time 11 t is represented by the history segment 
+
+ytpϑq “ ypt ` ϑq, ϑ P r´ τ, 0s,
+
+defined on the phase space X :“ Cpr´ τ, 0s, Rq, as detailed in Appendix B. Throughout, we use the parameter values r “ 1.8, K “ 10, and τ “ 1. The dominant modes arise from an unstable complex conjugate pair of eigenvectors of the linearized system about the origin equilibrium. Applying Theorem 1, and choosing γ ą 0, this ensures the existence of an SSM as smooth as the full system, thus C8. The spectrum in Figure 1 is computed using the toolbox developed in (Appeltans et al. [43], Appeltans & Michiels [44]), a root-finding algorithm for quasi-polynomials arising from the characteristic equations of DDEs. 
+
+Figure 1: Eigenvalues of the linearization of the full system (7) at the fixed point at the origin (black markers). The red vertical line indicates the value γ chosen to satisfy the assumptions of Theorem 1. The SSM parametrization and the reduced dynamics up to third order, computed via the procedure outlined in (Szaksz et al. [42]), are given by 
+
+W pϑ “ 0, z, ¯zq “ z ` ¯z ` 12
+
+`p0.0046 ´ 0.021 iq z2 ` p 0.0024 q z ¯z ` p 0.0046 ` 0.021 iq ¯z2˘
+
+` 16
+
+`p´ 0.0019 ` 0.0025 iq z3 ` p´ 0.0017 ` 0.0026 iq z2 ¯z
+
+` p´ 0.0017 ´ 0.0026 iq z ¯z2 ` p´ 0.0019 ´ 0.0025 iq˘ ¯z3 ` Op| z|4q,
+
+(8) 
+
+9z “ p 0.097 ´ 1.6iq z
+
+` p 0.072 ´ 0.042 iq z2 ` p 0.0055 ` 0.0082 iq z ¯z ´ p 0.066 ´ 0.050 iq ¯z2
+
+´ p 0.0039 ` 0.00073 iq z3 ´ p 0.0034 ´ 0.00054 iq z2 ¯z ` p 0.0018 ´ 0.0030 iq z ¯z2
+
+` p 0.00080 ´ 0.0039 iq ¯z3 ` Op| z|4q,
+
+(9) 
+
+9¯z “ p 0.097 ` 1.6iq ¯z
+
+´ p 0.066 ` 0.050 iq z2 ` p 0.0055 ´ 0.0082 iq z ¯z ` p 0.072 ` 0.042 iq ¯z2
+
+` p 0.00080 ` 0.0039 iq z3 ` p 0.0018 ` 0.0030 iq z2 ¯z ´ p 0.0034 ` 0.00054 iq z ¯z2
+
+´ p 0.0039 ´ 0.00073 iq ¯z3 ` Op| z|4q.
+
+(10) In Fig. 2, we plot the objects depicted in a three-dimensional observable space. The left panel shows the spectral subspace, an SSM obtained from the second-order Taylor truncation of the manifold parametrization, and a trajectory of the full system approaching the limit cycle shown in red. This limit cycle is obtained by lifting the prediction of the SSM-reduced model. The right panel shows SSM slices for three values of ϑ in the phase space X. Each red line represents a state, i.e., a history function in 
+
+X, while markers indicate intersections of the states with the SSM slices. Advecting the state generates 12 trajectories evolving from initial conditions near the unstable fixed point at the origin toward a stable limit cycle. A marker on the SSM at ϑ “ 0 corresponds to the marker evaluated one second later on the SSM at ϑ “ ´ 1, since for a DDE the state satisfies 
+
+yt`1pϑq “ ypt ` 1 ` ϑq “ y`t ` p ϑ ` 1q˘ “ ytpϑ ` 1q.
+
+This relation holds up to an Op| z|4q correction on the manifold, as we use a third-order Taylor expansion to approximate the spectral submanifold near the origin. Time-shift invariance is incorporated into the manifold through the interior equations in Appendix B.1. The SSM that we are going to be approximate from data using SSMLearn (Cenedese et al. [11]) corresponds to the slice at ϑ “ 0 (yellow) in Fig.2b, representing the invariant manifold of states, now the red markers ϑ “ 0 at the current time ytp0q “ yptq. Slices with ϑ ă 0 correspond to time-shifted states and thus provide backward-shifted predictions.  
+
+> (a) (b)
+
+Figure 2: (a): Comparison between a full-system trajectory (black) of system (7) and the SSM-reduced model (8)-(10) prediction (grey) obtained projecting the full trajectory’s initial condition onto the spectral subspace via the pairing, lifted with the cubic equation-driven SSM parametrization at ϑ “ ´ 0.9. (b): Equation-driven SSM slices for different values of ϑ (yellow: ϑ “ 0, medium green: ϑ “ ´ 0.5, dark green: 
+
+ϑ “ ´ 1). Red curves denote the states in X, i.e. hystory functions, and red markers indicate their intersections with each slice. Projecting the initial condition of a numerically advected full system trajectory onto the spectral subspace using the pairing (33) enables a linear approximation of the base point of the nonlinear leaf of the stable foliation over the finite-dimensional dominant spectral submanifold. The reduced initial condition is then evolved using the SSM-reduced model and lifted via the manifold parametrization at 
+
+ϑ “ 0 in Figure 3 to compare full-system simulations with equation-driven SSM predictions. 13 (a) 
+
+> (b)
+
+Figure 3: (a): Comparison between a trajectory of system (7) and the corresponding equation-driven SSM-reduced model prediction. (b): Reconstructed SSM used to lift reduced dynamics into the full space. Prediction errors in the limit-cycle amplitude are observed, while a frequency error induces a phase discrepancy that increases toward the end of the time series (Fig. 3a). These errors can be reduced by increasing the truncation order of the reduced dynamics, at the cost of a higher-order manifold expansion. A data-driven approach can accelerate this process while eliminating the need for explicit knowl-edge of the governing delay equations. More generally, when higher-dimensional SSMs are required, the computational cost of equation-driven reductions increases substantially. In an equation-driven set-ting, deriving higher-order reduced dynamics typically requires computing the SSM parametrization to sufficiently high order, at least one order below that of the reduced dynamics, in order to solve the cor-responding homological equations. This requirement is avoided in the proposed data-driven approach, where the approximation orders of the SSM and of the reduced dynamics can be selected independently. Furthermore, the data-driven approach does not require the explicit verification of nonresonance con-ditions, since the SSM is fitted directly using polynomial regression. Most importantly, a data-driven approach is particularly advantageous for real-world systems, where the governing equations and param-eter values are rarely known with high accuracy. Identifying the number and magnitude of delays from data is even more challenging, especially in the presence of distributed delays. To address these limitations identified with equation-driven SSM reduction, we propose in this paper a data-driven SSM-reduction approach for DDEs, and start by applying it to the Hutchinson delay equation (7) following the procedure described in Section 3. Numerical data are generated from the DDE (7) with the same parameter values used for the equation driven reduction. Finite-dimensional SSMs exist under generic conditions, i.e., f in (2) being C1 (Buza & Haller [7]). In this example, inspection of a spectrogram of the initial transient indicates that the dominant eigenvalues form an unstable complex conjugate pair, ensuring the existence of a 2D C8 SSM W in X. Since the phase space X is infinite-dimensional, it cannot be fully observed. We therefore leverage Takens’ theorem (Takens [34]), which, under generic nondegeneracy conditions on the dynamics and observables, guarantees the existence of a copy ˜W diffeomorphic to W , i.e., an embedding of the selected SSM W , in a delay-coordinate space of dimension k strictly greater than twice that of the SSM d.To embed the 2D SSM capturing the dominant dynamics, we construct a delay-embedding space of dimension at least 5, using y as the observable. We approximate ˜W , the embedding of the smooth SSM 
+
+W , directly from data via polynomials. In this particular case, being the slow manifold built on all the unstable linear modes, the SSM W coincides with the unstable manifold emanating from the equilibrium, and hence is unique in any smoothness class. The eigenvalues of the reduced dynamics correctly capture the two dominant eigenvalues of the full system, computed using the root-finding toolbox (Appeltans 14 et al. [43], Appeltans & Michiels [44]) (see Fig. 4). 
+
+Figure 4: Comparison between true dominant eigenvalues of the data-driven 2D SSM-reduced dynamics of system (7) (green) and those from the full system obtained via root-finding (Appeltans et al. [43], Appeltans & Michiels [44]) (black). Six training trajectories are sufficient to construct a predictive fifth-order SSM-reduced ODE model that captures the dominant dynamics of the underlying delay equation on an SSM approximated with cubic polynomials. The cubic SSM approximation significantly improves prediction accuracy as the delay-embedding lag ∆ t “ 5 was selected to further reduce the NMTE. The initial conditions of the training trajectories, generated via numerical simulation of the DDE, are placed near the unstable anchor fixed point to accurately reconstruct unstable directions. These trajectories are eventually attracted to the stable limit cycle as they lie within its domain of attraction. We evaluate the predictive power of the SSM model on previously unseen trajectories in Figure 5 and obtain a normalized mean trajectory error (NMTE) (Cenedese et al. [11]) of 1 .7%. 
+
+Figure 5: Comparison between two test trajectories of the full system (7) (black) and their data-driven SSM-based predictions (green). Data-driven SSM reduction seeks an optimal polynomial approximation of a diffeomorphic copy of 
+
+W pz, ¯z, ϑ “ 0q directly from data at ϑ “ 0, rather than recovering the Taylor expansion derived from an equation-driven formulation. Figure 6 shows a three-dimensional projection of the regressed SSM, a test trajectory with its SSM-based prediction, and the corresponding polynomial reduced dynamics. 15 Figure 6: Left: Comparison between a full system (7) test trajectory (black) together with its prediction (orange) on the data-driven SSM (green). Right: Polynomial of the SSM-reduced dynamics, with mono-mials whose coefficients are smaller than 10 ´5 omitted for plot clarity. The estimation of the spectral gap from data serves only to identify the smoothness class of W and its associated reduced dynamics ensured by Theorem 1. This requirement does not restrict the use of higher-order polynomial approximations for both the manifold and the reduced dynamics, since SSMLearn does not reconstruct the Taylor expansions produced by equation-driven methods, instead, it fits multivariate polynomials to data through regression. 
+
+4.2 Chaotic attractor in a single discrete time delay system 
+
+The Mackey–Glass system (Mackey & Glass [8]), a model for blood cell production, is described by the delay differential equation 
+
+9xptq “ β xpt ´ τ q
+
+1 ` xpt ´ τ qα ´ γx ptq, (11) where xptq P R, τ “ 1 is a constant discrete delay, and the parameters values are β “ 4.0, γ “ 2.0, and α “ 9.6 as in (Breda et al. [26]). The system admits an equilibrium at the origin. Despite being only one-dimensional, the system is known to exhibit chaotic behaviour for suitable parameter choices (Mackey & Glass [8]), as the delay renders the phase space infinite-dimensional. This contrasts with finite-dimensional ODEs, where chaos requires a phase space of dimension at least three. Following the steps outlined in Section 3, we first find the correlation dimension of the chaotic attractor to be m « 2.2 (Figure 7). Assuming that the chaotic attractor is contained in one of the SSMs whose existence in X is guaranteed by Theorem 1, we seek d “ 6 dimensional SSM, following the procedure outlined in Section 3. This choice is motivated by the oscillatory character of the dynamics and by the correlation dimension estimate 
+
+m “ 2.2. Indeed, d “ 6 is the smallest even integer satisfying the sufficient embedding condition 
+
+d ą 2m “ 4.4. This choice is further supported by a preliminary identification of the rightmost eigenvalues in the complex plane, revealing three pairs of weakly damped oscillatory modes. Accordingly, the minimum delay embedding dimension is k “ 13, which we further increase by 6 to improve predictive accuracy on test trajectories. Finally, we verify that the estimated correlation dimension of the attractor A is preserved under projection from the delay embedding space to the reduced space (Figure 7), confirming that no topological information about the attractor is lost. 16 Figure 7: Correlation dimension estimation and spectrum validation for the Mackey–Glass system (11). Left: log–log plot of the correlation sum versus radius (Grassberger & Procaccia [35]), showing a scaling region with slope m « 2.2. Right: comparison between eigenvalues of the reduced dynamics (green) and those from the full system obtained via root-finding (black). We identify the reduced SSM dynamics by applying polynomial regression to delay-embedded tra-jectories converging to the chaotic attractor A, after projecting them onto the tangent space. The graph-style parametrization of the SSM provides a one-to-one lift from the reduced coordinates to the delay-embedding space, thereby avoiding spurious self-intersections. This preserves the uniqueness of the predicted solutions, consistently with the well-posedness of smooth autonomous DDEs (Diekmann et al. [22]). The eigenvalues of the reduced dynamics, obtained from data, match those obtained via root-finding applied to the equation (Figure 7). Additionally, by estimating eigenvalues from an 8D SSM, one can approximate the dominant spectral gap and conclude that 6D SSMs are of class C1.A data-driven 6D linear SSM with third-order polynomial reduced dynamics accurately reproduces key features of the attractor, including a physically relevant invariant measure and leading Lyapunov ex-ponent. Although Theorem 1 guarantees only C1 reduced dynamics, we employ a third-order polynomial model for two reasons: first, we seek a smooth ODE that best fits the data, without aiming to recover a Taylor expansion; second, linear ODE systems cannot exhibit chaotic dynamics. Model performance is assessed via short-time trajectory prediction, as long-term accuracy is inherently limited by sensitivity to initial conditions. The positive leading Lyapunov exponent implies that even small projection errors grow exponentially under the flow. Exploiting the topological transitivity of A,two sufficiently long trajectories are used for training, while one is reserved for testing. Figure 8 shows trajectory divergence over the first 30 seconds, occurring on a timescale of order 1 {λLyap . A positive Lyapunov exponent can be approximated in the delay embedding space, as detailed in Section 3. 17 Figure 8: Short-time prediction performance of the SSM- reduced model of system (11). Left: training and test trajectories in the observable xptq used for delay embedding. Right: comparison between full (black) and predicted (green) test trajectories, showing divergence only over a timescale consistent with the inverse leading Lyapunov exponent. A physically relevant invariant measure of the chaotic attractor can be estimated via probability density functions of the reduced coordinates and is accurately reconstructed from training trajectories (Figure 9). The leading Lyapunov exponent is estimated from data by fitting an exponential growth to the mean deviation of many trajectories, here we used 50, initialized within an ϵ “ 10 ´3 neighborhood of a point on the attractor. The initial condition for the full model is taken as a constant history function in X. This requires access to the full DDE, but only for validation purposes. In contrast, Lyapunov exponents can be estimated directly from the SSM-based reduced dynamics, as the data-driven model allows controlled initialization near the attractor, even when only data are available. 
+
+Figure 9: Analysis of the chaotic attractor of system (11) and its SSM-reduced model. Left: probability density functions of all the reduced coordinates based on training trajectories (black) and their recon-struction (green). Right: estimation of the leading Lyapunov exponent from trajectory mean separation over time δptq for the full system (black) and for the SSM-predictions (green). A 3D projection in the delay embedding space shows the test trajectory together with its prediction converging to the chaotic attractor from the equilibrium (Figure 10). The polynomial reduced dynamics for system (11) is plotted in Figure 26 in Appendix D. 18 Figure 10: 3D projection of the delay embedding space showing convergence of the test trajectory to the chaotic attractor for the full system (11) (black) and the SSM prediction (green). We emphasize that, even in an equation-driven setting, Taylor expansions are not guaranteed to give good approximation of global invariant structures such as chaotic attractors, as the attractor can lie outside the domain of convergence of the series. Moreover, we highlight that polynomial parametrizations suffice to obtain predictive reduced models, without the need for rational terms and subsequent knowledge of the underlying equations, as required for the Mackey–Glass equation in (Breda et al. [26]). 
+
+4.3 Limit cycle in a multiple discrete time delays system 
+
+The two-neuron model with multiple discrete time delays (Breda et al. [26]) is described by 
+
+9x1ptq “ ´ κx 1ptq ` β tanh `x1pt ´ τsq˘ ` a12 tanh `x2pt ´ τ2q˘,
+
+9x2ptq “ ´ κx 2ptq ` β tanh `x2pt ´ τsq˘ ` a21 tanh `x1pt ´ τ1q˘, (12) where x1ptq, x 2ptq P R, with delays τs “ 1.5, τ1 “ 2.0, τ2 “ 2.0 and parameters κ “ 0.5, β “ ´ 1, a 12 “
+
+1, a 21 “ 2. The system admits the trivial equilibrium px˚ 
+
+> 1
+
+, x ˚ 
+
+> 2
+
+q “ p 0, 0q. From the behavior of the training trajectories, we observe a 2D unstable manifold emanating from the equilibrium containing a stable limit cycle. Accordingly, we seek a 2D SSM associated with the dominant linear modes. We follow the data-driven SSM-reduction outlined in Section 3. A 2D C8 SSM exists for (12) based on Theorem 1. We learn a cubic 2D manifold with a fifth-order reduced dynamics from the scalar observable x1 evolving on six training trajectories. The dominant eigenvalues are accurately captured by the reduced-order model, as shown in Figure 11. 19 Figure 11: Left: Comparison between eigenvalues of the data-driven reduced dynamics (green) and those obtained from the full system (12) (black) via root-finding. Right: Four test trajectories (black) and their SSM-based predictions (green). Four test trajectories of system (12), together with their predictions from the SSM-reduced model, are shown in Figure 11, yielding a NMTE of 4 .8%. A 3D projection of the delay embedding space is also reported in Figure 12. 
+
+Figure 12: Data-driven SSM reduction for system (12). Left: 3D projection of the delay embedding space showing an SSM (green), with a test trajectory (black) and its prediction (orange). Right: Learned 5th order polynomial SSM-reduced dynamics. Monomials whose coefficients are smaller than 10 ´5 are omitted for plot clarity. We observe that data-driven SSM reduction retains predictive power despite the presence of multiple discrete delays, both in number and magnitude, which are assumed unknown throughout the reduction procedure. We next demonstrate that this performance extends to systems exhibiting chaotic attractors. 20 4.4 Chaotic attractor in a multiple discrete delays system 
+
+We now consider the system (Breda et al. [26]) 
+
+9x1ptq “ ´ x2ptq ´ x3ptq ` α1x1pt ´ τ1q ` α2x1pt ´ τ2q,
+
+9x2ptq “ x1ptq ` β1x2ptq,
+
+9x3ptq “ β2 ` x3ptqx1ptq ´ γx 3ptq,
+
+(13) where x1ptq, x 2ptq, x 3ptq P R. The delays, τ1 “ 1.0 and τ2 “ 2.0, and the parameter values α1 “ 0.2, α 2 “
+
+1.0, β 1 “ 0.2, β 2 “ 0.2, γ “ 1.2. are taken from (Breda et al. [26]). The system admits a nontrivial equilibrium, which we shift to the origin. This system exhibits a chaotic attractor resembling that of the R¨ ossler system. As in the Mackey–Glass example, we estimate the correlation dimension of the attractor as m « 2.17 (Figure 13). Assuming again that the chaotic attractor is contained in one of the SSMs that exist in X by Theorem 1, and given the oscillatory nature of the dynamics, we seek a d “ 6 dimensional SSM following Section 3. Since d ą 2m, this choice guarantees that the attractor can be embedded in the reduced space within the delay-coordinate space (Sauer et al. [36]). We construct a delay embedding space of dimension k “ 23 using the delay-coordinate map, exceeding the minimum requirement k “ 13 to improve model accuracy. The dominant SSM is approximated using first-order polynomials for the manifold, while the reduced dynamics are learned via radial basis functions (RBFs), as polynomial approximations are insufficiently accurate, as already noted in (Kasz´ as & Haller [13], Abbasciano et al. [16], Xu et al. [39]). For the purpose of estimating the Lyapunov exponent from data, we regard the time series predicted by the RBF-based discrete map as a trajectory of an underlying continuous-time dynamical system, sampled at time instants separated by the discrete-map time step. 
+
+Figure 13: Left: Correlation dimension estimation for the attractor of system (13) from data in the delay embedding space (black) and in the reduced space (orange), showing agreement in correlation dimension estimation around m « 2.17. Right: Eigenvalues of the full system (13) obtained via root-finding (Appeltans et al. [43], Appeltans & Michiels [44]). Two of the four training trajectories, together with predictions for four test trajectories, are shown in Figure 14. As expected for chaotic dynamics, short-term predictions are accurate, while long-term prediction is limited by sensitivity to initial conditions. 21 Figure 14: Left: Training and test trajectories for the SSM-reduction of system (13) in the observable 
+
+x2. Right: Predictions (green) of a full system’s test trajectory (black), with divergence at longer times due to sensitivity to initial conditions. A physically relevant invariant measure and the leading Lyapunov exponent are estimated from data and reported in Figure 15. 
+
+Figure 15: Analysis of the attractor of system (13). Left: Probability density functions of the reduced coordinates, showing agreement between full system’s training trajectories (black) and their SSM-based reconstruction (green). Right: Estimation of the leading Lyapunov exponent based on trajectory mean separation over time δptq, comparing the full system (black) and the SSM-based prediction (green). A 3D projection of the delay embedding space (Figure 16) illustrates the attractor and the convergence from the unstable equilibrium of a test trajectory and its prediction. 22 Figure 16: 3D projection of the delay embedding space showing the chaotic attractor of system (13) and convergence of four test trajectories toward it, for both the full system (black) and the SSM-reduced model (green). 
+
+4.5 Parametric reduced model for delayed car-following system 
+
+We consider a time-delay traffic model describing the interaction between a human-driven vehicle (HV) and an autonomous vehicle (AV) (Szaksz et al. [2]), whose experimental relevance for autonomous driving control has been demonstrated in (Orosz & Moln´ ar [4]). The system is governed by 
+
+9˜hptq “ ˜vptq ´ ˜v´1ptq,
+
+9˜v´1ptq “ α
+
+´
+
+V `˜hpt ´ τ q ` h˚˘ ´ `˜v´1pt ´ τ q ` vref 
+
+˘¯
+
+` β
+
+´
+
+˜vpt ´ τ q ´ ˜v´1pt ´ τ q
+
+¯
+
+,
+
+9˜vptq “ ˆβ
+
+´
+
+vref ´ `˜vpt ´ τ q ` vref 
+
+˘¯
+
+` β´1
+
+´
+
+˜v´1pt ´ τ q ´ ˜vpt ´ τ q
+
+¯
+
+,
+
+(14) where ˜h is the shifted headway between the two vehicles, and ˜ v´1 and ˜ v are the shifted velocities of the HV and AV relative to the reference speed vref . The delay τ represents the reaction time delay in the control loop of both the HV and the AV. The gains α and β describe the HV response, while ˆβ and 
+
+β´1 play the analogous role in the AV controller, accounting for speed tracking and velocity-difference feedback. We use the same parameters as in (Szaksz et al. [2]), 
+
+α “ 0.3, β “ 0.4, ˆβ “ 0.6, β´1 “ ´ 0.4, vref “ 26 .55 ,
+
+with 
+
+hstop “ 5, hgo “ 55 , vmax “ 30 ,
+
+and h˚ defined implicitly by V ph˚q “ vref .We perform parameter-dependent SSM reduction for the traffic delay system with the equilibrium undergoing a Hopf bifurcation. Such reductions have been shown to accurately capture even global phenomena, including heteroclinic bifurcations of limit cycles (Abbasciano et al. [16]), as well as in fluid systems undergoing Hopf bifurcation (King et al. [20]). We remark that in the DDE setting, we do not focus on uniqueness, since a smoothest nonlinear continuation of the SSM, called the primary SSM in (Haller & Ponsioen [10]), is generally not guaranteed to exist. 23 Before and after the supercritical Hopf bifurcation, we identify from data, at each fixed value of the delay parameter, one SSM among the infinitely many SSMs. We then interpolate the tangent space, the polynomial parametrization of the manifold, and the polynomial parametrization of the reduced dynamics across the sampled parameter values. This yields a parametric SSM model in the delay-embedding space augmented with the bifurcation parameter, following (Abbasciano et al. [16]). Each autonomous SSM reduction at a fixed value of the delay parameter is carried out according to the procedure detailed in Section 3. The manifold and the dynamics are not necessarily smooth with respect to the delay parameter; nevertheless, their dependence on the delay can be approximated via smooth spline interpolation, rather than simple linear interpolation, when it provides better accuracy. Resonances are less disruptive in the data-driven setting, as we do not compute Taylor expansions of the solutions to the invariance PDE, but approximate them directly from data. Nevertheless, they still provide useful guidance: if a good approximation of the manifold cannot be learned, we will restrict the parameter range or reduce the polynomial order, as lower-order approximations cut out resonance-induced differences, making different SSMs less distinguishable, and being that the resonances at lower order occur further away from the critical value of the parameter, as noted in (King et al. [20]). The parametric SSM model is trained at four parameter values, τ “ t 1.030 s , 1.050 s , 1.070 s , 1.090 s u,by constructing individual autonomous SSM-reduced models. Each model is trained on 8 trajectories using only the segments lying approximately on the manifold and evaluated on 2 unseen trajectories. The results (see Fig. 17) demonstrate accurate reconstruction across unseen parameter values, with an average NMTE below 1%, even as a supercritical Hopf bifurcation occurs at the origin. We employ a 2D SSM with a third-order polynomial parametrization of the manifold and fifth-order polynomial reduced dynamics. The delay-embedding space has dimension 7, using all three state variables as observables. We remark that, because interpolation is used to construct the parametric SSM model, all individual SSM reductions must share the same SSM dimension, delay-embedding dimension, SSM approximation order, and reduced-dynamics approximation order. 24 (a) τ “ 1.040 s (b) τ “ 1.065 s 
+
+(c) τ “ 1.080 s Figure 17: For system (14), 3D projections of the delay embedding space showing the learned SSM (semi-transparent green), the full-system trajectory approaching the SSM (black), and the SSM prediction (orange dashed) for three unseen values of the delay parameter: (a) τ “ 1.040 s, (b) τ “ 1.065 s, and (c) 
+
+τ “ 1.080 s. The plots illustrate the onset of the Hopf bifurcation, known to occur in the full system at approximately τ “ 1.064 s, as identified by tracking the slowest pair of eigenvalues using the root-finding algorithm (Appeltans et al. [43], Appeltans & Michiels [44]). They also show the corresponding increase in limit cycle amplitude, while demonstrating that the SSM-based reduced model retains predictive accuracy. 
+
+4.6 Parametric SSM-reduced model for the analysis of multiple local bifurcations of limit cycles in systems with distributed delay. 
+
+We now consider the Cushing delay equation from (Buza & Haller [7], Cushing [45]), which is a distributed-delay equation with bounded delay. The parametric SSM-reduced ODE model explains the mechanism underlying qualitative changes in the system dynamics that lead to unusual behavior of observables as the time delay increases. The system in question is governed by 
+
+9xptq “ b
+
+ż τ
+
+> 0
+
+xpt ´ ϑq dϑ ` a`xptq ´ sin pxptqq ˘, (15) 25 where xptq P R, τ ą 0 is the delay, and a “ 1, b “ ´ 3 are system parameters. An equation-driven reduction for τ “ 1 was obtained in (Buza & Haller [7]), whose general formula can be applied directly. Alternatively, the system can be reformulated as a discrete-delay equation by introducing the auxiliary variable if one wishes to carry out the equation-driven reduction following (Szaksz et al. [42]): 
+
+zptq “ 
+
+ż tt´τ
+
+xpsq ds, 
+
+which transforms (15) into the equivalent delay system 
+
+9xptq “ b z ptq ` a`xptq ´ sin pxptqq ˘,
+
+9zptq “ xptq ´ xpt ´ τ q. (16) Thus, the scalar distributed-delay equation is recast as a 2D equation with a single discrete delay. The equilibrium of interest is the origin, px, z q “ p 0, 0q.The equation is symmetric under the transformation x Þ Ñ ´ x; therefore, this symmetry is expected to be preserved in the phase portrait of the reduced dynamics. In particular, for instance, every fixed point pη˚ 
+
+> 1
+
+, η ˚ 
+
+> 2
+
+q should have a symmetric counterpart p´ η˚ 
+
+> 1
+
+, ´η˚ 
+
+> 2
+
+q. However, because the reduced dynamics are only approximated from data, they are not necessarily exactly odd. This slight symmetry breaking may further stem from the fact that the approximated manifold does not exactly satisfy odd symmetry. We construct a parametric model following the approach in (Abbasciano et al. [16]). In the present setting, however, the construction of the SSMs can be justified directly by Theorem 1, whose conditions are verified. By contrast, the models in (Abbasciano et al. [16]) were obtained by analogy with the finite-dimensional SSM theory for ODEs. Linear interpolation suffices to obtain an SSM-based model across multiple limit-cycle saddle-node bifurcations near the origin (see Fig. 18). We use eight parameter values, τ “ t 0.95 s , 0.97 s , 0.99 s , 1 s , 1.01 s , 1.02 s , 1.03 s , 1.035 s u, to construct individual autonomous 2D SSM models following the procedure detailed in Section 3. Cubic-order polynomials are employed for the manifold approximation and 13th-order polynomials for the reduced dynamics, required to ensure accuracy of the SSM-based model at every training parameter point. Each model is trained on 26 trajectories, with 4 reserved for testing. This sampling is more than sufficient to achieve high accuracy. 26 (a) τ “ 0.98 s (b) τ “ 1.0074 s (c) τ “ 1.0078 s 
+
+(d) τ “ 1.025 s (e) τ “ 1.0294 s (f) τ “ 1.0299 s Figure 18: Predicted and verified portraits of the parametric SSM-reduced dynamics of system (15) at six previously unseen values of the delay τ , shown for increasing τ . The reduced dynamics captures a sequence of two saddle-node bifurcations of limit cycles, which explains the qualitative change of the dynamics underlying the unusual behavior of the observables. Limit cycles are identified as fixed points of the Poincar´ e map, obtained by tracking oriented inter-sections of trajectories of the SSM-reduced ODE with a chosen codimension-one section in the reduced space, a straight line within the 2D tangent space. This yields a further reduction to a one-dimensional (1D) discrete map of the original infinite-dimensional DDE. However, this reduction loses information on coexisting isolated fixed points, restricting the validity of the reduced dynamics to regions where only the origin equilibrium and limit cycles exist. A bifurcation diagram can then be constructed from the Poincar´ e map by plotting the positions of limit cycles in the section against the delay parameter, revealing two subsequent saddle-node bifurcations of periodic orbits. The parametric SSM, corresponding to the 2D slow stable subspace at the origin extended by the parameter direction, approximates well an extended center manifold (i.e. a center manifold in the delay embedding space extended with the delay parameter direction) associated with a saddle-node limit cycle, for the case of both bifurcations, arising near τ « 1.0075 and τ « 1.0295. Near each bifurcation in the parameter direction, the emerging stable and unstable limit cycles lie on such an extended center manifold emanating from the saddle-node limit cycle, which is locally captured by the SSM. Consequently, a single parametric SSM is able to model the birth and evolution of these newborn limit cycles across the parameter sweep. 27 We now extend our analysis to a broader range of parameter values, rather than restricting attention to local behavior near critical parameter values. Specifically, by considering the 1D Poincar´ e section in the reduced space and the associated Poincar´ e map, lifted in the delay embedding space in the illustration we provide in Figure 19, we can more clearly observe that a 2D SSM (associated with the stable eigenvalue and the zero eigenvalue corresponding to the parameter direction) emanating from the origin provides a good approximation, at least locally in phase space extended with the parameter and up to a sufficiently high polynomial order of a Taylor expansion, of the 2D spectral submanifold associated with the saddle-node bifurcating eigenvalue and the center eigenvalue (corresponding to the parameter direction) emanating from the inner saddle-node limit cycle around τ2,SN and of that emanating from the outer saddle-node limit cycle τ2,SN (fixed points of the Poincar´ e map). As such, the SSM emanating from the origin captures, over a global range of the parameter, the evolution of both the inner pair of stable and unstable limit cycles and the outer pair of stable and unstable limit cycles, simultaneously. 
+
+stable fixed point S pPoincar´ e section q saddle-node limit cycle 
+
+unstable limit cycle stable limit cycle SSM 
+
+center manifold unstable manifold stable manifold          
+
+> S
+> xpt`3∆ tq
+> . . . xpt`k∆tq
+> xpt`2∆ tq
+> xptq
+> SSSS
+
+τ
+
+τ ă τ1,SN τ1,SN τ1,SN ă τ ă τ2,SN τ2,SN τ ą τ2,SN 
+
+Figure 19: Illustration of the codimension one Poincar´ e section viewed in the delay embedding space extended with the bifurcation delay parameter. Limit cycles can be found as fixed points of the associated 1D Poincar´ e map of the 2D SSM-reduced dynamics via e.g. Newton-Raphson iteration. It is shown how one SSM-reduced ODE model is able to contain manifolds of the limit cycles along the parameter thus giving accurate reduced model of the full, infinite dimensional DDE across multiple saddle node bifurcations of periodic orbits. One should note that the manifolds (unstable/stable/center) of limit cycles are well approximated by the SSM at least locally in the phase space, but far from the fixed point from which they emanate they might in general deviate off the SSM due to higher order terms which are not captured by the fixed utilized order of the SSM. We emphasize that our SSM is only an approximation, as the saddle-node limit cycles, together with the newborn unstable and stable limit cycles, lie on a particular extended center manifold of a family of extended center manifolds. Moreover, these invariant objects also lie on a specific SSM chosen from a family of SSMs, which are not unique in the present setting of delay differential equations. If the order of polynomials used to approximate the SSM from data were increased, the discrepancy between the computed SSM and the actual particular SSM on which the saddle-node limit cycles, unstable limit cycles, and stable limit cycles lie would also increase, since higher-order polynomials would select a more specific member of the non-unique family of SSMs. Guided by Taylor series considerations, for lower polynomial orders, this discrepancy is less pronounced and we can conflate all the infinitely many SSMs with the one we have computed. This approximation provides a good representation of the SSM that actually contains the saddle-node limit cycles, unstable limit cycles, and stable limit cycles, as well as of the particular extended center manifold of the saddle-node limit cycle on which the unstable limit cycle 28 and stable limit cycle are going to be born. Finally, we stress that our approach provides a polynomial approximation inferred from data, rather than computating the Taylor series. More generally, away from the bifurcation values, each stable (respectively unstable) limit cycle pos-sesses a unique 1D stable (respectively unstable) manifold in the Poincar´ e section for a fixed parameter value. Each of these manifolds is captured, i.e. well approximated at least locally in phase space and up to a sufficiently high polynomial order, by the 1D computed SSM emanating from the origin. An alternative approach to constructing the bifurcation diagram is to compute the extended normal-form transformation and introduce polar coordinates. This yields a 2D ODE in p 9ρ, 9ϑq, where the 9ρ
+
+equation decouples from 9ϑ. A parametric study of the 9ρ equation (e.g., via interpolation) then provides a bifurcation diagram of ρ versus τ . However, this approach is difficult to implement from data, as the extended normal-form transformation is highly sensitive and does not interpolate reliably across parameter values. Instead, one could proceed in an equation-driven manner, which is computationally demanding, especially given the high polynomial order (13th order in this case) required to obtain an accurate parametric SSM-reduced model capturing the two local bifurcations of four coexisting limit cycles. This behavior is inherently nonlinear and cannot be captured by linear models. For instance, any principal Koopman eigenfunction whose domain contains the fixed point and the inner unstable limit cycle must identically vanish along both, thereby trivializing the dynamics. Predictions of the parametric SSM model remain accurate for unseen delay values, as shown in Fig. 20, with the NMTE remaining below 1 .2%. Panel (a) shows the onset of a saddle-node limit cycle, indicated by the gradual decay of oscillation amplitude toward a stable fixed point. Panels (b) and (c) show stable limit cycles after the first bifurcation, while panel (d) exhibits the coexistence of two limit cycles with different amplitudes after the second bifurcation. 
+
+(a) τ “ 1.005 s (b) τ “ 1.0125 s 
+
+(c) τ “ 1.025 s (d) τ “ 1.032 s Figure 20: Validation of the parametric SSM model for system (15) at unseen delay values. The model captures the onset of a saddle-node limit cycle (a), stable limit cycles (b,c), and the coexistence of two limit cycles (d). The NMTE is reported in each panel. 29 4.7 SSM-reduced modeling from periodically delayed experimental data 
+
+Here, we verify the existence of an SSM in the data-driven modeling of a PD-controlled mechanical system with delayed feedback and quantization using experimental data collected from the setup shown in Figure 21. The experiments were conducted at the Department of Applied Mechanics, Budapest University of Technology and Economics (BME), under the supervision of Professor G´ abor St´ ep´ an. These data were previously made publicly available in (Abbasciano et al. [16]). In that study, SSMs are employed to model global bifurcations and chaotic dynamics. 
+
+Figure 21: Left: experimental rig used to control the Furuta pendulum. Right: schematic of the experi-mental setup (adopted from (Vizi & St´ ep´ an [46])). In the experimental setting considered there, a periodic delay ρptq arises from the ZOH logic of the digital controller implementation: 
+
+ρptq “ t ´ ∆t
+
+Y t
+
+> ∆t
+
+]
+
+` r ∆t, r P N, (17) where t¨u denotes the integer part. The resulting controller simultaneously accounts for the constant feedback (discrete) delay r ∆t (with r “ 1 for the system studied here) and the additional delay induced by the ZOH mechanism, 
+
+t ´ ∆t
+
+Y t
+
+> ∆t
+
+]
+
+,
+
+which is periodic in time. The closed-loop system can therefore be written as 
+
+9xptq “ f `xptq˘loomoon 
+
+> uncontrolled system
+
+` gpxpt ´ ρptqqq looooooomooooooon 
+
+> linear controller
+
+(18) The control action is updated at the beginning of each sampling interval and then held constant over the interval of length ∆ t, as shown in Figure 22. This mechanism produces a periodic sawtooth-like delay, as discussed in (Insperger et al. [47]), where an expression for its average value is also derived. 30 Figure 22: Illustration of the periodic-delay mechanism induced by the ZOH for a scalar DDE of the form (18), with f P C1, sampling time ∆ t “ 20 ms, and feedback delay r “ 1. Top: periodic delay ρptq. Middle: state trajectory xptq. Bottom: delayed control action gpxpt ´ ρptqqq , shown as a piecewise-constant signal due to the sample-and-hold action of the digital controller. In light of the new theoretical results detailed in Theorem 2, which extend the Theorem 1 (Buza & Haller [7]) to DDEs with periodic delay, we carry out data-driven SSM-reduction following 3. Due to the ZOH logic, the control action g is in theory non-smooth. In reality, however, the control action is smooth with high gradients instead of nonsmooth, as a jump at the beginning of each and every sampling interval would require infinite power to occur, which is not possible. The system is thus C1,allowing us to apply Theorem 2 to digital controllers (18). We first reduce the system to a Poincar´ e section associated with sampling at intervals of length ∆ t.This yields an autonomous DDE whose Poincar´ e map is C1 and, by Theorem 2, admits infinitely many 
+
+d´dimensional SSMs in the Poincare’ section emanating from the equilibrium at 0, all tangent to a selected spectral subspace and with regularity C1. Infinitely many periodic SSMs and the associated periodic spectral subspace exist with regularity C1 as well in the extended phase space X ˆ S1. These periodic objects can be reconstructed from data by periodically interpolating the SSMs and spectral subspaces obtained in different Poincar´ e sections. By subsampling the experimental time series of the observable ϑ at intervals ∆ t, we obtain observations corresponding to intersections of the continuous-time flow with a codimension-one Poincar´ e section S in the delay-embedding space extended with time ϕ .
+
+“ t mod ∆ t P S1. The SSMLearn algorithm is then used, following Section 3, to fit a polynomial approximation of the SSM in S, whose existence is guaranteed by Theorem 2, emanating from the unstable upright equilibrium of the pendulum in (Abbasciano et al. [16]), corresponding to the angular position of the vertical arm θ “ 0. The reduced dynamics on the manifold are subsequently learned by projecting the data onto the tangent space and identifying a discrete-time map that approximates the Poincar´ e map. In this work, we employ RBFs, as the quantization inherent in the digital controller induces microchaos in the feedback-delayed PD controlled system (Haller & St´ ep´ an [48], St´ ep´ an et al. [5]). Finally, the SSM in the full extended delay-embedding space can be reconstructed by gluing the SSMs computed on each Poincar´ esection, parametrized by the phase variable ϕ P S1.The chaotic attractor has an estimated fractal dimension of approximately 4 .3. Assuming that the chaotic attractor is contained in one of the SSMs in X, we seek an SSM of sufficiently high dimension to 31 ensure a correct embedding of the attractor in the reduced space within the delay-coordinate space (Sauer et al. [36]). In this sense, a 10-dimensional embedding is adopted as a sufficient, not necessary choice. We therefore fit a first-order, 10-dimensional SSM, with the reduced dynamics approximated by radial basis functions (RBFs). The model is trained on 4 trajectories and tested on 4 additional trajectories (see Figure 23). 
+
+Figure 23: Left: correlation dimension of the chaotic attractor, yielding a value of approximately 4 .3. Right: training and test trajectories used for identification and validation of the first-order, 10-dimensional SSM with RBF-approximated SSM-reduced dynamics. For the delay-coordinate map, the lag is chosen to coincide with the zero-order-hold sampling time, namely ∆ t “ 20 ms, to retrieve the intersections with the Poincar´ e section. To improve accuracy, we use an overembedding dimension of 15. As discussed in the previous examples, Figure 24 shows short-time trajectory predictions, the PDFs of reduced coordinates and a three-dimensional projection of the delay embedding, where the two test trajectories are seen to approach the chaotic invariant set. 32 Figure 24: SSM-based model predictions for the Furuta pendulum experiments on previously unseen trajectory data. Top left: probability density functions of the reduced coordinates of training trajectories from experimental data and their reconstruction from the RBF-based SSM model. Top right: Two full system’s test trajectories (in black) evolving on the chaotic attractor together with their reduced model predictions (in green). Bottom: short-time predictions for two test trajectories, illustrating attraction toward the chaotic invariant set. 
+
+# 5 Conclusions 
+
+We have shown that a data-driven approach based on a recent extension of spectral submanifold (SSM) theory to delay differential equations (DDEs) yields predictive reduced-order models for autonomous systems with bounded delays. These SSM-reduced models remain accurate even in the presence of chaotic dynamics and without prior knowledge of the number or magnitude of delays. Furthermore, parametric SSM-reduction provides models that remain predictive across both local and global bifurcations, while revealing the mechanisms underlying loss of stability in the infinite-dimensional 33 phase space of the underlying and possibly unknown DDE. In the extension of the theory to nonautonomous DDEs with periodic delay, a d-dimensional family of SSMs exists, parametrized by time on a periodic interval, all of which are tangent to a time-periodic spectral subspace and with at least C1 regularity. We have recalled the underlying theory in Theorem 1 and extended it to systems with periodic delays in Theorem 2, with a proof in Appendix C. This extension enables the rigorously justified reduction of experimental data from a PD-controlled mechanical system subject to feedback delay and the quantization effect of the digital controller. We note that all results presented here concern bounded delays. Extensions to systems with un-bounded delay, or memory effects, are an active area of research. Theoretical foundations can be found in (Hino et al. [49]). 
+
+# 6 Aknowledgments 
+
+This work was supported by the Swiss National Science Foundation (Grant No. 200021 214908). The authors are grateful to Professor G´ abor St´ ep´ an for making the experimental data publicly available. 
+
+# A Data-driven spectral submanifolds for autonomous systems 
+
+The theory of SSMs and their data-driven reconstruction via delay embedding is well established (see (Haller [9])). Here, we summarize only the essentials to the present analysis. 
+
+A.1 SSM reconstruction via delay embedding 
+
+Full-state measurements are typically unavailable (Cenedese et al. [11], Liu et al. [38]), motivating recon-struction from limited observables. By Takens’ theorem (Takens [34]), a d-dimensional manifold can be embedded using m ą 2d delayed samples of a generic scalar observable (Ax˚ as et al. [50]). The reduced dynamics 
+
+9η “ Rpηq, η P Rd,
+
+on a d-dimensional SSM WpEq, tangent to a spectral subspace E, with associated flow Rt : η0 Þ Ñ ηptq,are conjugate to the restriction of the full system flow F t : Rn Ñ Rn to WpEq Ă Rn. This conjugacy is realized through a smooth parametrization M : Rd Ñ Rn, satisfying 
+
+F t ˝ M “ M ˝ Rt. (19) Consider a scalar time series sptq “ ξpxptqq , obtained by observing the full system, where ξ : Rn Ñ R.The delay-coordinate map Ψ : Rn Ñ Rm is constructed by stacking m uniformly spaced samples of sptq
+
+with sampling interval Ts:
+
+yptq “ Ψpxptqq “ r sptq, s pt ` Tsq, . . . , s pt ` p m ´ 1qTsq s T P Rm. (20) Denote by F t 
+
+> Ψ
+
+: Rm Ñ Rm the induced flow in the delay embedding space. If ξp0q “ 0, then the equilibrium x “ 0 maps to the fixed point y “ 0, i.e., F t
+
+> Ψ
+
+p0q “ 0. For a generic observable ξ, and assuming nondegeneracy conditions on the SSM-reduced dynamics, Takens’ theorem guarantees that for 
+
+m ą 2d, the restriction of Ψ to WpEq yields an embedding into Rm with probability one. As a result, the image ĂWpEq “ ΨpWpEqq is diffeomorphic to WpEq.This results enables the identification of an SSM anchored at y “ 0 in delay space via the conjugacy between the embedded dynamics F t 
+
+> Ψ
+
+on ČWpEq and the reduced dynamics on WpEq:
+
+F t 
+
+> Ψ
+
+˝ Ψ “ Ψ ˝ F t
+
+> WpEq
+
+. (21) 34 A.2 Data-driven modeling of spectral submanifoldw in a delay embedding space 
+
+Following (Liu et al. [38]), we denote by y P Rm the delay-embedded observations, and by η P Rd the reduced coordinates associated with the spectral subspace E of DΨp0qE. In a neighborhood of the fixed point, the embedded SSM can be locally represented as a polynomial graph tangent to this linear subspace. Let K be the maximal degree of the expansion. We approximate WpEq through the parametrization 
+
+M pηq “ V1 η `
+
+> K
+
+ÿ
+
+> |k|“ 2
+
+Vk ηk, k “ p k1, . . . , k dq P Nd, V1, V k P Rmˆd, (22) where ηk “ ηk1 
+
+> 1
+
+¨ ¨ ¨ ηkd 
+
+> d
+
+denotes the monomial associated with the multi-index k.The reduced coordinates are obtained via projection, η “ V T1 y, where V1 P Rmˆd has orthonormal columns spanning the tangent space of ČWpEq Ă Rm at y “ 0. The coefficients are identified using SSMLearn (Cenedese et al. [11]) by solving 
+
+V ˚ “ r V ˚ 
+
+> 1
+
+, V ˚ 
+
+> 2: K
+
+s “ arg min  
+
+> V1,tVku|k|ě 2
+
+ÿ
+
+> j
+
+yj ´ V1 V T1 yj ´
+
+> K
+
+ÿ
+
+> |k|“ 2
+
+Vk pηj qk 22 (23) subject to V T1 V1 “ I and V T1 Vk “ 0 for all |k| ě 2. 
+
+A.3 Data-driven modeling of the SSM-reduced dynamics 
+
+In the present work, we approximated the reduced dynamics on the SSM using either polynomial regres-sion or radial basis functions (RBFs) interpolation. 
+
+Polynomial reduced dynamics 
+
+We represent the reduced dynamics in polynomial form as 
+
+9η “ R1 η `
+
+> K
+
+ÿ
+
+> |k|“ 2
+
+Rk ηk, k “ p k1, . . . , k dq P Nd, Rk P Rdˆd, (24) where the coefficient matrices are identified through a least-squares regression: 
+
+R˚ “ arg min 
+
+> R
+
+ÿ
+
+> j
+
+››› 9ηj ´
+
+> K
+
+ÿ
+
+> |k|“ 1
+
+Rk pηj qk
+
+›››22, k “ p k1, . . . , k dq P Nd, R “ “ R1, R 2: K
+
+‰ P RdˆřK  
+
+> k“1dk
+
+. (25) Here, the number of monomials of total degree k is dk “ `d`k´1
+
+> k
+
+˘.
+
+RBF reduced dynamics 
+
+The SSM-reduced dynamics can be approximated using RBFs, following (Xu et al. [39]), in the form of a discrete-time map: 
+
+ηn`1 “ F pηnq “ 
+
+> K
+
+ÿ
+
+> i“1
+
+Ci k`}ηn ´ ηi}˘. (26) Here, k is a radial kernel that depends on the distance between ηn and the sampled points ηi. In this work, we adopt the linear kernel kprq “ r due to its simplicity and effectiveness (Xu et al. [39], Kasz´ as & Haller [13], Abbasciano et al. [16]). 35 A.4 Parametric SSM-reduced order models 
+
+About nonresonant points, the SSM and its associated reduced dynamics inherit smooth parameter de-pendence from the system vector field (Haller [9], Haller & Ponsioen [10]). This justifies constructing parameter-dependent SSMs via polynomial regression or smooth interpolation. This is achieved by in-terpolating the coefficients of the multivariate polynomial expansions describing the reduced space, the manifold and its reduced dynamics (e.g. using splines or linear interpolation, as in this paper), resulting in coefficient functions of μ P Rp, following (Abbasciano et al. [16]). The question of persistence and regularity of SSM across resonant points is addressed in (King et al. [20]). As mentioned therein, the limitations that resonance bring about are less pronounced in the data-driven setting. The corresponding reduced-order models can capture local bifurcations of equilibria and invariant tori, as well as global bifurcation phenomena in a neighborhood of the anchor point. For illustration, in the case of a two-dimensional SSM ( d “ 2), the parameter-dependent reduced dynamics in modal coordinates can be expressed as 
+
+9η1 “ λ1pμqη1 ` a11 pμqη21 ` a12 pμqη1η2 ` a13 pμqη22 ` O`|η|3˘,
+
+9η2 “ λ2pμqη2 ` a21 pμqη21 ` a22 pμqη1η2 ` a23 pμqη22 ` O`|η|3˘. (27) 
+
+# B Equation-driven reduction of the Hutchinson delay system 
+
+B.1 Formal procedure for SSM-reduction employed in (Szaksz et al. [42]) 
+
+We present the equation-driven SSM reduction of the Hutchinson delay system following (Szaksz et al. [2], Szaksz et al. [42]) based on previous work (St´ ep´ an & Haller [21], Diekmann et al. [22]). The Hutchinson equation, taken from (Breda et al. [26]), is 
+
+x1ptq “ r x ptq
+
+ˆ
+
+1 ´ xpt ´ τ q
+
+K
+
+˙
+
+, r ą 0, K ą 0, τ ą 0. (28) Its equilibria are x˚ P t 0, K u. Shifting the equilibrium x˚ “ K to the origin, we obtain 
+
+9yptq “ L y ptq ` R y pt ´ τ q ` N pyptq, y pt ´ τ qq , (29) with L “ 0, R “ ´ r, and N pu, v q “ ´ rK u v . The state at time t is the history segment ytpϑq “ ypt ` ϑq,
+
+ϑ P r´ τ, 0s, with phase space X :“ Cpr´ τ, 0s, Rq.For r “ 1.8, K “ 10, and τ “ 1, the dominant eigenvalues of the linearized system (29) form an unstable complex-conjugate pair. The existence of a C8 SSM follows from (Buza & Haller [7]), since the corresponding spectral subspace is spanned by eigenvectors associated with a simple unstable complex pair. We construct a two-dimensional SSM associated with the dominant complex-conjugate eigenvalue pair and use one complex reduced coordinate z P C, corresponding to two real dimensions via pℜz, ℑzq.The characteristic matrix is ∆pμq :“ μI ´ L ´ Re ´μτ . (30) Computing the infinitely many roots of the quasi-polynomial (30) is nontrivial. To this end, we use the method developed in (Appeltans et al. [43], Appeltans & Michiels [44]) to compute the dominant part of the spectrum, as shown in Figure 4. This yields λ1 “ 0.097 ´ 1.6i, λ2 “ λ1 “ 0.097 ` 1.6i,while all other eigenvalues satisfy ℜpλj q ă ℜpλ1q. To construct a third-order polynomial expansion of the manifold, we must verify that the nonresonance conditions up to cubic order are satisfied, namely, ∆pjλ 1 ` kλ 2q ‰ 0 for all integer pairs pj, k q with j ` k P t 2, 3u. Equivalently, ∆ p2λ1q, ∆ pλ1 ` λ2q, ∆ p2λ2q,∆p3λ1q, ∆ p2λ1 ` λ2q, ∆ pλ1 ` 2λ2q, and ∆ p3λ2q must all be nonzero. This prevents division by zero when solving the homological equations. The right eigenfunctions are 
+
+ϕ1pϑq “ q1eλ1ϑ, ϕ2pϑq “ q2eλ2ϑ, ϑ P r´ τ, 0s, where q1 “ ¯q2 P Czt 0u. (31) 36 For convenience, we set q1 “ 1. The left eigenfunctions are 
+
+ψ1pθq “ p˚
+
+> 1
+
+˜
+
+I ` Re ´λ1τ eλ1θ ´ 1
+
+λ1
+
+¸
+
+, ψ2 “ ¯ψ1, θ P r 0, τ s, p˚ 
+
+> 1
+
+P Czt 0u. (32) 
+
+Normalization. Imposing xψi, ϕ iy “ 1 for i P t 1, 2u fixes the remaining degree of freedom: p˚ 
+
+> i
+
+“
+
+1{p ∆1pλiqqiq, where the pairing is defined by 
+
+xΨ, Φy “ Ψp0q Φp0q ` 
+
+ż τ
+
+> 0
+
+Ψ1pθq Φp´ θq dθ. (33) Henceforth, ψ1 denotes the normalized adjoint eigenfunction. 
+
+SSM parametrization in history space. We parametrize histories on the two-dimensional SSM by 
+
+z P C:
+
+ytp¨q “ W pzptq, ¯zptq, ¨q .
+
+The reality of the manifold requires W p¯z, z, ϑ q “ W pz, ¯z, ϑ q. We expand up to cubic order, W “
+
+W1 ` W2 ` W3 ` Op| z|4q, with 
+
+W1pz, ¯z, ϑ q “ W10 pϑqz ` W01 pϑq¯z “ ϕ1pϑqz ` ϕ2pϑq¯z, W2pz, ¯z, ϑ q “ 12
+
+´
+
+W20 pϑqz2 ` 2W11 pϑqz ¯z ` W02 pϑq¯z2¯
+
+,W3pz, ¯z, ϑ q “ 16
+
+´
+
+W30 pϑqz3 ` 3W21 pϑqz2 ¯z ` 3W12 pϑqz ¯z2 ` W03 pϑq¯z3¯
+
+.
+
+(34) With 9z “ f pz, ¯zq and 9¯z “ f pz, ¯zq, the reduced dynamics truncated at cubic order are 
+
+9z “ λz ` β20 z2 ` β11 z ¯z ` β02 ¯z2 ` β30 z3 ` β21 z2 ¯z ` β12 z ¯z2 ` β03 ¯z3 ` Op| z|4q,
+
+9¯z “ ¯λ¯z ` β02 z2 ` β11 z ¯z ` β20 ¯z2 ` β03 z3 ` β12 ¯zz 2 ` β21 ¯z2z ` β30 ¯z3 ` Op| z|4q. (35) The invariance of the spectral submanifold can be expressed by the PDE 
+
+BBt yt “ BBϑ yt, (36) which yields equations in the interior, ϑ P r´ τ, 0q, and at the boundary, ϑ “ 0. 
+
+Interior invariance PDE. BϑW “ B z W 9z ` B ¯z W 9¯z , ϑ P r´ τ, 0q.
+
+The left-hand side, up to cubic order, can be computed from (34) as 
+
+BϑW “ B ϑW1 ` B ϑW2 ` B ϑW3 ` Op| z|4q“
+
+´
+
+W 1
+
+> 10
+
+z ` W 1 
+
+> 01
+
+¯z
+
+¯
+
+` 12
+
+´
+
+W 1
+
+> 20
+
+z2 ` 2W 1
+
+> 11
+
+z ¯z ` W 1 
+
+> 02
+
+¯z2¯
+
+` 16
+
+´
+
+W 1
+
+> 30
+
+z3 ` 3W 1
+
+> 21
+
+z2 ¯z ` 3W 1
+
+> 12
+
+z ¯z2 ` W 1 
+
+> 03
+
+¯z3¯
+
+` Op| z|4q.
+
+(37) For the right-hand side, we obtain 
+
+Bz W 9z “ λW 10 z `
+
+´
+
+pW10 β20 ` λW 20 qz2 ` p W10 β11 ` λW 11 qz ¯z ` W10 β02 ¯z2¯
+
+`
+
+´
+
+pW10 β30 ` W20 β20 ` λ 
+
+> 2
+
+W30 qz3`` p W10 β21 ` W20 β11 ` W11 β20 ` λW 21 qz2 ¯z ` p W10 β12 ` W20 β02 ` W11 β11 ` λ 
+
+> 2
+
+W12 qz ¯z2`` p W10 β03 ` W11 β02 q¯z3¯
+
+` Op| z|4q,
+
+B¯z W 9¯z “ ¯λW 01 ¯z `
+
+´
+
+W01 ¯β02 z2 ` p W01 ¯β11 ` ¯λW 11 qz ¯z ` p W01 ¯β20 ` ¯λW 02 q¯z2¯
+
+`
+
+´
+
+pW01 ¯β03 ` W11 ¯β02 qz3`` p W01 ¯β12 ` W11 ¯β11 ` W02 ¯β02 ` ¯λ 
+
+> 2
+
+W21 qz2 ¯z ` p W01 ¯β21 ` W11 ¯β20 ` W02 ¯β11 ` ¯λW 12 qz ¯z2`` p W01 ¯β30 ` W02 ¯β20 ` ¯λ 
+
+> 2
+
+W03 q¯z3¯
+
+` Op| z|4q.
+
+(38) 37 Boundary invariance PDE. Bz W p0q 9z `B ¯z W p0q9¯z “ L W p0q` R W p´ τ q` N `W p0q, W p´ τ q˘ at ϑ “ 0. The expansion of the nonlinearity up to cubic order is obtained by substituting (34). Define ϕ1,τ “ e´λτ and ϕ2,τ “ e´¯λτ . Truncating W at second order is sufficient for a third-order expansion of N :
+
+N `W p0q, W p´ τ q˘ “ ´ rK
+
+´
+
+ϕ1,τ z2 ` p ϕ1,τ ` ϕ2,τ qz ¯z ` ϕ2,τ ¯z2¯
+
+´ r
+
+2K
+
+´`W20 p´ τ q ` ϕ1,τ W20 p0q˘z3`` `W20 p´ τ q ` 2W11 p´ τ q ` 2ϕ1,τ W11 p0q ` ϕ2,τ W20 p0q˘z2 ¯z
+
+` `W02 p´ τ q ` 2W11 p´ τ q ` ϕ1,τ W02 p0q ` 2ϕ2,τ W11 p0q˘z ¯z2 ` `W02 p´ τ q ` ϕ2,τ W02 p0q˘¯z3¯
+
+` Op| z|4q.
+
+(39) We compute approximate solutions of the invariance PDE by solving the associated homological equations obtained from the interior and boundary invariance conditions order by order. This procedure yields the coefficients of both the manifold parametrization and the reduced dynamics up to the desired order, here cubic. 
+
+Order 1. Solving the interior invariance equation at first order, using (37) and (38), yields 
+
+W10 pϑq “ q1eλϑ , W01 pϑq “ q2e¯λϑ . (40) Substitution into the boundary invariance equations, derived from (38)–(39), leads to 
+
+rzs : λ “ L ` Re ´λτ ðñ ∆pλq “ 0, r¯zs : ¯λ “ L ` Re ´¯λτ ðñ ∆p¯λq “ 0,
+
+which ensures tangency to the spectral subspace spanned by the right eigenfunctions in X.
+
+Order 2. From (37) and (38), we derive the second-order interior invariance equations, solve them by variation of constants, evaluate them at ϑ P t´ τ, 0u, and substitute the resulting expressions into the boundary equations. Together with the following projection conditions, which we arbitrarily impose to fix the coefficients βij by removing the second-order component of the manifold along the spectral subspace directions: 
+
+xψ1, W jk y “ 0, xψ2, W jk y “ 0, j ` k “ 2, (41) this yields, for each monomial, a 3 ˆ 3 linear system with unknowns pWjk p0q, β jk , β jk q. The projections (41) are conditions chosen arbitrarily to render the system determined. This choice forces the component tangent to the spectral subspace entirely into βjk rather than Wjk .
+
+Notation for the projections. For any scalar exponential, define Πipaq :“ x ψi, e aϑ y “ 1∆1pλiq
+
+«
+
+1 ` R e ´λiτ epλi´aqτ ´ 1
+
+λi ´ a
+
+ff 
+
+, a ‰ λi, i “ 1, 2.
+
+In the limit a Ñ λi,Πipλiq “ 1∆1pλiq
+
+”
+
+1 ` R τ e ´λiτ ı
+
+“ 1.
+
+As an example, we compute pW20 p0q, β 20 , β 02 q. The boundary equation is 
+
+´
+
+λ ´ L 
+
+> 2
+
+´ R 
+
+> 2
+
+ϕ21,τ 
+
+¯looooooooomooooooooon   
+
+> “:a20 “12∆p2λqÑ nonres. cond.
+
+W20 p0q ` 
+
+´
+
+1 ´ Rλ pϕ21,τ ´ ϕ1,τ q
+
+¯loooooooooooomoooooooooooon 
+
+> “:b20
+
+β20 `
+
+´
+
+1 ´ Rλ´2λ pϕ2,τ ´ ϕ21,τ q
+
+¯loooooooooooooomoooooooooooooon 
+
+> “:c20
+
+β02 “ ´ rK ϕ1,τ looomooon 
+
+> “:d20
+
+.
+
+(42) The projection conditions read 0 “ x ψi, W 20 pϑqy “ Πip2λq W20 p0q ` 2β20 
+
+λ
+
+`Πip2λq ´ Πipλq˘ ` 2β02 
+
+λ ´ 2λ
+
+`Πipλq ´ Πip2λq˘, i P t 1, 2u. (43) 38 This leads to the following linear system for pW20 p0q, β 20 , β 02 q:
+
+»——– 
+
+> 12
+
+∆p2λq b20 c20 
+
+Π1p2λq 2
+
+> λ
+
+`Π1p2λq ´ Π1pλq˘ 2
+
+> λ´2λ
+
+`Π1pλq ´ Π1p2λq˘
+
+Π2p2λq 2
+
+> λ
+
+`Π2p2λq ´ Π2pλq˘ 2
+
+> λ´2λ
+
+`Π2pλq ´ Π2p2λq˘fi ffi ffi fl »—–
+
+W20 p0q
+
+β20 
+
+β02 
+
+fi ffi fl “
+
+»—–
+
+d20 
+
+00
+
+fi ffi fl . (44) The interior equation then reconstructs W20 pϑq. The same procedure applies to pW11 p0q, β 11 , β 11 q and 
+
+pW02 p0q, β 02 , β 20 q.
+
+Order 3. Proceeding as at second order, the cubic interior equations, derived from (37) and (38), are solved by variation of constants, evaluated at ϑ P t´ τ, 0u, and substituted into the boundary equations. Together with (41) applied for j ` k “ 3, each monomial yields a 3 ˆ 3 linear system for pWjk p0q, β jk , β jk q,for all j ` k “ 3. Again, as an example, we present the computation for pW30 p0q, β 30 , β 03 q. The boundary equation is 
+
+´ λ 
+
+> 2
+
+´ L
+
+> 6
+
+¯
+
+W30 p0q ` β30 ` β03 ´ R 
+
+> 6
+
+W30 p´ τ q “ D30 , (45) with projection constraints 0 “ x ψi, W 30 y “ Πip3λqW30 p0q ` J piq 
+
+> 30
+
+` 6β30 
+
+Πip3λq ´ Πipλq
+
+2λ ` 6β03 
+
+Πipλq ´ Πip3λq
+
+λ ´ 3λ . (46) Hence, the linear system for pW30 p0q, β 30 , β 03 q reads 
+
+»———–
+
+A30 B30 C30 
+
+Π1p3λq 6 Π1p3λq´ Π1pλq 
+
+> 2λ
+
+6 Π1pλq´ Π1p3λq
+
+> λ´3λ
+
+Π2p3λq 6 Π2p3λq´ Π2pλq 
+
+> 2λ
+
+6 Π2pλq´ Π2p3λq
+
+> λ´3λ
+
+fi ffi ffi ffi fl »—–
+
+W30 p0q
+
+β30 
+
+β03 
+
+fi ffi fl “
+
+»——–
+
+E30 
+
+´J p1q
+
+> 30
+
+´J p2q
+
+> 30
+
+fi ffi ffi fl . (47) where 
+
+A30 :“
+
+´ λ 
+
+> 2
+
+´ L
+
+> 6
+
+¯
+
+´ R 
+
+> 6
+
+ϕ31,τ “ 16∆p3λq, B30 :“ 1 ´ R ϕ31,τ ´ ϕ1,τ 
+
+2λ , C30 :“ 1 ´ R ϕ2,τ ´ ϕ31,τ 
+
+λ ´ 3λ ,D30 :“ ´ r
+
+2K
+
+´
+
+W20 p´ τ q ` ϕ1,τ W20 p0q
+
+¯
+
+´
+
+´
+
+W20 p0qβ20 ` W11 p0qβ02 
+
+¯
+
+, E30 :“ D30 ` R 
+
+> 6
+
+M30 .
+
+Here, D30 depends only on second-order quantities, and the known forcing terms are 
+
+F30 pϑq :“ 6
+
+´
+
+W20 pϑqβ20 ` W11 pϑqβ02 
+
+¯
+
+, M30 :“
+
+ż ´τ
+
+> 0
+
+e3λp´ τ ´sqF30 psq ds, J piq 
+
+> 30
+
+:“
+
+C
+
+ψi,
+
+ż ϑ
+
+> 0
+
+e3λpϑ´sqF30 psq ds 
+
+G
+
+.
+
+(48) The interior equation then reconstructs W30 pϑq. After solving all homological equations, we verify the conditions implied by the reality of the manifold, Wjk pϑq “ Wkj pϑq. Higher-order expansions can be derived analogously, but the number of coefficients grows rapidly, especially with increasing SSM dimension. This motivates data-driven formulations even when the governing equations are available. 
+
+B.2 Alternative procedure for SSM-reduction developed in (Buza & Haller [7]) 
+
+The continuous embedding ι : X ãÑ Xd‹ defined by φ Þ Ñ p φp0q, φ q, where the sun-star subspace Xd‹ “
+
+R ˆ L8pr´ τ, 0s; Rq is introduced in (Diekmann et al. [22]), allows us to transition from the update rule (7) into the evolution equation (49) 
+
+ι ddt yt “ Ad‹ ιy t ` Rpytq, (49a) 
+
+y0 “ φ, φ P O. (49b) 39 where the linear part is, explicitly for system (49), dom 
+
+´
+
+Ad˚ ¯
+
+“ ␣pc, φ q ˇˇ φ is Lipschitz with φp0q “ c( , (50a) 
+
+Ad˚ pc, φ q “ `´rφ p´ τ q, 9φ˘ . (50b) while the nonlinear remainder is R : X Ñ Xd‹ :
+
+Rpφq “ 
+
+´
+
+´ rK φp0qφp´ τ q, 0
+
+¯
+
+(51) so that R P C8, Rp0q “ 0 and the first derivative vanishes, that is, DR p0q “ 0. We define the spectral set Σ “ t λ, ¯λu. For each eigenvalue μ, the corresponding eigenfunction in X
+
+has the form wμpϑq “ qμeμϑ . Since the DDE is scalar, we fix qμ “ 1 and set 
+
+w1pϑq “ eλϑ , w2pϑq “ e¯λϑ .
+
+We precompute derivatives of the nonlinear part R, as they will be useful below. The second derivative is `D2Rp0qr u, v s˘ “
+
+´
+
+´ rK
+
+`up0qvp´ τ q ` vp0qup´ τ q˘ , 0
+
+¯
+
+u, v P X. (52) System (49) has no cubic term, so D3Rp0q “ 0. In particular, 
+
+`D2Rp0qr w1, w 1s˘ “
+
+´
+
+´ rK
+
+´
+
+1 ¨ e´λτ ` 1 ¨ e´λτ ¯
+
+, 0
+
+¯
+
+“
+
+´
+
+´ 2rK e´λτ , 0
+
+¯
+
+,
+
+`D2Rp0qr w1, w 2s˘ “
+
+´
+
+´ rK
+
+´
+
+e´λτ ` e´¯λτ ¯
+
+, 0
+
+¯
+
+, `D2Rp0qr w2, w 2s˘ “
+
+´
+
+´ 2rK e´¯λτ , 0
+
+¯
+
+.
+
+We now seek a two-dimensional SSM tangent to the spectral subspace XΣ. As in section B.1, we wish to parametrize our reduced dynamics via a single complex coordinate z P C. Lemma 24 in (Buza & Haller [7]), however, is posed with reduced space taken as the spectral subspace XΣ. To bridge this gap, we introduce Θ : C Ñ XΣ given by Θpzq “ p ϑ Þ Ñ zw 1pϑq ` ¯zw 2pϑqq .
+
+The reduced dynamics may then be posed on C, which will be of the general form 
+
+9zpz, ¯zq “ g1z ` 12
+
+`g20 z2 ` 2g11 z ¯z ` g02 ¯z2˘ ` 16
+
+´
+
+g30 z3 ` 3g21 z2 ¯z ` 3g12 z ¯z2 ` g03 ¯z3¯
+
+` Op4q. (53) 
+
+Computation of W
+
+The formulas provided in Lemma 24, (Buza & Haller [7]), extract W as a map XΣ Ñ X. To relate this to our reduced coordinate z, we need to precompose with Θ, i.e., our final manifold embedding will be 
+
+W ˝ Θ : C Ñ X.
+
+Linear term DW p0q
+
+The linear part is given as 
+
+DW p0q “ ιΣ : XΣ ãÑ X
+
+enforcing the graph style of parametrization. 40 Quadratic term D2W p0q
+
+As in Lemma 24 of (Buza & Haller [7]), 
+
+D2W p0q “ ι´1
+
+ż 8
+
+> 0
+
+T d‹ psq P d‹  
+
+> Σ1
+
+D2Rp0q“T p´ sqιΣ, T p´ sqιΣ
+
+‰ ds. (54) On the spectral subspace XΣ, the linear evolution is given by T p´ sqˇˇXΣ “ e´sA Σ , so that 
+
+T p´ sqw1 “ e´λs w1, T p´ sqw2 “ e´¯λs w2. (55) Therefore, using (55) and bilinearity, 
+
+D2Rp0q“T p´ sqwi, T p´ sqwj
+
+‰ “ e´p λi`λj qs D2Rp0qr wi, w j s, pi, j q P tp 1, 1q, p1, 2q, p2, 2qu , (56) The three second-order directions in XΣ are pw1, w 1q, pw1, w 2q, and pw2, w 2q. Applying (54) to each of these pairs gives 
+
+D2W p0qr wi, w j s “ ι´1
+
+ż 8
+
+> 0
+
+T d‹ psq P d‹  
+
+> Σ1
+
+e´p λi`λj qs D2Rp0qr wi, w j s ds, pi, j q P tp 1, 1q, p1, 2q, p2, 2qu ,
+
+(57) Under a suitable spectral gap assumption, so that the integrals converge and the resolvents exist, we use the resolvent identity 
+
+ι´1
+
+ż 8
+
+> 0
+
+e´νs T d‹ psq P d‹  
+
+> Σ1
+
+ds “ PΣ1 ι´1 pνI ´ Ad‹ q´1, (58) where ν P C satisfies Re pνq ą sup Re pΣ1q. Applying (58) to (57) yields 
+
+D2W p0qr wi, w j s “ PΣ1 ι´1 `pλi ` λj qI ´ Ad‹ ˘´1 D2Rp0qr wi, w j s, pi, j q P tp 1, 1q, p1, 2q, p2, 2qu , (59) 
+
+D2Rp0qr wi, w j s, viewed in Xd‹ “ RˆL8pr´ τ, 0s, Rq, has the form pcij , 0q. The resolvent then becomes 
+
+pνI ´ Ad‹ q´1pc, 0q “ `∆pνq´1c, ϑ Þ Ñ eνϑ ∆pνq´1c˘, (60) so that applying ι´1 simply extracts the history component: 
+
+ι´1pνI ´ Ad‹ q´1pc, 0q “ ϑ Þ Ñ eνϑ ∆pνq´1c. (61) Therefore, defining 
+
+Uν pϑ; cq :“ eνϑ ∆pνq´1c, 
+
+and using PΣ1 “ I ´ PΣ, equation (59) becomes 
+
+D2W p0qr wi, w j sp ϑq “ p I ´ PΣq Uλi`λj
+
+`ϑ; cij 
+
+˘, pi, j q P tp 1, 1q, p1, 2q, p2, 2qu , (62) where PΣ is the spectral projection onto the 2D spectral subspace XΣ.We now need an explicit formula for PΣ, that is, for Ptλu and Pt¯λu. We recall from (Diekmann et al. [22]), exercise IV.3.12, 
+
+Ptλuupϑq “ 
+
+p˚
+
+”
+
+up0q ` şτ 
+
+> 0
+
+dζ psq şs 
+
+> 0
+
+e´λη upη ´ sq dη 
+
+ı
+
+qp˚∆1pλqq eλϑ , u P X. (63) Here, ż τ
+
+> 0
+
+dζ psq up´ sq “ Lu p0q ` Ru p´ τ q “ ´ ru p´ τ q. (64) 41 Let q and p˚ denote, respectively, the right and left eigenvectors associated with λ, satisfying ∆pλqq “ 0 and p˚∆pλq “ 0.
+
+Substituting this into (63), we obtain 
+
+Ptλuupϑq “ 
+
+p˚
+
+”
+
+up0q ´ r şτ 
+
+> 0
+
+e´λη upη ´ τ q dη 
+
+ı
+
+qp˚∆1pλqq eλϑ . (65) Define the scalar functionals 
+
+αλpuq :“
+
+p˚
+
+„
+
+up0q ´ r
+
+ż τ
+
+> 0
+
+e´λs ups ´ τ q ds 
+
+ȷ
+
+qp˚∆1pλqq , α¯λpuq :“
+
+p˚
+
+„
+
+up0q ´ r
+
+ż τ
+
+> 0
+
+e´¯λs ups ´ τ q ds 
+
+ȷ
+
+qp˚∆1p¯λqq . (66) Therefore, for upϑq “ Ce νϑ ,
+
+pPΣuqp ϑq “ αλpCe ν¨q eλϑ ` α¯λpCe ν¨q e¯λϑ . (67) 
+
+pwi, w j q component. Thus, 
+
+D2W p0qr wi, w j sp ϑq “ Uλi`λj pϑ; cij q (68) 
+
+´
+
+´
+
+αλUλi`λj pϑ; cij qeλϑ ` α¯λUλi`λj pϑ; cij qe¯λϑ ¯
+
+, pi, j q P tp 1, 1q, p1, 2q, p2, 2qu , (69) 
+
+Linear term DH p0q
+
+From Lemma 24 in (Buza & Haller [7]), we have DH p0q “ AΣ. This translates to g1 “ λ in (53). 
+
+Quadratic term D2Hp0q
+
+From Lemma 24 in (Buza & Haller [7]), 
+
+D2Hp0q “ rP d‹  
+
+> Σ
+
+D2Rp0qr ιΣ, ι Σs.
+
+That is, 
+
+D2Hp0qr wi, w j sp ϑq “ rP d‹ 
+
+> Σ
+
+`D2Rp0qr wi, w j s˘pϑq “ rP d‹  
+
+> Σ
+
+pcij , 0qp ϑq.
+
+The projection onto tλu, t¯λu is, for a term pc, 0q P Xd‹ ,
+
+rP d‹ tλupc, 0qp ϑq “ p˚ cp˚∆1pλqq q e λϑ , rP d‹ t¯λupc, 0qp ϑq “ p˚ cp˚∆1p¯λqq q e ¯λϑ .
+
+Moreover, rP d‹  
+
+> Σ
+
+“ rP d‹ tλu ` rP d‹ t¯λu,
+
+is precisely the projection onto the two-dimensional spectral subspace. Explicitly, 
+
+D2Hp0qr wi, w j sp ϑq “ p˚ cij 
+
+p˚∆1pλqq q e λϑ ` p˚ cij 
+
+p˚∆1p¯λqq q e ¯λϑ ,
+
+pi, j q P tp 1, 1q, p1, 2q, p2, 2qu .
+
+Any u P XΣ can be written uniquely as u “ Θpzq “ p ϑ Þ Ñ zw 1pϑq ` ¯zw 2pϑqq for some z P C. Then, for the quadratic reduced coefficients in 9z,
+
+g20 “ p˚ c20 
+
+p˚∆1pλqq , g11 “ p˚ c11 
+
+p˚∆1pλqq , g02 “ p˚ c02 
+
+p˚∆1pλqq . (70) Analogously, the coefficients in 9¯z are obtained from the w2 component by replacing λ with ¯λ and pp˚, q q
+
+with pp˚, q q.42 3. Cubic term D3Hp0q
+
+From Lemma 24 in (Buza & Haller [7]), we have 
+
+D3Hp0qr u, v, w s “ rP d‹  
+
+> Σ
+
+D3Rp0qr DW p0qu, DW p0qv, DW p0qws ` rP d‹ 
+
+> Σ
+
+´
+
+D2Rp0qr D2W p0qr u, v s, DW p0qws` 
+
+D2Rp0qr D2W p0qr u, w s, DW p0qvs ` D2Rp0qr D2W p0qr v, w s, DW p0qus
+
+¯
+
+.
+
+(71) For the Hutchinson equation, the vector field is quadratic, hence D3Rp0q “ 0, and (71) simplifies accordingly. 
+
+Cubic contribution z3
+
+We compute the trilinear term D3Hp0qr w1, w 1, w 1s, which produces the z3 contribution in the reduced dynamics. Evaluating at pw1, w 1, w 1q and using DW p0qw1 “ w1 and D2W p0qr w1, w 1s “ W20 , we obtain 
+
+D3Hp0qr w1, w 1, w 1s “ 3 rP d‹  
+
+> Σ
+
+D2Rp0qr W20 , w 1s. (72) The corresponding boundary coefficient is 
+
+D2Rp0qr W20 , w 1s ” p c30 , 0q in Xd‹ ,
+
+where 
+
+c30 :“ `D2Rp0qr W20 , w 1s˘p0q “ ´ rK
+
+´
+
+e´λτ W20 p0q ` W20 p´ τ q
+
+¯
+
+. (73) Projecting onto Σ “ t λ, ¯λu gives 
+
+D3Hp0qr w1, w 1, w 1sp ϑq “ 3 rP d‹  
+
+> Σ
+
+pc30 , 0qp ϑq “ 3
+
+˜
+
+p˚ c30 
+
+p˚∆1pλqq q e λϑ ` p˚ c30 
+
+p˚∆1p¯λqq q e ¯λϑ 
+
+¸
+
+.
+
+Cubic contribution z2 ¯z
+
+We next compute the trilinear term producing the z2 ¯z contribution in the reduced dynamics. Evaluating at pw1, w 1, w 2q and using the notation W20 “ D2W p0qr w1, w 1s and W11 “ D2W p0qr w1, w 2s, we obtain 
+
+D3Hp0qr w1, w 1, w 2s “ rP d‹ 
+
+> Σ
+
+´
+
+D2Rp0qr D2W p0qr w1, w 1s, w 2s ` 2 D2Rp0qr D2W p0qr w1, w 2s, w 1s
+
+¯
+
+(74) 
+
+“ rP d‹ 
+
+> Σ
+
+´
+
+D2Rp0qr W20 , w 2s ` 2 D2Rp0qr W11 , w 1s
+
+¯
+
+“ rP d‹  
+
+> Σ
+
+pc21 , 0qp ϑq “ (75) 
+
+“
+
+˜
+
+p˚ c21 
+
+p˚∆1pλqq q e λϑ ` p˚ c21 
+
+p˚∆1p¯λqq q e ¯λϑ 
+
+¸
+
+. (76) Similarly, one obtains the terms corresponding to z ¯z2 and ¯ z3.
+
+B.3 Comparison between the two methods 
+
+The two methods presented in this appendix are equivalent. Here we verify their equivalence by comparing the coefficients obtained for the manifold up to second order and for the reduced dynamics up to third order. 43 B.3.1 SSM expansion coefficients 
+
+Figure 25: Comparison of the manifold coefficients obtained with the two SSM-reduction approaches, namely the equation-driven method in (Szaksz et al. [42]) and the semigroup-based method of (Buza & Haller [7]). The figure shows real and imaginary parts of the first- and second-order coefficient functions 
+
+W10 pϑq, W01 pϑq, W 20 pϑq, W11 pϑq, and W02 pϑq over the delay interval ϑ P r´ τ, 0s. The two formulations yield the same manifold parametrization up to second order, consistently with the identical gauge choice used to remove tangential components along the spectral subspace. The manifold can be expressed as 
+
+W pz, ¯z, ϑ q “ W10 pϑqz ` W01 pϑq¯z ` 12
+
+`W20 pϑqz2 ` 2W11 pϑqz ¯z ` W02 pϑq¯z2˘ ` Op| z|3q.
+
+B.3.2 SSM-reduced dynamics coefficients 
+
+Table 1 contains the reduced-dynamics coefficients obtained with both methods up to third order, yielding identical results: Table 1: Reduced-dynamics coefficients (with a factor 10 ´2 collected outside the table). 20 11 02 30 21 12 03 7.2 ´ 4.2 i 0 .55 ` 0.82 i ´6.6 ` 5.0 i ´0.39 ´ 0.073 i ´0.34 ` 0.054 i 0 .18 ´ 0.30 i 0 .080 ´ 0.39 i 
+
+Use of the table in the reduced dynamics. The coefficients reported in Table 1 are the complex coefficients bjk , with an overall factor 10 ´2 collected outside the table. They enter directly into the 44 reduced dynamics and its complex conjugate: 
+
+9z “ λz `
+
+> 3
+
+ÿ
+
+> j`k“2
+
+bjk zj ¯zk ` Op| z|4q, 9¯z “ ¯λ¯z `
+
+> 3
+
+ÿ
+
+> j`k“2
+
+bjk ¯zj zk ` Op| z|4q, (77) The equivalence of the two methods is expected, since the gauge is chosen identically in both cases. In both formulations, the tangential component of the manifold correction along the spectral subspace is removed at every order higher than one. In (Buza & Haller [7]) formulation, this is expressed through the operator pI ´ PΣq, whereas in (Szaksz et al. [42]) formulation it is imposed through the pairing conditions 
+
+xWjk , ψ iy “ 0. In other words, every higher-order manifold correction is chosen to be normal to the spectral subspace, while the tangential contribution is absorbed into the reduced dynamics coefficients. 
+
+# C Extension of SSM theory to the time-periodic case 
+
+Let X :“ Cpr´ h, 0s; Rnq; here h ą 0 denotes the maximal delay and n P N. Let O Ă X denote an open set containing the origin. We consider systems of the form 
+
+9xptq “ f pt, x tq, t ě s P R (78a) 
+
+xs “ u, (78b) for f : RˆO Ñ Rn continuous, time-periodic, i.e., f pt`p, u q “ f pt, u q for some p ą 0 and all pt, u q P RˆO,and f pt, 0q “ 0 for all t P R. We suppose moreover that f pt, ¨q is f pt, ¨q is Ck with k ě 1 for all t P R. We shall also suppose pt, u q Þ Ñ Dj
+
+> 2
+
+f pt, u q is continuous for all j ď k.
+
+C.1 Sun-star setting 
+
+We cast the system (78) into the sun-star setting of Diekmann et al. (Diekmann et al. [22]). 1 As usual, we denote by tT0ptqu tě0 the shift semigroup acting on X; its generator by A0. The p¨q d notation should be interpreted with respect to the semigroup tT0ptqu tě0. Recall that Xd˚ – Rn ˆ L8pr´ h, 0s; Rnq, and let ı : X ãÝÑ Xd˚ denote the continuous embedding u Þ Ñ p up0q, u q defined by the pairing between X and 
+
+Xd. Let 
+
+rd˚  
+
+> i
+
+:“ p ei, 0q P Xd˚ , 1 ď i ď n, 
+
+where pe1, . . . , e nq is the canonical basis of of Rn. We declare F : R ˆ O Ñ Xd˚ to be 
+
+F pt, u q :“
+
+> n
+
+ÿ
+
+> i“1
+
+xf pt, u q, e iyRn rd˚  
+
+> i
+
+. (79) We further dissect (79) into linear and nonlinear parts as 
+
+Bptq :“ D2F pt, 0q,Rpt, u q :“ F pt, u q ´ D2F pt, 0qr us.
+
+The integral equation 
+
+xt “ T0ptqu ` ı´1
+
+ż ts
+
+T d˚  
+
+> 0
+
+pt ´ τ qF pτ, x τ q dτ, u P O, t ě s, (80) determines a time-dependent semiflow , i.e., a continuous map S : DS Ñ X defined by 
+
+Spt, s ; uq :“ xt, DpSq :“ tp t, s ; uq P r s, 8q ˆ R ˆ O | t P Iuu, (81) where xt is determined by (80) and Iu is the maximal interval of existence for (80). For more details, see (Lentjes et al. [51], Section 2.3). It can be shown that Spt, s ; ¨q is of class Ck via an implicit function argument, as in (Buza & Haller [7], Appenidx B). Moreover, solutions of (78) and (80) are in one-to-one correspondence, provided we allow (78) to be satisfied in a weaker sense (see (Diekmann et al. [22], Section VII.6) for a more elaborate description). 
+
+> 1We assume familiarity with this setting. For the details, we refer to (Diekmann et al. [22], Chapter II).
+
+45 C.1.1 Linearized semiflow 
+
+In (Diekmann et al. [22], Chapter XII), it is shown, under the present assumption of B being strongly continuous, that 
+
+U pt, s qu “ T0pt ´ squ ` ı´1
+
+ż ts
+
+T d˚  
+
+> 0
+
+pt ´ τ qBpτ qU pτ, s qu ds, u P X, t ě s (82) uniquely determines a strongly continuous forward evolution system tU pt, s qu těs. Since D3Spt, s ; 0 q also satisfies (82), we must have that D3Spt, s ; 0 q “ U pt, s q.
+
+C.2 Recollection of Floquet theory 
+
+We collect the results we need from (Diekmann et al. [22], Chapter XIII) concerning Floquet theory in the following proposition. 
+
+Proposition 1. The evolution system tU pt, s qu těs defined by (82) satisfies the following. 
+
+(i) For all t ě s, U pt ` p, s ` pq “ U pt, s q.
+
+(ii) The spectrum σpU q :“ σpU pt ` p, t qq is independent of t P R, its only accumulation point is 0, and 
+
+σpU pt ` p, t qqzt 0u “ σppU pt ` p, t qqzt 0u.
+
+(iii) For each spectral subset Σ Ă σpU qzt 0u there exists a continuous family projections tPΣptqu tPR on 
+
+X of finite dimensional range such that PΣpt ` pq “ PΣptq and σpU pt ` p, t qPΣptqq “ Σ for all 
+
+t P R. Moreover, for t ě s, U pt, s q maps im pPΣpsqq onto im pPΣptqq isomorphically, such that 
+
+U pt, s qPΣpsq “ PΣptqU pt, s q.Proof. The first assertion is covered in (Diekmann et al. [22], Corollary XIII.2.2). The second is a consequence of (Diekmann et al. [22], Theorem XIII.3.3(i)) and the fact that U pt ` p, t qj is compact for some j P N large enough – in particular, σpU pt ` p, t qq is as described in the statement and always contains 0. The third assertion follows from spectral properties of compact operators and (Diekmann et al. [22], Theorem XIII.3.3(ii)); continuity of t Þ Ñ PΣptq follows from (Kato [55], Theorem IV.3.16) and time-periodicity of U . For a direct proof of continuity, see (Lentjes et al. [51], Appendix A.2). 
+
+C.3 Modification of the nonlinearity 
+
+To apply invariant manifold theory, one needs to control the global Lipschitz constant of the nonlinear-ity. The standard procedure in delay equations is to apply two cut-off functions (in order to preserve smoothness in a desired region), 
+
+Rρ,s pt, u q :“ χρp| PΣpsqu|X qχρp| u ´ PΣpsqu|X qRpt, u q, pt, u q P R ˆ X, 
+
+where χ : r0, 8q Ñ r 0, 1s is a C8 function satisfying (i) χpyq “ 1 for y P r 0, 1s,(ii) χpyq P r 0, 1s for y P p 1, 2q,(iii) χpyq “ 0 for y ě 2, (iv) |Dχ pyq| ď 2 for all y P Rě0,and χρpuq :“ χpu{ρq.We remark that pt, u q Þ Ñ Rρ,t pt, u q preserves the smoothness of R on the set 
+
+␣pt, u q P R ˆ X ˇˇ |u ´ PΣptqu| ă max tρ, 2|PΣptqu|u ( . (83) We quote the following Proposition from (Lentjes et al. [51]). 46 Proposition 2 (Proposition 6, (Lentjes et al. [51])) . For s P R and sufficiently small ρ ą 0, the operator 
+
+Rρ,s pt, ¨q is globally Lipschitz continuous for any t P R with Lipschitz constant Lip pRρ,s pt, ¨qq Ñ 0 as ρ Œ 0
+
+independent of s.
+
+Hence, the time-dependent semiflow defined by 
+
+Sρpt, s ; uq “ T0ptqu ` ı´1
+
+ż ts
+
+T d˚  
+
+> 0
+
+pt ´ τ q “Bpτ qSρpτ, s ; uq ` Rρ,τ pτ, S ρpτ, s ; uqq ‰ dτ, u P X, t ě s, (84) is globally defined for ρ ą 0 small enough, i.e., DpSρq “ r s, 8q ˆ R ˆ X; moreover Sρpt, s ; ¨q is Lipschitz on X.
+
+Lemma 1. For t ě s, Sρpt ` p, s ` p; ¨q “ Sρpt, s ; ¨q .Proof. This is shown analogously to (Diekmann et al. [22], Proposition XIII.2.1) and (Diekmann et al. [22], Corollary XIII.2.2), noting that it only relies on the time-periodicity of the time-dependent term, not its linearity. 
+
+C.4 Proof of Theorem 2 
+
+Proof of Theorem 2. . We apply (Chen et al. [56], Theorem 3.1) to the maps Sρpt ` p, t ; ¨q , t P R. For this, we set Φtpuq “ Ltu ` Ntpuq, pt, u q P R ˆ X, 
+
+with Lt :“ U pt ` p, t q and Ntpuq :“ Sρpt ` p, t ; ¨q ´ U pt ` p, t q. We need to verify (H.3) and (H.4) of (Chen et al. [56]). The prior follows from Proposition 1 applied with Σ as in the statement and the spectral radius formula (B¨ uhler & Salamon [57], Theorem 5.2.7), whereas (H.4) follows from Proposition 2, by which we can also guarantee (H.3)-(H.4) hold for all tΦtutPR for a single choice of ρ ą 0. Let Gtpγq denote the invariant Lipschitz manifold obtained by applying (Chen et al. [56], Theorem 3.1) to Φ t according to the splitting X “ im pPΣptqq ‘ ker pPΣptqq ,
+
+Gtpγq “ ␣u P X ˇˇ there is a negative semiorbit of Φ t, tununď0, with u0 “ u
+
+such that lim sup 
+
+> nÑ´8
+
+1
+
+|n| ln |un| ď ´ ln γ(.
+
+We claim that Sρpt, s, G spγqq Ă Gtpγq for all t ě s. Fix u P Gspγq and let tununď0 denote a negative semiorbit of Φ s with u0 “ u. Set v :“ Sρpt, s ; uq and vn :“ Sρpt, s ; unq, n ď 0. Then Φ tpvnq “ 
+
+Sρpt ` p, t ; Sρpt, s ; unqq “ Sρpt ` p, s ` p; un`1q “ vn`1 for n ď ´ 1 (recall Lemma 1), hence tvnunď0 is a negative semiorbit of Φ t with v0 “ v. Since Sρpt, s ; ¨q is Lipschitzian, we have |vn| ď C|un| for all n ď 0and hence lim sup 
+
+> nÑ´8
+
+1
+
+|n| ln |vn| ď ´ ln γ. 
+
+This shows the claim. For the converse inclusion, Sρpt, s, G spγqq Ą Gtpγq, we set j P N to be the unique integer for which 
+
+t ´ jp ď s ă t ´ p j ´ 1qp. Fix v P Gtpγq and let tvnunď0 denote a negative semiorbit under Φ t such that 
+
+v0 “ v. We set u :“ Sρps, t ´ jp ; v´j q, which is an element of Gspγq by the previous claim and the fact that v´j P Gt´jp pγq “ Gtpγq, which in turn follows from (Chen et al. [56], Theorem 3.1(ii)). Computing 
+
+Sρpt, s ; uq “ Φjt pv´j q “ v shows the converse inclusion. Hence, Gtpγq “ Sρpt, s, G spγqq for all t ě s. This shows that t Þ Ñ Gtpγq is continuous. Recall from (Chen et al. [56], Equation (3.16)) and Proposition 2 that we can control the Lipschitz constant of the function whose graph is Gtpγq via adjusting ρ, uniformly with respect to t. Upon examining (84) and the set (83) on which pt, u q Þ Ñ Rρ,t pt, u q preserves the smoothness of R, we infer that Φ t is Ck on a neighborhood of Gtpγq. Thus, each Gtpγq is Cℓ smooth according to (Irwin [58]). The local invariant 47 manifold statements (i)-(ii) now follow by observing that Sρ “ S on a small enough neighborhood of 
+
+rs, 8q ˆ R ˆ t 0u.For statement (iii) we utilize the foliation part of (Chen et al. [56], Theorem 3.1). For this, recall that leaves of said foliations are defined by 
+
+Mt,u pγq “ ␣v P X ˇˇ lim sup 
+
+> nÑ8
+
+1
+
+n ln |Φnt puq ´ Φnt pvq| ď ln γ(. (85) We show Sρpt, s, M s,u pγqq Ă Mt,S ρpt,s ;uqpγq for t ě s. Fix v P Ms,u pγq. We have Φ nt ˝ Sρpt, s ; ¨q “ 
+
+Sρpt ` np, s ; ¨q “ Sρpt ` np, s ` np, Φns p¨qq , hence lim sup 
+
+> nÑ8
+
+1
+
+n ln |Φnt ˝ Sρpt, s ; vq ´ Φnt ˝ Sρpt, s ; uq| ď ln γ, 
+
+using the Lipschitzness of Sρpt, s ; ¨q once more. This shows the desired property, and hence, upon using a contraction mapping argument to define πρt to be the continuous projection mapping Mt,u pγq to its unique intersection with Gtpγq (see (Buza [59], Section 4)), we obtain (5) globally for the cut-off setting; the local version then follows as above. Finally, we observe that (6) follows by (85). Recall from (Chen et al. [56], Theorem 3.1(iv)) that one can replace γ by γ ´ ε for ε ą 0 small enough, since γ R | σpU q| . Hence, for u P X and s P R fixed, (85) implies the existence of a C ą 0 such that 
+
+|Φns puq ´ Φns pπspuqq| ă Cγ n for all n P N.
+
+For t ě s, there exists a unique n P N for which s ` np ď t ă s ` p n ` 1qp. Therefore, using Lipschitzness of Sρpt, s ; ¨q once more, 
+
+|Sρpt, s ; uq ´ Sρpt, s ; πspuqq| ď rC|Φns puq ´ Φns pπspuqq| ă C rCγ n
+
+ď ˆCe pt´sq ln pγq{ p.
+
+The local version follows as above. 
+
+Remark 1. Note that, instead of considering (80), we could have also considered the integral equation obtained by considering R as a perturbation above tU pt, s qu těs, using a sun-star calculus for tU pt, s qu těs.This would have enabled a more elegant proof conducted entirely in the time-dependent setting, without the need to appeal to Poincar´ e maps, just as in the case of periodic center manifolds (Lentjes et al. [51]). Since we do not wish to derive rigorous formulas for the computation of manifold coefficients here (our example is dealt with in a data-driven setting), Theorem 2 suffices. 48 D Mackey-Glass SSM-reduced dynamics 
+
+Figure 26: Polynomial 6D ODE SSM-reduced model for the fulll system (11), with coefficients rounded to one significant digit. 
+
+# References 
+
+[1] Al-Tuwairqi, S. M. & Al-Harbi, S. K. “A Time-Delayed Model for the Spread of COVID-19 with Vaccination”. Sci. Rep. 12 (2022), 19435. [2] Szaksz, B., Orosz, G. & St´ ep´ an, G. “Reduction to Spectral Submanifolds in Guided Car-Following with Time Delay”. IFAC-Pap. OnLine 58 (2024), 67–72. [3] Szaksz, B., Orosz, G. & St´ ep´ an, G. “Discretization Based Spectral Submanifolds in Guided Car-Following with Time Delay”. IFAC-Pap. OnLine 59 (2025), 165–170. [4] Orosz, G. & Moln´ ar, T. G. Dynamics and Control of Connected Vehicles, Surveys and Tutorials in the Applied Mathematical Sciences, (Springer, Cham, 2025) https://doi.org/10.1007/978-3-031-94555-7. [5] St´ ep´ an, G., Milton, J. G. & Insperger, T. “Quantization Improves Stabilization of Dynamical Sys-tems with Delayed Feedback”. Chaos 27 (2017), 114306. [6] Insperger, T. & St´ ep´ an, G. Semi-Discretization for Time-Delay Systems, (Springer, New York, 2011) https://doi.org/10.1007/978-1-4614-0335-7. [7] Buza, G. & Haller, G. “Existence of Spectral Submanifolds in Time Delay Systems”. arXiv (2025), arXiv:2512.22062. [8] Mackey, M. C. & Glass, L. “Oscillation and Chaos in Physiological Control Systems”. Science 197 
+
+(1977), 287–289. [9] Haller, G. Modeling Nonlinear Dynamics from Equations and Data—with Applications to Solids, Fluids, and Controls, Computational Science & Engineering, (Society for Industrial and Applied Mathematics, Philadelphia, PA, 2025) https://doi.org/10.1137/1.9781611978353. [10] Haller, G. & Ponsioen, S. “Nonlinear Normal Modes and Spectral Submanifolds: Existence, Unique-ness and Use in Model Reduction”. Nonlinear Dyn. 86 (2016), 1493–1534. [11] Cenedese, M., Ax˚ as, J., B¨ auerlein, B., Avila, K. & Haller, G. “Data-Driven Modeling and Prediction of Non-Linearizable Dynamics via Spectral Submanifolds”. Nat. Commun. 13 (2022), 5514. 49 [12] Kasz´ as, B. & Haller, G. “Capturing the Edge of Chaos as a Spectral Submanifold in Pipe Flows”. 
+
+J. Fluid Mech. 979 (2024), A48. [13] Kasz´ as, B. & Haller, G. “Joint Reduced Model for the Laminar and Chaotic Attractors in Plane Couette Flow”. Journal of Fluid Mechanics 1023 (2025), A1. [14] Ax˚ as, J., B¨ auerlein, B., Avila, K. & Haller, G. “Data-Driven Modeling of Subharmonic Forced Response Due to Nonlinear Resonance”. Sci. Rep. 14 (2024), 25991. [15] Bettini, L., Cenedese, M. & Haller, G. “Model Reduction to Spectral Submanifolds in Piecewise Smooth Dynamical Systems”. Int. J. Non-Linear Mech. 163 (2024), 104753. [16] Abbasciano, G., Endr´ esz, B., St´ ep´ an, G. & Haller, G. “Data-Driven Modeling of Global Bifurcations and Chaos in a Mechanical System under Delayed and Quantized Control”. J. Sound Vib. 628 
+
+(2026), 119660. [17] Alora, J. I., Cenedese, M., Schmerling, E., Haller, G. & Pavone, M. “Data-Driven Spectral Sub-manifold Reduction for Nonlinear Optimal Control of High-Dimensional Robots”. arXiv (2022). [18] Alora, J. I., Cenedese, M., Schmerling, E., Haller, G. & Pavone, M. “Practical Deployment of Spectral Submanifold Reduction for Optimal Control of High-Dimensional Systems”. IFAC-Pap. OnLine 56 (2023), 4074–4081. [19] Bettini, L., Kazemipour, A., Katzschmann, R. K. & Haller, G. “Nonlinear Spectral Modeling and Control of Soft-Robotic Muscles from Data”. arXiv (2026). [20] King, J., Kasz´ as, B., Buza, G., Jussiau, W. & Haller, G. “Parametric Spectral Submanifolds across Hopf Bifurcations with Applications to Fluid Dynamics”. arXiv (2026). [21] St´ ep´ an, G. & Haller, G. “Quasiperiodic Oscillations in Robot Dynamics”. Nonlinear Dyn. 8 (1995), 513–528. [22] Diekmann, O., Verduyn Lunel, S. M., Gils, S. A. van & Walther, H.-O. Delay Equations: Functional-, Complex-, and Nonlinear Analysis, Applied Mathematical Sciences, vol. 110, (Springer, New York, NY, 1995) https://doi.org/10.1007/978-1-4612-4206-2. [23] Brunton, S. L., Proctor, J. L. & Kutz, J. N. “Discovering Governing Equations from Data by Sparse Identification of Nonlinear Dynamical Systems”. Proc. Natl. Acad. Sci. U.S.A. 113 (2016), 3932– 3937. [24] Ji, X. A. & Orosz, G. “Learning Time Delay Systems with Neural Ordinary Differential Equations”. 
+
+IFAC-Pap. OnLine 55 (2022), 79–84. [25] Ji, X. A. & Orosz, G. “Learn from One and Predict All: Single Trajectory Learning for Time Delay Systems”. Nonlinear Dyn. 112 (2024), 3505–3518. [26] Breda, D., Ji, X. A., Orosz, G. & Tanveer, M. “Data-Driven Methods for Delay Differential Equa-tions”. arXiv (2025), arXiv:2512.04894. [27] Pecile, A., Demo, N., Tezzele, M., Rozza, G. & Breda, D. “Data-Driven Discovery of Delay Differ-ential Equations with Discrete Delays”. J. Comput. Appl. Math. 461 (2025), 116439. [28] Sandoz, A., Ducret, V., Gottwald, G. A., Vilmart, G. & Perron, K. “SINDy for Delay-Differential Equations: Application to Model Bacterial Zinc Response”. Proc. R. Soc. A 479 (2023), 20220556. [29] Pazy, A. Semigroups of Linear Operators and Applications to Partial Differential Equations, Applied Mathematical Sciences, vol. 44, (Springer-Verlag, New York, 1983) https://doi.org/10.1007/978-1-4612-5561-1. [30] Szalai, R. “Invariant Spectral Foliations with Applications to Model Order Reduction and Synthe-sis”. Nonlinear Dyn. 101 (2020), 2645–2669. 50 [31] Haller, G. Modeling Nonlinear Dynamics from Equations and Data — with Applications to Solids, Fluids, and Controls, (Society for Industrial and Applied Mathematics, Philadelphia, PA, 2025) https://doi.org/10.1137/1.9781611978353. [32] Bettini, L., Kasz´ as, B., Zybach, B., Dual, J. & Haller, G. “Data-Driven Nonlinear Model Reduction to Spectral Submanifolds via Oblique Projection”. Chaos 35 (2025), 043135. [33] Bettini, L., Kazemipour, A., Katzschmann, R. K. & Haller, G. “General Oblique Projections for Model Reduction via Spectral Submanifolds”. Chaos 36 (2026), 053122. [34] Takens, F. “Detecting Strange Attractors in Turbulence”. Dyn. Syst. Turbulence 898 (1981), 366– 381. [35] Grassberger, P. & Procaccia, I. “Measuring the Strangeness of Strange Attractors”. Phys. D: Non-linear Phenom. 9 (1983), 189–208. [36] Sauer, T., Yorke, J. A. & Casdagli, M. “Embedology”. J. Stat. Phys. 65 (1991), 579–616. [37] Nastac, G., Labahn, J. W., Magri, L. & Ihme, M. “Lyapunov exponent as a metric for assessing the dynamic content and predictability of large-eddy simulations”. Physical Review Fluids 2 (2017), 094606. [38] Liu, A., Ax˚ as, J. & Haller, G. “Data-Driven Modeling and Forecasting of Chaotic Dynamics on Inertial Manifolds Constructed as Spectral Submanifolds”. Chaos 34 (2024), 033140. [39] Xu, Z., Kasz´ as, B., Cenedese, M., Berti, G., Coletti, F. & Haller, G. “Data-Driven Modelling of the Regular and Chaotic Dynamics of an Inverted Flag from Experiments”. J. Fluid Mech. 987 (2024), R7. [40] Haller, G., Yang, A., Ax˚ as, J., K´ ad´ ar, F. & St´ ep´ an, G. “Modeling nonlinear dynamics from videos Rights / license: Creative Commons Attribution 4.0 International Modeling nonlinear dynamics from videos”. 113 (2025), 10881–10909. [41] Hutchinson, G. E. “Circular Causal Systems in Ecology”. Ann. N. Y. Acad. Sci. 50 (1948), 221– 246. [42] Szaksz, B., Orosz, G. & St´ ep´ an, G. “Spectral Submanifolds in Time Delay Systems”. Nonlinear Dyn. 113 (2025), 14265–14286. [43] Appeltans, P., Silm, H. & Michiels, W. “TDS-CONTROL: a MATLAB Package for the Analysis and Controller-Design of Time-Delay Systems”. IFAC-Pap. OnLine 55 (2022), 272–277. [44] Appeltans, P. & Michiels, W. “Analysis and Controller-Design of Time-Delay Systems Using TDS-CONTROL: A Tutorial and Manual”. arXiv (2023). [45] Cushing, J. M. “Time Delays in Single Species Growth Models”. J. Math. Biol. 4 (1977), 257–264. [46] Vizi, M. B. & St´ ep´ an, G. “Digital Stability of the Furuta Pendulum Based on Angle Detection”. 
+
+J. Vib. Control 30 (2024), 588–597. [47] Insperger, T., Milton, J. & St´ ep´ an, G. “Semi-Discretization and the Time-Delayed PDA Feedback Control of Human Balance”. IFAC-Pap. OnLine 48 (2015), 93–98. [48] Haller, G. & St´ ep´ an, G. “Micro-Chaos in Digital Control”. J. Nonlinear Sci. 6 (1996), 415–448. [49] Hino, Y., Murakami, S. & Naito, T. Functional Differential Equations with Infinite Delay, Lecture Notes in Mathematics, vol. 1473, (Springer-Verlag, New York, 1991) https://doi.org/10.1007/BFb0084432. [50] Ax˚ as, J., Cenedese, M. & Haller, G. “Fast Data-Driven Model Reduction for Nonlinear Dynamical Systems”. Nonlinear Dyn. 111 (2023), 7941–7957. [51] Lentjes, B., Spek, L., Bosschaert, M. M. & Kuznetsov, Y. A. “Periodic Center Manifolds for DDEs in the Light of Suns and Stars”. J. Dyn. Differ. Equ. 37 (2025), 815–858. 51 [52] Morsy, A. A., Xu, Z., Tiso, P. & Haller, G. “Data-Driven Reduction of the Finite-Element Model of a Tribomechadynamics Benchmark Problem”. Nonlinear Dyn. 113 (2025), 24539–24555. [53] Alora, J. I., Cenedese, M., Haller, G. & Pavone, M. “Discovering Dominant Dynamics for Nonlinear Continuum Robot Control”. npj Robot. 3 (2025), 5. [54] Kaundinya, R. S., Alora, J. I., Matt, J. G., Pabon, L. A., Pavone, M. & Haller, G. “Data-Driven Soft Robot Control via Adiabatic Spectral Submanifolds”. arXiv (2025). [55] Kato, T. Perturbation Theory for Linear Operators, Grundlehren der mathematischen Wissenschaften, vol. 132, (Springer, Berlin, Heidelberg, 2013) https://doi.org/10.1007/978-3-662-12678-3. [56] Chen, X.-Y., Hale, J. K. & Tan, B. “Invariant Foliations for C1 Semigroups in Banach Spaces”. J. Differ. Equ. 139 (1997), 283–318. [57] B¨ uhler, T. & Salamon, D. A. Functional Analysis, Graduate Studies in Mathematics, vol. 191, (American Mathematical Society, Providence, RI, 2018). [58] Irwin, M. C. “A New Proof of the Pseudostable Manifold Theorem”. J. Lond. Math. Soc. s2-21 
+
+(1980), 557–566. [59] Buza, G. “Spectral Submanifolds of the Navier–Stokes Equations”. SIAM J. Appl. Dyn. Syst. 23 
+
+(2024), 1052–1089. 52

@@ -1,0 +1,1396 @@
+Title: Multilevel Isogeometric Projection Stabilization via Quasi-Interpolation for Advection-Dominated Problems
+
+URL Source: https://arxiv.org/pdf/2605.20583v2
+
+Published Time: Fri, 22 May 2026 00:35:28 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# MULTILEVEL ISOGEOMETRIC PROJECTION STABILIZATION VIA 
+
+# QUASI -I NTERPOLATION FOR ADVECTION -D OMINATED 
+
+# PROBLEMS 
+
+Zakaria El Hasnaoui 
+
+Vanguard Center Mohammed VI Polytechnic University (UM6P) Rabat, Morocco 
+
+zakaria.elhasnaoui@um6p.ma 
+
+Ahmed Ratnani 
+
+Vanguard Center Mohammed VI Polytechnic University (UM6P) Rabat, Morocco 
+
+ahmed.ratnani@um6p.ma 
+
+# ABSTRACT 
+
+This paper presents a novel multilevel projection-based stabilization method for advection-dominated convection–diffusion problems within the framework of Isogeometric Analysis. The proposed ap-proach extracts and penalizes fine-scale fluctuations using continuous B-spline quasi-interpolants, avoiding both the highly sensitive parameters used in residual-based stabilization methods and the discontinuous auxiliary spaces required by classical Local Projection Stabilization. Stabilization is applied hierarchically across nested levels of the discrete space via explicit mesh-dependent weights. We establish the theoretical foundation of the method by deriving a priori error estimates, supple-mented by a discrete inf-sup condition established for the one-dimensional setting with constant advection under a numerically validated stability hypothesis that ensures robust streamline deriva-tive control. Numerical experiments on stringent benchmarks demonstrate the method’s ability to significantly reduce spurious oscillations across a variety of regimes, including the limiting cases of pure advection and advection–reaction. Notably, despite being a fully linear formulation, the method achieves significant reduction of undershoots near sharp layers, delivering performance comparable to complex nonlinear shock-capturing schemes. Furthermore, by utilizing a robust global parameter scaling, the proposed approach significantly alleviates the parameter sensitivity that typically affects residual-based alternatives, reducing the strong dependence on problem-dependent tuning. 
+
+Keywords Isogeometric Analysis · Stabilization · Multilevel methods · Quasi-interpolants · B-splines · Advection-dominated problems 
+
+# 1 Introduction 
+
+Transport equations, possibly including perturbation terms such as diffusion or reaction, appear deceptively simple at the continuous level. Nevertheless, they play a central role in many physical applications and serve as fundamental model problems for the analysis of nonlinear and more complex flow phenomena. Despite their simple structure, obtaining stable and accurate numerical approximations remains a challenging task [1, 2]. A prototypical example is the advection–diffusion–reaction equation. It is well known that the standard Galerkin finite element method exhibits severe instabilities when applied to advection-dominated or advection–reaction problems. These instabilities typically manifest as non-physical oscillations in the numerical solution [3]. Over the past decades, numerous stabilization techniques have been proposed to overcome these difficulties [ 4]. A comprehensive historical overview of the development of stabilized methods can be found in [ 5, 6]. Broadly speaking, stabilized methods can be classified into two main categories: (1) residual-based stabilization methods, such as Variational Multiscale (VMS), Streamline Upwind Petrov-Galerkin (SUPG), and Galerkin Least-Squares (GLS) [ 7 , 4 ], and (2) penalty or projection-based methods, including Orthogonal Subscales (OSS), Subgrid Viscosity (SVG), and Local Projection Stabilization (LPS) techniques [8, 9, 10]. 
+
+> arXiv:2605.20583v2 [math.NA] 21 May 2026
+
+Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method Residual-based methods are strongly consistent and naturally allow for high-order discretizations. However, they may suffer from drawbacks related to the non-symmetric structure of the stabilization terms and the presence of a tuning parameter. These aspects can complicate the analysis of those methods. For these reasons, in the present work we adopt the second strategy, focusing on projection-based stabilization methods. The OSS stabilization strategy provides a systematic way to design high-order stabilized methods. This approach was introduced in [ 10 ], where the classical Galerkin formulation is enriched by adding a projection-based penalty term acting on selected components, typically the gradient or residual terms. However, a major drawback of this classical approach is that the required global L2 projection operator is often computationally expensive to evaluate. LPS methods overcome this computational difficulty by using element-wise local projections satisfying suitable orthogonality properties, instead of a global projection operator. In these approaches, the effect of unresolved scales on the small resolved scales is modeled through artificial diffusion terms applied locally. Furthermore, LPS methods belong to the class of symmetric stabilization techniques [ 11 ]. A notable advantage of symmetric stabilization, especially in PDE-constrained optimization problems, is that discretization and optimization commute [ 12 ], which simplifies both the theoretical analysis and the numerical implementation. Classical stabilization techniques such as SUPG and GLS were originally developed within the finite element framework and have been widely and successfully applied to advection- and advection–diffusion-dominated problems. With the emergence of Isogeometric Analysis (IGA), several studies have investigated the integration of SUPG-type stabilization within spline-based discretizations [13, 14]. However, it has been consistently observed that merely increasing the approximation order and continuity does not automatically suppress spurious oscillations. In particular, Gibbs-type oscillations, commonly encountered in high-order finite element discretizations, tend to intensify as the polynomial degree and smoothness increase, even when SUPG stabilization is employed [15]. More generally, numerical investigations indicate that classical stabilized formulations, including SUPG and GLS, perform satisfactorily for convection- or advection–diffusion-dominated problems in the absence of sharp internal or boundary layers. Their performance, however, deteriorates significantly in the presence of steep gradients, where oscillations, excessive smearing, and sensitivity to stabilization parameters frequently arise [ 16 ]. The tuning of stabilization parameters remains a delicate issue, particularly in high-order and high-regularity discretizations. Recent developments within IGA have therefore focused on modifying or enhancing classical SUPG-type methods. Several approaches augment the residual weighting or reformulate stabilization terms in order to mitigate known shortcomings in advection– and advection–diffusion–reaction-dominated regimes. In addition, adaptations of the spline approximation space itself such as exponential splines or variable-degree spline constructions have been proposed to better capture sharp gradients and reduce oscillatory behavior. For instance, the GSC methods introduced in [ 17 ] extend stabilization concepts derived from one-dimensional analysis by applying SUPG-type weighting to the advective operator, complemented by residual-based gradient weightings associated with reaction terms. These modifications improve upon classical SUPG by reducing overshoots and undershoots in boundary layer regions, particularly for high-order Lagrange and B-spline discretizations. Nevertheless, as with many residual-based approaches, these methods remain sensitive to stabilization parameter choices, requiring careful tuning to balance accuracy and artificial diffusion. Similarly, IGA formulations employing exponential or variable-degree spline spaces can substantially reduce oscillations in advection–diffusion problems due to their enhanced capacity to approximate sharp gradients [ 15 ]. However, such approaches modify the underlying approximation space, introducing additional problem-dependent parameters and nonstandard basis functions, which may limit general applicability and complicate integration into standard IGA frameworks. To place the present contribution in its proper context, we now briefly recall the main categories of stabilization methods and clarify the fundamental structural differences with the proposed approach. 
+
+(i) Residual-based methods (SUPG/GLS/VMS). In Streamline Upwind Petrov–Galerkin (SUPG) and Galerkin Least-Squares (GLS) methods [ 18 ], and their Variational Multiscale (VMS) generalization [ 19 ], the stabilization is achieved by testing the discrete equation with a modified test function of the form vh + τ L(vh), where L is the differential operator (or the streamline derivative b · ∇ vh). This requires computing the strong residual of the PDE, which involves second-order derivatives ∆uh. While IGA B-splines possess the required inter-element continuity, a well-recognized practical challenge of residual-based methods is the identification and tuning of the stabilization parameter τ , which is sensitive to the problem configuration and for which a robust, universally accepted definition for high-order elements 2Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method remains elusive. Additionally, these residual evaluations increase the complexity of the formulation and degrade algebraic conditioning. These methods are strongly consistent, but are non-symmetric : s(uh, v h)̸ = s(vh, u h).
+
+(ii) LPS. LPS methods [ 11 , 20 ] achieve symmetric stabilization by penalizing the fluctuation of the streamline derivative 
+
+b · ∇ uh that is not captured by a coarse space. The stabilization has the general form 
+
+sLPS (uh, v h) = X
+
+> M
+
+τM
+
+Z
+
+> M
+
+κM (b · ∇ uh) κM (b · ∇ vh) dx, 
+
+where κM = I − πM and πM is a local L2 projection onto a discontinuous polynomial space of degree p − 1 defined on macro-elements M . This approach avoids computing the residual, but the construction of the discontinuous auxiliary space, the element-wise L2 projection, and the macro-element infrastructure make it difficult to adapt to the highly smooth Cp−1 setting of Isogeometric Analysis. 
+
+(iii) Orthogonal Subscales (OSS). The Orthogonal Subscales method, introduced by Codina [ 10 ], provides a symmetric stabilization within the Variational Multiscale framework by assuming that the unresolved subscales are L2-orthogonal to the finite element space Vh. In its term-by-term formulation for the convective term, the stabilization takes the form 
+
+sOSS (uh, v h) = X
+
+> K
+
+τK
+
+ Π⊥ 
+
+> h
+
+(b · ∇ uh), Π⊥ 
+
+> h
+
+(b · ∇ vh) 
+
+> K
+
+,
+
+where Π⊥ 
+
+> h
+
+= I − Πh is the L2-orthogonal fluctuation operator and Πh : L2(Ω) → Vh is the global L2-orthogonal projection. Unlike LPS, the projection target is Vh itself (a continuous space), so OSS is in principle compatible with the smooth B-spline setting of Isogeometric Analysis. However, the L2 projection Πh requires solving the mass matrix system M λ = g at each evaluation. For Cp−1 B-splines, the mass matrix is banded but not diagonal , and mass lumping is known to be problematic for high-order, high-continuity splines. The projection is therefore a global operation that couples all degrees of freedom through M −1. Furthermore, OSS applies the fluctuation operator to b · ∇ uh, which is a function that does not belong to Vh (the derivative reduces the spline degree and the multiplication by a variable 
+
+b further degrades regularity). The L2 projection of this less regular function back onto the smooth Cp−1 space may introduce projection artifacts, particularly when the advection field exhibits sharp spatial variations. 
+
+(iv) Subgrid viscosity methods (Guermond). Guermond’s subgrid viscosity method [ 9] decomposes the discrete solution into two components: a resolved scale PH uh captured by a coarse finite element space VH ⊂ Vh, and a subgrid scale (I − PH )uh representing the unresolved high-frequency content. Artificial viscosity is then added proportionally to the subgrid fluctuation, acting on the full gradient ∇uh. A crucial feature of this approach is that the error analysis relies on the approximation properties of the coarse space VH itself, not on those of the projector PH . For this reason, an oblique projection suffices: PH only needs to satisfy PH |VH = Id (i.e., reproduce the coarse space), but it does not need to be an L2-orthogonal projector or possess optimal approximation estimates. The oblique projector merely serves to separate scales , not to approximate. It is worth emphasizing the fundamental role played by the nature of the projection operator in the design of stabilization methods. Four structurally distinct projectors appear in the literature: 1. L2-orthogonal projection πM onto a discontinuous space (LPS): the projector’s approximation properties directly enter the consistency error bound; requires solving local mass matrices on macro-elements; 2. Global L2-orthogonal projection Πh onto Vh itself (OSS): the fluctuation operator is applied to the streamline derivative b · ∇ uh; compatible with IGA but requires a global mass matrix solve; 3. Oblique projection PH onto a coarse space (Guermond): only separates resolved and subgrid scales; the coarse space controls the error, so no approximation properties are needed from the projector itself; 4. Quasi-interpolant Πpk onto a continuous B-spline space (present work): an approximation projector that reproduces polynomials of degree p, has local support, requires no linear system solve, and enjoys optimal approximation estimates. As in LPS, the projector’s approximation order directly controls the consistency error. The use of a quasi-interpolant as the projection operator is one of the key innovations of the proposed method, as it simultaneously provides optimal approximation order, computational efficiency (no mass matrix inversion), and full compatibility with the smooth B-spline structure of Isogeometric Analysis. 
+
+(v) The proposed method. The present work introduces a fundamentally different stabilization mechanism that is native to the Isogeometric Analysis framework. The key structural distinctions are: 3Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method • Projection of the primal variable. Unlike both LPS and OSS, which apply the projection operator to the streamline derivative b · ∇ uh (a function that generally does not belong to Vh), our method applies a quasi-interpolant operator Πpk to the primal variable uh itself , and then differentiates. This “project-then-differentiate” design ensures that the projection operates exclusively on smooth B-spline functions within Vh, avoiding the need to project quantities of reduced regularity back onto the discrete space. The fluctuation uh − Πpkuh
+
+captures the fine-scale content of uh that the coarse mesh M(k) 
+
+> h
+
+cannot resolve. • Continuous B-spline projection space. LPS relies on a local L2 projection onto a discontinuous polynomial space, which is foreign to IGA. Our method uses a quasi-interpolant onto a continuous B-spline space of the same degree p, fully exploiting the smooth structure of IGA discretizations. • Multilevel hierarchy. Classical LPS, VMS, and subgrid viscosity are all two-level methods: they decompose the solution into resolved and unresolved scales using a single coarse mesh. Our method introduces a true multilevel hierarchy M(1)  
+
+> h
+
+, . . . , M(L) 
+
+> h
+
+, with each level contributing to the stabilization through its own quasi-interpolant Πpk and mesh-dependent weight ck = h/H (k). This multilevel structure provides richer scale decomposition while maintaining optimal convergence. • No residual computation. Unlike SUPG/GLS/VMS, our method never evaluates the strong residual. Only first-order derivatives are required, which simplifies implementation and results in significantly improved condition numbers. In summary, the proposed method combines the symmetry advantage of projection-based stabilization with the smooth, high-order infrastructure of Isogeometric Analysis, while introducing a novel multilevel scale decomposition that has no counterpart in existing LPS, VMS, or subgrid viscosity frameworks. The stability of the method is established through coercivity in a natural norm (MQ norm) with a priori error estimates, as well as through a discrete inf-sup condition proven for a specialized one-dimensional setting with a constant advection field under a numerically validated hypothesis that demonstrates explicit control of the full streamline derivative (MQSD norm). Moreover, we provide extensive numerical evidence demonstrating that the proposed stabilization effectively suppresses spurious oscillations in challenging advection-dominated and advection–reaction-dominated benchmarks. 
+
+Outline. The remainder of this paper is organized as follows. Section 2 introduces the model advection–diffusion– reaction problem, the associated variational formulation, and the standard assumptions on the problem data. Section 3 recalls the construction of univariate and multivariate B-spline spaces and presents the quasi-interpolant operators, together with the key approximation and inverse estimates used throughout the analysis. In Section 4, we formulate the multilevel projection stabilization, define the stabilized bilinear form and the associated energy norms, and establish the general stability and a priori error analysis in the MQ norm. Section 5 is devoted to the enhanced inf-sup stability in the MQSD norm: we state the underlying stability hypothesis, validate it numerically via the Bressan–Sangalli dimension condition, and prove the discrete inf-sup condition for the one-dimensional constant-advection setting. Section 6 presents an extensive suite of numerical experiments including advection–reaction, advection–diffusion, parabolic boundary layers, internal layers, rotational flow, and pure advection benchmarks that demonstrate the robustness and accuracy of the proposed method. Finally, Section 7 summarizes the main contributions and discusses open problems and future research directions. 
+
+# 2 Model Problem and Assumptions 
+
+Let Ω ⊂ Rd, d ≥ 1, be a bounded domain with polyhedral Lipschitz boundary ∂Ω. We study the convection–diffusion– reaction problem 
+
+−ε∆u + b · ∇ u + c u = f in Ω, u = 0 on ∂Ω, (1) where ε > 0 is the diffusion coefficient, b is the convection field, c is the reaction coefficient, and f is a given source term. We assume the data satisfy 
+
+b ∈ W 1,∞(Ω) d, c ∈ L∞(Ω) , f ∈ L2(Ω) ,
+
+and that the reaction term is coercive, i.e., 
+
+σ := c − 12 div b ≥ σ0 > 0, (2) for some constant σ0. Under these conditions, problem (1) admits a unique solution u ∈ H1(Ω) .Then, the weak solution of problem (1) is a function u ∈ H10 (Ω) such that 4Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+a(u, v ) = ( f, v ) ∀v ∈ H10 (Ω) , (3) where 
+
+a(u, v ) = ε(∇u, ∇v) + ( b · ∇ u, v ) + ( cu, v ). (4) In this work, we focus on the numerical approximation of (3) . Accordingly, let Vh be a finite-dimensional approximation space of H10 (Ω) .The discrete variational scheme for (3) reads as follows: Find uh ∈ Vh, such that 
+
+a(uh, v h) = ( f, v h), ∀vh ∈ Vh. (5) It is well known (see [ 17 , 11 , 21 ]) that the standard Galerkin finite element method is generally unsuitable for the numerical approximation of problem (5) , as the discrete solution often exhibits nonphysical oscillations when convection dominates diffusion, i.e., when ∥b∥ ≫ ε.In this work, we focus on stabilization using a projection-based method with B-splines, relying on a quasi-interpolant operator [ 22 , 23 ] in a multilevel setting. A similar approach was previously introduced for classical finite elements in [ 11 , 24 , 25 , 26 , 27 , 20 ], where a local projection onto a discontinuous coarse space of degree p − 1 was employed. In that context, a tunable parameter, defined piecewise on each coarse element, was used, and the projection was typically taken as the local L2 projection. In contrast, our method employs a multilevel quasi-interpolant operator onto a B-spline space of degree p over a hierarchy of coarse meshes. In the following sections, we introduce the B-spline basis and the construction of the quasi-interpolant operator in detail. 
+
+# 3 B-splines and Quasi-Interpolant 
+
+3.1 B-splines and discrete spaces 
+
+Let T = ( t0, t 1, . . . , t m) be a non-decreasing sequence of real numbers, called a knot vector . The i-th univariate 
+
+B-spline of order p ∈ N is defined recursively by 
+
+N 0 
+
+> i
+
+(t) := 
+
+1, ti ≤ t < t i+1 ,
+
+0, otherwise ,
+
+and for p ≥ 1,
+
+N pi (t) := t − ti
+
+ti+p − ti
+
+N p−1 
+
+> i
+
+(t) + ti+p+1 − tti+p+1 − ti+1 
+
+N p−1 
+
+> i+1
+
+(t), t0 ≤ t ≤ tm,
+
+for i = 0 , . . . , n := m − p − 1, with the convention that a fraction with zero denominator is taken to be zero. The B-spline basis functions satisfy the following properties: • Positivity: N pi (t) ≥ 0 for all t ∈ [t0, t m].• Compact support: N pi (t) = 0 for t / ∈ [ti, t i+p+1 ).• Partition of unity: Pni=0 N pi (t) = 1 for all t ∈ [t0, t m].
+
+Definition 3.1 (B-spline curve) . Given control points (P0, . . . , P n) ⊂ Rd and a knot vector T , the B-spline curve of degree p is 
+
+C(t) = 
+
+> n
+
+X
+
+> i=0
+
+N pi (t)Pi.
+
+Important properties of B-spline curves include: • C is a piecewise polynomial curve. • Affine invariance: applying an affine map ϕ to C corresponds to transforming the control points: ϕ(C(t)) = P 
+
+> i
+
+N pi (t)ϕ(Pi).• Local support: if t ∈ [ti, t i+1 ), then C(t) depends only on (Pi−p, . . . , P i) and lies in their convex hull. • Local modification: changing a control point Pi affects C(t) only in [ti, t i+p+1 ).5Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method • C is C∞ in each open interval (ti, t i+1 ), and Cp−μi at knot ti, where μi is the knot multiplicity. • For an open knot vector 
+
+t0 = · · · = tp < t p+1 ≤ · · · ≤ tm−p−1 < t m−p = · · · = tm,
+
+the curve interpolates the endpoints: C(t0) = P0, C(tm) = Pn.
+
+3.1.1 Schoenberg space and multivariate generalization 
+
+The univariate Schoenberg space of degree p associated with T is 
+
+Sp(T ) = span {N pi | 0 ≤ i ≤ n}.
+
+Classical spline theory shows that Sp(T ) coincides with the space of piecewise polynomials of degree p with smoothness 
+
+μi at each knot ti.For the multivariate case, let d ∈ N∗ and a family of knot vectors T = {T 1, . . . , T d}. Assuming Ω = (0 , 1) d and that each T l is open, 
+
+T l =   0, . . . , 0
+
+| {z }
+
+> pl+1
+
+, t l,p l+1 , . . . , t ml−pl−1, 1, . . . , 1
+
+| {z }
+
+> pl+1
+
+, 1 ≤ l ≤ d, 
+
+the tensor-product Schoenberg space is 
+
+Sp(T ) = Sp1 (T 1) ⊗ · · · ⊗ S pd (T d),
+
+where p = ( p1, . . . , p d), with basis functions 
+
+N pi (x) = N p1 
+
+> i1
+
+(x1) · · · N pd 
+
+> id
+
+(xd), 0 ≤ il ≤ ml − pl − 1, 1 ≤ l ≤ d. 
+
+The approximation space for the Galerkin method is then 
+
+Vh = Sp(T ) ⊂ H1(Ω) , (6) and for homogeneous Dirichlet boundary conditions on ΓD ⊂ ∂Ω, we define 
+
+Vh, ΓD = {uh ∈ Vh | uh|ΓD = 0 }.
+
+3.2 Quasi-Interpolant 
+
+Quasi-interpolants based on B-splines provide local and computationally efficient approximations without solving global systems. The concept originates from Schoenberg [ 28 ] and was further developed by de Boor [ 29 , 30 ] for uniform and non-uniform splines. In particular, Lyche [ 31 , 23 , 22 ] constructed quasi-interpolant operators that preserve high-order approximation properties in both univariate and tensor-product spline spaces. These operators exploit the local support and smoothness of B-splines while maintaining optimal convergence rates. Given the B-spline basis functions {N pi }ni=0 associated with the knot vector T , a spline approximation of a given function f is written as 
+
+Qf (t) := 
+
+> n
+
+X
+
+> i=0
+
+λi(f ) N pi (t),
+
+where λi(f ) are suitable linear functionals. The operator Q is called a quasi-interpolant if it yields an accurate approximation without solving a global linear system; in local constructions, each λi(f ) depends only on the values of 
+
+f in a neighborhood of the support of N pi .In order to ensure that point-evaluation functionals are well defined, we assume throughout this section that f ∈C−1([ a, b ]) , where [a, b ] is a bounded interval. We consider the spline space Sp(T ) associated with a (p + 1) -basic knot sequence T . The corresponding basic interval [tp+1 , t n+1 ] is assumed to coincide with [a, b ].
+
+Definition 3.2 ([22]) . The quasi-interpolant 
+
+Qf (t) = 
+
+> n
+
+X
+
+> i=0
+
+λi(f ) N pi (t)
+
+is called a local quasi-interpolant if the following conditions hold: 6Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method (i) Each functional λi is supported on the interval 
+
+Ii := [ ti−vL , t i+p+1+ vU ] ∩ [a, b ],
+
+for some integers vL, v U ≥ − p, and Ii has nonempty interior. (ii) The operator Q reproduces polynomials of degree up to l, i.e., 
+
+Qg(t) = g(t) for all g ∈ Pl and all t ∈ [a, b ],
+
+for some integer l satisfying 0 ≤ l ≤ p.
+
+Definition 3.3 ([ 22 ]) . A local quasi-interpolant Q is said to be bounded in the Lq -norm , for 1 ≤ q ≤ ∞ , if there exists a constant CQ > 0 such that, for each functional λi, the estimate 
+
+|λi(f )| ≤ CQ h−1/q i,p,T ∥f ∥Lq (Ii)
+
+holds for all f ∈ C−1(Ii).Here, hi,p,T is the largest knot interval length contained in Ii ∩ supp( N pi ).
+
+Proposition 3.4. Let 
+
+Qf (t) = 
+
+> n
+
+X
+
+> i=0
+
+λi(f ) N pi (t)
+
+be a linear quasi-interpolant. If Q reproduces Pp and each functional λi is supported on a single knot interval 
+
+[t+ 
+
+> mi
+
+, t −
+
+> mi+1
+
+] ⊂ [ti, t i+p+1 ], with tmi < t mi+1 ,
+
+then Q reproduces the entire spline space Sp(T ), i.e., 
+
+Qs(t) = s(t) for all s ∈ S p(T ) and t ∈ [tp+1 , t n+1 ].
+
+In particular, Q is a projector onto Sp(T ).Proof. We refer to [22] for a detailed proof of this result. A general construction of a quasi-interpolant reproducing the polynomial space is given in [ 22 , 23 ]. For the reader’s convenience, we recall it here as follows. For a fixed index i, the coefficient λi(f ) is determined as follows: (i) Choose an interval ˆIi := [ tmL,i , t mU,i ] ⊂ [a, b ]
+
+such that 
+
+(tmL,i , t mU,i ) ∩ (ti, t i+p+1 )̸ = ∅,
+
+and such that mU,i − mL,i is uniformly bounded independently of n.(ii) Select a local linear approximation operator Qi which can be expressed in terms of B-splines as 
+
+Qif (t) = 
+
+> mU,i −1
+
+X
+
+> j=mL,i −p
+
+bj N pj (t), t ∈ (tmL,i , t mU,i ), (7) and which reproduces polynomials of degree up to l, i.e., 
+
+Qig(t) = g(t), ∀g ∈ Pl, t ∈ (tmL,i , t mU,i ),
+
+for some fixed l with 0 ≤ l ≤ p.(iii) Finally, set 
+
+λi(f ) := bi.
+
+If we replace (7) by 
+
+Qis(t) = s(t), for all s ∈ S p(T ) and t ∈ (tmL,i , t mU,i ). (8) then the quasi-interpolant Q reproduces the B-spline space Sp(T ) (see [22]). 7Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method The univariate interpolation and quasi-interpolation operators introduced above can be extended to the multidimensional case via a tensor-product construction. Let, for i = 1 , . . . , d , the symbol Qpi,T i denote the univariate operator onto the spline space Spi (Ti). We define the multidimensional operator 
+
+Qp,T (u) = ( Qp1,T 1 ⊗ · · · ⊗ Q pd,T d ) ( u),
+
+where p = ( p1, . . . , p d) and T = {T1, . . . , T d}.For a detailed discussion on the tensorization of quasi-interpolants, we refer to [ 32 ]. The definition above holds for smooth functions u and is extended by continuity to the appropriate functional spaces (see [33]). 
+
+Theorem 3.5 ([ 34 ]) . Let r and s be integers such that 0 ≤ r ≤ s ≤ min( p1, . . . , p d) + 1 . Then, there exists a projector(quasi-interpolant) 
+
+QVh : Hr (Ω) −→ Vh = Sp(T )
+
+satisfying 
+
+∥u − Q Vh u∥Hr (Ω) ≤ Ch s−r ∥u∥Hs(Ω) , ∀u ∈ Hs(Ω) , (9) 
+
+where C > 0 is a constant independent of h.
+
+Remark 3.6. The same result holds in the presence of Dirichlet boundary conditions. In this case, one can construct a projector 
+
+QVh, ΓD : Hr (Ω) −→ Vh, ΓD
+
+which satisfies the estimate (9) (see [34] for details). We conclude this subsection with the following inverse inequality. 
+
+Theorem 3.7 ([14]) . Let k and l be integers such that 0 ≤ k ≤ l. Then, for all vh ∈ Vh, the following estimate holds: 
+
+|vh|Hl(Ω) ≤ Ch k−l |vh|Hk (Ω) , (10) 
+
+where C > 0 is a constant independent of h.
+
+We are now in a position to introduce the stabilized discrete formulation of the problem. 
+
+# 4 Stabilized Discrete Formulation 
+
+The proposed approach relies on a multilevel decomposition of the discrete space into large- and small-scale components. Diffusion-type stabilization terms are added and applied only to the small-scale contributions at each level. From a multiscale perspective, these terms account for the influence of unresolved fine-scale structures on the resolved small scales within each hierarchical level. Consider a domain Ω = [ a, b ] × [c, d ] equipped with open knot vectors defining the tensor-product mesh Th. The B-spline space of degree p associated with Th, introduced above, is denoted by 
+
+Sp(Th).
+
+We define the discrete space 
+
+Vh := Sp(Th) ∩ H10 (Ω) .
+
+The standard discrete variational formulation of (3) then reads as follows: 
+
+Find uh ∈ Vh such that 
+
+a(uh, v h) = ( f, v h), ∀vh ∈ Vh. (11) 
+
+Multilevel hierarchy. 
+
+Let M(k) 
+
+> h
+
+, k = 1 , . . . , L , be a family of hierarchically coarsened meshes associated with the basic mesh Th, and set 
+
+M(0)  
+
+> h
+
+= Th.
+
+Each level M(k) 
+
+> h
+
+is obtained from M(k−1)  
+
+> h
+
+by removing selected interior knots. We denote by H(k) the mesh size associated with M(k) 
+
+> h
+
+.8Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method We assume that there exists a constant C > 0, independent of h, such that 
+
+H(k) ≤ Ch, ∀k = 1 , . . . , L. 
+
+We define the ratio 
+
+ck := hH(k) , k = 1 , . . . , L. 
+
+For each level, we introduce the B-spline space of degree p
+
+Sp(M(k) 
+
+> h
+
+),
+
+and denote by Πpk the associated quasi-interpolation operator onto Sp(M(k) 
+
+> h
+
+), satisfying the approximation estimate stated in (9). 
+
+Multilevel stabilization. 
+
+For uh, v h ∈ Vh, we define the multilevel projection stabilization term as 
+
+sMQ (uh, v h) = τhLX
+
+> k=1
+
+ck
+
+Z
+
+> Ω
+
+(b · ∇ (uh − Πpkuh)) ( b · ∇ (vh − Πpkvh)) dx, 
+
+where τh is the stabilization parameter to be defined in the subsequent sections. Note that, unlike classical LPS methods, the projection Πpk acts on uh itself rather than on its streamline derivative. This design leads to a natural multiscale decomposition: the fluctuation uh − Πpkuh captures exactly the fine-scale component that the coarse mesh M(k) 
+
+> h
+
+cannot resolve. Moreover, since the projection uses degree p (the same as uh), the resulting consistency error benefits from the full approximation order of the B-spline space. We then define the stabilized bilinear form 
+
+aMQ (u, v ) = a(u, v ) + sMQ (u, v ). (12) The multilevel projection discretization of (11) reads: 
+
+Find uh ∈ Vh such that 
+
+aMQ (uh, v h) = ( f, v h), ∀vh ∈ Vh. (13) 
+
+Remark 4.1. Another suitable choice of stabilization operator, which is particularly well-suited for extending the method to time-dependent problems, flows with highly variable advection directions, or problems featuring complex internal layers (e.g., Test 4), is the isotropic penalization of the full gradient of the fine-scale fluctuations: 
+
+sMQ (uh, v h) = τhLX
+
+> k=1
+
+ck
+
+Z
+
+> Ω
+
+∇(uh − Πpkuh) · ∇ (vh − Πpkvh) dx. 
+
+This isotropic form provides a balanced stabilization over the entire domain. Furthermore, thanks to the high approxi-mation power of the quasi-interpolants, this full-gradient penalization does not introduce excessive numerical crosswind diffusion. 
+
+Energy norms. We introduce the norm 
+
+∥v∥G =
+
+
+
+ε|v|21,Ω + ∥σ1/2v∥20,Ω
+
+1/2
+
+,
+
+and the stabilized norm 
+
+∥v∥MQ =  ∥v∥2 
+
+> G
+
++ sMQ (v, v )1/2 .
+
+For all v ∈ H10 (Ω) , we have 
+
+a(v, v ) = ∥v∥2
+
+> G
+
+, aMQ (v, v ) = ∥v∥2MQ .
+
+Therefore, the multilevel projection discretization (13) admits a unique solution. 9Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+4.1 Stability and Error Analysis in the MQ Norm 
+
+In this section, we present the general stability and a priori error analysis for the proposed multilevel stabilization. The results in this subsection apply to the general multidimensional setting with variable coefficients. We define the multilevel approximation constant: 
+
+Σ( p, L ) := 
+
+> L
+
+X
+
+> k=1
+
+ck (H(k))2p. (14) 
+
+Theorem 4.2 (Coercivity in the MQ norm) . For all vh ∈ Vh:
+
+aMQ (vh, v h) = ∥vh∥2MQ .
+
+In particular, the discrete problem (13) admits a unique solution. Proof. By integration by parts and vh|∂Ω = 0 :
+
+(b · ∇ vh, v h) = − 12 (div b vh, v h).
+
+Therefore: 
+
+aMQ (vh, v h) = ε|∇ vh|2 
+
+> L2(Ω)
+
++ (( c − 12 div b)vh, v h) + sMQ (vh, v h)= ε|vh|2 
+
+> H1(Ω)
+
++ ∥σ1/2vh∥2 
+
+> L2(Ω)
+
++ sMQ (vh, v h) = ∥vh∥2MQ .
+
+Lemma 4.3 (Modified Galerkin orthogonality) . Let u ∈ Hp+1 (Ω) ∩ H10 (Ω) solve the continuous problem (3) and 
+
+uh ∈ Vh solve the discrete problem (13) . Then: 
+
+aMQ (u − uh, v h) = sMQ (u, v h) ∀vh ∈ Vh. (15) 
+
+Proof. From the continuous problem: a(u, v h) = ( f, v h). From the discrete problem: a(uh, v h) + sMQ (uh, v h) = (f, v h). Subtracting: a(u, v h) − a(uh, v h) = sMQ (uh, v h). By bilinearity of sMQ :
+
+aMQ (u − uh, v h) = a(u, v h) − a(uh, v h) + sMQ (u, v h) − sMQ (uh, v h)= ( f, v h) + sMQ (u, v h) − [a(uh, v h) + sMQ (uh, v h)] = ( f, v h) + sMQ (u, v h) − (f, v h)= sMQ (u, v h).
+
+Lemma 4.4 (Multilevel consistency error) . Let u ∈ Hp+1 (Ω) . Then, with the constant CΠ = max k CΠpk , we have: 
+
+sup 
+
+> vh∈Vh\{ 0}
+
+|sMQ (u, v h)|∥vh∥MQ 
+
+≤ CΠ ∥b∥L∞(Ω) τ 1/2 
+
+> h
+
+Σ( p, L )1/2 ∥u∥Hp+1 (Ω) . (16) 
+
+Proof. By the Cauchy–Schwarz inequality applied to sMQ :
+
+|sMQ (u, v h)| ≤ sMQ (u, u )1/2 sMQ (vh, v h)1/2 ≤ sMQ (u, u )1/2 ∥vh∥MQ .
+
+To bound sMQ (u, u ), we use the approximation property (9) with r = 1 , s = p + 1 :
+
+∥b · ∇ (u − Πpku)∥L2(Ω) ≤ ∥ b∥L∞(Ω) |u − Πpku|H1(Ω) ≤ CΠ ∥b∥L∞(Ω) (H(k))p ∥u∥Hp+1 (Ω) .
+
+Therefore: 
+
+sMQ (u, u ) = τhLX
+
+> k=1
+
+ck ∥b · ∇ (u − Πpku)∥2
+
+> L2(Ω)
+
+≤ C2Π ∥b∥2 
+
+> L∞(Ω)
+
+τh ∥u∥2
+
+> Hp+1 (Ω)
+> L
+
+X
+
+> k=1
+
+ck (H(k))2p
+
+= C2Π ∥b∥2 
+
+> L∞(Ω)
+
+τh Σ( p, L ) ∥u∥2
+
+> Hp+1 (Ω)
+
+.
+
+10 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Theorem 4.5 (A priori error estimate in the MQ norm) . Let u ∈ Hp+1 (Ω) ∩ H10 (Ω) be the solution of the continuous problem and uh ∈ Vh be the solution of the multilevel projection discretization. Assume the stabilization parameter τh
+
+satisfies: 
+
+0 ≤ τh ≤ Cτ c−1
+
+> L
+
+h2
+
+max {ε, h ∥b∥0,∞} , (17) 
+
+where Cτ > 0 is a positive constant. Then: 
+
+∥u − uh∥MQ ≤ C Φ( ε, h, b, σ ) hp ∥u∥Hp+1 (Ω) , (18) 
+
+where 
+
+Φ( ε, h, b, σ ) = ε + ∥b∥2
+
+> L∞(Ω)
+
+σ0
+
++ h2∥σ∥L∞(Ω) + τh ∥b∥2
+
+> L∞(Ω)
+
+Σ( p, L )
+
+h2p
+
+!1/2
+
+,
+
+and C > 0 depends only on p, L, and CΠ.Proof. Let wh = QVh u ∈ Vh be the fine-level quasi-interpolant of u, and set η = u − wh and ξh = uh − wh ∈ Vh.First, we establish the error equation. From Lemma 4.3, we have aMQ (η − ξh, v h) = sMQ (u, v h). Setting vh = ξh
+
+yields: 
+
+∥ξh∥2MQ = aMQ (ξh, ξ h) = aMQ (η, ξ h) − sMQ (u, ξ h). (19) Next, we bound the standard bilinear form term a(η, ξ h). Applying the Cauchy-Schwarz and Poincaré-Friedrichs inequalities gives: 
+
+|a(η, ξ h)| ≤ ε1/2|η|H1(Ω) + ∥b∥L∞(Ω) 
+
+σ1/20
+
+|η|H1(Ω) + ∥σ∥1/2
+
+> L∞(Ω)
+
+∥η∥L2(Ω) 
+
+!
+
+∥ξh∥MQ . (20) For the stabilization term sMQ (η, ξ h), we apply the Cauchy–Schwarz inequality to obtain |sMQ (η, ξ h)| ≤ sMQ (η, η )1/2 ·∥ξh∥MQ . For each level k, using the H1-stability of the projection, we have: 
+
+∥b · ∇ (η − Πpkη)∥L2(Ω) ≤ ∥ b∥L∞(Ω) |η − Πpkη|H1(Ω) 
+
+≤ ∥ b∥L∞(Ω) (1 + CΠ)|η|H1(Ω) .
+
+Therefore, the stabilization term is bounded by: 
+
+sMQ (η, η ) ≤ τh ∥b∥2 
+
+> L∞(Ω)
+
+(1 + CΠ)2 |η|2
+
+> H1(Ω)
+> L
+
+X
+
+> k=1
+
+ck. (21) To bound the consistency error sMQ (u, ξ h), we use Lemma 4.4: 
+
+|sMQ (u, ξ h)| ≤ CΠ ∥b∥L∞(Ω) τ 1/2 
+
+> h
+
+Σ( p, L )1/2 ∥u∥Hp+1 (Ω) · ∥ ξh∥MQ .
+
+Combining these estimates in the error equation (19) , and recalling that aMQ (η, ξ h) = a(η, ξ h) + sMQ (η, ξ h), we deduce: 
+
+∥ξh∥MQ ≤ ε1/2|η|H1(Ω) + ∥b∥L∞(Ω) 
+
+σ1/20
+
+|η|H1(Ω) + ∥σ∥1/2
+
+> L∞(Ω)
+
+∥η∥L2(Ω) (22) 
+
++ sMQ (η, η )1/2 + CΠ∥b∥L∞(Ω) τ 1/2 
+
+> h
+
+Σ( p, L )1/2∥u∥Hp+1 (Ω) .
+
+By the quasi-interpolant approximation property, the interpolation errors are bounded as follows: 
+
+|η|H1(Ω) = |u − Q Vh u|H1(Ω) ≤ CΠ hp ∥u∥Hp+1 (Ω) , (23) 
+
+∥η∥L2(Ω) = ∥u − Q Vh u∥L2(Ω) ≤ CΠ hp+1 ∥u∥Hp+1 (Ω) . (24) Finally, by the triangle inequality, ∥u − uh∥MQ ≤ ∥ η∥MQ + ∥ξh∥MQ . Substituting the bounds (23) – (24) into the estimates for ∥η∥MQ and ∥ξh∥MQ yields the final result. 11 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Remark 4.6 (On the choice of stabilization parameter τh). The upper bound on τh in Theorem 4.5, inspired by Knobloch [ 25 ], is essential for the MQSD inf-sup stability established in Section 5. In practice, the scaling τh = cb h
+
+with a moderate constant cb naturally satisfies this bound in the advection-dominated regime ( ε ≪ h∥b∥L∞ ), since the theoretical condition then reduces to τh ≤ Cτ c−1 
+
+> L
+
+h/ ∥b∥L∞ . Throughout the numerical experiments in Section 6, we adopt cb = 0 .1 for one-dimensional problems and cb = 0 .01 for two-dimensional problems. These values are consistent with the theoretical bound for all test configurations considered and yield robust stabilization across the full range of Péclet numbers. 
+
+Remark 4.7 (On the convergence rate in the MQ norm) . The convergence rate O(hp) in the natural MQ norm is the standard result for projection-based stabilization methods; the same rate appears in the coercivity-based analysis of LPS [ 11 , 27 , 25 ]. In LPS, the improved rate O(hp+1 /2) is obtained by supplementing coercivity with a discrete inf-sup condition that controls the full streamline derivative (see [ 25 ], Section 4). The analogous enhanced stability for the present method is established in Section 5: Theorem 5.4 proves a discrete inf-sup condition in the MQSD norm, which provides explicit control of the full streamline derivative b · ∇ uh. This enhanced stability is the key ingredient that, following the same argument structure as in [25] (Section 4), yields the improved O(hp+1 /2) convergence rate within the multilevel quasi-interpolant framework. However, it should be noted that the rigorous mathematical proof of this enhanced MQSD stability provided in Section 5 is currently restricted to the one-dimensional setting with a constant advection field. 
+
+# 5 Enhanced Stability and Streamline Derivative Control 
+
+In this section, we establish a discrete inf-sup condition for the bilinear form aMQ with respect to the enhanced MQSD norm, which provides explicit control of the full streamline derivative b · ∇ uh. This enhanced stability goes beyond the coercivity-based analysis of Section 4 and is the key ingredient for improved convergence estimates, as discussed in Remark 4.7. We present a rigorous proof in the one-dimensional setting with constant advection, where the essential algebraic structure of the multilevel stabilization is most transparent. The robust convergence and effective reduction of oscillations observed in the numerical experiments of Section 6 provide strong evidence that these stability properties extend to variable-coefficient and multidimensional configurations, although a fully general proof remains an open problem. 
+
+5.1 Inf-sup condition hypothesis 
+
+The key to proving enhanced streamline control is an inf-sup condition between the fine space Vh and the coarse space 
+
+Sp−1(M(L) 
+
+> h
+
+). To this end, we assume a dyadic coarsening hierarchy . Specifically, starting from a uniform fine mesh Th
+
+with mesh size h, each progressively coarsened mesh M(k) 
+
+> h
+
+for k = 1 , . . . , L is constructed by removing every second interior knot from M(k−1)  
+
+> h
+
+. Consequently, the mesh size at level k is H(k) = 2 kh, and each macroscopic element in the coarsest mesh M(L) 
+
+> h
+
+is the union of exactly 2L fine elements from Th.
+
+Hypothesis 5.1 (H1 – Uniform L2 inf-sup stability) . Let Vh := Sp(Th) ∩ H10 (I) be the B-spline space of degree p ≥ 2
+
+on the fine mesh Th, and let QL := Sp−1(M(L) 
+
+> h
+
+) be the B-spline space of degree p − 1 on the hierarchically coarsened mesh M(L) 
+
+> h
+
+. Then there exists a constant αMQ > 0, depending only on p and the coarsening structure, but independent of h, such that 
+
+sup 
+
+> vh∈Vh\{ 0}
+
+(vh, q h)0,I 
+
+∥vh∥0,I 
+
+≥ αMQ ∥qh∥0,I ∀ qh ∈ QL. (25) 
+
+5.2 Empirical Validation via Dimension Condition 
+
+To validate Hypothesis 5.1 for the dyadic coarsening strategy defined above, we note that the positivity of the inf-sup constant αMQ (h) > 0 for each fixed h can be guaranteed by invoking the Bressan–Sangalli dimension condition [ 35 ]. The uniform h-independence of this constant is supported by the numerical evidence in Table 1. 
+
+Theorem 5.2 (Bressan–Sangalli [ 35 ]) . Let S1 and S2 be two univariate spline spaces defined on the same domain I,with respective B-spline bases B1 and B2. If for every continuous subinterval J ⊂ I, the dimension condition 
+
+dim {B ∈ B 1 | supp( B) ∩ J̸ = ∅} ≥ dim {C ∈ B 2 | supp( C) ⊂ J} (26) 
+
+holds, then the L2 coupling matrix between S1 and S2 has full row rank, meaning S2 ∩ S⊥ 
+
+> 1
+
+= {0}.
+
+12 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Theorem 5.3 (Positivity of the discrete inf-sup constant) . Assume the hierarchically coarsened mesh M(L) 
+
+> h
+
+is con-structed via dyadic coarsening of Th. For each h > 0, there exists αMQ (h) > 0 such that 
+
+inf  
+
+> qh∈QL\{ 0}
+
+sup 
+
+> vh∈Vh\{ 0}
+
+(vh, q h)0,I 
+
+∥vh∥0,I ∥qh∥0,I 
+
+≥ αMQ (h). (27) 
+
+Proof. Because the coarse spaces are nested ( QL ⊂ Q1 for L ≥ 1), it suffices to verify the dimension condition for the basic coarsening level L = 1 . The Bressan–Sangalli dimension condition requires that for any continuous subinterval 
+
+J ⊂ I, the number of fine basis functions intersecting J is greater than or equal to the number of coarse basis functions completely supported in J. This algebraic bound holds globally for dyadic meshes. Consequently, the L2 scalar product between Vh and QL has full row rank, meaning QL ∩ V ⊥ 
+
+> h
+
+= {0}. Let PVh :
+
+L2(I) → Vh denote the L2-orthogonal projection onto the fine space. Since QL ∩ V ⊥ 
+
+> h
+
+= {0}, the mapping qh 7 →∥PVh qh∥0,I defines a valid norm on the finite-dimensional space QL. By the equivalence of norms in finite-dimensional spaces, there exists a strictly positive constant αMQ (h) such that 
+
+∥PVh qh∥0,I ≥ αMQ (h)∥qh∥0,I ∀qh ∈ QL.
+
+By the standard property of the L2 orthogonal projection, we have sup vh∈Vh\{ 0} 
+
+> (vh,q h)0,I
+> ∥vh∥0,I
+
+= ∥PVh qh∥0,I , which concludes the proof. To verify the asymptotic h-independence of the constant, the exact discrete inf-sup constant, denoted by ˆβ(h) = αMQ (h),was computed numerically. The computations were executed across varying polynomial degrees p ∈ { 2, 3} and local refinement levels L ∈ { 1, 2, 3}. The results are summarized in Table 1. Table 1: Computed inf-sup constant ˆβ(h) for varying mesh refinement (degree p, level L, n fine elements) using the dyadic coarsening strategy. 
+
+p L n = 8 n = 16 n = 32 n = 64 n = 128 n = 256 n = 512 
+
+2 1 0.8641 0.8657 0.8657 0.8657 0.8657 0.8657 0.8657 2 2 0.9218 0.9319 0.9327 0.9327 0.9327 0.9327 0.9327 2 3 0.9422 0.9617 0.9666 0.9670 0.9670 0.9670 0.9670 3 1 0.8246 0.8296 0.8297 0.8297 0.8297 0.8297 0.8297 3 2 0.8992 0.9143 0.9166 0.9167 0.9167 0.9167 0.9167 3 3 0.9255 0.9509 0.9580 0.9591 0.9592 0.9592 0.9592 A notable feature of Table 1 is that the computed inf-sup constants converge rapidly to a fixed value as n increases, confirming the h-independence of αMQ . Moreover, the constant improves significantly with the number of levels L: for 
+
+L = 3 and p = 3 , the asymptotic value reaches αMQ ≈ 0.96 , exhibiting negligible h-dependence from n = 32 onward. This suggests that the multilevel hierarchy inherently reinforces the inf-sup stability, a property that has no counterpart in classical two-level methods. 
+
+5.3 Inf-Sup Stability in the MQSD Norm 
+
+We show that under Hypothesis 5.1, the method is stable with respect to the enhanced norm 
+
+∥v∥MQSD =  ∥v∥2 
+
+> G
+
++ sMQ (v, v ) + τhcL∥b · ∇ v∥20,I 
+
+1/2 .
+
+The abbreviation SD refers to the additional streamline derivative contribution. 
+
+Theorem 5.4 (MQSD Stability) . Assume b is constant. Let the stabilization parameter τh satisfy 
+
+0 ≤ τh ≤ Cτ c−1
+
+> L
+
+h2
+
+max {ε, h ∥b∥0,∞} , (28) 
+
+where Cτ > 0 is a positive constant. Then the bilinear form aMQ satisfies the discrete inf-sup condition 
+
+sup 
+
+> vh∈Vh
+
+aMQ (uh, v h)
+
+∥vh∥MQSD 
+
+≥ β ∥uh∥MQSD ∀uh ∈ Vh, (29) 
+
+where β > 0 is a constant independent of h and ε.
+
+13 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Proof. Let uh ∈ Vh. We construct vh ∈ Vh such that 
+
+aMQ (uh, v h) ≥ C1∥uh∥2MQSD and ∥vh∥MQSD ≤ C2∥uh∥MQSD ,
+
+which implies the desired inf-sup condition. Since b is constant and ΠpLuh ∈ S p(M(L) 
+
+> h
+
+), its derivative b · ∇ (Π pLuh) is a spline of degree p − 1 on the coarse mesh 
+
+M(L) 
+
+> h
+
+. Thus, it follows exactly that b · ∇ (Π pLuh) ∈ QL.By Hypothesis 5.1 ( H1 ), we define zh ∈ Vh such that 
+
+(zh, u H ) = cLτh(b · ∇ (Π pLuh), u H ) ∀uH ∈ QL, (30) 
+
+∥zh∥0 ≤ cLα−1MQ τh∥b · ∇ (Π pLuh)∥0. (31) Testing (30) with uH = b · ∇ (Π pLuh) ∈ QL, we obtain: 
+
+(zh, b · ∇ (Π pLuh)) = cLτh∥b · ∇ (Π pLuh)∥20.
+
+We split the advective term evaluated at (uh, z h) using the multiscale decomposition: 
+
+(b · ∇ uh, z h) = ( zh, b · ∇ (Π pLuh)) + ( zh, b · ∇ (uh − ΠpLuh)) = cLτh∥b · ∇ (Π pLuh)∥20 + ( zh, b · ∇ (uh − ΠpLuh)) .
+
+Hence, the MQ-stabilized bilinear form can be written as: 
+
+aMQ (uh, z h) = cLτh∥b · ∇ (Π pLuh)∥20 + ( a) + ( b) + ( c) + sMQ (uh, z h),
+
+where 
+
+(a) = ( zh, b · ∇ (uh − ΠpLuh)) ,
+
+(b) = ε(∇uh, ∇zh),
+
+(c) = ( cu h, z h).
+
+Using (31), inverse inequalities, and the upper bound on τh, we obtain: 
+
+ε1/2|zh|1 ≤ C1/2 
+
+> τ
+
+Cinv α−1MQ (cLτh)1/2∥b · ∇ (Π pLuh)∥0. (32) Now we bound the terms (a), (b), and (c) using the Cauchy-Schwarz inequality. For (a) and (b):
+
+|(a)| ≤ ∥ zh∥0∥b · ∇ (uh − ΠpLuh)∥0 ≤ α−1MQ (cLτh)1/2∥b · ∇ (Π pLuh)∥0
+
+ cLτh∥b · ∇ (uh − ΠpLuh)∥20
+
+1/2 ,
+
+|(b)| ≤ ε|uh|1|zh|1 ≤ C1/2 
+
+> τ
+
+Cinv α−1MQ (cLτh)1/2∥b · ∇ (Π pLuh)∥0
+
+ ε|uh|21
+
+1/2 .
+
+Summing them and applying the discrete Cauchy-Schwarz inequality for sums ( x1y1 + x2y2 ≤ px21 + x22
+
+py21 + y22 ): 
+
+|(a) + ( b)| ≤ √2
+
+
+
+α−1MQ + C1/2 
+
+> τ
+
+Cinv α−1MQ 
+
+
+
+(cLτh)1/2∥b · ∇ (Π pLuh)∥0
+
+ε|uh|21 + cLτh∥b · ∇ (uh − ΠpLuh)∥20
+
+1/2
+
+≤ √2
+
+
+
+α−1MQ + C1/2 
+
+> τ
+
+Cinv α−1MQ 
+
+
+
+(cLτh)1/2∥b · ∇ (Π pLuh)∥0∥uh∥MQ .
+
+We define Cab = √2
+
+
+
+α−1MQ + C1/2 
+
+> τ
+
+Cinv α−1MQ 
+
+
+
+.14 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method For (c), assuming c ∈ L∞(Ω) , we use the bounds ∥ΠpLuh∥0 ≤ CΠpL ∥uh∥0 (where CΠpL is the stability constant for the projector ΠpL), ∥uh∥0 ≤ σ−1/20 ∥σ1/2uh∥0, and the condition τh ≤ c−1 
+
+> L
+
+Cτ h 
+
+> ∥b∥0,∞
+
+:
+
+|(c)| ≤ ∥ c∥0,∞∥uh∥0∥zh∥0
+
+≤ ∥c∥0,∞
+
+σ1/20
+
+∥σ1/2uh∥0
+
+
+
+cLτhα−1MQ ∥b · ∇ (Π pLuh)∥0
+
+
+
+≤ ∥c∥0,∞
+
+σ1/20
+
+α−1MQ (cLτh)∥b∥0,∞∥∇ (Π pLuh)∥0∥σ1/2uh∥0
+
+≤ ∥c∥0,∞
+
+σ1/20
+
+α−1MQ (cLτh)∥b∥0,∞
+
+
+
+Cinv h−1CΠpL ∥uh∥0
+
+
+
+∥σ1/2uh∥0
+
+≤ ∥c∥0,∞
+
+σ0
+
+α−1MQ (cLτh)∥b∥0,∞Cinv CΠpL h−1∥σ1/2uh∥20
+
+≤ ∥c∥0,∞
+
+σ0
+
+α−1MQ Cinv CΠpL Cτ ∥σ1/2uh∥20.
+
+This implies |(c)| ≤ Cc∥uh∥2MQ , where Cc = ∥c∥0,∞ 
+
+> σ0
+
+α−1MQ Cinv CΠpL Cτ .Now let us estimate the term sMQ (uh, z h):
+
+|sMQ (uh, z h) | ≤ 
+
+q
+
+sMQ (uh, u h)
+
+q
+
+sMQ (zh, z h) ≤ ∥ uh∥MQ 
+
+q
+
+sMQ (zh, z h).
+
+For all k ∈ { 1 . . . L }, we have 
+
+∥b · ∇ (zh − Πpk(zh)) ∥0 ≤ ∥ b∥0,∞Cinv h−1(1 + CΠpk )∥zh∥0
+
+≤ cLτh∥b∥0,∞Cinv h−1(1 + CΠpk )α−1MQ ∥b · ∇ (Π pLuh)∥0.
+
+Using the condition τh ≤ Cτ c−1  
+
+> Lh
+> ∥b∥0,∞
+
+, we get: 
+
+∥b · ∇ (zh − Πpk(zh)) ∥0 ≤ Cτ Cinv (1 + CΠpk )α−1MQ ∥b · ∇ (Π pLuh)∥0. (33) Then: 
+
+sMQ (zh, z h) ≤ C2 
+
+> sMQ
+
+cLτh∥b · ∇ (Π pLuh)∥20, (34) where C2 
+
+> sMQ
+
+= C2 
+
+> τ
+
+C2 
+
+> inv
+
+α−2MQ c−1
+
+> L
+
+PLk=1 ck(1 + CΠpk )2. This yields: 
+
+|sMQ (uh, z h)| ≤ CsMQ (cLτh)1/2∥b · ∇ (Π pLuh)∥0∥uh∥MQ . (35) Combining the bounds, we have: 
+
+aMQ (uh, z h) ≥ cLτh∥b · ∇ (Π pLuh)∥20 − | (a) + ( b)| − | (c)| − | sMQ (uh, z h)|≥ cLτh∥b · ∇ (Π pLuh)∥20 − (Cab + CsMQ )( cLτh)1/2∥b · ∇ (Π pLuh)∥0∥uh∥MQ − Cc∥uh∥2MQ .
+
+Using Young’s inequality ( xy ≤ 12 x2 + 12 y2) on the cross term, we subtract exactly 12 of the stabilization term: 
+
+(Cab + CsMQ )( cLτh)1/2∥b · ∇ (Π pLuh)∥0∥uh∥MQ ≤ 12 cLτh∥b · ∇ (Π pLuh)∥20 + 12 (Cab + CsMQ )2∥uh∥2MQ .
+
+Thus, 
+
+aMQ (uh, z h) ≥ 12 cLτh∥b · ∇ (Π pLuh)∥20 − C3∥uh∥2MQ ,
+
+where C3 = 12 (Cab + CsMQ )2 + Cc.To recover the full streamline derivative, we apply the triangle inequality: 
+
+cLτh∥b · ∇ uh∥20 ≤ 2cLτh∥b · ∇ (Π pLuh)∥20 + 2 cLτh∥b · ∇ (uh − ΠpLuh)∥20.
+
+This implies: 12 cLτh∥b · ∇ (Π pLuh)∥20 ≥ 14 cLτh∥b · ∇ uh∥20 − 12 sMQ (uh, u h).
+
+15 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method Substituting this lower bound back into the bilinear form yields: 
+
+aMQ (uh, z h) ≥ 14 cLτh∥b · ∇ uh∥20 − C4∥uh∥2MQ ,
+
+where C4 = C3 + 12 .Finally, define vh := 4 zh + (1 + 4 C4)uh ∈ Vh. We evaluate the bilinear form: 
+
+aMQ (uh, v h) = 4 aMQ (uh, z h) + (1 + 4 C4)aMQ (uh, u h)
+
+≥ 4
+
+ 14 cLτh∥b · ∇ uh∥20 − C4∥uh∥2MQ 
+
+
+
++ (1 + 4 C4)∥uh∥2MQ 
+
+= cLτh∥b · ∇ uh∥20 − 4C4∥uh∥2MQ + ∥uh∥2MQ + 4 C4∥uh∥2MQ 
+
+= ∥uh∥2MQ + cLτh∥b · ∇ uh∥20
+
+= ∥uh∥2MQSD .
+
+Furthermore, since zh is bounded continuously by uh, we have ∥vh∥MQSD ≤ 4∥zh∥MQSD + (1 + 4 C4)∥uh∥MQSD ≤
+
+CV ∥uh∥MQSD . Thus, the discrete inf-sup condition holds with β = 1 
+
+> CV
+
+. This completes the proof. 
+
+Remark 5.5 (Conditionality of MQSD Stability) . We emphasize that the enhanced stability established in Theorem 5.4 is conditional on Hypothesis 5.1, which guarantees the h-independent inf-sup stability of the L2 projection between the fine and coarse spaces. 
+
+# 6 Numerical Tests 
+
+While the theoretical framework and error analysis in the preceding sections were rigorously developed for the general advection-diffusion-reaction equation, a key strength of the proposed multilevel quasi-interpolant stabilization is its robustness across different flow regimes. To demonstrate this versatility, the following numerical experiments investigate not only the full equation but also singular limit cases where the diffusion vanishes ( ε = 0 ). For instance, we explicitly include tests on a 1D advection-reaction problem (Section 6.1) and a 2D pure advection problem (Section 6.6) to highlight the method’s ability to seamlessly handle these challenging degenerate scenarios without requiring any structural modifications. Throughout all numerical experiments, we adopt the dyadic coarsening hierarchy introduced in Section 5.1. Furthermore, it is important to note that the theoretical quasi-interpolant satisfying the optimal approximation estimates of Theorem 3.5 is generally constructed using dual basis functions (see, e.g., [ 34 ]), which often lack a simple, explicitly computable form. Fortunately, highly practical quasi-interpolants can be constructed following the framework proposed by Lyche et al. [ 31 , 22 ], as detailed in Section 3.2. While this framework allows for various choices of local projection operators, in all our numerical experiments we specifically employ the Greville quasi-interpolant. For a given function 
+
+u and B-spline degree p, the Greville quasi-interpolant ΠpG is defined mathematically as: 
+
+ΠpGu(x) = X
+
+> i
+
+u(¯ ti)N pi (x), (36) where N pi (x) are the B-spline basis functions and ¯ti are the Greville abscissae, defined as the knot averages: 
+
+¯ti = ti+1 + ti+2 + · · · + ti+p
+
+p . (37) The Greville quasi-interpolant strictly follows the Lyche construction paradigm. We adopt it exclusively in our numerical implementation because it requires only simple point evaluations of the target function, making it a highly practical and straightforward choice for implementation while still providing robust multilevel stabilization. While the Greville quasi-interpolant does not possess proven optimal approximation estimates in the sense of Theorem 3.5, it shares the fundamental structural properties of the Lyche framework (locality, polynomial reproduction, projector property), and the numerical results below confirm that the theoretical stabilization mechanism remains fully effective with this practical choice. 
+
+6.1 Test 1: One-dimensional advection-reaction problem 
+
+We consider the one-dimensional advection-reaction problem: 
+
+(u′(x) + u(x) = f (x), x ∈ Ω = (0 , 1) ,u(0) = 0 , (38) 16 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method where the forcing term is defined as 
+
+f (x) = 
+
+5, for 13 ≤ x ≤ 23 ,
+
+0, otherwise .
+
+This example allows us to investigate the performance of the Multilevel stabilized method for a problem with discontin-uous source terms, where the exact solution is only piecewise smooth. For this test, we set the multilevel parameter to 
+
+L = 4 .         
+
+> (a) Zoom on the interval [0 ,1/3] showing the Multilevel solution compared with Galerkin and GLS solutions for p= 3 and ne= 512 .
+> (b) Convergence history for polynomial order
+> p= 5 .
+
+Figure 1: Results for the 1D advection-reaction problem (38) (Test 1). (a) Local zoom comparing the Multilevel, Galerkin, and GLS solutions for p = 3 and ne = 512 . (b) L2-error convergence history for polynomial degree p = 5 .
+
+6.2 Test 2: One-dimensional advection-diffusion problem 
+
+We note that Tests 2, 5, and 6 explore degenerate regimes that include σ0 = 0 , extending beyond the strict coercivity assumption ( σ0 > 0) of the theoretical analysis. We consider the one-dimensional linear advection-diffusion problem 
+
+(−εu ′′ + βu ′ = 1 , x ∈ (0 , 1) ,u(0) = u(1) = 0 . (39) For this numerical experiment, the multilevel parameter is set to L = 5 .It is well known that the solution u of (39) can develop boundary layers when 0 < ε ≪ | β|, i.e., in the advection-dominated regime. To evaluate the performance of our stabilization strategy under extreme conditions, we set ε = 10 −5
+
+and β = 1 .Figure 2 shows the numerical solution obtained using the standard Galerkin discretization, while Figure 3 depicts the solution computed with our stabilized method. It is clear that the Galerkin solution exhibits spurious oscillations throughout the domain, which are effectively suppressed in the stabilized solution. Minor oscillations may remain near the boundary layers due to steep solution gradients, but the overall accuracy and stability are significantly improved. 
+
+Remark 6.1. As the number of levels increases, spurious oscillations are progressively reduced. This behavior is illustrated in Figure 5, which shows the numerical solution near the boundary layer for different multilevel approxima-tions in the absence of diffusion. The results indicate that the multilevel stabilization effectively damps high-frequency components of the solution, leading to a more stable approximation. 
+
+Remark 6.2 (On the choice of the coarsest level L). The number of levels L controls the spectral breadth of the multilevel stabilization: each additional level penalizes a coarser band of unresolved scales, as confirmed by Remark 6.1. A natural guideline is to choose L such that the coarsest mesh size H(L) = 2 Lh remains comparable to the characteristic length scales of the data. Furthermore, this constraint on H(L) can be relaxed for higher polynomial degrees p. Because the method is weakly consistent, the enhanced approximation power of high-order splines ensures that the consistency error remains optimally bounded even on relatively coarser macro-elements. In all experiments reported here, L ∈ { 3, 4, 5}
+
+with H(L) < diam (Ω) , so that the coarsest quasi-interpolant ΠpL retains its full approximation order and the consistency error in Lemma 4.4 is not degraded. 17 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Figure 2: Standard Galerkin solution for the 1D advection-diffusion problem (39) (Test 2) with ε = 10 −5, p = 5 , and 
+
+ne = 512 . 
+
+> (a) Numerical solutions using SUPG and Multilevel stabi-lization. (b) Zoom near the boundary layer.
+
+Figure 3: Comparison of stabilized solutions for the 1D advection-diffusion problem (39) (Test 2) using p = 5 and 
+
+ne = 512 . (a) Numerical solutions over the full domain using SUPG and Multilevel stabilization. (b) Detailed zoom near the boundary layer ( x = 1 ). 
+
+Figure 4: Relative L2-error convergence plot for the 1D advection-diffusion problem (39) (Test 2) with polynomial degree p = 5 .18 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+Figure 5: Zoom near the boundary layer showing solutions at different levels for p = 5 and ne = 512 .
+
+Remark 6.3. Figure 6 shows the condition number as a function of the number of degrees of freedom for the Galerkin, SUPG, and multilevel stabilized methods. The multilevel method exhibits a condition number that grows approximately linearly with respect to the number of degrees of freedom. In contrast, the standard Galerkin method leads to significantly larger condition numbers with a faster growth rate. The SUPG method also exhibits growth under refinement, but remains larger than that of the multilevel method. These results demonstrate that the proposed stabilization not only reduces oscillations but also improves the numerical conditioning of the discrete problem, thereby enhancing robustness and enabling the efficient use of high-degree B-splines. 
+
+Figure 6: Condition number comparison for the 1D advection-diffusion problem (39) (Test 2) across Galerkin, SUPG, and Multilevel stabilized methods for polynomial degree p = 5 .
+
+6.3 Test 3: Problem with parabolic boundary layers 
+
+In this example, we consider a convection–diffusion problem whose solution exhibits two parabolic boundary layers. The problem is characterized by a small diffusion parameter 
+
+ε = 10 −8,
+
+and a convection field defined by 
+
+b(x, y ) =  0, 1 + x2T ,
+
+while the reaction coefficient is set to 
+
+c = 0 .
+
+Let Ω = (0 , 1) 2 be the computational domain. The boundary ∂Ω is decomposed into a Neumann part and a Dirichlet part as follows: 
+
+ΓN := {(x, y ) ∈ ∂Ω : 0 < x < 1, y = 1 }, ΓD := ∂Ω \ ΓN .
+
+19 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method On the Neumann boundary ΓN , homogeneous Neumann conditions are prescribed, i.e., 
+
+gN = 0 .
+
+On the Dirichlet boundary ΓD , the boundary data is given by 
+
+gD (x, y ) = 
+
+(1, for 0 ≤ x ≤ 1, y = 0 ,
+
+1 − y, otherwise .
+
+This configuration leads to the formation of parabolic boundary layers induced by the variable convection field, and serves as a relevant benchmark for assessing the robustness of stabilization methods. For the numerical experiments in this test, the multilevel parameter is set to L = 4 when the polynomial degree is p = 3 , and L = 5 when p = 5 .
+
+Figure 7: Standard Galerkin surface plot for the parabolic boundary layers problem (1) (Test 3) with p = 5 and 
+
+ne = 64 × 64 .
+
+Figure 8: Multilevel stabilized surface plot for the parabolic boundary layers problem (1) (Test 3) with p = 5 and 
+
+ne = 64 × 64 .These results (Figures 9, 8, 7) compare favorably with those reported in [ 36 ] for classical LPS methods, confirming the effectiveness of the proposed multilevel approach in the isogeometric setting. 20 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method      
+
+> (a) Solution for p= 5 .(b) Solution for p= 3 .
+
+Figure 9: Comparison of stabilized solutions for the parabolic boundary layers problem (1) (Test 3) with ne = 64 × 64 .(a) Polynomial degree p = 5 . (b) Polynomial degree p = 3 .
+
+6.4 Test 4: Problem with two internal layers 
+
+We consider problem (1) with diffusion coefficient ε = 10 −5, convection field b(x, y ) = (1 , 0) T , and homogeneous Dirichlet boundary conditions u = 0 on ∂Ω. The source term is defined by 
+
+f (x, y ) = 
+
+16(1 − 2x), if (x, y ) ∈ [0 .25 , 0.75] 2,
+
+0, otherwise .
+
+This test case, introduced in [ 37 ], serves as a benchmark for convection-dominated problems in which linear and nonlinear discretizations often fail to provide satisfactory results. The exact solution is well approximated by the quadratic function (4 x − 1)(3 − 4x) within the region [0 .25 , 0.75] 2, while it remains close to zero (yet positive) elsewhere in Ω. This function will be referred to as the reference solution in the cross-sectional plots presented below. Although the exact solution is non-negative, many nonlinear schemes yield numerical approximations that exhibit negative values in certain regions of the domain (see [ 38 ] for a detailed discussion). This behavior does not contradict the discrete maximum principle (DMP), since the right-hand side f changes sign inside Ω, but it remains undesirable from both physical and numerical viewpoints. Figure 10 illustrates the surface plots obtained with different methods, while Figure 11 shows cross-sections along the lines x = 0 .5. Along the line x = 0 .5, SUPG and Galerkin display similar behavior.  
+
+> (a) Multilevel stabilized solution. (b) Standard Galerkin solution.
+
+Figure 10: Surface plots of the numerical solutions for the two internal layers problem (1) (Test 4) with p = 3 and 
+
+ne = 64 × 64 . (a) Multilevel stabilized solution. (b) Standard Galerkin solution. 21 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method  
+
+> (a) Multilevel vs. SUPG. (b) Multilevel vs. reference solution.
+
+Figure 11: Cross-sectional profiles at x = 0 .5 for the two internal layers problem (1) (Test 4) with p = 3 , ne = 64 × 64 ,and L = 5 . (a) Comparison between Multilevel and SUPG methods. (b) Comparison between Multilevel method and the reference solution. Finally, to make a more detailed analysis for this problem, we have repeated the study carried out in [ 38 , 26 , 37 ] for this example. More precisely, we have computed the quantities 
+
+min := − min  
+
+> 0.4≤x≤0.6
+
+uh(x, y ), diff := max  
+
+> x≥0.8
+
+uh(x, y ) − min  
+
+> x≥0.8
+
+uh(x, y ).
+
+Table 2 summarizes these indicators for both the standard SUPG method and the proposed Multilevel stabilization method for polynomial degrees p = 2 , 3, 4, 5. The quantity min measures the undershoot near the internal layers, while 
+
+diff reflects the variation of the solution near the outflow. We observe that the Multilevel method consistently produces significantly smaller undershoots than SUPG for all degrees considered, with values of min decreasing from 0.0316, 0.0283, 0.0254, to 0.0205 for p = 2 , 3, 4, 5, respectively. This indicates improved monotonicity and enhanced stability near sharp internal layers. The diff values increase slightly with p, but remain moderate and do not introduce significant non-physical oscillations (See Fig 10). Furthermore, the 
+
+diff values achieved by the fully linear Multilevel method are highly comparable to those typically obtained using complex nonlinear shock-capturing stabilization techniques [ 38 ]. Therefore, the proposed Multilevel stabilization method maintains stability and physical consistency even for higher-order polynomial approximations. Table 2: Comparison of stability indicators for Test 4 for different polynomial degrees p (ne = 64 × 64 , L = 5 ). Method p min diff SUPG 2 0.0725 0.0332 Multilevel 2 0.0316 0.1779 SUPG 3 0.0590 0.2168 Multilevel 3 0.0283 0.2906 SUPG 4 0.0807 0.0393 Multilevel 4 0.0254 0.2307 SUPG 5 0.0464 0.2189 Multilevel 5 0.0205 0.2788 These results demonstrate that the proposed method achieves competitive or superior performance compared to the approaches reported in [26, 38]. 22 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method 
+
+6.5 Test 5: Rotational problem 
+
+We consider problem (1) on Ω = (0 , 1) 2 with ε = 10 −7, convection field b(x, y ) = ( −y, x ), reaction c = 0 , and source f = 0 . The inflow boundary condition is 
+
+ub(x, 0) = 
+
+(1, x ∈   13 , 23
+
+ ,
+
+0, otherwise. At the outflow boundary (0 , 1) × { 1}, a homogeneous Neumann condition is imposed. The solution develops two interior layers originating from the discontinuities in the inflow profile at y = 0 . For this test, the multilevel parameter is L = 4 .
+
+Figure 12: SUPG surface plot for the rotational problem (1) (Test 5) with p = 3 and ne = 64 × 64 .
+
+Figure 13: Multilevel stabilized surface plot for the rotational problem (1) (Test 5) with p = 3 and ne = 64 × 64 .
+
+6.6 Test 6: Two-dimensional pure advection problem 
+
+We consider the following two-dimensional pure advection problem: 
+
+(∂y u = 12ϵ
+
+ 1 − tanh 2   1 
+
+> ϵ
+
+(y − a) , in (0 , 1) 2,u|y=0 = 0 , for x ∈ (0 , 1) , (40) with ϵ = 0 .004 , whose exact solution is given by 
+
+u(y) = 12
+
+
+
+tanh 
+
+ 1
+
+ϵ (y − a)
+
+
+
++ 1 
+
+
+
+,
+
+23 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method where a = 23 .The parameter ϵ controls the sharpness of the internal layer located at y = a. The value ϵ = 0 .004 adopted here produces a significantly sharper transition than the standard choice ϵ = 0 .04 commonly used in the literature [ 39 , 40 ], thereby providing a more challenging benchmark for the stabilization method. Figure 15 shows a projection of the solution onto the plane x = 0 , comparing the exact solution with numerical approximations obtained using the standard Galerkin method and the proposed multilevel stabilization method. The results clearly illustrate the stabilizing effect of the multilevel approach, which effectively reduces spurious oscillations while accurately capturing the sharp layer at 
+
+y = a.   
+
+> (a) Exact solution. (b) Galerkin solution ( p= (2 ,3) ).
+
+Figure 14: Surface plots for the 2D pure advection problem (40) (Test 6) using ne = (8 , 256) . (a) Exact solution. (b) Standard Galerkin solution with polynomial degrees p = (2 , 3) . 
+
+> (a) Multilevel stabilized solution. (b) Standard Galerkin solution.
+
+Figure 15: Cross-sectional profiles for the 2D pure advection problem (40) (Test 6) with polynomial degrees p = (2 , 5) 
+
+and mesh size ne = (8 , 256) . (a) Multilevel stabilized solution. (b) Standard Galerkin solution. Table 3 presents the relative L2 and H1 errors with convergence rates for the 2D pure advection problem using both the standard Galerkin and the proposed Multilevel method with p=(2,3). The Multilevel method clearly outperforms Galerkin, achieving much lower errors even on coarse meshes and stable convergence on finer meshes. The L2 error decreases smoothly, while the H1 error remains reasonable despite the sharp layer in the y-direction. In contrast, Galerkin exhibits large errors and very slow convergence on coarse meshes. Note that the unusually high convergence rates observed between ne, 2 = 256 and 512 (e.g., r ≈ 5.12 for p = 3 ) are characteristic of pre-asymptotic behavior. Because the internal layer is exceptionally sharp ( ϵ = 0 .004 ), the coarser meshes severely under-resolve the gradient; once the mesh size h becomes smaller than ϵ, the layer is fully resolved, leading to a sudden drop in the error before it settles into the optimal asymptotic rate. Crucially, the Multilevel method’s convergence rate is less inflated than 24 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method Galerkin’s ( 5.12 vs 6.29 ) precisely because the proposed stabilization successfully suppressed the massive coarse-mesh errors that standard Galerkin suffers from. These results demonstrate the robustness and efficiency of the Multilevel stabilization for pure advection problems. Table 3: Relative convergence test with rates for p = (2 , 3) of 2D pure advection (40) by Galerkin and Multilevel method. 
+
+ne, 2 L2-G R-G H1-G R-G L2-ML R-ML H1-ML R-ML 64 0.3920 - 1.6015 - 0.0455 - 0.6222 -128 0.1985 0.98 1.5507 0.05 0.0240 0.92 0.4992 0.32 256 0.0314 2.66 0.4791 1.69 0.00734 1.71 0.1645 1.60 512 0.000402 6.29 0.0127 5.23 0.000211 5.12 0.00808 4.35    
+
+> (a) L2-norm convergence. (b) H1-norm convergence.
+
+Figure 16: Relative error convergence plots for the 2D pure advection problem (40) (Test 6) with different polynomial degrees. (a) Relative L2-norm error. (b) Relative H1-norm error. As reported in [ 39 ], the linear system associated with the standard Galerkin approximation is severely ill-conditioned, to the extent that the introduction of a small regularization term was necessary to obtain a stable solution. In contrast, the stabilized solutions do not require such a regularization term, and the linear systems arising from our method remain well conditioned, as illustrated in Figure 17. 
+
+Figure 17: Condition number comparison for the pure advection problem across different polynomial degrees. 
+
+# 7 Conclusions 
+
+We have presented a novel Multilevel Isogeometric Quasi-Interpolant (MQ) projection method for the stabilization of steady advection-dominated and advection–reaction problems. The core mechanism of the method is the hierarchical penalization of fine-scale fluctuations using continuous B-spline quasi-interpolants across nested levels of the discrete space. By leveraging the Cp−1 continuity of B-splines, the proposed approach avoids both the discontinuous auxiliary spaces required by Local Projection Stabilization and the strong PDE residual evaluations required by SUPG and VMS methods. 25 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method First, the analysis of the discrete method established the theoretical foundation by proving optimal a priori error estimates in the MQ norm. A key theoretical contribution is the explicit capture of the multilevel hierarchy’s effect through the weighted sum Σ( p, L ), which demonstrates that the stabilization is natively valid for arbitrary polynomial degrees p. Furthermore, we introduced the MQSD norm to establish a discrete inf-sup condition for the 1D setting under a numerically validated stability hypothesis, confirming that the method provides explicit control over the streamline derivative. While the rigorous proof is currently restricted to the 1D constant advection case, the extensive multidimensional numerical results provide strong evidence supporting its generalization; a complete functional analysis proof for the general setting remains an important open problem. Numerically, the method was evaluated on a stringent suite of benchmarks, including internal layers and parabolic boundary layers at high Péclet numbers. The multilevel projection consistently outperformed standard Galerkin and SUPG formulations, effectively suppressing spurious oscillations. Notably, despite being a fully linear formulation, the method demonstrated significant reduction of undershoots near sharp layers. While Godunov’s theorem dictates that a linear scheme cannot achieve strict monotonicity, the MQ method’s ability to mitigate these undershoots is highly competitive with complex nonlinear shock-capturing schemes. Finally, while assembling the L levels of quasi-interpolants introduces a moderate upfront computational overhead during matrix formation compared to standard Galerkin, this cost is heavily offset by the significantly improved algebraic condition number, leading to robust and efficient iterative solver performance. While the present results are highly encouraging, several open challenges remain. First, a functional analysis proof of the discrete inf-sup condition for variable convection fields in multidimensions remains an open mathematical problem. Another important direction is generalizing these results to the multidimensional case in the context of general geometric mappings. Finally, extending this methodology to time-dependent transport phenomena, potentially through integration within a space-time isogeometric framework, and the incompressible Navier-Stokes equations constitutes a promising direction for future research. Additionally, exploring local hierarchical spaces to develop machine learning methodologies without regularization represents an interesting avenue for further investigation. 
+
+# References 
+
+[1] V. John, P. Knobloch, and J. Novo. Finite elements for scalar convection-dominated equations and incompressible flow problems: a never ending story? Computing and Visualization in Science , 19(5):47–63, December 2018. [2] H.-G. Roos and M. Stynes. Some open questions in the numerical analysis of singularly perturbed differential equations. Computational Methods in Applied Mathematics , 15(4):531–550, 2015. [3] I. Harari and T.J.R. Hughes. Stabilized finite element methods for steady advection—diffusion with production. 
+
+Computer Methods in Applied Mechanics and Engineering , 115(1):165–191, 1994. [4] T.J.R. Hughes, G. Scovazzi, and L.P. Franca. Multiscale and Stabilized Methods. In Encyclopedia of Computational Mechanics . John Wiley & Sons, Ltd, Chichester, 2007. [5] M. Augustin, A. Caiazzo, A. Fiebach, J. Fuhrmann, V. John, A. Linke, and R. Umla. An assessment of discretiza-tions for convection-dominated convection–diffusion equations. Computer Methods in Applied Mechanics and Engineering , 200(47):3395–3409, 2011. [6] G. Hauke, G. Sangalli, and M.H. Doweidar. Combining adjoint stabilized methods for the advection-diffusion-reaction problem. Mathematical Models and Methods in Applied Sciences , 17(02):305–326, 2007. [7] M.F.P. ten Eikelder and I. Akkerman. Correct energy evolution of stabilized formulations: The relation between vms, supg and gls via dynamic orthogonal small-scales and isogeometric analysis. i: The convective–diffusive context. Computer Methods in Applied Mechanics and Engineering , 331:259–280, 2018. [8] M. Braack and E. Burman. Local projection stabilization for the oseen problem and its interpretation as a variational multiscale method. SIAM Journal on Numerical Analysis , 43(6):2544–2566, 2006. [9] J.-L. Guermond. Subgrid stabilization of Galerkin approximations of monotone operators. ZAMM - Journal of Applied Mathematics and Mechanics / Zeitschrift für Angewandte Mathematik und Mechanik , 79(S1):29–32, 1999. [10] R. Codina. On stabilized finite element methods for linear systems of convection–diffusion-reaction equations. 
+
+Computer Methods in Applied Mechanics and Engineering , 188(1):61–82, July 2000. [11] P. Knobloch and G. Lube. Local projection stabilization for advection–diffusion–reaction problems: One-level vs. two-level approach. Applied Numerical Mathematics , 59(12):2891–2907, December 2009. [12] P. Knobloch, P. Lukáš, and P. Solin. On error indicators for optimizing parameters in stabilized methods. Advances in Computational Mathematics , 45(4):1853–1862, August 2019. 26 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method [13] T.J.R. Hughes, J.A. Cottrell, and Y. Bazilevs. Isogeometric analysis: Cad, finite elements, nurbs, exact geometry and mesh refinement. Computer Methods in Applied Mechanics and Engineering , 194(39):4135–4195, 2005. [14] Y. Bazilevs, L. Beirão Da Veiga, J.A. Cottrell, T.J.R. Hughes, and G. Sangalli. Isogeometric analysis: approxima-tion, stability and error estimates for h-refined meshes. Mathematical Models and Methods in Applied Sciences ,16(07):1031–1090, July 2006. [15] C. Manni, F. Pelosi, and M.L. Sampoli. Isogeometric analysis in advection–diffusion problems: Tension splines approximation. Journal of Computational and Applied Mathematics , 236(4):511–528, 2011. International Workshop on Multivariate Approximation and Interpolation with Applications (MAIA 2010). [16] V. John and L. Schumacher. A study of isogeometric analysis for scalar convection–diffusion equations. Applied Mathematics Letters , 27:43–48, 2014. [17] K. Key, M.R.A. Abdelmalik, S. Elgeti, T.J.R. Hughes, and F.A. Baidoo. Finite element and isogeometric stabilized methods for the advection-diffusion-reaction equation. Computer Methods in Applied Mechanics and Engineering ,417:116354, December 2023. [18] A.N. Brooks and T.J.R. Hughes. Streamline upwind/Petrov-Galerkin formulations for convection dominated flows with particular emphasis on the incompressible Navier-Stokes equations. Computer Methods in Applied Mechanics and Engineering , 32(1):199–259, September 1982. [19] T.J.R. Hughes, G.R. Feijóo, L. Mazzei, and J.-B. Quincy. The variational multiscale method—a paradigm for computational mechanics. Computer Methods in Applied Mechanics and Engineering , 166(1):3–24, 1998. Advances in Stabilized Methods in Computational Mechanics. [20] G. Matthies, P. Skrzypacz, and L. Tobiska. A unified convergence analysis for local projection stabilisations applied to the Oseen problem. ESAIM : Modélisation mathématique et analyse numérique , 41(4):713–742, 2007. [21] G. Hauke and M.H. Doweidar. Exploring new subgrid scale stabilized methods for advection-diffusion-reaction. In ECCOMAS 2004 – European Congress on Computational Methods in Applied Sciences and Engineering ,Jyväskylä, Finland, July 2004. [22] T. Lyche, C. Manni, and H. Speleers. B-Splines and Spline Approximation. In Splines and PDEs: From Approximation Theory to Numerical Linear Algebra , volume 2219 of Lecture Notes in Mathematics , pages 1–57. Springer, Cham, 2018. [23] B.-G. Lee, T. Lyche, and K. Mørken. Some examples of quasi-interpolants constructed from local spline projectors. In Mathematical Methods for Curves and Surfaces: Oslo 2000 , pages 243–252. Vanderbilt University, USA, 1 edition, January 2001. [24] L. He and L. Tobiska. The two-level local projection stabilization as an enriched one-level approach. Advances in Computational Mathematics , 36(4):503–523, September 2011. [25] P. Knobloch. A Generalization of the Local Projection Stabilization for Convection-Diffusion-Reaction Equations. 
+
+SIAM Journal on Numerical Analysis , 48(2):659–680, 2010. [26] G.R. Barrenechea, E. Burman, and F. Karakatsani. Blending low-order stabilised finite element methods: A positivity-preserving local projection method for the convection–diffusion equation. Computer Methods in Applied Mechanics and Engineering , 317:1169–1193, April 2017. [27] G. Matthies and L. Tobiska. Local projection type stabilization applied to inf–sup stable discretizations of the Oseen problem. IMA Journal of Numerical Analysis , 35(1):239–269, January 2015. [28] I.J. Schoenberg. Contributions to the Problem of Approximation of Equidistant Data by Analytic Functions. 
+
+Quarterly of Applied Mathematics , 4:45–99 and 112–141, 1946. [29] C. de Boor. A Practical Guide to Splines . Springer, New York, revised edition, 2001. [30] C. de Boor and G.J. Fix. Spline approximation by quasiinterpolants. Journal of Approximation Theory , 8(1):19–45, May 1973. [31] T. Lyche and L.L. Schumaker. Local spline approximation methods. Journal of Approximation Theory , 15(4):294– 325, December 1975. [32] L. Beirão da Veiga, A. Buffa, G. Sangalli, and R. Vázquez. Mathematical analysis of variational isogeometric methods. Acta Numerica , 23:157–287, 2014. [33] L.L. Schumaker. Spline Functions: Basic Theory . Cambridge University Press, Cambridge, 3rd edition, 2007. [34] J.A. Cottrell, T.J.R. Hughes, and Y. Bazilevs. Isogeometric Analysis: Toward Integration of CAD and FEA . John Wiley & Sons, Chichester, 2009. 27 Stabilized Multilevel Isogeometric Quasi-Interpolant Projection Method [35] A. Bressan and G. Sangalli. Isogeometric discretizations of the Stokes problem: stability analysis by the macroelement technique. IMA Journal of Numerical Analysis , 33(2):629–651, April 2013. [36] G. Matthies, P. Skrzypacz, and L. Tobiska. Stabilization of local projection type applied to convection-diffusion problems with mixed boundary conditions. Electronic Transactions on Numerical Analysis , 2008. [37] V. John and P. Knobloch. A computational comparison of methods diminishing spurious oscillations in finite element solutions of convection–diffusion equations. In Programs and Algorithms of Numerical Mathematics 13 ,pages 122–136, Prague, 2006. Institute of Mathematics AS CR. [38] V. John and P. Knobloch. On spurious oscillations at layers diminishing (SOLD) methods for convection–diffusion equations: Part II – Analysis for P1 and Q1 finite elements. Computer Methods in Applied Mechanics and Engineering , 197(21):1997–2014, April 2008. [39] J.-L. Guermond. Stabilization of Galerkin approximations of transport equations by subgrid modeling. ESAIM: Mathematical Modelling and Numerical Analysis , 33:1293–1316, 1999. [40] D. Garg and S. Ganesan. Local projection stabilized finite element methods for advection-reaction problems. 
+
+Calcolo , 60(4):45, 2023. 28
