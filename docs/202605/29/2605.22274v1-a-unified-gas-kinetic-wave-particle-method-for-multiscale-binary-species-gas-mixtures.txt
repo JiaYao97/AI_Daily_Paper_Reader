@@ -1,0 +1,2395 @@
+Title: A unified gas-kinetic wave-particle method for multiscale binary-species gas mixtures
+
+URL Source: https://arxiv.org/pdf/2605.22274v1
+
+Published Time: Fri, 22 May 2026 01:12:17 GMT
+
+Number of Pages: 29
+
+Markdown Content:
+# A unified gas-kinetic wave-particle method for multiscale binary-species gas mixtures 
+
+Junzhe Cao a , Yufeng Wei a , Wenpei Long a , Chengwen Zhong b , Kun Xu a,c,d, ∗
+
+> aDepartment of Mathematics, Hong Kong University of Science and Technology, Hong Kong, China
+> bSchool of Aeronautics, Northwestern Polytechnical University, Xi’an, Shaanxi 710072, China
+> cDepartment of Mechanical and Aerospace Engineering, Hong Kong University of Science and Technology, Hong Kong, China
+> dHKUST Shenzhen Research Institute, Shenzhen, 518057, China
+
+Abstract 
+
+This paper presents a unified gas-kinetic wave-particle (UGKWP) method for simulating mul-tiscale binary-species gas mixtures. Benefiting from direct modeling in a discretized space, the UGKWP method enables the automatic decomposition of the gas distribution function into ana-lytical hydrodynamic waves and discrete particles, which respectively describe its near-equilibrium and non-equilibrium parts. This approach offers significant advantages for simulating various mul-tiscale physical phenomena, such as hypersonic flows, plasma transport, and radiation transport. In this study, we employ the model proposed by Groppi et al. [EPL, 96 (2011) 64002] to calculate the macroscopic velocity and temperature of the local target equilibrium distribution function, thereby recovering the correct viscosity and diffusion coefficients in the continuum flow regime. To address the heat conduction coefficient, the Shakhov model is incorporated to correct the Prandtl number. Diffusion effects are accounted for not only in the source term via an operator-splitting method, but also in the flux evolution through the characteristic integral solution, while strictly maintaining consistency between the wave and particle descriptions. Furthermore, the microscopic model for high-speed particles is improved by utilizing a physically corrected collision time to de-termine their free-transport time. Through a series of numerical tests spanning the continuum to rarefied regimes, the proposed UGKWP method is shown to accurately capture the differences in velocity and temperature between different species. Notably, for hypersonic flows, the predicted wall pressure, shear stress, and heat flux coefficients agree well with direct simulation Monte Carlo (DSMC) results. Consequently, this method establishes a solid foundation for future extensions to more complex flows around near-space vehicles, including thermal non-equilibrium, chemical reactions, and plasma transport. 
+
+Keywords: Unified gas-kinetic wave-particle method; Multiscale flow; Gas mixture          
+
+> Email addresses: jcaobb@connect.ust.hk (Junzhe Cao a), yweibe@connect.ust.hk (Yufeng Wei a),
+> wlongab@connect.ust.hk (Wenpei Long a), zhongcw@nwpu.edu.cn (Chengwen Zhong b), makxu@ust.hk (Kun Xu a,c,d, ∗)
+> arXiv:2605.22274v1 [physics.flu-dyn] 21 May 2026
+
+1. Introduction 
+
+The unified gas-kinetic wave-particle (UGKWP) method [1, 2] is a multiscale numerical ap-proach that offers significant advantages across diverse multiscale physical problems, including hypersonic flows [3–5], gas-solid two-phase flows [6, 7], radiation transport [8–10], plasma trans-port [11–13], and turbulent flows [14, 15]. In the UGKWP method, the near-equilibrium gain term is accumulated into hydrodynamic waves, while discrete particles are employed to capture the non-equilibrium part of the microscopic gas distribution function. By utilizing the integral solution of the kinetic model along the characteristic line, the time step is incorporated into the scheme as an observation scale. This achieves direct modeling [16, 17] of physical laws in discretized space and enables an adaptive transformation between waves and particles. In the continuum flow regime, where no particles remain in the computational domain, the UGKWP method recovers the gas-kinetic scheme (GKS) [18] as a Navier-Stokes solver. Conversely, in the rarefied regime, particles dominate the flow evolution, and UGKWP functions as a Boltzmann solver. Simplified variants of this method can be found in Refs.[19–21]. In Ref.[22], the underlying six-population kinetic sys-tem within the UGKWP framework is categorized into collisionless, collisional, and collided waves and particles, accompanied by a detailed analysis of their asymptotic behaviors. Furthermore, a unified gas-kinetic framework (UGKF) [23] has been derived to classify molecules by their colli-sion histories over an observation timescale, thereby bridging different flow regimes within a single framework. Alternatively, the UGKWP method can be viewed as a particle-based variant of the unified gas-kinetic scheme (UGKS) [24], where particles represent a highly adaptive velocity space that offers exceptional computational efficiency for high-speed flows. The UGKWP method has shown advantages in simulating hypersonic flows around near-space vehicles–such as the X-38-like vehicle, the Apollo reentry capsule, and a 70 ◦ blunted cone identical to the forebody of the Mars Pathfinder probe [25–27]–addressing a rapidly growing demand for advanced numerical simula-tions in aerospace engineering. However, due to the extreme temperatures behind shock waves, these multiscale phenomena are tightly coupled with thermal non-equilibrium and chemical reac-tion effects [28], making the development of corresponding physical models and numerical methods highly challenging. To address this, the present work proposes a UGKWP method for multiscale binary-species gas mixtures, establishing a robust foundation for the further development of more complex physical models. Regarding multiscale numerical methods for gas mixtures, either a single relaxation term [29– 35] or multiple relaxation terms [36–41] can be employed in the kinetic model to represent the complex collisions of multi-species molecules. To simplify the construction of the numerical flux and facilitate extensions to more components, the former approach is adopted in this study. The single-relaxation kinetic model proposed by Andries, Aoki, and Perthame (the AAP model) [29] successfully complies with the indifferentiability principle and has been widely applied in multiscale methods [11, 42, 43]. This includes operator-splitting and implicit methods developed to resolve the stiff source terms governing momentum and energy exchange between different species [44], as well as further extensions to multi-physics systems [45, 46]. Within the framework of the AAP model, this study employs the target near-equilibrium gas distribution function proposed by Groppi et al. [30]. This distribution is modeled by introducing a second relaxation parameter, allowing it to recover both the shear viscosity and diffusion coefficients in the continuum flow regime. To address the heat conduction coefficient, the Prandtl number ( Pr ) is corrected following Refs.[33, 47], which extends the Shakhov model [48] to gas mixtures and derives the corresponding Chapman-Enskog 2expansion. Additionally, the modification of the relaxation time τ for high-speed particles in the UGKWP method [49] is extended here to gas mixtures. This correction yields more accurate results in high-Ma cases, particularly for the temperature profile in the pre-shock region and the heat flux at the stagnation point. Finally, other recent multiscale approaches for gas mixtures originating from the direct simulation Monte Carlo (DSMC) method [50] include the asymptotic-preserving Monte Carlo (AAPMC) method [51] and the direct intermittent GSIS-DSMC coupling (DIG) method [52]. The remainder of this paper is organized as follows. Section 2 introduces the formulation of the UGKWP method for multiscale binary-species gas mixtures. Numerical test cases are presented in Sec.3, and concluding remarks are provided in Sec.4. 
+
+2. UGKWP method for multiscale binary-species gas mixture 
+
+2.1. Discretized governing equations in the finite volume method framework 
+
+In the general finite volume method (FVM) framework, the discretized governing equation of microscopic gas distribution function is as follows, 
+
+f n+1  
+
+> α,i
+
+= f nα,i − 1
+
+Ωi
+
+∑
+
+> j∈M (i)
+
+∫ ∆t
+
+> 0
+
+u · nj fα,j Sj dt +
+
+∫ ∆t
+
+> 0
+
+Jα,i dt, (1) where α ∈ { 1, 2} is the label of species, “ i” is the label of cell, M (i) is a collection of interfaces surrounding cell “ i”, Ωi is the area or volume of cell “ i”, Sj is the length or area of interface “ j”, 
+
+nj is the outer unit normal vector, ∆t is the time step. fα (ρ, x, u, ξ, t ) is the microscopic gas distribution function of species α, where x denotes the position, t denotes the time, u denotes the molecular velocity and internal energy is represented by the equivalent velocity ξ in length 
+
+D. Jα is the microscopic collision term considering both self-collisions and cross-collisions. The macroscopic conserved variable vector W α = ( ρα, ρ αU α, ρ αEα)T can be directly obtained from the distribution function fα by calculating moments as follows, where ρ is density, U is macroscopic velocity, E is specific total energy. 
+
+W α =
+
+∫
+
+> RD
+
+∫
+
+> R3
+
+Ψfαdudξ,
+
+Ψ =
+
+(
+
+1, u, 1
+
+2 |u|2 + 1
+
+2 |ξ|2
+
+)
+
+.
+
+The heat flux vector Qα can also be obtained by the following moments, 
+
+Qα =
+
+∫
+
+> RD
+
+∫
+
+> R3
+
+(u − U α)
+
+[1
+
+2
+
+(|u − U α|2 + |ξ|2) f
+
+]
+
+dudξ,
+
+On the other hand, regarding the macroscopic governing equation, an operator splitting is imple-mented before the discretization as follows, for a better consistency of microscopic particles with macroscopic variables, which will be introduced in detail in Sec. 2.6. 
+
+∂W α
+
+∂t + ∇ · F α = Sα
+
+⇒
+
+
+
+∂W α
+
+∂t + ∇ · F α = 0 ,∂W α
+
+∂t = Sα,
+
+3where source term vector Sα is for the exchanged momentum and energy between components. Their discretized governing equations are, 
+
+W ∗ 
+
+> α,i
+
+= W nα,i − 1
+
+Ωi
+
+∑
+
+> j∈M (i)
+
+F α,j Sj , (2) and, ∂W α,i 
+
+∂t = Sα,i , (3) where macroscopic flux F α,j is calculated by moments of fα,j at the interface, 
+
+F α,j =
+
+∫
+
+> RD
+
+∫
+
+> R3
+
+∫ ∆t
+
+> 0
+
+u · nj fα,j Ψdtdudξ. (4) An integral solution of Eq. (3) will be derived in Sec. 2.6, whose initial condition is the result of 
+
+W ∗ 
+
+> α,i
+
+in Eq. (2). 
+
+2.2. Kinetic model 
+
+For further calculating the source term and the fluxes of gas distribution function fα,j at the interface in Eq. (1) and Eq. (2), the kinetic model is introduced. In this study, the single collision operator in the type of Bhatnagar–Gross–Krook (BGK) model [53] is employed as, 
+
+∂f α
+
+∂t + u · ∂f α
+
+∂x = gα − fα
+
+τ0
+
+,gα = gMα CSα ,gMα = ρα
+
+( 1
+
+2πR α ˜Tα
+
+) 3
+
+> 2
+
+exp 
+
+−
+
+∣∣∣u − ˜U α
+
+∣∣∣2
+
+2Rα ˜Tα
+
+ ,CSα = 1 + (1 − Pr 0)
+
+(
+
+u − ˜U α
+
+)
+
+· Qα
+
+5˜ pαRα ˜Tα
+
+∣∣∣u − ˜U α
+
+∣∣∣2
+
+Rα ˜Tα
+
+− 5
+
+,
+
+(5) where Rα = kB /m α is the specific gas constant of species α, kB = 1 .380649 × 10 −23 J/K is Boltzmann constant, mα is the molecular mass, T is the macroscopic temperature, pα = ραRα ˜Tα
+
+is the species pressure, τ is the relaxation time and μ is the viscosity coefficient, which will be introduced together with the heat conduction coefficient and Pr 0 in detail from Eq. (8). The target near-equilibrium gas distribution function gα contains two parts. The first part gMα is in the form of Maxwellian distribution. In this work, we consider only monatomic gas in three dimensional physical space so internal energy is not introduced. Different from variables at the current state, we use tilde to denote the target macroscopic variables ˜U α and ˜Tα, which recover the diffusion effect. The model proposed by Groppi et al. [30] is employed as follows, 
+
+˜U α = (1 − ϑ) U α + ϑU 0,
+
+˜Tα = T0 − 1
+
+3n0kB
+
+(1 − ϑ)22∑
+
+> β=1
+
+ρβ |U β − U 0|2 , (6) 4where β is also a label of species, to differentiate from α, nα = ρα/m α is the number density. The subscript “ 0” denotes the macroscopic variable of gas mixture, such as, 
+
+n0 =
+
+> 2
+
+∑
+
+> α=1
+
+nα, ρ0 =
+
+> 2
+
+∑
+
+> α=1
+
+ρα, m0 = ρ0
+
+n0
+
+=
+
+> 2
+
+∑
+
+> α=1
+
+χαmα,ρ0U 0 =
+
+> 2
+
+∑
+
+> α=1
+
+ραU α, ρ0E0 =
+
+> 2
+
+∑
+
+> α=1
+
+ραEα,
+
+3
+
+2n0kB T0 =
+
+> 2
+
+∑
+
+> α=1
+
+3
+
+2nαkB Tα + 1
+
+2
+
+> 2
+
+∑
+
+> α=1
+
+ρα |U α − U 0|2,
+
+(7) where χα = nα 
+
+> n0
+
+is the mole fraction and Tα is the species temperature calculated as, 
+
+Tα = 1
+
+3ραRα
+
+∫
+
+> R3
+
+|u − U α|2 fαdu = 2Eα − | U α|2
+
+3Rα
+
+.
+
+The model on ˜U α and ˜Tα as Eq. (6) is derived by setting a constraint on the species drift velocity equalization. More details can be referred to Refs.[30, 33], and the diffusion coefficient is recovered by, 
+
+ϑ = 5
+
+3
+
+m0
+
+A∗ 2∑
+
+> α=1
+
+mα
+
+,
+
+where the values of A∗ between different gases are given in Ref.[54] and a suggested value is 
+
+1.11 [33]. The second part of gα in Eq. (5), CSα , is for the correction of Pr 0 in the approach of Shakhov model [48]. In Ref.[33], the Chapman-Enskog expansion in the gas mixture case is derived and the heat conduction coefficient in the continuum flow regime is recovered. In this kinetic model, each species shares the same τ and Pr , which is calculated by, 
+
+τ0 = μ0
+
+n0kB T0
+
+, Pr 0 = Cp, 0μ0
+
+k0
+
+, (8) where Cp, 0 = 5 
+
+> 2
+> kB
+> m0
+
+is the specific heat capacity of gas mixture at constant pressure [33] and k is the heat conduction coefficient. The viscosity and heat conduction coefficients of gas mixture are calculated by Wilke’s model and Wassiljewa’s model respectively as follows [55–58], 
+
+μ0 =
+
+> 2
+
+∑
+
+> α=1
+
+χαμα
+
+> 2
+
+∑
+
+> β=1
+
+χβ   
+
+> (
+> 1+ √μα
+> μβ
+> 4
+> √mβ
+> mα
+> )2
+> √
+> 8
+> (
+> 1+ mα
+> mβ
+> )
+
+, k0 =
+
+> 2
+
+∑
+
+> α=1
+
+χαkα
+
+> 2
+
+∑
+
+> β=1
+
+χβ   
+
+> (
+> 1+
+> √kα
+> kβ
+> 4
+> √mβ
+> mα
+> )2
+> √
+> 8
+> (
+> 1+ mα
+> mβ
+> )
+
+,
+
+where β is also a label of species, to differentiate from α. For each species the viscosity and heat conduction coefficients are calculated as, 
+
+μα = μα, ref 
+
+( Tα
+
+Tα, ref 
+
+)ω
+
+, kα = Cp,α μα
+
+Pr α
+
+,
+
+where subscript “ ref ” denotes the reference value, ω is the viscosity index, Cp,α = 5 
+
+> 2
+> kB
+> mα
+
+and for the monatomic gas in this work Pr α is set to be 2/3.52.3. Integral solution along the characteristic line 
+
+Setting the coordinate origin at the center of an interface, the integral solution along the characteristic line can be derived as, 
+
+fα (0, t ) = 1
+
+τ0
+
+∫ t
+
+> 0
+
+gα
+
+[−u (t − ˆt) , ˆt] e ˆt−t 
+
+> τ0
+
+dˆt + e−t/τ 0 fα (−ut, 0) , (9) where the free transport is considered together with the collision. The first term denotes the accumulation of near-equilibrium distribution. The second term denotes the transport of initial non-equilibrium state. Expanding gα and fα as, 
+
+gα (x, t ) = gα (0, 0) + ∂g α
+
+∂x · x + ∂g α
+
+∂t t, fα (x, 0) = fα (0, 0) + ∂f α
+
+∂x · x,
+
+it can be derived from Eq. (9) that, 
+
+fα (0, t ) = εagα (0, 0) + εb
+
+∂g α
+
+∂x · u + εc
+
+∂g α
+
+∂t + εdfα (0, 0) + εe
+
+∂f α
+
+∂x · u, (10) where, 
+
+εa = 1 − e−t/τ 0 ,εb = te −t/τ 0 − τ0
+
+(1 − e−t/τ 0 ) ,εc = t − τ0
+
+(1 − e−t/τ 0 ) ,εd = e−t/τ 0 ,εe = −te −t/τ 0 .
+
+Then the integrated macroscopic flux can be derived by substituting Eq. (10) into Eq. (4), 
+
+F α = F eq α + F f r α , (11) where, 
+
+F eq α =
+
+∫
+
+> R3
+
+Ψ
+
+(
+
+δagα (0, 0) + δb
+
+∂g α
+
+∂x · u + δc
+
+∂g α
+
+∂t 
+
+)
+
+(u · n) d u,
+
+F f r α =
+
+∫
+
+> R3
+
+Ψ
+
+(
+
+δdfα (0, 0) + δe
+
+∂f α
+
+∂x · u
+
+)
+
+(u · n) d u,
+
+(12) and, 
+
+δa = ∆ t − τ0
+
+(1 − e−∆t/τ 0 ) ,δb = 2 τ 20
+
+(1 − e−∆t/τ 0 ) − τ0∆t − τ0∆te −∆t/τ 0 ,δc = ∆ t2/2 − τ0∆t + τ 20
+
+(1 − e−∆t/τ 0 ) ,δd = τ0
+
+(1 − e−∆t/τ 0 ) ,δe = τ0∆te −∆t/τ 0 − τ 20
+
+(1 − e−∆t/τ 0 ) .
+
+(13) The F eq α term in Eq. (11) plays a major role in the continuum flow regime, where the gas evolution is constructed by deterministic hydrodynamic waves. The F f r α term gradually dominates the gas evolution when the flow gets rarefied. Particles are employed for this part of simulation. 62.4. Wave evolution 
+
+For the first term in Eq. (11), F eq α is calculated as the GKS [18], and the first step is to calculate 
+
+gα (0, 0) and its derivatives ∂g α 
+
+> ∂x
+
+, ∂g α 
+
+> ∂t
+
+. It is proved in Ref.[3] that ∂g α 
+
+> ∂x
+
+and ∂g α 
+
+> ∂t
+
+can be simplified by ∂g Mα
+
+> ∂x
+
+and ∂g Mα 
+
+> ∂t
+
+. And for simplicity, instead of gα (0, 0) , gMα (0, 0) along with the Pr correction method in the GKS [59] is used. Calculated by the sufficient collision as follows, gMα (0, 0) denotes the equilibrium state at the interface, 
+
+∫
+
+> R3
+
+ΨgMα (0, 0) d u = W α (0, 0) = 
+
+∫
+
+> u·n>0
+
+ΨgMα,L (0, 0) d u +
+
+∫
+
+> u·n<0
+
+ΨgMα,R (0, 0) d u,
+
+where gMα,L (0, 0) , gMα,R (0, 0) , and gMα (0, 0) are calculated from macroscopic variables W α,L (0, 0) ,
+
+W α,R (0, 0) and W α (0, 0) through Eq. (5). W α,L (0, 0) and W α,R (0, 0) are left-hand and right-hand limits at the interface by reconstruction. Meanwhile, spatial derivation ∂g Mα 
+
+> ∂x
+
+and temporal derivation ∂g Mα 
+
+> ∂t
+
+are derived as: 
+
+∂g Mα
+
+∂x = aαgMα ,∂g Mα
+
+∂t = AαgMα ,
+
+where, 
+
+aα = 1
+
+gMα
+
+∂g Mα
+
+∂x = ∂ [ln (gMα
+
+)] 
+
+∂x ,Aα = 1
+
+gMα
+
+∂g Mα
+
+∂t = ∂ [ln (gMα
+
+)] 
+
+∂t .
+
+For the spatial derivative, aα is written in the form of: 
+
+aα = aα, 0 + aα, 1u1 + aα, 2u2 + aα, 3u3 + aα, 4
+
+|u|2
+
+2 ,
+
+and, 
+
+aα, 0 =2 ∂ρ α 
+
+> ∂x
+
+˜Λα + ρα
+
+[
+
+−4˜Λ2 
+
+> α
+
+˜U α · ∂ ˜U α 
+
+> ∂x
+
++
+
+(
+
+3 − 2| ˜U α|2 ˜Λα
+
+) ∂ ˜Λα
+
+> ∂x
+
+]
+
+2ρα ˜Λα
+
+,
+
+aα, 1 = 2 
+
+(
+
+∂ ˜Uα, 1
+
+∂x ˜Λα + ˜Uα, 1
+
+∂ ˜Λα
+
+∂x
+
+)
+
+,
+
+aα, 2 = 2 
+
+(
+
+∂ ˜Uα, 2
+
+∂x ˜Λα + ˜Uα, 2
+
+∂ ˜Λα
+
+∂x
+
+)
+
+,
+
+aα, 3 = 2 
+
+(
+
+∂ ˜Uα, 3
+
+∂x ˜Λα + ˜Uα, 3
+
+∂ ˜Λα
+
+∂x
+
+)
+
+,
+
+aα, 4 = −2 ∂ ˜Λα
+
+∂x ,
+
+where ˜Λα =
+
+(
+
+2Rα ˜Tα
+
+)−1
+
+. When using the Pr correction method, ˜Λα derivation is modified as follows, 
+
+∂ ˜Λα
+
+∂x ⇒ ∂ ˜Λα
+
+∂x /Pr 0.
+
+7On the other hand, the time derivative is calculated obeying the conservation law on the right side of BGK-type model: 
+
+∫
+
+> R3
+
+gMα AαΨdu = −
+
+∫
+
+> R3
+
+gMα aα · uΨdu = bα.
+
+Spreading Aα into Aα = Aα, 0 + Aα, 1u1 + Aα, 2u2 + Aα, 3u3 + Aα, 4 |u|2 
+
+> 2
+
+, it is rewritten as: 
+
+Aα,q Mα,pq = bα,p ,
+
+where subscripts “ p” and “ q” here denote components, and Einstein summation convention is used. For example, as to the two-dimensional case, 
+
+M α =
+
+
+
+1 ˜Uα, 1 ˜Uα, 2 Bα, 1
+
+˜Uα, 1 ˜U2 
+
+> α, 1
+
++ 1
+
+> 2˜Λα
+
+˜Uα, 1 ˜Uα, 2 Bα, 2
+
+˜Uα, 2 ˜Uα, 1 ˜Uα, 2 ˜U2 
+
+> α, 2
+
++ 1
+
+> 2˜Λα
+
+Bα, 3
+
+Bα, 1 Bα, 2 Bα, 3 Bα, 4
+
+ ,
+
+where 
+
+Bα, 1 = 1
+
+2
+
+(
+
+˜U2 
+
+> α, 1
+
++ ˜U2 
+
+> α, 2
+
++ 3
+
+2˜Λα
+
+)
+
+,Bα, 2 = 1
+
+2
+
+(
+
+˜U3 
+
+> α, 1
+
++ ˜Uα, 1 ˜U2 
+
+> α, 2
+
++ 5
+
+2˜Λα
+
+˜Uα, 1
+
+)
+
+,Bα, 3 = 1
+
+2
+
+(
+
+˜U3 
+
+> α, 2
+
++ ˜U2 
+
+> α, 1
+
+˜Uα, 2 + 5
+
+2˜Λα
+
+˜Uα, 2
+
+)
+
+,Bα, 4 = 1
+
+4
+
+[( ˜U2 
+
+> α, 1
+
++ ˜U2
+
+> α, 2
+
+)2
+
++ 5
+
+˜Λα
+
+( ˜U2 
+
+> α, 1
+
++ ˜U2
+
+> α, 2
+
+)
+
++ 15 
+
+4˜Λ2
+
+> α
+
+]
+
+.
+
+And the result is: 
+
+Aα, 4 = 8˜Λ2
+
+> α
+
+3
+
+[
+
+bα, 4 − ˜Uα, 1bα, 2 − ˜Uα, 2bα, 3 − (Bα, 1 + ˜U2 
+
+> α, 1
+
++ ˜U2
+
+> α, 2
+
+)bα, 1
+
+]
+
+,Aα, 3 = 2 ˜Λα(bα, 3 − ˜Uα, 2bα, 1) − ˜Uα, 2Aα, 4,Aα, 2 = 2 ˜Λα(bα, 2 − ˜Uα, 1bα, 1) − ˜Uα, 1Aα, 4,Aα, 1 = bα, 1 − ˜Uα, 1Aα, 2 − ˜Uα, 2Aα, 3 − Bα, 1Aα, 4.
+
+More details of calculating gα (0, 0) , ∂g α 
+
+> ∂x
+
+and ∂g α 
+
+> ∂t
+
+can be referred to Refs.[18, 60]. By substituting them in to Eq. (12), the flux of wave evolution F eq α can be obtained. To improve the accuracy and robustness in the flow field regions of drastic scale variation, the scale-related coefficient δ is separated into left and right sides of the interface “ j”, as follows. By this formula, δa,L/R , δb,L/R 
+
+and δc,L/R used by the wave flux can be calculated within the cell, instead of at the interface. When sampling particles, the scale-related coefficient e−∆t/τ is calculated at the same location. This treatment enables the wave flux more consistent with particles, to prevent situations in which the scale changes significantly, the δ values within the cell and at the interface have significant 8discrepancies. Further illustrations can be referred to Ref.[27]. 
+
+F eq α,j =
+
+∫ 
+
+> u·nj>0
+
+Ψ
+
+(
+
+δa,L gα (0, 0) + δb,L 
+
+∂g Mα
+
+∂x · u + δc,L 
+
+∂g Mα
+
+∂t 
+
+)
+
+(u · nj ) d u
+
++
+
+∫ 
+
+> u·nj<0
+
+Ψ
+
+(
+
+δa,R gα (0, 0) + δb,R 
+
+∂g Mα
+
+∂x · u + δc,R 
+
+∂g Mα
+
+∂t 
+
+)
+
+(u · nj ) d u,
+
+(14) where details of integrations are provided as follows, 
+
+∫
+
+> R
+
+( 1
+
+2πRT 
+
+)1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = 1 ,
+
+∫
+
+> R
+
+u
+
+( 1
+
+2πRT 
+
+)1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = U, 
+
+∫
+
+> u> 0
+
+( 1
+
+2πRT 
+
+)1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = 1
+
+2erfc 
+
+(
+
+−√ΛU 
+
+)
+
+,
+
+∫
+
+> u> 0
+
+u
+
+( 1
+
+2πRT 
+
+) 1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = U
+
+2 erfc 
+
+(
+
+−√ΛU 
+
+)
+
++ 1
+
+2e−ΛU 2
+
+√πΛ ,
+
+∫
+
+> u< 0
+
+( 1
+
+2πRT 
+
+)1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = 1
+
+2erfc 
+
+(√ΛU 
+
+)
+
+,
+
+∫
+
+> u< 0
+
+u
+
+( 1
+
+2πRT 
+
+) 1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du = U
+
+2 erfc 
+
+(√ΛU 
+
+)
+
+− 1
+
+2e−ΛU 2
+
+√πΛ ,
+
+and, ∫
+
+> R/u> 0/u< 0
+
+un+2 
+
+( 1
+
+2πRT 
+
+) 1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du 
+
+=U
+
+∫
+
+> R/u> 0/u< 0
+
+un+1 
+
+( 1
+
+2πRT 
+
+)1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du 
+
++ n + 1 
+
+2Λ 
+
+∫
+
+> R/u> 0/u< 0
+
+un
+
+( 1
+
+2πRT 
+
+) 1
+
+> 2
+
+exp 
+
+(
+
+−|u − U|2
+
+2RT 
+
+)
+
+du, 
+
+where erfc() = 1 − erf() is the complementary error function. 
+
+2.5. Particle evolution 
+
+In the UGKWP method, numerical particles are employed to describe the free-transport part of distribution function, whose parameters are: species label α, particle mass m, location x and velocity u. As Eq. (9), the distribution function after ∆t is a combination of the initial state fα
+
+and target near-equilibrium state gα. Firstly, for a particle from the initial state, the probability for keeping free-transport is e− ∆t 
+
+> τ0
+
+, otherwise it collides with other particles and is relaxed into gα.As a result, the cumulative distribution of a free-transport particle is e− ∆t 
+
+> τ0
+
+. By taking a uniform random number ǫ ∈ (0 , 1) , the free-transport time tf,k of a particle labeled by “ k” can be calculated by, 
+
+tf,k = min ( −τ0,k ln ( ǫ) , ∆t) . (15) 9Then the location of the particle can be renewed by, 
+
+xk ⇒ xk + uktf,k , (16) and the contribution of all particles to the macroscopic conserved variables is, 
+
+W f r,p α,i = W p, + 
+
+> α,i
+
+− W p, − 
+
+> α,i
+
+, (17) and, 
+
+W p, +/− 
+
+> α,i
+
+= 1
+
+Ωi
+
+∑  
+
+> k∈N +/−
+> α(i)
+
+mp,k Ψk,
+
+where Nα (i) is a collection of particles of species α within cell “ i”. Superscripts “ −” and “ +”denote the time before and after the free transport, respectively. Then, after calculating W f r,p α,i ,if tf,k < ∆t, the particle is deleted, relaxing into gα, called collisional particles. Otherwise, if 
+
+tf,k = ∆ t, the particle will be kept, called collisionless particles. Furthermore, when calculating tf,k , there is more freedom to improve the microscopic model in the premise of conservation. In this study, the free-transport time is reduced for high-speed particles as follows, which is an extension to the gas mixture from Ref.[49] and can recover the formula of single-species case in Ref.[49]. This primarily breaks through the limitation that particles with different speeds have the same collision frequency. Particularly when the thermal speed of the particles is high, their collision frequency should significantly increase, which is especially reflected in the calculation of their free transport time. As shown in Ref.[49], it improves high-Ma case results such as the temperature profile in the pre-shock location and the heat flux at the stagnation point. 
+
+tf,k,α = min (−τ ∗
+
+> α,k
+
+ln ( ǫ) , ∆t) , (18) and, 
+
+τ ∗ 
+
+> α,k
+
+=
+
+
+
+τ0,k , |uk − U α| ≤ b√RαTα, 
+
+> 1
+> 1+ 2∑
+> β=1
+> cαβ
+
+τ0,k , |uk − U α| > b √RαTα,
+
+where, 
+
+cαβ =
+
+
+
+0, |uk − U β | ≤ b√Rβ Tβ ,aχ β
+
+|uk −U β |√Rβ Tβ
+
+, |uk − U β | > b √Rβ Tβ ,
+
+Here a and b are set to be 0.1 and 5 respectively as validated in Ref.[49]. To illustrate the multispecies case, we set m1 = m2 as a baseline for comparison. On one hand, when species “ 1”has smaller m1, its distribution function is broader as √R1T1 = √kB T1/m 1, so that the high-speed particle satisfying |uk − U α| > b √RαTα has a larger |uk − U β |. As a result, a larger c12 gives a smaller τ ∗
+
+> 1,k
+
+. It is compatible with the physics that a faster particle has a larger collision frequency, and in this case the speed is risen up by the mass ratio between the two species. On the other hand, when species “ 1” is heavier, its distribution is sharper. Though a high-speed particle satisfies 
+
+|uk − U α| > b √RαTα, it may be still within b√Rβ Tβ because |uk − U β | is not large enough. As a result, the contribution from c12 decreases so that τ ∗ 
+
+> 1,k
+
+is not as small as the m1 = m2 case. 10 Secondly, according to Eq. (9), particles should be sampled from e− ∆t 
+
+> τ0,i
+
+proportion of the hy-drodynamic wave part, W hα,i = W α,i − W pα,i with tf,k = ∆ t. The density of sampled collisionless particles is, 
+
+ρhp α,i = e− ∆t 
+
+> τ0,i
+
+ρhα,i . (19) Unless ρhα,i = 0 when no particle will be sampled, the number of sampled particles is calculated by, 
+
+Nhp α,i = ⌈ρhp α,i 
+
+ρα,i 
+
+χα,i Nhp, ref ⌉, (20) where Nhp, ref is a given reference number for the gas mixture. The corresponding mass of a particle in species α is, 
+
+mp,k = ρhp α,i Ωi
+
+Nhp α,i 
+
+.
+
+The particle position is set according to a uniform distribution probability within cell “ i”. The velocity is got by acceptance-rejection sampling, as follows. Firstly, the velocity according to the Maxwellian distribution function is calculated by, 
+
+uk, 1 = ˜Uα,i, 1 +
+
+√
+
+2Rα ˜Tα,i cos(2 πǫ a1)√−ln( ǫa2),uk, 2 = ˜Uα,i, 2 +
+
+√
+
+2Rα ˜Tα,i cos(2 πǫ b1)√−ln( ǫb2),uk, 3 = ˜Uα,i, 3 +
+
+√
+
+2Rα ˜Tα,i cos(2 πǫ c1)√−ln( ǫc2),
+
+where ǫ is a random number distributing uniformly in (0 , 1) . Then according to CSα in Eq. (5), the criterion of the acceptance-rejection method is suggested to be: 
+
+1 + (1 − Pr 0,i )(uk − ˜U α,i )·Qα,i  
+
+> 5˜ pα,i Rα˜Tα,i
+
+( |uk − ˜U α,i |2 
+
+> Rα˜Tα,i
+
+− 5
+
+)
+
+1 + (1 − Pr 0,i ) 20 |Qα,i |
+
+> ˜pα,i
+
+√Rα ˜Tα,i 
+
+, (21) Additionally, since the analytical macroscopic flux of newly sampled particles corresponds to the second-order discrete velocity method (DVM), the free transport fluxes contributed from the collisional particles of (W hα − W hp α
+
+) can be calculated as, 
+
+F f r,wave α = F f r 
+
+> UGKS
+
+(W hα
+
+) − F f r 
+
+> DVM
+
+(W hp α
+
+)
+
+=
+
+∫
+
+> R3
+
+Ψ
+
+(
+
+δdghα (0, 0) + δe
+
+∂g hα
+
+∂x · u
+
+)
+
+(u · n) d u
+
+−e− ∆t
+
+> τ0
+
+∫ ∆t
+
+> 0
+
+∫
+
+> R3
+
+Ψ
+
+(
+
+ghα (0, 0) + t∂g hα
+
+∂x · u
+
+)
+
+(u · n) d udt
+
+=
+
+∫
+
+> R3
+
+Ψ
+
+[(
+
+δd − ∆te − ∆t
+
+> τ0
+
+)
+
+ghα (0, 0) + 
+
+(
+
+δe + ∆t2
+
+2 e− ∆t
+
+> τ0
+
+) ∂g hα
+
+∂x · u
+
+]
+
+(u · n) d u.
+
+11 The same as in Eq. (14), the scale-related coefficient δ is separated into left-side and right-side cells of the interface “ j” for a better consistency with sampled particles, as follows, 
+
+F f r,wave α,j =
+
+∫ 
+
+> u·nj>0
+
+Ψ
+
+[( 
+
+δd,L − ∆te − ∆t
+
+> τ0,L
+
+)
+
+ghα (0, 0) + 
+
+(
+
+δe,L + ∆t2
+
+2 e− ∆t
+
+> τ0,L
+
+) ∂g hα
+
+∂x · u
+
+]
+
+(u · nj ) d u
+
++
+
+∫ 
+
+> u·nj<0
+
+Ψ
+
+[( 
+
+δd,R − ∆te − ∆t
+
+> τ0,R
+
+)
+
+ghα (0, 0) + 
+
+(
+
+δe,R + ∆t2
+
+2 e− ∆t
+
+> τ0,R
+
+) ∂g hα
+
+∂x · u
+
+]
+
+(u · nj ) d u.
+
+(22) As a result, the macroscopic update equation is renewed from Eq. (2) as follows. 
+
+W ∗ 
+
+> α,i
+
+= W nα,i − 1
+
+Ωi
+
+∑
+
+> j∈M (i)
+
+F eq α,j Sj − 1
+
+Ωi
+
+∑
+
+> j∈M (i)
+
+F f r,wave α,j Sj + W f r,p α,i . (23) 
+
+2.6. Macroscopic source term 
+
+By calculating moments in Eq. (5), the source term in Eq. (3) can be derived as, 
+
+∂W α,i 
+
+∂t =˜W ∗ 
+
+> α,i
+
+− W α,i 
+
+τ0
+
+,
+
+whose integral solution is, 
+
+W n+1  
+
+> α,i
+
+= e−∆t 
+
+> τ0
+
+W ∗ 
+
+> α,i
+
++
+
+(
+
+1 − e− ∆t
+
+> τ0
+
+) ˜W ∗
+
+> α,i
+
+, (24) where the initial condition W ∗ 
+
+> α,i
+
+is the result of Eq. (23) and ˜W ∗ 
+
+> α,i
+
+is the target conserved variables of W ∗
+
+> α,i
+
+. Different from the AAP model, because the target velocity is obtained by a convex combination in Eq. (6), an extra implicit module is not necessary. In this way, the consistency between wave and particles is achieved in three viewpoints. Firstly, for the flux, the contribution of particles (mainly about the newly sampled particles from gα,i ) uses the same ˜W ∗ 
+
+> α,i
+
+as the flux of deterministic wave. Secondly, for the source collision term, both of macroscopic evolution in Eq. (24) and the particle sampling use the same ˜W ∗ 
+
+> α,i
+
+as well. Finally, still for the source term, the coefficients in front of the target variables ( gα for particle as Eq. (19) and ˜W ∗ 
+
+> α,i
+
+for macroscopic variables as Eq. (24)) are the same, which is 1 − e− ∆t 
+
+> τ0
+
+. If the operator splitting is not implemented before the discretization in Sec. 2.1 but after that instead, the coefficient in front of ˜W ∗ 
+
+> α,i
+
+will be  
+
+> ∆t
+> ∆t+τ0
+
+, different from 1 − e− ∆t 
+
+> τ0
+
+. Additionally, Eq. (24) ensures the conservation because, 
+
+> 2
+
+∑
+
+> α=1
+
+W ∗ 
+
+> α,i
+
+=
+
+> 2
+
+∑
+
+> α=1
+
+˜W ∗
+
+> α,i
+
+.
+
+2.7. Algorithm 
+
+Regarding Fig. 1, the following part is a summary of the algorithm of the proposed UGKWP method for multiscale binary-species gas mixture. 
+
+Step (1) Initial state. As the result of the previous time step n−1 in Fig. 1(d), numerical particles 
+
+W pα coexist with hydrodynamic wave W hα. Then collisionless particles W hp α are sampled as Eq. (19), with detailed parameters from Eq. (20) to Eq. (21). For the first step, W pα = 0, as shown in Fig. 1(a). 12 Step (2) Free transport. Firstly, divide particles W pα into two parts as Eq. (15) or Eq. (18). As in Fig. 1(b), collisionless particles are denoted by hollow circles, and collisional particles are denoted by solid circles. Then transport all particles as Eq. (16), and sum their contribution to the macroscopic conserved variables as Eq. (17). Meanwhile, the free transport fluxes 
+
+F f r,wave α,j contributed from the collisional particles of (W hα − W hp α
+
+) are also calculated as Eq. (22). Finally, delete the collisional particles which are denoted by solid circles. 
+
+Step (3) Collision. Firstly, calculate the F eq α,j term in Eq. (14) by equations in Sec. 2.4. Secondly, get W ∗ 
+
+> α
+
+as Eq. (23). Then get the target macroscopic variables ˜W ∗ 
+
+> α
+
+from W ∗ 
+
+> α
+
+by Eq. (6), along with other variables such as relaxation time τ0 and Pr 0 in Eq. (8). Finally, update 
+
+W n+1  
+
+> α
+
+as Eq. (24). 
+
+Step (4) If the simulation continues, go to Step (1) , where collisionless particles W hp α will be sampled.                 
+
+> W h
+> 1-e -Δt/ τe-Δt/ τ00
+> (a)
+> 1-e -Δt/ τe-Δt/ τ
+> W h
+> W p
+> tf<Δttf=Δt
+> α α
+> 00
+> (b)
+> W h
+> W p
+> Feq
+> Ffr,wave
+> αα
+> αα
+> Wα
+> ~Wα
+> ,Wα
+> **
+> (c)
+> W h
+> W p
+> 1-e -Δt/ τe-Δt/ τ00
+> αα
+> (d) Figure 1: Diagram to illustrate the algorithm of UGKWP method: (a) Initial state at n= 0 step, (b) step 2, (c) step 3, (d) initial state at other steps.
+
+3. Numerical cases 
+
+A series of cases are conducted to test the performance of the proposed UGKWP method. Firstly, the shock structures at Ma = 1 .5 and Ma = 3 .0 are simulated as a classical rarefied case. The proposed method is compared with the AAP model-based UGKS in detail. The performance of using a modified τ ∗ is also exhibited. Then the mass diffusion case is tested at different Kn . The Couette flow is also simulated under four different conditions, ranging from continuum to rarefied regimes. The primary focus is on the velocity profile, which provides insights into the magnitude of velocity slip at the boundary and the separation of species. In these three cases, Nref is set to be 5000 to reduce the noise of particles. In the shock structure case, it is for avoiding the shock moving. In other two cases, the flow speed is very low, enlarging the influence of the particle noise. The last case is the hypersonic flow around a cylinder. In this case Nref is set to be 800 
+
+and a wide range of Ma and Kn is considered. The pressure, shear stress and heat flux coefficients at the wall are compared with the DSMC in detail. In all cases, the Courant-Friedrichs-Lewy (CFL) number is set to be 0.8. The full accommodation is applied for the isothermal walls as the boundary condition. 13 3.1. Shock structure 
+
+The first case is the shock structure for binary gas mixture containing species “ A” and “ B”. It is a classical microscopic one-dimensional case to evaluate the model’s and numerical method’s capability to capture the highly non-equilibrium flow behaviors [61, 62], such as the profiles of density and temperature, the shock thickness, and the double-peak distribution function which is rather far away from the local equilibrium state [63]. In the multi-species case, the non-equilibrium behaviors exist not only within the components but also between the components. Taking the Boltzmann solution as reference [64], conditions for Ma − = 1 .5 and Ma − = 3 .0 are simulated with a large range of mole fraction χ. Hereby superscripts “ −” and “ +” denote upstream and downstream respectively, and, 
+
+χ− 
+
+> A
+
+= χ+ 
+
+> A
+
+, χ − 
+
+> B
+
+= χ+ 
+
+> B
+
+,U− 
+
+> A
+
+= U− 
+
+> B
+
+= U− 
+
+> 0
+
+, U + 
+
+> A
+
+= U+ 
+
+> B
+
+= U+0 ,T − 
+
+> A
+
+= T − 
+
+> B
+
+= T − 
+
+> 0
+
+, T + 
+
+> A
+
+= T + 
+
+> B
+
+= T +0 ,
+
+Ma − = U−
+
+> 0
+
+√5 
+
+> 3
+
+kB T − 
+
+> 0
+
+/m −
+
+> 0
+
+, Ma + = U+0
+
+√5 
+
+> 3
+
+kB T +0 /m +0
+
+.
+
+The Rankine-Hugoniot condition is employed to achieve the upstream and downstream conditions for each species, 
+
+Ma + =
+
+√√√√ 2/3 (Ma −)2 + 2 
+
+10 /3 (Ma −)2 − 2/3,ρ+
+
+> A
+
+ρ−
+
+> A
+
+= ρ+
+
+> B
+
+ρ−
+
+> B
+
+= 8/3 (Ma −)2
+
+2/3 (Ma −)2 + 2 ,U+0
+
+U−
+
+> 0
+
+= 2/3 (Ma −)2 + 2 
+
+8/3 (Ma −)2 ,T +0
+
+T −
+
+> 0
+
+=
+
+[
+
+2/3 (Ma −)2 + 2 
+
+] [ 
+
+10 /3 (Ma −)2 − 2/3
+
+]
+
+64 /9 (Ma −)2 .
+
+The hard sphere (HS) model is employed for both species “ A” and “ B”, and μ− 
+
+> A
+
+= μ− 
+
+> B
+
+. In the results, the vertical coordinate is normalized as, 
+
+ˆnA = nA − n−
+
+> A
+
+n+ 
+
+> A
+
+− n−
+
+> A
+
+, ˆnB = nB − n−
+
+> B
+
+n+ 
+
+> B
+
+− n−
+
+> B
+
+,
+
+ˆTA = TA − T −
+
+> A
+
+T + 
+
+> A
+
+− T −
+
+> A
+
+, ˆTB = TB − T −
+
+> B
+
+T + 
+
+> B
+
+− T −
+
+> B
+
+.
+
+The horizontal coordinate is nondimensionalized by the mean free path defined as, 
+
+λ∞ = 16 
+
+5
+
+√
+
+m−
+
+> 0
+
+2πk B T −
+
+> 0
+
+μ−
+
+> A
+
+ρ−
+
+> 0
+
+. (25) 14 For the Ma = 1 .5 case the mesh size is set to be ∆x = λ∞/2, and for the Ma = 3 case the mesh size is set to be ∆x = λ∞/4.As shown from Fig. 2 to Fig. 5, the proposed UGKWP method is compared with the AAP model-based UGKS [42]. At the post-shock location, the temperature profile of the proposed UGKWP method matches better with the reference result, and this advantage is more significant at higher Ma . Referring to Refs.[47, 62], it is mainly because the Pr of current method is more accurate, and when using different methods to correct Pr the approach of Shakhov model gives better results. Another advantage lies in the temperature profile at the pre-shock location. Because in the BGK-type kinetic model the relaxation time is not a function of particle speed, the negative-velocity high-speed particle at the pre-shock location has a lower collision frequency than the real physics. As a result, the temperature there is always higher than the Boltzmann solution. Benefiting from a further microscopic model in Eq. (18), the current method can give a better result. A more detailed comparison whether using τ ∗ or not is shown from Fig. 6 to Fig. 9. The improvement is much more obvious at higher Ma as well.             
+
+> λ∞
+> (a)
+> λ∞
+> (b) Figure 2: Shock structure in binary gas mixture ( Ma −= 1 .5,mB/m A= 0 .5,χ−
+> B= 0 .9): (a) Number density and (b) temperature.
+> λ∞
+> (a)
+> λ∞
+> (b) Figure 3: Shock structure in binary gas mixture ( Ma −= 1 .5,mB/m A= 0 .5,χ−
+> B= 0 .1): (a) Number density and (b) temperature.
+
+15 λ∞
+
+(a) 
+
+> λ∞
+
+(b) Figure 4: Shock structure in binary gas mixture ( Ma − = 3 , mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .9): (a) Number density and (b) temperature. 
+
+> λ∞
+
+(a) 
+
+> λ∞
+
+(b) Figure 5: Shock structure in binary gas mixture ( Ma − = 3 , mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .1): (a) Number density and (b) temperature. 
+
+> λ∞
+> τ
+> τ
+
+(a) 
+
+> λ∞
+> τ
+> τ
+
+(b) Figure 6: Shock structure in binary gas mixture ( Ma − = 1 .5, mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .9): (a) Number density and (b) temperature. 
+
+16 λ∞
+
+> τ
+> τ
+
+(a) 
+
+> λ∞
+> τ
+> τ
+
+(b) Figure 7: Shock structure in binary gas mixture ( Ma − = 1 .5, mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .1): (a) Number density and (b) temperature. 
+
+> λ∞
+> τ
+> τ
+
+(a) 
+
+> λ∞
+> τ
+> τ
+
+(b) Figure 8: Shock structure in binary gas mixture ( Ma − = 3 , mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .9): (a) Number density and (b) temperature. 
+
+> λ∞
+> τ
+> τ
+
+(a) 
+
+> λ∞
+> τ
+> τ
+
+(b) Figure 9: Shock structure in binary gas mixture ( Ma − = 3 , mB /m A = 0 .5, χ− 
+
+> B
+
+= 0 .1): (a) Number density and (b) temperature. 
+
+17 3.2. Mass diffusion 
+
+In Ref.[50], this case primarily verified that the DSMC can recover the Navier-Stokes diffusion coefficient in the continuum flow regime. In this section, the one-dimensional mass diffusion in an argon-neon (Ar-Ne) mixture is simulated and compared with the DSMC in a wide Kn range. The gases properties can be referred to Tab. 1. 
+
+> Table 1: Properties of Ar and Ne [50]
+
+Gas Ar Ne 
+
+Molecular mass m (kg) 6.63 × 10 −26 3.35 × 10 −26 
+
+Gas constant R
+
+( J
+
+> kg ·K
+
+)
+
+208 .242 412 .134 
+
+Viscosity index ω 0.81 0.66 
+
+Scattering parameter α in the variable soft sphere model 1.40 1.31 
+
+Viscosity coefficient μref (Pa · s) at Tref = 273K 2.117 × 10 −5 2.975 × 10 −5
+
+Prandtl number Pr 2/3 2/3
+
+In this case, two reservoirs containing pure stationary Ar and Ne gases at T = 273K are established at the two ends of a spatial interval of L = 1m . According to Ref.[50], 200 cells are set within the interval, and the number density of both reservoirs are set to be 2.8×10 20 , 2.8×10 19 and 
+
+2.8×10 18 from continuum to rarefied condition. Using the following HS model, their corresponding Knudsen numbers are 0.0061 , 0.061 and 0.61 respectively. 
+
+Kn = 16 
+
+5L
+
+√ m0
+
+2πk B T0
+
+μ0
+
+ρ0
+
+. (26) The mole fraction profile and velocity profile are shown in Fig. 10 and Fig. 11. Because of 
+
+mAr 6 = mNe , the χAr = χNe = 0 .5 point deviates from x = 0 .5. The “composition slip” and “velocity slip” at the boundary are more obvious at higher Kn . For comparison, the DSMC results are calculated by DSMC1.FOR code in Ref.[50]. At a lower Kn , the results of proposed UGKWP method match well with those of DSMC because both of them can recover the Navier-Stokes diffusion coefficient in the continuum flow regime. At Kn = 0 .61 , there are deviations between velocity profiles. The reason may be some assumptions in the kinetic model utilized in this study such as τAr = τNe .      
+
+> (a) (b) (c) Figure 10: Mole fraction profile of mass diffusion case in an Ar-Ne mixture: (a) Kn = 0 .0061 , (b) Kn = 0 .061 and (c) Kn = 0 .61 .
+
+18 (a) (b) (c) Figure 11: Velocity profile of mass diffusion case in an Ar-Ne mixture: (a) Kn = 0 .0061 , (b) Kn = 0 .061 and (c) 
+
+> Kn = 0 .61 .
+
+3.3. Couette flow 
+
+The Couette flow between two parallel plates with full diffusion boundary condition and spatial interval H = 1m is simulated in this section. The velocity of top plate is set to be (Uw, 0, 0) T and that of bottom plate is set to be (−Uw , 0, 0) T . In the x direction, the periodic boundary condition is applied. For the initial condition, the mole fractions of species are both set to be 0.5, and their temperature is set to be the same as the wall Tw. Ar and Ne are employed in this case and their properties can be referred to Tab. 1, except that μAr ,ref and μNe ,ref are set to be 2.239 × 10 −5Pa · s
+
+and 3.160 × 10 −5Pa · s respectively at Tw for comparison with Ref.[44]. Hereby, as Ref.[44], a characteristic molecular velocity is defined as, 
+
+v0 =
+
+√2kB Tw
+
+m0
+
+,
+
+and a gas rarefaction parameter ˆδ0 is defined as, 
+
+ˆδ0 = n0kB TwH
+
+μ0v0
+
+.
+
+Conditions as ˆδ0 = 100 , 10 , 1, 0.1 are considered from continuum to rarefied flow regime, and Uw is set to be 0.1v0. The results are shown in Fig. 12, in comparison with results of AAP model-based Discrete UGKS (DUGKS) [44] and McCormack model-based DVM [65]. The vertical coordinate is normalized by 2Uw. When the flow gets rarefied, both of diffusion velocity within the flow field and slip velocity at the wall boundary enlarge. The deviation also increases among different methods and models. The velocity profile of the proposed UGKWP method lies in the middle of others. 19 (a) (b)          
+
+> (c) (d) Figure 12: Velocity profile of Couette flow in an Ar-Ne mixture: (a) ˆδ0= 100 , (b) ˆδ0= 10 , (c) ˆδ0= 1 and (d)
+> ˆδ0= 0 .1.
+
+3.4. Hypersonic flow around a cylinder 
+
+The hypersonic flow around a cylinder is a typical multiscale case from continuum to rarefied regime. The high-Ma shock strongly compresses the flow at the windward wall, which makes the local scale tends more towards continuum, while the flow at leeward side is more rarefied due to the expansion. The characteristics of this case are consistent with the hypersonic flow around near-space vehicles, and in this section a wide range of Ma ∞ and Kn ∞ is taken for validation. Both of dimensionless and dimensional parameters are given in Tab. 2 and Tab. 3, where the gas properties can be referred to Tab. 1 and Kn ∞ is calculated as Eq. (26). The results are shown from Fig. 13 to Fig. 17. With Ma ∞ increasing, the shock is compressed closer to the wall. At higher Kn ∞,the shock is broader and the flow is smoother, while at lower Kn ∞, the shock becomes sharper and there is even a small vortex at the wake area as in Fig. 17(a), which brings about a negative shear stress as in Fig. 17(f). Along the stagnation line there are significant deviations of velocity and temperature between different species in rarefied cases. While in the near-continuum regime they gather closer, and in this case the most obvious difference lies in the post-shock location as in Fig. 17(c). The DSMC simulations are performed using DS2V code [50], and the results of proposed method match well with the DSMC, including the pressure, shear stress and heat flux coefficients at the wall. 20 Table 2: Identical parameters in all cases of hypersonic flow around a cylinder 
+
+χAr ,∞ 0.25 Inflow temperature 273K 
+
+χNe ,∞ 0.75 Wall temperature 500K 
+
+Reference length (radius) 1m 
+
+Table 3: Differing parameters in each case of hypersonic flow around a cylinder 
+
+Case number 1 2 3 4 5
+
+Ma ∞ 3 9 18 9 9
+
+Kn ∞ 0.1 0.1 0.1 1 0.01 
+
+ρAr (kg /m3) 2.352 × 10 −7 2.352 × 10 −7 2.352 × 10 −7 2.352 × 10 −8 2.352 × 10 −6
+
+ρNe (kg /m3) 3.565 × 10 −7 3.565 × 10 −7 3.565 × 10 −7 3.565 × 10 −8 3.565 × 10 −6
+
+U (m /s) 1164 .396 3493 .188 6986 .376 3493 .188 3493 .188 
+
+Result Fig. 13 Fig. 14 Fig. 15 Fig. 16 Fig. 17 
+
+(a) (b) (c) 
+
+(d) 
+
+> φ
+
+(e) 
+
+> φ
+
+(f) Figure 13: Hypersonic flow around a cylinder in an Ar-Ne mixture at Ma ∞ = 3 , Kn ∞ = 0 .1: (a) Ma contour and streamline, (b) velocity along the stagnation line, (c) temperature along the stagnation line, (d) density along the stagnation line, (e) pressure coefficient at the wall, (f) shear stress and heat flux coefficients at the wall. 
+
+21 (a) (b) (c) 
+
+(d) 
+
+> φ
+
+(e) 
+
+> φ
+
+(f) Figure 14: Hypersonic flow around a cylinder in an Ar-Ne mixture at Ma ∞ = 9 , Kn ∞ = 0 .1: (a) Ma contour and streamline, (b) velocity along the stagnation line, (c) temperature along the stagnation line, (d) density along the stagnation line, (e) pressure coefficient at the wall, (f) shear stress and heat flux coefficients at the wall. 
+
+(a) (b) (c) 
+
+(d) 
+
+> φ
+
+(e) 
+
+> φ
+
+(f) Figure 15: Hypersonic flow around a cylinder in an Ar-Ne mixture at Ma ∞ = 18 , Kn ∞ = 0 .1: (a) Ma contour and streamline, (b) velocity along the stagnation line, (c) temperature along the stagnation line, (d) density along the stagnation line, (e) pressure coefficient at the wall, (f) shear stress and heat flux coefficients at the wall. 
+
+22 (a) (b) (c) 
+
+(d) 
+
+> φ
+
+(e) 
+
+> φ
+
+(f) Figure 16: Hypersonic flow around a cylinder in an Ar-Ne mixture at Ma ∞ = 9 , Kn ∞ = 1 : (a) Ma contour and streamline, (b) velocity along the stagnation line, (c) temperature along the stagnation line, (d) density along the stagnation line, (e) pressure coefficient at the wall, (f) shear stress and heat flux coefficients at the wall. 
+
+(a) (b) (c) 
+
+(d) 
+
+> φ
+
+(e) 
+
+> φ
+
+(f) Figure 17: Hypersonic flow around a cylinder in an Ar-Ne mixture at Ma ∞ = 9 , Kn ∞ = 0 .01 : (a) Ma contour and streamline, (b) velocity along the stagnation line, (c) temperature along the stagnation line, (d) density along the stagnation line, (e) pressure coefficient at the wall, (f) shear stress and heat flux coefficients at the wall. 
+
+23 4. Conclusions 
+
+In this study, viscosity, heat conduction, and diffusion effects are comprehensively incorporated into the UGKWP method for multiscale gas mixtures. Utilizing the model of Groppi et al., the velocity of the target equilibrium distribution function is calculated as a convex combination of the individual species velocity and the mixture velocity. On one hand, this formulation reduces the stiffness of the momentum-exchange source term, eliminating the need for an implicit solver and facilitating straightforward extensions to multi-species mixtures. On the other hand, by intro-ducing a second relaxation parameter, both the diffusion and viscosity coefficients are successfully recovered in the continuum flow regime. Unlike traditional approaches that treat the diffusion term solely as a source term via operator splitting, the entire target equilibrium distribution function is utilized here to derive the characteristic integral solution. This yields a multiscale flux that inherently accounts for diffusion effects. Additionally, the target equilibrium distribution function is evaluated at the same time level for both the flux and source term evaluations of waves and particles. This ensures strict consistency between particle and wave evolution while guaranteeing conservation. To correct the Prandtl number ( Pr ), the Shakhov model formulation is incorporated. Consequently, the proposed method performs well in predicting both aerodynamic forces and heat fluxes in hypersonic test cases. Furthermore, the microscopic model for high-speed particles is modified by extending the formulation in Ref.[49] to gas mixtures, moving beyond a single relax-ation time. This extension leads to a significant improvement in capturing the temperature profile in the pre-shock region. Through binary-species test cases spanning multiple flow regimes, includ-ing shock structures, mass diffusion, Couette flows, and hypersonic flow around a cylinder, the results obtained from the proposed UGKWP method agree well with reference solutions. These benchmarks include solutions from the Boltzmann equation, the DSMC method, the UGKS based on the AAP model, and the DVM based on the McCormack model. The method accurately cap-tures complex flow structures, particularly species-specific differences in mole fractions, velocities, and temperatures, as well as wall pressure, shear stress, and heat flux coefficients under hypersonic conditions. These findings demonstrate that the proposed method meets the rigorous requirements for simulating near-space hypersonic flows and possesses strong potential for extensions to multi-component systems and more complex physical couplings, such as thermochemical non-equilibrium and plasma transport. 
+
+Acknowledgements 
+
+The current research is supported by National Key R &D Program of China (Grant Nos. 2022YFA1004500), National Natural Science Foundation of China (92371107), and Hong Kong research grant council (16208324). Helpful discussions with Prof. Z. Guo and Dr. Z. Pu are gratefully acknowledged. 
+
+Reference References 
+
+[1] C. Liu, Y. Zhu, K. Xu, Unified gas-kinetic wave-particle methods I: Contin-uum and rarefied gas flow, Journal of Computational Physics 401 (2020) 108977. 
+
+doi:https://doi.org/10.1016/j.jcp.2019.108977 .24 [2] Y. Zhu, C. Liu, C. Zhong, K. Xu, Unified gas-kinetic wave-particle methods. II. Multiscale simulation on unstructured mesh, Physics of Fluids 31 (2019) 067105. 
+
+doi:https://doi.org/10.1063/1.5097645 .[3] X. Xu, Y. Chen, C. Liu, Z. Li, K. Xu, Unified gas-kinetic wave-particle meth-ods V: Diatomic molecular flow, Journal of Computational Physics 442 (2021) 110496. 
+
+doi:https://doi.org/10.1016/j.jcp.2021.110496 .[4] Y. Wei, Y. Zhu, K. Xu, Unified gas-kinetic wave-particle methods VII: Diatomic gas with rota-tional and vibrational nonequilibrium, Journal of Computational Physics 497 (2024) 112610. 
+
+doi:https://doi.org/10.1016/j.jcp.2023.112610 .[5] Y. Chen, Y. Zhu, K. Xu, A three-dimensional unified gas-kinetic wave-particle solver for flow computation in all regimes, Physics of Fluids 32 (9) (2020) 096108. 
+
+doi:https://doi.org/10.1063/5.0021199 .[6] X. Yang, C. Liu, X. Ji, W. Shyy, K. Xu, Unified gas-kinetic wave-particle methods VI: Disperse dilute gas-particle multiphase flow, Communications in Computational Physics 31 (3) (2022) 669–706. doi:https://doi.org/10.4208/cicp.OA-2021-0153 .[7] X. Yang, W. Shyy, K. Xu, Unified gas-kinetic wave-particle method for polydisperse gas-solid particle multiphase flow, Journal of Fluid Mechanics 983 (3) (2024) A37. 
+
+doi:https://doi.org/10.1017/jfm.2024.80 .[8] W. Li, C. Liu, Y. Zhu, J. Zhang, K. Xu, Unified gas-kinetic wave-particle methods III: Multiscale photon transport, Journal of Computational Physics 408 (2020) 109280. 
+
+doi:https://doi.org/10.1016/j.jcp.2020.109280 .[9] C. Liu, W. Li, Y. Wang, P. Song, K. Xu, An implicit unified gas-kinetic wave-particle method for radiative transport process, Physics of Fluids 35 (11) (2023) 112013. 
+
+doi:https://doi.org/10.1063/5.0174774 .[10] X. Yang, Y. Zhu, C. Liu, K. Xu, Unified gas-kinetic wave-particle method for frequency-dependent radiation transport equation, Journal of Computational Physics 522 (2025) 113587. 
+
+doi:https://doi.org/10.1016/j.jcp.2024.113587 .[11] C. Liu, K. Xu, Unified gas-kinetic wave-particle methods IV: multi-species gas mixture and plasma transport, Advances in Aerodynamics 3 (2021) 9. 
+
+doi:https://doi.org/10.1186/s42774-021-00062-1 .[12] Z. Pu, K. Xu, Unified gas-kinetic wave-particle method for multiscale flow simula-tion of partially ionized plasma, Journal of Computational Physics 530 (2025) 113918. 
+
+doi:https://doi.org/10.1016/j.jcp.2025.113918 .[13] Z. Pu, K. Xu, Electromagnetic flow control in hypersonic rarefied environment, Journal of Fluid Mechanics 1033 (2026) A37. doi:https://doi.org/10.1017/jfm.2026.11462 .[14] X. Yang, K. Xu, Wave-particle based multiscale modeling and simulation of non-equilibrium turbulent flows (2025). arXiv:2503.07207 .25 [15] X. Yang, K. Xu, Wave-particle turbulence simulation of spatially developing round jets: Turbulent flow modeling and method validation, Physics of Fluids 37 (10) (2025) 101706. 
+
+doi:https://doi.org/10.1063/5.0293211 .[16] K. Xu, Direct modeling for computational fluid dynamics: Construction and application of unified gas-kinetic schemes, World Scientific, 2015. [17] K. Xu, A unified computational fluid dynamics framework from rarefied to continuum regimes, Cambridge University Press, 2021. [18] K. Xu, A gas-kinetic BGK scheme for the Navier-Stokes equations and its connection with artificial dissipation and Godunov method, Journal of Computational Physics 171 (20) (2001) 289–335. doi:https://doi.org/10.1006/jcph.2001.6790 .[19] S. Liu, C. Zhong, M. Fang, Simplified unified wave-particle method with quantified model-competition mechanism for numerical calculation of multiscale flows, Physical Review E 102 (2020) 013304. doi:https://doi.org/10.1103/PhysRevE.102.013304 .[20] L. M. Yang, Z. H. Li, C. Shu, Y. Y. Liu, J. Wu, Discrete unified gas-kinetic wave-particle method for flows in all flow regimes, Physical Review E 108 (2023) 015302. 
+
+doi:https://doi.org/10.1103/PhysRevE.108.015302 .[21] W. Liu, C. Shu, C. J. Teo, Z. Y. Yuan, Y. Y. Liu, A simple hydrodynamic-particle method for supersonic rarefied flows, Physics of Fluids 34 (5) (2022) 057101. 
+
+doi:https://doi.org/10.1063/5.0088946 .[22] Z. Guo, Y. Zhu, K. Xu, Kinetic representation of the unified gas-kinetic wave-particle method and beyond, Communications in Computational Physics 39 (5) (2026) 1512–1535. 
+
+doi:https://doi.org/10.4208/cicp.OA-2024-0192 .[23] Z. Guo, K. Xu, Y. Zhu, A unified gas-kinetic framework from Boltz-mann to Navier-Stokes scales, Advances in Aerodynamics 8 (2026) 8. 
+
+doi:https://doi.org/10.1186/s42774-025-00252-1 .[24] K. Xu, J.-C. Huang, A unified gas-kinetic scheme for continuum and rar-efied flows, Journal of Computational Physics 229 (20) (2010) 7747–7764. 
+
+doi:https://doi.org/10.1016/j.jcp.2010.06.032 .[25] W. Long, Y. Wei, K. Xu, Nonequilibrium flow simulations using unified gas-kinetic wave-particle method, AIAA Journal 62 (4) (2024) 1411–1433. 
+
+doi:https://doi.org/10.2514/1.J063641 .[26] Y. Wei, J. Cao, X. Ji, K. Xu, Adaptive wave-particle decomposition in UGKWP method for high-speed flow simulations, Advances in Aerodynamics 5 (2023) 25. 
+
+doi:https://doi.org/10.1186/s42774-023-00156-y .[27] J. Cao, Y. Wei, W. Long, C. Zhong, K. Xu, Adaptive criterion and modification of wave-particle decomposition in UGKWP method for high-speed flow simulation, Computers &
+
+Fluids 305 (2026) 106896. doi:https://doi.org/10.1016/j.compfluid.2025.106896 .26 [28] E. H. Hirschel, C. Weiland, Selected aerothermodynamic design problems of hypersonic flight vehicles, Springer Berlin, 2009. [29] P. Andries, K. Aoki, B. Perthame, A consistent BGK-type model for gas mixtures, Journal of Statistical Physics 106 (2002) 993–1018. doi:https://doi.org/10.1023/A:1014033703134 .[30] M. Groppi, S. Monica, G. Spiga, A kinetic ellipsoidal BGK model for a binary gas mixture, Europhysics Letters 96 (6) (2011) 64002. 
+
+doi:https://doi.org/10.1209/0295-5075/96/64002 .[31] S. Brull, V. Pavan, J. Schneider, Derivation of a BGK model for mix-tures, European Journal of Mechanics - B/Fluids 33 (2012) 74–86. 
+
+doi:https://doi.org/10.1016/j.euromechflu.2011.12.003 .[32] S. Brull, An ellipsoidal statistical model for gas mixtures, Communications in Mathematical Sciences 13 (1) (2015) 1–13. doi:https://dx.doi.org/10.4310/CMS.2015.v13.n1.a1 .[33] B. N. Todorova, R. Steijl, Derivation and numerical comparison of Shakhov and Ellipsoidal Statistical kinetic models for a monoatomic gas mixture, European Journal of Mechanics -B/Fluids 76 (2019) 390–402. doi:https://doi.org/10.1016/j.euromechflu.2019.04.001 .[34] F. Hild, M. Pfeiffer, Multi-species modeling in the particle-based ellipsoidal statistical Bhatnagar-Gross-Krook method including internal degrees of freedom, Journal of Compu-tational Physics 514 (2024) 113226. doi:https://doi.org/10.1016/j.jcp.2024.113226 .[35] F. Fei, D. Liu, L. Xie, Z. Ren, Y. Hu, A unified stochastic particle method for polyatomic gas mixtures, Computer Physics Communications 321 (2026) 110029. 
+
+doi:https://doi.org/10.1016/j.cpc.2026.110029 .[36] F. J. McCormack, Construction of linearized kinetic models for gaseous mix-tures and molecular gases, Physics of Fluids 16 (12) (1973) 2095–2105. 
+
+doi:https://doi.org/10.1063/1.1694272 .[37] J. R. Haack, C. D. Hauck, M. S. Murillo, A conservative, entropic mul-tispecies BGK model, Journal of Statistical Physics 168 (2017) 826–856. 
+
+doi:https://doi.org/10.1007/s10955-017-1824-9 .[38] A. V. Bobylev, M. Bisi, M. Groppi, G. Spiga, I. F. Potapenko, A general consistent BGK model for gas mixtures, Kinetic and Related Models 11 (6) (2018) 1377–1393. 
+
+doi:https://doi.org/10.3934/krm.2018054 .[39] Q. Li, J. Zeng, L. Wu, Kinetic modelling of rarefied gas mixtures with disparate mass in strong non-equilibrium flows, Journal of Fluid Mechanics 1001 (2024) A5. 
+
+doi:https://doi.org/10.1017/jfm.2024.1047 .[40] Y. Zhang, L. Zhu, P. Wang, Z. Guo, Discrete unified gas kinetic scheme for flows of bi-nary gas mixture based on the McCormack model, Physics of Fluids 31 (1) (2019) 017101. 
+
+doi:https://doi.org/10.1063/1.5063846 .27 [41] J. Zeng, Q. Li, L. Wu, General synthetic iterative scheme for rarefied gas mixture flows, Journal of Computational Physics 519 (2024) 113420. 
+
+doi:https://doi.org/10.1016/j.jcp.2024.113420 .[42] R. Wang, Unified gas-kinetic scheme for the study of non-equilibrium flows, Ph.D. thesis, The Hong Kong University of Science and Technology (2015). [43] Y. Zhang, L. Zhu, R. Wang, Z. Guo, Discrete unified gas kinetic scheme for all Knudsen number flows. III. Binary gas mixtures of maxwell molecules, Physical Review E 97 (2018) 053306. doi:https://doi.org/10.1103/PhysRevE.97.053306 .[44] Z. Xin, Y. Zhang, Z. Guo, A discrete unified gas-kinetic scheme for multi-species rarefied flows, Advances in Aerodynamics 5 (2023) 5. 
+
+doi:https://doi.org/10.1186/s42774-022-00135-9 .[45] C. Liu, K. Xu, A unified gas kinetic scheme for continuum and rarefied flows V: Multiscale and multi-component plasma transport, Communications in Computational Physics 22 (5) (2017) 1175–1223. doi:https://doi.org/10.4208/cicp.OA-2017-0102 .[46] M. Quan, X. Yang, Y. Wei, K. Xu, Radiative hydrodynamic equations with nonequilibrium radiative transfer, Physical Review D 111 (2025) 103038. 
+
+doi:https://doi.org/10.1103/PhysRevD.111.103038 .[47] B. N. Todorova, C. White, R. Steijl, Numerical evaluation of novel kinetic models for binary gas mixture flows, Physics of Fluids 32 (1) (2020) 016102. 
+
+doi:https://doi.org/10.1063/1.5134040 .[48] E. M. Shakhov, Generalization of the Krook kinetic relaxation equation, Fluid Dynamics 3 (1968) 95–96. doi:https://doi.org/10.1007/BF01029546 .[49] X. Xu, Y. Chen, K. Xu, Modeling and computation for non-equilibrium gas dynamics: Beyond single relaxation time kinetic models, Physics of Fluids 33 (1) (2021) 011703. 
+
+doi:https://doi.org/10.1063/5.0036203 .[50] G. A. Bird, Molecular gas dynamics and the direct simulation of gas flows, Clarendon Press, 1994. [51] F. Fei, A Navier-Stokes asymptotic preserving direct simulation Monte Carlo method for multi-species gas flows, Journal of Computational Physics 538 (2025) 114196. 
+
+doi:https://doi.org/10.1016/j.jcp.2025.114196 .[52] L. Luo, J. Zeng, Y. Zhang, W. Li, Q. Li, L. Wu, Enhancing DSMC sim-ulations of rarefied gas mixtures using a fast-converging and asymptotic-preserving scheme, Computer Methods in Applied Mechanics and Engineering 449 (2026) 118508. 
+
+doi:https://doi.org/10.1016/j.cma.2025.118508 .[53] P. L. Bhatnagar, E. P. Gross, M. Krook, A model for collision processes in gases. I. Small amplitude processes in charged and neutral one-component systems, Physical Review Journals Archive 94 (1954) 511–525. doi:https://doi.org/10.1103/PhysRev.94.511 .28 [54] S. Weissman, E. A. Mason, Determination of gaseous-diffusion coefficients from vis-cosity measurements, The Journal of Chemical Physics 37 (6) (1962) 1289–1300. 
+
+doi:https://doi.org/10.1063/1.1733277 .[55] C. R. Wilke, A viscosity equation for gas mixtures, The Journal of Chemical Physics 18 (4) (1950) 517–519. doi:https://doi.org/10.1063/1.1747673 .[56] V. A. Wassiljewa, Wärmeleitung in gasgemischen, Physikalische Zeitschrift 5 (1904) 737–742. [57] E. A. Mason, S. C. Saxena, Approximate formula for the thermal conductivity of gas mixtures, The Physics of Fluids 1 (5) (1958) 361–369. doi:https://doi.org/10.1063/1.1724352 .[58] B. E. Poling, J. M. Prausnitz, J. P. O’Connell, The properties of gases and liquids, McGraw-Hill Education, 2001. [59] G. May, B. Srinivasan, A. Jameson, An improved gas-kinetic BGK finite-volume method for three-dimensional transonic flow, Journal of Computational Physics 220 (2) (2007) 856–878. 
+
+doi:https://doi.org/10.1016/j.jcp.2006.05.027 .[60] K. Xu, Gas-kinetic schemes for unsteady compressible flow simulations, in: 29th CFD Lecture Series 1998-03 von Kárman Institute for Fluid Dynamics, Belgium, 1998. [61] S. Liu, Y. Yang, C. Zhong, An extended gas-kinetic scheme for shock structure calculations, Journal of Computational Physics 390 (2019) 1–24. 
+
+doi:https://doi.org/10.1016/j.jcp.2019.04.016 .[62] S. Liu, C. Zhong, Investigation of the kinetic model equations, Physical Review E 89 (2014) 033306. doi:https://doi.org/10.1103/PhysRevE.89.033306 .[63] K. Xu, J.-C. Huang, An improved unified gas-kinetic scheme and the study of shock structures, IMA Journal of Applied Mathematics 76 (5) (2011) 698–711. 
+
+doi:https://doi.org/10.1093/imamat/hxr002 .[64] S. Kosuge, K. Aoki, S. Takata, Shock-wave structure for a binary gas mixture: finite-difference analysis of the Boltzmann equation for hard-sphere molecules, European Journal of Mechanics - B/Fluids 20 (1) (2001) 87–126. doi:https://doi.org/10.1016/S0997-7546(00)00133-3 .[65] M. T. Ho, L. Wu, I. Graur, Y. Zhang, J. M. Reese, Comparative study of the Boltzmann and McCormack equations for Couette and Fourier flows of binary gaseous mixtures, International Journal of Heat and Mass Transfer 96 (2016) 29–41. 
+
+doi:https://doi.org/10.1016/j.ijheatmasstransfer.2015.12.068 .29

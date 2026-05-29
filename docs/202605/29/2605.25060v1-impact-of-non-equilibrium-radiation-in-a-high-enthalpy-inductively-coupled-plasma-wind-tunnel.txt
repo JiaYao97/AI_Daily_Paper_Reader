@@ -1,0 +1,544 @@
+Title: Impact of non-equilibrium radiation in a high-enthalpy inductively coupled plasma wind tunnel
+
+URL Source: https://arxiv.org/pdf/2605.25060v1
+
+Published Time: Tue, 26 May 2026 01:17:52 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+# Impact of non-equilibrium radiation in a high-enthalpy inductively coupled plasma wind tunnel 
+
+Sanjeev Kumar 1,∗, Sung Min Jo 2,∗, Alessandro Munaf` o1,3 and Marco Panesi 1,3,∗∗ 
+
+> 1
+
+Center for Hypersonics and Entry Systems Studies (CHESS), University of Illinois Urbana-Champaign, Urbana, IL 61801, USA 
+
+> 2
+
+UCF Center of Excellence in Hypersonics and Space Propulsion (HYPERSPACE), Department of Mechanical and Aerospace Engineering, University of Central Florida, Orlando, FL 32816, USA 
+
+> 3
+
+Department of Mechanical and Aerospace Engineering, University of California Irvine, Irvine, CA 92697, USA 
+
+> ∗
+
+The two authors contributed equally to this paper. 
+
+> ∗∗
+
+Corresponding author (mpanesi@uci.edu). 
+
+Abstract. High-power inductively coupled plasma (ICP) wind tunnels are widely used to reproduce high-enthalpy environments relevant to atmospheric entry and hypersonic testing. Despite their importance, radiative heat transfer in ICP facilities is commonly neglected or modeled using simplified optically thin assumptions, and the impact of non-equilibrium radiation on plasma dynamics remains poorly quantified. In this work, a loosely coupled, multi-physics framework is developed to systematically investigate radiative cooling effects in the 350 kW Plasmatron X facility at the University of Illinois Urbana-Champaign. The approach self-consistently couples a magnetohydrodynamic plasma framework with a spectral radiative transport solver, eliminating the need for optically thin or empirical models. Simulations are performed for nitrogen and air plasmas over a wide range of operating pressures (1–101 kPa) and powers (100–350 kW). The results reveal a strong pressure dependence of radiative losses, with radiation contributing negligibly at low pressures, but becoming a dominant energy sink at elevated pressures. At atmospheric pressure, radiative losses account for up to approximately 32% and 22% of the input power for nitrogen and air plasmas, respectively, leading to substantial reductions in core plasma temperatures. Nitrogen plasmas consistently exhibit higher radiative losses than air as a result of increased concentrations of radiatively active species and higher electron number densities. Pressure–power maps of radiative heat loss relative to input power are constructed to quantify combined operating effects and to provide guidance for facility operation and modeling fidelity. Finally, an assessment of self-absorption demonstrates that the Plasmatron X torch operates predominantly in an optically thin regime, even at the highest power and pressure conditions considered. 
+
+Keywords : Inductively coupled plasma, Radiative cooling, Multi-physics coupling, Hypersonics 
+
+> arXiv:2605.25060v1 [physics.plasm-ph] 24 May 2026
+
+2
+
+1. Introduction 
+
+High-power inductively coupled plasma (ICP) discharges are widely utilized across industry and academia to generate large plasma volumes for a wide range of possible applications. The appeal of ICPs lies in their capacity for extended testing durations and the absence of contact elements, such as electrodes, facilitating contamination-free plasma generation [1]. Consequently, ICPs are typically favored over arc jets for examining thermal protection systems (TPS) in atmospheric entry vehicles. Accurate modeling of plasma dynamics within ICP facilities is thus paramount for supporting experimental efforts. Simulations of ICP discharges commonly assume Local Thermodynamic Equilibrium (LTE) conditions, where the time-scale of chemical reactions is small as compared to the flow time-scale [2–9]. Under this assumption, all the plasma properties ( e.g., composition, thermodynamic and transport properties) become a function of two independent state variables ( e.g., p and T, correspondingly pressure and temperature), which drastically reduce the computational cost. To describe non-equilibrium flows, two-temperature (2T) models are widely used in the hypersonics community [10–12]. This model assumes fast equilibration between the heavy-species translational and the rotational energy modes, while the heavy-species electronic and vibrational energy modes are assumed to be in equilibrium with the translational energy of the free electrons. Application of the 2T model to ICP simulations can also be seen in literature [13–19] which reveal a significant non-Local Thermodynamic Equilibrium (NLTE) effect in the plasma and its impact on the plasma thermal and flow field. Hence, accurate modeling of non-equilibrium effects in these facilities is of utmost importance in predicting the state of the plasma. Physically consistent modeling of radiation presents a significant challenge in ICP simulations. Incorporating radiation requires coupling hydrodynamics-governing equations, such as Navier-Stokes, with the Radiative Transport Equation (RTE), which captures the space-time evolution of monochromatic intensity due to light emission, absorption, and scattering. This introduces substantial computational complexities since plasma optical properties are strongly dependent on wavelength, solid angle, and spatial coordinates. As a result, all the existing ICP models conveniently assume that radiative losses are optically thin [3, 8, 20–22]. When the plasma is assumed optically thin, radiation acts locally and may be readily taken into account via a sink term in the energy equation. The latter may be evaluated via curve-fits obtained based on experiments and/or theoretical calculations [23–25]. The use of the optically thin assumption, though suitable for continua, is rarely valid for spectral lines [26]. Further, these curve-fits may not be available for a variety of gases and for various operating conditions. Moreover, radiative effects in air ICPs at sub-atmospheric pressures have generally been neglected in the literature based on experimental evidence [27, 28]. However, these experiments are limited to very small diameter air plasmas (e.g. , 2-8 mm) and necessitate careful assessment for larger plasma configurations such as the one considered in this work. The main reason for the above simplifying assumptions being commonly used for 3modeling radiative effects in ICPs in the past was the computationally expensive nature of radiation solvers relying on a line-by-line method. However, recent improvements in computing power and radiative modeling efficiency have made it possible to fully couple the Navier-Stokes with RTE. Applications of the fully coupled NS-RTE approach have been widely reported in the hypersonics community to study radiative heat effects in the flow around atmospheric re-entry vehicles [29–38]. However, as per the authors’ knowledge, there have been no reports on radiation-CFD coupling for ICP modeling. This motivates the aim of this paper, which is to study the radiative heat effects in an ICP torch using a coupled radiation-CFD approach without resorting to any simplifying assumptions such as optically thin plasma. This work presents a systematic study of radiative heat effects in the 350 kW Plasmatron X facility at the University of Illinois Urbana-Champaign for a broad spectrum of operating conditions for air and nitrogen mixtures. The paper is organized as follows: Section 2 describes the physical model for the plasma, the electromagnetic field, and the radiation. Section 3 describes the multi-physics coupled framework used in the work, where the main features of the three solvers are also provided. Section 4 describes the Plasmatron X facility and simulation setup. Results are presented and discussed in Section 5. Finally, conclusions and future work are summarized in Section 6. 
+
+2. Physical Modeling 
+
+This section presents the magnetohydrodynamic (MHD) model employed to simulate ICP discharges in this study. The model accounts for non-equilibrium plasma behavior, the self-consistent electromagnetic fields induced by the inductor coils, and the radiative heat transfer processes within the plasma domain. 
+
+2.1. Plasma 
+
+The plasmas treated in this work are modeled as a collection of neutral and charged components/species ( e.g. , e −, N 2, O +), each behaving as an ideal gas. It is further assumed that the plasma is globally and locally neutral as well as collision-dominated, such that the use of a hydrodynamic description is appropriate [1]. In addition, the internal degrees of freedom for the molecular gaseous components are treated in a decoupled manner by using rigid-rotor and harmonic oscillator assumptions [39]. Thermal and chemical non-equilibrium effects in plasma are modeled using the Park two-temperature model [11,12], where the internal states are assumed to follow a Maxwell-Boltzmann distribution at a specific temperature. Here, thermal equilibrium is assumed between the rotational and translational degrees of freedom (Th = Ttr = Tr) of heavy particles, and between the free electrons, electronic, and vibrational energy modes ( Te = Tel = Tv). Under the above assumptions, the hydrodynamics of the plasma is governed by the mass continuity, global momentum, total energy, and vibronic energy conservation equations 4[40–42]: 
+
+∂ρ s
+
+∂t + ∇ · [ρs (v + Us)] = ˙ ωc 
+
+> s
+
++ ˙ ωr 
+
+> s
+
+, s ∈ S , (1) 
+
+∂ρ v
+
+∂t + ∇ · (ρvv + pI) = ∇ · τ + J × B, (2) 
+
+∂ρ E
+
+∂t + ∇ · (ρH v) = ∇ · (τ v − q) − Ωr + J · E′, (3) 
+
+∂ρe ve 
+
+∂t + ∇ · (ρe ve v) = −∇ · qve − pe∇ · v + Ω c 
+
+> ve
+
+− Ωr + J · E′, (4) where S denotes the set of species, whereas the ve lower-script is introduced to distinguish between contributions for the sole vibronic degrees of freedom from those referring to the plasma as a whole. The symbols in the governing equations (1)-(4) have their usual meanings: 
+
+t denotes time, ρ and v the mass density and mass-averaged velocity, respectively; ρs and 
+
+Us the partial density and diffusion velocity of species s; pe the pressure of free-electrons; 
+
+E = e + v · v/2 and H = E + p/ρ the total energy and total enthalpy per unit-mass, where e is the mixture thermal energy per unit-mass; τ the stress tensor; q the heat flux vector; ˙ ωc 
+
+> s
+
+and ˙ωr 
+
+> s
+
+the mass production rates due to collisional ( c) and radiative ( r) processes, respectively, with the corresponding energy exchange terms being Ω c and Ω r; J the conduction current density; E and B the electric field and the magnetic induction, respectively; E′ = E + v × B
+
+the electric field in the hydrodynamic frame. More details on the calculation of ˙ ωs, Ω c
+
+> ve
+
+, as well as on the evaluation of thermodynamic and transport properties, can be found in [18, 43]. The expression for Ω r is detailed in Section 2.3. 
+
+2.2. Electromagnetic field 
+
+Electromagnetic phenomena inside ICPs are governed by Maxwell’s equations [41]. A detailed derivation of the governing equations for the electromagnetic field within ICPs can be found in [18]. Here, only the main expressions are summarized for the sake of completeness and brevity. For a two-dimensional axi-symmetric configuration, and assuming that in steady-state all variables undergo harmonic oscillations ( e.g., E(r, z, t ) = ˜E(r, z ) exp ( ıωt )), the equation governing the spatial dependence of the induced electric field consists of a scalar equation for its toroidal component: 
+
+∂∂r 
+
+1
+
+r∂r ˜E∂r 
+
+!
+
++ ∂2 ˜E∂z 2 − ıωμ 0σ ˜E = ıωμ 0 ˜Js, (5) where r and z are the radial and axial coordinates, respectively. The electric field amplitude is assumed complex ( i.e. , phasor) ˜E = ˜ER + ı ˜EI, where the subscripts R and I refer to its real and imaginary components, respectively, while ı = √−1 denotes the imaginary unit. The angular frequency of the current flowing through the inductor is ω = 2 πf . The symbol 5˜Js represents the current density contribution of the inductor coils. The magnetic induction phasor ( ˜B = ˜BR + ı ˜BI) is obtained from Faraday’s law, and reads: ˜BR = 1
+
+ω∂ ˜EI
+
+∂z er − 1
+
+ωr ∂r ˜EI
+
+∂r ez , (6) ˜BI = − 1
+
+ω∂ ˜ER
+
+∂z er + 1
+
+ωr ∂r ˜ER
+
+∂r ez , (7) where ez and er denote the axial and radial unit vectors, respectively. In general, ICP facilities operate at frequencies on the order of a few megahertz. Consequently, over one period of the driving frequency (1/f), the plasma can be considered to experience a time-averaged Lorentz force and Joule heating [14]: 
+
+⟨J × B⟩z = −12σℜ
+
+h ˜E ˜B∗
+
+> r
+
+i
+
+, (8) 
+
+⟨J × B⟩r = 12σℜ
+
+h ˜E ˜B∗
+
+> z
+
+i
+
+, (9) 
+
+⟨J · E⟩ = 12σ ˜E ˜E∗, (10) where k∗ and ℜ(k) denote, respectively, the complex conjugate and the real part of k, while ˜Br
+
+and ˜Bz are, respectively, the radial and axial components of the magnetic induction phasor. 
+
+2.3. Radiation 
+
+The transport of radiation within a plasma can be modeled using the radiative transport equation (RTE). This equation describes the temporal, spatial, directional, and spectral dependence of the monochromatic intensity as a result of emission, absorption, and scattering. For a two-dimensional axi-symmetric configuration and assuming steady-state and no scattering, the RTE reads: 1
+
+r∂∂r [μrI λ(r, s)] + ∂∂z [ξI λ(r, s)] − 1
+
+r∂∂ϕ [δI λ(r, s)] = −κλ(r)Iλ(r, s) + ϵλ (r) , (11) where μ, ξ, and δ are the direction cosines of the path s; r the spatial position; Iλ, κλ,and ϵλ the monochromatic intensity, absorption, and emission coefficients, respectively, at the wavelength λ. The optical properties of the plasmas ( e.g. , ϵλ) are evaluated via a Line-by-Line (LBL) method, followed by order-reduction using a Multi-Band Opacity Binning (MBOB) approach [32, 44–46]. In the present study, the radiating species are: N, O, N 2, N +2 , and O 2. For atoms, bound-bound, bound-free, and free-free transitions are considered. In addition to the bound-free and the free-free transitions of the neutral atoms, the continuum radiation generated by the photo-detachment of atomic negative ions is also considered. This is because the amount of the photo-detachment continuum is comparable to that of the bound-free radiation under high-enthalpy air conditions [45]. In modeling atomic continuum radiation, the photo-ionization edge shift is taken into account following the work by Nicolet [47]. For molecules, 6Table 1: Molecular band systems of the present radiation model. System Range Reference N2
+
+B3Πg − A3Σ+ 
+
+> u
+
+Visible [48] C3Πu − B3Πg UV [48] c′4Σ+ 
+
+> u
+
+− X1Σ+ 
+
+> g
+
+VUV [49, 50] c′13 Πu − X1Σ+ 
+
+> g
+
+VUV [49, 50] b1Πu − X1Σ+ 
+
+> g
+
+VUV [49, 50] b′1Σ+ 
+
+> u
+
+− X1Σ+ 
+
+> g
+
+VUV [49, 50] o13Πu − X1Σ+ 
+
+> g
+
+VUV [49, 50] N+2
+
+B2Σ+ 
+
+> u
+
+− X2Σ+ 
+
+> g
+
+Visible [48] A2Πu − X2Σ+ 
+
+> g
+
+Visible [49] C2Σ+ 
+
+> u
+
+− X2Σ+ 
+
+> g
+
+UV [51] NO B2Πr − X2Πr UV [48] A2Σ+ − X2Πr UV [48] C2Πr − X2Πr UV [48] D2Σ+ − X2Πr UV [48] B′2∆ − X2Πr VUV-UV [48] E2Σ+ − X2Πr VUV-UV [48] O2
+
+B3Σ− 
+
+> u
+
+− X3Σ+ 
+
+> g
+
+UV [48] band systems ranging from vacuum ultraviolet (VUV) to near-infrared (IR) are taken into account, as summarized in Table 1. For non-Boltzmann radiation calculations, the population of excited electronic states is computed assuming a quasi-steady-state (QSS) for simplicity. This approximation transforms the electronic master equations into a set of algebraic equations. The needed electronic state-resolved rate coefficients, such as those for electron and heavy-particle impact excitation, are taken from previous studies from one of the authors [36, 45]. As a result, the i-th electronic (e.g. , emitting) state population with the non-Boltzmann effect ni, NB is defined as: 
+
+ni, NB = ni, B
+
+ρi
+
+χ , (12) where the subscripts NB and B denote the non-Boltzmann and Boltzmann state populations, respectively, while ρi and χ are the normalized state population and the normalized species density, respectively, corresponding to the equilibrium state at a given set of flow properties. In this work, the RTE (Eq. (11)) is solved using a finite-volume method for radiative 7transfer. The discretization is performed by defining a median-dual control volume around a nodal point on an unstructured grid topology. The intensity flux component across a control volume face is evaluated using the step scheme [52], which corresponds to a first-order upwind approximation. To avoid control angle overlap in the non-orthogonal grid topology, a bold approximation [53] is applied. The discretized system of equations is then solved using the gmres [54] (General Minimal Residual) algorithm. Once Eq. (11) is solved, the net volumetric power loss due to radiation follows from integration of the intensity over the solid angles and the wavelength: Ωr =
+
+Z ∞
+
+> 0
+
+κλ
+
+
+
+4πB λ −
+
+I
+
+Iλ dΩ
+
+
+
+dλ, (13) where Bλ denotes the Planck function. When the plasma is considered optically thin, the second term on the right-hand side of the above equation is omitted. 
+
+3. Computational Framework 
+
+The simulations in this study utilize a multi-solver coupled numerical framework for ICP wind tunnels, as detailed in [18], which serves as the foundational platform for the present work and will be referred to as the base ICP framework. Here, only a concise overview of the latter framework is provided to contextualize the novel contributions of this work. The flow governing equations are solved in a block-structured finite volume (FV) solver, hegel (High fidElity tool for maGnEtogas-dynamic appLications) [55], and the electromagnetic (EM) field is solved in a mixed finite element (FE) solver, flux (Finite-element soLver for Unsteady electromagnetiX) [56]. hegel is coupled with the plato 
+
+library [43], which takes care of the evaluation of thermodynamic and transport properties as well as mass and energy transfer source terms due to collisional chemical-kinetics processes. The plasma and the electromagnetic field are coupled through the Lorentz force ( J × B) and Joule heating ( J·E) terms in the fluid momentum equation and energy equations, respectively, and the electrical conductivity ( σ) in the induction equation. This interaction between the plasma and the electromagnetic solver enables the accurate simulation of intricate magnetohydrodynamic phenomena within ICP wind tunnels. The coupling between hegel 
+
+and flux occurs throughout the plasma domain, and both solvers require matching grids within the torch region. To extend the capability of the base ICP framework to study radiation transport effects, an in-house radiation solver, murp (MUlti-fidelity Radiation Package) [32], has been coupled to hegel . murp is a finite volume solver, which supports integration of RTE in one-, two-, and three-dimensional spatial grid topologies. It computes the radiative heat source term Ω R
+
+for the given flow quantities, such as the plasma composition and temperatures from hegel ,and communicates it back to hegel . As for the coupling with flux , the two solvers require matching grids in the region of overlap. Fig. 1 shows the overall coupling framework used in this work. 8
+
+Figure 1: Flowchart of the coupling framework used in this work. 
+
+4. Problem description and simulation setup 
+
+Figure 2: Geometry of the Plasmatron X torch [57]. The previously described multi-physics computational framework is applied to analyze the 350 kW Plasmatron X facility at UIUC. Fig. 2 presents a schematic of the torch section [19, 57]. The torch design features two distinct gas injection arrangements: a central injector containing 15 holes oriented downward at 15 ◦ and imparts a 24 ◦ swirl, and a sheath injector consisting of 72 axially aligned holes. In the computational model, these injectors are simplified as continuous annular inlets. For all simulations, the mass flows are maintained at 0.86 g /s for the central injector and 7 .13 g /s for the sheath gas. Of the three nozzle geometries available in the Plasmatron X facility, one straight and two converging-diverging, this work considers only the straight configuration. This nozzle, placed downstream of the torch, has a length of 129 .54 mm and a diameter of 100 mm. The induction system features a three-turn 9coil with a rectangular cross-section. For two-dimensional axisymmetric simulations, the coils are represented as parallel loops to preserve axial symmetry. Each coil turn is treated as an infinitesimally thin ring positioned at the inner boundary of the coil cross-section, which is a valid assumption since the skin effect causes most of the current to concentrate near this region [58, 59]. The current distribution across the Nc coil turns is modeled using a point-source approximation. ˜Js = J0 exp ( iωt )
+
+> Nc
+
+X
+
+> i=1
+
+δ(r − ri) eθ, (14) where ri is the location of the center of the i-th coil; δ is Dirac’s delta function; and e θ is the unit vector along the toroidal direction. All simulations are conducted at a fixed coil operating frequency of 2 .1 MHz. It is important to note that, in actual facility operation, only a fraction of the supplied power is transferred to the plasma. This reduction arises from various losses such as imperfect electromagnetic coupling between the induction coils and the plasma, resistive losses in the coils, and inefficiencies in the matching network. Consequently, all power values presented in this study are reported together with the corresponding overall efficiency, η, defined as 
+
+η = ( P − Ploss )/P (15) where P is the nominal power and Ploss the sum of all power losses. Consequently, the actual power delivered to the plasma (and which is prescribed in the simulations) is Pin = ηP .
+
+4.1. Domain and grids 
+
+The computational domain for hegel and murp includes the torch section along with the straight nozzle. For the sake of brevity, in what follows, the torch-nozzle assembly will be simply referred to as torch. A block-structured grid for hegel and murp , shown in Fig. 3, has been used for all simulations. The grid consists of around 20 550 cells, which was found to be sufficient to provide grid-converged solutions. The computational domain for flux includes the torch as well as the farfield region (refer Fig. 4), and consists of around 41 000 elements. 
+
+4.2. Boundary conditions 4.2.1. Plasma The plasma governing equations are solved by imposing the following boundary conditions: 
+
+• inlet (subsonic): 
+
+ρu = ˙mz
+
+A , ρv = ˙mr
+
+A , ρw = ˙mθ
+
+A , ys = ya,s , ∂p ∂x = 0 , Th = Ta and Tve = Ta,
+
+where u, v, and w represent the axial, radial, and swirl velocity components; A the injector area; and ys the mass fraction of species s. The a subscript denotes ambient conditions. 10 Torch Straight nozzle Connecto r
+
+Figure 3: Torch mesh (with nozzle) for the hegel and flux .
+
+Figure 4: EM solver mesh. The mesh domain highlighted in green overlaps with the plasma solver mesh. Coil locations are marked in red. 
+
+• centerline (symmetry): 
+
+∂ρ s
+
+∂r = ∂u ∂r = ∂p ∂r = 0 and v = w = 0 .
+
+• walls (isothermal and non-catalytic): 
+
+u = v = w = 0 , Th = Tw and Tve = Tw.
+
+• outlet (subsonic): 
+
+p = pa.
+
+In all simulations, Tw and Ta are set to 300 K. 
+
+4.2.2. Electromagnetic field The electric field is zero on the axis and at large distance from the coils and the plasma ( i.e. , farfield): E(z, 0) = 0 , E(z, ∞) = 0 , E(±∞ , r ) = 0. 
+
+4.2.3. Radiation The RTE is solved by imposing the following boundary conditions: 
+
+• walls (diffusely emitting and reflecting): 
+
+Iλ (rw, s) = εwBλ (rw) + 1 − εw
+
+π
+
+Z
+
+> s′·nw<0
+
+Iλ (rw, s′) |s′ · nw| dΩ′ for s · nw > 0,11 where nw is the wall outgoing unit normal. 
+
+• inlet and outlet (vacuum): 
+
+Iλ (r, s) = 0 for s · nv < 0,
+
+where the v subscript denotes the inlet/outlet outgoing unit normal. 
+
+5. Results 
+
+5.1. General features of the discharge 
+
+A two-dimensional axisymmetric calculation, using a simplified geometry of the torch, has been performed by means of the Park two-temperature NLTE model to illustrate the general features of the discharge inside the Plasmatron X torch. The operating conditions are as follows: pressure 5 kPa, power 200 kW, and efficiency 50%. All other parameters ( e.g. , frequency, mass flows) are fixed and retain the same values as mentioned in Section 4. The working gas is air modeled using an eleven-species mixture: (S = e−, N2, O2, NO , N, O, N+2 , O+2 , NO +, N+, O+ ). Kinetic data are taken from [12]. Radiative losses are neglected.  
+
+> (a) (b)
+
+Figure 5: Plasma field inside the Plasmatron X torch. (a) Top: heavy-species temperature Th, bottom: electro-vibrational temperature T ve , and (b) top: streamlines, bottom: axial velocity. ( pa = 5 kPa, P = 200 kW, η = 50%). Fig. 5 shows the plasma field (axial velocity and temperature contours) inside the torch. The streamlines highlight a large recirculation eddy close to the inlet, representing a typical vortex-mode discharge. As reported in the literature [8, 60, 61], this phenomenon plays a crucial role in maintaining the discharge. The recirculation bubble carries the hot plasma from the inductor zone back towards the inlet, preventing the plasma from getting swept away by the flow. The plasma is suspended in the middle of the inductor zone, shielded from the tube by a layer of cold fluid coming from the sheath gas injector. Fig. 6 illustrates the distribution of Joule heating and Lorentz forces, predominantly concentrated in the coil region. Joule heating in this region raises the temperature of the incoming cold gas, forming a hot plasma core. Additionally, as shown in Fig. 6 (b), the radial Lorentz force is directed towards the axis (as indicated by the negative sign of the values), ensuring that the hot 12 x [m]  
+
+> r [m]
+> (a) x [m]
+> r [m] (b)
+
+Figure 6: Distribution of the electromagnetic quantities inside the torch. (a) Joule heating, (b) Lorentz forces (top: radial component, bottom: axial component). (pa = 5 kPa, 
+
+P = 200 kW, η = 50%). 0 0.01 0.02 0.03 0.04 0.05 02000 4000 6000 8000 10000 12000       
+
+> (a) 00.01 0.02 0.03 0.04 0.05 02000 4000 6000 8000 10000 12000 (b)
+
+Figure 7: Radial temperature profiles obtained using the NLTE and LTE simulations. (a) x = 0 .15 m (mid-torch location), and (b) torch outlet. ( pa = 5 kPa, P = 200 kW, η = 50%). plasma is pushed towards the axis. Meanwhile, the axial component of the Lorentz force, acting in the negative x-direction around x = 0 .2 m, draws the plasma back towards the inlet. The interplay between the swirling injector and Lorentz forces ultimately generates the large recirculation bubble, stabilizing the plasma discharge. The temperature field highlights significant non-equilibrium between the translational and the electro-vibrational modes in the coil region, as shown in Fig. 7. At low pressures, such as those considered here, the low electron-heavy collisional frequency is insufficient to establish and maintain thermal equilibrium, especially in the coil region, where the energy deposition is maximum. Away from the coils, thermal equilibrium between the translational 13 0 0.01 0.02 0.03 0.04 0.05 02468 10 8      
+
+> (a) 00.01 0.02 0.03 0.04 0.05 -10000 -8000 -6000 -4000 -2000 0(b)
+
+Figure 8: LTE and NLTE radial profiles of Joule heating and Lorentz force at x = 0 .15 m (coil region). ( pa = 5 kPa, P = 200 kW, η = 50%). and the electro-vibrational modes is observed. However, the effect of NLTE plasma formation propagates towards the outlet. As a result, the NLTE temperature distributions differ significantly from those obtained under the LTE assumption. This observation is in line with the findings reported in refs. [17, 62], and highlights the importance of using a correct physico-chemical model depending on the operating conditions. Fig. 8 further investigates the Joule heating and Lorentz Force distributions inside the torch. The Joule heating profiles at the mid-torch location reveal that the heating profile is thicker in the case of the NLTE simulation. Hence, a larger volume of plasma is heated by the inductor for the same power, causing the peak temperature to drop significantly from the LTE simulation. Moreover, the location of the maximum departure between Th and Tve occurs at the location of the Joule heating peak ( i.e. , r = 0 .04 m), which further confirms the role of inductor coils in creating non-equilibrium plasma. 
+
+5.2. Effect of radiation coupling 
+
+Having discussed the general features of the baseline discharge, we now turn to the main focus of this work, which is the study of the influence of radiative cooling. 
+
+5.2.1. Simulation setup for radiation-coupled simulations Radiation-coupled simu-lations were performed for two mixtures: nitrogen (e −, N2, N, N2+, N+) and air (e −, N2, O2, NO , N, O, N+2 , O+2 , NO +, N+, O+). Since the impact of radiation losses strongly depend on pressure, due to its dependence on the number densities of radiating species [23–25, 63], simulations were first conducted at different pressures: 1 kPa, 5 kPa, 10 kPa, 30 kPa, and 101 kPa, while keeping the operating power fixed at 200 kW, to analyze the im-14 pact of radiation cooling at different pressures. The efficiency for all cases has been set to 50 %. All other operating conditions retain the same values as in Section 4. Data exchange between hegel and murp was performed every 10000 hegel time-steps ( i.e. , iterations), and 10-12 couplings were found to be sufficient to obtain a converged solution in all the cases. The wavelength domain, ranging from 200 nm to 1000 nm, was evenly subdivided (in the frequency domain) using 600 001 spectral points at every spatial location, while the 4 π-sr of the solid angle was discretized into 16 ×32 polar and azimuthal angles, respectively. Once the plasma optical properties were evaluated based on the LBL approach (with non-Boltzmann correction, if needed), model reduction was carried out using the MBOB algorithm. The MBOB method divides the entire spectral range into a given number of bands (N BAND ), and then the spectral points within a given band are further decomposed into a given number of bins (N BIN ). As a result, the RTE is solved N BAND ×NBIN times for a given control volume and a given direction. This approach leads to good performance for molecular bands. For atomic line radiation, the accuracy could be improved by varying the way the band-bin structures are constructed [64]. For the conditions adopted in this work, a convergence study revealed that 20 bands and 20 bins essentially led to the same results as those obtained using the LBL method for quantities of interest such as temperature and chemical composition. 
+
+5.2.2. Nature of radiative heat loss distribution in the torch Figs. 9 and 10 present the distributions of Joule heating and radiative heat loss within the torch at different operating pressures for nitrogen and air plasmas, respectively. The Joule heating distribution is primarily governed by the spatial distribution of the electric field and electrical conductivity, and is consistently concentrated in the coil region where the electric field intensity is maximum. In contrast, the radiative heat loss distribution exhibits a marked dependence on pressure, as evidenced by the contour plots. The variation in radiative loss distribution with pressure can be explained by Fig. 11, which displays the distribution of the electron concentration and electro-vibrational temperature for air at 1 kPa and 30 kPa. It can be clearly seen that the radiative cooling distributions at the two pressures strongly follow the 
+
+Xe and Tve distributions, a trend also observed for nitrogen. This observation agrees with the theoretical results in ref. [25], where the optically thin radiative loss term in air plasmas was found to be strongly dependent on electron temperature and number density. Nevertheless, an assessment of whether the plasma in the Plasmatron X torch operates in an optically thin or thick regime is presented in Section 5.2.6, following the definition of the relevant characterization parameters. 
+
+5.2.3. Quantification of the total radiative power loss To quantify the contribution of radiative cooling, the radiative heat loss distribution was integrated over the entire torch 
+
+QRad =
+
+Z
+
+ΩRdV. (16) 15 
+
+(a) Ω J peak = 680 MW /m3, Ω R peak = 8 .1 MW /m3 (b) Ω J peak = 810 MW /m3, Ω R peak = 5 .2 MW /m3
+
+(c) Ω J peak = 840 MW /m3, Ω R peak = 17 .1 MW /m3 (d) Ω J peak = 560 MW /m3, Ω R peak = 44 MW /m3
+
+Figure 9: Radiative heat loss and Joule heating distribution normalized by corresponding peak values for nitrogen plasma: (a) 1 kPa, (b) 5 kPa, (c) 10 kPa and (d) 30 kPa, all at a fixed operating power of 200 kW (with η = 50%). Top: Ω R, bottom: Ω J.
+
+(a) Ω J peak = 680 MW /m3, Ω R peak = 7 .4 MW /m3 (b) Ω J peak = 810 MW /m3, Ω R peak = 2 .1 MW /m3
+
+(c) Ω J peak = 840 MW /m3, Ω R peak = 11 .5 MW /m3 (d) Ω J peak = 560 MW /m3, Ω R peak = 32 .7 MW /m3
+
+Figure 10: Radiative heat loss and Joule heating distribution normalized by corresponding peak values for air plasma: (a) 1 kPa, (b) 5 kPa, (c) 10 kPa and (d) 30 kPa, all at a fixed operating power of 200 kW (with η = 50%). Top: Ω R, bottom: Ω J.In ICP simulations, the Joule heating distribution integrated over the torch volume represents the input power ( i.e., operating power × η) provided to the plasma via coils: 
+
+Pin = QJ =
+
+Z
+
+ΩJ dV. (17) 16  
+
+> (a) (b)
+
+Figure 11: Distribution of electron mole-fraction Xe and electro-vibrational temperature Tve 
+
+in the torch for air plasma. (a) 1 kPa case, and (b) 30 kPa case, both at a fixed operating power of 200 kW (with η = 50%). Fig. 12 shows the total radiative heat loss in the torch as a percentage of the input power. The extent of radiative cooling for both gas mixtures increases with pressure, which was expected as radiation losses scale with the number densities of radiating species as discussed previously. Also, nitrogen is found to give a higher radiative cooling as compared to air. For air, Q Rad is negligible (less than 2% of the input power) for pressures below 5 kPa. However, at 10 kPa, Q Rad becomes significant and contributes to ≃ 5% of the input power, and increases up to 18% at 101 kPa. For nitrogen, Q Rad becomes significant at much lower pressure, being 5% of the input power at 5 kPa, and increasing up to ≃ 24% at 101 kPa. The observation that nitrogen plasma has higher radiative cooling is consistent with the fact that nitrogen plasmas have higher concentrations of radiatively active species, especially molecular nitrogen (N 2) and ionized nitrogen (N 2+). Nitrogen has strong molecular band emissions, especially in the ultraviolet and visible regions ( i.e. , second positive system and first negative system), in addition to the strong continuum and line radiation systems of the atomic nitrogen. On the other hand, in air we have only about 79% nitrogen and 21% oxygen, whose dissociation/ionization products  O, O+2 , and O + generally radiate less efficiently than their nitrogen counterparts. Also, because radiation often scales like ∝ n2e [25, 63] and depends on excited states, differences in electron density and excitation rates between nitrogen and air plasmas also matter. Fig. 13 compares the electron number density distribution in the torch at 30 kPa for nitrogen and air plasmas, showing a significantly higher electron concentration in the nitrogen plasma. 
+
+5.2.4. Effect of radiation loss on temperature profiles Figs. 14 to 17 show the radial profiles of heavy-particle and electro-vibrational temperatures at x = 0 .15 m (mid-torch location) and at the torch outlet for both nitrogen and air plasmas. To avoid confusion in the discussion, we focus on the outlet profiles, as these are more relevant for the characterization of the aerothermal response of TPS samples. Moreover, since the plasma is essentially in thermal equilibrium at the torch exit ( i.e. , Th ≃ Tve ), there is no need for a separate discussion of 17 Pressure [kPa]       
+
+> (Q Rad /Q J)x100 %
+> 020 40 60 80 100 120
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> Nitrogen Air
+
+Figure 12: Total radiative heat loss in the ICP torch as a percent of input power at a fixed operating power of 200 kW (with η = 50%). 
+
+Figure 13: Electron number density distribution at 30 kPa, and 200 kW (with η = 50%). Top: nitrogen plasma, bottom: air plasma. the two temperatures. The reported profiles show that temperature drops are significant near the axis. On the other hand, close to the wall, the radiation-coupled profiles collapse onto the uncoupled simulation results for all the pressures. In light of this, the impact of radiation is here quantified in terms of the temperature difference on the axis. The profiles show a negligible effect of radiation at 1 kPa and 5 kPa. However, beyond 10 kPa, radiation losses become significant and lead to temperature drops of around 800 K (7.2%) and 600 K (5.8%) for nitrogen and air plasmas, respectively. At 30 kPa, the decrease in temperature due to radiation losses is much higher, and around 1700 K (16%) for nitrogen and 1600 (15.3%) for air. Finally, at 1 atm, the temperature drop is around 900 K (10.3%) and 600 K (7.14%) for nitrogen and air plasmas, respectively. It is interesting to note that, although the 18 temperature drop at the axis at 1 atm is smaller than that at 30 kPa, there is a significant temperature drop throughout the radial direction in this case, an indication of an overall higher total radiative power loss.  
+
+> (a) (b)
+
+Figure 14: Radial profiles of heavy-species temperature for nitrogen plasma at a fixed operating power of 200 kW (with η = 50%): (a) x = 0 .15 m (mid-torch location) and (b) 
+
+x = 0 .36 m (nozzle exit). 
+
+5.2.5. Pressure-power mapping of the total radiative power loss Since radiative losses in ICPs are governed primarily by temperature and number density of radiating species, they exhibit a strong dependence on the operating pressure, as also demonstrated in the foregoing discussion. This is because the number density of particles scales directly with pressure ( i.e. ,
+
+n = p/k bT ). In contrast, the dependence of radiation loss on operating power is expected to be comparatively weaker. As a matter of fact, increasing the input power at a fixed pressure typically leads to only a moderate rise in temperature and electron number density due to enhanced ionization. Nevertheless, in the use of ICP facilities, it is common to perform both power and pressure sweeps for the purpose of reproducing a spectrum of flight conditions as broad as possible. Therefore, constructing a two-dimensional pressure–power map of the total radiative power loss may provide valuable insight into how these parameters jointly influence the impact of radiation on the plasma discharge. Such a map not only benefits researchers working with the Plasmatron X facility but also serves as a useful reference for the broader ICP community, enabling informed decisions prior to undertaking computationally intensive radiation-coupled simulations. Consequently, this section investigates how the total radiative power loss in the Plasmatron X facility depends on these two key operational parameters (pressure and power). 19  
+
+> (a) (b)
+
+Figure 15: Radial profiles of electro-vibrational temperature for nitrogen plasma at a fixed operating power of 200 kW (with η = 50%) : (a) x = 0 .15 m (mid-torch location) and (b) 
+
+x = 0 .36 m (nozzle exit).  
+
+> (a) (b)
+
+Figure 16: Radial profiles of heavy-species temperature for air plasma at a fixed operating power of 200 kW (with η = 50%) : (a) x = 0 .15 m (mid-torch location) and (b) x = 0 .36 m (nozzle exit). A two-dimensional Cartesian grid of operating conditions has been constructed by considering the following values of pressure and operating power: pa ∈ [1 , 5, 10 , 30 , 101] kPa, 
+
+P ∈ [100 , 150 , 200 , 300 , 350] kW. The efficiency is assumed to be 50% for all the cases. Hence, 20  
+
+> (a) (b)
+
+Figure 17: Radial profiles of electro-vibrational temperature for air plasma at a fixed operating power of 200 kW (with η = 50%) : (a) x = 0 .15 m (mid-torch location) and (b) x = 0 .36 m (nozzle exit). the input power to the plasma is half of the operating power, e.g. , Pin ∈ [50 , 75 , 100 , 150 , 175] kW. Fig. 18 illustrates the two-dimensional pressure–power map of the total radiative power loss, expressed as a percentage of the input power, for both nitrogen and air plasmas. A clear trend emerges for both mixtures: the radiative power loss depends strongly on the operating pressure across the entire range of input powers, whereas its dependence on input power remains relatively weak at lower pressures (10 kPa and below). This behavior aligns well with expectations, since at lower pressures, the particle number density, and consequently, the number of radiating species, is limited, leading to comparatively modest changes in radiation even when the input power is varied. At higher pressures, however, the situation changes significantly. The radiative power loss shows a pronounced increase with increasing input power, reflecting the combined effect of enhanced particle density and high temperatures that promote stronger emission. For nitrogen, the radiative loss rises from approximately 8% at 50 kW to about 23% at 175 kW at an operating pressure of 30 kPa, and from 17% to nearly 32% over the same power range at 101 kPa. A similar but somewhat less pronounced trend is observed for air plasma, where the radiative loss increases from around 3% to 20% between 50 and 175 kW at 30 kPa, and from 8% to 22% at 101 kPa. The above results clearly demonstrate that, while pressure remains the primary factor governing the magnitude of radiative losses, the influence of power becomes increasingly significant at elevated pressures. The combined pressure–power dependence revealed in this mapping thus provides valuable insight into the radiation behavior of both nitrogen and air plasmas under different operating conditions. 21 Finally, Fig. 19 shows the wavelength-dependent decomposition of the percentage total radiative power loss at the highest power and pressure condition. It is clear that infrared (IR) radiation contributes most to the total radiation loss for both nitrogen and air. The low influence of the ultraviolet (UV) range implies that the majority of the radiation loss is due to atomic lines and continuum transitions of N and O, rather than the molecular band systems that are dominant in the UV range. This information may provide apriori insight for the design of an experiment using optical diagnostics for an ICP facility to define a measurement wavelength regime. 50    
+
+> 75
+> 100
+> 150 175
+> Input power [kW]
+> 1
+> 5
+> 10
+> 30
+> 101.3 Pressure [kPa]
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> (QRad /Q J) × 100  [%]
+> 0
+> 32
+> (a) 50
+> 75
+> 100
+> 150 175
+> Input power [kW]
+> 1
+> 5
+> 10
+> 30
+> 101.3
+> Pressure [kPa]
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> (QRad /Q J) × 100  [%]
+> 0
+> 32 (b)
+
+Figure 18: Total radiative heat loss in the ICP torch as a percent of input power : (a) nitrogen, and (b) air plasmas. The black dot implies the actual data point for which the simulation is carried out. 
+
+5.2.6. Assessment of the plasma optical thickness To assess whether the plasma inside the Plasmatron X torch operates in an optically thin or optically thick regime, a set of radiation-coupled torch simulations was performed for the highest power and pressure conditions (i.e. , 101 .3 kPa, 350 kW (with η = 50%)) for both nitrogen and air plasmas. In these simulations, the self-absorption option in the RTE solver was disabled, thereby neglecting in-plasma reabsorption of emitted radiation and effectively enforcing an optically thin approximation. The resulting solutions were then compared against the baseline radiation-coupled simulations in which self-absorption was accounted for. The highest power–pressure operating point was selected for this analysis because radiative heat losses are maximum under these conditions, making this case the most sensitive for distinguishing between optically thin and optically thick behavior. Fig. 20 compares the spatial distributions of radiative heat loss in the torch for air plasma obtained with and without accounting for self-absorption. The two distributions are essentially identical, indicating that reabsorption 22 Nitrogen Air 
+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> (QRad /Q J) × 100  [%]
+> UV
+> Vis
+> IR
+
+Figure 19: Decomposition of the total radiative heat loss in the ICP torch as a percent of input power into the UV, Visible, and IR wavelength ranges. ( pa = 101 .3 kPa, P = 350 kW, 
+
+η = 50%). has a negligible impact on the radiative field. A similar behavior was observed for nitrogen. Quantitatively, the total radiative power loss as a percentage of input power, expressed as (QRad /Q J ) × 100, is 22.72% for air plasma when self-absorption is neglected, compared to 21.89% when self-absorption is taken into account. For nitrogen, the corresponding values are 32.6% and 32.05%, respectively. The small differences between these cases confirm that in-plasma reabsorption of radiation is negligible and that most of the emitted radiation escapes the plasma without significant attenuation. These findings therefore demonstrate that the Plasmatron X torch operates in an optically thin regime and provides a strong basis for future work aimed at developing simplified correlations or reduced-order curve-fit models for the radiative loss term. Such models, derived from detailed numerical simulations and theoretical analyses, could significantly reduce computational cost while retaining the essential physics governing radiation transport, thereby enabling more efficient implementation for high-fidelity simulations of high-enthalpy plasmas. 23 
+
+Figure 20: Radiative heat loss distribution in the torch for air plasma. Top: without self-absorption (optically thin assumption), bottom: with self-absorption. (pa = 101 .3 kPa, 
+
+P = 350 kW, η = 50%). 
+
+6. Conclusions 
+
+This work presented a comprehensive numerical investigation of radiative heat transfer in a high-power inductively coupled plasma wind tunnel using a loosely coupled, non-equilibrium, multi-physics modeling framework. A key contribution of the study is the direct coupling of an NLTE magnetohydrodynamic plasma framework with a spectrally resolved RTE solver, enabling the explicit treatment of emission, absorption, and transport of radiation without relying on optically thin assumptions or empirical radiative loss models. To the authors’ knowledge, this represents the first systematic application of coupled radiation–CFD simulations to an ICP facility. The developed framework was applied to the 350 kW Plasmatron X facility at the University of Illinois Urbana-Champaign for both nitrogen and air plasmas over a broad range of operating pressures and powers. The results demonstrate that radiation transport is negligible at low pressures ( i.e. , ≤ 5 kPa), demonstrating the validity of the simplifying assumptions commonly employed in prior ICP modeling efforts under such conditions. However, as the operating pressure is increased, radiative cooling becomes increasingly significant and ultimately constitutes a major energy loss mechanism. At atmospheric pressure, radiation accounts for up to approximately 32% of the input power for nitrogen and 22% for air, leading to substantial reductions in plasma core temperatures and pronounced modifications of radial temperature distributions. A clear distinction between nitrogen and air plasmas was observed, with nitrogen exhibiting consistently higher radiative losses. This behavior was attributed to the higher concentrations of radiatively active species, stronger molecular and atomic emission systems, and elevated electron number densities present in nitrogen plasmas. The spatial distribution of radiative losses was found to be closely correlated with regions of high electro-vibrational 24 temperature and electron concentration, underlying the importance of accurately capturing NLTE effects when modeling radiation in ICP facilities. To provide practical insight for facility operation and future modeling efforts, pressure–power maps of total radiative loss were constructed. These maps reveal that pressure is the dominant parameter governing radiation losses, while the influence of input power becomes increasingly important at elevated pressures. Such mappings offer valuable guidance for anticipating radiation effects before performing computationally intensive radiation-coupled simulations and for interpreting experimental measurements in high-pressure ICP regimes. Further, spectral decomposition of the radiative losses indicates that infrared emission dominates the total radiative power loss for both nitrogen and air plasmas, with comparatively smaller ultraviolet contributions, implying that atomic bound–bound and continuum radiation is the primary loss mechanism and providing clear guidance for selecting optimal wavelength ranges for optical diagnostics. Finally, an assessment of plasma optical thickness showed that in-plasma self-absorption has a negligible impact on the radiative field, even at the highest pressure and power conditions examined. This confirms that the Plasmatron X torch operates predominantly in an optically thin regime, despite exhibiting large absolute radiative losses at elevated pressures. This finding reconciles the observed importance of radiation with the limited role of reabsorption in the facility and provides confidence in the applicability of optically thin approximations for selected diagnostic and modeling purposes. Overall, the present study highlights the critical role of radiation in high-pressure ICP operation and establishes a high-fidelity computational framework capable of capturing the complex interplay between plasma dynamics, electromagnetic fields, and non-equilibrium radiation. The insights gained herein are directly relevant to the design, operation, and interpretation of ICP wind tunnel experiments for hypersonic ground testing. Future work will focus on extending the framework to three-dimensional configurations, incorporating more detailed state-to-state kinetics and non-Boltzmann radiation models, and coupling the facility plasma to material response models to enable end-to-end prediction of aerothermal test environments. 
+
+Acknowledgments 
+
+This work has been supported under a NASA Space Technology Research Institute Award (ACCESS, grant number 80NSSC21K1117). S Kumar has been funded by the Vannevar Bush Faculty Fellowship OUSD(RE) Grant No: N00014-21-1-295 with M. Panesi as the Principal Investigator. 
+
+References  
+
+> [1] Boulos, M., “Thermal plasmas: Fundamentals and Applications,” Plenum , Vol. 1, 1994, pp. 163.
+
+25 
+
+[2] Boulos, M. I., “Flow and temperature fields in the fire-ball of an inductively coupled plasma,” IEEE Trans. Plasma Sci. , Vol. 4, No. 1, 1976, pp. 28–39. [3] Mostaghimi, J., Proulx, P., and Boulos, M. I., “Parametric study of the flow and temperature fields in an inductively coupled rf plasma torch,” Plasma Chem. Plasma Process. , Vol. 4, No. 3, 1984, pp. 199–217. [4] Mostaghimi, J., Proulx, P., and Boulos, M. I., “An analysis of the computer modeling of the flow and temperature fields in an inductively coupled plasma,” Numer. Heat Transf. , Vol. 8, No. 2, 1985, pp. 187–201. [5] Proulx, P., Mostaghimi, J., and Boulos, M. I., “Heating of powders in an rf inductively coupled plasma under dense loading conditions,” Plasma Chem. Plasma Process. , Vol. 7, 1987, pp. 29–52. [6] Mostaghimi, J. and Boulos, M. I., “Effect of frequency on local thermodynamic equilibrium conditions in an inductively coupled argon plasma at atmospheric pressure,” J. Appl. Phys. , Vol. 68, No. 6, 1990, pp. 2643–2648. [7] Chen, X. and Pfender, E., “Modeling of RF plasma torch with a metallic tube inserted for reactant injection,” Plasma Chem. Plasma Process. , Vol. 11, No. 1, 1991, pp. 103–128. [8] Abeele, D. V. and Degrez, G., “Efficient computational model for inductive plasma flows,” AIAA J. ,Vol. 38, No. 2, 2000, pp. 234–242. [9] Utyuzhnikov, S., Konyukhov, A., Rudenko, D., Vasil’evskii, S., Kolesnikov, A., and Chazot, O., “Simulation of subsonic and supersonic flows in inductive plasmatrons,” AIAA J. , Vol. 42, No. 9, 2004, pp. 1871–1877. [10] Park, C., “Nonequilibrium hypersonic aerothermodynamics,” 1989. [11] Park, C., “Review of chemical-kinetic problems of future NASA missions. I-Earth entries,” J. Thermophys. Heat Transf. , Vol. 7, No. 3, 1993, pp. 385–398. [12] Park, C., Jaffe, R. L., and Partridge, H., “Chemical-kinetic parameters of hyperbolic earth entry,” J. Thermophys. Heat Transf. , Vol. 15, No. 1, 2001, pp. 76–90. [13] Mostaghimi, J., Proulx, P., and Boulos, M. I., “A two-temperature model of the inductively coupled rf plasma,” J. Appl. Phys. , Vol. 61, No. 5, 1987, pp. 1753–1760. [14] Mostaghimi, J. and Boulos, M. I., “Two-dimensional electromagnetic field effects in induction plasma modeling,” Plasma Chem. Plasma Process. , Vol. 9, No. 1, 1989, pp. 25–44. [15] Atsuchi, N., Shigeta, M., and Watanabe, T., “Modeling of non-equilibrium argon–oxygen induction plasmas under atmospheric pressure,” Int. J. Heat Mass Transf. , Vol. 49, No. 5-6, 2006, pp. 1073– 1082. [16] Panesi, M., Rini, P., Degrez, G., and Chazot, O., “Analysis of chemical nonequilibrium and elemental demixing in plasmatron facility,” J. Thermophys. Heat Transf. , Vol. 21, No. 1, 2007, pp. 57–66. [17] Zhang, W., Lani, A., and Panesi, M., “Analysis of non-equilibrium phenomena in inductively coupled plasma generators,” Phys. Plasmas , Vol. 23, No. 7, 2016, pp. 073512. [18] Kumar, S., Munaf` o, A., Jo, S. M., and Panesi, M., “Investigation of non-equilibrium phenomena in nitrogen RF inductively coupled plasma discharges: a state-to-state approach,” J. Phys. D: Appl. Phys. , Vol. 58, No. 2, 2024, pp. 025204. [19] Kumar, S., Munaf` o, A., Bodony, D. J., and Panesi, M., “Numerical analysis of three-dimensional magnetohydrodynamic effects in an inductively coupled plasma wind tunnel,” J. Phys. D: Appl. Phys. ,Vol. 58, No. 34, 2025, pp. 345208. [20] Boulos, M., “Flow and temperature fields in the fire-ball of an inductively coupled plasma,” IEEE Trans. Plasma Sci. , Vol. 4, No. 1, 1976, pp. 28–39. [21] Miller, R. C. and Ayen, R. J., “Temperature profiles and energy balances for an inductively coupled plasma torch,” J. Appl. Phys. , Vol. 40, No. 13, 1969, pp. 5260–5273. [22] Owano, T. G., Nonequilibrium behavior in a flowing, atmospheric pressure plasma , Stanford University, 1991. [23] Evans, D. L. and Tankin, R., “Measurement of emission and absorption of radiation by an argon plasma,” 
+
+Phys. Fluids , Vol. 10, No. 6, 1967, pp. 1137–1144. [24] Owano, T., Gordon, M., and Kruger, C., “Measurements of the radiation source strength in argon at 26 
+
+temperatures between 5000 and 10 000 K,” Phys. Fluids B , Vol. 2, No. 12, 1990, pp. 3184–3190. [25] Ogino, Y., Nagano, A., Ishihara, T., and Ohnishi, N., “A fitting formula for radiative cooling based on non-local thermodynamic equilibrium population from weakly-ionized air plasma,” J. Phys.: Conf. Ser. , Vol. 454, IOP Publishing, 2013, p. 012080. [26] Dresvin, S. V., Donskoi, A. V., God’dfarb, V., and Klubnikin, V., “Physics and technology of low-temperature plasma,” 1972. [27] Asinovsky, E., Kirillin, A., Pakhomov, E., and Shabashov, V., “Experimental investigation of transport properties of low-temperature plasma by means of electric arc,” Proc. IEEE , Vol. 59, No. 4, 1971, pp. 592–601. [28] Devoto, R., Bauder, U., Cailleteau, J., and Shires, E., “Air transport coefficients from electric arc measurements,” Phys. Fluids , Vol. 21, No. 4, 1978, pp. 552–558. [29] Palmer, G. E., White, T., and Pace, A., “Direct coupling of the NEQAIR radiation and DPLR CFD codes,” J. Spacecr. Rockets , Vol. 48, No. 5, 2011, pp. 836–845. [30] Sahai, A., Johnston, C. O., Lopez, B., and Panesi, M., “Flow-radiation coupling in CO 2 hypersonic wakes using reduced-order non-Boltzmann models,” Phys. Rev. Fluids , Vol. 4, No. 9, 2019, pp. 093401. [31] Wood, W., “Radiation coupling with the fun3d unstructured-grid cfd code,” AIAA Paper 2012-2741 .[32] Jo, S. M., Kumar, S., Le Maout, V., Munaf` o, A., and Panesi, M., “Multi-Fidelity Modeling Framework for Radiative Transfer in Hypersonic Atmospheric Entry,” AIAA Paper 2023-1730 .[33] Balakrishnan, A., Park, C., and Green, M., “Radiative viscous-shock-layer analysis of Fire, Apollo, and PAET flight data,” AIAA Paper 1985-1064 .[34] Olynick, D. R., Henline, W., Chambers, L. H., and Candler, G., “Comparison of coupled radiative flow solutions with project fire II flight data,” J. Thermophys. Heat Transf. , Vol. 9, No. 4, 1995, pp. 586–594. [35] Hartung, L. C., “Development of a nonequilibrium radiative heating prediction method for coupled flowfield solutions,” J. Thermophys. Heat Transf. , Vol. 6, No. 4, 1992, pp. 618–625. [36] Jo, S. M., Kwon, O. J., and Kim, J. G., “Electronic-state-resolved analysis of high-enthalpy air plasma flows,” Phys. Rev. E , Vol. 100, No. 3, 2019, pp. 033203. [37] Feldick, A., Modest, M., Levin, D., Gnoffo, P., and Johnston, C., “Examination of Coupled Continnum Fluid Dynamics and Radiation in Hypersonic Simulations,” AIAA Paper 2009-475 .[38] Panesi, M., Magin, T., Bourdon, A., Bultel, A., and Chazot, O., “Fire II flight experiment analysis by means of a collisional-radiative model,” J. Thermophys. Heat Transf. , Vol. 23, No. 2, 2009, pp. 236– 248. [39] Bottin, B., Abeele, D. V., Carbonaro, M., Degrez, G., and Sarma, G. S., “Thermodynamic and transport properties for inductive plasma modeling,” J. Thermophys. Heat Transf. , Vol. 13, No. 3, 1999, pp. 343– 350. [40] Munaf` o, A., Alberti, A., Pantano, C., Freund, J. B., and Panesi, M., “A computational model for nanosecond pulse laser-plasma interactions,” J. Comput. Phys. , Vol. 406, 2020, pp. 109190. [41] Mitchner, M. and Kruger, C. H., Partially Ionized Gases , John Wiley & Sons, 1973. [42] Gnoffo, P. A., Conservation equations and physical models for hypersonic air flows in thermal and chemical nonequilibrium , Vol. 2867, National Aeronautics and Space Administration, 1989. [43] Munaf` o, A. and Panesi, M., “Plato: A High-Fidelity Library for Multicomponent Gases and Plasmas,” 
+
+J. Thermophys. Heat Transf. , 2025, pp. 1–21. [44] Scoggins, J. B., Magin, T., Wray, A. A., and Mansour, N., “Multi-group reductions of LTE air plasma radiative transfer in cylindrical geometries,” AIAA Paper 2013-3142 .[45] Jo, S. M., Kwon, O. J., and Kim, J. G., “Stagnation-point heating of Fire II with a non-Boltzmann radiation model,” Int. J. Heat Mass Transf. , Vol. 153, 2020, pp. 119566. [46] Jo, S. M., Shim, H., Park, G., Kwon, O. J., and Kim, J. G., “Temperature determination in a shock tube using hydroxyl radical A-X band emission,” Phys. Fluids , Vol. 31, No. 2, 02 2019, 026109. [47] Nicolet, W. E., “Advanced methods for calculating radiation transport in ablation-product contaminated boundary layers,” Tech. rep., CR-1656, NASA, 1970. 27 
+
+[48] Laux, C. O., “Optical diagnostics and radiative emission of air plasmas,” Tech. rep., Report T-288, Stanford, CA, 1993. [49] Hyun, S. Y., Radiation Code SPRADIAN07 and its Application , Ph.D. thesis, Korea Advanced Institute of Science and Technology, 2009. [50] Chauveau, S., Perrin, M.-Y., Rivi` ere, P., and Soufiani, A., “Contributions of diatomic molecular electronic systems to heated air radiation,” J. Quant. Spectrosc. Radiat. Transfer , Vol. 72, No. 4, 2002, pp. 503–530. [51] Gilmore, F. R., Laher, R. R., and Espy, P. J., “Franck–Condon Factors, r-Centroids, Electronic Transition Moments, and Einstein Coefficients for Many Nitrogen and Oxygen Band Systems,” J. Phys. Chem. Ref. Data , Vol. 21, No. 5, 09 1992, pp. 1005–1107. [52] Chai, J. and Patankar, S., “Finite-volume method for radiation heat transfer,” Advances in Numer. Heat Transf. , CRC Press, 2018, pp. 109–141. [53] Asllanaj, F., Feldheim, V., and Lybaert, P., “Solution of radiative heat transfer in 2-D geometries by a modified finite-volume method based on a cell vertex scheme using unstructured triangular meshes,” 
+
+Numer. Heat Transf., Part B: Fundamentals , Vol. 51, No. 2, 2007, pp. 97–119. [54] SAAD, Y., “A generalized minimal residual algorithm for solving nonsymmetric linear systems,” SIAM J. Sci. Stat. Comput , Vol. 7, 1985, pp. 417–424. [55] Munaf` o, A., Kumar, S., Jo, S. M., and Panesi, M., “Hegel: a high-fidelity flexible software for hypersonics and plasma simulations,” AIAA Paper 2024-0449 .[56] Kumar, S., Munaf` o, A., Le Maout, V., Mansour, N., and Panesi, M., “Self-consistent magneto-hydrodynamic modeling of ICP discharges,” AIAA Paper 2022-1619 .[57] Oruganti, S., Kumar, S., Le Maout, V., Capponi, L., Munaf` o, A., Bodony, D. J., Panesi, M., Panerai, F., Mansour, N., and Fraile Izquierdo, S., “Modeling instrumented test articles for Plasmatron X aerothermal environment,” AIAA Paper 2023-3327 .[58] Belevitch, V., “Lateral skin effect in a flat conductor,” Philips tech Rev , Vol. 32, No. 6, 1971, pp. 221–231. [59] Blackwell, A. E., Rotunno, A. P., and Aubin, S., “Demonstration of the lateral AC skin effect using a pickup coil,” Am. J. Phys. , Vol. 88, No. 8, 2020, pp. 676–684. [60] Boulos, M. I., “The inductively coupled RF (radio frequency) plasma,” Pure Appl. Chem. , Vol. 57, No. 9, 1985, pp. 1321–1352. [61] Eckert, H. U., “The induction arc: a state of the art review,” High Temp. Sci. , Vol. 6, 1974, pp. 99–133. [62] Abeele, D. V., An Efficient Computational Model for Inductively Coupled Air Plasma Flows Under Thermal and Chemical Non-Equilibrium , Ph.D. thesis, Univesit´ e Libre de Bruxelles, Bruxelles, Belgium, 2000. [63] Wilbers, A., Beulens, J., and Schram, D., “Radiative energy loss in a two-temperature argon plasma,” 
+
+J. Quant. Spectrosc. Radiat. Transf. , Vol. 46, No. 5, 1991, pp. 385–392. [64] Sahai, A., Johnston, C. O., Lopez, B., and Panesi, M., “Comparative analysis of reduced-order spectral models and grouping strategies for non-equilibrium radiation,” J. Quant. Spectrosc. Radiat. Transf. ,Vol. 242, 2020, pp. 106752.
