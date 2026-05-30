@@ -1,0 +1,4007 @@
+Title: Stochastic Generalized Sampling
+
+URL Source: https://arxiv.org/pdf/2605.23421v1
+
+Published Time: Mon, 25 May 2026 00:42:00 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+STOCHASTIC GENERALIZED SAMPLING 
+
+LUCA FINOTTI AND MATTEO SANTACESARIA 
+
+Abstract. Reconstructing an infinite-dimensional signal from a finite set of measurements is a fundamental problem in approximation theory and signal processing. While the generalized sampling (GS) framework provides a robust methodology for recovering elements in arbitrary separable Hilbert spaces, deterministic approaches suffer from severe basis-dependent dimen-sionality constraints, often requiring a quadratic sample complexity m ≳ n2 to avoid numerical instability. In this paper, we introduce a fully stochastic framework for GS that natively overcomes these deterministic barriers. By drawing measurements according to an optimal leverage-score probability distribution, we prove that stable recovery is guaranteed with high probability at a near-linear sample complexity of m ≳ n log n. Crucially, this optimal rate is universal—independent of the specific choice of measurement and reconstruction bases—and holds even when the sensing system is a highly redundant frame. To establish these guaran-tees, we derive a novel matrix Bernstein inequality for random rectangular operators, allowing us to rigorously control the aliasing error governed by the empirical cross-term. Finally, we demonstrate the practical efficacy of our approach on the classical problem of recovering an-alytic functions from continuous Fourier measurements via Legendre polynomials, where our randomized method achieve near-exponential convergence rates. 
+
+1. Introduction 
+
+A fundamental problem in sampling theory revolves around the reconstruction of an un-known signal from a finite set of measurements. The starting point of the modern theory is the celebrated Nyquist-Shannon sampling theorem, which allows one to perfectly reconstruct a bandlimited signal from its uniform point samples. However, this pioneering result is inher-ently limited in practice, as it requires an infinite number of samples on a rigid uniform grid. To overcome these practical limitations and accommodate more general sampling geometries, a variety of approaches have been developed, ranging from classical deterministic methods to modern stochastic strategies. Deterministic approaches generally seek to recover an unknown signal by computing a least-squares approximation within a chosen finite-dimensional subspace. The measurements can be pointwise evaluations, as in Shannon’s theorem, or modeled via abstract continuous linear functionals. In [7], Adcock and Hansen introduced Generalized Sampling (GS), focusing on reconstructing an element f in an infinite-dimensional separable Hilbert space H from its first m
+
+measurements (⟨f, s k⟩)mk=1 , where {sk}k∈N is a given Riesz basis (or a frame, as extended in [10]). The recovery is achieved by projecting onto the span of the first n elements of a reconstruction system {wk}k∈N, which the user can tailor to the specific application. The central goal is to establish a deterministic sampling rate —an estimate of how large the sampling budget m must be relative to the reconstruction dimension n to guarantee stable recovery. Within the deterministic GS framework [7, 8, 10, 11], the stable sampling rate is not universal; it is heavily basis-dependent. For highly compatible pairs, such as Fourier sampling and wavelet reconstruction, one can achieve an optimal linear scaling m ≳ n. However, other physically mo-tivated choices—such as Fourier measurements and Legendre polynomial reconstruction—suffer from a severe quadratic bottleneck m ≳ n2 [5]. To break this deterministic barrier, one can transition to a stochastic scenario. The geometric setup remains identical, but rather than deterministically selecting the first m samples, one de-fines a probability distribution p = ( pj )j∈N over the natural numbers and draws m independent 
+
+Key words and phrases. Generalized sampling, weighted least squares, concentration inequalities, sample com-plexity, frames, Riesz bases.  
+
+> 1
+> arXiv:2605.23421v1 [math.FA] 22 May 2026 2L. FINOTTI AND M. SANTACESARIA
+
+sample indices. Instead of seeking a worst-case deterministic rate, we fix a confidence param-eter δ ∈ (0 , 1) and establish a stochastic sampling rate that guarantees stable recovery with a probability exceeding 1 − δ.Our analysis falls within the broader context of stochastic weighted least-squares [23]. The sampling process is modeled via continuous linear functionals—inner products against the ele-ments of a Riesz basis or a frame—rather than pointwise evaluations. The acquired data are the random measurements ⟨f, s i1 ⟩, . . . , ⟨f, s im ⟩, which are subsequently utilized in a weighted least-squares problem. The resulting optimal coefficients synthesize the recovered signal ˜f within the finite-dimensional subspace Wn := span {w1, . . . , w n}.To quantify the geometric compatibility between the sampling and reconstruction systems, we introduce the coherence parameter R := sup j∈N 1
+
+> pj
+
+Pnk=1 |⟨ wk, s j ⟩| 2. One of the main results of this work can be summarized as follows: 
+
+Theorem (sketch). Let f ∈ H be the unknown element we wish to reconstruct. Suppose 
+
+{sk}k∈N is a frame, and {wk}k∈N is a Riesz basis such that the nested subspace condition 
+
+span {wk : k ∈ N} ⊆ span {sk : k ∈ N} holds. If the number of random measurements m satisfies 
+
+m ≳ R log(2 n/δ ),
+
+then with probability at least 1 − δ, the weighted least-squares reconstruction ˜f satisfies the error bound: 
+
+∥f − ˜f ∥ ≤ μn, Ω∥PW⊥ 
+
+> n
+
+f ∥,
+
+where μn, Ω ≥ 1 is an amplification factor depending only on the reconstruction dimension n and the random sampling indices Ω = {i1, . . . , i m}.
+
+This is a consequence of a more general result, Theorem 3.2, which uses weaker geometric assumptions but yields a slightly less explicit sampling rate. Because the reconstruction ˜f is constrained to Wn, the orthogonal projection PWn f represents the best possible theoretical approximation. This theorem thus guarantees that our randomized method is robust: the reconstruction error is bounded by a small multiple of this optimal, out-of-space tail error ∥PW⊥ 
+
+> n
+
+f ∥ = ∥f − PWn f ∥.A major advantage of this stochastic framework is its flexibility regarding the probability distribution p. This allows us to actively select the distribution that minimizes the sample complexity, commonly referred to as the leverage-score distribution [29]. When orthonormal bases are employed, leverage scores are intimately tied to the concept of Christoffel sampling [32, 35]. We demonstrate that, even in the broadly generalized scenario where both systems are arbitrary frames, our leverage-score distribution retains a deep, explicit connection to the classical Christoffel function. Crucially, by implementing leverage-score sampling, we achieve the stochastic sampling rate: 
+
+m ≳ n log(2 n/δ ).
+
+In stark contrast to deterministic approaches, this near-linear rate is universal within our struc-tural setting. Provided the subspace condition holds, this n log n complexity is completely independent of the specific choice of the frame {sk}k∈N and Riesz basis {wk}k∈N. Furthermore, when orthonormal bases are employed, the framework yields tighter constants and precise control over the approximation error. Specifically, we prove that the factor μn, Ω converges in proba-bility to 1 as m → +∞, achieving the theoretical lower bound. This effectively establishes the quasi-optimality of our method under the framework developed by Adcock, Hansen, and Poon [11, 12]. We demonstrate the practical power of this method on the classical problem of recovering an analytic function f from m continuous Fourier measurements [5, 28, 25]. We obtain this by explicitly computing the leverage-score distribution associated with the Fourier-Legendre coherence. This computation relies on a known closed-form expression for the Fourier coefficients of Legendre polynomials via spherical Bessel functions. Consequently, our stochastic method natively overcomes the deterministic n2 bottleneck, yielding near-exponential convergence rates: 
+
+∥f − ˜f ∥ ≲ √m ρ − m 
+
+> log( m/δ )
+
+.STOCHASTIC GENERALIZED SAMPLING 3
+
+Let us summarize our main contributions: 
+
+• We establish a rigorous randomized framework for generalized sampling that accommo-dates arbitrary frames for both the sampling and reconstruction systems. Within this broad setting, we prove that whenever the reconstruction system is a Riesz basis and its span embeds into the sampling space, the near-linear rate m ≳ n log n guarantees stable recovery with high probability. 
+
+• We provide explicit concentration bounds for both the empirical Gram matrix and the empirical cross-term operator. To effectively control the aliasing error governed by the cross-term, we prove a novel variant of the matrix Bernstein inequality—extending the classical result to random rectangular operators acting between distinct, infinite-dimensional Hilbert spaces—which constitutes a theoretical contribution of independent interest. 
+
+• We rigorously connect our leverage-score distribution to classical Christoffel sampling in the orthonormal setting, and present a comprehensive comparative analysis between the two strategies in the more general frame setting. 
+
+• We showcase the efficacy of our method through the classical Fourier-Legendre analytic continuation problem: our stochastic framework allows us to achieve near-exponential convergence rates. 1.1. Related Work. The theoretical framework developed in this work intersects with numer-ous active areas of research. 
+
+Generalized Sampling. The formalization of GS in arbitrary infinite-dimensional, separable Hilbert spaces was driven by the seminal works of Adcock and Hansen [7], where instead of considering pointwise samples they resorted to abstract continuous linear functionals over Riesz bases. The main contribution of Adcock and Hansen lies not only in the nature of the measure-ments, but in the decoupling of the sampling and reconstruction dimensions: more specifically, they fixed the reconstruction dimension n and treated the sampling dimension m ≥ n as a vari-able parameter. This strategy established the foundation for investigating stable sampling rates :the goal is determining the minimal oversampling required to ensure numerical stability in this redundant framework. This theory was subsequently generalized to frames [10, 15] as well as to nonlinear, ill-posed inverse problems in [19]. However, as demonstrated in these foundational studies, ensuring universally stable reconstructions typically demands a stringent quadratic scal-ing m ≳ n2, which often becomes computationally unfeasible in high-resolution applications. In parallel, it was shown in [33] that employing deterministic, equispaced grids of pointwise mea-surements to ensure exponential convergence in the approximation of analytic functions leads to severe numerical instability. A continuous analogue of this impossibility theorem was later established in [14]. 
+
+Stochastic Least Squares. In order to overcome the aforementioned deterministic barriers, the contemporary approximation theory has been heading towards randomized strategies. Our work is strongly influenced by the seminal paper of Cohen and Migliorati [23], who derived an optimal sampling strategy via weighted least-squares for the recovery of bounded functions from pointwise measurements, ultimately achieving the same log-linear sampling rate that we establish here. Other works that implement weighted least-squares methods to derive a linear rate up to log factors include [30]. These approaches fundamentally rely on point evaluations drawn according to the so-called Christoffel sampling strategy from a domain D ⊆ Rd endowed with a probability measure and operate with orthonormal bases in Reproducing Kernel Hilbert Spaces, a choice that makes the (reciprocal) Christoffel function particularly easy to compute. In contrast, our paper extends this paradigm to the recovery of arbitrary elements in general separable Hilbert spaces from abstract continuous linear measurements. A recent review [3] highlights this broader framework as a compelling direction for future research. Here, we move beyond conceptual discussion to rigorously establish the validity of the sought-after log-linear sampling rate. Specifically, we derive concentration estimates for both the random Gram matrix and the empirical cross-term operator, extending the results of aforementioned works from standard orthonormal settings to arbitrary frames. 4 L. FINOTTI AND M. SANTACESARIA 
+
+Other Stochastic Approaches. The stochastic approach considered in the present work has been explored in different contexts and variants. For instance, in order to achieve the much-coveted linear sampling rate m ≳ n, numerous endeavors have been made to develop a randomized sampling strategy that improves the sampling rate yielded by Christoffel sampling. An example of such methods are determinantal point processes [20]: in the context of recovering functions in a reproducing kernel Hilbert space from pointwise measurements, determinantal sampling extends the Christoffel strategy by introducing a kernel-dependent correlation between the sam-pled nodes, effectively forcing those nodes to repel each other with a repulsion related to the smoothness of the target function. Other works that aim at removing the logarithmic factor replace i.i.d. sampling with greedy procedures [26] that continuously update the Gram ma-trix at every sampling step, ultimately establishing a linear sampling rate at the cost of higher (polynomial) computational complexity. Another prominent field that makes use of stochastic techniques is compressed sensing (CS)[21, 27]. Although it originally emerged in a finite-dimensional setting, over the past two decades an increasing number of works have been seeking a method to recover infinite-dimensional signals which are assumed to be sparse or compressible with respect to some suitable basis, which is a reasonable hypothesis in many applications. The series of works [6, 9, 13, 2, 4] extended CS to infinite dimension, by combining GS with existing CS tools, namely randomization and weighted 
+
+ℓ1-minimization. This made it possible to achieve stochastic sampling rates of the form 
+
+m ≳ μ · n · s × log factors ,
+
+where s is the sparsity of the unknown signal f , the factor μ measures the coherence between the sampling and the reconstruction bases and n > s is the reconstruction dimension. These ideas were recently further expanded and applied to ill-posed inverse problems in [18, 17, 16]. 1.2. Structure of the Paper. In Section 2, we fix our notation and present to the reader more background regarding GS. In particular, we explore the core ideas behind the deterministic scenario in order to properly generalize them to the randomized framework. Section 3 is devoted to presenting the main result of the paper. We establish rigorous concentration inequalities for both the empirical Gram matrix and the empirical cross-term operator. We derive the stochastic sampling rate m ≳ n log(2 n/δ ) by drawing the samples according to a leverage-score distribution and compare this strategy with Christoffel sampling. Finally, we prove how to extend the aforementioned results to the case where the reconstruction system is an arbitrary frame. In Section 4, we present one application of our method: the reconstruction of an analytic function from Fourier measurements. Section 5 gathers the proofs of the statements of the previous sections (with many technical lemmas postponed to Appendix A). Finally, Section 6 presents concluding remarks and some open questions on the topic. 2. Setup 
+
+We begin by setting up our notation. Let ℓ2 = ℓ2(N) be the Hilbert space of square summable sequences. In our convention 0 /∈ N. Let {en}n∈N be the canonical basis of ℓ2 and let {e1, . . . , en}
+
+denote the canonical basis of Cn. In what follows, Pn will denote the orthogonal projection of 
+
+ℓ2 onto span {e1, . . . , e n} and P ⊥ 
+
+> n
+
+:= Iℓ2 − Pn. We also define ιn : Cn −→ ℓ2 by ιn(x1, . . . , x n) = (x1, . . . , x n, 0, 0, . . . ). It’s easy to see that ι∗ 
+
+> n
+
+: ℓ2 −→ Cn cuts an infinite sequence (xn)n∈N ∈ ℓ2
+
+into its first n components (x1, . . . , x n) ∈ Cn. We have the identities ι∗
+
+> n
+
+ιn = ICn and ιnι∗ 
+
+> n
+
+= Pn.For an operator A, we will denote its range by Ran( A).Fix a separable Hilbert space H. Recall the definitions of Riesz sequence, Riesz basis and frame. 
+
+Definition 2.1. A sequence (vk)k∈N of H is called a Riesz sequence if there exists two positive constants A, B > 0 such that for every x ∈ ℓ2 one has 
+
+A∥x∥2 ≤ X
+
+> k∈N
+
+xkvk
+
+> 2
+
+≤ B∥x∥2.STOCHASTIC GENERALIZED SAMPLING 5
+
+Equivalently, the synthesis operator associated to (vk)k∈N:
+
+x ∈ ℓ2 7 −→ X
+
+> k∈N
+
+xkvk ∈ H 
+
+is bounded, injective and has closed range. The Riesz sequence (vk)k∈N is a Riesz basis for H if 
+
+span {vk : k ∈ N} = H,
+
+that is, if the synthesis operator associated to (vn)n∈N is bounded and bijective. 
+
+Definition 2.2. A sequence (vk)k∈N of H is called a frame if there exist two positive constants 
+
+α, β > 0 such that for every h ∈ H one has 
+
+α∥h∥2 ≤ X
+
+> k∈N
+
+|⟨ h, v k⟩| 2 ≤ β∥h∥2.
+
+This is equivalent to requiring the associated analysis operator 
+
+h ∈ H 7 −→ (⟨h, v k⟩)k∈N ∈ ℓ2
+
+to be bounded and injective with closed range, which in turn means that the associated synthesis operator is bounded and surjective. The last part of the previous definitions make it clear that a Riesz basis is in particular a frame. Throughout this paper, we often write "Riesz basis" to denote a Riesz sequence in the ambient space H, with the implicit understanding that it constitutes a Riesz basis for its closed linear span. The analogous convention holds for the word "frame". 2.1. Background on Generalized Sampling. Let f ∈ H be the unknown element we would like to recover. Suppose we are given a frame {sk}k∈N (sampling vectors) and a Riesz sequence 
+
+{wk}k∈N (reconstruction vectors), and let S := span {sk : k ∈ N} and W := span {wk : k ∈ N}.If n ∈ N, we set Sn := span {s1, . . . , s n} and Wn := span {w1, . . . , w n}. Each sequence has its associated synthesis operator: 
+
+S : ℓ2 −→ H , W : ℓ2 −→ H ,x 7 −→ X
+
+> k∈N
+
+xksk, x 7 −→ X
+
+> k∈N
+
+xkwk.
+
+The analysis operators associated to {sk}k∈N and {wk}k∈N are S∗ and W ∗ respectively, which are defined by 
+
+S∗ : H −→ ℓ2, W ∗ : H −→ ℓ2,h 7 −→ (⟨h, s k⟩)k∈N, h 7 −→ (⟨h, w k⟩)k∈N.
+
+By definition, there exist positive constants A, B, C, D > 0 such that for every x ∈ ℓ2 and every 
+
+s ∈ S we have (1) A∥s∥2 ≤ ∥ S∗s∥2 ≤ B∥s∥2, C∥x∥2 ≤ ∥ W x ∥2 ≤ D∥x∥2.
+
+It’s known that any Riesz basis for a Hilbert space is a frame for that space and the frame bounds coincide with the Riesz basis bounds (cf. [22, Theorem 5.4.1]). It follows that for every 
+
+w ∈ W 
+
+C∥w∥2 ≤ ∥ W ∗w∥2 ≤ D∥w∥2.
+
+In particular, both S and W are bounded with ∥S∥ ≤ √B, ∥W ∥ ≤ √D. Moreover, W is a bijection between ℓ2 and W. On the other hand, S(ℓ2) = S but S may not be one-to-one. Our goal is to obtain a reconstruction ˜f ∈ W of f based on the sampling vectors S∗f =
+
+{⟨ f, s k⟩} k∈N. If we assume that H = W ⊕ S ⊥ and that also {sk}k∈N is a Riesz basis for S, a natural choice would be ˜f := W ˜β, 
+
+where ˜β ∈ argmin 12 ∥S∗W β − S∗f ∥2. This can be solved explicitly: 
+
+˜f = W (S∗W )−1S∗f. 6 L. FINOTTI AND M. SANTACESARIA 
+
+Indeed, under the above assumptions, the operator U := S∗W is invertible and W U −1S∗ is precisely the projection onto W along S⊥.However, in practice, one does not have the infinite amount of samples S∗f ∈ ℓ2 at disposal. In [7], Adcock and Hansen fixed n ∈ N (the reconstruction dimension) and proved (under the assumption W ∩ S ⊥ = {0}) that for sufficiently large m ∈ N (the sampling dimension) the n × n
+
+matrix ι∗
+
+> n
+
+U ∗PmU ι n is invertible, allowing them to deduce that the problem 
+
+PmU ι nx = PmS∗f
+
+admits a unique least-squares solution given by ˜x = ( ι∗
+
+> n
+
+U ∗PmU ι n)−1ι∗
+
+> n
+
+U ∗PmS∗f . The recon-struction of f ∈ H is then performed in the following way: 
+
+˜f := W ι n ˜x = W ι n(ι∗
+
+> n
+
+U ∗PmU ι n)−1ι∗
+
+> n
+
+U ∗PmS∗f ∈ W n,
+
+with an estimate on the error of the form 
+
+∥f − ˜f ∥ ≲ (1 + ∥ιn(ι∗
+
+> n
+
+U ∗PmU ι n)−1ι∗
+
+> n
+
+U ∗PmU P ⊥ 
+
+> n
+
+∥)∥P ⊥ 
+
+> n
+
+β∥.
+
+2.2. Stochastic Generalized Sampling. Rather than taking the first m deterministic samples from y := S∗f = ( ⟨f, s k⟩)k∈N, we propose selecting m indices Ω = {i1, . . . , i m} ⊆ N at random according to a suitable probability distribution p = ( pj )j∈N. This randomized sampling strategy ensures the stable recovery of f with high probability using a much smaller sampling budget m.To formalize this, let i1, . . . , i m be drawn independently from p. We define the weighted random projection QΩ onto span {ei1 , . . . , e im } as 
+
+QΩ := 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+eit ⊗ eit
+
+pit
+
+,
+
+which is well-defined almost surely since indices are drawn according to p (and thus pit > 0 with probability one). Our goal is to obtain a reconstruction ˜f := W ι n ˜x, where the coefficients ˜x ∈ Cn minimize the discrepancy between the acquired samples and the reconstructed samples. To prevent highly probable indices from unfairly dominating the target element, we solve the weighted least-squares problem: 
+
+argmin 
+
+> x∈Cn
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|⟨ W ι nx, s it ⟩ − ⟨ f, s it ⟩| 2.
+
+Observe that this objective function can be rewritten in operator form: 
+
+1
+
+m
+
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|⟨ W ι nx, s it ⟩ − ⟨ f, s it ⟩| 2 = 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|⟨ U ι nx − y, e it ⟩| 2
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+⟨(eit ⊗ eit )( U ι nx − y), U ι nx − y⟩
+
+= pQΩ(U ι nx − y) 2
+
+.
+
+We are thus looking for a least-squares solution ˜x to the linear system 
+
+pQΩU ι nx = pQΩy.(2) Such a solution exists and is unique if the random Gram matrix 
+
+bΣΩ := ( pQΩU ι n)∗pQΩU ι n = ι∗
+
+> n
+
+U ∗QΩU ι n
+
+is invertible. By construction, bΣΩ is an unbiased estimator of the n × n finite section Σ := 
+
+ι∗
+
+> n
+
+U ∗U ι n. Inspired by the deterministic scenario, we will prove that bΣΩ is eventually invertible with high probability by showing that it converges in the operator norm to Σ. (Under the assumption W ∩ S ⊥ = {0}, the limiting matrix Σ is strictly positive definite and invertible, as shown in Proposition 5.4). To rigorously analyze this convergence, we introduce the following key quantities. Let λ0 > 0
+
+denote the smallest eigenvalue of Σ, so that ∥Σ−1∥ = 1 
+
+> λ0
+
+. For each frequency index j ∈ N, we STOCHASTIC GENERALIZED SAMPLING 7
+
+isolate the specific finite-dimensional interaction vector vj := ι∗
+
+> n
+
+U ∗ej ∈ Cn, and we define the coherence bound: 
+
+R := sup 
+
+> j∈supp( p)
+
+∥vj ∥2
+
+pj
+
+.
+
+In addition to the Gram matrix, our reconstruction error analysis requires us to understand how the out-of-space tail of the signal (i.e., PW⊥ 
+
+> n
+
+f ) aliases into our finite-dimensional approxi-mation. This aliasing is governed by the empirical cross-term operator: 
+
+bCΩ := ι∗
+
+> n
+
+U ∗QΩS∗PW⊥ 
+
+> n
+
+: H −→ Cn.
+
+Analogous to the Gram matrix, bCΩ acts as an unbiased estimator for the true cross-term operator 
+
+C := ι∗
+
+> n
+
+U ∗S∗PW⊥ 
+
+> n
+
+. To control the concentration of this operator, we define the residual vectors 
+
+uj := PW⊥ 
+
+> n
+
+sj ∈ W ⊥ 
+
+> n
+
+along with their respective bound R′ := sup j∈supp( p)  
+
+> ∥uj∥2
+> pj
+
+.To unify our subsequent concentration inequalities, we define the joint coherence bound R′′ := max {R, R ′}. Assuming that R′ < +∞ (see Assumption 3.1), the series P 
+
+> j∈supp( p)
+
+uj ⊗ uj
+
+converges absolutely in the operator norm to a bounded operator T ∈ B (H). Finally, we let 
+
+K := max {∥ Σ∥, ∥T ∥} denote the maximum scale of our limiting operators. 3. Main result 
+
+Throughout this work, we operate under the following assumptions. 
+
+Assumption 3.1. i) The reconstruction space trivially intersects the orthogonal complement of the sampling space: 
+
+W ∩ S ⊥ = {0}.
+
+(Note that this condition is naturally satisfied in many practical settings, such as when 
+
+W ⊆ S ). ii) The probability distribution p yields finite coherence bounds R and R′ (and consequently, 
+
+R′′ < +∞). iii) The support of the probability distribution p contains the support of the sequence (vj )j∈N.Equivalently, pj > 0 whenever vj̸ = 0 :(3) supp( p) := {j ∈ N : pj > 0} ⊇ { j ∈ N : vj̸ = 0 }.
+
+3.1. Main Result. We first present our main result for the case where {sk}k∈N is a frame and {wk}k∈N is a Riesz basis. We then conclude this subsection by detailing its specialization to the orthonormal case. We recall the definitions of the weighted sampling operator QΩ := 
+
+> 1
+> m
+
+Pmt=1  
+
+> eit⊗eit
+> pit
+
+, the empirical Gram matrix bΣΩ := ι∗
+
+> n
+
+W ∗SQ ΩS∗W ι n and the empirical cross-term bCΩ := ι∗
+
+> n
+
+W ∗SQ ΩS∗PW⊥ 
+
+> n
+
+.
+
+Theorem 3.2. Let H be a separable Hilbert space. Let {sk}k∈N be a frame for its closed span 
+
+S, and let {wk}k∈N be a Riesz basis for its closed span W, with respective synthesis operators S
+
+and W .Let f ∈ H and let Wn := span {w1, . . . , w n}. Suppose we draw m i.i.d. sample indices 
+
+Ω = {i1, . . . , i m} from N according to a probability distribution p = ( pj )j∈N.Under Assumption 3.1, if for a given δ ∈ (0 , 1) the sample size m satisfies 
+
+m ≥ 83 R∥Σ∥∥ Σ−1∥2 log(2 n/δ ),
+
+then with probability at least 1 − δ, the weighted least-squares problem 
+
+argmin 
+
+> x∈Cn
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|⟨ W ι nx, s it ⟩ − ⟨ f, s it ⟩| 2
+
+admits a unique solution ˜x. Moreover, the reconstructed signal ˜f := W ι n ˜x satisfies the error bound 
+
+∥f − ˜f ∥ ≤ ∥ PW⊥ 
+
+> n
+
+f ∥  1 + K2
+
+> n, Ω
+
+ 12 ,8 L. FINOTTI AND M. SANTACESARIA 
+
+where Kn, Ω := ∥W ι n bΣ−1Ω bCΩ∥.
+
+To the best of our knowledge, Theorem 3.2 constitutes the first result extending the generalized sampling framework to a stochastic setting with explicit bounds on the sample complexity. While a conceptual generalization of randomized least-squares to abstract measurements was recently discussed by Adcock [3, Section 9], the analysis therein does not provide explicit sampling bounds for the discrete frame interactions. Crucially, it does not address the aliasing error introduced by the infinite-dimensional basis mismatch. In our framework, this mismatch is governed by the empirical cross-term operator bCΩ, whose concentration properties are rigorously established in Section 3.2 to guarantee stable recovery. Under slightly stronger assumptions, we can remove the dependence on ∥Σ∥ and ∥Σ−1∥ in the sample complexity bounds. 
+
+Corollary 3.3. Consider the setting of Theorem 3.2 and suppose further that W ⊆ S . Then 
+
+∥Σ∥ ≤ BD and ∥Σ−1∥ ≤ 1 
+
+> AC
+
+. In particular, the conclusions of Theorem 3.2 hold provided that 
+
+(4) m ≳ R log(2 n/δ ).
+
+Recall that, although suppressed in the notation, the parameter R inherently depends on the reconstruction dimension n, due to the fact that each vj belongs to Cn. We show in Section 3.3 that, starting from the new rate (4), one can then choose an appropriate probability distribution 
+
+p such that R grows (at most) linearly with n, ultimately resulting in the desired sampling rate 
+
+m ≳ n log(2 n/δ ).While one might hope for an even slower growth rate, linear scaling is in fact the theoretical limit. Indeed, as shown in Proposition 5.11, the trace of Σ can be bounded by R:
+
+tr(Σ) = X
+
+> j∈N
+
+∥vj ∥2 ≤ R X
+
+> j∈N
+
+pj = R. 
+
+This inequality, combined with the fact that tr(Σ) ≥ λ0n, proves that R must grow at least linearly with n. This constraint aligns with contemporary literature (e.g., [3]) and is intrinsically tied to Christoffel sampling, a concept we will explore further in Section 3.3. 
+
+Proof Strategy. The proof of Theorem 3.2 proceeds in three main steps, detailed fully in Section 5. First, we express the empirical Gram matrix error bΣΩ − Σ as a sum of independent, centered, self-adjoint random matrices. By applying the matrix Bernstein inequality (Theorem 5.1) and carefully bounding the variance and spectral norm of the summands (Proposition 5.6), we deduce that ∥bΣΩ − Σ∥ < λ 0 with high probability, provided m is sufficiently large. Second, a standard perturbation argument ensures that bΣΩ is invertible on this high-probability event, guaranteeing the existence and uniqueness of the least-squares solution. Finally, to estimate the error, we decompose the true signal as f = PWn f + PW⊥ 
+
+> n
+
+f and explicitly track the aliasing of the out-of-space tail PW⊥ 
+
+> n
+
+f through the inversion process. This algebraic manipulation isolates the empirical cross-term bCΩ, yielding the final bound. 3.1.1. Orthonormal Bases. Suppose now that we are given orthonormal bases {sk}k∈N and 
+
+{wk}k∈N for S and W respectively. Suppose further that W ⊆ S : under these additional assumptions, the synthesis operator S, W become isometries, and so does U :
+
+U ∗U = W ∗SS ∗W = W ∗PS W = W ∗W = Iℓ2 .
+
+But then Σ = ι∗
+
+> n
+
+U ∗U ι n = ι∗
+
+> n
+
+ιn = ICn is simply the identity n × n matrix, hence ∥Σ∥ = λ0 = 1 .We thus deduce immediately from Theorem 3.2 the following result. 
+
+Corollary 3.4. Consider the setting of Theorem 3.2. Assume further that W ⊆ S and that both {sk}k∈N and {wk}k∈N are orthonormal bases for S, W respectively. Then the conclusions of Theorem 3.2 hold provided that m ≥ 83 R log(2 n/δ ).
+
+This simplified orthonormal setting is frequently encountered in practice. Some of the most notable examples include the reconstruction of wavelet coefficients from Fourier measurements STOCHASTIC GENERALIZED SAMPLING 9
+
+(the Fourier-Wavelet setup) and the approximation of analytic functions via Legendre polyno-mials from Fourier data. We will extensively study this Fourier-Legendre setup in Section 4 as a primary application of our theory. 3.2. Concentration of the Empirical Cross-Term. In Theorem 3.2, the reconstruction error is bounded by a multiple of the theoretical best-approximation error, scaled by the factor (1 + 
+
+K2
+
+> n, Ω
+
+)1/2 where Kn, Ω = ∥W ι n bΣ−1Ω bCΩ∥. Clearly, such an estimate is of practical significance only if we can establish rigorous control over Kn, Ω as the sample size m grows. In the deterministic Generalized Sampling framework, the corresponding cross-term parameter is known to converge to the deterministic limit ∥W ι nΣ−1C∥ [8, 10]. Motivated by this, our primary goal in this subsection is to prove that Kn, Ω converges in probability to this same limit, and to provide an explicit concentration inequality for this con-vergence. To establish this, we rely on the following algebraic decomposition: (5) |Kn, Ω − ∥ W ι nΣ−1C∥| = ∥W ι n bΣ−1Ω bCΩ∥ − ∥ W ι nΣ−1C∥ ≤ √D∥bΣ−1Ω bCΩ − Σ−1C∥.
+
+Since we have already established that bΣΩ P
+
+−−−−−→ 
+
+> m→+∞
+
+Σ, a standard continuity argument ensures 
+
+bΣ−1Ω
+
+> P
+
+−−−−−→ 
+
+> m→+∞
+
+Σ−1. Therefore, it suffices to prove that the empirical cross-term concentrates around its expectation ( bCΩ P
+
+−−−−−→ 
+
+> m→+∞
+
+C) with a precise probability threshold ˜Mε,δ , and then invoke the continuity of operator composition. However, analyzing bCΩ introduces specific technical challenges. Unlike the Gram matrix, 
+
+bCΩ : H −→ Cn is a rectangular operator mapping between two distinct Hilbert spaces, one infi-nite dimensional, the other finite dimensional. To overcome this, we develop a novel extension of the Bernstein inequality. By combining the Hermitian dilation technique typically used for finite rectangular matrices with a dimension-free Bernstein inequality for Hilbert-Schmidt operators (Theorem 5.2), we obtain the following general result. 
+
+Theorem 3.5 (Bernstein inequality for random, rectangular operators) . Let H1, H2 be separable Hilbert spaces and let X1, . . . , X m : H1 −→ H 2 be independent, random operators such that 
+
+E(Xt) = 0 for every t ∈ { 1, . . . , m }. Assume that there exists L, σ 2 ≥ 0 such that for every 
+
+t ∈ { 1, . . . , m } one has: 
+
+∥Xt∥ ≤ L almost surely ,
+
+max {∥ V1∥, ∥V2∥} ≤ σ2,
+
+where V1 := Pmt=1 E(X∗ 
+
+> t
+
+Xt) and V2 := Pmt=1 E(XtX∗ 
+
+> t
+
+). Finally, suppose that for every t ∈{1, . . . , m } the operators X∗ 
+
+> t
+
+Xt and XtX∗ 
+
+> t
+
+are trace-class on H1 and H2 respectively. Then for every ε ≥ 16 (L + √L2 + 36 σ2) one has 
+
+P
+
+> m
+
+X
+
+> t=1
+
+Xt ≥ ε
+
+!
+
+≤ 14 tr( V1) + tr( V2)max {∥ V1∥, ∥V2∥} exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+.
+
+Although the proof fundamentally relies on combining two well-established variants of the Bernstein inequality, to the best of our knowledge, this specific formulation for random, rectan-gular operators between abstract Hilbert spaces does not appear in the existing literature. The full proof is deferred to Section 5.1. With this tool at our disposal, we can now establish the concentration inequality for the cross-term factor Kn, Ω.
+
+Theorem 3.6. Consider the setting of Theorem 3.2. Let Λ := 1 + ∥Σ−1∥ + ∥C∥ and let ε ∈
+
+(0 , Λ√D min {1, 2∥Σ−1∥} ) and δ ∈ (0 , 1) . If 
+
+m ≥ M ∗ 
+
+> ε,δ
+
+:= 10 3 KR ′′ log(56 n/δ ) Λ2Dε2 max 1, 2∥Σ−1∥ 4 ,
+
+then 
+
+Kn, Ω − ∥ W ι nΣ−1C∥ < ε 10 L. FINOTTI AND M. SANTACESARIA 
+
+with probability at least 1 − δ.
+
+If we specialize this result to the orthonormal case and assume geometric compatibility be-tween the spaces, the cross-term behavior simplifies dramatically. We are able to prove that the cross-term vanishes entirely by only requiring the sampling system {sk}k∈N to be orthonormal. 
+
+Corollary 3.7. If {sk}k∈N is an orthonormal basis for S and W ⊆ S , then C = 0 , hence 
+
+Kn, Ω P
+
+−−−−−→ 
+
+> m→+∞
+
+0.
+
+This corollary highlights a remarkable feature of orthonormal sampling systems: the alias-ing error caused by the out-of-space tail of the signal is completely eliminated in the limit. Because Kn, Ω P
+
+−→ 0, our randomized reconstruction asymptotically achieves the theoretical best-approximation error ∥f − ˜f ∥ ≤ ∥ PW⊥ 
+
+> n
+
+f ∥ without suffering from any noise amplification from the un-reconstructed tail. 3.3. Leverage-score Sampling. Up to this point, our stochastic framework has accommo-dated any arbitrary probability distribution p satisfying Assumption 3.1. We now specialize our analysis to the optimal choice of measure, which minimizes the coherence parameter R and consequently yields the most efficient sampling rate. Recall from Proposition 5.11 that the trace of the matrix Σ is exactly P 
+
+> j∈N
+
+∥vj ∥2. We can thus define the following probability distribution on N:
+
+pj := ∥vj ∥2
+
+tr(Σ) for every j ∈ N.
+
+A randomized sampling strategy that employs this specific distribution will be referred to as 
+
+leverage-score sampling . Note that this density naturally satisfies Assumption 3.1: clearly, vj̸ = 0 
+
+forces pj > 0. Moreover, this optimal choice yields: 
+
+R = sup 
+
+> j∈supp( p)
+
+∥vj ∥2
+
+pj
+
+= tr(Σ) < +∞.
+
+Substituting this value of R into our main theorem immediately yields the following result. 
+
+Corollary 3.8. Consider the setting of Theorem 3.2 and choose pj = ∥vj ∥2 
+
+> tr(Σ)
+
+for every j ∈ N.Then the conclusions of Theorem 3.2 hold provided that m ≥ 83 tr(Σ) ∥Σ∥∥ Σ−1∥2 log(2 n/δ ).
+
+We remark that, since tr(Σ) ≤ n∥Σ∥, the stable sampling rate with the leverage-score choice can be safely bounded by 
+
+m ≥ 83 κ(Σ) 2n log(2 n/δ ),
+
+where κ(Σ) = ∥Σ∥∥ Σ−1∥ is the condition number of Σ. Under the additional subspace condition 
+
+W ⊆ S , we know from Proposition 5.8 that this condition number is controlled uniformly in n
+
+by the frame/Riesz bounds. We thus obtain the following universal rate. 
+
+Corollary 3.9. Consider the setting of Theorem 3.2 and choose pj = ∥vj ∥2 
+
+> tr(Σ)
+
+for every j ∈ N.Assume further that W ⊆ S . Then the conclusions of Theorem 3.2 hold provided that m ≳
+
+n log(2 n/δ ).
+
+This corollary highlights a profound advantage of the stochastic framework. By employing leverage-score sampling, we achieve an explicit, near-linear sample complexity of m ≳ n log n
+
+that is completely independent of the specific choice of the bases . This stands in stark contrast to deterministic generalized sampling, where the stable sampling rate is strictly basis-dependent, often impossible to compute explicitly, and frequently suffers from a severe quadratic scaling barrier ( m ≳ n2). When orthonormal bases are employed, the asymptotic sampling rate remains O(n log n), but we obtain tighter constants and, crucially, the cross-term factor Kn, Ω decays to zero. Indeed, if both {sk}k∈N and {wk}k∈N are orthonormal bases and W ⊆ S , then Σ = ICn , therefore 
+
+R = tr( ICn ) = n. We immediately derive the following. STOCHASTIC GENERALIZED SAMPLING 11 
+
+Corollary 3.10. Consider the setting of Corollary 3.4 and choose pj = ∥vj ∥2 
+
+> n
+
+for every j ∈ N.Then the conclusions of Theorem 3.2 hold provided that m ≥ 83 n log(2 n/δ ).
+
+3.3.1. Connections with Christoffel Sampling. In the literature of randomized least-squares ap-proximation for continuous functions, optimal sampling distributions are intimately tied to the concept of the Christoffel function . Given that our leverage-score distribution pj ∝ ∥ vj ∥2 yields the optimal m ≳ n log n rate in the discrete, abstract operator setting, it is natural to ask how our framework mathematically mirrors this established continuous concept. To see this connection, let us briefly review the continuous setting. If (D, ρ ) is a measure space and P ⊆ L2(D, ρ ) is an n-dimensional subspace where pointwise evaluation is defined, the (reciprocal) Christoffel function KP : D −→ [0 , +∞) is defined such that KP (x) is the squared norm of the evaluation functional p ∈ P 7 → p(x) ∈ C. (This functional is well-defined by assumption and continuous due to the finite dimensionality of P). If μ is a probability measure on D that is absolutely continuous with respect to ρ, it admits a positive density dμ = ν dρ . By defining the weight function w := 1 
+
+> ν
+
+, the global coherence of the subspace is captured by the parameter: 
+
+κw(P) := ∥w KP ∥L∞(D,ρ ).
+
+It is a well-established result [3] that if m samples x1, . . . , x m ∈ D are drawn independently according to μ, one can stably recover a function f ∈ L2(D, ρ ) from its pointwise evaluations using a finite-dimensional reconstruction ˜f ∈ P with probability at least 1 − δ, provided that: 
+
+m ≳ κw(P) log(2 n/δ ).
+
+Comparing this to our stable sampling rate, it is evident that κw(P) plays the exact same role as our coherence parameter R. We now rigorously explore this connection both for the orthonormal setting and the frame-to-Riesz scenario. 
+
+Orthonormal Bases. In our discrete setting, the domain is D = N and ρ is the counting measure, meaning L2(D, ρ ) = ℓ2. Our n-dimensional subspace is P = U ι n(Cn) = S∗(Wn). The density 
+
+ν corresponds to our probability distribution p = ( pj )j∈N (which acts as the Radon-Nikodym derivative with respect to the counting measure), yielding the weight function w(j) = 1 
+
+> pj
+
+. As-suming for simplicity that p is strictly positive on N, the next lemma demonstrates that in the orthonormal setting, our parameter R is exactly the Christoffel parameter. 
+
+Lemma 3.11. With the above notation and assuming orthonormal bases, we have: 
+
+κw(P) = sup 
+
+> j∈N
+
+∥vj ∥2
+
+pj
+
+=: R. 
+
+The proof of this lemma is deferred to Subsection 5.4. 
+
+Frame-to-Riesz Case. It is natural to ask if the exact equality κw(P) = R holds in the more general Riesz basis case. To answer this, we must explicitly compute the Christoffel function 
+
+KP (j) for our discrete subspace P.By definition, KP (j) is the squared norm of the evaluation functional a 7 → aj on P. By the Riesz Representation Theorem, there exists a unique representer qj ∈ P such that ⟨a, q j ⟩ℓ2 =
+
+aj = ⟨a, e j ⟩ℓ2 for every a ∈ P . This orthogonality condition implies that the difference qj − ej
+
+lies in P⊥.Because qj ∈ P , taking the orthogonal projection PP yields qj = PP ej . Utilizing the explicit formula for the projection onto the range of U ι n, we find: 
+
+qj = PRan( U ι n)ej = U ι n(ι∗
+
+> n
+
+U ∗U ι n)−1ι∗
+
+> n
+
+U ∗ej = U ι nΣ−1vj .
+
+We can now compute the Christoffel function by evaluating the squared norm of this representer: 
+
+KP (j) = ∥qj ∥2 
+
+> ℓ2
+
+= ⟨U ι nΣ−1vj , U ι nΣ−1vj ⟩ℓ2
+
+= ⟨Σ−1vj , ΣΣ −1vj ⟩ℓ2 = ⟨Σ−1vj , v j ⟩ℓ2 .(6) 12 L. FINOTTI AND M. SANTACESARIA 
+
+Consequently, the weighted Christoffel parameter is not exactly R, but rather: 
+
+κw(P) = sup 
+
+> j∈N
+
+⟨Σ−1vj , v j ⟩ℓ2
+
+pj
+
+.
+
+By bounding this quadratic form, we see that the parameters are equivalent up to the spectral bounds of the finite section Σ:
+
+1
+
+∥Σ∥ R ≤ κw(P) ≤ ∥ Σ−1∥R. 
+
+3.4. Extension to {wk}k∈N Frame. We now consider the setting where we relax the condition on the reconstruction system {wk}k∈N, requiring it only to be a frame for W rather than a Riesz basis. Recall that any Riesz basis constitutes a frame with the identical bounds (cf. [22, Theorem 5.4.1]). For this reason, we deliberately retain the notation C, D to denote the frame bounds of the synthesis operator W . This guarantees that our broader frame notation naturally recovers the previously established Riesz bounds when restricted to that special case. This generalization has been studied in the deterministic setting by Adcock-Hansen-Herrholz-Teschke [10], where they developed analogous stable sampling rates to those in the Riesz sce-nario [7]. The core issue in the frame setting is that, although the convergence in probability 
+
+bΣΩ P
+
+−−−−−→ 
+
+> m→+∞
+
+Σ remains true (Proposition 5.6 does not rely on {wk}k∈N being a Riesz basis), we no longer have the guarantee that bΣΩ is eventually invertible. Because the synthesis operator 
+
+W is only required to be bounded and surjective onto W (not necessarily injective), the limiting finite section Σ itself need not be invertible. To overcome this lack of invertibility, we employ the Moore-Penrose pseudo-inverse, following the approach of [10]. The recovery ˜f is now defined as: (7) ˜f := W ι n bΣ†
+
+> Ω
+
+ι∗
+
+> n
+
+U ∗QΩS∗f. 
+
+In this subsection, λ0 > 0 will denote the smallest non-zero eigenvalue of Σ. With this extended notation, the minimal stable sampling rate Mδ = Mλ0,δ coincides with the one proposed in the Riesz scenario, essentially due to the fact that ∥Σ†∥ = λ−10 .As before, we recall the weighted sampling operator QΩ, the empirical Gram matrix bΣΩ, and the empirical cross-term bCΩ.
+
+Theorem 3.12. Let H be a separable Hilbert space. Let {sk}k∈N and {wk}k∈N be frames for their respective closed spans S and W, with synthesis operators S and W .Let f ∈ H and let Wn := span {w1, . . . , w n}. Suppose we draw m i.i.d. sample indices 
+
+Ω = {i1, . . . , i m} from N according to a probability distribution p = ( pj )j∈N. Let yt := ⟨f, s it ⟩ be the acquired samples. Under Assumption 3.1, for any δ ∈ (0 , 1) , if the sample size m satisfies 
+
+m ≥ 83 R∥Σ∥∥ Σ†∥2 log(2 n/δ ),
+
+then with probability at least 1 − δ, the weighted least-squares problem 
+
+argmin 
+
+> x∈Cn
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|⟨ W ι nx, s it ⟩ − yt|2
+
+admits a unique minimal norm solution ˜x. Moreover, the reconstructed signal ˜f := W ι n ˜x
+
+satisfies the error bound 
+
+∥f − ˜f ∥ ≤ ∥ PW⊥ 
+
+> n
+
+f ∥  1 + K2
+
+> n, Ω
+
+ 12 ,
+
+where Kn, Ω := ∥W ι n bΣ† 
+
+> Ω
+
+bCΩ∥.
+
+Theorem 3.12 represents a fully stochastic extension of the deterministic frame-based gener-alized sampling introduced in [10]. While the deterministic framework yields bounds that are STOCHASTIC GENERALIZED SAMPLING 13 
+
+difficult to compute in practice, our stochastic result provides explicit, non-asymptotic bounds on the sample complexity required to achieve stable recovery with arbitrary redundant frames. We remark that several auxiliary results displayed in Subsections 3.2 and 3.3 did not specifi-cally rely on the Riesz basis assumption for the reconstruction system. To be precise, in Corollary 3.7, we only require the sampling system to be orthonormal (the reconstruction system can re-main an arbitrary frame). Furthermore, the leverage-score distribution bounds in Corollary 3.8 directly extend to the frame setting by simply substituting Σ−1 with Σ†.Analogously, the connection to Christoffel sampling at the end of Subsection 3.3 extends to the frame scenario by substituting every occurrence of Σ−1 with Σ†. (Note that in equation (6), the identity ΣΣ †vj = vj remains valid by virtue of the fact that vj ∈ Ran( ι∗
+
+> n
+
+U ∗) = Ran(Σ) in conjunction with ΣΣ † = PRan(Σ) ). We thus deduce the bounds: 
+
+1
+
+∥Σ∥ R ≤ κw(P) ≤ ∥ Σ†∥R. 
+
+We also state the analogue of Theorem 3.6 regarding the concentration of the cross-term factor 
+
+Kn, Ω in the frame setting. 
+
+Theorem 3.13. Consider the setting of Theorem 3.12. Let Λ := 1 + ∥Σ†∥ + ∥C∥ and let 
+
+ε ∈ (0 , Λ√D min {1, 2∥Σ†∥} ) and δ ∈ (0 , 1) . If 
+
+m ≥ M ∗ 
+
+> ε,δ
+
+:= max 
+
+
+
+˜M ε  
+
+> Λ√D,δ
+> 2
+
+, ˜M ε  
+
+> 4∥Σ†∥2Λ√D,δ
+> 2
+
+
+
+,
+
+then 
+
+P
+
+
+
+Kn, Ω − ∥ W ι nΣ†C∥ < ε 
+
+
+
+≥ 1 − δ. 
+
+Proof Strategy. We now sketch the proofs of both theorems. The core difficulty in the frame setting is that Σ is generally singular, meaning we cannot rely on standard matrix inversion. We recover the uniqueness of the reconstruction by computing the minimal norm least-squares solution via the Moore-Penrose pseudo-inverse: ˜x := bΣ†
+
+> Ω
+
+ι∗
+
+> n
+
+U ∗QΩy.This introduces two major analytical hurdles: (1) Algebraic cancellation. In the Riesz basis setting, bounding the reconstruction error relies on the clean cancellation bΣ−1Ω bΣΩ = ICn . With frames, this product yields an orthogonal projection bΣ† 
+
+> Ω
+
+bΣΩ = PRan( bΣΩ), which severely complicates the algebraic decomposition of the projection error. (2) Discontinuity of the pseudo-inverse. To prove that the factor Kn, Ω concentrates, we require bΣ†
+
+> Ω
+> P
+
+−→ Σ†. However, the pseudo-inverse mapping A 7 → A† is notoriously discon-tinuous under arbitrary perturbations if the rank of the matrix changes. The key to overcoming both hurdles lies in establishing the high-probability eventual-range stability of the empirical Gram matrix. The pivotal result of this subsection is that, for suffi-ciently large m, the empirical Gram bΣΩ and its expected value Σ share the same range with high probability. 
+
+Proposition 3.14. One has 
+
+Ran(Σ) = Ran( ι∗
+
+> n
+
+W ∗W ι n).
+
+Furthermore, for every δ ∈ (0 , 1) and every m ≥ Mδ one has 
+
+Ran( bΣΩ) = Ran(Σ) = Ran( ι∗
+
+> n
+
+W ∗W ι n)
+
+with probability at least 1 − δ.
+
+Once the ranges of the matrices coincide, the pseudo-inversion map becomes continuous when restricted to this subspace (Lemma A.9), allowing us to conclude that bΣ†
+
+> Ω
+> P
+
+−→ Σ†. Furthermore, the matching ranges allow the cumbersome orthogonal projections in the error decomposition to simplify algebraically, enabling the proof to conclude exactly as it did in the Riesz case. The rigorous event-tracking for these probabilities is detailed in Section 5.5. 14 L. FINOTTI AND M. SANTACESARIA 
+
+4. Application: reconstruction of analytic functions 
+
+In this section, we consider the classical problem of recovering an analytic function defined on a compact interval from a finite number of its Fourier coefficients. It is natural to reconstruct such a function using a polynomial basis, as the orthogonal projection of an analytic function onto the space of complex-coefficient polynomials of degree at most n converges exponentially fast as n → +∞ [24]. Using our notation, let W = S = H = L2([ −1, 1]) , and let f ∈ L2([ −1, 1]) be analytic on 
+
+[−1, 1] (meaning it admits an analytic continuation to an open set containing [−1, 1] ). Since our stochastic framework is independent of the specific choice of bases, we can set the sampling system {sl}l∈N to be the standard Fourier basis: 
+
+sl(x) := 1
+
+√2 eπiσ (l)x, l ∈ N,
+
+where σ : N → Z is a bijection. For the reconstruction system, we employ the normalized Legendre polynomials: 
+
+wk+1 (x) := 
+
+q
+
+k + 12
+
+2kk!
+
+dk
+
+dx k (( x2 − 1) k), k ∈ N.
+
+Our goal is to answer the following: If we have access to m Fourier coefficients of f , how large must m be to guarantee stable recovery of the first n Legendre coefficients with high probability? 
+
+Previous studies [5, 28, 25] have shown that deterministic sampling strategies for this Fourier-Legendre pair suffer from severe numerical instability, requiring a stringent quadratic oversam-pling rate of m ≳ n2 to ensure stable recovery. In contrast, Corollary 3.10 indicates that by sampling frequencies randomly according to the leverage-score distribution, this barrier can be broken, reducing the requirement to m ≳ n log(2 n/δ ).To apply our theorem, we must explicitly compute this optimal leverage-score distribution 
+
+pl = ∥vl∥2/n . By definition, the vector vl ∈ Cn consists of the inner products between the 
+
+l-th sampling vector and the first n reconstruction vectors. Consequently, its squared norm is precisely the sum of the squared Fourier coefficients of the first n Legendre polynomials: 
+
+∥vl∥2 =
+
+> n
+
+X
+
+> k=1
+
+| bwk(σ(l)) |2,
+
+where, for l ∈ N, the 2-periodic σ(l)-th Fourier coefficient of f is 
+
+bf (σ(l)) = ⟨f, s l⟩L2([ −1,1]) = 1
+
+√2
+
+Z 1
+
+> −1
+
+f (x)e−πiσ (l)x dx. 
+
+Using the well-known closed-form expression for these coefficients in terms of spherical Bessel functions of the first kind, we can explicitly construct the optimal sampling distribution. This yields the following main result for analytic function recovery. 
+
+Theorem 4.1. Let m, n ∈ N and let f be an analytic function on [−1, 1] . Let {sk}k∈N be the Fourier basis and {wk}k∈N the normalized Legendre polynomial basis. Sample m independent, identically distributed indices Ω = {i1, . . . , i m} ⊆ N according to the probability distribution: 
+
+pl = ∥vl∥2
+
+n = 1
+
+n
+
+> n−1
+
+X
+
+> k=0
+
+(2 k + 1) |jk(−σ(l)π)|2 ,
+
+where jk is thev k-th spherical Bessel function of the first kind. For δ ∈ (0 , 1) , if m ≥ 
+
+> 83
+
+n log(2 n/δ ), then with probability at least 1 − δ, the least-squares problem 
+
+argmin 
+
+> x∈Cn
+> m
+
+X
+
+> t=1
+
+1
+
+pit
+
+|\W ι nx(σ(it)) − bf (σ(it)) |2
+
+admits a unique solution ˜x. Moreover, the reconstruction ˜f := W ι n ˜x satisfies: 
+
+∥f − ˜f ∥L2([ −1,1]) ≲ √nρ −n  1 + K2
+
+> n, Ω
+
+ 12 ,STOCHASTIC GENERALIZED SAMPLING 15 
+
+for some ρ > 1, where the cross-term factor Kn, Ω := ∥W ι n bΣ−1Ω bCΩ∥ converges in probability to 0
+
+as m → +∞.Remark 4.2 (Overcoming the deterministic barrier) . By employing the optimal stochastic sam-pling rate m ≍ n log( n/δ ), we can select a reconstruction dimension n ≍ m 
+
+> log( m/δ )
+
+. Because the cross-term vanishes ( Kn, Ω P
+
+−→ 0), the asymptotic bound on the reconstruction error becomes: 
+
+∥f − ˜f ∥L2([ −1,1]) ≤ C√m ρ − m 
+
+> log( m/δ )
+
+.
+
+This represents a drastic and fundamental improvement over the deterministic setting. In classi-cal deterministic Generalized Sampling, the severe algebraic mismatch between the Fourier and Legendre bases yields an exponentially ill-conditioned system, forcing the quadratic sample com-plexity m ≳ n2. Under that deterministic restriction, the maximum reconstructable polynomial degree is n ∼ √m, which limits the convergence to a root-exponential rate of O(ρ−√m).In stark contrast, our leverage-score sampling automatically selects the most informative frequencies. By allowing a near-linear reconstruction degree n ∼ m/ log m, the stochastic frame-work yields near-exponential rate of O(ρ−m/ log m). This rigorously demonstrates that geometry-aware randomization not only stabilizes the inversion process, but also improves the convergence rates of infinite-dimensional inverse problems. 5. Proofs 
+
+5.1. Concentration Inequalities. The driving force behind our main results is the matrix Bernstein inequality, which allows us to bound the probability that the norm of a sum of inde-pendent, zero-mean random matrices exceeds a given tolerance by the dimension of the matrices times an exponentially decaying factor. This is the key in obtaining the desired sampling rate of the form m ≳ n log(2 n/δ ).
+
+Theorem 5.1 (Bernstein inequality [34, Theorem 1.4]) . Let X1, . . . , X m be independent, ran-dom, self-adjoint matrices of dimension d such that E(Xt) = 0 for every t ∈ { 1, . . . , m }. Assume that there exists L ≥ 0 such that for every t ∈ { 1, . . . , m } one has ∥Xt∥ ≤ L almost surely. Then for every ε > 0 one has 
+
+P
+
+> m
+
+X
+
+> t=1
+
+Xt ≥ ε
+
+!
+
+≤ 2d · exp 
+
+ −ε2/2
+
+V + Lε/ 3
+
+
+
+,
+
+where V := ∥ Pmt=1 E[X2 
+
+> t
+
+]∥.
+
+We need an infinite-dimensional version of the Bernstein inequality since, in Subsection 3.2, we wish to apply to the empirical cross-term bCΩ the same reasoning we used for the empirical Gram bΣΩ. The first issue we stumble upon is that Theorem 5.1 makes use of the dimension 
+
+d of the matrices in play. Fortunately, there exists a dimension-free version of the Bernstein inequality that employs the effective rank of a matrix, defined as 
+
+r(A) := tr( A)
+
+∥A∥ .
+
+Since the definition of effective rank can be extended to trace-class operators, this version has been generalized to random operators acting on a Hilbert space. 
+
+Theorem 5.2 (Bernstein inequality for random, self-adjoint, Hilbert-Schmidt operators [31, Section 3.2]) . Let H be a separable Hilbert space and let X1, . . . , X m be independent, random, self-adjoint, Hilbert-Schmidt operators on H such that E(Xt) = 0 for every t ∈ { 1, . . . , m }.Assume that there exists L, σ 2 ≥ 0 such that for every t ∈ { 1, . . . , m } one has: 
+
+∥Xt∥ ≤ L almost surely ,
+
+> m
+
+X
+
+> t=1
+
+E(X2 
+
+> t
+
+) ≤ σ2.16 L. FINOTTI AND M. SANTACESARIA 
+
+Then for every ε ≥ 16 (L + √L2 + 36 σ2) one has 
+
+P
+
+> m
+
+X
+
+> t=1
+
+Xt ≥ ε
+
+!
+
+≤ 14 · r
+
+> m
+
+X
+
+> t=1
+
+E(X2 
+
+> t
+
+)
+
+!
+
+exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+.
+
+At the cost of a worse constant and of a constraint on ε, this extension of the Bernstein inequality solves the dimensionality issue. However, the cross-terms bCΩ, C do not act on a single space, but on two distinct Hilbert spaces: 
+
+bCΩ, C : H −→ Cn.
+
+Our goal is now to further extend Theorem 5.2 to random operators mapping between possibly distinct Hilbert spaces H1 −→ H 2. This is done by means of the so-called Hermitian dilation, a technique that is employed to extend result from square self-adjoint matrices to rectangular matrices (see [34, Theorem 1.6]). 
+
+Definition 5.3. Let T : H1 −→ H 2 be a bounded operator between Hilbert spaces. The Her-mitian dilation of T is 
+
+H(T ) : H1 ⊕ H 2 −→ H 1 ⊕ H 2,
+
+(x, y ) 7 −→ (T ∗y, T x ).
+
+We have now at our disposal all the ingredients to prove the extension of the Bernstein inequality that we need. 
+
+Proof of Theorem 3.5. We wish to apply Theorem 5.2 to the dilations H(Xt). We have that 
+
+H(X1), . . . , H (Xm) are independent, random, self-adjoint operators on H1 ⊕ H 2 (where self-adjointness follows from Proposition A.11 (2)) satisfying E(H(Xt)) = H(E(Xt)) = 0 for every 
+
+t ∈ { 1, . . . , m }, where H commutes with E by continuity (indeed, H is isometric from Proposition A.11 (1)) and R-linearity (Proposition A.11 (3)). We must check that each H(Xt) is a Hilbert-Schmidt operator: this is equivalent to requiring H(Xt)∗H(Xt) = H(Xt)2 to be trace-class. A simple calculation shows that H(Xt)2(x, y ) = ( X∗ 
+
+> t
+
+Xtx, X tX∗ 
+
+> t
+
+y) for every (x, y ) ∈ H 1 ⊕ H 2: it follows that 
+
+tr( H(Xt)2) = tr( X∗ 
+
+> t
+
+Xt) + tr( XtX∗ 
+
+> t
+
+),
+
+and this is finite by hypothesis. We also deduce that Pmt=1 E(H(Xt)2) = ( V1, V 2), and it’s easy to see that 
+
+tr(( V1, V 2)) = tr( V1) + tr( V2),
+
+∥(V1, V 2)∥ = max {∥ V1∥, ∥V2∥} ≤ σ2.
+
+This allows us to write the effective rank of Pmt=1 E(H(Xt)2) in the following way: 
+
+r
+
+> m
+
+X
+
+> t=1
+
+E(H(Xt)2)
+
+!
+
+= tr( V1) + tr( V2)max {∥ V1∥, ∥V2∥} .
+
+Let ε ≥ 16 (L + √L2 + 36 σ2). Since ∥H(Xt)∥ = ∥Xt∥ ≤ L for each t, we can apply Theorem 5.2 to infer 
+
+P
+
+> m
+
+X
+
+> t=1
+
+H(Xt) ≥ ε
+
+!
+
+≤ 14 · r
+
+> m
+
+X
+
+> t=1
+
+E(H(Xt)2)
+
+!
+
+exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+= 14 tr( V1) + tr( V2)max {∥ V1∥, ∥V2∥} exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+.
+
+And the claim follows because ∥ Pmt=1 H(Xt)∥ = ∥H(Pmt=1 Xt)∥ = ∥ Pmt=1 Xt∥, where we used the R-linearity of H (Proposition A.11 (3)). □STOCHASTIC GENERALIZED SAMPLING 17 
+
+5.2. Proof of the Main Result. Recall that, for this subsection, we are assuming the sampling system to be a frame and the reconstruction system to be a Riesz basis. Under these assumption, the matrix Σ is invertible. 
+
+Proposition 5.4. Σ = ι∗
+
+> n
+
+U ∗U ι n is invertible. Proof. We will start by showing that U = S∗W is injective: let x ∈ ker( U ). We can check that 
+
+W x ∈ S ⊥: let s ∈ S . Since S = S(ℓ2), let y ∈ ℓ2 such that s = Sy . Then 
+
+⟨W x, s ⟩ = ⟨W x, Sy ⟩ = ⟨S∗W x, y ⟩ℓ2 = ⟨U x, y ⟩ℓ2 = 0 .
+
+Clearly, we also have W x ∈ W . Since we are assuming W ∩ S ⊥ = {0} (see Assumptions 3.1), we conclude that W x = 0 . But then x = 0 by injectivity of the synthesis operator W .Now, since Σ is an n × n matrix, invertibility is equivalent to injectivity. Furthermore, since 
+
+Σ = ι∗
+
+> n
+
+U ∗U ι n = ( U ι n)∗U ι n, Lemma A.1 ensures that ker(Σ) = ker( U ι n), and the latter is {0}
+
+by injectivity of U and ιn. □
+
+In order to employ the matrix Bernstein inequality (Theorem 5.1), we need to express the difference bΣΩ − Σ as the sum of independent, centered, self-adjoint matrices. This is the essence of the next lemma. Recall that vj := ι∗
+
+> n
+
+U ∗ej ∈ Cn.
+
+Lemma 5.5. One has: 
+
+Σ = X
+
+> j∈N
+
+vj ⊗ vj and bΣΩ = 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+vit ⊗ vit
+
+pit
+
+,
+
+where the infinite series converges in the operator norm topology. In particular, in accordance to our convention (3) , we have 
+
+Σ = X
+
+> j∈supp( p)
+
+vj ⊗ vj .
+
+Proof. Use the properties of rank-1 operators to quickly deduce 
+
+bΣΩ = ι∗
+
+> n
+
+U ∗QΩU ι n
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+ι∗
+
+> n
+
+U ∗
+
+ eit ⊗ eit
+
+pit
+
+
+
+U ι n
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+(ι∗
+
+> n
+
+U ∗eit ) ⊗ (( U ι n)∗eit )
+
+pit
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+vit ⊗ vit
+
+pit
+
+.
+
+We can apply the same reasoning to Σ. However, the series P 
+
+> j∈N
+
+ej ⊗ej converges to the identity only in the strong sense, but not in norm. It follows that the series P 
+
+> j∈N
+
+ι∗
+
+> n
+
+U ∗(ej ⊗ ej )U ι n =
+
+P 
+
+> j∈N
+
+vj ⊗ vj converges strongly to ι∗
+
+> n
+
+U ∗IU ι n = Σ . But strong operator topology and norm operator topology coincide in the space of operators that act on a finite dimension space (i.e. the space of matrices), and the claim is proved. □
+
+We arrived at the heart of the proof of Theorem 3.2: we apply the Bernstein inequality and carry on the computations to explicitly derive the stable sampling threshold Mε,δ .
+
+Proposition 5.6. For every ε ∈ (0 , ∥Σ∥], δ ∈ (0 , 1) there exists Mε,δ > 0 such that for every natural m ≥ Mε,δ one has 
+
+P(∥bΣΩ − Σ∥ ≥ ε) ≤ δ. 
+
+Proof. Fix ε ∈ (0 , ∥Σ∥], δ ∈ (0 , 1) . The strategy of the proof revolves around bounding the tail 
+
+P(∥bΣΩ − Σ∥ ≥ ε) using the matrix Bernstein inequality (Theorem 5.1). To this end, we must 18 L. FINOTTI AND M. SANTACESARIA 
+
+write bΣΩ −Σ as the sum of independent, random, self-adjoint matrices, and this is where Lemma 5.5 comes into play: define for every t ∈ { 1, . . . , m }
+
+Yt := vit ⊗ vit
+
+pit
+
+, Xt := 1
+
+m (Yt − Σ) .
+
+Clearly, we have bΣΩ − Σ = Pmt=1 Xt. Each Yt is self-adjoint and so is Σ: it follows that Xt
+
+is self-adjoint for every t ∈ { 1, . . . , m }. Furthermore, since the random indices i1, . . . , i m are independent, we have that Y1, . . . , Y m are independent random matrices, and the same applies to X1, . . . , X m. The expected value of each Yt is 
+
+E(Yt) = X
+
+> j∈supp( p)
+
+pj
+
+vj ⊗ vj
+
+pj
+
+= X
+
+> j∈supp( p)
+
+vj ⊗ vj = Σ ,
+
+(where the last step follows from Lemma 5.5), and this entails E(Xt) = 0 for every t.Next, let t ∈ { 1, . . . , m }. We can use the fact that Xt is self-adjoint to evaluate its operator norm as follows: 
+
+∥Xt∥ = sup 
+
+> x∈Cn
+> ∥x∥=1
+
+|⟨ Xtx, x ⟩| .
+
+For every x ∈ Cn such that ∥x∥ = 1 we have 
+
+|⟨ Xtx, x ⟩| = 1
+
+m
+
+1
+
+pit
+
+⟨(vit ⊗ vit )x, x ⟩ − ⟨ Σx, x ⟩
+
+= 1
+
+m
+
+1
+
+pit
+
+⟨⟨ x, v it ⟩vit , x ⟩ − ⟨ Σx, x ⟩
+
+= 1
+
+m
+
+1
+
+pit
+
+⟨x, v it ⟩⟨ vit , x ⟩ − ⟨ Σx, x ⟩
+
+= 1
+
+m
+
+1
+
+pit
+
+|⟨ x, v it ⟩| 2 − ⟨ Σx, x ⟩
+
+≤ 1
+
+m max 
+
+ 1
+
+pit
+
+|⟨ x, v it ⟩| 2, ⟨Σx, x ⟩
+
+
+
+Notice that 1
+
+> pit
+
+|⟨ x, v it ⟩| 2 ≤ 1
+
+> pit
+
+∥x∥2∥vit ∥2 ≤ R, where the last inequality follows from the defini-tion of R. We also have that ⟨Σx, x ⟩ ≤ ∥ Σ∥ ≤ R: this gives us the bound 
+
+∥Xt∥ ≤ Rm =: L. (8) Next, we will find a suitable bound for the variance parameter V := ∥ Pmt=1 E(X2 
+
+> t
+
+)∥. Start with 
+
+X2 
+
+> t
+
+= 1
+
+m2 (Yt − Σ) 2 = 1
+
+m2 (Y 2 
+
+> t
+
+− 2YtΣ + Σ 2),
+
+E(X2 
+
+> t
+
+) = 1
+
+m2 (E(Y 2 
+
+> t
+
+) − 2E(Yt)Σ + Σ 2) = 1
+
+m2 (E(Y 2 
+
+> t
+
+) − 2Σ 2 + Σ 2) = 1
+
+m2 (E(Y 2 
+
+> t
+
+) − Σ2).
+
+For every x ∈ Cn with ∥x∥ = 1 one has 
+
+⟨E(X2 
+
+> t
+
+)x, x ⟩ = 1
+
+m2 (⟨E(Y 2 
+
+> t
+
+)x, x ⟩ − ⟨ Σ2x, x ⟩).
+
+Use the fact that Y 2 
+
+> t
+
+= ∥vit ∥2vit ⊗vit
+
+> pi2
+> t
+
+= ∥vit ∥2
+
+> pit
+
+Yt to bound the first summand in the following way: 
+
+⟨E(Y 2 
+
+> t
+
+)x, x ⟩ = E
+
+ ∥vit ∥2
+
+pit
+
+⟨Ytx, x ⟩
+
+
+
+≤ RE(⟨Ytx, x ⟩)= R⟨E(Yt)x, x ⟩
+
+= R⟨Σx, x ⟩≤ R∥Σ∥.STOCHASTIC GENERALIZED SAMPLING 19 
+
+On the other hand, we have 
+
+⟨Σ2x, x ⟩ = ∥Σx∥2 ≥ 0.
+
+Ultimately, we are left with 
+
+⟨E(X2 
+
+> t
+
+)x, x ⟩ ≤ R∥Σ∥
+
+m2 .
+
+Since the right-hand side is independent of t,
+
+* mX
+
+> t=1
+
+E(X2 
+
+> t
+
+)x, x 
+
++
+
+≤ R∥Σ∥
+
+m .
+
+Taking the supremum as ∥x∥ = 1 , we deduce 
+
+V ≤ R∥Σ∥
+
+m .(9) We can now use the matrix Bernstein inequality (Theorem 5.1) to infer 
+
+P
+
+
+
+∥bΣΩ − Σ∥ ≥ ε
+
+
+
+≤ 2n · exp 
+
+ −ε2/2
+
+V + Lε/ 3
+
+
+
+.
+
+Substituting the value of L (8) and using the bound for V (9), we get 
+
+P
+
+
+
+∥bΣΩ − Σ∥ ≥ ε
+
+
+
+≤ 2n · exp 
+
+ −mε 2/2
+
+R∥Σ∥ + Rε/ 3
+
+
+
+.
+
+The claim follows if, for sufficiently large m, we can prove that 
+
+2n · exp 
+
+ −mε 2/2
+
+R∥Σ∥ + Rε/ 3
+
+
+
+≤ δ, 
+
+which is the case if 
+
+m ≥ 2R
+
+
+
+∥Σ∥ + ε
+
+3
+
+ log(2 n/δ )
+
+ε2 .(10) Since ε ≤ ∥ Σ∥, (10) is true if, for example, 
+
+m ≥ 2R
+
+
+
+∥Σ∥ + ∥Σ∥
+
+3
+
+ log(2 n/δ )
+
+ε2
+
+= 83 R∥Σ∥ log(2 n/δ )
+
+ε2 =: Mε,δ . □
+
+If bΣΩ concentrates around Σ, which is invertible by Lemma 5.4, then bΣΩ itself must be invertible with high probability for sufficiently large m.
+
+Corollary 5.7. For every m ≥ Mδ := Mλ0,δ = 83 R∥Σ∥λ−20 log(2 n/δ ) one has that bΣΩ is invert-ible with probability at least 1 − δ.Proof. By Lemma A.3, 
+
+n
+
+∥bΣΩ − Σ∥ < λ 0 = ∥Σ−1∥−1o
+
+⊆ { bΣΩ is invertible }.
+
+It thus suffices to apply Proposition 5.6 with ε = λ0 ≤ ∥ Σ∥ to conclude that for every m ≥
+
+Mλ0,δ = Mδ
+
+P
+
+bΣΩ is invertible 
+
+
+
+≥ P
+
+
+
+∥bΣΩ − Σ∥ < λ 0 = ∥Σ−1∥−1
+
+≥ 1 − δ. □
+
+To conclude the proof of Theorem 3.2, we are going to estimate the reconstruction error 
+
+∥f − ˜f ∥.20 L. FINOTTI AND M. SANTACESARIA 
+
+Proof of Theorem 3.2. Let m ≥ Mδ: by Corollary 5.7, we can define 
+
+˜f := W ι n bΣ−1Ω ι∗
+
+> n
+
+U ∗QΩS∗f
+
+on a set of probability at least 1 − δ. Decompose f = PWn f + PW⊥ 
+
+> n
+
+f :
+
+˜f = W ι n bΣ−1Ω ι∗
+
+> n
+
+U ∗QΩS∗PWn f + W ι n bΣ−1Ω ι∗
+
+> n
+
+U ∗QΩS∗PW⊥ 
+
+> n
+
+f = ˜f1 + W ι n bΣ−1Ω bCΩf, 
+
+where ˜f1 := W ι n bΣ−1Ω ι∗
+
+> n
+
+U ∗QΩS∗PWn f . Use the fact that 
+
+PWn = PRan( W ι n) = W ι n(ι∗
+
+> n
+
+W ∗W ι n)−1ι∗
+
+> n
+
+W ∗
+
+to write 
+
+˜f1 = W ι n bΣ−1Ω ι∗
+
+> n
+
+U ∗QΩS∗W ι n(ι∗
+
+> n
+
+W ∗W ι n)−1ι∗
+
+> n
+
+W ∗f. 
+
+Next, recognize ι∗
+
+> n
+
+U ∗QΩS∗W ι n = bΣΩ to derive 
+
+˜f1 = W ι n(ι∗
+
+> n
+
+W ∗W ι n)−1ι∗
+
+> n
+
+W ∗f = PWn f, 
+
+hence ˜f = PWn f + W ι n bΣ−1Ω bCΩf. 
+
+It follows that 
+
+f − ˜f = PW⊥ 
+
+> n
+
+f − W ι n bΣ−1Ω bCΩf. 
+
+Finally, by the Pythagorean theorem, 
+
+∥f − ˜f ∥ = ( ∥PW⊥ 
+
+> n
+
+f ∥2 + ∥W ι n bΣ−1Ω bCΩf ∥2) 12 ≤ ∥ PW⊥ 
+
+> n
+
+f ∥(1 + K2
+
+> n, Ω
+
+) 12 . □
+
+Under the additional geometric assumption W ⊆ S , one is able to uniformly bound the condition number of Σ.
+
+Proposition 5.8. If W ⊆ S , then κ(Σ) := ∥Σ∥∥ Σ−1∥ ≤ BD AC .Proof. First, we have ∥Σ∥ = ∥ι∗
+
+> n
+
+U ∗U ι n∥ ≤ ∥ U ∥2 ≤ ∥ S∥2∥∥ W ∥2 ≤ BD . Since we know that 
+
+∥Sα ∥ ≥ √A∥α∥ for every α ∈ ℓ2, Lemma A.2 entails that ∥S∗Sα ∥ ≥ √A∥Sα ∥ for every 
+
+α ∈ ℓ2, or ∥S∗s∥ ≥ √A∥s∥ for every s ∈ S . From the assumption W ⊆ S , we deduce that 
+
+∥U ι nx∥ = ∥S∗W ι nx∥ ≥ √A∥W ι nx∥ ≥ √AC ∥x∥ for every x ∈ Cn. But then we have 
+
+∥Σx∥ = ∥(U ι n)∗U ι nx∥ ≥ √AC ∥U ι nx∥ ≥ AC ∥x∥ for every x ∈ Cn,
+
+again by Lemma A.2. This allows us to conclude that ∥Σ−1∥ ≤ (AC )−1, hence 
+
+κ(Σ) = ∥Σ∥∥ Σ−1∥ ≤ BD AC . □
+
+This immediately yields Corollary3.3. 
+
+Proof of Corollary 3.3. Just like in the proof of Proposition 5.8, we have that ∥Σ∥∥ Σ−1∥2 ≤ 
+
+> BD A2C2
+
+. It follows that the conclusions of Theorem 3.2 hold provided that 
+
+m ≥ 83
+
+BD A2C2 R log(2 n/δ ). □
+
+5.3. Proofs for the Empirical Cross-term. Analogously to the Gram case, we need to ex-press the difference bCΩ − C as the sum of independent, centered operators. We recall that 
+
+uj := PW⊥ 
+
+> n
+
+sj ∈ W ⊥ 
+
+> n
+
+.
+
+Lemma 5.9. One has: 
+
+C = X
+
+> j∈N
+
+vj ⊗ uj and bCΩ = 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+vit ⊗ uit
+
+pit
+
+,
+
+where the series converges in the operator norm topology. In particular, in accordance to our convention (3) , we have 
+
+C = X
+
+> j∈supp( p)
+
+vj ⊗ uj .STOCHASTIC GENERALIZED SAMPLING 21 
+
+Proof. The representation of bCΩ immediately follows from the definition of QΩ and the properties of rank-1 operators: 
+
+bCΩ = ι∗
+
+> n
+
+U ∗QΩS∗PW⊥
+
+> n
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+ι∗
+
+> n
+
+U ∗
+
+ eit ⊗ eit
+
+pit
+
+
+
+S∗PW⊥
+
+> n
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+(ι∗
+
+> n
+
+U ∗eit ) ⊗ (PW⊥ 
+
+> n
+
+Se it )
+
+pit
+
+= 1
+
+m
+
+> m
+
+X
+
+> t=1
+
+vit ⊗ uit
+
+pit
+
+.
+
+Similarly, it’s easy to see that the series P 
+
+> j∈N
+
+vj ⊗ uj converges strongly to C. But the series is absolutely convergent: 
+
+X
+
+> j∈N
+
+∥vj ⊗ uk∥ = X
+
+> j∈N
+
+∥vj ∥∥ uj ∥ ≤ √RR ′ X
+
+> j∈N
+
+pj = √RR ′,
+
+meaning that it must converge in the operator topology to its pointwise limit C. □
+
+We can now apply our extension of the Bernstein inequality. 
+
+Proposition 5.10. For every ε ∈ (0 , ∥Σ∥], δ ∈ (0 , 1) and for every natural 
+
+m ≥ ˜Mε,δ := 10 3 KR ′′ log(28 n/δ )
+
+ε2 ,
+
+one has 
+
+P(∥ bCΩ − C∥ ≥ ε) ≤ δ. 
+
+Proof. Define for every t ∈ { 1, . . . , m }
+
+Yt := vit ⊗ uit
+
+pit
+
+, Xt := 1
+
+m (Yt − C).
+
+By Lemma 5.9, we have bCΩ − C = Pmt=1 Xt. Moreover, X1, . . . , X m are independent and their expected value is 
+
+E(Xt) = 1
+
+m (E(Yt) − C),
+
+but since 
+
+E(Yt) = X
+
+> j∈supp( p)
+
+pj
+
+vj ⊗ uj
+
+pj
+
+= X
+
+> j∈supp( p)
+
+vj ⊗ uj = C, 
+
+(where the last equality follows from Lemma 5.9), we have E(Xt) = 0 for each t. Notice that 
+
+X∗ 
+
+> t
+
+Xt is trace class because XtX∗ 
+
+> t
+
+is a n × n matrix. Furthermore, 
+
+∥Xt∥ = 1
+
+m ∥Yt − C∥ ≤ 1
+
+m (∥Yt∥ + ∥C∥),
+
+but we have ∥Yt∥ = ∥vit ∥∥ uit ∥
+
+> pit
+
+≤√Rp it R′pit
+
+> pit
+
+= √RR ′ and also (11) ∥C∥ ≤ X
+
+> j∈N
+
+∥vj ∥∥ uj ∥ = X
+
+> j∈supp( p)
+
+∥vj ∥∥ uj ∥ ≤ √RR ′ X
+
+> j∈supp( p)
+
+pj = √RR ′,
+
+and this allows us to deduce that 
+
+∥Xt∥ ≤ 2√RR ′
+
+m ≤ 2R′′ 
+
+m =: L. 
+
+We stress that in (11) we were able to sum over the support of the distribution p thanks to our convention (3). While this might seem like a mere technicality, it is not guaranteed that uj = 0 22 L. FINOTTI AND M. SANTACESARIA 
+
+when j / ∈ supp( p).Next, define V1 = Pmt=1 E(X∗ 
+
+> t
+
+Xt) and notice that (12) X∗ 
+
+> t
+
+Xt = 1
+
+m2 (Y ∗ 
+
+> t
+
+Yt − Y ∗ 
+
+> t
+
+C − C∗Yt + C∗C).
+
+Now, 
+
+Y ∗ 
+
+> t
+
+Yt = ∥vit ∥2
+
+p2
+
+> it
+
+uit ⊗ uit = ∥vit ∥2
+
+pit
+
+Zt,
+
+where Zt := uit ⊗uit
+
+> pit
+
+. On taking the expected value to both sides of (12), we get 
+
+E(X∗ 
+
+> t
+
+Xt) = 1
+
+m2
+
+
+
+E
+
+ ∥vit ∥2
+
+pit
+
+Zt
+
+
+
+− C∗C
+
+
+
+.
+
+Moreover 
+
+E(Zt) = X
+
+> j∈supp( p)
+
+pj
+
+uj ⊗ uj
+
+pj
+
+= X
+
+> j∈supp( p)
+
+uj ⊗ uj = T. 
+
+Fix h ∈ H such that ∥x∥ = 1 . Then 
+
+⟨E(X∗ 
+
+> t
+
+Xt)h, h ⟩ = 1
+
+m2
+
+
+
+E
+
+ ∥vit ∥2
+
+pit
+
+⟨Zth, h ⟩
+
+
+
+− ⟨ C∗Ch, h ⟩
+
+
+
+≤ 1
+
+m2 (R · E(⟨Zth, h ⟩) − ∥ Ch ∥2)
+
+≤ 1
+
+m2 (R⟨E(Zt)h, h ⟩)= 1
+
+m2 R⟨T h, h ⟩≤ R∥T ∥
+
+m2 .
+
+Since V1 is a self-adjoint, positive operator on H, we can estimate its operator norm by (13) ∥V1∥ = sup 
+
+> h∈H ∥h∥=1
+
+⟨V1h, h ⟩ = sup 
+
+> h∈H ∥h∥=1
+> m
+
+X
+
+> t=1
+
+⟨E(X∗ 
+
+> t
+
+Xt)h, h ⟩ ≤ R∥T ∥
+
+m .
+
+An analogous bound holds for the norm of V2 = Pmt=1 E(XtX∗ 
+
+> t
+
+): indeed, 
+
+E(XtX∗ 
+
+> t
+
+) = 1
+
+m2 (E(YtY ∗ 
+
+> t
+
+) − CC ∗),
+
+and since YtY ∗ 
+
+> t
+
+= ∥uit ∥2
+
+> p2
+> it
+
+vit ⊗ vit , for every x ∈ Cn such that ∥x∥ = 1 we have 
+
+⟨E(XtX∗ 
+
+> t
+
+)x, x ⟩ = 1
+
+m2 (⟨E(YtY ∗ 
+
+> t
+
+)x, x ⟩ − ⟨ CC ∗x, x ⟩)= 1
+
+m2
+
+
+
+E
+
+ ∥uit ∥2
+
+pit
+
+ vit ⊗ vit
+
+pit
+
+x, x 
+
+ 
+
+− ∥ C∗x∥2
+
+
+
+≤ 1
+
+m2 R′
+
+
+
+E
+
+ vit ⊗ vit
+
+pit
+
+
+
+x, x 
+
+
+
+= 1
+
+m2 R′⟨Σx, x ⟩≤ R′∥Σ∥
+
+m2 ,
+
+and we obtain (14) ∥V2∥ ≤ R′∥Σ∥
+
+m .STOCHASTIC GENERALIZED SAMPLING 23 
+
+From the bounds (13) and (14) we get 
+
+max {∥ V1∥, ∥V2∥} ≤ max {R∥T ∥, R ′∥Σ∥} 
+
+m ≤ R′′ Km = LK 
+
+2 =: σ2,
+
+where K := max {∥ Σ∥, ∥T ∥} . We can apply Theorem 3.5 to infer the following: for every 
+
+ε ≥ 16 (L + √L2 + 36 σ2) one has 
+
+P
+
+
+
+∥ bCΩ − C∥ ≥ ε
+
+
+
+≤ 14 tr( V1) + tr( V2)max {∥ V1∥, ∥V2∥} exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+≤ 14 2 tr( V2)
+
+∥V2∥ exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+≤ 28 n exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+,
+
+where we’ve employed the cyclic property of the trace to entail 
+
+tr( V1) = 
+
+> m
+
+X
+
+> t=1
+
+E(tr( X∗ 
+
+> t
+
+Xt)) = 
+
+> m
+
+X
+
+> t=1
+
+E(tr( XtX∗ 
+
+> t
+
+)) = tr( V2),
+
+and we also bounded 1max {∥ V1∥,∥V2∥} ≤ 1 
+
+> ∥V2∥
+
+in order to get the effective rank r(V2) = tr( V2)
+
+> ∥V2∥
+
+of V2. Finally, since V2 is a n × n self-adjoint matrix, one has r(V2) ≤ n (indeed, under these assumptions, matrix norm = spectral radius ≥ trace  
+
+> n
+
+). Now, the inequality ε ≥ 16 (L +
+
+√L2 + 36 σ2) amounts to saying 
+
+L ≤ 6ε2
+
+3K + 2 ε ,
+
+which in turn implies m ≥ R′′  
+
+> 3ε2
+
+(3 K + 2 ε). On the other hand, simplifying 
+
+28 n · exp 
+
+ −ε2/2
+
+σ2 + Lε/ 3
+
+
+
+≤ δ
+
+yields (15) m ≥ 23 R′′ (3 K + 2 ε) log(28 n/δ )
+
+ε2 .
+
+Since 28 n/δ > e , (15) is the most restrictive condition. Because ε < ∥Σ∥ ≤ K, the claim follows with 
+
+˜Mε,δ := 10 3 KR ′′ log(28 n/δ )
+
+ε2 . □
+
+By combining the concentration inequalities for the random Gram matrix (Proposition 5.6) and for the empirical cross-term operator (Proposition 5.10), we are able to provide an explicit concentration estimate for the factor Kn, Ω.
+
+Proof of Theorem 3.6. Consider the two following events: 
+
+E1 := 
+
+
+
+∥bΣ−1Ω − Σ−1∥ < ε
+
+Λ√D
+
+
+
+,E2 := 
+
+
+
+∥ bCΩ − C∥ < ε
+
+Λ√D
+
+
+
+,
+
+and let m ≥ M ∗ 
+
+> ε,δ
+
+:= max { ˜M ε  
+
+> Λ√D,δ
+> 2
+
+, ˜M ε  
+
+> 4∥Σ−1∥2Λ√D,δ
+> 2
+
+}. By assumption, ε 
+
+> Λ√D
+
+= min {1, ε 
+
+> Λ√D
+
+}.Lemma A.5 infers that 
+
+E1 ∩ E2 ⊆ {∥ bΣ−1Ω bCΩ − Σ−1C∥ < ε/ √D}.
+
+Moreover, since we have 
+
+|Kn, Ω − ∥ W ι nΣ−1C∥| ≤ ∥ W ι n bΣ−1Ω bCΩ − W ι nΣ−1C∥ ≤ √D∥bΣ−1Ω bCΩ − Σ−1C∥
+
+It follows that E1 ∩ E2 ⊆ {| Kn, Ω − ∥ W ι nΣ−1C∥| < ε }. Therefore, the claim follows if we prove that P(E1 ∩ E2) ≥ 1 − δ, and we do this by showing that each Ej (j = 1 , 2) occurs with 24 L. FINOTTI AND M. SANTACESARIA 
+
+probability that exceeds 1 − δ 
+
+> 2
+
+.Since m ≥ ˜M ε  
+
+> Λ√D,δ
+> 2
+
+, we immediately get P (E2) ≥ 1 − δ 
+
+> 2
+
+from Proposition 5.10. Furthermore, we have by Lemma A.6 that 
+
+E1 ⊇
+
+
+
+∥bΣΩ − Σ∥ < ε
+
+4∥Σ−1∥2Λ√D
+
+
+
+,
+
+where we also used the fact that ε 
+
+> 4∥Σ−1∥2Λ√D
+
+= min { 12∥Σ−1∥ , ε 
+
+> 4∥Σ−1∥2Λ√D
+
+} because we are as-suming ε < 2∥Σ−1∥Λ√D. Finally, we have 
+
+P(E1) ≥ P
+
+
+
+∥bΣΩ − Σ∥ < ε
+
+4∥Σ−1∥2Λ√D
+
+
+
+≥ 1 − δ
+
+2
+
+thanks to Proposition 5.6 because m ≥ ˜M ε  
+
+> 4∥Σ−1∥2Λ√D,δ
+> 2
+
+. □
+
+The fact that Kn, Ω converges to zero in probability as m → +∞ establishes the quasi-optimality of our method. This can be achieved by requiring the subspace condition W ⊆ S 
+
+and the sampling system to be orthonormal. 
+
+Proof of Corollary 3.7. Under the orthonormality assumption of {sk}k∈N, the corresponding synthesis operator S becomes an isometry. It follows that C = ι∗
+
+> n
+
+U ∗S∗PW⊥ 
+
+> n
+
+= ι∗
+
+> n
+
+W ∗SS ∗PW⊥ 
+
+> n
+
+=
+
+ι∗
+
+> n
+
+W ∗PS PW⊥ 
+
+> n
+
+. Observe that ker( ι∗
+
+> n
+
+W ∗) = Ran( W ι n)⊥ = W⊥ 
+
+> n
+
+, hence ι∗
+
+> n
+
+W ∗ = ι∗
+
+> n
+
+W ∗PWn .But then C = ι∗
+
+> n
+
+W ∗PS PW⊥ 
+
+> n
+
+= ι∗
+
+> n
+
+W ∗PWn PS PW⊥ 
+
+> n
+
+. Finally, the assumption W ⊆ S forces 
+
+S⊥ ⊆ W ⊥ ⊆ W ⊥ 
+
+> n
+
+and consequently PWn PS = PWn − PWn PS⊥ = PWn , and this allows us to conclude that C = ι∗
+
+> n
+
+W ∗PWn PS PW⊥ 
+
+> n
+
+= ι∗
+
+> n
+
+W ∗PWn PW⊥ 
+
+> n
+
+= 0 . □
+
+Proof of Corollary 3.9. By Proposition 5.8, we have κ(Σ) ≤ BD AC . The claim thus follows from Corollary 3.8 and the subsequent remark. □
+
+5.4. Proofs for the Leverage-score Sampling. All the previous results in this section are valid for an arbitrary probability distribution (pj )j∈N that satisfies Assumption 3.1: we are now going to implement our findings to a specific sampling strategy. Looking at the definition of 
+
+R, one might think to use pj ∝ ∥ vj ∥2 for each j ∈ N. To this end, we need to compute the normalization constant, which turns out to be the trace of Σ.
+
+Proposition 5.11. One has: 
+
+tr(Σ) = X
+
+> j∈N
+
+∥vj ∥2.
+
+Proof. By the cyclic property of the trace, the trace of Σ can be rewritten as 
+
+tr(Σ) = tr( ι∗
+
+> n
+
+U ∗U ι n) = tr( U ι nι∗
+
+> n
+
+U ∗),
+
+which in turn is equal to 
+
+tr( U ι nι∗
+
+> n
+
+U ∗) = X
+
+> j∈N
+
+⟨U ι nι∗
+
+> n
+
+U ∗ej , e j ⟩ = X
+
+> j∈N
+
+⟨ι∗
+
+> n
+
+U ∗ej , ι ∗
+
+> n
+
+U ∗ej ⟩ = X
+
+> j∈N
+
+⟨vj , v j ⟩ = X
+
+> j∈N
+
+∥vj ∥2. □
+
+It’s not a coincidence that leverage-score sampling is the optimal sampling strategy, given the fact that (in the orthonormal setting) it coincides with the so-called Christoffel sampling strategy. The following Proposition allows us to see why this is the case. 
+
+Proposition 5.12. Let (D, ρ ) be a measure space and let P ⊆ L2(D, ρ ) be an n-dimensional subspace where pointwise evaluation is defined. Define KP : D −→ [0 , +∞) by letting KP (x) := 
+
+∥ev x∥2 
+
+> P∗
+
+, where ev x : p ∈ P 7 → p(x) ∈ C. If {ϕ1, . . . , ϕ n} is an orthonormal basis for P, then for every x ∈ D KP (x) = 
+
+> n
+
+X
+
+> k=1
+
+|ϕk(x)|2.STOCHASTIC GENERALIZED SAMPLING 25 
+
+Proof. Since P endowed with the scalar product of L2(D, ρ ) is a Hilbert space (where complete-ness descends from finite dimensionality), there exists a unique qx ∈ P such that for every p ∈ P 
+
+one has p(x) = ⟨p, q x⟩L2(D,ρ ). Moreover, one has KP (x) = ∥ev x∥2 
+
+> P∗
+
+= ∥qx∥2
+
+> L2(D,ρ )
+
+. We can easily check that qx = Pmk=1 ϕk(x)ϕk ∈ P is the element we are looking for: indeed, for every p ∈ P ⟨p, q x⟩L2(D,ρ ) =
+
+> m
+
+X
+
+> k=1
+
+ϕk(x)⟨p, ϕ k⟩L2(D,ρ ) =
+
+> m
+
+X
+
+> k=1
+
+ϕk⟨p, ϕ k⟩L2(D,ρ )
+
+!
+
+(x) = p(x),
+
+meaning that 
+
+KP (x) = ∥qx∥2 
+
+> L2(D,ρ )
+
+= ⟨qx, q x⟩L2(D,ρ ) = qx(x) = 
+
+> m
+
+X
+
+> k=1
+
+ϕk(x)ϕk(x) = 
+
+> m
+
+X
+
+> k=1
+
+|ϕk(x)|2. □
+
+The above result allows us to find a closed form for the Christoffel function in the orthonormal framework. Indeed, we deduce that KP (j) = ∥vj ∥2 for each j ∈ N.
+
+Proof of Lemma 3.11. Let {e1, . . . , en} and {ej }j∈N be the canonical bases of Cn and ℓ2, re-spectively. Since U ι n is an isometry, we have that {U e 1, . . . , U e n} is an orthonormal basis for 
+
+P. Thanks to Proposition 5.12, for every j ∈ N we have 
+
+KP (j) = 
+
+> n
+
+X
+
+> k=1
+
+|⟨ U e k, e j ⟩| 2 =
+
+> n
+
+X
+
+> k=1
+
+|⟨ U ∗ej , e k⟩| 2.
+
+Notice that ιnek = ek whenever k ∈ { 1, . . . , n } and zero otherwise. This allows us to write 
+
+KP (j) = 
+
+> n
+
+X
+
+> k=1
+
+|⟨ U ∗ej , ι nek⟩| 2 =
+
+> n
+
+X
+
+> k=1
+
+|⟨ ι∗
+
+> n
+
+U ∗ej , ek⟩| 2 =
+
+> n
+
+X
+
+> k=1
+
+|⟨ vj , ek⟩| 2 = ∥vj ∥2,
+
+hence 
+
+κw(P) = sup 
+
+> j∈N
+
+|w(j)KP (j)| = sup 
+
+> j∈N
+
+∥vj ∥2
+
+pj
+
+= R. □
+
+5.5. Proofs for the Frames Extension. In the full-frame setting, we lose the invertibility of 
+
+Σ. In order to recover both the reconstruction error estimate and the concentration of Kn, Ω
+
+from the Riesz scenario, we need the high-probability eventual-range stability of bΣΩ.
+
+Proof of Proposition 3.14. Start by noticing that 
+
+Ran(Σ) = Ran( ι∗
+
+> n
+
+W ∗SS ∗W ι n) ⊆ Ran( ι∗
+
+> n
+
+W ∗) = Ran( ι∗
+
+> n
+
+W ∗W ι n),
+
+where the last equality follows from Lemma A.1. Moreover, from the fact that ker( S∗) = Ran( S)⊥ = S⊥ in conjunction with Wn ∩ S ⊥ ⊆ W ∩ S ⊥ ⊆ S ∩ S ⊥ = {0} we deduce that S∗|W n
+
+is injective. It follows that dim( S∗(Wn)) = dim( Wn), but Wn = Ran( W ι n) ∼= Ran( ι∗
+
+> n
+
+W ∗W ι n)
+
+and S∗(Wn) = S∗(Ran( W ι n)) = Ran( S∗W ι n) = Ran( U ι n) ∼= Ran( ι∗
+
+> n
+
+U ∗U ι n) = Ran(Σ) ,where both isomorphism are due to Lemma A.1. We have thus proved that dim(Ran(Σ)) = dim(Ran( ι∗
+
+> n
+
+W ∗W ι n)) , but since Ran(Σ) ⊆ Ran( ι∗
+
+> n
+
+W ∗W ι n) we actually conclude Ran(Σ) = Ran( ι∗
+
+> n
+
+W ∗W ι n)
+
+As for the second part of the statement, one inclusion is once again easy to see and holds for every m ∈ N with probability 1:
+
+Ran( bΣΩ) = Ran( ι∗
+
+> n
+
+U ∗QΩU ι n) ⊆ Ran( ι∗
+
+> n
+
+U ∗) = Ran(Σ) .
+
+Now, let δ ∈ (0 , 1) and m ≥ Mδ: thanks to Proposition A.4, we have 
+
+n
+
+∥bΣΩ − Σ∥ < λ 0
+
+o
+
+⊆
+
+n
+
+dim(Ran( bΣΩ)) ≥ dim(Ran(Σ)) 
+
+o
+
+,26 L. FINOTTI AND M. SANTACESARIA 
+
+allowing us to conclude that 
+
+P
+
+
+
+Ran( bΣΩ) = Ran(Σ) 
+
+
+
+= P
+
+n 
+
+Ran( bΣΩ) ⊆ Ran(Σ) 
+
+o
+
+∩
+
+n
+
+dim(Ran( bΣΩ)) ≥ dim(Ran(Σ)) 
+
+o 
+
+= P
+
+
+
+dim(Ran( bΣΩ)) ≥ dim(Ran(Σ)) 
+
+
+
+≥ P
+
+
+
+∥bΣΩ − Σ∥ < λ 0
+
+
+
+≥ 1 − δ, 
+
+where the last inequality is due to Proposition 5.6 (recall that this proposition does not rely on 
+
+{wk}k∈N being a Riesz basis). □
+
+We are now ready to prove the main result in the case where the sensing system is an arbitrary frame. 
+
+Proof of Theorem 3.12. Fix δ ∈ (0 , 1) and define ˜f as in (7). The proof proceeds, mutatis mutandis, like the proof of Theorem 3.2. Decompose f = PWn f + PW⊥ 
+
+> n
+
+f .
+
+˜f = W ι n bΣ†
+
+> Ω
+
+ι∗
+
+> n
+
+U ∗QΩS∗PWn f + W ι n bΣ† 
+
+> Ω
+
+bCΩf. 
+
+Focus on the first summand ˜f1 := W ι n bΣ†
+
+> Ω
+
+ι∗
+
+> n
+
+U ∗QΩS∗PWn f . Now, W ι n is not necessarily injective here, but we still have the property W ι n(ι∗
+
+> n
+
+W ∗W ι n)†ι∗
+
+> n
+
+W ∗ = PWn :
+
+f1 = W ι n bΣ†
+
+> Ω
+
+ι∗
+
+> n
+
+U ∗QΩS∗W ι n(ι∗
+
+> n
+
+W ∗W ι n)†ι∗
+
+> n
+
+W ∗f = W ι n bΣ† 
+
+> Ω
+
+bΣΩ(ι∗
+
+> n
+
+W ∗W ι n)†ι∗
+
+> n
+
+W ∗f. 
+
+At this point we cannot cancel out bΣ† 
+
+> Ω
+
+and bΣΩ as we did in the frame-to-Riesz case: instead, we must use bΣ† 
+
+> Ω
+
+bΣΩ = PRan( bΣ∗ 
+
+> Ω)
+
+= PRan( bΣΩ) to obtain 
+
+˜f1 = W ι nPRan( bΣΩ)(ι∗
+
+> n
+
+W ∗W ι n)†ι∗
+
+> n
+
+W ∗f. 
+
+We know from Proposition 3.14 that for every m ≥ Mδ we have PRan( bΣΩ) = PRan( ι∗  
+
+> nW∗W ι n)
+
+with probability at least 1 − δ, and every logical implication that will follow from this will be true on a set of at least this probability. In particular, 
+
+˜f1 = W ι n(ι∗
+
+> n
+
+W ∗W ι n)†ι∗
+
+> n
+
+W ∗f = PWn f, 
+
+hence ˜f = PWn f + W ι n bΣ† 
+
+> Ω
+
+bCΩf. 
+
+It follows that 
+
+f − ˜f = PW⊥ 
+
+> n
+
+f − W ι n bΣ† 
+
+> Ω
+
+bCΩf. 
+
+To conclude, by the Pythagorean theorem, 
+
+∥f − ˜f ∥ = ( ∥PW⊥ 
+
+> n
+
+f ∥2 + ∥W ι n bΣ† 
+
+> Ω
+
+bCΩf ∥2) 12
+
+≤ ∥ PW⊥ 
+
+> n
+
+f ∥(1 + K2
+
+> n, Ω
+
+) 12 . □
+
+We follow up with the concentration inequality for the factor Kn, Ω that is analogous to the one we deduced in the frame-to-Riesz case. The proof is very similar, although one must be careful with the ε-dependencies, the event inclusions and the crucial role played by the eventual range stability. 
+
+Proof of Theorem 3.13. The proof proceeds almost exactly like the one for Theorem 3.6, except that every instance of operator inversion is replaced with pseudo-inversion. We stress that instead of using Lemma A.6 to infer 
+
+E1 ⊇
+
+
+
+∥bΣΩ − Σ∥ < ε
+
+4∥Σ−1∥2Λ√D
+
+
+
+,
+
+we resort to Lemma A.9, which states that, for the modified event E† 
+
+> 1
+
+=
+
+n
+
+∥bΣ† 
+
+> Ω
+
+− Σ†∥ < ε
+
+> Λ√D
+
+o
+
+,we have 
+
+E† 
+
+> 1
+
+⊇
+
+
+
+∥bΣΩ − Σ∥ < ε
+
+4∥Σ†∥2Λ√D
+
+
+
+∩
+
+n
+
+Ran( bΣΩ) = Ran(Σ) 
+
+o
+
+.(16) STOCHASTIC GENERALIZED SAMPLING 27 
+
+However, we saw in the proof of Proposition 3.14 that 
+
+n
+
+∥bΣΩ − Σ∥ < λ 0
+
+o
+
+⊆
+
+n
+
+Ran( bΣΩ) = Ran(Σ) 
+
+o
+
+,
+
+and since ε 
+
+> 4∥Σ†∥2Λ√D
+
+≤ λ0 = 1 
+
+> ∥Σ†∥
+
+(indeed, ε < 2∥Σ†∥Λ√D by assumption), the intersection in (16) only amounts to 
+
+n
+
+∥bΣΩ − Σ∥ < ε
+
+> 4∥Σ†∥2Λ√D
+
+o
+
+, and the proof can now be finished exactly like the proof of Theorem 3.6. □
+
+5.6. Proof of the Stable Recovery of Analytic Functions. We now focus on the proof of the recovery of analytic functions from Fourier measurements. 
+
+Proof of Theorem 4.1. Since both the Fourier basis and the Legendre polynomial basis are or-thonormal, both the sampling rate m ≥ 83 n log(2 n/δ ) and the existence and uniqueness of the solution to the least-squares problem follow from Corollary 3.10 if the leverage-score distribution is implemented. We now wish to evaluate the square norm of vl = ι∗
+
+> n
+
+U ∗el = ι∗
+
+> n
+
+W ∗sl for each 
+
+l ∈ N in this Fourier-Legendre setting. Since 
+
+W ∗sl = ( ⟨sl, w k⟩)k∈N,
+
+we have that vl = ( ⟨sl, w k⟩)nk=1 ∈ Cn, hence 
+
+∥vl∥2 =
+
+> n
+
+X
+
+> k=1
+
+|⟨ sl, w k⟩| 2 =
+
+> n
+
+X
+
+> k=1
+
+| bwk(σ(l)) |2 =
+
+> n−1
+
+X
+
+> k=0
+
+| bwk+1 (σ(l)) |2.
+
+The Fourier coefficients of the Legendre polynomials are known to have a closed form in terms of the spherical Bessel function of first kind [1, Formula 10.1.14]: 
+
+bwk+1 (σ(l)) = ik√2k + 1 jk(−πσ (l)) .
+
+Ultimately, we obtain 
+
+pl = ∥vl∥2
+
+n = 1
+
+n
+
+> n−1
+
+X
+
+> k=0
+
+(2 k + 1) |jk(−σ(l)π)|2 .
+
+We also deduce the error estimate ∥f − ˜f ∥ ≲ ∥PW⊥ 
+
+> n
+
+f ∥(1 + K2
+
+> n, Ω
+
+) 12 . To conclude the proof, the only thing left to prove is that there exists ρ > 1 such that ∥PW⊥ 
+
+> n
+
+f ∥L2([ −1,1]) ≲ √nρ −n. Since the normalized Legendre polynomials form an orthonormal basis of L2([ −1, 1]) , we have 
+
+∥PW⊥ 
+
+> n
+
+f ∥2 
+
+> L2([ −1,1])
+
+=
+
+> +∞
+
+X
+
+> k=n+1
+
+|⟨ f, w k⟩L2([ −1,1]) |2.
+
+Let Pk := ( k + 12 )− 12 wk+1 be the (unnormalized) k-th Legendre polynomial. Since f is analytic on [−1, 1] , there exists ρ > 1 such that f is holomorphic on the interior of the ellipse 
+
+Eρ := 
+
+ z + z−1
+
+2 : |z| = ρ
+
+
+
+,
+
+that is, the ellipse on the complex plane centered at zero whose axes have length ρ + ρ−1 and 
+
+ρ − ρ−1 and whose foci are located at {− 1, 1} (such curves are called Bernstein ellipses). Then it’s known [24] that |⟨ f, P k⟩L2([ −1,1]) | ≤ cρ −k for some constant c > 0 that depends upon ρ but 28 L. FINOTTI AND M. SANTACESARIA 
+
+not on k. We thus get 
+
+> +∞
+
+X
+
+> k=n+1
+
+|⟨ f, w k⟩L2([ −1,1]) |2 =
+
+> +∞
+
+X
+
+> k=n
+
+
+
+k + 12
+
+
+
+|⟨ f, P k⟩L2([ −1,1]) |2
+
+≤ c2+∞X
+
+> k=n
+
+
+
+k + 12
+
+
+
+ρ−2k
+
+≤ 2c2+∞X
+
+> k=n
+
+kρ −2k
+
+= 2 c2ρ−2n n − nρ −2 + ρ−2
+
+(1 − ρ−2)2
+
+≤ 2c2
+
+(1 − ρ−2)2 nρ −2n.
+
+Ultimately, we deduce that 
+
+∥PW⊥ 
+
+> n
+
+f ∥L2([ −1,1]) ≤ C√nρ −n. □
+
+6. Conclusions 
+
+This work has introduced a fully stochastic approach to generalized sampling. We have demonstrated that, by employing a suitable randomized sampling strategy, stable recovery is guaranteed with high probability at a near linear sample complexity, even when operating with highly redundant sensing systems such as frames. Establishing these guarantees required us to derive sharp concentration estimates for both the empirical Gram matrix and the empirical cross-term operator, culminating in a new variant of Bernstein’s inequality for operators acting between potentially distinct, infinite-dimensional Hilbert spaces. Furthermore, we provided a comprehensive comparative analysis between leverage-score sampling and Christoffel sampling within this abstract frame setting. Finally, we showcased the practical viability of this machinery through the Fourier-Legendre approximation problem, where the stochastic framework natively overcomes deterministic ill-conditioning to achieve near-exponential convergence rates. While this framework significantly advances the stability and efficiency of infinite-dimensional inverse problems, it is important to delineate its domain of applicability. First, the universality of the m ≳ n log n sampling rate relies on the geometric inclusion W ⊆ S . Second, the loga-rithmic oversampling factor is an intrinsic feature of independent random sampling. Achieving a strictly linear rate would require departing from i.i.d. extractions—for instance, by employing greedy selection methods [26] or determinantal point processes [20]. However, the former incurs higher computational costs, while the latter generally requires a reproducing kernel Hilbert space structure, a restriction our abstract operator framework was deliberately designed to bypass. We also emphasize that leverage-score sampling is a cure for basis mismatch and geometric redun-dancy, not for intrinsic ill-posedness; if the underlying physical problem is severely ill-posed, the condition number of the Gram matrix will naturally reflect this sensitivity. Finally, the current theory is developed for linear inverse problems governed by well-defined frame bounds. These considerations naturally suggest new directions for future research. A primary open theoretical question is whether the log-linear sampling rate can be universally achieved without the subspace condition W ⊆ S . Furthermore, extending this stochastic GS framework to non-linear inverse problems represents a challenging but highly relevant direction. Within the context of linear problems, another promising path involves generalizing the nature of the measurements themselves. Instead of restricting the analysis to continuous linear functionals defined on the entire Hilbert space H, one could adapt the framework to handle “indirect data” [15]—that is, continuous linear functionals ℓ : G → C defined only on a proper, dense subspace G ⊆ H .Because such measurements cannot be globally represented by standard inner products, this extension would encompass crucial real-world scenarios, such as the pointwise evaluation of continuous functions in L2 when a reproducing kernel structure is unavailable. STOCHASTIC GENERALIZED SAMPLING 29 
+
+Acknowledgements 
+
+This material is based upon work supported by the Air Force Office of Scientific Research under award number FA8655-23-1-7083. The research was supported in part by the MIUR Excellence Department Project awarded to Dipartimento di Matematica, Università di Genova, CUP D33C23001110001. 
+
+References 
+
+[1] Milton Abramowitz and Irene A Stegun. Handbook of mathematical functions with formulas, graphs, and mathematical tables , volume 55. US Government printing office, 1948. [2] Ben Adcock. Infinite-dimensional compressed sensing and function interpolation. Foundations of Computa-tional Mathematics , 18(3):661–701, 2018. [3] Ben Adcock. Optimal sampling for least-squares approximation. Foundations of Computational Mathematics ,pages 1–60, 2025. [4] Ben Adcock, Simone Brugiapaglia, Nick Dexter, and Sebastian Moraga. On efficient algorithms for comput-ing near-best polynomial approximations to high-dimensional, Hilbert-valued functions from limited samples .European Mathematical Society-EMS-Publishing House GmbH, 2024. [5] Ben Adcock and Anders Hansen. Generalized sampling and the stable and accurate reconstruction of piece-wise analytic functions from their fourier coefficients. Mathematics of Computation , 84(291):237–270, 2015. [6] Ben Adcock, Anders Hansen, Bogdan Roman, and Gerd Teschke. Generalized sampling: stable reconstruc-tions, inverse problems and compressed sensing over the continuum. In Advances in imaging and electron physics , volume 182, pages 187–279. Elsevier, 2014. [7] Ben Adcock and Anders C Hansen. A generalized sampling theorem for stable reconstructions in arbitrary bases. Journal of Fourier Analysis and Applications , 18(4):685–716, 2012. [8] Ben Adcock and Anders C Hansen. Stable reconstructions in hilbert spaces and the resolution of the gibbs phenomenon. Applied and Computational Harmonic Analysis , 32(3):357–388, 2012. [9] Ben Adcock and Anders C Hansen. Generalized sampling and infinite-dimensional compressed sensing. Foun-dations of Computational Mathematics , 16(5):1263–1323, 2016. [10] Ben Adcock, Anders C Hansen, Evelyn Herrholz, and Gerd Teschke. Generalized sampling: extension to frames and inverse and ill-posed problems. Inverse Problems , 29(1):015008, 2012. [11] Ben Adcock, Anders C Hansen, and Clarice Poon. Beyond consistent reconstructions: optimality and sharp bounds for generalized sampling, and application to the uniform resampling problem. SIAM Journal on Mathematical Analysis , 45(5):3132–3167, 2013. [12] Ben Adcock, Anders C Hansen, and Clarice Poon. On optimal wavelet reconstructions from fourier sam-ples: linearity and universality of the stable sampling rate. Applied and Computational Harmonic Analysis ,36(3):387–415, 2014. [13] Ben Adcock, Anders C Hansen, Clarice Poon, and Bogdan Roman. Breaking the coherence barrier: A new theory for compressed sensing. In Forum of mathematics, sigma , volume 5, page e4. Cambridge University Press, 2017. [14] Ben Adcock, Anders C Hansen, and Alexei Shadrin. A stability barrier for reconstructions from fourier samples. SIAM Journal on Numerical Analysis , 52(1):125–139, 2014. [15] Ben Adcock and Daan Huybrechs. Frames and numerical approximation ii: generalized sampling. Journal of Fourier Analysis and Applications , 26(6):87, 2020. [16] Giovanni S Alberti, Alessandro Felisi, Matteo Santacesaria, and S Ivan Trapasso. Compressed sensing for in-verse problems II: applications to deconvolution, source recovery, and MRI. arXiv preprint arXiv:2501.01929 ,2025. [17] Giovanni S Alberti, Alessandro Felisi, Matteo Santacesaria, and Salvatore Ivan Trapasso. Compressed sensing for inverse problems and the sample complexity of the sparse Radon transform. Journal of the European Mathematical Society , pages 1–56, 2025. [18] Giovanni S Alberti and Matteo Santacesaria. Infinite dimensional compressed sensing from anisotropic mea-surements and applications to inverse problems in PDE. Applied and Computational Harmonic Analysis ,50:105–146, 2021. [19] Giovanni S Alberti and Matteo Santacesaria. Infinite-dimensional inverse problems with finite measurements. 
+
+Archive for Rational Mechanics and Analysis , 243(1):1–31, 2022. [20] Ayoub Belhadji, Rémi Bardenet, and Pierre Chainais. Signal reconstruction using determinantal sampling. 
+
+Applied and Computational Harmonic Analysis , page 101822, 2025. [21] Emmanuel J Candès, Justin Romberg, and Terence Tao. Robust uncertainty principles: Exact signal re-construction from highly incomplete frequency information. IEEE Transactions on information theory ,52(2):489–509, 2006. [22] Ole Christensen et al. An introduction to frames and Riesz bases , volume 7. Springer, 2003. [23] Albert Cohen and Giovanni Migliorati. Optimal weighted least-squares methods. The SMAI journal of com-putational mathematics , 3:181–203, 2017. 30 L. FINOTTI AND M. SANTACESARIA 
+
+[24] Philip J Davis. Interpolation and approximation . Courier Corporation, 1975. [25] Laurent Demanet and Alex Townsend. Stable extrapolation of analytic functions. Foundations of Computa-tional Mathematics , 19(2):297–331, 2019. [26] Matthieu Dolbeault and Moulay Abdellah Chkifa. Randomized least-squares with minimal oversampling and interpolation in general spaces. SIAM Journal on Numerical Analysis , 62(4):1515–1538, 2024. [27] David L Donoho. Compressed sensing. IEEE Transactions on information theory , 52(4):1289–1306, 2006. [28] Tomasz Hrycak and Karlheinz Gröchenig. Pseudospectral fourier reconstruction with the modified inverse polynomial reconstruction method. Journal of Computational Physics , 229(3):933–946, 2010. [29] I. T. Jolliffe. Discarding variables in a principal component analysis. i: Artificial data. Journal of the Royal Statistical Society Series C: Applied Statistics , 21(2):160–173, 06 1972. [30] Lutz Kämmerer, Tino Ullrich, and Toni Volkmer. Worst-case recovery guarantees for least squares approxi-mation using random samples. Constructive Approximation , 54(2):295–352, 2021. [31] Stanislav Minsker. On some extensions of bernstein’s inequality for self-adjoint operators. Statistics & Prob-ability Letters , 127:111–119, 2017. [32] Paul Nevai. Géza Freud, orthogonal polynomials and Christoffel functions. a case study. Journal of Approx-imation Theory , 48(1):3–167, 1986. [33] Rodrigo B Platte, Lloyd N Trefethen, and Arno BJ Kuijlaars. Impossibility of fast stable approximation of analytic functions from equispaced samples. SIAM review , 53(2):308–318, 2011. [34] Joel A Tropp. User-friendly tail bounds for sums of random matrices. Foundations of computational mathe-matics , 12(4):389–434, 2012. [35] Y. Xu. Christoffel functions and Fourier series for multivariate orthogonal polynomials. Journal of Approx-imation Theory , 82(2):205–239, 1995. 
+
+Appendix A. Technical Lemmas 
+
+In this section, we collect several auxiliary results from functional analysis and operator theory. Although their underlying principles are well known, we state and prove them here in the precise formulations required for our subsequent analysis. 
+
+Lemma A.1. Let H, K be Hilbert spaces and let A : H −→ K be a linear operator. Then 
+
+ker( A∗A) = ker( A) and Ran( A∗) = Ran( A∗A). In particular, if A is bounded and has closed range, then Ran( A∗) = Ran( A∗A) ∼= Ran( A).Proof. Clearly, if Ax = 0 , then A∗Ax = 0 : this proves that ker( A) ⊆ ker( A∗A). Conversely, assume that x ∈ ker( A∗A). Then 
+
+0 = ⟨A∗Ax, x ⟩ = ⟨Ax, Ax ⟩ = ∥Ax ∥2,
+
+which means that Ax = 0 and proves ker( A) = ker( A∗A). From this we immediately deduce 
+
+Ran( A∗A) = (Ran( A∗A)⊥)⊥ = ker( A∗A)⊥ = ker( A)⊥ = Ran( A∗).
+
+If we further assume that A is bounded and has closed range, then the first isomorphism theorem grants 
+
+Ran( A∗) = Ran( A∗A) ∼= H⧸ ker( A∗A) = H⧸ ker( A) ∼= Ran( A). □
+
+Lemma A.2. Let T : H −→ K be a bounded, injective operator with closed range between Hilbert spaces and let c > 0 such that ∥T h ∥ ≥ c∥h∥ for every h ∈ H . Then ∥T ∗T h ∥ ≥ c∥T h ∥ for every 
+
+h ∈ H .Proof. Let h ∈ H . We can assume h̸ = 0 , otherwise the claim is trivial. Then 
+
+∥T ∗T h ∥∥ h∥ ≥ |⟨ T ∗T h, h ⟩| = ∥T h ∥2 ≥ c∥h∥∥ T h ∥.
+
+The claim follows by dividing both sides by ∥h∥. □
+
+Lemma A.3. Let X be a Banach space. Then the set of bounded bijective linear operators is open in B(X). More precisely, let A, B ∈ B (X) and suppose that A is bijective. If ∥B−A∥ < ∥A−1∥−1,then B is bijective and ∥B−1∥ ≤ 1 
+
+> ∥A−1∥−1−∥ B−A∥
+
+.Proof. One has: 
+
+∥I − A−1B∥ = ∥A−1(A − B)∥ ≤ ∥ A−1∥∥ B − A∥ < 1.STOCHASTIC GENERALIZED SAMPLING 31 
+
+By virtue of the Neumann series criterion, A−1B is bijective and 
+
+(A−1B)−1 =
+
+> +∞
+
+X
+
+> k=0
+
+(I − A−1B)k.
+
+It follows that B = A(A−1B) is also bijective and 
+
+∥B−1∥ = ∥(A−1B)−1A−1∥ ≤ ∥ (A−1B)−1∥∥ A−1∥≤ ∥ A−1∥
+
+> +∞
+
+X
+
+> k=0
+
+∥I − A−1B∥k
+
+≤ ∥ A−1∥
+
+> +∞
+
+X
+
+> k=0
+
+(∥A−1∥∥ B − A∥)k
+
+= ∥A−1∥
+
+1 − ∥ A−1∥∥ B − A∥
+
+= 1
+
+∥A−1∥−1 − ∥ B − A∥ . □
+
+Proposition A.4. Let A ∈ Cn×n be self-adjoint and let r := rk( A). Let λr be the eigenvalue of 
+
+A with the smallest non-zero absolute value. Then for every B ∈ Cn×n such that ∥B − A∥ < |λr|
+
+one has rk( B) ≥ r.Proof. Let σ(A) = {λ1, . . . , λ n} ⊆ R such that |λ1| ≥ · · · ≥ | λr| > λ r+1 = · · · = λn = 0 . We can find an orthonormal system {x1, ..., x r} ⊆ Cn of eigenvectors for A, where Ax j = λj xj for every 
+
+j ∈ { 1, . . . , r }. Let a1, . . . , a r ∈ C such that Prj=1 aj Bx j = 0 . On one hand, we have: 
+
+> r
+
+X
+
+> j=1
+
+aj Ax j
+
+> 2
+
+=
+
+> r
+
+X
+
+> j=1
+
+aj (A − B)xj
+
+> 2
+
+= (A − B)
+
+
+
+> r
+
+X
+
+> j=1
+
+aj xj
+
+
+
+> 2
+
+≤ ∥ B − A∥2
+
+> r
+
+X
+
+> j=1
+
+aj xj
+
+> 2
+
+= ∥B − A∥2
+
+> r
+
+X
+
+> j=1
+
+|aj |2.
+
+If we were to assume Prj=1 |aj |2̸ = 0 , we would have 
+
+> r
+
+X
+
+> j=1
+
+aj Ax j
+
+> 2
+
+< |λr|2
+
+> r
+
+X
+
+> j=1
+
+|aj |2,
+
+but also 
+
+> r
+
+X
+
+> j=1
+
+aj Ax j
+
+> 2
+
+=
+
+> r
+
+X
+
+> j=1
+
+aj λj xj
+
+> 2
+
+=
+
+> r
+
+X
+
+> j=1
+
+|aj λj |2 ≥ | λr|2
+
+> r
+
+X
+
+> j=1
+
+|aj |2,
+
+a contradiction. It follows that a1, . . . , a r = 0 , hence {Bx 1, ..., Bx r} is linearly independent, so that rk( B) ≥ r. □
+
+Lemma A.5 (Continuity of operator composition) . Let X, Y, Z be Banach spaces and let B ∈B(X, Y ), A ∈ B (Y, Z ). Then for every ε > 0 and every D ∈ B (X, Y ), C ∈ B (Y, Z ) satisfying 
+
+∥C − A∥, ∥D − B∥ < δ := min 
+
+
+
+1, ε
+
+1 + ∥A∥ + ∥B∥
+
+
+
+one has ∥CD − AB ∥ < ε. 
+
+Proof. Write 
+
+CD − AB = ( C − A)( D − B) + CB + AD − 2AB 
+
+= ( C − A)( D − B) + ( C − A)B + A(D − B).32 L. FINOTTI AND M. SANTACESARIA 
+
+This immediately implies 
+
+∥CD − AB ∥ < δ 2 + δ∥A∥ + δ∥B∥ = δ(δ + ∥A∥ + ∥B∥) ≤ δ(1 + ∥A∥ + ∥B∥) ≤ ε, 
+
+where we used the fact that δ ≤ 1. □
+
+Lemma A.6 (Continuity of operator inversion) . Let X be a Banach space and let A be a bounded, invertible operator on X. Then for every ε > 0 and every B ∈ B (X) satisfying 
+
+∥B − A∥ < δ := min 
+
+ 12∥A−1∥ , ε
+
+4∥A−1∥2
+
+
+
+one has that B is invertible and ∥B−1 − A−1∥ < ε .Proof. Since ∥B − A∥ < 12 ∥A−1∥−1 < ∥A−1∥−1, we already know from Lemma A.3 that B is invertible and 
+
+∥B−1∥ ≤ 1
+
+∥A−1∥−1 − ∥ B − A∥ < 1
+
+∥A−1∥−1 − 12 ∥A−1∥−1 = 2 ∥A−1∥.
+
+But then 
+
+∥B−1 − A−1∥ = ∥B−1(A − B)A−1∥≤ ∥ B−1∥∥ B − A∥∥ A−1∥
+
+< 2δ∥A−1∥2 ≤ ε
+
+2 < ε. □
+
+Remark A.7 . It’s easy to see from the last step of the previous proof that taking 
+
+δ = min 
+
+ 12∥A−1∥ , ε
+
+2∥A−1∥2
+
+
+
+would be a more natural and optimal choice. However, we prefer to use ε 
+
+> 4∥A−1∥2
+
+instead of  
+
+> ε
+> 2∥A−1∥2
+
+for consistency with the result concerning the continuity of the pseudo-inversion (see Lemma A.9). 
+
+Lemma A.8. Let H be a Hilbert space and let P, Q be two orthogonal projection of H. Then 
+
+∥P − Q∥ = max {∥ P Q ⊥∥, ∥QP ⊥∥} .
+
+Proof. On one hand, we have 
+
+P Q ⊥ = P − P Q = P (P − Q),
+
+which immediately entails ∥P Q ⊥∥ ≤ ∥ P − Q∥ and, with similar reasoning, ∥QP ⊥∥ ≤ ∥ P − Q∥
+
+as well. On the other hand, 
+
+P − Q = P − P Q + P Q − Q = P Q ⊥ − P ⊥Q, 
+
+and for every x ∈ H one has 
+
+∥(P − Q)x∥2 = ∥P Q ⊥x − P ⊥Qx ∥2 = ∥P Q ⊥x∥2 + ∥P ⊥Qx ∥2
+
+≤ ∥ P Q ⊥∥2∥Q⊥x∥2 + ∥P ⊥Q∥2∥Qx ∥2
+
+≤
+
+
+
+max {∥ P Q ⊥∥, ∥P ⊥Q∥} 
+
+2
+
+(∥Q⊥x∥2 + ∥Qx ∥2)=
+
+
+
+max {∥ P Q ⊥∥, ∥P ⊥Q∥} 
+
+2
+
+∥x∥2,
+
+and this proves ∥P − Q∥ ≤ max {∥ P Q ⊥∥, ∥P ⊥Q∥} . Finally, ∥P ⊥Q∥ = ∥(P ⊥Q)∗∥ = ∥QP ⊥∥. □
+
+Lemma A.9 (Continuity of pseudo-inversion) . Let H be a Hilbert space and fix a closed subspace 
+
+Y ⊆ H . Let A ∈ B (H) such that Ran( A) = Y . Then for every ε > 0 and every B ∈ B (H) such that Ran( B) = Y satisfying 
+
+∥B − A∥ < δ := min 
+
+ 12∥A†∥ , ε
+
+4∥A†∥2
+
+
+
+one has ∥B† − A†∥ < ε .STOCHASTIC GENERALIZED SAMPLING 33 
+
+Proof. It’s known that ker( B†) = ker( B∗): this allows us to write 
+
+B† = B†Pker( B∗)⊥ = B†PY = B†PY − PRan( B∗)A† + PRan( B∗)A†.
+
+Use the properties PY = AA † and PRan( B∗) = B†B to write 
+
+B† = B†AA † − B†BA † + PRan( B∗)A† = B†(A − B)A† + PRan( B∗)A†.
+
+It follows that ∥B†∥ ≤ ∥ B†∥∥ A†∥δ + ∥A†∥ ≤ 12 ∥B†∥ + ∥A†∥, hence ∥B†∥ ≤ 2∥A†∥. From the previous computations we also deduce 
+
+B† − A† = B†(A − B)A† + PRan( B∗)A† − A†
+
+= B†(A − B)A† + PRan( B∗)A† − PRan( A∗)A†
+
+= ( B†(A − B) + PRan( B∗) − PRan( A∗))A†,
+
+where we used that Ran( A†) = Ran( A∗). By Lemma A.8, we have 
+
+∥PRan( B∗) − PRan( A∗)∥ = max {∥ PRan( B∗)PRan( A∗)⊥ ∥, ∥PRan( A∗)PRan( B∗)⊥ ∥} 
+
+= max {∥ B†BP ker( A)∥, ∥A†AP ker( B)∥} 
+
+= max {∥ B†(B − A)Pker( A)∥, ∥A†(B − A)Pker( B)∥} ≤ max {∥ A†∥, ∥B†∥}∥ B − A∥ < 2δ∥A†∥.
+
+This allows us to conclude: 
+
+∥B† − A†∥ < (∥B†∥δ + ∥PRan( B∗) − PRan( A∗)∥)∥A†∥≤ (2 δ∥A†∥ + 2 δ∥A†∥)∥A†∥
+
+= 4 δ∥A†∥2 ≤ ε. □
+
+Lemma A.10. Let T : H −→ K be a linear operator between Hilbert spaces with closed range such that ∥T x ∥ ≥ c∥x∥ for some c > 0 for every x ∈ ker( T )⊥. Then the pseudo-inverse 
+
+T † : K −→ H is bounded and ∥T †∥ ≤ 1 
+
+> c
+
+.Proof. Let y ∈ K . By a well-known property of pseudo-inverses, PR(T )y = T T †y. Taking the norm of both sides, we get 
+
+∥y∥ ≥ ∥ PR(T )y∥ = ∥T T †y∥ ≥ c∥T †y∥,
+
+where we used the fact that ∥PR(T )y∥ ≤ ∥ y∥ and T †y ∈ Ran( T †) = ker( T )⊥. The claim follows by dividing both sides by c. □
+
+We conclude with basic properties of the Hermitian dilation of an operator (see Definition 5.3). 
+
+Proposition A.11. Let T : H1 −→ H 2 be a bounded operator between Hilbert spaces. Then: (1) H(T ) ∈ B (H1 ⊕ H 2) and ∥H(T )∥B(H1⊕H 2) = ∥T ∥B(H1,H2).(2) H(T ) is self-adjoint. (3) H : B(H1, H2) −→ B (H1 ⊕ H 2) is R-linear. Proof. (1) H(T ) is clearly linear. Moreover, for every (x, y ) ∈ H 1 ⊕ H 2 we have 
+
+∥H(T )( x, y )∥2 
+
+> H1⊕H 2
+
+= ∥(T ∗y, T x )∥2
+
+> H1⊕H 2
+
+= ∥T ∗y∥2 
+
+> H1
+
++ ∥T x ∥2
+
+> H2
+
+≤ ∥ T ∥2
+
+> B(H1,H2)
+
+(∥x∥2 
+
+> H1
+
++ ∥y∥2 
+
+> H2
+
+)= ∥T ∥2
+
+> B(H1,H2)
+
+∥(x, y )∥2 
+
+> H1⊕H 2
+
+.34 L. FINOTTI AND M. SANTACESARIA 
+
+It follows that H(T ) is bounded and ∥H(T )∥B(H1⊕H 2) ≤ ∥ T ∥B(X,Y ). Conversely, for every x ∈ H 1 one has 
+
+∥T x ∥2 
+
+> H2
+
+= ∥T ∗0∥2 
+
+> H1
+
++ ∥T x ∥2
+
+> H2
+
+= ∥(T ∗0, T x )∥2
+
+> H1⊕H 2
+
+= ∥H(T )( x, 0) ∥2
+
+> H1⊕H 2
+
+≤ ∥ H(T )∥2
+
+> B(H1⊕H 2)
+
+∥(x, 0) ∥2
+
+> H1⊕H 2
+
+= ∥H(T )∥2
+
+> B(H1⊕H 2)
+
+∥x∥2 
+
+> H1
+
+,
+
+and this concludes that ∥H(T )∥B(H1⊕H 2) = ∥T ∥B(H1,H2).(2) For every (x1, y 1), (x2, y 2) ∈ H 1 ⊕ H 2 one has 
+
+⟨(x1, y 1), H (T )( x2, y 2)⟩H1⊕H 2 = ⟨(x1, y 1), (T ∗y2, T x 2)⟩H1⊕H 2
+
+= ⟨x1, T ∗y2⟩H1 + ⟨y1, T x 2⟩H2
+
+= ⟨T x 1, y 2⟩H2 + ⟨T ∗y1, x 2⟩H1
+
+= ⟨(T ∗y1, T x 1), (x2, y 2)⟩H1⊕H 2
+
+= ⟨H(T )( x1, y 1), (x2, y 2)⟩H1⊕H 2 ,
+
+hence H(T )∗ = H(T ).(3) Let T1, T 2 ∈ B (H1, H2) and let α, β ∈ R. For every (x, y ) ∈ H 1 ⊕ H 2 we have 
+
+H(αT 1 + βT 2)( x, y ) = (( αT 1 + βT 2)∗y, (αT 1 + βT 2)x)= ( αT ∗ 
+
+> 1
+
+y + βT ∗ 
+
+> 2
+
+y, αT 1x + βT 2x)= α(T ∗ 
+
+> 1
+
+y, T 1x) + β(T ∗ 
+
+> 2
+
+y; T2x)= αH (T1)( x, y ) + βH (T2)( x, y ).
+
+This proves H(αT 1 + βT 2) = αH (T1) + βH (T2) (note that H is not C-linear, as in the second equality we would have had to consider the complex conjugate of α and β). □
+
+MaLGa Center, Department of Mathematics, University of Genoa, Via Dodecaneso 35, 16146, Genova, Italy 
+
+Email address : luca.finotti@edu.unige.it 
+
+MaLGa Center, Department of Mathematics, University of Genoa, Via Dodecaneso 35, 16146, Genova, Italy 
+
+Email address : matteo.santacesaria@unige.it

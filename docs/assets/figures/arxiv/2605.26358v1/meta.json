@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-011.webp",
+      "caption": "Figure 1: Hybrid discrete adjoint pipeline. Top row: the three outer steps (forward solve, iterative solve for λ, gradient extraction). The matvec (∂R/∂U)⊤v is assembled by applying M forward sub-steps in reverse and applying the three-step recipe (bottom box) at each substep: each substep reuses the efficient forward solver for the implicit half (1, 2) and one AD pass for the explicit half (3). Gradient extraction is a second pass through the chain with ÛM = λ. We use GMRES for the outer adjoint solve, but any matrix-free iterative method consuming the matvec works. The implementation differentiates once at the end of the gradient step rather than at every substep; the gradient is unchanged (Section C.4).",
+      "page": 8,
+      "index": 11,
+      "width": 844,
+      "height": 756
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-016.webp",
+      "caption": "Figure 2: Gradient-computation scaling. (a) Adjoint time vs. N . (b) Peak memory: UNROLL saturates the 128GB budget. IFT-HYBRID is the only viable route to large-scale DARSM training.",
+      "page": 9,
+      "index": 16,
+      "width": 804,
+      "height": 279
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-007.webp",
+      "caption": "Figure 3: Streamwise velocity W/Ub (filled contours) and in-plane secondary flow (white streamlines) at the test case Reb=11386. DARSM recovers the symmetric eight-vortex secondary-flow topology of the DNS (ground truth). TBNN, PINN, DeepONet, FIML, and the additive source-term closure produce distorted streamlines or weaker secondary motion.",
+      "page": 10,
+      "index": 7,
+      "width": 806,
+      "height": 453
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-001.webp",
+      "caption": "Table 2: Square-duct velocity error J × 103 on the Reynolds-number split. “Div.” = forward solver diverged when the trained closure was inserted. Lower error is better. DARSM values are mean±std over seeds.",
+      "page": 11,
+      "index": 1,
+      "width": 834,
+      "height": 214
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-012.webp",
+      "caption": "Figure 4: Distribution shift in the (S,Ω)-invariant feature space the a-priori network consumes. All invariants normalised per case (τ=1/ωRANS). Top: joint distributions at Reb=5000 of the strain pair (IIS , IIIS) and the rotation/coupling pair (IIΩ, IV), at the DNS state (training) and the converged default-RANS state (deployment). Bottom: 1-D marginals of all five invariants pooled across Reb ∈ {5000, 7000, 11386, 40000}. Every feature is displaced between training and deployment, the covariate shift whose consequence is quantified in Figure 5.",
+      "page": 12,
+      "index": 12,
+      "width": 809,
+      "height": 310
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-013.webp",
+      "caption": "Figure 5: Pointwise relative Frobenius error of the a-priori TBNN-Ling anisotropy [Ling et al., 2016] versus DNS, evaluated on RANS-state invariants at four Reynolds numbers (one in training, three held out). The closure was trained offline on DNS-state invariants but queried at deployment on RANS-state invariants (Figure 4); ∼ 50% median error appears even at the training Reb = 5000 and persists across all Reb, concentrating at corners and walls.",
+      "page": 12,
+      "index": 13,
+      "width": 806,
+      "height": 201
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-010.webp",
+      "caption": "Table 3: Square-duct velocity error J × 103. Top: Reynolds-number generalisation, training on Reb∈{5000, 17800} with the remaining four cases as test. Bottom: aspect-ratio generalisation, training on {AR=1,AR=3} with {AR=5,AR=7} out-of-sample. DARSM values are mean±std over seeds.",
+      "page": 13,
+      "index": 10,
+      "width": 831,
+      "height": 287
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-008.webp",
+      "caption": "Figure 6: Cross-stream velocity U/Ub along the horizontal midplane y=Ly/2 versus x̂=2(x − Lx/2)/Lx∈[−1, 1]. Top two rows: six Reb cases at AR=1 (train: Reb∈{5000, 17800}). Bottom row: three AR cases at Reτ=180 (train: AR∈{1, 3}). The default EARSM systematically underpredicts secondary-flow amplitude; the adjoint-trained closure recovers amplitude and sign across all cases, including extrapolation to Reb=40000 (top right) and AR=7 (bottom right).",
+      "page": 14,
+      "index": 8,
+      "width": 798,
+      "height": 637
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-002.webp",
+      "caption": "Figure 7: Periodic-hills cross-sections at Reb=5600 for five hill shapes α ∈ {0.5, 0.75, 1.0, 1.25, 1.5} (columns); the training case is α=1.0, the rest are test. Rows 1–3: streamwise velocity U/Ub (DNS, default EARSM, DARSM). Rows 4–6: wall-normal velocity V/Ub (same sources). Solid black contours mark each model’s U, V=0 separation lines; the dashed white contour re-draws the DNS reference on the model rows.",
+      "page": 15,
+      "index": 2,
+      "width": 800,
+      "height": 371
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-009.webp",
+      "caption": "Figure 8: Square-duct forward-solver validation. Top: streamwise velocity W/Ub (colour) with in-plane (u, v) secondary-flow streamlines, showing the characteristic eight-vortex pattern in the DNS [Vinuesa et al., 2018] at Reb = 12000 (left) and in our WJ-EARSM solution (right). Bottom: profiles of the streamwise W and cross-plane V components along the corner diagonal, compared to BSL-EARSM reference data [Menter, F. R. et al., 2012]. Our solver matches the BSL-EARSM reference to visual accuracy.",
+      "page": 23,
+      "index": 9,
+      "width": 801,
+      "height": 648
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-015.webp",
+      "caption": "Figure 9: Periodic-hills forward-solver validation at α=1.0, Reb=5600. Streamwise velocity u/Ub (top) and turbulent kinetic energy k/U2 b (bottom) at stations x/h ∈ {2, 4, 6, 8}: DNS [Breuer et al., 2009] (solid black), OpenFOAM k–ω (dashed blue), our PyTorch k–ω (dotted vermilion). The two RANS implementations overlap to within line width, verifying our curvilinear discretisation.",
+      "page": 24,
+      "index": 15,
+      "width": 802,
+      "height": 422
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-014.webp",
+      "caption": "Figure 10: End-to-end finite-difference verification of the hybrid adjoint gradient. Pointwise relative error |gadj − gFD|/|gFD| for ∂J /∂c1 versus FD step ε on a 322 square-duct grid (forward/adjoint tolerances 10−12). Left branch: truncation-limited (∝ ε2). Right branch: roundoff-limited (∝ 1/ε). Minimum relative error 4.2×10−8 at ε=10−4; the plateau floor is consistent with the adjoint GMRES residual.",
+      "page": 27,
+      "index": 14,
+      "width": 430,
+      "height": 317
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-006.webp",
+      "caption": "Figure 11: Velocity-only loss Jvel over outer iterations for one fold. Left: square duct (Reynolds split, H=10, BFGS). Right: periodic hills (shape-generalisation split, H=10, BFGS). Vertical dashed line marks the best-val epoch. Train decreases monotonically; val minimises then drifts.",
+      "page": 29,
+      "index": 6,
+      "width": 799,
+      "height": 252
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-005.webp",
+      "caption": "Figure 12: Validation loss trajectory for BFGS (used throughout) vs. Adam, matched architecture and initialisation. Exact adjoint gradients are deterministic and full-batch, which favours classical second-order optimisation over stochastic first-order methods.",
+      "page": 29,
+      "index": 5,
+      "width": 431,
+      "height": 289
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-004.webp",
+      "caption": "Figure 13: Learned closure corrections at Reb=5000: NN output for each of the seven k–ω/EARSM coefficients, expressed as fractional deviation from the default value. Red = pushed above default, blue = pushed below, white = default. The closure is spatially varying and concentrates its corrections near walls and along corner bisectors, exactly where secondary flow is generated.",
+      "page": 30,
+      "index": 4,
+      "width": 801,
+      "height": 373
+    },
+    {
+      "url": "assets/figures/arxiv/2605.26358v1/fig-003.webp",
+      "caption": "Figure 14: Learned closure corrections on periodic hills at α=1.0: same quantities as Figure 13 but on the curvilinear hill geometry. Hill surface is masked in grey. The trained closure alters coefficients most strongly inside the separation bubble and along the reattachment line.",
+      "page": 30,
+      "index": 3,
+      "width": 805,
+      "height": 271
+    }
+  ]
+}
