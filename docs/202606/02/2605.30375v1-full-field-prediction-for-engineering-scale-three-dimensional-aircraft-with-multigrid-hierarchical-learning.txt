@@ -1,0 +1,650 @@
+Title: Full-field prediction for engineering-scale three-dimensional aircraft with multigrid-hierarchical learning
+
+URL Source: https://arxiv.org/pdf/2605.30375v1
+
+Published Time: Mon, 01 Jun 2026 00:01:12 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# Full-field prediction for engineering-scale three-dimensional aircraft with multigrid-hierarchical learning 
+
+## Yunfei Liu 1,2,3,4 †, Hao Wang 1†, Yuhang Qi 1, Hao Yue 1,Dehong Meng 1, Wei Li 1, Rui Wang 1, Tiejun Li 4, Jie Liu 2,3,4 ,Junwu Hong 1* , Xinhai Chen 2,3,4* 
+
+> 1
+
+Computational Aerodynamics Institute, China Aerodynamics Research and Development Center, Mianyang, 621000,China. 
+
+> 2
+
+Laboratory of Digitizing Software for Frontier Equipment,National University of Defense Technology,Changsha,410073,China. 
+
+> 3
+
+National Key Laboratory of Parallel and Distributed Computing, National University of Defense Technology, Changsha,410073,China. 
+
+> 4
+
+College of Computer Science and Technology, National University of Defense Technology, Changsha,410073,China. *Corresponding author(s). E-mail(s): hjw128@sina.com; chenxinhai16@nudt.edu.cn; 
+
+> †
+
+These authors contributed equally to this work. 
+
+Abstract 
+
+High-fidelity computational fluid dynamics is essential for aerospace design, but engineering-scale simulations of practical three-dimensional aircraft remain computationally expensive. Learning-based flow-field initialization offers a com-plementary route to improve efficiency by reducing the numerical distance between the initial and converged solutions. In practice, existing deep learn-ing approaches remain difficult to scale to engineering-scale three-dimensional flows because of the large parameter space and the intrinsic heterogeneity of multiscale flow regimes. Most studies therefore focus on two-dimensional prob-lems, surface quantities or integral aerodynamic coefficients for three-dimensional aircraft, or full-field prediction only in simplified three-dimensional test cases with limited grid resolution. These settings either lack complete volumetric flow information, preventing physical consistency checks and coupling with down-stream CFD solvers, or remain difficult to scale to engineering-scale aircraft flows 
+
+1
+
+> arXiv:2605.30375v1 [physics.flu-dyn] 26 May 2026
+
+with complex body-fitted boundaries, strong local gradients and million-scale grids. Here we propose MHLF, a multigrid-hierarchical learning framework for accelerating engineering-scale three-dimensional aircraft flow simulations while preserving high-fidelity numerical accuracy. MHLF combines a topologically con-sistent Geometric MultiGrid representation, which reduces the learning burden on engineering-scale grids, with a hierarchical strategy that captures regional flow heterogeneity during both prediction and subsequent CFD correction. Across three engineering-scale aircraft cases spanning Mach 0.15 to 6.0 and covering subsonic, transonic and supersonic regimes, MHLF accelerates convergence with-out sacrificing flow-field accuracy, achieving an efficiency improvement of 3 to 8 times over conventional initialization. Numerical results demonstrate that this method not only achieves the first large-scale, practical full-flow-field prediction for 3D aircraft within the CFD domain, but also establishes a solid foundation for future related research.  
+
+> Keywords: Computational fluid dynamics; Flow-field initialization; Deep learning; Multigrid representation; Regional heterogeneity; Engineering-scale three-dimensional aircraft; CFD acceleration
+
+# 1 Introduction 
+
+Computational fluid dynamics (CFD) is central to aerodynamic design and optimiza-tion in aerospace engineering, providing reliable physics-based analysis at substantially lower cost than extensive physical testing. However, high-fidelity simulations of engineering-scale three-dimensional aircraft typically require millions of computational cells and repeated evaluations across design conditions, making CFD computationally expensive. Although CFD algorithms and solver technologies continue to advance, the cost of reaching convergence remains a major constraint on practical design cycles. This motivates complementary acceleration strategies that preserve the reliability of established CFD solvers while reducing the numerical distance from the initial state to the converged solution. Deep learning has created new opportunities for flow-field prediction and CFD acceleration. Early studies mainly used regular-grid representations, treating flow variables as multichannel images. Convolutional neural networks enabled efficient prediction of two-dimensional steady laminar and RANS flow fields, demonstrating the feasibility of image-based learning for fluid problems [1–4]. Related ideas were extended to inverse design, where models learned mappings between target pressure distributions and airfoil geometries [5]. In three dimensions, voxel, octree and point-voxel representations reduced the cost of sparse volumetric learning [6, 7]. These approaches advanced fast flow prediction, but regularized spatial representations can distort complex aircraft boundaries and near-wall flow structures in aircraft CFD [8]. To improve geometric adaptability while retaining the efficiency of convolutional models, coordinate-mapping methods were introduced to transform irregular phys-ical regions into regular reference regions [9]. This strategy relaxed the geometric constraints of image-based flow prediction, but still relied on a structured reference 2representation. Subsequent work moved further towards graph structures and point-cloud representations. Graph neural networks showed strong representational capacity for flow problems with variable topology [10, 11]. Point-cloud methods avoided explicit grid regularization and enabled learning directly from non-uniformly sampled geomet-ric coordinates [12, 13]. These developments improved the representation of complex geometries, but practical aircraft CFD imposes a more demanding setting. Despite these advances, most learning-based aerodynamic prediction studies still reduce the difficulty of the problem through simplified settings. Existing work com-monly focuses on two-dimensional fields, surface quantities or integral aerodynamic coefficients, or evaluates full-field prediction only in simplified three-dimensional cases with limited resolution [14–26]. These settings have demonstrated the potential of learning-based flow prediction, but they remain insufficient for practical aircraft CFD. They do not resolve two difficulties central to this setting, namely learning from large volumetric grids at engineering scale and representing flow regions with markedly different physical characteristics and convergence behavior. The first difficulty is grid scale. Engineering-scale high-fidelity aircraft simulations typically rely on volumetric grids with millions of cells or more. Direct end-to-end learning on the original fine grid rapidly increases computational complexity, mem-ory consumption and optimization difficulty. This issue is especially pronounced for graph and point-cloud networks as the number of nodes grows, affecting both training stability and computational efficiency [27]. Global message passing on large graphs can also cause oversmoothing, weakening the representation of local high-frequency flow structures [28]. The second difficulty is cross-region flow heterogeneity. Practi-cal three-dimensional external flows contain boundary-layer, inner-field and outer-field regions with different dynamics, grid scales, variable distributions and numerical stiff-ness. Boundary-layer regions contain steep gradients and high-frequency structures, whereas the outer field is smoother and varies more weakly [29]. A global represen-tation compresses these distinct regimes into a single feature space, which can mask near-wall or shock-related structures and force multiscale features to compete within shared parameters. Because deep networks are biased towards low-frequency compo-nents, uniform modeling can reduce their ability to capture boundary layers, shocks and separated flows [30, 31]. Regional differences in variable distribution and con-vergence difficulty can also introduce gradient conflicts during joint training [32, 33]. Scalable full-field prediction for practical aircraft CFD therefore requires both a grid representation that reduces the learning burden and a flow-field organization that respects regional physical differences. To address these challenges, we propose MHLF, a multigrid-hierarchical learning framework for accelerating engineering-scale three-dimensional flow simulations while preserving high-fidelity numerical accuracy. Rather than performing global end-to-end regression on the original fine grid, MHLF reformulates full-field prediction as a coupled process that combines low-cost learning on a topologically consistent coarse grid, region-aware modeling, high-resolution reconstruction and CFD correction. The framework constructs a coarse-grid representation while preserving the topology of the original CFD grid. This transfers the learning task to a lower-resolution but 3geometrically consistent representation space, reducing the computational complex-ity and optimization difficulty of large-scale flow-field modeling. The computational domain is then organized into boundary-layer, inner-field and outer-field regions according to flow-field characteristics. This partition allows the model to learn mul-tiscale flow features under more balanced regional scales and variable distributions. On this partitioned representation, MHLF uses Backbone–Branch Modulation and introduces a Region-Aware Residual Attention mechanism. These components adapt feature responses across different physical regions, mitigating feature masking and optimization conflicts under unified modeling. The predicted coarse-grid flow field is reconstructed at the original CFD resolution through multigrid prolongation [34, 35], providing an initial flow fields for subsequent CFD correction. The same flow-field hierarchy is also used for numerical iteration scheduling, allowing different regions to employ distinct iterative strategies based on their flow characteristics and convergence behavior [36]. In MHLF, multigrid representation provides the multiresolution learn-ing and reconstruction pathway needed for large-scale flow-field prediction, whereas flow-field hierarchy provides the core mechanism for resolving cross-region physi-cal differences. Together, they form an efficient full-field prediction framework for engineering-scale three-dimensional aircraft. The main contributions of this work are as follows: 
+
+• We propose a topologically consistent multigrid representation and reconstruction method for engineering-scale full-field prediction. This method converts high-resolution flow-field prediction into feature learning in a lower-cost coarse-grid space, and uses multigrid prolongation to provide initial flow fields at the original CFD resolution. 
+
+• We propose a flow-field hierarchy based on regional physical characteristics. By organizing the spatial flow field into boundary-layer, inner-field and outer-field regions, MHLF enables region-aware learning and solution strategies. During learning, hierarchical modeling is achieved through Backbone–Branch Modula-tion and Region-Aware Residual Attention. During CFD correction, region-specific scheduling improves numerical efficiency. 
+
+• To the best of our knowledge, this work represents the first full-field prediction for engineering-scale three-dimensional aircraft configurations across different Mach number regimes in the field of CFD. It has achieved remarkable results, marking a significant step in advancing deep learning-based flow prediction from laboratory research toward fully practical engineering applications, and opening a door for the comprehensive integration of deep learning methods into CFD. Building upon this work, flow-field prediction will no longer be confined to two-dimensional prob-lems or simple three-dimensional geometries with basic flow structures; instead, it is poised for large-scale, extensive application to truly complex three-dimensional configurations and intricate flow regimes across the full velocity range.The numer-ical experiments in this paper demonstrate that the MHLF prediction framework not only showcases the immense potential of deep learning for flow-field prediction but also provides a solid foundation for future development. 42 Results 
+
+We propose MHLF, a multigrid-hierarchical learning framework for accelerating engineering-scale three-dimensional flow simulations while preserving high-fidelity numerical accuracy. The central idea of this framework is to transfer learning across spatial resolutions through a topologically consistent multigrid representation, enabling feature learning in a low-resolution space and flow-field reconstruction at the original CFD resolution. At the same time, the flow domain is organized into boundary-layer, inner-field and outer-field regions according to flow-field character-istics. A Backbone–Branch Modulation architecture with a Region-Aware Residual Attention mechanism is then used for region-aware training. The predicted flow field provides a initial flow fields for subsequent CFD correction, substantially improv-ing solution efficiency. The architecture and workflow of MHLF are shown in Fig. 4. The multigrid coarsening and prolongation procedures are shown in Fig. 5, and the prediction network is shown in Fig. 6. Further details are provided in the Meth-ods. Throughout the figures, the flow-field regions are denoted using a consistent color scheme, with orange representing the boundary-layer region, blue the inner-field region, and green the outer-field region. To evaluate the effectiveness and computational efficiency of MHLF, we performed validation calculations on three canonical aerospace configurations using structured grids. The cases span M a = 0 .15 ∼ 6.0 and cover subsonic, transonic and supersonic regimes. The subsonic case is the half-span Trap Wing configuration from the first High Lift Prediction Workshop. The transonic case is the WBNP configuration of the DLR-F6 model. The supersonic case is the X-38 lifting-body configuration. These benchmarks are widely used in CFD verification and validation and involve different aircraft geometries, flow structures and grid scales, providing a practical test of both multigrid learning and flow-field hierarchy. Because of the large grid sizes, all simu-lations were performed in parallel. The comparisons show that the MHLF-based flow prediction and simulation strategy accelerates CFD convergence without sacrificing flow-field accuracy, achieving a threefold to eightfold efficiency improvement over con-ventional initialization and substantially outperforming the tested baseline methods. The following sections analyze the cases in order of increasing geometric complexity. 
+
+## 2.1 X-38 case 
+
+The X-38 case is a canonical supersonic CFD validation case released by NASA and derived from a real spacecraft program. It is a high-volume lifting-body configura-tion and serves as a standard model with typical supersonic flow features, including detached shocks and viscous interaction. The case is mainly used to assess the reliabil-ity and accuracy of CFD algorithms for supersonic aerodynamic prediction. Although the geometry is relatively simple, complex shock systems arise at high Mach numbers and large angles of attack, including the bow shock near the nose and leading-edge shocks near the wing. The interactions between these shocks and the body boundary-layer, together with large-scale flow separation on the upper wing surface and aft-body 5Enlarge 
+
+# a
+
+# b c
+
+# dFig. 1 X-38 computational geometry and comparison of computational results. a, Com-putational geometry, representative volumetric flow field and flow-field regions on grids at different layers. The computational grid contains 91 blocks and 7,412,224 cells, with y+ ≈ 1. b, Comparison between the predicted ( left ) and converge ( right ) surface-pressure contours at α = 28 .7◦. The pre-dicted flow clearly captures the main flow structures and closely resembles the converged solution. c, Comparison and local enlargement of drag convergence curves obtained using conventional CFD and MHLF at the representative angle of attack. The green line denotes conventional CFD, the blue line denotes MHLF and the red band denotes the convergence interval. The convergence curve obtained using MHLF has a much smaller oscillation amplitude and enters the convergence interval earlier, indicating a substantial increase in convergence speed. d, Comparison of drag coefficient and lift-to-drag ratio obtained using MHLF with wind-tunnel measurements. The close agreement supports the reliability of MHLF. 
+
+at high angle of attack, make the case challenging for CFD. The X-38 therefore rep-resents a supersonic case with highly complex spatial flow structures and provides a stringent test for the proposed prediction model. We first coarsened the original grid to obtain a training grid with 1 /64 of the cells in the original fine grid, and then performed numerical simulations on this grid. The training conditions were M a = 6 .0 and Re = 3 .10 × 10 6, with α = 20 ◦ ∼ 40 ◦ at 6intervals of 0 .5◦. The governing equations were the full Navier–Stokes equations, and the turbulence model was the two-equation SST model. This step incurred negligible computational cost, owing to the substantially reduced grid size relative to the original grid and the accelerated flow convergence caused by increased numerical viscosity after coarsening. Based on these data, we trained MHLF on the coarse-grid flow fields. Training used the Adam optimizer with an initial learning rate of 1 ×10 −3 and momentum parameters 
+
+β1 = 0 .9 and β2 = 0 .999. The learning rate was scheduled using StepLR and decayed by a factor of 0 .8 every 50 epochs. All models were trained for 500 epochs on an NVIDIA A100 GPU with 40 GB memory. After training, the model directly predicted the corresponding three-dimensional coarse-grid flow field for a given angle of attack. To more strictly evaluate predictive capability, all test conditions were excluded from the training angles. The selected comparison conditions were α = 20 .3◦, 24 .2◦, 28 .7◦,32 .2◦, 35 .7◦ and 39 .2◦. The computational geometry and prediction results are shown in Fig. 1.                                                                              
+
+> Table 1 Convergence performance and computational cost for the X-38 case. Method Convergence steps Ncat AoA α(deg) Total steps Total time (s) 20 .3◦24 .2◦28 .7◦32 .2◦35 .7◦39 .2◦
+> Old 4512 4176 3180 3084 2508 2496 19956 31530.5 PointCNN ××××××××
+> PointConv 4080 4032 3240 3096 2400 2328 19176 30298.1 PointMLP ××××××××
+> PointNet++ 5004 ×××××××
+> PointNeXt ××××××××
+> PointTransformerV3 5868 5424 5016 4200 3660 3336 27504 43456.3
+> MHLF (ours) 732 1468 1612 11020 1528 21056 34416 3874 .9
+> The iteration strategy of the asynchronous iteration mode is slightly adjusted for different angles of attack. Superscripts 1, 2 and 3 denote the 10-3-1, 10-4-1 and 10-5-1 modes, respectively. In the 10-3-1 mode, the boundary-layer, inner-field and outer-field are iterated for 10, 3 and 1 steps, respectively, within each multigrid cycle. The other modes follow the same convention.
+
+Table 1 compares MHLF with conventional CFD and baseline models. For all computational conditions, three strategies were compared. Conventional CFD uses a uniform initial condition with synchronous iteration. The baseline strategies use initial conditions predicted by baseline models with synchronous iteration. MHLF uses its predicted initial condition with hierarchical asynchronous iteration. The six baseline models are PointCNN, PointConv, PointMLP, PointNet++, PointNeXt and Point-TransformerV3, all of which are representative flow-field prediction models. In the table, AoA denotes the angle of attack, Nc denotes the number of convergence steps determined by the convergence criterion described in Appendix 1, and Total steps and Total time denote the total number of computational steps and total computa-tional time, respectively. The symbol × denotes calculation failure. The comparison 7shows that the baseline models generally have poor predictive capability for flow fields because they do not use hierarchical modeling and cannot effectively distinguish flow features across physical regions from macroscopic to microscopic scales. Most pre-dicted initial conditions therefore do not accelerate convergence, and many even lead to calculation failure because the predicted flow variables deviate substantially from physical behavior. By contrast, the total number of computational steps required by MHLF over the six comparison conditions is only 22.1% of that required by conven-tional CFD. Because asynchronous iteration also reduces the computational cost per step, MHLF achieves an average speed-up of 8.14 in this case, with the largest speed-up of 18.23 at α = 24 .2◦. Given the flow complexity of the X-38 case, these results demonstrate the strong potential of MHLF. 
+
+## 2.2 DLR-F6-WBNP case 
+
+The DLR-F6-WBNP configuration, consisting of wing, body, nacelle and pylon com-ponents, was released by the AIAA Applied Aerodynamics Technical Committee (APATC) for the second Drag Prediction Workshop. The case is used mainly to assess the ability of CFD methods to simulate aerodynamic interference among realistic aircraft components [38]. The configuration uses a modern wide-body aircraft wing with sweep and spanwise twist. Compared with the smooth DLR-F6 configuration, it includes an engine nacelle and pylon. Flow separation may occur near the nacelle-pylon junction, and interactions among the nacelle, pylon and wing can alter the shock position and boundary-layer state. This configuration therefore places strong demands on CFD solvers for simulating boundary-layer separation and reattachment, as well as shock-boundary-layer interaction. It has substantial practical value and has become a commonly used transonic CFD benchmark. We used the same procedure described above to perform numerical simulations for the training conditions. The training conditions were M a = 0 .75 and Re =3.10 × 10 6, with α = −3◦ ∼ 1.5◦ at intervals of 0 .25 ◦. The governing equations were the full Navier–Stokes equations, and the turbulence model was the two-equation SST model. The MHLF framework was then trained on the resulting flow fields using the same training configuration as in the X-38 case. The comparison condi-tions were again excluded from the training set. The tested angles of attack were 
+
+−2.82 ◦, −2.13 ◦, −1.12 ◦, −0.62 ◦, 0.13 ◦, 0.66 ◦, 1.12 ◦, 1.47 ◦. The computational geometry and comparison results are shown in Fig. 2. Table 2 compares MHLF with conventional CFD and baseline models. As in the previous case, the baseline models generally show poor predictive capability for flow fields, and all require longer computational times than conventional CFD. By contrast, MHLF reduces the total number of computational steps across the eight comparison conditions to 43.3% of that required by conventional CFD. After the speed-up from asynchronous iteration is included, MHLF achieves an average acceleration of 4.05 in this case, with the largest speed-up of 6.44 at α = 1 .47 ◦. These results show that, for a transonic case with a more complex geometry, MHLF can still predict flow phenomena involving interactions between shock waves and boundary layers in multi-component configurations with good accuracy. 8Enlarge 
+
+# a
+
+# d
+
+# b cFig. 2 DLR-F6-WBNP computational geometry and comparison of computational results. a, Computational geometry, representative flow field and flow-field regions on grids at different layers. The computational grid contains 148 blocks and 14,380,032 cells, with y+ ≈ 1. b, Comparison between the predicted ( left ) and converge ( right ) surface-pressure contours at 
+
+α = 1 .12 ◦. The predicted flow again shows high similarity to the converged flow, with only minor dif-ferences downstream of the pylon. c, Comparison and local enlargement of drag convergence curves obtained using conventional CFD and MHLF at the representative angle of attack. d, Comparison of drag coefficient and lift-to-drag ratio obtained using MHLF with wind-tunnel measurements. The results agree closely except at two small angles of attack. This discrepancy is consistent with the fact that the experimental model involved forced transition and a certain degree of elastic deformation during wind-tunnel testing, which causes differences between measured aerodynamic forces and most fully turbulent numerical simulations [37]. 
+
+## 2.3 TRAP Wing case 
+
+To comprehensively evaluate the predictive capability of MHLF, we further tested a more complex subsonic case after completing the supersonic and transonic compar-isons. Subsonic aircraft typically have more control surfaces and are geometrically much more complex than high-speed aircraft. We therefore selected a representative 9Table 2 Convergence performance and computational cost for the DLR-F6-WBNP case. Method Convergence steps Nc at AoA α (deg) Total steps Total time (s)                                                                                        
+
+> −2.82 ◦−2.13 ◦−1.12 ◦−0.62 ◦0.13 ◦0.66 ◦1.12 ◦1.47 ◦
+> Old 5040 5280 5184 4800 4320 2532 4812 6012 37980 63996.3 PointCNN ××××××××××
+> PointConv 9504 9528 4800 6924 7164 8184 7056 6636 59796 100756.3 PointMLP ××××××××××
+> PointNet++ 5136 5496 6312 5808 5100 4476 4008 4764 41100 69253.5 PointNeXt 5976 7308 6672 7332 6840 4464 3240 5112 46944 79100.6 PointTransformerV3 5760 5904 5964 5820 4884 3732 3984 5892 41940 70668.9
+> MHLF (ours) 2340 12484 12868 11824 22448 31440 31524 41512 416440 15787 .1
+> Superscripts 1, 2, 3 and 4 denote the 10-3-2, 10-3-3, 10-3-4 and 10-3-5 modes, respectively.
+
+high-lift configuration for validation. Flow fields around high-lift configurations are usually closely associated with complex physical phenomena such as flow separation, transition and boundary-layer mixing, all of which are difficult for CFD. The high-lift configuration tested here is the part-span configuration of the Trap Wing benchmark released at the first High Lift Prediction Workshop (HiLiftPW-1) in 2010. This configuration consists of a large-chord, moderate-aspect-ratio, three-element system mounted on a simplified fuselage, including a leading-edge slat, main wing and trailing-edge flap [39]. Compared with the full-span case released at the same workshop, this configuration is closer to a realistic civil aircraft. The trailing-edge flap has a scissors-like deflection, which makes grid generation difficult using conventional abutting-grid methods. In this work, the case was generated using an patched grid method. As described above, the training conditions were M a = 0 .15 and Re = 1 .5 ×
+
+10 7, with α = 3 ◦ ∼ 24 ◦ at intervals of 0 .5◦. The governing equations were the full Navier–Stokes equations, and the turbulence model was the one-equation SA model. Except that the number of training epochs was increased to 1000, the model training configuration was the same as in the X-38 case. The comparison angles of attack were 3 .01 ◦, 5 .34 ◦, 7 .61 ◦, 12 .17 ◦, 14 .44 ◦, 16 .70 ◦, 18 .95 ◦, 21 .20 ◦, 22 .33 ◦ and 23 .46 ◦. The computational geometry and comparison results are shown in Fig. 3. Table 3 compares MHLF with conventional CFD and baseline models. As in the preceding cases, the baseline models generally show poor predictive capability for flow fields, and all require longer computational times than conventional CFD. For two of the baseline models, the predicted initial conditions more than double the con-vergence time. We attribute this behavior to the high geometric complexity of the configuration. The control surfaces create multiple flow-field regions, producing flow separation at different spatial locations and substantial differences in flow morphology across regions. Under these conditions, a non-hierarchical model has difficulty over-coming feature masking among regions and accurately predicting the local flow state in each region. MHLF retains a clear advantage over the baseline models even for this 10 Enlarge 
+
+# a
+
+# d
+
+# b cFig. 3 TRAP Wing computational geometry and comparison of computational results. 
+
+a, Computational geometry, representative flow field and flow-field regions on grids at different layers. The computational grid contains 253 blocks and 16,494,848 cells, with y+ ≈ 1. b, Comparison between the predicted ( left ) and converge ( right ) surface-pressure contours at α = 5 .34 ◦. Apart from slight non-smooth artifacts, the predicted flow is highly similar to the converged flow. c, Comparison and local enlargement of drag convergence curves obtained using conventional CFD and MHLF at the representative angle of attack. d, Comparison of drag coefficient and lift-to-drag ratio obtained using MHLF with wind-tunnel measurements. The two sets of results agree closely across the full comparison range. 
+
+complex geometry. Across the ten evaluation conditions, the total number of com-putational steps required by MHLF is 49.6% of that required by conventional CFD. After the speed-up from asynchronous iteration is included, the average acceleration reaches 3.19, with the largest speed-up of 7.01 at α = 5 .34 ◦. This case also shows that, although MHLF uses hierarchical processing, its predictive capability remains limited when highly complex geometries induce strongly heterogeneous multi-region flow states. A highly adaptive dynamic regional training strategy should therefore be considered in future work. 11 Table 3 Convergence performance and computational cost for the TRAP Wing case. Method Convergence steps Nc at AoA α (deg) Total steps Total time (s) 3.01 ◦ 5.34 ◦ 7.61 ◦ 12 .17 ◦ 14 .44 ◦ 16 .70 ◦ 18 .95 ◦ 21 .20 ◦ 22 .33 ◦ 23 .46 ◦                                                                                                
+
+> Old 3780 3408 3768 3312 2796 2712 2652 2652 2808 2424 30312 18338.8 PointCNN 7716 6540 7212 6780 6612 6996 6084 3816 4848 6828 63432 38376.4 PointConv 5148 4800 3540 5424 4740 7068 7908 7596 8136 10296 64656 39116.9 PointMLP 3984 4512 2556 4140 2376 3612 2616 2592 3456 2448 32292 19536.7 PointNet++ 3312 2688 4476 2724 2436 2952 1836 4764 4524 2928 32640 19747.2 PointNeXt 6276 5508 7128 5664 5340 5112 5376 3540 3924 8460 56328 34078.4 PointTransformerV3 4788 4980 6924 1500 2316 1452 4068 4488 3576 8112 42204 25533.4
+> MHLF (ours) 3180 1840 22640 21488 21368 31740 31056 31380 31020 4960 515672 5752 .0
+> Superscripts 1, 2, 3, 4 and 5 denote the 10-3-1, 10-3-3, 10-3-5, 10-3-7 and 10-3-9 modes, respectively.
+
+# 3 Discussion 
+
+Compared with conventional CFD acceleration strategies, MHLF represents a new CFD paradigm for engineering-scale flow simulation. Conventional methods mainly seek to accelerate convergence by improving the numerical algorithm itself. MHLF instead combines faster numerical correction with a deep learning improvement of the initial flow field, thereby shortening the convergence trajectory. A simple distance-speed analogy clarifies this difference. If the distance from point A to point B is s
+
+and the moving speed is v, then the travel time is t = s/v . To reduce t, conventional methods mainly increase v, corresponding to the convergence speed of the CFD solver. MHLF acts on both terms. It increases the effective update efficiency through hier-archical asynchronous iteration, and reduces s through initial-field prediction, which decreases the gap between the initial and converged flow fields. The present results suggest that the efficiency gain from hierarchical asynchronous iteration alone is con-strained by grid-distribution characteristics and may be limited in the short term. By contrast, initial-field prediction provides a larger acceleration margin. In some com-parison conditions, MHLF reduced the number of convergence steps to approximately 1/6 ∼ 1/8 of that required by conventional initialization. Further improvements in model architecture and regional learning may extend this acceleration to a broader range of conditions. This advantage is obtained at very low additional cost. The time and computational resources required to generate learning data on the coarsened training grids are almost negligible, making MHLF highly valuable for the large numbers of flow states encoun-tered in engineering CFD applications. Moreover, other flow-field prediction methods often exhibit large random errors that are difficult to correct, whereas the final flow-field results obtained with MHLF are numerically accurate after CFD correction. This property makes the framework particularly important for high-precision data applica-tions, especially in aerospace engineering. In this work, the coarsening stride is 4, so 12 the flow-field data are compressed to 1 /64 of the original size. However, the multires-olution representation based on multigrid can compress training data much further. We have also implemented four consecutive coarsening operations with strides of 3, 3, 2 and 2, compressing aircraft flow-field data with 10.4 billion grid cells to 1 /46656 of the original data size while preserving all major macroscopic flow structures. Large-scale learning of engineering-scale flow-field data based on MHLF should therefore no longer be fundamentally limited by the original grid size or hardware capacity. Although MHLF shows substantial promise in the three canonical cases, several issues remain to be addressed. First, flow states vary markedly with angle of attack, and separation regions and shock structures continue to evolve. The random sampling strategy used for sparse point clouds also makes model predictions insufficiently sta-ble, with high accuracy in some states and weaker performance in others. Improving the model to achieve consistently high-quality flow-field prediction across all states will be a focus of future work. Second, more extensive testing is still needed for more practical geometries and flow structures, as well as for the generalization capability of the prediction model beyond the training set. Third, current network training is still dominated by data fitting and does not sufficiently incorporate physical constraints such as flux conservation and boundary conditions during learning. The relationship between deep learning prediction and physical consistency may therefore be critical for further improving such methods. Finally, the present cases are validated using structured grids, although MHLF is also compatible with unstructured-grid meth-ods. The implementation of hierarchical iteration on unstructured grids has been described in prior work on hierarchical iteration methods for CFD numerical solution [36]. However, owing to the inherent advantages of structured grids, grid coarsen-ing and flow-field reconstruction are relatively straightforward to implement in the present framework. For unstructured grids, the same regional hierarchy and geometric-multigrid-based multiresolution prolongation and reconstruction framework could in principle be used, but the implementation is more involved. The performance of MHLF for unstructured-grid methods therefore remains to be further confirmed. Looking ahead, a more urgent application is to establish the ability of prediction models to generalize across aircraft geometries. In the present cases, the computa-tional geometries are fixed. In engineering CFD, however, many simulations require accurate prediction of flow fields around deformed configurations. Achieving this capa-bility would provide a new solution pathway for full-envelope aircraft performance evaluation, aircraft design optimization, and aeroelastic problems involving static and dynamic coupling between aerodynamics and structures. The long and highly repetitive workload associated with conventional CFD would be greatly reduced, and MHLF-based aircraft design, optimization and evaluation systems could achieve a step change in efficiency. We will address these issues and challenges progressively in future work. 13 Fine grid  
+
+> Topology-preserving
+> coarsening
+> Region-aware
+> predictor
+> Conventional synchronous
+> iteration
+> Hierarchical asynchronous
+> iteration
+
+c Region-specific asynchronous CFD iteration 
+
+> Boundary: 10
+> Boundary branch
+
+b Flow-field hierarchy for prediction  
+
+> Inner branch
+> Outer branch
+> Boundary layer
+> Inner field
+> Outer field
+> Coarse grid
+> Coarse grid flow input
+> CFD solver
+> Shared
+> backbone
+> Inner: 10
+> Outer: 10
+> Boundary: 10
+> Inner: 3
+> Outer: 1
+
+a Multigrid representation and recovery 
+
+> Coarse grid prediction
+> CFD-corrected field
+> Two-stage
+> prolongation
+> Reconstructed
+> fine grid field
+> Grid coarsening
+> Region-guided solving
+> Hierarchical prediction
+> Fine-grid recovery
+> CFD initialization
+> Region -guided solving
+
+Fig. 4 Overview of the MHLF framework. a, Multigrid representation and reconstruction. The original fine grid is converted into a topologically consistent coarse-grid representation through a topology-preserving coarsening strategy, and flow-field prediction is performed on this coarse grid. The predicted coarse-grid flow field is then reconstructed on the fine grid through two-stage prolongation and used as the initial condition for the CFD solver. b, Flow-field hierarchy for prediction. The flow field is organized into boundary-layer, inner-field and outer-field regions, and is modeled using a shared backbone network with region-specific branches for region-aware prediction. c, Region-specific asynchronous CFD iteration. The reconstructed fine-grid flow field is further corrected by CFD, with an asynchronous iteration strategy that assigns different iteration counts to different flow-field regions. 
+
+# 4 Methods 
+
+Figure 4 shows the overall workflow of MHLF. MHLF decomposes direct engineering-scale full-field prediction into four coupled steps that consist of coarse-grid represen-tation learning, region-aware flow-field prediction, fine-grid reconstruction and CFD correction. First, the original fine grid is mapped to a low-resolution representation space through topology-preserving coarsening, reducing the computational complex-ity of large-scale flow-field learning. The computational domain is then organized into boundary-layer, inner-field and outer-field regions according to flow-field characteris-tics. The model performs adaptive prediction for these regions using a shared backbone network and region-specific branches. The coarse-grid prediction is reconstructed on the original fine grid through two-stage prolongation and used as the initial flow field for CFD correction. Finally, the same hierarchy guides asynchronous iteration schedul-ing during CFD correction, allowing the boundary-layer, inner-field and outer-field regions to use different iteration counts according to their convergence characteristics and thereby improving computational efficiency. In MHLF, the multigrid method provides cross-resolution representation and reconstruction, whereas the hierarchical strategy supports both region-adaptive learn-ing and region-specific asynchronous numerical iteration. By integrating coarse-grid 14 learning, fine-grid reconstruction and subsequent CFD correction into a unified workflow, MHLF provides an effective approach for predicting engineering-scale three-dimensional flow fields while retaining high-fidelity numerical accuracy. 
+
+## 4.1 Multigrid representation and reconstruction 
+
+As shown in Fig. 5, the multigrid module of MHLF consists of a topology-preserving grid-coarsening process that constructs the coarse-grid representation and a two-stage volume-weighted prolongation process that reconstructs the predicted coarse-grid flow field on the original high-resolution grid. The central idea is to perform the main learning task in a low-resolution but geometrically consistent representation space, and then map the low-resolution prediction back to the fine grid to provide a high-resolution initial flow field for subsequent CFD correction. a Topology-preserving coarsening 
+
+> Fine grid
+> 1/64 cells
+> Coarse grid for
+> learning
+> Structured downsampling, s = 4
+> Topology preserving
+
+b Two-stage volume-weighted prolongation   
+
+> Coarse grid
+> prediction
+> Coarse Grid
+> Intermediate
+> recovery
+> Volume-weighted
+> prolongation
+> Volume-weighted
+> prolongation
+> Recovered
+> fine grid field
+> Intermediate grid (s = 2) Fine grid
+> CFD
+> initialization
+
+Fig. 5 Multigrid representation and reconstruction in MHLF. a, Topology-preserving coars-ening. The original fine grid is structurally coarsened with stride s = 4 to construct a topologically consistent coarse-grid representation for learning, reducing the number of grid cells to approximately 1/64 of that in the fine grid. b, Two-stage volume-weighted prolongation. The predicted coarse-grid flow field is first mapped to an intermediate grid through volume-weighted prolongation, and is then reconstructed on the original fine grid through a second volume-weighted prolongation step, yielding a high-resolution flow field for CFD initialization. 
+
+4.1.1 Topology-preserving grid coarsening 
+
+We construct the cross-resolution representation using geometric multigrid (GMG). Here, GMG is used to define the learning space rather than only to accelerate numerical iteration. The aim is to reduce the size of the regression problem while preserving the grid correspondence needed for later reconstruction on the CFD grid. 15 Let the original high-resolution structured grid be denoted as Gfine . A coarse grid is obtained by sampling the grid with a fixed stride along each computational direction: 
+
+Gcoarse = {xi,j,k ∈ Gfine | i, j, k ≡ 0 (mod s)} ,
+
+where s is the coarsening stride. In this work, s = 4. One point is retained for every four points along each grid edge, and the computational grid is generated from the coarsened grid edges. In three dimensions, this reduces the number of coarse-grid cells to 1 /64 of the original fine-grid count. Because Gcoarse is obtained by direct coarsening from Gfine , the two grids remain consistent in geometry and spatial topology. This correspondence links low-cost pre-diction to subsequent fine-grid CFD correction. We perform CFD simulations on 
+
+Gcoarse to generate supervised learning data. Although the coarse-grid solution cannot resolve all local details, it preserves the large-scale flow structures and main physical distributions needed for initialization. 
+
+4.1.2 Two-stage volume-weighted prolongation 
+
+CFD correction requires the predicted field to be reconstructed on the original high-resolution grid Gfine . The coarse-grid prediction must therefore be reconstructed in the fine-grid space before CFD correction. Because the resolution differs by a factor of 4 along each spatial direction and the total number of cells differs by a factor of 64, direct interpolation can distort regions with strong grid stretching or large local volume variation. To reduce the error caused by a large single-step mapping, we introduce a medium-resolution grid Gmedium between Gcoarse and Gfine . Reconstruction is decom-posed into two prolongation steps, Gcoarse → Gmedium and Gmedium → Gfine . The medium grid is obtained by structurally coarsening the fine grid with stride s = 2, so it remains topologically consistent with both the coarse and fine grids. This intermediate level reduces the resolution jump in each mapping and stabilizes reconstruction. At each reconstruction level, a volume-weighted prolongation operator Ivol (·) maps the low-resolution flow field to a higher-resolution grid. The operator accounts for local control-volume differences instead of relying only on geometric distance. It constructs interpolation weights from the volume distribution of cells in the target neighbor-hood, which helps reduce distortion near boundaries and locally refined regions. The reconstruction process is 
+
+bYmedium = Ivol 
+
+ bYcoarse , G medium 
+
+
+
+,
+
+bYfine = Ivol 
+
+ bYmedium , G fine 
+
+
+
+.
+
+The final reconstructed flow field bYfine is used as the initial condition for CFD correction. This step converts coarse-grid learning into a CFD acceleration pathway. 
+
+## 4.2 Flow-field hierarchy for prediction and CFD correction 
+
+The flow-field hierarchy makes regional physical differences explicit before prediction and CFD correction. As shown in Figs. 6 and 4c, this part of MHLF includes hierarchy 16 definition with region-wise normalization, region-aware prediction on flow-field regions, and region-specific asynchronous CFD iteration. This organization avoids a single homogeneous treatment of boundary-layer, inner-field and outer-field regions. 
+
+4.2.1 Flow-field hierarchy and region-wise normalization 
+
+As shown in Fig. 6a, the flow field is organized into a boundary-layer region Ω boundary ,an inner-field region Ω inner and an outer-field region Ω outer . This hierarchy separates regions with different statistical scales and numerical stiffness. The region Ω boundary 
+
+lies near the wall and contains strong grid stretching and steep local gradients. The region Ω inner lies between the near-wall region and the far field and contains transi-tional, medium-scale flow structures. The region Ω outer is dominated by smoother flow variations. a Flow-field hierarchy 
+
+and region-wise normalization 
+
+b Region-aware prediction on flow-field regions 
+
+Normal coordinates 
+
++ Mach 
+
++ AoA    
+
+> T-net
+> Input
+> alignment
+> Conv1d(1024)
+> Conv1d (128)
+> Conv1d (64)
+> Concat
+> Conv1d(1024)
+> RARA
+> RARA
+> RARA
+> RARA
+> RARA
+> RARA
+> RARA
+> E1
+> E7
+> E2
+> E3
+> E4
+> E5
+> E6
+> D1
+> D7
+> D2
+> D3
+> D4
+> D5
+> D6
+> Fenc 𝐀 𝐀𖰀𝐀𚀀𝐀𛠀𝐀𙰀
+> 𝐀 𝐀 𝐀𚀀𚀀𙰀𝐀
+> 𝐀 𝐀 𖰀𝐀𝐀𙰀𝐀
+> 𝐀
+> boundary RARA
+> 𝐀 𝐀𖰀𝐀𚀀𝐀𛠀𝐀𙰀
+> 𝐀
+> inner RARA
+> 𝐀 𝐀𖰀𝐀𚀀𝐀𛠀𝐀𙰀
+> 𝐀
+> far RARA
+> 𝐀 𝐀𖰀𝐀𚀀𝐀𛠀𝐀𙰀
+> 𝐀
+> Shared design
+> Region-specific parameters
+> boundary RARA
+> 𝐀 𝐀𖰀𝐀𚀀𝐀𛠀𝐀𙰀
+> 𝐀
+> inner RARA
+> 𝐀 𝐀𲠀𲠀𳰀𝐀
+> 𝐀
+> outer RARA
+> 𝐀 𖰀𝐀𝐀𙰀𝐀
+> 𝐀
+
+c Region-specific 
+
+prediction heads  
+
+> Ffinal  = Concat(D1,F enc ) Ground-truth
+> coarse
+> targets
+> MSE(pred,GT)
+> Conv1d(512)
+> Conv1d(512)
+> Conv1d(512)
+> Conv1d(5)
+> Conv1d(5)
+> Conv1d(5)
+> Boundary head
+> Inner head
+> Outer head
+> E(l)
+> AvgPool
+> Conv1d
+> MaxPool
+> ReLu
+> Conv1d
+> Sigmoid
+> Channel attention
+> Concat
+> AvgPool MaxPool
+> Conv1d
+> Sigmoid
+> Spatial attention
+> RARA
+> output
+
+Region-Aware Residual Attention (RARA) 
+
+Boundary layer 
+
+Inner field 
+
+Outer field 
+
+Zboundary Zboundary Norm ~
+
+Zinner Zinner Norm ~
+
+Zouter Zouter Norm ~
+
+Fig. 6 Flow-field hierarchy and region-aware prediction in MHLF. a, Flow-field hierarchy and region-wise normalization. The flow field is organized into boundary-layer, inner-field and outer-field regions, and each region is normalized independently to reduce scale imbalance and feature masking among heterogeneous flow regions. b, Region-aware prediction on flow-field regions. Normal-ized coordinates and flow-condition parameters are processed by a shared backbone network, while region-specific RARA branches adaptively modulate multiscale features in different physical regions. c, Region-specific prediction heads. The final latent representations are mapped to coarse-grid flow variables by independent regression heads corresponding to the boundary-layer, inner-field and outer-field regions. 
+
+For any region r ∈ { Ωboundary , Ωinner , Ωouter }, let Nr denote the number of sampled points in this region. The geometric coordinates and flow variables are denoted by 
+
+Xr = ( x, y, z ) ∈ RNr ×3, Yr = ( ρ, u, v, w, p ) ∈ RNr ×5.
+
+Because spatial scales and variable distributions differ across regions, each region is normalized independently rather than by a global transform. For the ith point in 17 region r,˜Z(i) 
+
+> r
+
+= Z(i) 
+
+> r
+
+− zmin 
+
+> r
+
+zmax  
+
+> r
+
+− zmin 
+
+> r
+
+, zmin  
+
+> r
+
+= min  
+
+> i
+
+Z(i) 
+
+> r
+
+, z max  
+
+> r
+
+= max  
+
+> i
+
+Z(i) 
+
+> r
+
+,
+
+where Zr can represent either the regional coordinates Xr or the flow variables Yr.This region-wise normalization prevents near-wall geometry from being compressed by global scaling and balances the input distributions used for region-aware prediction. 
+
+4.2.2 Region-aware prediction on flow-field regions 
+
+As shown in Fig. 6b,c, prediction is performed on the flow-field regions within the coarse-grid representation. The network uses a Backbone–Branch Modulation architecture to share global aircraft-flow information while allowing region-specific responses. The shared backbone extracts geometric and flow representations common to all regions. The branches modulate skip connections and output mapping for each flow-field region. For any region r, the network input consists of normalized coordinates and global flow-condition parameters. After the Mach number M a and angle of attack α are broadcast to all points in the region, the input tensor is 
+
+Ur =
+
+h ˜Xr , M a, α 
+
+i
+
+∈ RNr ×5,
+
+where ˜Xr ∈ RNr ×3 denotes the normalized regional coordinates. A lightweight T-Net first aligns the input to reduce sensitivity to geometric and flow-condition variations: 
+
+Uali  
+
+> r
+
+= UrTr,
+
+where Tr ∈ R5×5 is the input alignment matrix. The aligned input Uali  
+
+> r
+
+is mapped by pointwise convolution to shallow local features Flocal ∈ RNr ×64 , and successive pointwise convolutions extract deep features Fdeep ∈ RNr ×1024 . The two feature ten-sors are concatenated and compressed to preserve local geometric information before multiscale encoding: 
+
+Fenc = ϕred 
+
+ Concat( Fdeep , Flocal ) ∈ RNr ×1024 .
+
+The feature Fenc then enters a seven-level encoder path, producing multiscale features {E(l)}7
+
+> l=1
+
+, which are progressively reconstructed in a mirrored decoder path. In a standard U-Net, feature fusion at level l is written as 
+
+D(l) = D(l) 
+
+Concat( D(l+1) , E(l))
+
+
+
+.
+
+To prevent skip connections from applying the same feature emphasis to regions with different flow characteristics, we introduce the RARA module at each level. For each 18 level l, three modules, M(l)boundary , M(l)inner and M(l)outer , are constructed, and the branch is selected according to the input region: 
+
+E(l) 
+
+> r, rara
+
+= M(l)
+
+> r
+
+ E(l).
+
+Given the input feature E(l) ∈ RNr ×Cl , RARA first applies channel attention: 
+
+a(l) 
+
+> r,c
+
+= σ
+
+
+
+MLP(AvgPool N (E(l))) + MLP(MaxPool N (E(l))) 
+
+
+
+∈ R1×Cl ,
+
+where σ(·) is the Sigmoid function. This gives the channel-recalibrated feature 
+
+E(l) 
+
+> r,c
+
+= E(l) ⊙ a(l)
+
+> r,c
+
+.
+
+Spatial attention is then applied: 
+
+a(l) 
+
+> r,s
+
+= σ
+
+
+
+Conv 7
+
+
+
+Concat  AvgPool C (E(l)
+
+> r,c
+
+), MaxPool C (E(l)
+
+> r,c
+
+) 
+
+∈ RNr ×1,
+
+The resulting feature is 
+
+E(l) 
+
+> r,s
+
+= E(l) 
+
+> r,c
+
+⊙ a(l)
+
+> r,s
+
+.
+
+Finally, RARA outputs the region-modulated feature in residual form: 
+
+E(l) 
+
+> r, rara
+
+= E(l) + E(l)
+
+> r,s
+
+.
+
+Thus, the feature fusion of the level-l decoder becomes 
+
+D(l) = D(l) 
+
+Concat  D(l+1) , E(l)
+
+> r, rara
+
+
+
+.
+
+At the end of the decoder, the top-level decoded feature is concatenated again with the encoder-entry feature to obtain the final representation: 
+
+Ffinal = Concat( D(1) , Fenc ).
+
+Independent prediction heads Hboundary , Hinner and Houter keep the final regression consistent with the regional organization. For any region r, the prediction is 
+
+bYr = Hr (Ffinal ).
+
+Each prediction head consists of two pointwise convolution layers, first compressing the feature to 512 dimensions and then mapping it to five physical variables. During training, the mean squared error is computed separately for each region and then combined as a weighted sum: 
+
+L = X 
+
+> r∈{ Ωboundary ,Ωinner ,Ωouter }
+
+λr MSE   bYr, ˜Yr
+
+,
+
+19 where λr is the regional loss weight. Unless otherwise specified, λr = 1 in this work. The prediction model outputs the five non-conservative variables, density, pressure and the three velocity components. The turbulence variables required by the CFD solver are supplemented from coarse-grid turbulence fields at a nearby angle of attack. This keeps the learning target focused on the main flow variables while retaining the turbulence information needed for CFD correction. 
+
+4.2.3 Region-specific asynchronous CFD iteration 
+
+This step uses the fine-grid flow field obtained by two-stage prolongation as the initial condition and obtains a physically constrained converged solution through subsequent iteration. We further introduce a hierarchical iteration strategy in this process [36], as briefly described below. As shown in Fig. 4c, we no longer apply a unified synchronous update to the entire flow field. Instead, asynchronous iteration is performed according to the physical characteristics and convergence behaviour of each region. Figure 4c illustrates a com-monly used 10-3-1 iteration strategy, which can be dynamically adjusted for different computational conditions. For mainstream time-marching CFD solvers based on local time stepping, the boundary-layer region usually requires more iterations because of its small grid scale, steep gradients and stronger numerical stiffness. The inner-field region has larger grid scales and smaller flow gradients, so the number of iterations can be moderately reduced. The outer-field region exhibits smoother flow variations and can use fewer iteration steps. This asynchronous iteration strategy assigns differ-ent iteration counts to different regions. It does not change the governing equations or discretization framework of the solver, but substantially reduces redundant updates in smooth regions by adjusting the iteration strategy region by region. This enables balanced advancement of the full flow field and markedly improves numerical iteration efficiency. 
+
+## 4.3 CFD simulation method 
+
+The CFD solver provides the reference converged fields for supervised learning and the correction step used after MHLF initialization. All simulations were performed using NNW-FSI, the fluid-structure interaction software of the National Numerical Wind Tunnel platform developed by the China Aerodynamics Research and Devel-opment Center. The CFD module is based on structured grids and discretizes the Reynolds-averaged Navier–Stokes (RANS) equations in generalized coordinates using the finite-volume method, as shown in the following equation. Convective terms are discretized by the MUSCL-Roe upwind scheme, and diffusive terms by a second-order central scheme. The turbulence models include the one-equation SA model and the two-equation SST model. The discrete equations are solved mainly with LU-SGS. Pre-conditioning is used for low-speed calculations, and geometric multigrid and massively parallel computing are used to accelerate convergence. Matching grids are used for geometrically simpler cases, whereas patched grids are used for complex configurations 20 to handle scissor gaps caused by control-surface deflection. 
+
+∂ ˆQ∂τ + ∂ ˆE∂ξ + ∂ ˆF∂η + ∂ ˆG∂ζ = ∂ ˆEv
+
+∂ξ + ∂ ˆFv
+
+∂η + ∂ ˆGv
+
+∂ζ .
+
+Here, ˆQ denotes the vector of conservative variables. ˆE, ˆF and ˆG denote the inviscid fluxes in curvilinear coordinates, and ˆEv , ˆFv and ˆGv denote the corresponding viscous fluxes. These are mature mainstream CFD algorithms and are therefore not described further. The multigrid method used in this work uses three grid levels to support coarsening with s = 4. 
+
+4.3.1 Convergence criterion 
+
+To accurately compare the computational efficiency of CFD, it is essential to precisely count number of iterations to convergence. Since aerodynamic forces in complex flows often do not converge directly to a fixed value but instead exhibit small-amplitude oscillations, and given that there is currently no widely accepted unified convergence criterion for such flows in the CFD community, we adopted convergence criterion proposed for hierarchical CFD iteration [36]. Details are provided in Appendix 1. 
+
+4.3.2 Initial-condition dependence 
+
+Because MHLF changes the CFD initial condition, we assessed whether the final con-verged solution depends on the starting field. Such dependence can occur in separated or discontinuous flows. It is well documented in high-lift configurations, where cold starts and hot starts near stall can converge to different states. The AIAA High Lift Prediction Workshop therefore recommended using the converged flow field from a nearby lower angle of attack as the initial condition near stall. The present numerical experiments show the following. First, for all attached flows and flows with small separation bubbles, both uniform and predicted initial fields converge to the same solution. Second, when large surface separation is present, the converged results obtained from uniform and predicted initial fields are also identical in most states. In a small number of states, slight differences may occur, usually with aerodynamic-force differences below 1 ‰. Near the critical angles of attack where sepa-ration first appears or is about to disappear, however, differences in surface-separation morphology can cause this discrepancy to exceed 1%. This situation corresponds to the coexistence of multiple attractors in a nonlinear dynamical system, meaning that the system has multiple stable solutions. In practical CFD applications, when different initial conditions yield inconsistent results and grid or solver changes do not remove the discrepancy, the solution ini-tialized closer to the final flow state is commonly selected. Following this practice, when uniform and predicted initial conditions produced different results, we reported the solution obtained from the predicted initial condition. Figure 7 compares the two sets of results. Differences mainly occur near critical separation states, such as the negative-angle-of-attack states of the WBNP configuration, whereas other states are almost identical. Initial condition dependence is not the focus of this study and is not discussed further. 21 a X38 b DLR-F6-WBNP c TRAP WING   
+
+> RMSE=0.0002179 RMSE=0.0069932 RMSE=0.0000158
+
+Fig. 7 Comparison of drag coefficients obtained from different initial conditions. a–c, Comparison of drag coefficients obtained from uniform and predicted initial conditions for the X-38, DLR-F6-WBNP and TRAP Wing cases, respectively. The horizontal axis denotes the drag coefficient obtained from the uniform initial condition, and the vertical axis denotes the drag coefficient obtained from the predicted initial condition. RMSE denotes the root mean squared relative error between the two sets of results. 
+
+## 4.4 Baseline models 
+
+To test whether the performance gains come from the multigrid-hierarchical formu-lation rather than generic point-based model capacity, we selected six representative point-based learning models: PointCNN [40], PointConv [41], PointMLP [42], Point-Net++ [43], PointNeXt [44] and Point Transformer V3 [45]. These baselines cover major paradigms for irregular point-cloud learning, including point convolution, hier-archical set abstraction, MLP-based learning and Transformer-based attention. This set enables a systematic comparison between MHLF and classical or recent point-cloud learning methods. We further compared the prediction error and model size of all methods across the three benchmark cases. As shown in Table 4, MHLF achieves the lowest MSE on all three datasets while using the fewest trainable parameters. This result indicates that the improved prediction performance of MHLF does not come from a larger model capacity, but from the multigrid representation and flow-field hierarchy. 
+
+Table 4 Prediction error and model size across benchmark cases. Model MSE Parameters X-38 DLR-F6-WBNP TRAP Wing PointCNN 2.0133 × 10 −3 1.8514 × 10 −3 4.5090 × 10 −5 11,348,113 PointConv 2.5870 × 10 −3 1.4144 × 10 −3 5.2769 × 10 −5 13,399,335 PointMLP 6.1433 × 10 −4 1.0361 × 10 −3 1.8280 × 10 −4 15,307,549 PointNet++ 4.2203 × 10 −3 2.4633 × 10 −3 4.1228 × 10 −5 15,965,317 PointNeXt 7.0552 × 10 −3 3.3955 × 10 −3 1.6759 × 10 −4 11,118,365 PointTransformerV3 1.8946 × 10 −2 5.9227 × 10 −3 2.0732 × 10 −4 46,150,597 
+
+MHLF (ours) 2.2128 × 10 −4 2.4497 × 10 −4 2.8135 × 10 −5 9, 374 , 100 
+
+22 5 Data availability 
+
+Owing to institutional confidentiality regulations, the data that support the findings of this study are not publicly available. All data are available from the corresponding author upon reasonable request. 
+
+# 6 Code availability 
+
+Owing to institutional confidentiality regulations, the code used in this study is not publicly available. All code is available from the corresponding author upon reasonable request. 
+
+# References 
+
+[1] Guo, X., Li, W., Iorio, F.: Convolutional neural networks for steady flow approx-imation. In: Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 481–490 (2016) [2] Bhatnagar, S., Afshar, Y., Pan, S., Duraisamy, K., Kaushik, S.: Prediction of aerodynamic flow fields using convolutional neural networks. Computational Mechanics 64 (2), 525–545 (2019) [3] Ribeiro, M.D., Rehman, A., Ahmed, S., Dengel, A.: Deepcfd: Efficient steady-state laminar flow approximation with deep convolutional neural networks. arXiv preprint arXiv:2004.08826 (2020) [4] Thuerey, N., Weißenow, K., Prantl, L., Hu, X.: Deep learning methods for reynolds-averaged navier–stokes simulations of airfoil flows. AIAA journal 58 (1), 25–36 (2020) [5] Sekar, V., Zhang, M., Shu, C., Khoo, B.C.: Inverse design of airfoil using a deep convolutional neural network. Aiaa Journal 57 (3), 993–1003 (2019) [6] Riegler, G., Osman Ulusoy, A., Geiger, A.: Octnet: Learning deep 3d representa-tions at high resolutions. In: Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pp. 3577–3586 (2017) [7] Liu, Z., Tang, H., Lin, Y., Han, S.: Point-voxel cnn for efficient 3d deep learning. Advances in neural information processing systems 32 (2019) [8] V¨ ansk¨ a, A.: Voxel-based modelling in additive manufacturing (2025) [9] Gao, H., Sun, L., Wang, J.-X.: Phygeonet: Physics-informed geometry-adaptive convolutional neural networks for solving parameterized steady-state pdes on irregular domain. Journal of Computational Physics 428 , 110079 (2021) 23 [10] Pfaff, T., Fortunato, M., Sanchez-Gonzalez, A., Battaglia, P.: Learning mesh-based simulation with graph networks. In: International Conference on Learning Representations (2020) [11] Belbute-Peres, F.D.A., Economon, T., Kolter, Z.: Combining differentiable pde solvers and graph neural networks for fluid flow prediction. In: International Conference on Machine Learning, pp. 2402–2411 (2020). PMLR [12] Kashefi, A., Rempe, D., Guibas, L.J.: A point-cloud deep learning framework for prediction of fluid flow fields on irregular geometries. Physics of Fluids 33 (2) (2021) [13] Chen, X., Li, T., Wan, Y., Liang, Y., Gong, C., Pang, Y., Liu, J.: Developing an advanced neural network and physics solver coupled framework for accelerating flow field simulations. Engineering with Computers 40 (2), 1111–1126 (2024) [14] Bonnet, F., Mazari, J., Cinnella, P., Gallinari, P.: Airfrans: High fidelity computa-tional fluid dynamics dataset for approximating reynolds-averaged navier–stokes solutions. Advances in Neural Information Processing Systems 35 , 23463–23478 (2022) [15] Sabater, C., St¨ urmer, P., Bekemeyer, P.: Fast predictions of aircraft aerodynamics using deep-learning techniques. Aiaa Journal 60 (9), 5249–5261 (2022) [16] Li, K., Kou, J., Zhang, W.: Deep learning for multifidelity aerodynamic distri-bution modeling from experimental and simulation data. AIAA Journal 60 (7), 4413–4427 (2022) [17] Hines, D., Bekemeyer, P.: Graph neural networks for the prediction of aircraft surface pressure distributions. Aerospace Science and Technology 137 , 108268 (2023) [18] Shen, Y., Huang, W., Wang, Z.-g., Xu, D.-f., Liu, C.-Y.: A deep learning framework for aerodynamic pressure prediction on general three-dimensional configurations. Physics of Fluids 35 (10) (2023) [19] Lei, Y., An, X., Pan, Y., Zhou, Y., Chen, Q.: Prediction of pressure distribution and aerodynamic coefficients for a variable-sweep wing. Aerospace Science and Technology 155 , 109706 (2024) [20] Wang, S., Zhang, X., Tie, Y., Xia, W., Jiang, Y.: Aerodynamic performance prediction of 3d aircraft based on point cloud deep learning. Journal of Compu-tational Design and Engineering 12 (5), 175–189 (2025) [21] Catalani, G., Agarwal, S., Bertrand, X., Tost, F., Bauerheim, M., Morlier, J.: Neural fields for rapid aircraft aerodynamics simulations. Scientific Reports 14 (1), 25496 (2024) 24 [22] Rabeh, A., Herron, E., Balu, A., Sarkar, S., Hegde, C., Krishnamurthy, A., Gana-pathysubramanian, B.: Benchmarking scientific machine-learning approaches for flow prediction around complex geometries. Communications Engineering 4(1), 182 (2025) [23] Nemati Taher, F., Suba¸ sı, A.: A fast three-dimensional flow field prediction around bluff bodies using deep learning. Physics of Fluids 36 (2) (2024) [24] Xie, R., Wan, Z., Yan, D., Qiu, W.: Fast aerodynamic analysis method for three-dimensional morphing wings based on deep learning. Aerospace Science and Technology 155 , 109690 (2024) [25] Li, M., Wang, J., Sun, K., Han, F., Lee, C.: Fast prediction of three-dimensional wing inviscid flow fields from sparse data based on an autoencoder and a deep attention network. Physics of Fluids 37 (8) (2025) [26] Zuo, K., Ye, Z., Yuan, X., Zhang, W.: Flow3dnet: A deep learning framework for efficient simulation of three-dimensional wing flow fields. Aerospace Science and Technology 159 , 109991 (2025) [27] Lino, M., Fotiadis, S., Bharath, A.A., Cantwell, C.D.: Current and emerging deep-learning methods for the simulation of fluid dynamics. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences 479 (2275) (2023) [28] Chen, D., Lin, Y., Li, W., Li, P., Zhou, J., Sun, X.: Measuring and relieving the over-smoothing problem for graph neural networks from the topological view. In: Proceedings of the AAAI Conference on Artificial Intelligence, vol. 34, pp. 3438–3445 (2020) [29] Zeng, C., Zhang, Y., Zhou, J., Wang, Y., Wang, Z., Liu, Y., Wu, L., Huang, D.Z.: Point cloud neural operator for parametric pdes on complex and variable geome-tries. Computer Methods in Applied Mechanics and Engineering 443 , 118022 (2025) [30] Xu, Z.-Q.J., Zhang, Y., Luo, T., Xiao, Y., Ma, Z.: Frequency principle: Fourier analysis sheds light on deep neural networks. arXiv preprint arXiv:1901.06523 (2019) [31] Wang, S., Wang, H., Perdikaris, P.: On the eigenvector bias of fourier feature net-works: From regression to solving multi-scale pdes with physics-informed neural networks. Computer Methods in Applied Mechanics and Engineering 384 , 113938 (2021) [32] Xiao, Q., Chen, X., Liu, J., Gong, C., Sun, Y.: Mh-dcnet: An improved flow field prediction framework coupling neural network with physics solver. Computers & Fluids 284 , 106440 (2024) 25 [33] Wang, S., Teng, Y., Perdikaris, P.: Understanding and mitigating gradient flow pathologies in physics-informed neural networks. SIAM Journal on Scientific Computing 43 (5), 3055–3081 (2021) [34] Brandt, A., Livne, O.E.: Multigrid Techniques: 1984 Guide with Applications to Fluid Dynamics, Revised Edition. SIAM, ??? (2011) [35] Brandt, A.: Multi-level adaptive solutions to boundary-value problems. Mathe-matics of computation 31 (138), 333–390 (1977) [36] Meng, D., Yue, H., Wang, H., Li, W., Qi, Y., Wang, R., Hong, J.: Hierarchi-cal iterative method in cfd numerical solution. arXiv preprint arXiv:2604.09392 (2026) [37] Laflin, K., Brodersen, O., Rakowitz, M., Vassberg, J., Wahls, R., Morrison, J., Tinoco, E., Godard, J.-L.: Summary of data from the second aiaa cfd drag pre-diction workshop. In: 42nd AIAA Aerospace Sciences Meeting and Exhibit, p. 555 (2004) [38] Wang, Y.: An overview of dpw iv˜ dpw vi numerical simulation technology. Acta Aeronautica et Astronautica Sinica 39 (4), 021836 (2018) [39] Yuntao, W.: An overview of hiliftpw-1 to hiliftpw-3 numerical simulation tech-nologies. Acta Aeronautica et Astronautica Sinica 39 (7), 021997 (2018) [40] Li, Y., Bu, R., Sun, M., Wu, W., Di, X., Chen, B.: Pointcnn: Convolution on x-transformed points. Advances in neural information processing systems 31 (2018) [41] Wu, W., Qi, Z., Fuxin, L.: Pointconv: Deep convolutional networks on 3d point clouds. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 9621–9630 (2019) [42] Ma, X., Qin, C., You, H., Ran, H., Fu, Y.: Rethinking network design and local geometry in point cloud: A simple residual mlp framework. arXiv preprint arXiv:2202.07123 (2022) [43] Qi, C.R., Yi, L., Su, H., Guibas, L.J.: Pointnet++: Deep hierarchical feature learning on point sets in a metric space. Advances in neural information processing systems 30 (2017) [44] Qian, G., Li, Y., Peng, H., Mai, J., Hammoud, H., Elhoseiny, M., Ghanem, B.: Pointnext: Revisiting pointnet++ with improved training and scaling strategies. Advances in neural information processing systems 35 , 23192–23204 (2022) [45] Wu, X., Jiang, L., Wang, P.-S., Liu, Z., Liu, X., Qiao, Y., Ouyang, W., He, T., Zhao, H.: Point transformer v3: Simpler faster stronger. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 26 4840–4851 (2024) 
+
+# 7 Convergence criterion 
+
+Fig. 8 Drag-coefficient-based convergence criterion. The final converged drag coefficient CD
+
+is used as the reference value, and the interval CD ± 0.0002 CD is defined as the convergence band. Let n denote the iteration step at which the drag-coefficient convergence history enters this band for the last time. The convergence step count is then defined as Nc = 1 .2n. For cases in which the drag coefficient exhibits small-amplitude fluctuations and does not converge to a strictly fixed value, the reference value is taken as the mean drag coefficient during the statistically converged stage, and n
+
+is determined after filtering and smoothing. 
+
+To quantitatively compare the convergence efficiency of different CFD strategies, this work adopts the convergence criterion proposed in the study on hierarchical iter-ation methods for CFD numerical solution, as illustrated in Fig. 8. In the reference study, the convergence band was set to ±0.0001 CD. Here, we relax this threshold 27 to ±0.0002 CD, mainly because the CFD software used in this work outputs aero-dynamic coefficients with five significant digits. For computational states with more complex geometries and spatial flow structures, truncation error can cause fluctua-tions in the last digit of the aerodynamic output. In this situation, a convergence band of ±0.0001 CD is comparable to the uncertainty of the numerical output, mak-ing the drag-coefficient history prone to oscillations near the convergence band and making the convergence step count difficult to quantify. We therefore use a slightly wider convergence band to improve the robustness and practicality of the criterion. This work does not address whether this criterion is the optimal definition of CFD convergence. Its purpose is to provide an objective, reproducible and operational stan-dard for quantifying convergence steps, so that the convergence efficiency of different initial conditions and iteration strategies can be compared within the same numerical framework. 28

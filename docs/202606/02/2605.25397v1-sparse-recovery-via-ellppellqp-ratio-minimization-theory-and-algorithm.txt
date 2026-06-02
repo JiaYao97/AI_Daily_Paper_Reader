@@ -1,0 +1,3679 @@
+Title: Sparse Recovery via ℓ_p^p/ℓ_q^p Ratio Minimization: Theory and Algorithm
+
+URL Source: https://arxiv.org/pdf/2605.25397v1
+
+Published Time: Tue, 26 May 2026 01:44:26 GMT
+
+Number of Pages: 39
+
+Markdown Content:
+# Sparse Recovery via ℓpp/ℓ pq Ratio Minimization: Theory and Algorithm 
+
+Lang Yu a, Nanjing Huang a, ∗
+
+> aSchool of Mathematics, Sichuan University, 610064, Chengdu, China
+
+Abstract 
+
+The constrained ℓpp/ℓ pq ratio model is scale invariant and is therefore attractive for sparse signal recovery. However, its nonconvex, nonsmooth, and fractional structure makes a unified theo-retical and algorithmic analysis challenging for 0 < p ≤ 1 and q > 1. This paper develops a unified framework for this general model, covering deterministic exact recovery, stable recovery for sparse and compressible signals, and convergence analysis of a fractional algorithm. We first establish two deterministic sufficient conditions for exact recovery: a local optimality criterion and a null-space condition ensuring uniform recovery. For the ℓ1/ℓ q subfamily, this null-space condition is further converted into high-probability sample-complexity bounds for isotropic sub-Gaussian matrix. We then study noisy recovery. Under the k-sparsity assumption, we improve the RIP-based stable recovery theory by relaxing the required sufficient condition and deriving sharper reconstruction-error bounds. For compressible signals, we establish RIP–ROP based error estimates whose constants are independent of the ambient dimension, improving prior bounds with explicit dimension-dependent factors [1]. An RIP-only variant is also derived. On the algorithmic side, we propose a prox-linear Dinkelbach framework that directly handles the fractional structure of the constrained problem and prove its convergence. Numerical exper-iments demonstrate that suitable choices of (p, q ) are effective for high-dynamic-range sparse signals and coherent sensing matrices. 
+
+Keywords: Compressed Sensing, Sparse Recovery, ℓpp/ℓ pq Ratio minimization, Exact and Stable Recovery, Restricted Isometry Property, Restricted Orthogonality Property 
+
+1. Introduction 
+
+Compressed sensing (CS) [2, 3] aims to recover a sparse or compressible signal x ∈ Rn
+
+from far fewer linear measurements than the ambient dimension. In the standard observation model b = Ax + e, where b ∈ Rm is the observation vector, A ∈ Rm×n with m  n is the sensing matrix, and e ∈ Rm is a bounded noise vector. The central task is to exploit the sparsity of x and reconstruct it from this underdetermined system. The most direct formulation is ℓ0-minimization, but it is NP-hard in general [4]. A standard convex relaxation replaces the ℓ0 measure by the ℓ1 norm, leading to basis pursuit and its noisy variants [2, 5]. Under conditions such as the null space property (NSP) and the restricted isometry property (RIP), 
+
+ℓ1-minimization enjoys exact, stable, and robust recovery guarantees [3, 6]. Nevertheless, the ℓ1
+
+norm is only a convex surrogate for sparsity, and it may produce biased estimates or suboptimal recovery, especially for coherent sensing matrices or high-dynamic-range signals [7]. To obtain sharper approximations of the ℓ0 measure, many nonconvex sparsity-promoting models have been investigated, including ℓp-minimization with 0 < p < 1 [8, 9], transformed ℓ1  
+
+> ∗Corresponding author
+> Email address: nanjinghuang@hotmail.com (Nanjing Huang)
+> arXiv:2605.25397v1 [math.OC] 25 May 2026
+
+penalties [10], the minimax concave penalty (MCP) [11], capped-ℓ1 [12], the smoothly clipped absolute deviation (SCAD) penalty [13], and iterative reweighted schemes [14]. These models often promote sparsity more aggressively than convex ℓ1-minimization, but their nonconvex and nonsmooth structures make both recovery analysis and algorithmic convergence substantially more delicate. Beyond separable penalties, non-separable models have also been proposed, including the difference-based penalties ℓ1 − ℓ2 [15, 16], ℓ21 − ηℓ 22 [17], ℓ1 − αℓ 2 [18], ℓ1 − βℓ q [19], weighted 
+
+ℓr − αℓ 1 [20] with r ∈ (0 , 1) , and the more general models ℓp − αℓ q [21] with p ∈ (0 , 1] ,
+
+q ∈ [1 , 2] , α ∈ [0 , 1] , and weighted ℓq − αℓ p [22] with q ∈ (0 , 1] , p ∈ [q, +∞], α ∈ [0 , 1] . Asecond important family is given by ratio-based models, such as ℓ1/ℓ 2 [23, 24], ℓ1/ℓ ∞ [25], and 
+
+ℓ21/ℓ 22 [26]. More general ratio-type models include the q-ratio CMSV [27], the q-ratio sparsity measure (ℓ1/ℓ q)q/ (q−1) with 1 < q ≤ ∞ [28], ℓp/ℓ 1 with 0 < p < 1 [29], SPOQ [30], and ℓp/ℓ q
+
+with 0 < p ≤ 1 and q > 1 [1]. Ratio-based models are particularly attractive because they preserve the scale invariance of the ℓ0 measure and can reduce the amplitude bias caused by homogeneous convex relaxations. Their highly nonconvex and nonsmooth nature, however, leaves several theoretical and algorithmic issues unresolved. Many of the preceding ratio models can be viewed as special cases or variants of ℓp/ℓ q.However, existing studies have mostly focused on specific choices of p and q [31, 32, 33, 34], leaving the recovery theory for the general ℓpp/ℓ pq model with 0 < p ≤ 1 and q > 1 far from complete. Recently, Zhu et al. [1] investigated the following generalized norm-ratio ℓpp/ℓ pq
+
+minimization problem 
+
+
+
+Qp,q : inf 
+
+> x∈Rn\{ 0}
+
+{‖x‖pp
+
+‖x‖pq
+
+| Ax = b
+
+}
+
+,
+
+Qδp,q : inf 
+
+> x∈Rn\{ 0}
+
+{‖x‖pp
+
+‖x‖pq
+
+| ‖ Ax − b‖2 ≤ δ
+
+}
+
+,
+
+(1a) (1b) where 0 < p ≤ 1 and q > 1. They established stable recovery guarantees for such a problem based on the restricted isometry property (RIP) and the restricted orthogonality property (ROP). The main results of [1] can be stated as follows: (i) Theorem 1 in [1] derives a sufficient RIP condition expressed in terms of the RIC δ2k and an associated error bound under the assumption that the true signal is k-sparse; (ii) Corollary 1 in [1] is a special case to the important ℓ1/ℓ q model; (iii) Theorem 2 in [1] obtains a stable recovery guarantee by combining RIC and restricted orthogonality constant (ROC) estimates, in which the error bound depends on the dimension of the recovery signal, such a dependence is undesirable in compressed sensing. Thus, the first goal of this paper is to develop some new techniques to obtain an error bound which is independent of the ambient dimension. Sampling complexity is another important aspect in the study of CS. Deterministic condi-tions such as NSP, RIP, ROP, or norm-ratio lower bounds clarify which geometric properties of the sensing matrix ensure recovery, but they do not by themselves specify how many random measurements are sufficient for these properties to hold. We would like to mention that Xu et al. [35] gave the geometric analysis for lower bound of sample complexity of (1a) with p = 1 
+
+and q = 2 , including local optimality, uniform recoverability, and random-matrix guarantees. However, to the best of our knowledge, there is no report on the lower bound of sample com-plexity for (1a). Therefore, our second goal is to give a lower bound of sample complexity for (1a) under some mild conditions. It is well known that how to design algorithms with convergence guarantees for the gener-alized ratio model is an essential issue. Existing methods for ratio-based sparse recovery are 2largely designed for special structures. There have been numerous studies addressing the algo-rithms for solving the ratio models and some special cases of (1), as well as their regularized problem. For example, Zhou [29] solved the ℓp/ℓ 1 minimization by fast iterative shrinkage-thresholding method (FISTA); Zhan et al. [36] combined iterative reweighting, DCA, and bisection to apply weighted ℓp/ℓ q minimization to block k-sparse recovery; Cherni et al. [30] introduced a logarithmic smoothing of the ℓpp/ℓ pq ratio and embedded the smoothed model into a trust-region majorize-minimize framework with convergence to a critical point under the Kurdyka–Łojasiewicz property; Wang et al. [25] derived a closed-form proximal operator for the ℓ1/ℓ ∞ regularizer corresponding to (1a) with p = 1 and q = ∞, and developed FISTA-type and ADMM-type algorithms for the associated regularized problem; and further Wang et al. [24] developed an adaptive Dinkelbach-type framework for (1a) with p = 1 and q = 2 , together with a convergence analysis. It is worth mentioning that the work mentioned above relies on convex numerators, special denominators, smoothing devices, or model-specific proximal structures. Thus, the above algorithms can not be directly used to address (1a). The third motivation of this paper is to design an effective algorithm for (1a) by employing the prox-linear Dinkelbach scheme and to establish its convergence. The present paper is thus devoted to the studies of theory and algorithm for (1) under some mild conditons. We obtain some improved recovery conditions and error bounds, and develop an implementable algorithm for (1a). The main contributions of this paper can be summarized as follows: (i) We develop a local optimality criterion for (1a), which shows how the dynamic range of a sparse signal affects local recovery and gives a sufficient condition for uniform exact recovery. For the special case of (1a) with p = 1 , we further derive high-probability sample complexity bounds under isotropic sub-Gaussian measurements. (ii) For the k-sparse setting of (1b), we establish an RIP-based stable recovery guarantee by using several new inequalities. Compared with [1], our result requires a weaker RIP condition and gives a tighter reconstruction error bound. (iii) For compressible signals without the k-sparsity assumption of (1b), we refine the existing RIP–ROP recovery theory by removing its explicit dependence on the ambient dimension, and further we obtain an RIP-only guarantee by eliminating the ROC condition. (iv) We propose a prox-linear Dinkelbach scheme for (1a) and prove its convergence by com-bining a Dinkelbach-type transformation with a proximal quadratic term to guarantee the descent of the sequence. The rest of this paper is organized as follows. Section 2 recalls the notation and basic concepts used throughout the paper. Section 3 establishes a local optimality condition for the 
+
+ℓpp/ℓ pq model. Section 4 studies uniform exact recovery and derives high-probability guarantees for the ℓ1/ℓ q case. Section 5 proves stable recovery under the RIP and the k-sparsity assump-tion, and compares the obtained bounds with existing results. Section 6 gives stable recovery results for compressible signals without the k-sparsity assumption. Section 7 presents the prox-linear Dinkelbach scheme and proves its convergence. Section 8 reports numerical experiments. Finally, Section 9 concludes the work and discusses future work. 
+
+2. Notation and Preliminaries 
+
+We collect in this section the notation and basic notions that will be used in the sequel. For a positive integer n, we write [n] := {1, 2, . . . , n }. Given an index set S ⊆ [n], its complement in 
+
+[n] is denoted by Sc. For a vector u ∈ Rn, the restricted vector uS is defined by (uS )i = ui1{i∈S} 
+
+3for each i. The support of the vector u is supp( u) := {i ∈ [n] : ui 6 = 0 }, and u is said to be 
+
+s-sparse if card(supp( u)) ≤ s. Equivalently, ‖u‖0 := card(supp( u)) counts the number of nonzero components of u.Throughout the paper, vectors and matrices are usually denoted by bold lowercase and bold uppercase letters, respectively. The zero vector is denoted by 0, and Rm×n stands for the set of all real m × n matrices. For 0 < p < ∞, we use ‖u‖p := ( ∑ni=1 |ui|p)1/p , while 
+
+‖u‖∞ := max 1≤i≤n |ui|. When 0 < p < 1, ‖ · ‖ p is not a norm in the usual sense; nevertheless, following the common convention in sparse recovery, we still refer to it as the ℓp norm or quasi-norm when no ambiguity arises. For later use, we also introduce the best sparse approximation error. For p > 0 and u ∈ Rn,the best s-term approximation error of u in the ℓp norm is σs(u)p := inf ∥z∥0≤s ‖u − z‖p. In particular, if umax( s) denotes the vector obtained by retaining the s largest entries of u in magnitude and setting the others to zero, then u− max( s) := u − umax( s) is the tail part of u after its best s dominant entries are removed. We shall use the following null-space-type properties in the analysis. 
+
+Definition 2.1 (ℓp null space property, ℓp-NSP) . Let 0 < p ≤ 1 and let s be a positive integer. A matrix A ∈ Rm×n is said to satisfy the ℓp null space property ( ℓp-NSP) of order s if there exists a constant μ ∈ (0 , 1) such that ‖vS ‖pp < μ ‖vSc ‖pp for every v ∈ ker( A) \ { 0} and every index set S ⊆ [n] with card( S) ≤ s.
+
+Definition 2.2 (ℓq robust null space property, ℓq-rNSP) . Let q ≥ 1, and let ‖ · ‖ be a norm on the measurement space. A matrix A ∈ Rm×n is said to satisfy the ℓq robust null space property (ℓq-rNSP) of order s with constants ρ ∈ (0 , 1) and τ > 0 if ‖vS ‖q ≤ ρs1−1/q ‖vSc ‖1 + τ ‖Av ‖ holds for all v ∈ Rn and all index sets S ⊆ [n] satisfying card( S) ≤ s.
+
+We next recall two matrix properties frequently used in compressed sensing. The first one quantifies the extent to which a sensing matrix preserves the Euclidean norm of sparse vectors. 
+
+Definition 2.3 (Restricted isometry property, RIP) . Let A be a real matrix and let s be a positive integer. The restricted isometry constant (RIC) of order s, denoted by δs, is the smallest number for which (1 − δs)‖u‖22 ≤ ‖ Au ‖22 ≤ (1 + δs)‖u‖22 holds for all s-sparse vectors 
+
+u. If δs ∈ [0 , 1) , then A is said to satisfy the s-restricted isometry property, abbreviated as 
+
+s-RIP. 
+
+The second property controls the near-orthogonality of the images of sparse vectors with prescribed sparsity levels. 
+
+Definition 2.4 (Restricted orthogonality property, ROP) . Let s1 and s2 be positive integers. The restricted orthogonality constant (ROC) θs1,s 2 of a matrix A is the smallest nonnegative number such that ‖〈 Au , Φv〉‖ ≤ θs1,s 2 ‖u‖2‖v‖2 for all s1-sparse vectors u and all s2-sparse vectors v with disjoint supports whenever such a disjointness assumption is required. In this case, A is said to satisfy the (s1, s 2)-ROP with ROC θs1,s 2 .
+
+Finally, we recall several standard notions from variational analysis that are needed for the algorithmic part of the papeet F : Rn → (−∞ , +∞] be an extended-real-valued function. Its effective domain is dom F := {x ∈ Rn : F (x) < +∞} . The function F is called proper if 
+
+dom F 6 = ∅ and F (x) > −∞ for all x ∈ Rn. It is lower semicontinuous (l.s.c) at x if, for every sequence xk → x, F (x) ≤ lim inf k→∞ F (xk). If this property holds at every point, then F is said to be l.s.c. A function is called closed if it is proper and l.s.c. For a point x∗ ∈ dom F , we call x∗ a critical point, or stationary point, of F if 0 ∈ ∂F (x∗), where ∂F denotes the limiting subdifferential. 43. Local Optimality Criterion of Qp,q - Minimization 
+
+In this section, we derive a strict local optimality condition that ensure a non-zero s-sparse vector x0 is a strict local minimizer of (1a). We start with the definition of the generalized norm-ratio coefficient. 
+
+Definition 3.1 (Generalized Norm-Ratio Coefficient) . Let x0 ∈ Rn be a non-zero vector. We define its generalized norm-ratio coefficient (GNRC) κp,q (x0) as 
+
+κp,q (x0) := ‖x0‖pp‖x0‖q−p
+
+> ∞
+
+‖x0‖qq
+
+.
+
+In the next theorem, we show that the local optimality criterion of Qp,q . Specifically, there exists a strictly positive, uniform radius δr > 0 such that for any h ∈ ker( A) \ { 0} with 
+
+‖h‖∞ ≤ δr, we have ∥x0+h∥pp 
+
+> ∥x0+h∥pq
+
+> ∥x0∥pp 
+
+> ∥x0∥pq
+
+.
+
+Theorem 3.2 (Local optimality) . Let x0 ∈ Rn \ { 0} be an s-sparse vector with support S := supp( x0), and set b = Ax 0. Assume that A ∈ Rm×n satisfies the ℓp-NSP of order s with a constant μ ∈ (0 , 1) . Then x0 is a strict local minimizer of (1a) over the feasible set {x ∈ Rn :
+
+Ax = b} under the following conditions: 
+
+(i) If p = 1 , assume in addition that μ ≤ 11+ κ1,q (x0) .
+
+(ii) If 0 < p < 1, no further restriction on μ is required beyond the ℓp-NSP condition. Proof. Let h ∈ ker( A) \ { 0}. Since every feasible point sufficiently close to x0 can be written as 
+
+x0 + h with h ∈ ker( A), it is enough to prove that ∥x0+h∥pp 
+
+> ∥x0+h∥pq
+
+> ∥x0∥pp 
+
+> ∥x0∥pq
+
+for all nonzero h ∈ ker( A)
+
+with sufficiently small norm. Equivalently, we shall show 
+
+‖x0 + h‖pp
+
+‖x0‖pp
+
+>
+
+(‖x0 + h‖qq
+
+‖x0‖qq
+
+)p/q 
+
+. (2) Choose δr > 0 such that 0 < δ r < min i∈S |x0,i | and sgn (x0,i + hi) = sgn (x0,i ) for all i ∈ S .We restrict attention to perturbations satisfying ‖h‖∞ ≤ δr. By the subadditivity of t 7 → | t|p
+
+for 0 < p ≤ 1, one has |x + h|p ≥ | x|p − | h|p. Splitting the vector into the support S and its complement Sc, we have 
+
+‖x0 + h‖pp = ∑
+
+> i∈S
+
+|x0,i + hi|p + ∑
+
+> i∈S c
+
+|hi|p ≥ ‖ x0‖pp − ‖ hS ‖pp + ‖hSc ‖pp. (3) Next we estimate the ℓq term. For i ∈ S , the mean value theorem applied to t 7 → | t|q gives 
+
+|x0,i + hi|q − | x0,i |q ≤ q(|x0,i | + |hi|)q−1|hi|. Thus, over the support S, one has 
+
+∑
+
+> i∈S
+
+|x0,i + hi|q ≤ ‖ x0‖qq + q(‖x0‖∞ + δr)q−1 ∑
+
+> i∈S
+
+|hi|.
+
+For i ∈ S c, it follows from ‖h‖∞ ≤ δr that |hi|q = |hi|q−p|hi|p ≤ δq−pr |hi|p. We rewrite |hi| as 
+
+|hi| = |hi|1−p|hi|p ≤ δ1−pr |hi|p for any i ∈ S . This yields an upper bound 
+
+‖x0 + h‖qq ≤ ‖ x0‖qq + q(‖x0‖∞ + δr)q−1δ1−pr ‖hS ‖pp + δq−pr ‖hSc ‖pp. (4) Using Bernoulli’s inequality (1 + z)α ≤ 1 + αz for z ≥ 0 and α = p/q ∈ (0 , 1) , (4) implies 
+
+(‖x0 + h‖qq
+
+‖x0‖qq
+
+)p/q 
+
+≤ 1 + p(‖x0‖∞ + δr)q−1δ1−pr
+
+‖hS ‖pp
+
+‖x0‖qq
+
++ pq δq−pr
+
+‖hSc ‖pp
+
+‖x0‖qq
+
+. (5) 5Combining (3) and (5), a sufficient condition for (2) is 
+
+‖hSc ‖pp
+
+(
+
+1 − pq δq−pr
+
+‖x0‖pp
+
+‖x0‖qq
+
+)
+
+> ‖hS ‖pp
+
+(
+
+1 + p(‖x0‖∞ + δr)q−1δ1−pr
+
+‖x0‖pp
+
+‖x0‖qq
+
+)
+
+. (6) It remains to verify that (6) holds uniformly for all sufficiently small nonzero h ∈ ker( A). By the ℓp-NSP applied to S, every nonzero h ∈ ker( A) satisfies ‖hS ‖pp < μ ‖hSc ‖pp. In particular, 
+
+‖hSc ‖p > 0. Consider the normalized set K := {h ∈ ker( A) : ‖hSc ‖p = 1 }. Then K is nonempty and closed. Moreover, the NSP gives ‖hS ‖pp < μ for all h ∈ K , so K is bounded. The continuous function R(h) := ∥hS ∥pp  
+
+> ∥hSc∥pp
+
+therefore attains its maximum on K. Denote this maximum by μ∗. Since R(h) < μ pointwise on K, compactness yields μ∗ < μ < 1. Consequently, for every nonzero h ∈ ker( A), ∥hS ∥pp  
+
+> ∥hSc∥pp
+
+≤ μ∗. Dividing (6) by ‖hSc ‖pp, it is enough to show 
+
+1 − pq δq−pr
+
+‖x0‖pp
+
+‖x0‖qq
+
+> μ ∗
+
+(
+
+1 + p(‖x0‖∞ + δr)q−1δ1−pr
+
+‖x0‖pp
+
+‖x0‖qq
+
+)
+
+. (7) If 0 < p < 1, then both δq−pr and δ1−pr tend to zero as δr → 0+. It follows that the left-hand side (LHS) of (7) tends to 1, while the right-hand side (RHS) tends to μ∗ < 1. Hence (7) holds for all sufficiently small δr > 0. Thus, for 0 < p < 1, the standard ℓp-NSP alone is sufficient to guarantee strict local minimality, and no additional upper bound on the NSP constant μ is needed. If p = 1 , then δ1−pr = 1 , and (7) tends, as δr → 0+, to 
+
+1 > μ ∗
+
+(
+
+1 + ‖x0‖q−1
+
+> ∞
+
+‖x0‖1
+
+‖x0‖qq
+
+)
+
+= μ∗
+
+(1 + κ1,q (x0)).
+
+By assumption, μ∗ < μ ≤ 11+ κ1,q (x0) , and therefore the above strict inequality holds. Thus (7) again holds for all sufficiently small δr > 0. This proves that every sufficiently small nonzero feasible perturbation strictly increases the objective value. Hence x0 is a strict local minimizer of (1a). The preceding theorem gives a signal-dependent local optimality condition through the coefficient κ1,q (x0) when p = 1 . For uniform statements over all s-sparse signals, it is useful to replace this quantity by its worst-case upper bound on the class of nonzero s-sparse vectors. The following corollary provides such a uniform estimate and consequently yields a signal-independent sufficient condition for local optimality. 
+
+Corollary 3.3 (Uniform local optimality) . Let p = 1 , q > 1, and s be a positive integer. For nonzero s-sparse vectors, the coefficient κ1,q satisfies 
+
+sup   
+
+> x̸=0,∥x∥0≤s
+
+κ1,q (x) = K1,q,s ,
+
+where K1,q, 1 = 1 when s = 1 , and when s ≥ 2, K1,q,s = 1+( s−1) x∗ 
+
+> 1+( s−1)( x∗)q
+
+. Here x∗ ∈ (0 , 1) is the unique positive solution of 1 − qx q−1 = ( q − 1)( s − 1) xq. Moreover, if A satisfies the ℓ1-NSP of order s with a constant μ ≤ 11+ K1,q,s , then, for every nonzero s-sparse vector x0, the vector x0 is a strict local minimizer of the ℓ1/ℓ q minimization over the feasible set {x ∈ Rn : Ax = Ax 0}.Proof. The case s = 1 is immediate. Indeed, if x0 is nonzero and one-sparse, then κ1,q (x0) = 1 ,and hence K1,q, 1 = 1 .We now assume s ≥ 2. Let x0 ∈ Rn \ { 0} be arbitrary with ‖x0‖0 ≤ s. Since κ1,q is invariant under permutations, sign changes, and nonzero scalings, we may assume without loss 6of generality that ‖x0‖∞ = 1 and 1 = x0,1 ≥ x0,2 ≥ · · · ≥ x0,s ≥ 0, where zero components are appended if the actual support size of x0 is smaller than s. Under this normalization, 
+
+κ1,q (x0) = 1 + ∑si=2 x0,i 
+
+1 + ∑si=2 xq
+
+> 0,i
+
+.
+
+To rigorously find the global maximum over the hypercube [0 , 1] s−1, we define the arithmetic mean of the tail components 
+
+ν := 1
+
+s − 1
+
+> s
+
+∑
+
+> i=2
+
+x0,i ∈ [0 , 1] .
+
+Then the numerator is equal to 1 + ( s − 1) ν. Since t 7 → tq is strictly convex for q > 1, Jensen’s inequality gives 
+
+1
+
+s − 1
+
+> s
+
+∑
+
+> i=2
+
+xq 
+
+> 0,i
+
+≥ ( 1
+
+s − 1
+
+> s
+
+∑
+
+> i=2
+
+x0,i )q = νq =⇒
+
+> s
+
+∑
+
+> i=2
+
+xq 
+
+> 0,i
+
+≥ (s − 1) νq.
+
+Applying this strict lower bound to the denominator, we have 
+
+κ1,q (x0) ≤ 1 + ( s − 1) ν
+
+1 + ( s − 1) νq =: g(ν).
+
+Equality holds if and only if x0,2 = x0,3 = · · · = x0,s = ν. This formulation inherently covers all k ≤ s support sizes since ν spans down to 0. It remains to maximize g on [0 , 1] . Taking the derivative of g(ν) with respect to ν, one has 
+
+g′(ν) = s − 1[1 + ( s − 1) νq]2
+
+(1 − qν q−1 − (q − 1)( s − 1) νq) .
+
+Define H(ν) := ( q − 1)( s − 1) νq + qν q−1 − 1. Then sgn( g′(ν)) = − sgn( H(ν)) . Although ν may take the endpoint value 0, the derivative of H is considered on (0 , 1] . For ν ∈ (0 , 1] , we have 
+
+H′(ν) = q(q − 1)( s − 1) νq−1 + q(q − 1) νq−2 > 0 for ν ∈ (0 , 1] . Hence H is strictly increasing on 
+
+(0 , 1] . Moreover, lim ν→0+ H(ν) = −1 and H(1) = ( q − 1) s > 0. Therefore, there exists a unique 
+
+x∗ ∈ (0 , 1) such that H(x∗) = 0 , namely, 1 − q(x∗)q−1 = ( q − 1)( s − 1)( x∗)q. Consequently, g is strictly increasing on (0 , x ∗) and strictly decreasing on (x∗, 1] . Hence 
+
+g(x∗) = 1 + ( s − 1) x∗
+
+1 + ( s − 1)( x∗)q
+
+is the maximum of g over [0 , 1] . Since the above argument holds for every nonzero x0 with 
+
+‖x0‖0 ≤ s, and equality is attained by vectors whose nonzero magnitudes are proportional to 
+
+(1 , x ∗, x ∗, . . . , x ∗), we obtain 
+
+sup  
+
+> x0̸=0
+> ∥x0∥0≤s
+
+κ1,q (x0) = 1 + ( s − 1) x∗
+
+1 + ( s − 1)( x∗)q = K1,q,s .
+
+Finally, if A satisfies the ℓ1-NSP of order s with μ ≤ 11+ K1,q,s , then for every nonzero s-sparse vector x0, one has 
+
+μ ≤ 11 + K1,q,s 
+
+≤ 11 + κ1,q (x0).
+
+The conclusion follows from Theorem 3.2. 74. Exact Recovery for Qp,q Minimization 
+
+In this section, we propose a sufficient condition that guarantees the exact recovery for sparse vectors using Qp,q -minimization. As we will see, the condition to be obtained will hold with overwhelming probability for a large class of sub-Gaussian random matrices. 
+
+4.1. Uniform recoverability 
+
+In this subsection, we turn to the uniform exact recovery property of Qp,q . Unlike the local optimality result, which depends on the particular sparse vector through signal-dependent quantities, a uniform recovery guarantee requires a condition ensuring that every s-sparse signal is recovered as the unique global minimizer. The following theorem gives such a sufficient condition in terms of a null-space norm-ratio lower bound. For convenience, we first recall the definition of sub-Gaussian and isotropic vectors. 
+
+Definition 4.1 (Sub-Gaussian random vector) . Let x be an Rn-valued random vector. We call 
+
+x sub-Gaussian if every linear functional of x has a finite sub-Gaussian Orlicz norm. More precisely, for each g ∈ Rn, the scalar random variable 〈g, x〉 satisfies 
+
+‖〈 g, x〉‖ ψ2 := inf {t > 0 : E exp( |〈 g, x〉| 2
+
+t2 ) ≤ 2} < ∞.
+
+The sub-Gaussian norm of the random vector x is then defined by ‖x‖ψ2 := sup ∥g∥2=1 ‖〈 g, x〉‖ ψ2 .In particular, if x ∼ N (0, In), then every one-dimensional projection 〈g, x〉 with ‖g‖2 = 1 
+
+follows the standard normal distribution, and hence ‖x‖ψ2 = ‖N (0 , 1) ‖ψ2 .
+
+Definition 4.2 (Isotropic random vector) . An Rn-valued random vector x is called isotropic if its second-moment matrix equals the identity matrix, namely, E[xx T ] = In. Equivalently, for every g ∈ Rn, E[〈g, x〉2] = ‖g‖22.
+
+We next turn to the uniform exact recovery property of the proposed norm-ratio model. Unlike the local optimality result, which depends on the particular sparse vector through signal-dependent quantities, a uniform recovery guarantee requires a condition ensuring that every 
+
+s-sparse signal is recovered as the unique global minimizer. The following theorem gives such a sufficient condition in terms of a null-space norm-ratio lower bound. 
+
+Theorem 4.3 (Uniform exact recovery) . Let 0 < p ≤ 1, q > 1, and let s ∈ N. Assume that the measurement matrix A ∈ Rm×n satisfies 
+
+inf 
+
+> h∈ker( A)\{ 0}
+
+‖h‖p
+
+‖h‖q
+
+> 31/p s1/p −1/q . (8) 
+
+Then every nonzero s-sparse vector x0 is the unique global minimizer of Qp,q . Consequently, 
+
+Qp,q exactly recovers all nonzero s-sparse signals. Proof. Let x0 be an arbitrary nonzero s-sparse vector. Set S := supp( x0) and |S| ≤ s. To prove exact recovery, it suffices to show that for every nonzero h ∈ ker( A), one has 
+
+‖x0‖pp
+
+‖x0‖pq
+
+< ‖x0 + h‖pp
+
+‖x0 + h‖pq
+
+.
+
+Indeed, every feasible point distinct from x0 can be written as x0 + h for some nonzero h ∈
+
+ker( A). Since 0 < p ≤ 1, the map t 7 → | t|p is subadditive. It follows that |a + b|p ≥ | a|p − | b|p.Splitting the perturbation over S and Sc gives 
+
+‖x0 + h‖pp = ‖(x0)S + hS ‖pp + ‖hSc ‖pp ≥ ‖ x0‖pp − ‖ hS ‖pp + ‖hSc ‖pp. (9) 8Moreover, since q > 1, the ℓq norm satisfies the triangle inequality. Using again the subaddi-tivity of t 7 → tp on [0 , ∞), one has 
+
+‖x0 + h‖pq ≤ (‖x0‖q + ‖h‖q)p ≤ ‖ x0‖pq + ‖h‖pq . (10) For brevity, define A0 := ‖x0‖pp, B0 := ‖x0‖pq , E := ‖h‖pq , and T := ‖hSc ‖pp − ‖ hS ‖pp =
+
+‖h‖pp − 2‖hS ‖pp. From (9) and (10), we have 
+
+‖x0 + h‖pp
+
+‖x0 + h‖pq
+
+≥ A0 + TB0 + E . (11) We now estimate T /E . By Hölder’s inequality, for any s-sparse vector v and p < q , we have 
+
+‖v‖pp ≤ s1−p/q ‖v‖pq . Applying this inequality to x0 yields 
+
+A0
+
+B0
+
+= ‖x0‖pp
+
+‖x0‖pq
+
+≤ s1−p/q . (12) It follows from applying inequality (12) to the s-sparse perturbation vector hS that ‖hS ‖pp ≤
+
+s1−p/q ‖hS ‖pq ≤ s1−p/q ‖h‖pq . On the other hand, the assumption condition (8) implies ‖h‖pp >
+
+3s1−p/q ‖h‖pq . Therefore, one has 
+
+T = ‖h‖pp − 2‖hS ‖pp > 3s1−p/q ‖h‖pq − 2s1−p/q ‖h‖pq = s1−p/q ‖h‖pq . (13) Combining (13) with (12), we obtain TE > s 1−p/q ≥ A0 
+
+> B0
+
+. Since B0 > 0 and E > 0, it follows from the standard mediant property of fractions that A0+TB0+E > A0 
+
+> B0
+
+. Together with (11), we conclude that ‖x0 + h‖pp
+
+‖x0 + h‖pq
+
+> ‖x0‖pp
+
+‖x0‖pq
+
+.
+
+Thus x0 is the unique global minimizer of Qp,q . Since x0 was arbitrary, the result holds uniformly for all nonzero s-sparse signals. 
+
+Remark 4.4. Theorem 4.3 recovers, as a special case, the uniform recoverability condition for the ℓr/ℓ 2 minimization studied by Xu et al. [35]. Indeed, for 0 < r ≤ 1, minimiz-ing ∥x∥r 
+
+> ∥x∥2
+
+is equivalent to minimizing (∥x∥r 
+
+> ∥x∥2
+
+)r = ∥x∥rr
+
+> ∥x∥r
+> 2
+
+. Taking p = r and q = 2 in (8) gives 
+
+inf h∈ker( A)\{ 0} ∥h∥r 
+
+> ∥h∥2
+
+> 31/r s1/r −1/2, which coincides with the sufficient condition in Xu et al. [35, Theorem 4.1]. Thus, Theorem 4.3 extends that uniform exact recovery condition from the ℓr/ℓ 2
+
+ratio to the general ℓpp/ℓ pq ratio. This reduction demonstrates consistency with the existing result; it should not be interpreted as a sharpness claim for the constant in (8) .4.2. Sample Complexity Bounds for the Uniform Null Space Condition 
+
+The uniform exact recovery criterion in Theorem 4.3 is expressed as a geometric condition (8) on the null space of the measurement matrix. To convert this condition into a probabilistic sampling guarantee, we next estimate the number of measurements required for random sub-Gaussian matrices. Since the Gaussian-width analysis of nonconvex ℓp balls with 0 < p < 1 is substantially more delicate, we restrict this subsection to the convex numerator case p = 1 . In this case, the null space condition in Theorem 4.3 becomes 
+
+inf 
+
+> h∈ker( A)\{ 0}
+
+‖h‖1
+
+‖h‖q
+
+> 3s1−1/q . (14) 9Theorem 4.5. Let 2 ≤ q < ∞, s ∈ N, u ≥ 1, and n ≥ 2. Let A ∈ Rm×n be a random matrix whose rows are independent, isotropic, sub-Gaussian random vectors with sub-Gaussian norm bounded by F . Then there exists an absolute constant D > 0 such that, if 
+
+m > DF 4u2s2−2/q log(2 n), (15) 
+
+then (14) holds with probability at least 1 − 2e−u2
+
+.Proof. Let Bn 
+
+> 1
+
+:= {x ∈ Rn : ‖x‖1 ≤ 1}. We apply the matrix deviation inequality to the deterministic set Bn 
+
+> 1
+
+. With probability at least 1 − 2e−u2
+
+, one has 
+
+sup 
+
+> x∈Bn
+> 1
+
+∣∣‖Ax ‖2 − √m‖x‖2
+
+∣∣ ≤ CF 2 (ω(Bn 
+
+> 1
+
+) + u rad( Bn 
+
+> 1
+
+)) ,
+
+where C > 0 is an absolute constant, ω(·) denotes Gaussian width, and rad( ·) denotes Euclidean radius. Since 
+
+ω(Bn 
+
+> 1
+
+) = E‖g‖∞ ≤ √2 log(2 n), rad( Bn 
+
+> 1
+
+) ≤ 1,
+
+with g ∼ N (0, In), it follows from u ≥ 1 and n ≥ 2 that 
+
+sup 
+
+> x∈Bn
+> 1
+
+∣∣‖Ax ‖2 − √m‖x‖2
+
+∣∣ ≤ C1F 2u√log(2 n) (16) for another absolute constant C1 > 0. Now take any nonzero h ∈ ker( A) and set z := h 
+
+> ∥h∥1
+
+.Then z ∈ Bn 
+
+> 1
+
+and Az = 0. Substituting z into (16) gives √m‖z‖2 ≤ C1F 2u√log(2 n).Equivalently, we have 
+
+‖h‖1
+
+‖h‖2
+
+= 1
+
+‖z‖2
+
+≥√mC1F 2u√log(2 n).
+
+For q ≥ 2, the norm monotonicity relation ‖h‖q ≤ ‖ h‖2 yields 
+
+‖h‖1
+
+‖h‖q
+
+≥ ‖h‖1
+
+‖h‖2
+
+≥√mC1F 2u√log(2 n).
+
+Therefore (14) holds whenever 
+
+√mC1F 2u√log(2 n) > 3s1−1/q ,
+
+which is guaranteed by (15) after choosing D = 9 C21 . The exact recovery assertion then follows directly from Theorem 4.3. 
+
+Remark 4.6. When q = 2 , Theorem 4.5 gives the sufficient sampling rate m ≳ F 4u2s log(2 n),which has the same sparsity dependence as the standard sub-Gaussian sampling bound for the 
+
+ℓ1/ℓ 2 model. As q increases, the exponent 2 − 2/q increases and approaches 2 in the limiting 
+
+ℓ1/ℓ ∞ regime. These estimates are sufficient conditions derived from the lower bound on the null-space ℓ1/ℓ 2 ratio, and should not be interpreted as sharp phase transition thresholds. 
+
+For the range 1 < q < 2, the preceding argument is no longer effective, since ‖h‖q ≤ ‖ h‖2
+
+fails in general. A sharper estimate can be obtained by combining the RIP-induced rNSP with Stechkin’s inequality. 10 Theorem 4.7 (Sample complexity for 1 < q < 2). Let 1 < q < 2, s ∈ N, u ≥ 1, and n ≥ 2. Let 
+
+A ∈ Rm×n be a random matrix whose rows are independent, isotropic, sub-Gaussian random vectors, and suppose that their sub-Gaussian norms are uniformly bounded by F . Then there exist a constant Cq > 0, depending only on q, and absolute constants D0, D 1 > 0 such that, if 
+
+Cqs ≤ n and 
+
+m ≥ D0F 4Cqs log 
+
+(en s
+
+)
+
++ D1F 4u2, (17) 
+
+then (14) holds with probability at least 1 − 2e−u2
+
+.Proof. Define c1,q := (1 /q )1/q (1 − 1/q )1−1/q ≤ 1. Fix δ := 4√41 . By the standard result that the restricted isometry property (RIP) implies the ℓ2-robust NSP, see Theorem 6.13 in [37], there exist constants ρ ∈ (0 , 1) and τ > 0, depending only on the fixed value of δ, such that any matrix with δ2k < δ satisfies the ℓ2-robust NSP of order k with constants ρ and 
+
+τ . Set αq := [3( ρ + c1,q )] q/ (q−1) and choose k := dαqse + 1 . Then, one has k > α qs and 
+
+2k ≤ 2( αqs + 2) ≤ 2( αq + 2) s. Let Cq := 2( αq + 2) . Hence 2k ≤ Cqs. By the assumption 
+
+Cqs ≤ n, we have 2k ≤ n. Let Φ := 1√m A be the normalized measurement matrix and define the event E := {δ2k(Φ) < δ }. By the standard RIP estimate for isotropic sub-Gaussian random matrices, see Theorem 9.2 in [37], there exist absolute constants C, c > 0 such that 
+
+P(E) ≥ 1 − 2e−u2
+
+provided that 
+
+m ≥ CF 4δ−2(2 k) log( en 
+
+2k ) + cF 4δ−2u2. (18) Since the function t 7 → t log (en t
+
+) is nondecreasing on (0 , n ], it follows from 2k ≤ Cqs ≤ n that 
+
+(2 k) log( en 
+
+2k ) ≤ Cqs log( en Cqs) ≤ Cqs log( en s ). (19) Thus, by choosing D0 := Cδ −2 and D1 := cδ −2, condition (17), together with (19), implies (18). It follows that P(E) ≥ 1 − 2e−u2
+
+.We now work on the event E. Then δ2k(Φ) < δ , and therefore Φ satisfies the ℓ2-robust NSP of order k. Namely, for every index set S ⊂ [n] with card( S) ≤ k and every v ∈ Rn, one has 
+
+‖vS ‖2 ≤ ρ
+
+√k ‖vSc ‖1 + τ ‖Φv‖2. (20) Let h ∈ ker( A) \ { 0}. Since ker( A) = ker( Φ), we have Φh = 0. Let S0 be the index set of the k largest entries of h in absolute value. Applying (20) to v = h and S = S0, we get 
+
+‖hS0 ‖2 ≤ ρ√k ‖hSc 
+
+> 0
+
+‖1. Since 1 < q < 2, Hölder’s inequality gives 
+
+‖hS0 ‖q ≤ k1/q −1/2‖hS0 ‖2 ≤ ρk 1/q −1‖hSc 
+
+> 0
+
+‖1 ≤ ρk 1/q −1‖h‖1. (21) On the other hand, by Stechkin’s inequality, see Theorem 2.5 in [37], we have 
+
+‖hSc 
+
+> 0
+
+‖q = σk(h)q ≤ c1,q k1/q −1‖h‖1. (22) Combining (21) and (22), we obtain 
+
+‖h‖q ≤ ‖ hS0 ‖q + ‖hSc 
+
+> 0
+
+‖q ≤ (ρ + c1,q )k1/q −1‖h‖1.
+
+It follows that ‖h‖1
+
+‖h‖q
+
+≥ 1
+
+ρ + c1,q 
+
+k1−1/q . (23) 11 Since k > α qs and 1−1/q > 0, taking the power yields k1−1/q > α 1−1/q q s1−1/q = 3( ρ+c1,q )s1−1/q .Substituting this into (23) yields ∥h∥1 
+
+> ∥h∥q
+
+> 3s1−1/q . Because h ∈ ker( A) \ { 0} was arbitrary, it follows that 
+
+inf 
+
+> h∈ker( A)\{ 0}
+
+‖h‖1
+
+‖h‖q
+
+> 3s1−1/q .
+
+This proves (14). The exact recovery conclusion then follows from Theorem 4.3. 
+
+Remark 4.8. Theorem 4.7 gives a sufficient sampling rate of order m ≳ F 4Cqs log (en s
+
+) + F 4u2
+
+for each fixed 1 < q < 2. The constant Cq depends on q through the auxiliary sparsity level used in the robust-NSP argument. Together with Theorem 4.5, this provides probabilistic sufficient conditions for the null space criterion (14) in the full range q > 1, but the stated bounds should be understood as sufficient recovery guarantees rather than sharp optimal thresholds. 
+
+5. Stable recovery guarantee with k-sparse Assumption 
+
+This section presents the main result under the k-sparsity assumption, together with a corollary for the special case p = 1 , q > 1. The improvements over the prior work [1, Theorem 1] are also discussed. 
+
+5.1. RIP Analysis for Qδp,q -Minimization 
+
+We first list two lemmas and a corollary that will assist the proof of Theorem 5.3. For convenience, the compressed sensing measurement model described in Section 1 is denoted by 
+
+M{ A, x, b, m, n, ϵ }.
+
+Lemma 5.1 ([1, Lemma 1]) . Assume that x 6 = 0 belongs to {z | ‖ b − Az ‖2 ≤ ϵ}, is k-sparse, and satisfies ∥x∥p 
+
+> ∥x∥q
+
+≤ β with 0 < p ≤ 1, q > 1 and β > 0. Let ˆx be a solution to Qϵp,q , and set 
+
+h := ˆ x − x. Then, we have 
+
+‖h− max( k)‖pp ≤ (βp + k q−pq )‖hmax( k)‖pq + βp‖h− max( k)‖pq . (24) 
+
+Lemma 5.2 ([1, Lemma 2]) . Let fp,q (z) = zq − βpk− q−pq zp − βpk− q−pq − 1, where 0 < p ≤ 1,
+
+q > 1, β > 0 and k ≥ 1 be an integer. Then, 
+
+(i) fp,q (z) is monotonically decreasing on (0 , z ∗) and increasing on (z∗, +∞), where z∗ =
+
+k−1/q (βpp/q )1/(q−p) is the stationary-point; 
+
+(ii) fp,q (z) has a unique zero-point z0 in [0 , +∞) satisfying ˜z < z 0 < ¯z, where ˜z := ( kq )− 1 
+
+> q
+
+(pβ p) 1
+
+> q−p
+
+and ¯z := (1 + βpk− q−pq ) 2 
+
+> q−p
+
+.
+
+We now turn to the stable recovery analysis under the additional assumption that the ground-truth signal is k-sparse. The preceding exact recovery result is formulated through a null space condition, whereas the following theorem provides a verifiable sufficient condition in terms of the restricted isometry constant of order 2k. The proof refines the tail estimate for the recovery error by exploiting the zero point of the auxiliary function in Lemma 5.2, and then combines this estimate with a sparse convex decomposition argument. This leads to a 2k-RIP condition and an explicit stability bound for the solution of Qϵp,q .
+
+Theorem 5.3. Assume that x 6 = 0 is k-sparse and satisfies ∥x∥p 
+
+> ∥x∥q
+
+≤ β with 0 < p ≤ 1, q > 1,
+
+β > 0. Let ˆx be a solution to Qϵp,q . The function fp,q (z) is defined as in Lemma 5.2. If A
+
+satisfies 2k-RIP with RIC 
+
+δ2k < 1
+
+√
+
+1 + k 2min( q, 2) − 2q+2 −2pq Ψ2
+
+,
+
+12 where Ψ := βp(1 + zp 
+
+> 0
+
+) + k q−pq and z0 is the unique zero-point of fp,q (z) in [0 , +∞), then 
+
+‖ ˆx − x‖2 ≤ 2ε√1 + δ2k(1 + k 1min( q, 2) − 2−p+q
+
+> 2q
+
+√Ψ) 1 − δ2k
+
+√
+
+1 + k 2min( q, 2) − 2q+2 −2pq Ψ2
+
+. (25) 
+
+Proof. Define h = ˆ x − x. The case h = 0 is trivial, so the subsequent analysis assumes h 6 = 0
+
+and aims to bound ‖h‖2. Decomposing h = hmax( k) + h− max( k), upper bounds for ‖hmax( k)‖2
+
+and ‖h− max( k)‖2 are derived separately. First, we estimate ‖h− max( k)‖q. It follows from the definition of the ℓ∞-norm and the inequality |vi|q = |vi|q−p · | vi|p ≤ ‖ v‖q−p 
+
+> ∞
+
+|vi|p that 
+
+‖h− max( k)‖qq ≤ ‖ h− max( k)‖q−p 
+
+> ∞
+
+‖h− max( k)‖pp. (26) For the vector h− max( k), the ordering of entries implies 
+
+‖h− max( k)‖qq ≤ k− q−pq ‖hmax( k)‖q−pq ‖h− max( k)‖pp. (27) Lemma 5.1 applied to the term ‖h− max( k)‖pp, together with (27), gives 
+
+‖h− max( k)‖qq ≤ k− q−pq ‖hmax( k)‖q−pq
+
+[(βp + k q−pq
+
+)‖hmax( k)‖pq + βp‖h− max( k)‖pq
+
+]
+
+= (1 + βpk− q−pq
+
+)‖hmax( k)‖qq + βpk− q−pq ‖h− max( k)‖pq ‖hmax( k)‖q−pq .
+
+(28) Let z := ∥h− max( k)∥q 
+
+> ∥hmax( k)∥q
+
+. From the definition of fp,q (z) in Lemma 5.2 and rearranging (28), it follows that ‖h− max( k)‖qq
+
+‖hmax( k)‖qq
+
+− βpk− q−pq
+
+‖h− max( k)‖pq
+
+‖hmax( k)‖pq
+
+− βpk− q−pq − 1 = fp,q (z) ≤ 0.
+
+By Lemma 5.2, it follows that z ≤ z0, i.e., 
+
+‖h− max( k)‖q ≤ z0‖hmax( k)‖q. (29) Substituting (29) in (24), we directly obtain the upper bound 
+
+‖h− max( k)‖pp ≤ (βp + k q−pq )‖hmax( k)‖pq + βpzp 
+
+> 0
+
+‖hmax( k)‖pq
+
+= [ βp(1 + zp 
+
+> 0
+
+) + k q−pq ]‖hmax( k)‖pq = Ψ ‖hmax( k)‖pq .
+
+(30) By [8, Lemma 2.2], there exist N ∈ N, weights {λi}Ni=1 with λi > 0, ∑Ni=1 λi = 1 , and k-sparse vectors {ui}Ni=1 with supp( ui) ⊆ supp( h− max( k)) such that h− max( k) = ∑Ni=1 λiui, and 
+
+> N
+
+∑
+
+> i=1
+
+λi‖ui‖22 ≤ k−1‖h− max( k)‖pp‖h− max( k)‖2−p
+
+> 2−p
+
+.
+
+Combining (26) with (29) yields 
+
+k−1‖h− max( k)‖pp‖h− max( k)‖2−p 
+
+> 2−p
+
+≤ k−1‖h− max( k)‖2pp ‖h− max( k)‖2−2p 
+
+> ∞
+
+.
+
+It follows from 
+
+‖h− max( k)‖∞ ≤ k−1‖hmax( k)‖1 ≤ k− 1 
+
+> q
+
+‖hmax( k)‖q (31) 13 that 
+
+k−1‖h− max( k)‖2pp ‖h− max( k)‖2−2p 
+
+> ∞
+
+≤ k−1− 2−2pq ‖hmax( k)‖2−2pq ‖h− max( k)‖2pp . (32) Substituting (30) into (32) yields 
+
+k−1− 2−2pq ‖hmax( k)‖2−2pq ‖h− max( k)‖2pp ≤ k−1− 2−2pq Ψ2‖hmax( k)‖2 
+
+> q
+
+.
+
+It follows from Hölder’s inequality with 1 < q < 2 and the property of ℓq-norm with q ≥ 2 that 
+
+> N
+
+∑
+
+> i=1
+
+λi‖ui‖22 ≤ k 2min( q, 2) − 2q+2 −2pq Ψ2‖hmax( k)‖22. (33) Define μ := 11+    
+
+> √
+> 1+ k
+> 2min( q, 2) −2q+2 −2pqΨ2
+
+, w := (1 − μ)hmax( k) + μh, and wi := hmax( k) + μui for 
+
+i = 1 , 2, . . . , N , It follows immediately that 
+
+> N
+
+∑
+
+> i=1
+
+λi‖A(w − 12wi)‖22 =
+
+> N
+
+∑
+
+> i=1
+
+λi
+
+4 ‖Aw i‖22. (34) Since each wi is 2k-sparse, the 2k-RIP gives ‖Aw i‖22 ≥ (1 − δ2k)‖wi‖22. Expanding ‖wi‖22 =
+
+‖hmax( k)‖22 + μ2‖ui‖22 and applying the weights λi, we obtain the lower bound 
+
+> N
+
+∑
+
+> i=1
+
+λi
+
+4 ‖Aw i‖22 ≥ 1 − δ2k
+
+4 (‖hmax( k)‖22 + μ2
+
+> N
+
+∑
+
+> i=1
+
+λi‖ui‖22). (35) For the left-hand side of (34), we rewrite the term inside the norm as 
+
+w − 12wi = ( 12 − μ)hmax( k) − 12μui + μh := vi. (36) The vector vi is strictly 2k-sparse since hmax( k) and ui have disjoint supports of size at most k.Expanding the squared ℓ2-norm yields 
+
+‖A(w − 12wi)‖22 = ‖Av i‖22 + μ2‖Ah ‖22 + 2 μ〈Av i, Ah 〉. (37) Since ∑Ni=1 λiui = h− max( k) = h − hmax( k), the weighted sum of vi evaluates exactly to 
+
+> N
+
+∑
+
+> i=1
+
+λivi = ( 12 − μ)hmax( k) − μ
+
+2 h− max( k) = 1 − μ
+
+2 hmax( k) − μ
+
+2 h. (38) Substituting (38) into the sum of the cross-terms 2μ〈Av i, Ah 〉, one has 
+
+> N
+
+∑
+
+> i=1
+
+λi2μ〈Av i, Ah 〉 = μ(1 − μ)〈Ah max( k), Ah 〉 − μ2‖Ah ‖22. (39) Notice that the term −μ2‖Ah ‖22 perfectly annihilates the ∑ λiμ2‖Ah ‖22 term arising from (37). Thus, the left-hand side of (34) simplifies to 
+
+> N
+
+∑
+
+> i=1
+
+λi‖A(w − 12wi)‖22 =
+
+> N
+
+∑
+
+> i=1
+
+λi‖Av i‖22 + μ(1 − μ)〈Ah max( k), Ah 〉.
+
+14 Applying the 2k-RIP to ‖Av i‖22, the Cauchy-Schwarz inequality to the inner product, and utilizing the feasibility constraint ‖Ah ‖2 ≤ 2ε, we obtain the upper bound 
+
+> N
+
+∑
+
+> i=1
+
+λi‖A(w − 12wi)‖22 ≤ (1 + δ2k)[( 12 − μ)2‖hmax( k)‖22 + μ2
+
+4
+
+> N
+
+∑
+
+> i=1
+
+λi‖ui‖22]+ 2 εμ (1 − μ)√1 + δ2k ‖hmax( k)‖2.
+
+(40) Combining the lower (35) and upper (40) estimates, we multiply both sides by 4 
+
+> μ2
+
+and group the terms for ‖hmax( k)‖22 and ∑ λi‖ui‖22. Let C2 := k 2min( q, 2) − 2q+2 −2pq Ψ2 as defined in (33). After algebraic simplification utilizing the definition μ = 11+ √1+ C2 , the coefficients meticulously resolve to 
+
+4√1 + C2
+
+[
+
+1 − δ2k
+
+√1 + C2
+
+]
+
+‖hmax( k)‖22 ≤ 8ε√1 + C2√1 + δ2k‖hmax( k)‖2.
+
+Dividing by 4√1 + C2‖hmax( k)‖2 > 0 and combining with δ2k
+
+√1 + C2 < 1 yields 
+
+‖hmax( k)‖2 ≤ 2ε√1 + δ2k
+
+1 − δ2k
+
+√
+
+1 + k 2min( q, 2) − 2q+2 −2pq Ψ2
+
+. (41) According to Lemma 5.1 and (31), one has 
+
+‖h− max( k)‖22 ≤ ‖ h− max( k)‖2−p 
+
+> ∞
+
+‖h− max( k)‖pp
+
+≤ k− 2−pq (βp + k q−pq )( ‖hmax( k)‖2 
+
+> q
+
++ βp
+
+βp + k q−pq
+
+‖h− max( k)‖pq ‖hmax( k)‖2−pq ).
+
+Combining (29) with Hölder’s inequality ( 1 < q < 2) and the ℓq-norm property for q ≥ 2 yields 
+
+‖h− max( k)‖22 ≤ k− 2−pq (βp(1 + zp 
+
+> 0
+
+) + k q−pq )‖hmax( k)‖2 
+
+> q
+
+= k− 2−pq Ψ‖hmax( k)‖2
+
+> q
+
+≤ k 2min( q, 2) − 2−p+qq Ψ‖hmax( k)‖22.
+
+(42) It follows from the triangle inequality and (42) that 
+
+‖h‖2 ≤ ‖ hmax( k)‖2 + ‖h− max( k)‖2 ≤ (1 + k 1min( q, 2) − 2−p+q
+
+> 2q
+
+√Ψ) ‖hmax( k)‖2. (43) Combining (43) with (41), we obtain the final upper bound (25). When p = 1 in Theorem 5.3, we have the following result. 
+
+Corollary 5.4 ([1, Corollary 1]) . Assume that x 6 = 0 is k-sparse and satisfies ∥x∥1 
+
+> ∥x∥q
+
+≤ β with q > 
+
+1 and β > 0. Let ˆx be a solution to Qϵ
+
+> 1,q
+
+. Define a function f1,q (z) = zq −βk − q−1 
+
+> q
+
+z −βk − q−1 
+
+> q
+
+−1.If A satisfies 2k-RIP with RIC 
+
+δ2k < 1
+
+√
+
+1 + k 2min {q, 2} (β(1 + z0)k−1 + k− 1 
+
+> q
+
+)2
+
+,
+
+where z0 is the unique zero-point of f1,q (z) in [0 , +∞), then the distance between ˆx and x is upper-bounded by 
+
+‖ ˆx − x‖2 ≤ 2ϵ√1 + δ2k(1 + k 12 − 1 
+
+> q
+
+)
+
+√
+
+β(1 + z0) + k q−1
+
+> q
+
+1 − δ2k
+
+√
+
+1 + k 2min {q, 2} (β(1 + z0)k−1 + k− 1 
+
+> q
+
+)2
+
+. (44) 15 In order to compare Theorem 5.3 with Theorem 1 in [1], we recall it as follows. 
+
+Theorem 5.5 ([1, Theorem 1]) . Let 0 < p ≤ 1, q > 1, and β > 0. Assume that x 6 = 0 is 
+
+k-sparse in M{ A, x, b, m, n, ϵ } and satisfies 
+
+‖x‖p
+
+‖x‖q
+
+≤ β. 
+
+Let ˆx be a solution of Qϵp,q , and let z0 be the unique zero point of fp,q in Lemma 5.2. If A
+
+satisfies the 2k-RIP with RIC 
+
+δ2k < 1
+
+√
+
+1 + 3 2−2pk 2min {q, 2} − 2−2pq (β(1 + z0)k− 1 
+
+> p
+
++ k− 1 
+
+> q
+
+)2p
+
+, (45) 
+
+then 
+
+‖ ˆx − x‖2 ≤ 2ϵ√1 + δ2k(1 + k 1min {q, 2} − 2−p+q
+
+> 2q
+
+√
+
+βp(1 + zp 
+
+> 0
+
+) + k q−pq )1 − δ2k
+
+√
+
+1 + 3 2−2pk 2min {q, 2} − 2−2pq (β(1 + z0)k− 1 
+
+> p
+
++ k− 1 
+
+> q
+
+)2p
+
+. (46) Let T1 := 3 2−2pk 2min {q, 2} − 2−2pq (β(1 + z0)k− 1 
+
+> p
+
++ k− 1 
+
+> q
+
+)2p. Then the corresponding upper bound on δ2k in (45) can be rewritten as ∆Zhu := 1√1+ T1 . In contrast, Theorem 5.3 involves T2 := 
+
+k 2min {q, 2} − 2q+2 −2pq Ψ2, and its upper bound on δ2k can be rewritten as ∆new := 1√1+ T2 . Thus, we have the following proposition. 
+
+Proposition 5.6. For all parameters 0 < p ≤ 1, q > 1, β > 0, k ≥ 1, and with z0 defined as in Lemma 5.2, we have T1 ≥ T2. Consequently, ∆new ≥ ∆Zhu . Moreover, equality holds when 
+
+p = 1 , while the inequality is strict for 0 < p < 1.Proof. The identity 2q+2 −2pq = 2−2pq + 2 implies k 2min( q, 2) − 2q+2 −2pq Ψ2 = k 2min( q, 2) − 2−2pq k−2Ψ2. Hence 
+
+T1 ≥ T2 is equivalent to 
+
+k−2Ψ2 ≤ 32−2p(β(1 + z0)k−1/p + k−1/q )2p.
+
+Taking square roots (all quantities are positive) gives the equivalent inequality 
+
+k−1Ψ ≤ 31−p(β(1 + z0)k−1/p + k−1/q )p.
+
+According to the definition of Ψ, one has 
+
+Ψ = βp(1 + zp 
+
+> 0
+
+) + k q−pq = k[(βk −1/p )p + ( βz 0k−1/p )p + (k−1/q )p].
+
+Letting a = βk −1/p , b = βz 0k−1/p , and c = k−1/q yields Ψ = k(ap + bp + cp).For 0 < p ≤ 1, the function t 7 → tp is concave. By the power mean inequality (or the generalized Hölder inequality), we have ap + bp + cp ≤ 31−p(a + b + c)p. Hence, 
+
+Ψ ≤ k · 31−p (a + b + c)p = k[ 3 1−pp (β(1 + z0)k−1/p + k−1/q )] p.
+
+Dividing both sides by k yields the desired inequality 
+
+k−1Ψ ≤ 31−p(β(1 + z0)k−1/p + k−1/q )p.
+
+When 0 < p < 1, the inequality ap + bp + cp ≤ 31−p(a + b + c)p is strict unless a = b = c; this would require z0 = 1 , whereas fp,q (1) = 1 − βpk− q−pq − βpk− q−pq − 1 < 0, so z0 6 = 1 . Hence 
+
+T2 < T 1 for 0 < p < 1. For p = 1 the inequality becomes an equality, and consequently T1 = T2.This implies ∆new ≥ ∆Zhu .16 Figure 1 intuitively illustrates the magnitudes of two different upper bounds under varying sparsity levels. 
+
+Remark 5.7. Proposition 5.6 shows that the proposed RIP condition is never more restrictive than that of [1, Theorem 1]. For 0 < p < 1, it permits a strictly larger range for δ2k. For p = 1 ,the two upper bounds on δ2k coincide, so the result reduces to the corresponding ℓ1/ℓ q case. 0 10 20 30 40 50                          
+
+> Sparsity
+> 0.3 0.4 0.5 0.6 0.7
+> Zhu
+> Our
+> 010 20 30 40 50
+> Sparsity
+> 0.25 0.3 0.35 0.4 0.45 0.5 0.55
+> Zhu
+> Our
+> 010 20 30 40 50
+> Sparsity
+> 0.25 0.3 0.35 0.4 0.45
+> Zhu
+> Our
+> 010 20 30 40 50
+> Sparsity
+> 0.25 0.26 0.27 0.28 0.29 0.3 0.31
+> Zhu
+> Our
+> 010 20 30 40 50
+> Sparsity
+> 0.3 0.35 0.4 0.45
+> Zhu
+> Our
+> 010 20 30 40 50
+> Sparsity
+> 0.21 0.22 0.23 0.24 0.25 0.26
+> Zhu
+> Our
+
+Figure 1: The behavior of two different upper bounds under different sparsity levels k.
+
+Proposition 5.8. Let Bo denote the upper bound in Theorem 5.3, and Bz denote the upper bound in Theorem 5.5. If the RIC δ2k of the measurement matrix A satisfies the sufficient conditions of both results, then Bo ≤ Bz .Proof. If p = 1 , Proposition 5.6 gives T1 = T2, and the two error bounds coincide under the same range of δ2k. Thus the claim is immediate. In the following, assume that 0 < p < 1.The numerators of both bounds are identical, reducing the comparison exclusively to their respective denominators. The recovery bound Bo is governed by the denominator 
+
+Do = 1 − δ2k
+
+√
+
+1 + k 2min( q, 2) − 2q+2 −2pq Ψ2,
+
+In contrast, the recovery bound Bz is governed by the denominator 
+
+Dz = 1 − δ2k
+
+√
+
+1 + 3 2−2pk 2min( q, 2) − 2−2pq (β(1 + z0)k−1/p + k−1/q )2p.
+
+Define an auxiliary variable 
+
+Φ2
+
+z := [3 1−pp
+
+(
+
+β(1 + z0)k p−qpq + 1 
+
+)
+
+]2p. (47) Factoring out k q−pq from Ψ2 yields 
+
+Ψ2 = [ βp(1 + zp
+
+0 ) + k q−pq ]2 = k 2q−2pq [βp(1 + zp
+
+0 )k p−qq + 1] 2.
+
+Substituting the factorized form of Ψ2 and combining the powers of k yields 
+
+k 2min( q, 2) − 2q+2 −2pq Ψ2 = k 2min( q, 2) − 2 
+
+> q
+
+[βp(1 + zp
+
+0 )k p−qq + 1] 2. (48) 17 Similarly, multiplying the factor k 2min( q, 2) − 2−2pq by Φz from (47) yields 
+
+k 2min( q, 2) − 2−2pq Φ2 
+
+> z
+
+= k 2min( q, 2) − 2−2pq · 32−2pk 2pq (β(1 + z0)k−1/p + k−1/q )2p
+
+= k 2min( q, 2) − 2 
+
+> q
+
+· 32−2p[β(1 + z0)k p−qpq + 1] 2p.
+
+(49) Since the factor k 2min( q, 2) − 2 
+
+> q
+
+appears in both (48) and (49), it suffices to compare Λo = [ βp(1 + 
+
+zp 
+
+> 0
+
+)k p−qq + 1] 2 and Λz = [ β(1 + z0)k p−qpq + 1] 2p. Let x := β(1 + z0)k p−qpq > 0 be an auxiliary variable. Then Λz = (1 + x)2p. The inequality (a + b)p ≥ 2p−1(ap + bp) for p ∈ (0 , 1] implies 
+
+1 + zp 
+
+> 0
+
+≤ 21−p(1 + z0)p. Consequently, 
+
+βp(1 + zp 
+
+> 0
+
+)k p−qq ≤ 21−pβp(1 + z0)pk p−qq = 2 1−pxp,
+
+and hence Λo ≤ (1 + 2 1−pxp)2. It remains to show that for all x > 0 and 0 < p < 1,
+
+(1 + 2 1−pxp)2
+
+(1 + x)2p ≤ 32−2p ⇐⇒ 1 + 2 1−pxp
+
+(1 + x)p ≤ 31−p.
+
+Let us define the univariate function f (x) = 1+2 1−pxp 
+
+> (1+ x)p
+
+for x > 0. Taking the derivative with respect to x, one has 
+
+f ′(x) = p21−pxp−1(1 + x)p − p(1 + 2 1−pxp)(1 + x)p−1
+
+(1 + x)2p . (50) Setting the numerator of (50) to zero to find the critical points yields 
+
+21−pxp−1(1 + x) = 1 + 2 1−pxp =⇒ 21−pxp−1 + 2 1−pxp = 1 + 2 1−pxp =⇒ x1−p = 2 1−p.
+
+Since p ∈ (0 , 1) , the exponent p − 1 is strictly negative. Therefore, g(x) = 2 1−pxp−1 − 1 is a strictly monotonically decreasing function of x on (0 , +∞). Setting g(x) = 0 to find the unique critical point x = 2 . Because g(x) is strictly decreasing, we have g(x) > 0 =⇒ f ′(x) > 0 for all x ∈ (0 , 2) , and g(x) < 0 =⇒ f ′(x) < 0 for all x ∈ (2 , +∞). That is, the function f (x)
+
+is strictly increasing on (0 , 2) and strictly decreasing on (2 , +∞). This implies a unique global maximum exists precisely at x = 2 . At the global maximum x = 2 , the function f (x) takes the value 
+
+f (2) = 1 + 2 1−p2p
+
+(1 + 2) p = 1 + 2 3p = 3 1−p.
+
+It follows that f (x) is bounded above by 31−p on (0 , ∞), with the maximum attained uniquely at x = 2 . Squaring this result, we have 
+
+Λo
+
+Λz
+
+≤ (31−p)2 = 3 2−2p =⇒ Λo ≤ 32−2pΛz .
+
+It follows universally that Bo ≤ Bz . This completes the proof. Figure 2 provides a comparison of the upper bounds of two recovery errors across different sparsity levels. 18 0 20 40 60 80                     
+
+> Sparsity
+> 0100 200 300 400 500 600 700
+> Error Upper Bound
+> Zhu
+> Ours
+> 020 40 60 80
+> Sparsity
+> 0200 400 600 800 1000
+> Error Upper Bound
+> Zhu
+> Ours
+> 020 40 60 80
+> Sparsity
+> 350 400 450 500 550 600 650 700
+> Error Upper Bound
+> Zhu
+> Ours
+> 020 40 60 80
+> Sparsity
+> 0100 200 300 400 500 600 700 800
+> Error Upper Bound
+> Zhu
+> Ours
+> 020 40 60 80
+> Sparsity
+> 0100 200 300 400 500 600 700
+> Error Upper Bound
+> Zhu
+> Ours
+> 020 40 60 80
+> Sparsity
+> 0100 200 300 400 500 600 700
+> Error Upper Bound
+> Zhu
+> Ours
+
+Figure 2: Upper bounds of two recovery errors under different sparsity levels. 
+
+5.2. Extreme Cases for the RIP Sufficient Condition 
+
+In this subsection, we investigate the limiting behavior of the RIP sufficient condition in Theorem 5.3. The purpose is twofold. First, we follow the same worst-case sparsity-based normalization used in [1]. Second, we further discuss the bounded norm-ratio regime, which more clearly reveals the improvement of the proposed condition. In the following, we discuss and analyze the limiting cases under the two scenarios. First, the worst-case sparsity-based normalization. For a nonzero k-sparse vector x, the standard norm inequality gives ∥x∥p
+
+∥x∥q ≤ k 1 
+
+> p
+
+− 1 
+
+> q
+
+. Following the discussion in [1], we first take 
+
+β = k 1 
+
+> p
+
+− 1 
+
+> q
+
+. Then βpk− q−pq = 1 , and hence the auxiliary equation in Lemma 5.2 becomes 
+
+zq − zp − 2 = 0 . Moreover, Ψ = k q−pq (2 + zp
+
+0 ). Sybstituting this into Ψ and T2 yields T2 =
+
+k 2min {q, 2} − 2 
+
+> q
+
+(2 + zp
+
+0 )2. Similarly, (45) becomes T1 = 3 2−2pk 2min {q, 2} − 2 
+
+> q
+
+(2 + z0)2p.
+
+Case (1): p → 0+ and q → 1+. Since 1 < q ≤ 2 in this regime, min {q, 2} = q, and hence 
+
+2min {q, 2} − 2
+
+q = 0 . The root z0 of equation zq − zp − 2 = 0 satisfies z0 → 3 and zp
+
+0 → 1. Therefore, 
+
+T1 → 9. Thus the improved sufficient condition tends to δ2k < 1√10 . In the same limit, T2 → 9,so the limiting sufficient condition of [1, Theorem 1] is the same. This shows that, under the worst-case normalization of β, the strict finite-parameter improvement may disappear in this singular limit. 
+
+Case (2): p → 0+ and q → ∞ . Here min {q, 2} = 2 , and hence 2min {q, 2} − 2
+
+q → 1. From the auxiliary equation, one has z0 → 1+ and zp
+
+0 → 1. It follows that Tnew (p, q, k ) → 9k. Therefore, 
+
+δ2k < 1√1+9 k . The original quantity T1 has the same limiting value 9k. Thus, in this worst-case scaling, both conditions have the same leading asymptotic form. 
+
+Case (3): p = 1 and q → 1+. When p = 1 , the auxiliary equation becomes zq − z − 2 = 0 .As q → 1+, its unique positive root satisfies z0 → +∞. Consequently, both Tnew (1 , q, k ) and 
+
+TZhu (1 , q, k ) diverge, and the corresponding upper bounds on δ2k tend to zero. This limiting regime is therefore not useful for stable recovery. 
+
+Case (4): p = 1 and q → ∞ . In this case, z0 → 1+, and Tnew (1 , q, k ) → 9k. Therefore, 
+
+δ2k < 1√1+9 k . Since p = 1 , Proposition 5.6 gives equality between the two RIP quantities, and the limiting condition coincides with that of [1, Theorem 1]. 19 Second, the bounded norm-ratio regime. The preceding discussion follows the worst-case sparsity-based choice of β. To reveal the improvement of the proposed condition more explicitly, we now consider the regime where the norm-ratio parameter remains bounded as p → 0+.More precisely, assume that β is fixed, or more generally that βp → 1 as p → 0+. This regime corresponds to signals whose norm-ratio parameter does not grow at the worst-case rate 
+
+k1/p −1/q .
+
+Case (5): p → 0+ and q → 1+ with bounded β. Since βp → 1, and k− q−pq → k−1, the auxiliary equation in Lemma 5.2 tends to z − k−1 − k−1 − 1 = 0 . Thus z0 → 1 + 2 
+
+> k
+
+and zp 
+
+> 0
+
+→ 1.Moreover, Ψ → k + 2 . Since 2min {q, 2} − 2q+2 −2pq → − 2, we obtain T2 → k−2(k + 2) 2 = (1 + 2
+
+> k
+
+)2.Hence the improved RIP condition tends to 
+
+δ2k < 1
+
+√
+
+1 + (1 + 2
+
+> k
+
+)2 .
+
+In particular, as k → ∞ , δ2k < 1√2 . On the other hand, the corresponding quantity in [1, Theorem 1] satisfies T1 → 9, so that the limiting condition is δ2k < 1√10 . Thus, in the bounded norm-ratio regime, the improved condition gives a substantially larger upper bound on δ2k.
+
+Case (6): p → 0+ and q → ∞ with bounded β. In this regime, βp → 1 and k− q−pq → k−1.The auxiliary equation asymptotically becomes zq − 2 
+
+> k
+
+− 1 = 0 , and hence z0 → 1+, and zp 
+
+> 0
+
+→ 1.Again, Ψ → k + 2 . Since 2min {q, 2} − 2q+2 −2pq → − 1, we get T2 → k−1(k + 2) 2 = k + 4 + 4 
+
+> k
+
+.Therefore, 
+
+δ2k < 1
+
+√k + 5 + 4 /k .
+
+For large k, this behaves as δ2k ≲ 1√k . By contrast, the corresponding limiting condition in [1, Theorem 1] is δ2k < 1√1+9 k ∼ 13√k . Hence, in this bounded norm-ratio regime, the upper bound on δ2k given by the improved condition is asymptotically three times larger than that of [1]. The above analysis shows that the proposed RIP sufficient condition is always at least as mild as that in [1, Theorem 1]. Under the worst-case sparsity-based normalization, the leading constants may coincide in singular limits. However, for bounded norm-ratio signal classes, the improvement remains visible even in the extreme regimes p → 0+, yielding substantially larger upper bounds on δ2k.
+
+6. Stable recovery guarantee without k-sparse assumption 
+
+The recovery results in the preceding section are established under the assumption that the true signal is exactly k-sparse. This assumption is mathematically useful, but it is often too restrictive in applications where the sparsity level is unknown in advance or the signal is only compressible. In such cases, the integer k should be regarded as an analysis parameter rather than the exact number of nonzero entries, and the recovery error should naturally depend on the best k-term approximation tail x− max( k) as well as the noise level ϵ.We therefore develop stable recovery guarantees for the ℓpp/ℓ pq model without imposing the 
+
+k-sparse assumption on the true signal. The starting point is the RIP–ROP framework of Zhu et al. [1, Theorem 2]. Their result already covers the non-k-sparse setting, but for 1 < q < 2, Zhu et al.’s proof uses the finite-dimensional estimate ‖h‖q ≤ n1/q −1/2‖h‖2 for the full error vector 
+
+h. Our proof avoids this full-vector estimate by applying the same norm relation on localized blocks whose cardinalities are controlled by k and t. This yields a dimension-free RIP–ROP recovery bound for all q > 1. We then give a related RIP-only formulation by controlling the 20 disjoint-support cross terms through the RIC δk+t, which provides a condition stated solely in terms of RIP constants. 
+
+6.1. Main result based on RIP and ROP 
+
+This subsection first treats the non-k-sparse case within the RIP–ROP framework. The integer k is not assumed to be the true sparsity level of x; instead, it specifies the leading part of the recovery error and the approximation tail x− max( k). The additional integer t is used to partition the remaining error into ordered blocks. This block structure replaces the full-vector estimate used in [1, Theorem 2] by separate estimates on individual blocks: for each block, we first control its error using the ℓq norm and then translate this control into an ℓ2 error bound, which removes the explicit ambient-dimension factor in the range 1 < q < 2. The RIP–ROP theorem below gives a sufficient condition based on k-RIP and (k, t )-ROP, expressed through the constants δk and θk,t . It also provides a stable error bound depending on ‖x− max( k)‖p and 
+
+ϵ. We first recall the auxiliary estimates needed for the proof and then introduce the localized block ℓq–ℓ2 estimate in Lemma 6.4. 
+
+Lemma 6.1 ([1, Lemma 3]) . Assume that x 6 = 0 belongs to {z | ‖ b − Az ‖2 ≤ ϵ} and satisfies  
+
+> ∥x∥p
+> ∥x∥q
+
+≤ β with 0 < p ≤ 1, q > 1 and β > 0. Let ˆx be a solution to Qϵp,q , h := ˆx − x, k ∈ (0 , n ]
+
+be an integer. Then, one has 
+
+‖h− max( k)‖pp ≤ ‖ hmax( k)‖pp + 2 ‖x− max( k)‖pp + βp‖h‖pq .
+
+Lemma 6.2 ([38, Lemma 5.5]) . Suppose n ≥ k, u ≥ 0, v1 ≥ v2 ≥ · · · ≥ vn, and ∑ki=1 vi + u ≥∑ni=k+1 vi, then for all ρ ≥ 1,
+
+> n
+
+∑
+
+> i=k+1
+
+vρi ≤ k(( 
+
+∑ki=1 vρi
+
+k )1/ρ + uk )ρ.
+
+Lemma 6.3 ([39, Proposition 2.1]) . For any a ∈ Rn,
+
+‖a‖2 − ‖a‖1
+
+√n ≤√n
+
+4
+
+(
+
+max  
+
+> 1≤i≤n
+
+|ai| − min  
+
+> 1≤i≤n
+
+|ai|
+
+)
+
+.
+
+Lemma 6.4. Let T0 = supp (hmax( k)) and let Ti (i ≥ 1) be the sets of indices of the t largest elements in absolute value of h(T0∪···∪ Ti−1)c . Let 
+
+ϑq := max {1
+
+q − 12, 0}.
+
+Then, for every q > 1,
+
+‖h‖q ≤ kϑq ‖hmax( k)‖2 + tϑq
+
+> J
+
+∑
+
+> i=1
+
+‖hTi ‖2. (51) 
+
+Proof. For q > 1, the ℓq-norm is a true norm and satisfies the triangle inequality. Decomposing 
+
+h over the disjoint index blocks, we have 
+
+‖h‖q ≤ ‖ hT0 ‖q +
+
+> J
+
+∑
+
+> i=1
+
+‖hTi ‖q.
+
+Since |T0| ≤ k and |Ti| ≤ t, we use the standard finite-dimensional norm relation 
+
+‖v‖q ≤ smax {1/q −1/2,0}‖v‖2, ‖v‖0 ≤ s. 
+
+It follows that ‖hT0 ‖q ≤ kϑq ‖hT0 ‖2 and ‖hTi ‖q ≤ tϑq ‖hTi ‖2. Substituting these local bounds into the triangle inequality and noting that hT0 = hmax( k) gives (51). 21 We now present a dimension-free refinement of the non-k-sparse recovery guarantee of [1, Theorem 2], which relies on both RIP and ROP. 
+
+Theorem 6.5. Assume that the true signal x 6 = 0 in M{ A, x, b, m, n, ϵ } satisfies ∥x∥p 
+
+> ∥x∥q
+
+≤ β
+
+with 0 < p ≤ 1, q > 1, and β > 0. Let ˆx be a solution to Qϵp,q . Let 1 ≤ k < n and 
+
+1 ≤ t ≤ n−k be integers. Define ap := 3 1−pp , ϑq := max {1 
+
+> q
+
+− 12 , 0}, ˜ηp,q (k, t, β ) := ap β k p−1 
+
+> p
+
+tϑq − 12 ,
+
+˜τp,q (k, t, β ) := ap
+
+√kt + 14
+
+√ tk +ap β k p−1     
+
+> p+ϑq t−12
+> 1−˜ηp,q (k,t,β )
+
+, and ˜ψp,q (k, t, β ) := δk + ˜τp,q (k, t, β ) θk,t . If A satisfies 
+
+k-RIP and (k, t )-ROP with ˜ηp,q (k, t, β ) < 1 and ˜ψp,q (k, t, β ) < 1, then 
+
+‖ ˆx − x‖2 ≤ ˜C1‖x− max( k)‖p + ˜C2ϵ, 
+
+where 
+
+˜C1 = ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 (1 − δk + θk,t )
+
+(1 − ˜ηp,q (k, t, β ))( 1 − ˜ψp,q (k, t, β )), ˜C2 = 2(1 + ˜τp,q (k, t, β ))√1 + δk
+
+1 − ˜ψp,q (k, t, β ) .
+
+Proof. Let h := ˆ x − x. If h = 0, then the conclusion is trivial. Hence we only consider the case h 6 = 0.Let T0 := supp( hmax( k)), and let Ti (i ≥ 1) be the sets of indices of the t largest elements in absolute value of h(T0∪···∪ Ti−1)c . Let J = d(n − k)/t e be the total number of such tail blocks; the last block is allowed to have cardinality smaller than t. For notational brevity, we define 
+
+S := ∑Ji=1 ‖hTi ‖2, u := ‖hmax( k)‖2, and σ := ‖x− max( k)‖p. Since h 6 = 0 and k ≥ 1, one has 
+
+u > 0. It follows from Lemma 6.1 that 
+
+‖h− max( k)‖pp ≤ ‖ hmax( k)‖pp + 2 ‖x− max( k)‖pp + βp‖h‖pq := u0.
+
+Applying Lemma 6.2 with ρ = 1 
+
+> p
+
+to bridge the ℓp and ℓ1 norms, we obtain 
+
+‖h− max( k)‖1 ≤ k(( ‖hmax( k)‖1
+
+k )p + u0
+
+k ) 1 
+
+> p
+
+.
+
+Using the p-norm subadditivity inequality (A + B + C) 1 
+
+> p
+
+≤ 31−pp
+
+(
+
+A 1 
+
+> p
+
++ B 1 
+
+> p
+
++ C 1
+
+> p
+
+)
+
+, and substi-tuting u0, one has 
+
+‖h− max( k)‖1 ≤ k · 31−pp (‖hmax( k)‖1
+
+k + 2 1 
+
+> p
+
+σk 1
+
+> p
+
++ β‖h‖q
+
+k 1
+
+> p
+
+).
+
+Together with the standard Cauchy-Schwarz bound ‖hmax( k)‖1 ≤ √k ‖hmax( k)‖2 = √ku , and recalling ap := 3 1−pp , we obtain the foundational ℓ1 tail bound 
+
+‖h− max( k)‖1 ≤ ap
+
+√k u + ap k p−1 
+
+> p
+
+(2 1 
+
+> p
+
+σ + β‖h‖q).
+
+Applying Lemma 6.3 to each tail block, with the final block padded by zeros if its cardinality is smaller than t, gives 
+
+S ≤ 1
+
+√t
+
+> J
+
+∑
+
+> i=1
+
+‖hTi ‖1 +
+
+√t
+
+4 max 
+
+> j∈T1
+
+|hj | ≤ 1
+
+√t‖h− max( k)‖1 + 14
+
+√ tk u. (52) 22 In the displayed estimate, the maximum and minimum for the last block are understood after the possible zero-padding. The ordering of the blocks implies max j∈Ti+1 |hj | ≤ min j∈Ti |hj | for full preceding blocks, while zero-padding makes the last minimum equal to zero if the last block is not full. Moreover, if |h|(1) ≥ · · · ≥ | h|(n) denotes the nonincreasing rearrangement of |h|,then 
+
+max 
+
+> j∈T1
+
+|hj | ≤ | h|(k+1) ≤ ( 1
+
+k
+
+> k
+
+∑
+
+> j=1
+
+|h|2(j))1/2 = u
+
+√k ,
+
+with the same conclusion being trivial when h has at most k nonzero entries. Substituting the bound for ‖h− max( k)‖1, it follows that 
+
+S ≤ (ap
+
+√kt + 14
+
+√ tk )u + ap k p−1 
+
+> p
+
+t− 12 (2 1 
+
+> p
+
+σ + β‖h‖q). (53) Since the block sizes satisfy |T0| ≤ k and |Ti| ≤ t, we apply the finite-dimensional norm relation 
+
+‖hT0 ‖q ≤ kϑq ‖hT0 ‖2 and ‖hTi ‖q ≤ tϑq ‖hTi ‖2, where ϑq = max {1 
+
+> q
+
+− 12 , 0}. By the triangle inequality for q > 1, one has 
+
+‖h‖q ≤ ‖ hT0 ‖q +
+
+> J
+
+∑
+
+> i=1
+
+‖hTi ‖q ≤ kϑq u + tϑq S. (54) Substituting (54) into (53) yields 
+
+S ≤ (ap
+
+√kt + 14
+
+√ tk + apβk p−1  
+
+> p+ϑq
+
+t− 12 )u + ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 σ + apβk p−1 
+
+> p
+
+tϑq − 12 S. 
+
+It follows from the definition of ˜ηp,q (k, t, β ) and ˜τp,q (k, t, β ) that 
+
+(1 − ˜ηp,q (k, t, β )) S ≤ (1 − ˜ηp,q (k, t, β )) ˜τp,q (k, t, β ) u + ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 σ. 
+
+Since the condition ˜ηp,q (k, t, β ) < 1 guarantees positivity, dividing to isolate S yields 
+
+S ≤ ˜τp,q (k, t, β ) u + ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12
+
+1 − ˜ηp,q (k, t, β )σ. (55) It follows from the triangle inequality ‖h‖2 ≤ u + S that 
+
+‖h‖2 ≤ (1 + ˜τp,q (k, t, β ))u + ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12
+
+1 − ˜ηp,q (k, t, β )σ. (56) By the Cauchy–Schwarz inequality and the k-RIP, together with the bound ‖Ah ‖2 ≤ 2ϵ, we obtain 
+
+|〈 Ah , Ah max( k)〉| ≤ ‖ Ah ‖2 ‖Ah max( k)‖2 ≤ 2ϵ√1 + δk u. (57) Expanding the inner product and applying the (k, t )-ROP to the disjoint blocks, it follows that 
+
+‖〈 Ah , Ah max( k)〉‖ a
+
+= ‖〈 Ah max( k), Ah max( k)〉 +
+
+> J
+
+∑
+
+> i=1
+
+〈Ah Ti , Ah max( k)〉‖ 
+
+> b
+
+≥ ∣∣〈Ah max( k), Ah max( k)〉∣∣ −
+
+> J
+
+∑
+
+> i=1
+
+∣∣〈Ah Ti , Ah max( k)〉∣∣
+
+> c
+
+≥ (1 − δk)‖hmax( k)‖22 −
+
+> J
+
+∑
+
+> i=1
+
+∣∣〈Ah Ti , Ah max( k)〉∣∣
+
+> d
+
+≥ (1 − δk)u2 − θk,t u
+
+> J
+
+∑
+
+> i=1
+
+‖hTi ‖2,
+
+23 where (a) follows from A (hmax( k) + ∑ 
+
+> i
+
+hTi
+
+) = Ahmax( k)+∑ 
+
+> i
+
+AhTi , (b) follows from |a + ∑ 
+
+> i
+
+bi| ≥ |a|− ∑ 
+
+> i
+
+|bi|, (c) follows from ‖Ahmax( k)‖22 ≥ (1 −δk)‖hmax( k)‖22, and (d) follows from |〈 Ax, Ay 〉| ≤ 
+
+θk,t ‖x‖2‖y‖2. Substituting the bound into (55) yields 
+
+|〈 Ah , Ah max( k)〉| ≥ (1 − ˜ψp,q (k, t, β ))u2 − ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 θk,t 
+
+1 − ˜ηp,q (k, t, β ) σ u. (58) Combining the upper bound (57) and lower bound (58), and utilizing the assumption 1 −
+
+˜ψp,q (k, t, β ) > 0, dividing by u > 0 and isolate u yields 
+
+u ≤ ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 θk,t 
+
+(1 − ˜ηp,q (k, t, β ))( 1 − ˜ψp,q (k, t, β ))σ + 2√1 + δk
+
+1 − ˜ψp,q (k, t, β )ϵ. (59) Substituting (59) into (56), and using the algebraic simplification 1 + (1+ ˜τ )θk,t   
+
+> 1−˜ψ
+
+= 1−δk +θk,t   
+
+> 1−˜ψ
+
+yields precisely 
+
+‖h‖2 ≤ ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 (1 − δk + θk,t )
+
+(1 − ˜ηp,q (k, t, β ))( 1 − ˜ψp,q (k, t, β ))σ + 2(1 + ˜τp,q (k, t, β ))√1 + δk
+
+1 − ˜ψp,q (k, t, β ) ϵ. 
+
+That is, ‖ ˆx − x‖2 ≤ ˜C1‖x− max( k)‖p + ˜C2ϵ. This completes the proof. 
+
+Remark 6.6 (Dimension-free refinement) . Compared with [1, Theorem 2], the main technical change is that the finite-dimensional estimate ‖h‖q ≤ n1/q −1/2‖h‖2 is not applied to the full error vector when 1 < q < 2. Instead, the same norm relation is applied on localized blocks whose cardinalities are controlled by k and t, as in Lemma 6.4. Consequently, the sufficient condition and the error constants above contain only k, t, p, q, and β, and have no explicit dependence on the ambient dimension n. This removes the dimension-dependent factor appearing in [1, Theorem 2 and Remark 6] for the range 1 < q < 2.
+
+The preceding theorem avoids the full-vector factor n1/q −1/2, but it still involves the ROC 
+
+θk,t . In applications, ROC estimates are often less convenient to check than RIC estimates. It is therefore useful to record a RIP-only variant of the same argument. The only modification is in the treatment of the cross terms: for two disjointly supported vectors whose supports have cardinalities at most k and t, respectively, the (k + t)-RIP implies the bound 
+
+|〈 Au , Av 〉| ≤ δk+t‖u‖2‖v‖2.
+
+Replacing the ROC estimate by this RIP-controlled estimate yields the following result. Since generally θk,t ≤ δk+t, the RIP-only version should be viewed as more directly verifiable, rather than uniformly sharper, than the RIP–ROP version. 
+
+Theorem 6.7. Assume that the true signal x 6 = 0 in M{ A, x, b, m, n, ϵ } satisfies ∥x∥p 
+
+> ∥x∥q
+
+≤ β
+
+with 0 < p ≤ 1, q > 1, and β > 0. Let ˆx be a solution to Qϵp,q . Let 1 ≤ k < n and 
+
+1 ≤ t ≤ n − k be integers. Define ap := 3 1−pp , ϑq := max 
+
+{1 
+
+> q
+
+− 12 , 0
+
+}
+
+, ρp(k, t ) := ap
+
+√kt +
+
+> 14
+
+√ tk , αp,q (k, t, β ) := ap β k p−1  
+
+> p+ϑq
+
+t− 12 , ηp,q (k, t, β ) := ap β k p−1 
+
+> p
+
+tϑq − 12 , Cp(k, t ) := ap 2 1 
+
+> p
+
+k p−1 
+
+> p
+
+t− 12 ,
+
+τ p,q (k, t, β ) := ρp(k,t )+ αp,q (k,t,β )1−ηp,q (k,t,β ) , and ψp,q (k, t, β ) := δk +δk+t τ p,q (k, t, β ). If A satisfies (k+t)-RIP with ηp,q (k, t, β ) < 1 and ψp,q (k, t, β ) < 1, then 
+
+‖ ˆx − x‖2 ≤ C1‖x− max( k)‖p + C2ϵ, 
+
+24 where 
+
+C1 := Cp(k, t )1 − ηp,q (k, t, β )(1 + (1 + τ p,q (k, t, β )) δk+t
+
+1 − ψp,q (k, t, β ) ), C2 := 2(1 + τ p,q (k, t, β )r)√1 + δk
+
+1 − ψp,q (k, t, β ) .
+
+Proof. Let the recovery error vector be denoted by h := ˆ x − x. The case h = 0 is trivial; thus, we solely consider h 6 = 0.Following the same block-decomposition strategy established in Theorem 6.5, we define 
+
+T0 := supp( hmax( k)). The complementary support T c 
+
+> 0
+
+is partitioned into disjoint subsets 
+
+T1, . . . , T J , where each Ti contains the indices of the t largest elements in absolute value of 
+
+h(T0∪···∪ Ti−1)c . Set S := ∑Ji=1 ‖hTi ‖2, u := ‖hmax( k)‖2, and σ := ‖x− max( k)‖p. Since h 6 = 0 and 
+
+k ≥ 1, one has u > 0. The part of the proof of Theorem 6.5 up to the estimate of S uses only Lemmas 6.1–6.4 and does not use ROP. Hence, with the present notation, 
+
+S ≤ τ p,q (k, t, β )u + Cp(k, t )1 − ηp,q (k, t, β )σ. (60) Consequently, 
+
+‖h‖2 ≤ (1 + τ p,q (k, t, β ))u + Cp(k, t )1 − ηp,q (k, t, β )σ. (61) Since (k + t)-RIP implies k-RIP by monotonicity of the RIC, the Cauchy–Schwarz inequality and the feasibility constraint ‖Ah ‖2 ≤ 2ϵ give 
+
+|〈 Ah max( k), Ah 〉| ≤ 2ϵ√1 + δk u. 
+
+For the lower bound, expanding the inner product yields 
+
+|〈 Ah max( k), Ah 〉| ≥ (1 − δk)u2 −
+
+> J
+
+∑
+
+> i=1
+
+∣∣〈Ah max( k), Ah Ti 〉∣∣ .
+
+Since the vectors hmax( k) and hTi possess disjoint supports with cardinalities at most k and 
+
+t, respectively, their union support is bounded by k + t. By the standard disjoint-support consequence of the (k + t)-RIP, obtained by applying the RIP to u ± cv and optimizing over 
+
+c > 0, one has ∣∣〈Ah max( k), Ah Ti 〉∣∣ ≤ δk+t u ‖hTi ‖2.
+
+Consequently, the lower bound becomes 
+
+|〈 Ah max( k), Ah 〉| ≥ (1 − δk)u2 − δk+t u S. 
+
+Substituting (60), one has 
+
+|〈 Ah max( k), Ah 〉| ≥ (1 − ψp,q (k, t, β ))u2 − δk+t
+
+Cp(k, t )1 − ηp,q (k, t, β )σ u, 
+
+where ψp,q (k, t, β ) := δk +δk+tτ p,q (k, t, β ). Under the strict assumption that 1−ψp,q (k, t, β ) > 0,we have 
+
+u ≤ δk+tCp(k, t )
+
+(1 − ηp,q (k, t, β ))( 1 − ψp,q (k, t, β ))σ + 2√1 + δk
+
+1 − ψp,q (k, t, β )ϵ. (62) Finally, substituting (62) back into (61) yields 
+
+‖h‖2 ≤ Cp(k, t )1 − ηp,q (k, t, β )
+
+(
+
+1 + 
+
+(1 + τ p,q (k, t, β ))δk+t
+
+1 − ψp,q (k, t, β )
+
+)
+
+σ + 2(1 + τ p,q (k, t, β ))√1 + δk
+
+1 − ψp,q (k, t, β ) ϵ. 
+
+This precisely coincides with ‖ ˆx − x‖2 ≤ C1‖x− max( k)‖p + C2ϵ.25 Remark 6.8. Theorem 6.7 has the same proof architecture as Theorem 6.5, with the ROC 
+
+θk,t replaced by the RIC δk+t in the estimates of the cross terms. Since the standard RIP implication gives θk,t ≤ δk+t, the RIP-only condition is generally easier to verify but may be more conservative than the RIP–ROP condition. Thus the purpose of Theorem 6.7 is not to claim a uniformly sharper constant, but to provide a dimension-free recovery guarantee stated solely in terms of RIP constants. 
+
+7. Algorithm 
+
+In this section, we develop a standard Dinkelbach-type linearized proximal framework for the proposed ratio minimization model and establish convergence properties for the resulting outer sequence. In the numerical implementation, the resulting linearized-proximal subproblems are treated by an ADMM routine. The starting point is the link between the constrained ratio problem (63) and a parameter-dependent difference formulation. Proposition 7.1 provides the sign characterization that mo-tivates the standard Dinkelbach ratio update. The convergence analysis is then developed for the prox-linear outer scheme below. 
+
+7.1. Dinkelbach Method for the Generalized Ratio Model 
+
+Let F := {x ∈ Rn | Ax = b}. Fractional programming connects the constrained ratio model with the parametric value function g(α) := sup x∈F 
+
+{α‖x‖pq − ‖ x‖pp
+
+} . The following proposition records the sign characterization of g and provides the motivation for the standard Dinkelbach ratio update used below. 
+
+Proposition 7.1. Consider the constrained ratio minimization problem and denote its optimal value as α∗, that is 
+
+α∗ := inf 
+
+> x∈Rn
+
+{‖x‖pp
+
+‖x‖pq
+
+s.t. Ax = b
+
+}
+
+, (63) 
+
+where 0 < p ≤ 1, q > 1, and b 6 = 0. For any scalar α > 0, define the corresponding parameter-dependent value function 
+
+g(α) := sup 
+
+> x∈Rn
+
+{α‖x‖pq − ‖ x‖pp s.t. Ax = b} . (64) 
+
+Then, the parametric function g(α) exhibits the following rigorous properties linking it to the ratio model (63) : (a) If g(α) > 0, then α > α ∗; (b) If g(α) ≤ 0, then α ≤ α∗; (c) If g(α) = 0 ,then α = α∗.Proof. Let F = {x ∈ Rn | Ax = b} denote the feasible set. Since b 6 = 0, the origin is not feasible, i.e., 0 /∈ F . Consequently, for any x ∈ F , the denominator is strictly positive (‖x‖pq > 0). (a) If g(α) > 0, by the definition of the supremum (64), there exists a feasible vector x ∈ F 
+
+such that α‖x‖pq − ‖ x‖pp > 0. Since ‖x‖pq > 0, dividing both sides by this strictly positive value yields α > ∥x∥pp 
+
+> ∥x∥pq
+
+. By definition (63), ∥x∥pp 
+
+> ∥x∥pq
+
+≥ inf x∈F ∥x∥pp 
+
+> ∥x∥pq
+
+= α∗. Therefore, we deduce α > α ∗.(b) If g(α) ≤ 0, it implies that for all x ∈ F , we have α‖x‖pq − ‖ x‖pp ≤ 0. Dividing by 
+
+‖x‖pq > 0 gives α ≤ ∥x∥pp 
+
+> ∥x∥pq
+
+for all x ∈ F . Taking the infimum over the entire feasible set F, we obtain α ≤ inf x∈F ∥x∥pp 
+
+> ∥x∥pq
+
+= α∗. Hence, α ≤ α∗.26 (c) If g(α) = 0 , it immediately follows from part (b) that α ≤ α∗. Furthermore, by the definition of the supremum, there exists a sequence {xk} ⊂ F such that 
+
+lim 
+
+> k→∞
+
+(α‖xk‖pq − ‖ xk‖pp
+
+) = 0 . (65) Since xk ∈ F , we have Ax k = b. By matrix norm properties, ‖b‖2 = ‖Ax k‖2 ≤ ‖ A‖2‖xk‖2.Thus, ‖xk‖2 ≥ ∥b∥2 
+
+> ∥A∥2
+
+> 0. Due to the finite-dimensional norm equivalence in Rn, there exists a constant Cq, 2 > 0 (specifically, Cq, 2 = nmin(0 ,1/q −1/2) ) such that ‖xk‖q ≥ Cq, 2‖xk‖2. Therefore, 
+
+‖xk‖pq ≥
+
+(
+
+Cq, 2 ∥b∥2
+
+> ∥A∥2
+
+)p
+
+:= M > 0. Because the sequence ‖xk‖pq is bounded away from zero by a strictly positive constant M , dividing the limit (65) by ‖xk‖pq yields 
+
+lim 
+
+> k→∞
+
+α‖xk‖pq − ‖ xk‖pp
+
+‖xk‖pq
+
+= 0 = ⇒ lim 
+
+> k→∞
+
+‖xk‖pp
+
+‖xk‖pq
+
+= α. 
+
+By the definition of the optimal ratio, α∗ ≤ ∥xk ∥pp  
+
+> ∥xk∥pq
+
+holds for all k. Taking the limit as k → ∞ 
+
+yields α∗ ≤ α. Combining α ≤ α∗ and α∗ ≤ α, we definitively conclude α = α∗.Although g is written as a maximization problem, its maximizers are exactly the minimiz-ers of the sign-reversed difference objective ‖x‖pp − α‖x‖pq on F. Solving this global problem is generally intractable for the present nonconvex model. Therefore, at the k-th outer iteration, we use a linearized-proximal approximation of this linearly constrained minimization problem. Since the present subproblem is highly nonconvex, we keep the nonsmooth numerator in proxi-mal form and linearize only s(x) = ‖x‖pq at the current point. A proximal term β 
+
+> 2
+
+‖x − x(k)‖22 is added to obtain descent control and boundedness of the outer scheme. The resulting linearized proximal subproblem is 
+
+x(k+1) = arg min 
+
+> x∈Rn
+
+{
+
+h(x) − 〈 c(k), x〉 + β
+
+2 ‖x − x(k)‖22
+
+}
+
+, (66) where h(x) = ‖x‖pp + IF (x), IF is the indicator function of F, and the linearization coefficient 
+
+c(k) is given by 
+
+c(k) = α(k) · p‖x(k)‖p−qq sign( x(k)) |x(k)|q−1.
+
+For numerical implementation of the linearization proximal problem (66), we introduce an auxiliary variable y = x and construct the augmented Lagrangian function 
+
+Lρ(x, y, u) = ‖y‖pp + IF (x) − 〈 c(k), x〉 + β
+
+2 ‖x − x(k)‖22 + ρ
+
+2
+
+∥∥∥∥x − y + u
+
+ρ
+
+∥∥∥∥
+
+> 22
+
+, (67) where u is the Lagrange multiplier, ρ is the penalty parameter, and β is the proximal parameter. In the l-th inner step, the x-update admits a closed-form solution via orthogonal affine projection, that is 
+
+x(l+1)  
+
+> in
+
+= ψ(l) − PA(Aψ (l) − b), with ψ(l) = ρy(l) + βx(k) − u(l) + c(k)
+
+ρ + β ,
+
+where PA = AT (AA T )† is the pre-computed pseudo-inverse projection operator, reducing the computational complexity from O(n3) matrix inversions to O(mn ) matrix-vector multiplica-tions. 27 Algorithm 1: Prox-Linear Dinkelbach Method for Qp,q -Minimization 
+
+Input: 0 < p ≤ 1, q > 1, sensing matrix A ∈ Rm×n, observation vector b ∈ Rm, initial feasible point x(0) ∈ F , proximal parameter β > 0, maximum iteration number 
+
+Kmax , and tolerance ε > 0
+
+Output: Recovered sparse solution x and ratio value α 
+
+> 1
+
+Set α(0) ← ‖ x(0) ‖pp/‖x(0) ‖pq ; 
+
+> 2
+
+for k = 0 , 1, . . . , K max − 1 do 
+
+// Linearization of the denominator  
+
+> 3
+
+c(k) ← α(k)p‖x(k)‖p−qq sign( x(k)) |x(k)|q−1;
+
+// Prox-linear update  
+
+> 4
+
+Compute x(k+1) ∈ arg min x∈Rn {h(x) − 〈 c(k), x〉 + β 
+
+> 2
+
+‖x − x(k)‖22};
+
+// Ratio update  
+
+> 5
+
+∆k ← α(k)‖x(k+1) ‖pq − ‖ x(k+1) ‖pp; 
+
+> 6
+
+α(k+1) ← ‖ x(k+1) ‖pp/‖x(k+1) ‖pq ; 
+
+> 7
+
+if |∆k| < ε or ‖x(k+1) − x(k)‖2/‖x(k)‖2 < ε then break ; 
+
+> 8
+
+end  
+
+> 9
+
+return x(k+1) and α(k+1) 
+
+The y-subproblem is separable and corresponds to the proximal subproblem of the ℓpp
+
+penalty, given by 
+
+y(l+1) = arg min  
+
+> y
+
+‖y‖pp + ρ
+
+2
+
+∥∥∥∥y −
+
+(
+
+x(l+1)  
+
+> in
+
++ u(l)
+
+ρ
+
+)∥ ∥∥∥
+
+> 22
+
+.
+
+For p = 1 , (7.1) reduces to the standard soft-thresholding operator. For 0 < p < 1, the coordinate update is evaluated by the Generalized Soft-Thresholding (GST) formula T ρp (·)
+
+[40]. Denoting t = x(l+1)  
+
+> in ,i
+
++ u(l) 
+
+> i
+
+/ρ , The operator T ρp is defined by T ρp (t) = 0 for |t| ≤ τ and 
+
+T ρp (t) = sign( t)h−1(|t|) for |t| > τ , where h(z) = pz p−1/ρ + z, and the threshold τ is analytically determined by τ = βp +pβ p−1 
+
+> p
+
+/ρ with βp = [2(1 −p)/ρ ]1/(2 −p). In the numerical implementation, the positive branch of h−1 is evaluated by safeguarded Newton iteration, and a continuation strategy on ρ is used to improve the stability of the inner ADMM iteration. The dual variable is updated by u(l+1) = u(l) + ρ(x(l+1) in − y(l+1) ). After the k-th linearized subproblem update is computed, we evaluate f (k)1 = ‖x(k+1) ‖pp, f (k)2 = ‖x(k+1) ‖pq , and ∆k =
+
+α(k)f (k)2 − f (k)1 . The outer scheme analyzed below is 
+
+
+
+x(k+1) ∈ arg min 
+
+> x∈Rn
+
+{
+
+h(x) − 〈 c(k), x〉 + β
+
+2 ‖x − x(k)‖22
+
+}
+
+,
+
+∆k := α(k)‖x(k+1) ‖pq − ‖ x(k+1) ‖pp,α(k+1) := ‖x(k+1) ‖pp
+
+‖x(k+1) ‖pq
+
+= α(k) − ∆k
+
+‖x(k+1) ‖pq
+
+.
+
+(68) The Dinkelbach linearization proximal algorithm (DLPA) is summarized in Algorithm 1. 
+
+7.2. Convergence analysis 
+
+In this subsection, we establish a convergence framework for the standard prox-linear Dinkel-bach scheme underlying Algorithm 1. The main difficulty is that the present model combines two nonconvex components: the numerator ‖x‖pp is nonconvex when 0 < p < 1, and the term 28 −α‖x‖pq must be linearized at every outer iteration. Therefore, unlike the ℓ1/ℓ 2 analysis in [24], one cannot directly reuse a convex-proximal-gradient argument. Let us begin by introducing the following two definitions. 
+
+Definition 7.2 (Regular and limiting subdifferentials) . Let f : Rn → (−∞ , +∞] be a proper closed function. 
+
+• The regular (Fréchet) subdifferential of f at x is 
+
+ˆ∂f (x) := 
+
+{
+
+v ∈ Rn
+
+∣∣∣ lim inf   
+
+> y→x,y̸=x
+
+f (y) − f (x) − 〈 v, y − x〉‖y − x‖ ≥ 0
+
+}
+
+.
+
+• The limiting (Mordukhovich) subdifferential of f at x ∈ dom f is 
+
+∂f (x) := 
+
+{
+
+v ∈ Rn
+
+∣∣∣ ∃xk → x, f (xk) → f (x), vk ∈ ˆ∂f (xk), vk → v
+
+}
+
+.
+
+Let s(x) := ‖x‖pq . We work under the following conditions throughout the convergence analysis. 
+
+Assumption 7.1. We make the following assumptions: 
+
+(i) F 6 = ∅, 0 < p ≤ 1, q > 1, b 6 = 0, and A has full row rank. 
+
+(ii) The outer sequence {x(k)} generated by (68) is bounded, that is, there exists a positive ¯ν
+
+such that ‖x(k)‖2 ≤ ¯ν for any k ≥ 0.
+
+(iii) There exist a compact set Ω ⊂ Rn and an open convex set U ⊂ Rn such that Ω ⊂ U ,
+
+x(k) ∈ Ω ∩ F for all k, and ∇s is Ls-Lipschitz continuous on U, namely ‖∇ s(x) −∇s(y)‖2 ≤ Ls‖x − y‖2 for any x, y ∈ U .
+
+(iv) The proximal parameter satisfies β > αL s and α := n1−p/q .
+
+Remark 7.3. The Lipschitz-gradient assumption in Assumption 7.1(iii) is automatic when 
+
+q ≥ 2, provided the iterates are bounded. Indeed, in that case s(x) = ‖x‖pq is C1 on Rn \ { 0}.Since the feasible affine set is uniformly separated from the origin by Lemma 7.4 below, the compact convex hull of the bounded feasible iterates admits a small open convex neighborhood that is still separated from the origin, and ∇s is Lipschitz there. When 1 < q < 2, this condition is not automatic near zero coordinates; in that case Assumption 7.1(iii) should be read as requiring the open convex neighborhood visited by the analysis to avoid the coordinate singularities of ∇s.
+
+Lemma 7.4. Let PA := AT (AA T )† and v := PAb. Then v 6 = 0, and there exists a constant 
+
+ν > 0 such that ‖x‖pq ≥ ν for any x ∈ F . Moreover, there exists ν < ∞ such that ‖x‖pq ≤ ν
+
+for every x ∈ Ω ∩ F .Proof. Since b 6 = 0 and F 6 = ∅, the minimum-norm feasible point is exactly v = PAb, hence 
+
+v 6 = 0. Moreover, every x ∈ F admits the orthogonal decomposition x = v + z, where 
+
+z ∈ ker( A) and v ⊥ ker( A). It follows that ‖x‖22 = ‖v‖22 + ‖z‖22 ≥ ‖ v‖22. By norm equivalence in Rn, there exists Cq, 2 > 0 such that ‖x‖q ≥ Cq, 2‖x‖2 ≥ Cq, 2‖v‖2. Therefore, ‖x‖pq ≥
+
+(Cq, 2‖v‖2)p =: ν > 0 for every x ∈ F . The upper bound follows from compactness of Ω and continuity of x 7 → ‖ x‖pq .
+
+Lemma 7.5. For every nonzero x ∈ Rn, 1 ≤ ∥x∥pp 
+
+> ∥x∥pq
+
+≤ n1−p/q . Consequently, for every outer iterate, 1 ≤ α(k) ≤ α := n1−p/q .
+
+29 Proof. Since p ≤ q, the norm inequalities imply ‖x‖q ≤ ‖ x‖p ≤ n1/p −1/q ‖x‖q. Raising both sides to the power p gives ‖x‖pq ≤ ‖ x‖pp ≤ n1−p/q ‖x‖pq , which is equivalent to the stated bound. 
+
+Lemma 7.6. Let g(α) be defined by (64) . Then on every interval where g is finite, it is strictly increasing and convex. Proof. Fix α1 < α 2. For every x ∈ F , we have α2‖x‖pq −‖ x‖pp = α1‖x‖pq −‖ x‖pp +( α2 −α1)‖x‖pq .Using Lemma 7.4, α2‖x‖pq − ‖ x‖pp ≥ α1‖x‖pq − ‖ x‖pp + ( α2 − α1)ν. Taking the supremum over F
+
+yields g(α2) ≥ g(α1)+( α2 −α1)ν > g (α1), which proves strict monotonicity. For convexity, note that for each fixed x ∈ F , the mapping α 7 → α‖x‖pq − ‖ x‖pp is affine. Since g is the supremum of affine functions, it is convex. 
+
+Lemma 7.7. Define Φα(x) := ‖x‖pp − α‖x‖pq + I(Ax − b), and for each k define the full linearized model ˜Φk(x) := h(x) − α(k)
+
+(
+
+‖x(k)‖pq + 〈∇ s(x(k)), x − x(k)〉
+
+)
+
++ β 
+
+> 2
+
+‖x − x(k)‖22. Then ˜Φk
+
+and (66) have the same minimizers. Moreover, for every x ∈ Ω ∩ F , one has 
+
+˜Φk(x) ≥ Φα(k) (x) + β − α(k)Ls
+
+2 ‖x − x(k)‖22. (69) 
+
+Proof. The first claim is immediate, because (66) differs from ˜Φk only by a constant independent of x.To prove the majorization inequality (69), we directly evaluate the difference ˜Φk(x) −
+
+Φα(k) (x). By substituting the definition of Φα(k) (x) = h(x) − α(k)s(x) and the definition of 
+
+˜Φk(x) into ˜Φk(x) − Φα(k) (x), the common term h(x) cancels out, yielding 
+
+˜Φk(x) − Φα(k) (x) = α(k)
+
+[
+
+s(x) −
+
+(
+
+‖x(k)‖pq + 〈∇ s(x(k)), x − x(k)〉
+
+)] 
+
++ β
+
+2 ‖x − x(k)‖22. (70) Because both x and x(k) belong to Ω ⊂ U and U is convex, the segment joining them is contained in U. Since ∇s is Ls-Lipschitz continuous on U, the descent lemma gives s(x) ≥‖x(k)‖pq + 〈∇ s(x(k)), x − x(k)〉 − Ls 
+
+> 2
+
+‖x − x(k)‖22. Rearranging this inequality, we have 
+
+s(x) −
+
+(
+
+‖x(k)‖pq + 〈∇ s(x(k)), x − x(k)〉
+
+)
+
+≥ − Ls
+
+2 ‖x − x(k)‖22. (71) Since α(k) > 0, we can substitute the lower bound (71) into the bracketed term in (70) to obtain 
+
+˜Φk(x) − Φα(k) (x) ≥ α(k)
+
+(
+
+−Ls
+
+2 ‖x − x(k)‖22
+
+)
+
++ β
+
+2 ‖x − x(k)‖22 = β − α(k)Ls
+
+2 ‖x − x(k)‖22.
+
+Moving Φα(k) (x) to the right-hand side of the inequality produces ˜Φk(x) ≥ Φα(k) (x)+ β−α(k)Ls 
+
+> 2
+
+‖x−
+
+x(k)‖22. This completes the proof. 
+
+Theorem 7.8. Let {(x(k), α (k))} be generated by (68) . Suppose that Assumption 7.1 holds. Then, for every k ≥ 0,
+
+∆k ≥ β − α(k)Ls
+
+2 ‖x(k+1) − x(k)‖22 ≥ β − αL s
+
+2 ‖x(k+1) − x(k)‖22 ≥ 0. (72) 
+
+Consequently, 
+
+α(k) − α(k+1) = ∆k
+
+‖x(k+1) ‖pq
+
+≥ β − αL s
+
+2ν ‖x(k+1) − x(k)‖22. (73) 
+
+Hence {α(k)} is monotonically decreasing and convergent, and ‖x(k+1) − x(k)‖2 → 0.
+
+30 Proof. Since x(k+1) minimizes (66), equivalently it minimizes ˜Φk. Because α(k) = ‖x(k)‖pp/‖x(k)‖pq ,we have ˜Φk(x(k)) = Φ α(k) (x(k)) = ‖x(k)‖pp − α(k)‖x(k)‖pq = 0 . Therefore, ˜Φk(x(k+1) ) ≤ ˜Φk(x(k)) = 0. Using Lemma 7.7 at x = x(k+1) , we obtain 
+
+0 ≥ ˜Φk(x(k+1) ) ≥ Φα(k) (x(k+1) ) + β − α(k)Ls
+
+2 ‖x(k+1) − x(k)‖22.
+
+Expanding Φα(k) (x(k+1) ) = ‖x(k+1) ‖pp − α(k)‖x(k+1) ‖pq and rearranging the terms by moving the objective evaluation to the left-hand side yields ∆k = α(k)‖x(k+1) ‖pq −‖ x(k+1) ‖pp ≥ β−α(k)Ls 
+
+> 2
+
+‖x(k+1) −
+
+x(k)‖22. Using α(k) ≤ α from Lemma 7.5 and β > αL s, this proves (72). Moreover, Lemma 7.4 gives ‖x(k+1) ‖pq ≤ ν, and therefore α(k) − α(k+1) = ∆k 
+
+> ∥x(k+1) ∥pq
+
+≥ ∆k 
+
+> ν
+
+≥ β−αL s 
+
+> 2ν
+
+‖x(k+1) − x(k)‖22, which is (73). Lemma 7.5 shows that {α(k)} is bounded below by 1, while (73) shows it is decreasing. Hence {α(k)} converges. Summing the sufficient decrease inequality (73) from k = 0 to ∞ yields ∑∞ 
+
+> k=0
+
+‖x(k+1) − x(k)‖22 ≤ 2νβ−αL s (α(0) − α(∞)) < ∞. Hence concluding that ‖x(k+1) − x(k)‖2 →
+
+0.
+
+Theorem 7.9. Let {(x(k), α (k))} be generated by (68) . Suppose that Assumption 7.1 holds. Then every cluster point ¯x of {x(k)} satisfies 
+
+0 ∈ ∂h ( ¯ x) − ¯α∇s( ¯ x), ¯α := ‖ ¯x‖pp
+
+‖ ¯x‖pq
+
+. (74) 
+
+Equivalently, 
+
+0 ∈ ‖ ¯x‖pq ∂h ( ¯ x) − ‖ ¯x‖pp ∇s( ¯ x). (75) 
+
+Hence every cluster point is a limiting critical point of the original constrained ratio model (63) .Proof. The optimality condition of (66) gives 0 ∈ ∂h (x(k+1) ) − c(k) + β(x(k+1) − x(k)). Since 
+
+c(k) = α(k)∇s(x(k)), there exists ξ(k+1) ∈ ∂h (x(k+1) ) such that ξ(k+1) −α(k)∇s(x(k))+ β(x(k+1) −
+
+x(k)) = 0. Define r(k+1) := ξ(k+1) − α(k)∇s(x(k+1) ) ∈ ∂h (x(k+1) ) − α(k)∇s(x(k+1) ). Then 
+
+‖r(k+1) ‖2 ≤ β‖x(k+1) − x(k)‖2 + α(k)‖∇ s(x(k+1) ) − ∇ s(x(k))‖2.
+
+By Lemma 7.5 and the Lipschitz continuity of ∇s, one has ‖r(k+1) ‖2 ≤ (β+αL s)‖x(k+1) −x(k)‖2.
+
+It follows from r(k+1) ∈ ∂h (x(k+1) )−α(k)∇s(x(k+1) ) that dist (0, ∂h (x(k+1) ) − α(k)∇s(x(k+1) )) ≤‖r(k+1) ‖. Theorem 7.8 implies ‖x(k+1) − x(k)‖2 → 0, it follows that 
+
+dist (0, ∂h (x(k+1) ) − α(k)∇s(x(k+1) )) → 0.
+
+Let ¯x be a cluster point of {x(k)}. Passing to a subsequence if necessary, we may assume 
+
+x(kj ) → ¯x. Since ‖x(k+1) − x(k)‖2 → 0, we also have x(kj +1) → ¯x. Because {α(k)} converges by Theorem 7.8, there exists ¯α such that α(kj ) → ¯α. Moreover, from the optimality condition, one has ξ(kj +1) = α(kj )∇s(x(kj )) − β(x(kj +1) − x(kj )) → ¯α∇s( ¯ x). Since ξ(kj +1) ∈ ∂h (x(kj +1) ),
+
+x(kj +1) → ¯x, and h(x(kj +1) ) = ‖x(kj +1) ‖pp → ‖ ¯x‖pp = h( ¯ x), the closedness of the limiting-subdifferential graph yields ¯α∇s( ¯ x) ∈ ∂h ( ¯ x), that is, 0 ∈ ∂h ( ¯ x) − ¯α∇s( ¯ x). Lemma 7.4 ensures that ‖x‖pq is uniformly bounded away from zero on F. Consequently, the ratio map is continuous, which implies that 
+
+¯α = lim  
+
+> j→∞
+
+α(kj +1) = lim 
+
+> j→∞
+
+‖x(kj +1) ‖pp
+
+‖x(kj +1) ‖pq
+
+= ‖ ¯x‖pp
+
+‖ ¯x‖pq
+
+.
+
+This proves (74). Multiplying (74) by ‖ ¯x‖pq > 0 gives (75). 31 8. Numerical Experiments 
+
+This section evaluates the proposed PLDM algorithm for solving the Qp,q -minimization problem in sparse signal recovery. All experiments were performed in MATLAB R2025b on a desktop computer equipped with an Intel Core i9-12900H processor at 2.50 GHz and 16 GB RAM. We consider the noiseless compressed sensing model b = Ax ⋆, where A ∈ Rm×n,
+
+m = 64 , and n = 1024 . The sparsity level is varied over k ∈ { 2, 4, . . . , 30 }. For each trial, the support of the ground-truth signal x⋆ is sampled uniformly at random, subject to the separation constraint described below when the oversampled DCT matrix is used. To test recovery under high dynamic range, the nonzero entries are generated with random signs and log-uniform magnitudes, using the interval [1 , 10 3] for the correlated Gaussian matrices and [1 , 10 5] for the oversampled DCT matrices. Two sensing matrices are used. The first is a correlated Gaussian matrix, where the rows of A are independently sampled from N (0, Σr) with Σr = (1 − r)I + r11 ⊤, and r ∈ { 0.3, 0.9}
+
+controls the correlation level. The second is the oversampled DCT matrix Aij = 1√m cos( 2πw ijF )
+
+for every i = 1 , . . . , m and j = 1 , . . . , n , where wi
+
+> i.i.d.
+
+∼ U ([0 , 1]) . Larger F gives a more coherent sensing matrix. Following the common protocol for highly coherent dictionaries [7], the support of x⋆ in the DCT experiments is sampled with minimum separation 2F . We report results for 
+
+F = 10 and F = 15 .A run is declared successful if ∥ ˆx−x⋆∥2 
+
+> ∥x⋆∥2
+
+< 10 −3. For unsuccessful trials, we further distinguish between two failure modes. If the objective value at the returned point ˆx is smaller than that at x⋆, the trial is counted as a model failure; in this case, the planted sparse vector is not favored by the model for that instance. Otherwise, the trial is counted as an algorithm failure ; this indicates that the model may still be appropriate, but the numerical solver failed to reach a successful feasible point. We also report the reconstruction signal-to-noise ratio 
+
+SNR = 20 log 10 
+
+( ∥x⋆∥2 
+
+> ∥ˆx−x⋆∥2
+
+)
+
+. Unless otherwise stated, the constrained ℓ1 solution computed by Gurobi is used as the initialization. If this initialization fails, the minimum-norm feasible point 
+
+v = AT (AA T )†b is used as a fallback. 
+
+8.1. Parameter Sensitivity of Qp,q 
+
+We first study how the proposed model depends on the parameter pair (p, q ). The parameter grid is given by p ∈ { 0.1, 0.3, 0.5, 0.7, 0.9, 1.0} and q ∈ { 1.2, 1.4, . . . , 3.0}. For each triple 
+
+(p, q, k ), we conduct 50 Monte Carlo trials and average the results over trials and sparsity levels when drawing the heat maps. Figure 3 shows a clear and stable parameter pattern. Very small p values, especially p = 0 .1,lead to relatively low success rates because the optimization landscape becomes difficult, as indicated by the high algorithm-failure rates. On the other hand, p close to 1 weakens the sparsity-promoting effect of the numerator and produces visible model failures, particularly at 
+
+p = 1 . The most reliable region is the middle range p = 0 .5–0.7, where the success rate is the highest and both failure components are comparatively small. The choice of q is less fragile than the choice of p, but values in the range q ≈ 1.6–2.4 usually provide the best trade-off. This behavior remains consistent when the Gaussian correlation increases from r = 0 .3 to r = 0 .9,suggesting that the favorable parameter region is not an artifact of a single sensing geometry. Figures 4 and 5 provide a more detailed view of the success rate with respect to k. For small sparsity levels, almost all parameter choices recover the signal successfully. As k increases, the curves separate. The choices p = 0 .5 and p = 0 .7 preserve high success rates over a wider sparsity range than both the more aggressive choice p = 0 .1 and the nearly convex choice 
+
+p = 1 . Among them, p = 0 .7 is often the most robust when q is moderate or large, while 32 Success Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+q
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0.35 
+
+0.4 
+
+0.45 
+
+0.5 
+
+0.55 
+
+0.6 
+
+0.65 
+
+0.7 
+
+0.75 
+
+Model Failure Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0
+
+0.05 
+
+0.1 
+
+0.15 
+
+0.2 
+
+0.25 
+
+0.3 
+
+0.35 
+
+0.4 
+
+Algorithm Failure Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0.15 
+
+0.2 
+
+0.25 
+
+0.3 
+
+0.35 
+
+0.4 
+
+0.45 
+
+0.5 
+
+0.55 
+
+0.6 
+
+0.65 (a) Gaussian matrix: r = 0 .3.Success Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+q
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0.35 
+
+0.4 
+
+0.45 
+
+0.5 
+
+0.55 
+
+0.6 
+
+0.65 
+
+0.7 
+
+0.75 
+
+0.8 Model Failure Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0
+
+0.05 
+
+0.1 
+
+0.15 
+
+0.2 
+
+0.25 
+
+0.3 
+
+0.35 
+
+0.4 
+
+0.45 
+
+Algorithm Failure Rate 
+
+p
+
+0.1 0.3 0.5 0.7 0.9 1
+
+1.2 
+
+1.4 
+
+1.6 
+
+1.8 
+
+2
+
+2.2 
+
+2.4 
+
+2.6 
+
+2.8 
+
+3
+
+0.1 
+
+0.2 
+
+0.3 
+
+0.4 
+
+0.5 
+
+0.6 
+
+(b) Gaussian matrix: r = 0 .9.
+
+Figure 3: Parameter sensitivity of Qp,q under correlated Gaussian sensing matrices. Each subfigure reports the average success rate, model-failure rate, and algorithm-failure rate over the tested sparsity levels. Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 1:2
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 1:6
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 2
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 3
+
+p = 0:1
+
+p = 0:3
+
+p = 0:5
+
+p = 0:7
+
+p = 0:9
+
+p = 1
+
+Figure 4: Success rate curves of Qp,q under the Gaussian matrix with r = 0 .3. Each panel fixes q and compares different p values as the sparsity level increases. Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 1:2
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 1:6
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 2
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+> Success Rate
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+q = 3
+
+p = 0:1
+
+p = 0:3
+
+p = 0:5
+
+p = 0:7
+
+p = 0:9
+
+p = 1
+
+Figure 5: Success rate curves of Qp,q under the Gaussian matrix with r = 0 .9.
+
+33 p = 0 .5 remains competitive for smaller q. The shaded confidence bands also show that the transition region becomes wider as the recovery problem becomes harder, but the ranking of the parameter choices is largely stable for both r = 0 .3 and r = 0 .9.p                                                                                      
+
+> 00.2 0.4 0.6 0.8 1
+> Mean SNR (dB)
+> 45
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75
+> 80
+> 85
+> 90
+> 95
+> q=1:2
+> q=1:4
+> q=1:6
+> q=1:8
+> q=2
+> q=2:2
+> q=2:4
+> q=2:6
+> q=2:8
+> q=3
+> q
+> 11.5 22.5 3
+> 45
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75
+> 80
+> 85
+> 90
+> 95
+> p=0:1
+> p=0:3
+> p=0:5
+> p=0:7
+> p=0:9
+> p=1
+> (a) Gaussian matrix: r= 0 .3.p
+> 00.2 0.4 0.6 0.8 1
+> Mean SNR (dB)
+> 45
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75
+> 80
+> 85
+> 90
+> 95
+> q=1:2
+> q=1:4
+> q=1:6
+> q=1:8
+> q=2
+> q=2:2
+> q=2:4
+> q=2:6
+> q=2:8
+> q=3
+> q
+> 11.5 22.5 3
+> 45
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75
+> 80
+> 85
+> 90
+> 95
+> p=0:1
+> p=0:3
+> p=0:5
+> p=0:7
+> p=0:9
+> p=1
+> (b) Gaussian matrix: r= 0 .9.
+
+Figure 6: Mean reconstruction SNR of Qp,q under correlated Gaussian sensing matrices. 
+
+The SNR results in Figure 6 are consistent with the success rate analysis. Averaged over the tested sparsity levels, the best reconstruction fidelity is attained near p = 0 .7, with p = 0 .5
+
+giving the second-best and very stable performance. In contrast, p = 1 produces substantially lower SNR, while p = 0 .1 is also inferior despite its stronger sparsity bias. The dependence on q is smoother: for p = 0 .7, the SNR stays high over a broad interval of q, whereas the performance for p = 0 .9 tends to decrease as q grows. Overall, the empirical evidence supports the use of moderately nonconvex numerator exponents, especially p = 0 .5 or p = 0 .7, together with a denominator exponent around q = 1 .5–2.
+
+8.2. Comparison with Other Ratio-Type Models 
+
+We next compare the proposed model with representative ratio-type sparse recovery mod-els. The tested methods are ℓ0.5/ℓ 1.5-DLPA, ℓ0.7/ℓ 1.5-DLPA, ℓ1/ℓ 1.5-CCP, ℓ1/ℓ ∞-ADMM, ℓ1/ℓ ∞-FISTA, ℓ1/ℓ 2-A2, and ℓ0.5/ℓ 1-FISTA. Here DLPA denotes the proposed Dinkelbach-type lin-earized proximal ADMM solver for Qp,q . For each method and each sparsity level, 100 Monte Carlo trials are performed. We use the same success and failure classification as above. Figure 7 reports the results for the oversampled DCT matrices, which are the most challeng-ing tests because of strong column coherence. Both DLPA variants perform competitively, and 
+
+ℓ0.7/ℓ 1.5-DLPA gives the best overall experiments. For F = 10 , it retains a higher success rate than the baselines in the intermediate sparsity range, where most competing methods already deteriorate rapidly. This advantage becomes even more visible when the coherence is increased to F = 15 : ℓ0.7/ℓ 1.5-DLPA maintains a high success probability for larger k, while most other methods enter the failure regime earlier. The middle panels show that model failures are nearly absent for most methods, except for a small contribution from ℓ1/ℓ 2-A2 at large sparsity levels. Thus, the performance loss in the DCT experiments is mainly caused by algorithmic difficulty under high coherence rather than by a systematic mismatch between the model and the planted sparse signal. 34 Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Success Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Modle Failure Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Algorithm Failure Rate 
+
+`0:5=`1:5-PLDM
+
+`0:7=`1:5-PLDM
+
+`1=`1:5-CCP
+
+`1=`1 -ADMM
+
+`1=`1 -FISTA
+
+`1=`2-A2
+
+`0:5=`1-FISTA(a) Oversampled DCT matrix: F = 10 .Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Success Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Modle Failure Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Algorithm Failure Rate 
+
+`0:5=`1:5-PLDM
+
+`0:7=`1:5-PLDM
+
+`1=`1:5-CCP
+
+`1=`1 -ADMM
+
+`1=`1 -FISTA
+
+`1=`2-A2
+
+`0:5=`1-FISTA
+
+(b) Oversampled DCT matrix: F = 15 .
+
+Figure 7: Comparison of success rate, model-failure rate, and algorithm-failure rate on oversampled DCT matrices. Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Success Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Modle Failure Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Algorithm Failure Rate 
+
+`0:5=`1:5-DLPA
+
+`0:7=`1:5-DLPA
+
+`1=`1:5-CCP
+
+`1=`1 -ADMM
+
+`1=`1 -FISTA
+
+`1=`2-A2
+
+`0:5=`1-FISTA
+
+(a) Correlated Gaussian matrix: r = 0 .3.Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Success Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Modle Failure Rate 
+
+Sparsity 
+
+0 5 10 15 20 25 30 
+
+0
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1
+
+Algorithm Failure Rate 
+
+`0:5=`1:5-DLPA
+
+`0:7=`1:5-DLPA
+
+`1=`1:5-CCP
+
+`1=`1 -ADMM
+
+`1=`1 -FISTA
+
+`1=`2-A2
+
+`0:5=`1-FISTA
+
+(b) Correlated Gaussian matrix: r = 0 .9.
+
+Figure 8: Comparison of success rate, model-failure rate, and algorithm-failure rate on correlated Gaussian matrices. 
+
+35 The Gaussian results in Figure 8 lead to the same conclusion. When r = 0 .3, ℓ0.7/ℓ 1.5-DLPA has the slowest decay of success rate as k grows, followed by ℓ0.5/ℓ 1.5-DLPA. Several existing ratio-type methods perform well for very sparse signals but lose accuracy earlier in the transition region. When the correlation is increased to r = 0 .9, the advantage of the proposed model becomes more pronounced: ℓ0.7/ℓ 1.5-DLPA keeps a noticeably higher success rate over moderate sparsity levels, whereas the baseline methods transition more sharply to failure. As in the DCT case, the dominant failure source is algorithmic failure. The only substantial model-failure component is again associated with the ℓ1/ℓ 2-A2 baseline, indicating that the proposed 
+
+ℓpp/ℓ pq formulation with p < 1 is less prone to selecting a lower-objective but incorrect solution in these experiments. Taken together, the experiments indicate that the proposed PLDM algorithm for solving the Qp,q -minimization problem is particularly effective in a moderately nonconvex regime. The parameter choices (p, q ) = (0 .5, 1.5) and (0 .7, 1.5) are both robust, with (0 .7, 1.5) delivering the strongest overall performance in the cross-model comparisons. The results also confirm the benefit of the generalized ratio structure under high dynamic range and coherent sensing matrices, where classical ratio models such as ℓ1/ℓ 2, ℓ1/ℓ ∞, and ℓp/ℓ 1 tend to suffer earlier phase transitions or larger failure rates. 
+
+9. Conclusion and future work 
+
+This paper studied the generalized norm-ratio minimization model ℓpp/ℓ pq for compressed sensing. We established a local optimality criterion and a uniform exact recovery condition based on a null-space norm-ratio lower bound, and further derived high-probability sampling guarantees for the ℓ1/ℓ q case under isotropic sub-Gaussian measurements. For stable recovery, we sharpened the RIP-based analysis of (1b): in the exact k-sparse case, the proposed bound gives a weaker RIP requirement and a smaller reconstruction error estimate, and further, in the compressible case it removes the explicit ambient-dimension dependence in earlier RIP–ROP estimates and also yields an RIP-only guarantee. These results provide theoretical support for 
+
+ℓpp/ℓ pq minimization as both a sparsity-promoting and stable recovery model. We also proposed a prox-linear Dinkelbach scheme for the constrained ratio problem and proved its convergence. Numerical experiments on Gaussian and oversampled DCT sensing ma-trices show that suitable choices of (p, q ) improve empirical recovery performance, especially for high-dynamic-range sparse signals and coherent measurements. Future work includes extending the sampling-complexity theory to the nonconvex range 0 < p < 1, developing convergence-rate results for the Dinkelbach updates, and automatic selection of (p, q ).
+
+References 
+
+[1] T. Zhu, J. Tu, L. Cai, J. Wang, Stable recovery guarantees for ℓp/ℓ q-minimization based on restricted isometry and orthogonality properties, Signal Processing 238 (2026) 110167. [2] D. L. Donoho, Compressed sensing, IEEE Transactions on Information Theory 52 (4) (2006) 1289–1306. [3] E. J. Candès, M. B. Wakin, An introduction to compressive sampling, IEEE Signal Pro-cessing Magazine 25 (2) (2008) 21–30. [4] B. K. Natarajan, Sparse approximate solutions to linear systems, SIAM Journal on Com-puting 24 (2) (1995) 227–234. 36 [5] S. S. Chen, D. L. Donoho, M. A. Saunders, Atomic decomposition by basis pursuit, SIAM Review 43 (1) (2001) 129–159. [6] E. J. Candes, J. K. Romberg, T. Tao, Stable signal recovery from incomplete and inaccurate measurements, Communications on Pure and Applied Mathematics 59 (8) (2006) 1207– 1223. [7] A. Fannjiang, W. Liao, Coherence pattern–guided compressive sensing with unresolved grids, SIAM Journal on Imaging Sciences 5 (1) (2012) 179–202. [8] R. Zhang, S. Li, Optimal RIP bounds for sparse signals recovery via ℓp minimization, Applied and Computational Harmonic Analysis 47 (3) (2019) 566–584. [9] J. Zeng, S. Lin, Y. Wang, Z. Xu, l1/2 regularization: Convergence of iterative half thresh-olding algorithm, IEEE Transactions on Signal Processing 62 (9) (2014) 2317–2329. [10] S. Zhang, J. Xin, Minimization of transformed ℓ1 penalty: theory, difference of convex func-tion algorithm, and robust application in compressed sensing, Mathematical Programming 169 (1) (2018) 307–336. [11] C. Zhang, Nearly unbiased variable selection under minimax concave penalty, The Annals of Statistics 38 (2) (2010) 894–942. [12] T. Zhang, Analysis of multi-stage convex relaxation for sparse regularization, Journal of Machine Learning Research 11 (3) (2010). [13] J. Fan, R. Li, Variable selection via nonconcave penalized likelihood and its oracle prop-erties, Journal of the American Statistical Association 96 (456) (2001) 1348–1360. [14] M.-J. Lai, Y. Xu, W. Yin, Improved iteratively reweighted least squares for unconstrained smoothed \ell_q minimization, SIAM Journal on Numerical Analysis 51 (2) (2013) 927– 957. [15] P. Yin, E. Esser, J. Xin, Ratio and difference of ℓ1 and ℓ2 norms and sparse representation with coherent dictionaries., Commun. Inf. Syst. 14 (2) (2014) 87–109. [16] Y. Lou, M. Yan, Fast ℓ1 − ℓ2 minimization via a proximal operator, Journal of Scientific Computing 74 (2) (2018) 767–785. [17] L. Li, L. Ding, ℓ21 − ηℓ 22 sparsity regularization for nonlinear ill-posed problems, Journal of Computational and Applied Mathematics (2026) 117715. [18] H. Ge, P. Li, The dantzig selector: recovery of signal via ℓ1 − αℓ 2 minimization, Inverse Problems 38 (1) (2021) 015006. [19] L. Huo, W. Chen, H. Ge, M. K. Ng, ℓ1 − βℓ q minimization for signal and image recovery, SIAM Journal on Imaging Sciences 16 (4) (2023) 1886–1928. [20] Z. Zhou, RIP analysis for the weighted ℓr − ℓ1 minimization method, Signal Processing 202 (2023) 108754. [21] F. Gu, A. Wan, Nonconvex ℓp − αℓ q minimization method and p-RIP condition for sta-ble recovery of approximately k-sparse signals, Computational and Applied Mathematics 43 (1) (2024) 29. 37 [22] K. Zhan, A. Wan, Sparse representation for ℓp − αℓ q minimization and uniform condition for the recovery of approximately k-sparse signals with prior support information, Signal Processing 235 (2025) 110019. [23] Y. Rahimi, C. Wang, H. Dong, Y. Lou, A scale-invariant approach for sparse signal recov-ery, SIAM Journal on Scientific Computing 41 (6) (2019) A3649–A3672. [24] C. Wang, M. Yan, Y. Rahimi, Y. Lou, Accelerated schemes for the ℓ1/ℓ 2 minimization, IEEE Transactions on Signal Processing 68 (2020) 2660–2669. [25] J. Wang, Q. Ma, The variant of the iterative shrinkage-thresholding algorithm for mini-mization of the ℓ1 over ℓ∞ norms, Signal Processing 211 (2023) 109104. [26] J. Jia, A. Prater-Bennette, L. Shen, E. E. Tripp, Sparse recovery: The square of ℓ1/ℓ 2
+
+norms, Journal of Scientific Computing 102 (1) (2025) 24. [27] Z. Zhou, J. Yu, On q-ratio cmsv for sparse recovery, Signal Processing 165 (2019) 128–132. [28] Z. Zhou, J. Yu, Minimization of the q-ratio sparsity with 1 < q ≤ ∞ for signal recovery, Signal Processing 189 (2021) 108250. [29] Z. Zhou, Recovery analysis for the ℓp/ℓ 1 minimization problem, Journal of Inverse and Ill-posed Problems 33 (1) (2025) 61–80. [30] A. Cherni, E. Chouzenoux, L. Duval, J.-C. Pesquet, SPOQ ℓp-over-ℓq regularization for sparse signal recovery applied to mass spectrometry, IEEE Transactions on Signal Pro-cessing 68 (2020) 6070–6084. [31] A. Repetti, M. Q. Pham, L. Duval, E. Chouzenoux, J.-C. Pesquet, Euclid in a taxicab: Sparse blind deconvolution with smoothed ℓ1/ℓ 2 regularization, IEEE Signal Processing Letters 22 (5) (2014) 539–543. [32] C. Wang, M. Tao, J. G. Nagy, Y. Lou, Limited-angle CT reconstruction via the ℓ1/ℓ 2
+
+minimization, SIAM Journal on Imaging Sciences 14 (2) (2021) 749–777. [33] L. Zeng, P. Yu, T. K. Pong, Analysis and algorithms for some compressed sensing models based on ℓ1/ℓ 2 minimization, SIAM Journal on Optimization 31 (2) (2021) 1576–1603. [34] M. Tao, Minimization of ℓ1/ℓ 2 for sparse signal recovery with convergence guarantee, SIAM Journal on Scientific Computing 44 (2) (2022) A770–A797. [35] Y. Xu, A. Narayan, H. Tran, C. G. Webster, Analysis of the ratio of ℓ1 and ℓ2 norms in compressed sensing, Applied and Computational Harmonic Analysis 55 (2021) 486–511. [36] K. Zhan, A. Wan, lp/l q minimization method and stable recovery of approximately block 
+
+k-sparse signals, IEEE Transactions on Signal Processing 73 (2025) 2399–2416. [37] S. Foucart, H. Rauhut, A Mathematical Introduction to Compressive Sensing, Springer New York, 2013. [38] T. T. Cai, A. Zhang, Compressed sensing and affine rank minimization under restricted isometry, IEEE Transactions on Signal Processing 61 (13) (2013) 3279–3290. 38 [39] T. T. Cai, L. Wang, G. Xu, New bounds for restricted isometry constants, IEEE Transac-tions on Information Theory 56 (9) (2010) 4388–4394. [40] W. Zuo, D. Meng, L. Zhang, X. Feng, D. Zhang, A generalized iterated shrinkage algorithm for non-convex sparse coding, in: Proceedings of the IEEE International Conference on Computer Vision, 2013, pp. 217–224. 39
