@@ -1,0 +1,725 @@
+Title: Reconstructing 3D Neural Hemodynamics using Sparse Ultrasound Localization Microscopy Data
+
+URL Source: https://arxiv.org/pdf/2605.26752v1
+
+Published Time: Wed, 27 May 2026 01:02:49 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# Reconstructing 3D Neural Hemodynamics using Sparse Ultrasound Localization Microscopy Data 
+
+# Jipeng Yan 1,6, Oscar Bates 2, Jingwen Zhu 3, Qingyuan Tan 3, Biao Huang 3, John Goodwin 4,Andriy S. Kozlov 4, Chris Dunsby 5, Meng-Xing Tang 3,6
+
+Abstract 
+
+Ultrasound Localization Microscopy (ULM) has presented great potential in functional imaging, bene-fiting from its ability to reconstruct deep microvasculature. However, the hemodynamic reconstruction is compromised by sparsity in the ULM data, as a limited number of MB tracks cannot sample the complete speed profile in one vessel. Here, we propose to reconstruct hemodynamics using sparse ULM velocity maps by solving a laminar flow model through stochastic variational inference. In addition to vascular ge-ometry and flow velocity maps, the proposed method generates two new ULM maps—a pressure gradient map and a map describing uncertainty of the estimation. By investigating the effect of sparsity in ULM maps on the quantification and visualization of hemodynamics, we demonstrate the effectiveness of the proposed method in dealing with sparse ULM maps via simulations and 3D rat brain imaging. Accurately reconstructing a broad range of hemodynamic parameters and associate uncertanties using sparse ULM data may help detect subtle and dynamic brain activity. 
+
+Keywords— Ultrasound Localization Microscopy, Hemodynamic Reconstruction, Laminar Flow Model, Variational Infer-ence, Neural Hemodynamics 
+
+# 1 Introduction 
+
+Ultrasound Localization Microscopy (ULM)[1, 2] is a type of Super-Resolution Ultrasound (SRUS) technique, achieved by localizing and tracking microbubbles (MBs)[3, 4] or erythrocytes [5]. The localization approach allows ULM to break the wave diffraction limit and image deep microvasculature by utilizing the high sensitivity of MBs to ultrasound [6, 7], which has been demonstrated to outperform Computer Tomography Coronary Angiography (CTCA) in the heart [8] and shows promise for the assessment of human brain microvasculature pathologies[9, 10]. The tracking can capture hemodynamics in any directions, which is not available by CTCA, Color Doppler, Power Doppler, or SRUS based on shrinking the point spread function (PSF) using temporal coherence [11, 12]. Therefore, ULM has been investigated widely for its feasibility in brain vascular imaging [13–17] and clinical applications [18, 19]. As the number of MBs in the body is many orders of magnitude less than the blood cells, it is not possible for ULM to fully sample the vast vascular space within a realistic acquisition time frame. The limited accumulation of MB signals in a sparse ULM map can lead to biased hemodynamic quantification and visualization [19–21], as the blood flow speed in the cross-section of the blood vessel is generally not constant and the MBs accumulate in a sparse map that does not cover every location in the vessel. Although the increase of MB concentration could alleviate map sparsity, the concentration should not be too high to avoid inference from overlapping MBs and to ensure the accuracy of existing localization techniques [22], whether model-based [23] or learning-based [24–26]. Therefore, ULM data acquisition takes longer than conventional ultrasound imaging to achieve high-saturation vascular maps, and may require repeated acquisitions to reduce inconsistencies in functional ULMs [13], which comes at the cost of losing the fidelity to the true temporal dynamics. Additionally, blood flow at vessel edges is usually slower than that at the center, so MBs are less likely to pass by vessel sides, making reconstructed vessels narrower than the actual vessel. This           
+
+> 1was with Ultrasound Lab for Imaging and Sensing, Department of Bioengineering, Imperial College London, London SW7 2AZ, UK, and is with the State Key Laboratory of Robotics and Systems, Harbin Institute of Technology, Harbin 150001, China.
+> 2Department of Earth Science and Engineering, Imperial College London, London SW7 2AZ, UK.
+> 3Ultrasound Lab for Imaging and Sensing, Department of Bioengineering, Imperial College London, London SW7 2AZ, UK.
+> 4Laboratory of Auditory Neuroscience and Biophysics, Department of Bioengineering, Imperial College London, London SW7 2AZ, UK.
+> 5Light Community, Department of Physics, Imperial College London, London SW7 2AZ, UK.
+> 6Corresponding authors: Meng-Xing Tang (e-mail: mengxing.tang@imperial.ac.uk, Tel.: +44-2075943664), Jipeng Yan (e-mail: jipengyan@hit.edu.cn)
+
+1
+
+> arXiv:2605.26752v1 [eess.IV] 26 May 2026
+
+problem can be more serious when temporal filtering is adopted to remove tissue signals, such as high-pass filtering and Singular Value Decomposition (SVD) [27], where slow-moving MBs can also be removed. Therefore, new methods to improve the geometrical and hemodynamic quantification and visualization are needed when ULM maps are sparse. Existing techniques deal with sparse ULM maps mainly by using large pixel sizes or smoothing after accumulation to improve the apparent vascular saturation in the maps. Both ways compromise image resolution, especially when the pixel size or smoothing kernel is larger than the localization accuracy [28]. The latter can mitigate the above problem, but smoothing is usually done in a manner of convolution with a fixed kernel, such as a Gaussian kernel for ULM count (density) maps or averaging kernel for ULM speed maps. Information that has not been sampled, such as those lost by the temporal filtering, cannot be recovered after smoothing. Some studies [7, 13, 29] utilize vesselness filters [30] on ULM count or speed maps to enhance the image. The vesselness filters output a score, derived from eigenvalues of local Hessian analysis, to describe if the local region contains a vessel. Therefore, the vesselness filters are used for segmenting the vessels but cannot be used for reconstructing hemodynamics. In this study, we demonstrate the feasibility of reconstructing 3D neuronal hemodynamics from sparse ULM speed maps using a flow dynamics model in silico and in vivo . We integrate the laminar flow model into stochastic variational inference to estimate hemodynamic parameters with the MB trajectories that are grouped from sparse ULM speed maps based on Hessian Analysis. We show the method’s effectiveness by analyzing the impact of map sparsity on hemodynamic quantification and visualization, and demonstrating new ULM maps of flow pressure gradient and hemodynamics estimation uncertainty. 
+
+# 2 Results 
+
+The method proposed to reconstruct hemodynamics from a sparse ULM speed map is shown in Figure 1. When laminar flow occurs in the majority of vessels, the laminar flow model is adopted to estimate hemodynamic parameters, including radius, center position, pressure gradient and mean velocity, from a group of MB speed values and their positions on a vessel cross-section. The estimation applies Stochastic Variational Inference (SVI) – the implementation of which can be found in the Methods and Supplementary Method 1 – to obtain Gaussian distributions of the parameters, where the means are taken as the estimated value and the standard deviations can describe the estimation uncertainties [31–33]. A strategy based on multi-scale Hessian analysis is adopted to obtain vessel cross-sections and to group speed values and positions on the ULM speed map for the model-based estimation – the implementation of which can be found in the Methods and Supplementary Method 2. Estimated parameters are used to enhance the saturation of the speed map, generate a new map presenting the pressure gradient and create another new map to describe the uncertainty of estimation. The proposed method is evaluated and compared with baseline methods via simulations and demonstrated in vivo by imaging a rat brain. 
+
+# 2.1 Evaluation with Simulated Data Samples 
+
+The proposed model-based method, which solves the Hagen-Poiseuille equation using SVI, is first evaluated and compared with a baseline method, denoted as ’direct’, under a simulated situation where trajectories have been exactly grouped for a vessel cross-section. Simulated data, containing various numbers of trajectories, are generated by randomly sampling positions from a round vessel cross-section and giving the speed values with the laminar flow model. The localization uncertainty in ULM processing is simulated by adding Gaussian noise to the coordinates.In the direct method, the vessel center and mean speed are estimated using average values of trajectories, the radius is estimated by assuming the trajectory farthest from the center is located at the edge of the vessel. In contrast, the outputs of the model-based method are vessel radius, center and pressure gradient. The Hagen–Poiseuille equation is utilized to allow the comparison of parameters estimated by the two methods. A typical case, where four trajectories are at one side of vessels, is shown in Figure 2 a). Here the direct method estimates an off-center flow profile, and the model-based estimation with the flow dynamics model can better handle this situation. The distribution of model-based estimation error versus the direct estimation error is presented in Figure 2 b) with a significant difference found by the Wilcoxon signed rank test, and the proportion of model-based estimation errors below the direct estimation errors over all the estimation is at least 0.75 and can reach 0.92. T The model-based method can outperform the direct method under a wide range of localization uncertainties, as shown in Supplementary Figure S.1 and S.2 a). Considering that the model-based method might not always perform as expected, the estimation uncertainty obtained by the model-based method is found to be in a positive exponential relationship with the estimation error, as shown in Figure 2 c) and Supplementary Figure S.2 b), indicating the estimation uncertainty can be used to filter out incorrect estimates or illustrate confidence in the estimation. Note that the optimized cost – Supplementary Method Eq. (S.9) – in the model-based method cannot be used as such an indicator, because it is difficult to establish a positive correlation between optimization cost and estimation error (Supplementary Figure S.3). The model-based method consistently obtains lower medians of estimation errors than 2Figure 1: Diagram of using the proposed method, in the dashed box, after a ULM processing pipeline. A ULM speed map is the input of the proposed method. First, the multi-scale Hessian analysis groups MB trajectories on each vessel cross section, then a laminar flow model fits the speeds and coordinates of MB trajectories on a vessel cross section using SVI. This outputs estimated parameters of the laminar flow model as well as the uncertainty of the estimation. By accumulating the estimated speed profile, pressure gradient, or estimation uncertainty on each cross section onto a map the same size as the input ULM speed map, the proposed method can generate three maps: (1) an enhanced speed map, (2) a pressure gradient map, and (3) an uncertainty map. The feasibility is demonstrated by imaging a rat brain with a 1024-elements 8-MHz matrix array probe. 3the direct method when the number of trajectories is greater than 3, as shown in Supplementary Figure S.4. The the model-based method requires the determination of four values (radius, two coordinates of the center position, and pressure gradient), so the model-based method is less effective than the direct method when there are only 3 trajectories, as this leads to an ill-posed problem. Therefore, the model-based estimation will not be executed for the following image enhancement when the number of trajectories grouped with Hessian analysis is less than 4. 
+
+Figure 2: Evaluation on parameter estimation with simulated data samples containing varying numbers of trajectories with different speeds and positions. a) a typical case where four red points are sampled trajectories, colored surfaces are speed profiles created by Hagen–Poiseuille equation with parameters estimated by the two methods, and the gray mesh is ground truth speed profile in the vessel cross section. b) direct estimation errors (denoted as ’D’) versus model-based estimation errors (denoted as ’M’), where the proportion (denoted as ’ br ’) by which the latter is lower than the former is given on the top of the corresponding plot. There are 18 (different numbers of trajectories) ×
+
+200 (random sampling repetitions)= 3600 pairs, and Wilcoxon signed rank test implemented by MATLAB signrank 
+
+function returns p-value <0.001 for each of the four pairs. c) model-based estimation error versus estimation uncertainty with exponential fitting implemented. 
+
+# 2.2 Evaluation with Simulated Images 
+
+The model-based estimation applied in combination with the trajectory grouping strategy is then evaluated and compared to a smoothing-based method for enhancing the saturation of sparse ULM speed maps of simulated close tubes and a bifurcation vessel. The smoothing-based enhancement is achieved by dividing the average smoothed speed map by the average smoothed density map, which approximates reconstructing the speed map with larger voxels without increasing quantization error. Hyperparameters, namely the window size of the average kernel and the count threshold for discarding voxels with low cumulative counts, are applied from small to large find the most suitable parameters for smoothing-based and model-based enhancements respectively. The two methods are compared at their optimal performance, where the enhanced speed map is with least Dice loss to the ground truth. The dashed lines in the Figure 3 a) and b) label the best performance of smoothing-based enhancement averaged across 20 (two simulated angles between tubes and 10 random generations for each angle) ULM images under two different saturation levels. Two enhancement methods obtain lower Dice loss and velocity error with more available trajectories, and the model-based enhancement outperforms the smoothing-based enhancement both in the Dice loss and velocity error. Both cases of enhancement from sparse ULM trajectories demonstrate that model-based enhancements can reconstruct more tubular structures with parabolic velocity distributions in the cross-section. Images reconstructed from simulated bifurcation datasets are shown in Figure 4. The model-based enhancement can achieve smaller mean square error, namely higher similarity, between data acquired with different durations than the smoothing-based enhancement. 
+
+# 2.3 In Vivo Demonstration 
+
+The feasibility of model-based parameter estimation and image enhancement is validated on ULM imaging of a rat brain, and the differences from direct estimation and smoothing-based enhancement are demonstrated. The rat brain is imaged by a 1024-elements 8-MHz matrix array that is connected to a 256-channel ultrasound data acquisition system with channel multiplexing. A plane wave without angle steering is transmitted four times, each of which is followed 4by receive on sub-apertures with 256 elements. The data are used to synthesize a full aperture when reconstructing ultrasound volumes. B-mode volumes are reconstructed from the received data using a Coherence to Variance (CV) beamformer. Tissue motion due to breathing is detected by rigid image registration, and volumes found with smaller structure similarity index to the preceding volume are discarded to reduce influence of the pulsatility on the temporal consistence of speed profiles. Tissue signals are reduced by SVD processing in channel signals and then contrast-enhanced ultrasound (CEUS) volumes are reconstructed with the CV beamformer and tissue motion corrected via Lagrangian coordinates. Normalized Cross Correlation (NCC) and feature-motion-model framework are adopted for localizing and tracking MBs, with the tracked trajectories filtered to reduce noise. Straight lines are created between tracked MB positions in consecutive volumes, and speed values are filled to a map with averaging for the voxel that are reached multiple times to create the ULM speed map. Samples on seven manually picked cross-sections are used to demonstrate the difference between the direct and model-based parameter estimation, as shown in Figure 5 a). The model-based method estimates larger radius and lower mean velocity than the direct, as shown in Figure 5 b). When the model-based method outperforms the direct method in the simulation analysis shown in Figure 2 b), the above results can be explained by the observation that low-speed MBs traveling near to a vessel edge can be removed with tissue signals by the SVD processing. The direct method can estimate similar parameters and reconstruct similar speed profiles between short and long acquisitions when there are enough data samples, but more differences between estimations of two methods can be observed when too few samples are available, demonstrated by the two cases shown in Figure 5 c). The model-based estimation can mitigate the problem for the above two cases. 
+
+Figure 3: Evaluation on image enhancement with simulated sparse ULM images of two close tubes. a) and b) are obtained with number of trajectories in each tube given as 5 and 10 respectively. Curves plot mean and standard deviations of Dice loss and mean square error between the ground truth and speed map enhanced by smoothing using different window sizes for averaging or by model-based estimation using different thresholds to discarding voxels. Images present two cases in which the smoothing-based enhancement achieves the lowest Dice loss with the best window size and the corresponding model-based enhancement images with the best threshold. The 3D volumes are rendered by MATLAB volshow function. 5The speed maps reconstructed in three ways from short- and long-duration data are shown in Figure 6. It can be seen that more vasculature can be reconstructed with longer duration data. After overlapping the short-duration map on the corresponding long-duration map, the main difference between the two images reconstructed by the model-based method is the length of reconstructed vessels, because model-based enhancement rejects trajectories grouped for a cross-section when they are too few. The model-based pair presents fewer differences between vessel segments if the segments have already been reconstructed by the short acquisition, such as the arrow-pointed segment, than the other two pairs. Y-Z MIP images of the white box region in Figure 6 reconstructed with durations from short to long are presented in the columns of Figure 7. The blank voxels among trajectories in the first row, such as the vessel labeled by the red arrow, can be filled in the images at the second and third rows, demonstrating the benefit of using smoothing or model-based enhancement for improving saturation. There are two main differences between the second and third rows. First, the model-based enhancement presents a more parabolic profile across the vessel than the smoothing-based enhancement. Second, the smoothing-based enhancement dilates all the trajectories, meaning that the saturation enhancement of large vessels is at a cost of overestimating the sizes of small vessels. The model-based enhancement can process trajectories in large and small vessels in different ways. For example, capillaries with small diameters and non-laminar flow can be excluded from model-based estimation, thus maintaining their size unchanged before and after enhancement. The model-based enhancement can additionally generate a pressure gradient map using a given blood viscosity, which might have the potential for diagnosis. The uncertainty map newly generated by the model-based enhancement can indicate artifacts in the reconstructed image. For example, the high uncertainty region indicated by the white arrow corresponds to a vessel segment with a speed unreasonably higher than that of its neighbors; when more trajectories are available, the speed of the vessel segment becomes similar to that of its neighbors, and the corresponding uncertainty decreases. 
+
+Figure 4: Evaluation on image enhancement with simulated ULM images of a bifurcation vessel. The most suitable hyperparameters obtained in Figure 3 are used here. The images enhanced by two methods with the full-duration data are taken as references respectively. Images enhanced by two methods with ten 1/10-duration data are compared with the two references respectively and quantified by normalized mean square error (MSE). Wilcoxon signed rank test implemented by MATLAB signrank function returns p-value = 0.002 for two groups of MSE values. Two 1/10 data cases are selected as they obtain the least MSE for model-based and smoothing-based enhancement respectively. The 3D volumes are rendered by MATLAB volshow function. 63 Discussion 
+
+This study proposes a model-based method using the laminar flow model for hemodynamic quantification and visualization, demonstrating improved hemodynamic reconstruction from sparse ULM data. The pressure gradient map generated by the proposed method further enriches hemodynamic reconstruction, and the uncertainty map provides new information that indicates the accuracy of the reconstruction. The method proposed in this study has great potential for brain functional imaging. The quantification with ultrasound Power Doppler is affected by the signal intensity, which varies with the transducer used, the transmit pressure, type of MB and ultrasound attenuation. The accuracy of ultrasound Color Doppler relies on a suitable angle between vessel flow and transducer, even when employing the vector Doppler technique [34]. Although binarization in the ULM localization can reduce the influence of signal intensity and the ULM tracking is not sensitive to flow direction, the inconsistency of ULM reconstruction results from the randomness in MB accumulation, which increases with sparsity and can be affected by MB concentrations, acquisition duration, and filtering in the ULM processing. The model-based method can achieve higher accuracy in parameter estimation and speed profile reconstruction than the direct estimation, as shown in Figure 2. The localization uncertainty required to guarantee the outperformance can be achieved [23, 26, 35], and the minimum required sample size is only 4. When fewer trajectories are required for accurate estimation, the accumulation in ULM can be shortened to capture more dynamic activities. The proposed model-based image enhancement features with the ability to process ULM images, which are sparser than images of other modalities (such as X-ray, CT, and MRI). The Hessian analysis that has been widely used for vesselness enhancement is adopted in this study for detecting vessel cross-sections and to group samples from the ULM speed map for model-based estimation. Whereas many existing vesselness enhancement methods require input images with saturated lumen and use eigenvalues to generate a scalar value for each voxel that represents the likelihood of belonging to a tube-like shape [30, 36], the method presented here only requires input images with sparse trajectories and uses the laminar flow model to generate for each voxel an estimated flow speed and an estimated uncertainty representing the likelihood. Compared to smoothing-based enhancement, the proposed enhancement does not treat trajectories in large and small vessels with a unified dilation, which makes it possible to improve saturation whilst retaining the spatial resolution. This study provides a preliminary demonstration of the model-based method – a method for hemodynamic recon-struction using flow dynamics models – and has limitations in terms of the number of models studied, the utilization 
+
+Figure 5: Demonstration on parameter estimation with samples on cross-sections manually picked from a ULM speed map of rat brain. a) Volume rendering by MATLAB volshow and Y-Z Maximum Intensity Projection (MIP) of branches under a sub-aperture of the matrix array. 7 cross-sections on a segment presenting straight and relatively unified speed along vessel axial are picked to obtained speeds and coordinates of crossing trajectories. b) Medians, 25th and 75th percentiles of three parameters estimated by the direct and model-based method on samples in speed maps reconstructed from various duration data. Medians and percentiles are calculated across cross-sections and data with the same duration. c) Two cases with most samples and only four samples on a cross section of ULM speed map reconstructed from two different 20-s acquisition data. Red scatters denote the samples’ coordinates and speeds, gray meshes denote the speed profile estimated by the two methods with the full 240-s data, and colored surfaces denote the speed profile estimates by the two methods with 20-s data. 7Figure 6: Demonstration on image enhancement with ULM speed map of a rat brain, with 3D maps displayed by ParaView (Version 6.0.0-RC1, Kitware, France). Three columns are volume rendering of ULM speed maps, smoothing-based enhanced speed maps, and model-based enhanced speed map respectively. Three rows are maps obtained with the first quarter of acquisition duration, the full duration, and overlapping the first-row images on the corresponding second-row images with the color changed to green and red respectively. Yellow dashed boxes denote the zoomed-in images of regions in the white dashed boxes. Note that vessels with too few trajectories or too far from the foreground can hardly be visible due to the brightness reduction in the volume rendering processing, but can be visible by Maximum Intensity Projection, as shown in Figure 7. 8Figure 7: Y-Z MIP of five kinds of maps reconstructed from data with various durations, corresponding to the region of dashed-line box in Figure 6. First row: Sparse ULM speed maps reconstructed by accumulating trajectories. Second row: Speed maps enhanced by smoothing on the ULM speed maps. Third row: Speed maps enhanced by the model-based method on the ULM speed map. Fourth row: Maps of the division between pressure gradient and blood viscosity estimated by the model-based method from the ULM speed maps. Fifth row: uncertainty maps generated by the model-based method from the ULM maps for describing the validity of the estimation. 9of SVI, and computational efficiency. As only the laminar flow model is used in this study, the enhancement at the location where the blood vessel begins to bifurcate, as shown in Figure 4, is not as accurate as expected. While SVI is powerful in handling large amounts of data and parameters, to reduce the challenges of convergence, we group a small number of data samples to estimate four values for each cross section independently and primarily use SVI to obtain the uncertainty of the estimate. To reduce randomness in image enhancement, the current strategy detects cross sections and a set of trajectories multiple times and calculates the average value at the cost of computational resources. Future work should be to investigate techniques to further improve the performance of reconstruction and ex-periments to explore the potential in functional imaging. Modeling the hemodynamic parameters with an assumed distribution that is closer to the real distribution than the Gaussian function could strengthen the correlation between the estimation uncertainty and the estimation error, which will make the estimated uncertainty more effective in indicating estimation errors and filtering estimations. Exploring various flow models for different hemodynamics could improve the reconstruction at locations where blood vessels begin to bifurcate, narrow, or widen. A better strategy, which can accurately group trajectories in a single vessel without the need of repetition, can improve estimation effi-ciency. It is also worthwhile to explore efficient computational methods, which can fully utilize SVI or other machine learning techniques to reconstruct the entire image simultaneously. Future research will explore the feasibility of the proposed method in detecting brain activity related to heartbeat [37] or stimulation [13]. 
+
+# 4 Methods 
+
+# 4.1 Implementation of Model-based Parameter Estimation and Image Enhancement 
+
+4.1.1 Hemodynamic Parameter Estimation with Grouped Trajectories 
+
+The laminar flow on a vessel cross-section can be described by the Hagen–Poiseuille equation below, 
+
+v = G
+
+4μ (R2 − || x − xc|| 2) (1) where G = −dp/dx is the pressure gradient; μ is the viscosity; R is the radius of vessel; xc is the vessel center, and x
+
+is the location of a passed MB and v is the corresponding speed of passed MB. In this study, we estimate ˆG♯ = ˆG 
+
+> 4μ
+
+for simplicity by avoiding assuming a value for the viscosity. We estimate posterior distributions of parameters by solving Bayes’s equation rather than just estimate the param-eters by fitting, because fitting techniques, such as the least square fit between Eq. (1) and the data samples ( x, v ), might output incorrect parameters and provide no indication on its effectiveness. To obtain a description on the effectiveness, we assume all the data and hemodynamic parameters are in Gaussian distributions and the Stochastic Variational Inference (SVI) method is utilized to find the posterior distribution of the parameters, given the observed data D = {d} = {(x, v )}. The vessel mean blood speed can be calculated as ˆ v = ˆG♯R2/2 with the distribution centers, i.e. the mean. Explanation and implementation of SVI for hemodynamic parameter estimation are described in the Supplementary Methods. Note that Eq. (1) is rewritten in v = ax2 + bx + c for the Adam optimizer used in SVI, as 
+
+{a, b, c} are found easier to converge than {G♯, R, xc}, and {G♯, R, xc} are then calculated with the mean value of 
+
+{a, b, c}, where only G♯ keeps unmodified before and after the reparameterization. Therefore, the standard deviation corresponding to estimated distribution of a is given as the uncertainty in Figure 2 c) to present its correlation to the G♯ error, and the geometric mean of standard deviations of a, b, c is used to present the overall uncertainty of estimation in Figure 7. 
+
+4.1.2 Trajectory Grouping from ULM Map 
+
+We assume vessels in ULM images are tubular in shape and group trajectories for the model-based estimation with the algorithm presented in the Supplementary Methods. By convolving the ULM flow map using second-order Gaussian derivatives of different sizes, the cross-section of the blood vessel can be detected using Hessian analysis. Similar with the multi-scale vesselness filter [30], the eigenvectors vλ(1) 
+
+> H
+
+corresponding to the eigenvalue λ(1)  
+
+> H
+
+with least absolute of a local Hessian Matrix regarded along the vessel and the sign of eigenvalues, λ(2)  
+
+> H
+
+and λ(3)  
+
+> H
+
+, are used to justify if the used Gaussian derivatives is valid to include the voxel in vessel area. In contrast to the vesselness filter, a probability description on a voxel belonging to vessel is not created with the eigenvalues, but trajectories within the vessel cross section, whose direction is defined by the eigenvectors and range is defined by search radius, are grouped as data samples for model-based estimation. Implementation details can be found in the Supplementary Methods. 10 4.1.3 Map Generation with Estimated Parameters 
+
+To obtain a saturation-enhanced speed map, a blank map is created in the same size with the original ULM speed map M . The speed value for a voxel in the cross section is first calculated with Eq. (1) and parameters estimated by the model-based method for the cross-section, and then accumulated on eight voxels that are in the blank map and surround the voxel in the cross section. The saturation-enhanced speed map is obtained by element-wise division between the accumulated values and the accumulated counts of all the estimated m mean. Voxels where the counts are below a threshold cT are set as zero to reach a good balance between precision and recall in the reconstruction. A pressure gradient map and an estimation uncertainty map are created in a similar way, where the voxel value in the cross section corresponds to the G♯ mean and geometric mean of the all the estimated standard deviations. The pressure gradient map is smoothed to reduce discontinuities caused by using the same G♯ mean value across the entire cross-section. For the simulation evaluation, enhanced speed maps are created only by the proposed method; for the 
+
+in vivo demonstration, the enhanced speed maps are created by additionally copying the voxels in the original map to corresponding voxels that are with accumulation counts under the threshold cT .
+
+# 4.2 Evaluation through Simulations 
+
+4.2.1 Parameter Estimation 
+
+To simulate MBs passing through the cross-section of a blood vessel, the positions of the MBs within the disk are randomly sampled using a probability distribution function given by Eq. (1), where MB concentration is assumed constant, and the speed of each MB is also given by the sampled position and Eq. (1). Here, the radius is given as Rs = 200 μm; xcs is given as coordinate origin, i.e., (0, 0); maximum speed is given as 30 mm/s and mean speed is vs = 15 mm/s, and thus G♯s = 7 .5 × 10 5 (m ·s) −1. The number of MB ranges from 3 to 20, with a step size of 1. Gaussian noise with standard deviation of from 0 to 50 × 10 −6 μm is added to the sampled positions to simulate different levels of localization uncertainty after ULM processing. Each setting is randomly sampled 200 times. Vessel center ˆ xc, radius ˆR, pressure gradient ˆG♯ and mean velocity ˆ v are calculated by the model-based methods, and the estimation errors are calculated and normalized as below. 
+
+Re = | ˆR − Rs|/R s
+
+ˆxce = ∥ ˆxc − 0∥/R s
+
+G♯e = | ˆG♯ − G♯s|/G ♯s
+
+ve = |ˆv − vs|/v s
+
+(2) Vessel center ˆ xc, radius ˆR, pressure gradient ˆG♯ and mean velocity ˆ v are also calculated in the way listed below to provide a baseline for comparison. 
+
+• Vessel center can be obtained by the average of coordinates of each MB: ˆ xc = x.
+
+• Vessel radius can be obtained by the maximum of distance of MBs to the estimated vessel center ˆR = max (|| x −
+
+ˆxc|| 2). 
+
+• Vessel mean blood speed can be obtained by the average of MB speed ˆ v = v.
+
+• Pressure gradient ♯ can be calculated by ˆG♯ = ˆG 
+
+> 4μ
+
+= 2 v/R 2.
+
+4.2.2 Parallel Tubes 
+
+The two straight tubes are placed parallel to each other or at a 45-degree angle. Radii of two vessels are 50 and 100 μm respectively and the distance between the nearest edges is 25 μm; the maximum speed of the small and large vessels are 15 mm/s and 30 mm/s; 5 or 10 random tracks are generated with Eq. (1) in each vessels to generate different saturation levels. The pixel size is given as a 5 × 5 × 5 μm3. Each set of parameters was used to generate a simulated vessel 10 times, generating 2 × 2 × 10 = 40 simulated data. Dice loss dloss and normalized mean square error ve(M ), defined as below, are used to quantify the performance of the proposed method in enhancing saturation of speed maps. 
+
+dloss = 1 − 2 ×
+
+P BE ∩ BT
+
+P BE + P BT
+
+(3) 11 where BE and BT are the binary maps that are estimated by the proposed method and set as vessel regions, and 
+
+ve(M ) = 1
+
+NΩ
+
+X
+
+> i∈Ω
+
+ VE (i) − VT (i)
+
+Vc(i)
+
+2
+
+Ω = BE ∪ BT
+
+(4) where VE and VT are the estimated and set speed maps; Vc is the speed value on the vessel center line that is closest to voxel i; NΩ is number of voxels in BE ∪ BT .The proposed image reconstruction method is also compared to conventional smoothing methods at the aspect of saturation enhancement, with d1oss score and ve(M ) as metrics. Average smoothing with a cubic length of 2 ha+1 is used to mimic the reconstruction using larger pixel size; To avoid the speed decrease due to the smoothing, the average-smoothed speed is voxel-by-voxel normalized with average-smoothed density map. As for the hyper-parameters, the count threshold cT for the proposed method is adjusted from 0 to 100 with a step of 5; ha for the average smoothing is adjusted from 0 to 20 voxel by a step of 1, corresponding to m 0 to 100 μm with a step of 5 μm. The methods were compared when their corresponding hyper-parameters used achieve the lowest average d1oss score on the simulated datasets. 
+
+4.2.3 Bifurcation Vessel 
+
+MB trajectories in a bifurcation vessel are generated in the BUFF simulator [38]. The simulated space is a cube with a side length of 1 mm; the radius of the main vessel is 150 μm, and those of the bifurcated vessels are 119 μm. The blood viscosity is given as 4 mPa/s, generating speeds at the vessel center as 27.9, 23.6 and 20.8 mm/s. Trajectories are generated by the continuous injection function with the average rate as 200, duration of 2 s, simulated time step as 2 ms, and start time as 2 s. The obtained trajectories are then accumulated in a pixel map, whose pixel size is 5 ×
+
+5 × 5 μm3, with straight lines filled on voxels between MB positions. The ULM speed map is generated via dividing the accumulated speeds by the accumulated event counts. Data with different time durations (one whole 2-second dataset and ten 0.2-second datasets) are used to reconstruct the ULM images at two different saturation levels. The model-based method and average smoothing are implemented with the corresponding hyper-parameters ob-tained in the straight tube simulation. The normalized mean square error ve(M ) is used to measure the similarity between speed maps reconstructed from the 2-second dataset and each 0.2-second dataset. 
+
+# 4.3 Demonstration with Rat Brain Data 
+
+4.3.1 Animal 
+
+A Sprague Dawley rat (male, 23 weeks, 748 g) was used for the imaging procedure. The experiment complied with the Animals (Scientific Procedures) Act 1986 and was approved by the Animal Welfare and Ethical Review Body of Imperial College London. The animal was induced in an induction chamber in 5 % isoflurane, and then transferred to a small animal physiological monitoring platform (Harvard Apparatus, Massachusetts, USA). Isoflurane was titrated so the breathing rate reached a target of 80 bpm. Urethane was then injected intraperitoneally (1.35 g/kg body weight, 0.5 g/ml, Sigma-Aldrich) and isoflurane was removed, with subsequent 10 % top-up doses administered as required to eliminate eye-blink and pedal-withdrawal reflexes. Atropine (0.66 ml/kg, 1 % w/v) was administered subcutaneously to reduce mucous secretions, and bupivicaine (1.5 mg/kg) was injected under the scalp to provide local analgesia. Rectal temperature was monitored throughout the duration of the experiment and maintained at approximately 37 
+
+> ◦
+
+C. The head was fixed in a stereotaxic frame for the duration of the surgery and recordings. A midline incision was made and soft tissue was removed with a scalpel to expose the skull. The right temporalis muscle was resected and a rectangular unilateral craniotomy was performed using a dental drill, using regular applications of sterile saline to cool and clean the skull. The craniotomy was performed just lateral to the midline, extending immediately posterior to the lambdoid suture, anterior to the coronal suture, and down to the zygomatic arch. Homemade microbubbles were infused through the tail vein (0.1 uL/min/g) during the acquisition. After the experiment, animals were humanely killed by overdose of an anaesthetic drug in accordance with Schedule 1 to the Animals (Scientific Procedures) Act 1986. 
+
+4.3.2 Data Acquisition 
+
+The rat brain is imaged by a Vantage 256 ultrasound research system (Verasonics Inc., Kirkland, WA, USA) and a matrix array probe (Vermon, Tours, France) with 32 × 32 elements, 7.8 MHz center frequency and a 9.3 mm × 10.2 mm aperture. A multiplexing technique is used to connect the 1024 elements in the probe to the 256 channels in the research system, where 1024 elements are excited at the same time to transmit plane waves and four sub-apertures, 12 i.e., 256 elements in each, receive signals in sequence for one volume. Image volumes are acquired at a frame rate of 400 Hz without beam steering. Data are acquired and saved simultaneously in blocks, 1 s (400 volumes), for the convenience of data loading and off-line processing. 
+
+4.3.3 ULM Processing 
+
+Tissue signals are removed by applying singular value decomposition (SVD) to channel signals for each 400 frames. B-mode and contrast enhanced ultrasound (CEUS) images are reconstructed by the previously described Coherence to Variances (CV) beamformer [39]. Slight head motions in all the volumes are detected by rigid image registration to one B-mode volume in the first saved acquisition and corrected for the corresponding CEUS volumes. When pulsatility affects the vessel size and blood flow speed, the structure similarity index is calculated using MATLAB ’ssim’ function between consecutive B-mode volumes, and volumes with low index are regarded as changing fast due to the pulsatility and not used for ULM reconstruction. Considering the compromise between computation cost and effect of voxel size on the localization uncertainty [40], the demonstration is performed for two volumes with different sizes. (1) A small volume around 3 × 3 × 8 mm 3 is reconstructed for B-mode and CEUS images in a map with a voxel size of 25 × 25 × 25 μm3, which is around 1/8 wavelength, and for SR image in a map with a voxel size of 5 × 5 × 5
+
+μm3;(2) A large volume around 10 × 10 × 10 mm 3 with a voxel size of 100 × 100 × 100 μm3 and 20 × 20 × 20 μm3
+
+for original and SR maps respectively. MBs are isolated by 3D normalized cross-correlation between each CEUS volume and the Point Spread Function (PSF) estimated via fitting Gaussian functions to a image that is obtained by averaging 10 manually segmented MB main lobes. Noise is reduced by two empirical thresholds in image intensity and cross-correlation coefficients. MBs are localized by the intensity-weighted centroid of CEUS images with the mask created by the thresholding and tracked by the feature-motion-model framework with a maximum accepted speed of 100 mm/s [8, 41]. MBs trajectories were created by linking straight lines between the MB positions that are estimated by updating the localized MB position with motion-model-predicted position, according to the Kalman filtering. MBs with track lengths of less than 5 frames are discarded to further improve the precision of localization and tracking. The remaining MBs are used to create ULM speed maps. ULM images are reconstructed with MB trajectories acquired over various durations. 
+
+4.3.4 Parameter Estimation 
+
+Consecutive subsets of data with various durations, increasing from 20 to 90 seconds, are sampled from the 240-second data. 150 subsets are created for each duration by changing the start time of subsets from the first second by a step of 1 second. Note that the number of trajectories at one cross-section can change in data with the duration when the MB concentration in blood flow is not constant across time. Seven cross sections are picked manually from a vessel segment that is located approximately under the center of the corresponding sub-aperture. Radius R, the division of pressure gradient over blood viscosity G♯, and mean velocity ve are estimated by the direct and model-based methods with the samples. 
+
+4.3.5 Image Enhancement 
+
+Acquired data with durations of 1, 2, 5, 10, 20, 60, and 240 seconds and starting from the first second are used to reconstruct ULM speed maps for the large volume. The ULM speed maps are enhanced by the averaged-smoothing with a least window size of 3 voxels (70 μm ) and the model-based method with the least count threshold as 0, namely keeping all the accumulated voxels.         
+
+> Acknowledgements
+> J.Y. discloses support for the research of this work by the National Natural Science Foundation of China (grant number 62501193), the National Institute for Health Research i4i (grant number NIHR200972), the Engineering and Physical Sciences Research Council (grant number EP/X033651/1), Self-Planned Task (grant number SKLRS202610C) of State Key Laboratory of Robotics and Systems (HIT). O.B. discloses support by the Engineering and Physical Sciences Research Council (grant number EP/X033651/1). J.Z. discloses support for studentship from the China Scholarship Council. Q.T. discloses support by the Wellcome Bioimaging Technology Development Award (grant number 310835/Z/24/Z). B.H. discloses support by the Engineering and Physical Sciences Research Council (grant number UKRI145). A.S.K. discloses support by ARIA through Brain-scale Cell Type-specific Acoustic Neural Interface. M.T. discloses support by the Engineering and Physical Sciences Research Council (grant number EP/X033651/1) and ARIA through Brain-scale Cell Type-specific Acoustic Neural Interface.
+> Author Contributions
+> J.Y., M.T. and C.D. conceived the study. J.Y. designed the algorithm framework and developed codes, and processed the data. O.B. contributed to math and development of SVI. J.Z., J.G. and A.S.K. acquired the in vivo data. Q.T. and B.H.
+
+13 contributed to development of image enhancement. J.Y. and M.T. interpreted the results and wrote the first draft. All authors edited and approved the submitted version of the manuscript.    
+
+> Data Availability
+> The data generated or analyzed during this study are available from the corresponding author upon reasonable request.
+> Code Availability
+> Codes for the hemodynamic reconstruction are available from the corresponding author upon reasonable request. MB localization, tracking and accumulation in this study is a 3D version of the SRUS Software provided on GitHub ( https: //github.com/JipengYan1995/SRUSSoftware ). 3D ULM imaging and hemodynamic reconstruction will be integrated into the SRUS Software in the future.
+> Competing Interests
+> M.T. is a shareholder of Sonalis Imaging Ltd and CardioACC Ltd, and serves as a member of the Scientific Advisory Board for Verasonics inc. O.B. declare an interest in Sonalis Imaging Ltd (stocks, shares and employment). Sonalis Imaging Ltd develops brain ultrasound computed tomography systems; CardioACC Ltd develops intracardiac ultrasound imaging systems; and Verasonics Inc. produces research ultrasound systems. The other authors declare no competing interests.
+
+# References 
+
+1. Christensen-Jeffries, K., Browning, R. J., Tang, M.-X., Dunsby, C. & Eckersley, R. J. In vivo acoustic super-resolution and super-resolved velocity mapping using microbubbles. IEEE Transactions on Medical Imaging 34, 
+
+433–440 (2014). 2. Errico, C. et al. Ultrafast ultrasound localization microscopy for deep super-resolution vascular imaging. Nature 
+
+527, 499–502 (2015). 3. Christensen-Jeffries, K. et al. Super-resolution ultrasound imaging. Ultrasound in Medicine and Biology 46, 865– 891 (2020). 4. Dencks, S. et al. Super-resolution ultrasound: from data acquisition and motion correction to localization, track-ing, and evaluation. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control (2025). 5. Naji, M. A. et al. Super-resolution ultrasound imaging using the erythrocytes—Part II: Velocity images. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 71, 945–959 (2024). 6. Opacic, T. et al. Motion model ultrasound localization microscopy for preclinical and clinical multiparametric tumor characterization. Nature Communications 9, 1–13 (2018). 7. Huang, C. et al. Super-resolution ultrasound localization microscopy based on a high frame-rate clinical ultra-sound scanner: an in-human feasibility study. Physics in Medicine and Biology 66, 08NT01 (2021). 8. Yan, J. et al. Transthoracic ultrasound localization microscopy of myocardial vasculature in patients. Nature Biomedical Engineering 8, 689–700 (2024). 9. Demen´ e, C. et al. Transcranial ultrafast ultrasound localization microscopy of brain vasculature in patients. 
+
+Nature Biomedical Engineering 5, 219–228 (2021). 10. Bureau, F. et al. Ultrasound matrix imaging for 3D transcranial in vivo localization microscopy. Science Advances 
+
+11, eadt9778 (2025). 11. Bar-Zion, A., Solomon, O., Tremblay-Darveau, C., Adam, D. & Eldar, Y. C. SUSHI: Sparsity-based ultrasound super-resolution hemodynamic imaging. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency control 
+
+65, 2365–2380 (2018). 12. Yin, J. et al. Pattern recognition of microcirculation with super-resolution ultrasound imaging provides markers for early tumor response to anti-angiogenic therapy. Theranostics 14, 1312 (2024). 13. Renaudin, N. et al. Functional ultrasound localization microscopy reveals brain-wide neurovascular activity on a microscopic scale. Nature Methods 19, 1004–1012 (2022). 14. Lin, H. et al. Super-resolution ultrasound imaging reveals temporal cerebrovascular changes with disease pro-gression in female 5 × FAD mouse model of Alzheimer’s disease: correlation with pathological impairments. 
+
+EBioMedicine 108 (2024). 15. Guo, Y. et al. Brain-Wide Transcranial Ultrasound Localization Microscopy of the Non-Human Primate. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 72, 1448–1461 (2025). 16. Jones, R. M., DeRuiter, R. M., Deshmukh, M., Dayton, P. A. & Pinton, G. F. Non-invasive volumetric ultrasound localization microscopy detects vascular changes in mice with Alzheimer’s disease. Theranostics 15, 1110 (2025). 14 17. Lee, S. A. et al. Assessing cerebral capillary function and stalling using single capillary reporters in ultrasound localization microscopy. Proceedings of the National Academy of Sciences 123, e2509564123 (2026). 18. Xia, S. et al. Super-resolution ultrasound and microvasculomics: a consensus statement. European radiology 34, 
+
+7503–7513 (2024). 19. Smith, C. A., Wilson, H., Yan, J. & Tang, M.-X. Quantitative image markers of super-resolution ultrasound. 
+
+EBioMedicine 124 (2026). 20. Hingot, V. et al. Microvascular flow dictates the compromise between spatial resolution and acquisition time in Ultrasound Localization Microscopy. Scientific Reports 9, 1–10 (2019). 21. Dencks, S. et al. Assessing vessel reconstruction in ultrasound localization microscopy by maximum likelihood estimation of a zero-inflated poisson model. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 67, 1603–1612 (2020). 22. Lerendegui, M. et al. ULTRA-SR challenge: Assessment of ultrasound localization and tracking algorithms for super-resolution imaging. IEEE transactions on medical imaging 43, 2970–2987 (2024). 23. Heiles, B. et al. Performance benchmarking of microbubble-localization algorithms for ultrasound localization microscopy. Nature Biomedical Engineering 6, 605–616 (2022). 24. Van Sloun, R. J. et al. Super-resolution ultrasound localization microscopy through deep learning. IEEE trans-actions on medical imaging 40, 829–839 (2020). 25. Liu, X. et al. Deep learning for ultrasound localization microscopy. IEEE transactions on medical imaging 39, 
+
+3064–3078 (2020). 26. Shin, Y. et al. Context-aware deep learning enables high-efficacy localization of high concentration microbubbles for super-resolution ultrasound localization microscopy. Nature Communications 15, 2932 (2024). 27. Demen´ e, C. et al. Spatiotemporal clutter filtering of ultrafast ultrasound data highly increases Doppler and fUltrasound sensitivity. IEEE Transactions on Medical Imaging 34, 2271–2285 (2015). 28. Hingot, V., Chavignon, A., Heiles, B. & Couture, O. Measuring image resolution in ultrasound localization microscopy. IEEE transactions on medical imaging 40, 3812–3819 (2021). 29. Xing, P. et al. 3D ultrasound localization microscopy of the nonhuman primate brain. EBioMedicine 111 (2025). 30. Frangi, A. F., Niessen, W. J., Vincken, K. L. & Viergever, M. A. Multiscale vessel enhancement filtering in 
+
+International conference on medical image computing and computer-assisted intervention (1998), 130–137. 31. Hoffman, M. D., Blei, D. M., Wang, C. & Paisley, J. Stochastic variational inference. Journal of Machine Learning Research (2013). 32. Blundell, C., Cornebise, J., Kavukcuoglu, K. & Wierstra, D. Weight uncertainty in neural network in International conference on machine learning (2015), 1613–1622. 33. Bates, O. et al. A probabilistic approach to tomography and adjoint state methods, with an application to full waveform inversion in medical ultrasound. Inverse Problems 38, 045008 (2022). 34. Dunmire, B., Beach, K., Labs, K., Plett, M. & Strandness Jr, D. Cross-beam vector Doppler ultrasound for angle-independent velocity measurements. Ultrasound in Medicine and Biology 26, 1213–1235 (2000). 35. Dencks, S., Lisson, T., Oblisz, N., Kiessling, F. & Schmitz, G. Ultrasound localization microscopy precision of clinical 3-D ultrasound systems. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 71, 
+
+1677–1689 (2024). 36. Lamy, J., Merveille, O., Kerautret, B., Passat, N. & Vacavant, A. Vesselness filters: A survey with benchmarks applied to liver imaging in 2020 25th international conference on pattern recognition (ICPR) (2021), 3528–3535. 37. Wu, A. et al. 3D transcranial Dynamic Ultrasound Localization Microscopy in the mouse brain using a Row-Column Array. IEEE Transactions on Biomedical Engineering 73, 1112–1123 (2025). 38. Lerendegui, M., Riemer, K., Wang, B., Dunsby, C. & Tang, M.-X. BUbble flow field: A simulation framework for evaluating ultrasound localization microscopy algorithms. arXiv preprint arXiv:2211.00754 (2022). 39. Yan, J. et al. Fast 3D super-resolution ultrasound with adaptive weight-based beamforming. IEEE Transactions on Biomedical Engineering 70, 2752–2761 (2023). 40. Song, P., Manduca, A., Trzasko, J. D., Daigle, R. E. & Chen, S. On the effects of spatial sampling quantiza-tion in super-resolution ultrasound microvessel imaging. IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control 65, 2264–2276 (2018). 41. Yan, J., Zhang, T., Broughton-Venner, J., Huang, P. & Tang, M.-X. Super-resolution ultrasound through sparsity-based deconvolution and multi-feature tracking. IEEE Transactions on Medical Imaging 41, 1938–1947 (2022). 15 Supplementary Methods and Figures 
+
+# 1 Method 1: Parameter Estimation 
+
+Bayes’ equation is only tractable in specific cases, such as the Gaussian Process [1]. Stochastic Variational Inference (SVI) allows solutions to Bayes equation where the likelihood distribution is either analytically or computationally intractable. The Bayes’ equation can be written 
+
+p(m|D) = p(D|m)p(m)
+
+p(D) (S.1) where p(m|D) is the posterior distribution, i.e, parameter distribution given the observed position and locations at the current cross-section; p(m) is the prior distribution, i.e., the parameter distribution of all kinds of vessels; p(D) is the evidence distribution, i.e. distribution of MBs’ position and locations on cross-section of all kinds of vessels; and the conditional distribution p(D|m) is the likelihood to get an evidence given one kind of vessel structure, which can be established with the flow dynamic model, such as Eq. (1) in the main text. When it is challenging to exactly know the above three distributions, the SVI method is used to find an approxi-mation q(m|D) of the posterior p(m|D) by minimizing the Kulback–Leibler (KL) divergence, 
+
+q(m|D) = arg min  
+
+> q(m|D)
+
+KL [q(m|D)|| p(m|D)] (S.2) where q(m|D) is the approximating distribution of the posterior p(m|D), we use the symbol ξ to replace m|D for convenience, i.e, ξ = ( G♯
+
+> ξ
+
+, R ξ, x♯
+
+> ξ
+
+). The KL divergence equation can be rearranged to as follows, 
+
+KL [q(ξ)|| p(ξ)] = 
+
+Z
+
+q(ξ) log q(ξ)
+
+p(ξ) dξ =
+
+Z
+
+q(ξ)[log q(ξ) − log p(D|m)p(m)
+
+p(D) ]dξ
+
+=
+
+Z
+
+q(ξ)[log q(ξ) − log p(D|m) − log p(m) + log p(D)] dξ
+
+= −
+
+Z
+
+q(ξ) log p(D|m)dξ +
+
+Z
+
+q(ξ)[log q(ξ) − log p(m)] dξ + log p(D)(S.3) In this study, q(ξ) and and p(m) are assumed to be in normal distribution for simplicity. Namely, 
+
+q(ξ) = N (uξ, σξ)
+
+p(m) = N (um, σm) (S.4) where uξ and σξ are the desired vasculature and flow dynamics estimation and the uncertainty of estimation with given observations; um and σm are the mean and standard deviations of vasculature and flow dynamics parameters without given observations. Then, we can obtain 
+
+Z
+
+q(ξ) log q(ξ)dξ = −0.5J log(2 π) − 0.5
+
+> J
+
+X
+
+> j=1
+
+log( σ2 
+
+> ξ(j)
+
++ 1) 
+
+Z
+
+q(ξ) log p(m)dξ = −0.5J log(2 π) − 0.5
+
+> J
+
+X
+
+> j=1
+
+log( σ2 
+
+> m(j)
+
++ 1
+
+σ2
+
+> m(j)
+
+(σ2 
+
+> ξ(j)
+
++ ( uξ(j) − um(j))2)) (S.5) where J is number of elements/parameters in μ and σ, which is 4 for 3D ULM imaging. Following the reparameterization trick in conventional variational interference implementation, a posterior sample 
+
+w for the estimated parameters is: w(l) = uξ + σξ ⊙ ϵ(l), where ϵ(l) ∼ p(ϵ) = N (0, I), ( l) denotes the lth time of sampling, and ⊙ denotes element-wise production. Then, we assume the likelihood p(D|m) is also a Normal 1distribution, allowing us to define the optimization problem as minimizing the Mean Squared Error (MSE) between observed MB speed and the MB speed predicted by the MB locations and the flow dynamic model in Eq. (1), 
+
+p(D|m) = 1
+
+√2πσ e
+
+exp (−
+
+> 1
+> N
+
+PNn=1 (v(n) − v(n) 
+
+> w(l)
+
+)2
+
+2σ2
+
+> e
+
+)
+
+v(n) 
+
+> w(l)
+
+= G♯ 
+
+> w(l)
+
+(R2 
+
+> w(l)
+
+− || x(n) − xc 
+
+> w(l)
+
+|| 2)(S.6) where N is number of observed data in D and ( n) denotes the nth trajectory; σe is an assumed variance of the error between the observation and prediction. Then, the term in Eq. (S.3) can be estimated by Monte Carlo (MC) method as below, 
+
+−
+
+Z
+
+q(ξ) log p(D|m)dξ = log ( √2πσ e) + 
+
+Z
+
+p(ϵ)( 
+
+> 1
+> N
+
+PNn=1 (v(n) − v(n) 
+
+> w(l)
+
+)2
+
+2σ2
+
+> e
+
+)dϵ
+
+> M C
+
+≈ log ( √2πσ e) + 1
+
+L
+
+> L
+
+X
+
+> l=1
+
+( 12σ2
+
+> e
+
+1
+
+N
+
+> N
+
+X
+
+> n=1
+
+(v(n) − v(n) 
+
+> w(l)
+
+)2)(S.7) where L is the number of MC sampling times. Introducing Eq.(S.5) and Eq.(S.7) into Eq.(S.3), the equation can be rewritten as below, 
+
+σ2 
+
+> e
+
+KL [q(ξ)|| p(ξ)] = 1
+
+L
+
+> L
+
+X
+
+> l=1
+
+( 12N
+
+> N
+
+X
+
+> n=1
+
+(v(n) − v(n) 
+
+> w(l)
+
+)2)+ 0 .5σ2
+
+> eJ
+
+X
+
+> n=1
+
+[− log( σ2 
+
+> ξ(n)
+
++ 1) + log( σ2 
+
+> m(n)
+
++ 1
+
+σ2
+
+> m(n)
+
+(σ2 
+
+> ξ(n)
+
++ ( uξ(n) − um(n))2))] + σ2 
+
+> e
+
+(log p(D) + log ( √2πσ e)) (S.8) log p(D), log ( √2πσ e) and σ2 
+
+> e
+
+can be regarded as constants in the minimization of the KL divergence [2]. Therefore, 
+
+q(ξ) = arg min 
+
+> q(ξ)
+
+1
+
+L
+
+> L
+
+X
+
+> l=1
+
+( 12N
+
+> N
+
+X
+
+> n=1
+
+(v(n) − v(n) 
+
+> w(l)
+
+)2)+ 0 .5σ2
+
+> eJ
+
+X
+
+> n=1
+
+[− log( σ2 
+
+> ξ(n)
+
++ 1) + log( σ2 
+
+> m(n)
+
++ 1
+
+σ2
+
+> m(n)
+
+(σ2 
+
+> ξ(n)
+
++ ( uξ(n) − um(n))2))] (S.9) When getting the gradient of Eq. (S.9) respect to uξ or σξ with the chain rule, the first line is related to the evidence and contributes to the gradient, which is equivalent to least square fit; the second line is not related to the evidence that can work as a regularization with a weight of λ = 0 .5σ2 
+
+> e
+
+and contribute to the gradient. The Adam optimizer is adopted to find the optimal uξ and σξ. The observation data D are normalized with zero-mean and unit variance. uξ and um are initialized and given as parameters obtained by the direct estimation with the normalized data, respectively. Then, Eq. (1) is rewritten in the format: v = ax2 + bx + c, as {a, b, c} are easier to converge than {G♯ = a, R, xc} in the Adam optimizer. Thus, the elements in σξ and σm are corresponding to {a, b, c} in the SVI implementation. σξ is initialized as a unit array. The element in σm corresponding to a, also the G♯, is given as 10, and other elements are given as 100, which we empirically found helpful to reduce aggressive outliers under noisy condition and get acceptable estimation accuracy with λ = 0 .5σ2 
+
+> e
+
+= 0 .1 from simulations. The 
+
+softplus is used to force elements in σξ positive during the optimization. If the radius is estimated to be more than a limit that is empirically given as double or half the initial guess, the estimation is regarded as invalid to reduce outliers. When there is randomness in the MC sampling, the SVI estimation is repeated for 5 times with the each observation D and outputs the uξ with the minimal det (diag (σξ)). 
+
+# 2 Method 2: Trajectory Grouping 
+
+MB trajectories are grouped from ULM maps for SVI based on Hessian Analysis, as shown in Algorithm 1. Lines 1 to 5 are same with conventional Hessian analysis [3]. Considering the sparsity of super-resolution map, Algorithm 1 is implemented on non-zero voxels, denoted as p, that are a small portion of the map to save computation cost. When each voxel of the ULM speed map can be reconstructed by averaging the trajectory speed passing through the voxel, the number of trajectories in the average for the voxel, besides the speed value and position of the voxel, is also fed to 2the SVI and weights the average in Eq. S.6, which approximates feeding individual trajectories to the SVI. Note that the half width of the center negative lobe of the second-order Gaussian derivatives fG2 = {fhh , f ww , f tt , f hw , f ht , f wt }
+
+is equal to its standard deviation, where subscripts h, w, t is used to denote partial derivatives along rows, columns and slices of the 3D ULM speed map. 
+
+Algorithm 1: Grouping trajectories with vessel cross-section detection 
+
+Input: ULM speed map M , Searching range radius [ rmin ,rmax ], radius size increment rstep 
+
+Output: Sample set Dr,p for each non-zero voxel in Mv and for each searching radius  
+
+> 1
+
+for searching radius r = rmin : rstep : rmax do  
+
+> 2
+
+· Give second-order Gaussian derivative function sets fG2 with σ = r 
+
+> 3
+
+· Calculate Hessian matrix H for each pixel by the convolution between Mv and fG2 
+
+> 4
+
+· Get the eigenvalues and eigenvectors of H for each pixel  
+
+> 5
+
+· Rank the eigenvalues with its absolute from small to large and get λH for each pixel  
+
+> 6
+
+for Each non-zero pixel p in Mv do  
+
+> 7
+
+if λ(2)  
+
+> H
+
+< 0 & λ(3)  
+
+> H
+
+< 0 then  
+
+> 8
+
+for cross-section center shift distance ratio dr = 0 : 0 .25 : 1 do  
+
+> 9
+
+· Find non-zero value set {(x, v )}r,p,d r from Mv within the cross section whose radius is r. 
+
+> 10
+
+if Meeting Justifications (1) & (2) then  
+
+> 11
+
+· Execute SVI with the non-zero value set {(x, v )}r,p,d r 
+
+> 12
+
+if Meeting Justification (3) then  
+
+> 13
+
+return Estimated Distributions of parameter  
+
+> 14
+
+break 
+
+For a voxel close to vessel edges, it is possible that the assumed r approximates or is more than vessel radius but the cross section centered on the voxel can only capture very few samples; it is also possible that the cross section is across two close vessels and capture samples in two different vessels. Therefore, in the implementation for line 10 and 12 in Algorithm 1, we set three justifications: (1) sample numbers in Dr,p is ≥ Nleast = 4; Nleast is define as the unknown parameters in m, i.e. 4 for 3D images. (2) valid mean angle between trajectories within the cross section and norm of the cross section (A threshold is empirically given as 40 degree for the in vivo data). (3) valid radius (empirically defined within 0.5 r and 2 r ) are estimated by SVI from Dr,p .When any of the above three is not satisfied, the section center is moved by a distance dr r and the ratio dr increases from 0 with a step of 0.25 until both justifications are met or dr = 1. The moving direction vm is given as below 
+
+vm = α1vλ(2) 
+
+> H
+
++ α2vλ(3) 
+
+> H
+
+α1 = sign (vJ · vλ(2) 
+
+> H
+
+)
+
+q
+
+λ(2)2  
+
+> H
+
+/(λ(2)2  
+
+> H
+
++ λ(3)2  
+
+> H
+
+)
+
+α2 = sign (vJ · vλ(3) 
+
+> H
+
+)
+
+q
+
+λ(3)2  
+
+> H
+
+/(λ(2)2  
+
+> H
+
++ λ(3)2  
+
+> H
+
+)(S.10) where λ(2)  
+
+> H
+
+and λ(3)  
+
+> H
+
+are the second and third elements of the eigenvalues; vλ(2) 
+
+> H
+
+and vλ(3) 
+
+> H
+
+are the corresponding normalized eigenvectors and coplanar with the cross section; the vector vJ is the first-order gradient of at p obtained by convolving first-order Gaussian derivates fG1 = {fh, f w, f t} with SR speed map M ; · denotes the inner product. With a suitable assumed radius r, the cross section can be moved close to the vessel center. 
+
+Computation Platform 
+
+Codes for the proposed methods are developed in MATLAB R2024b. Data for simulation evaluation are processed on a desktop (CPU: Intel i9-14900k, Memory: 128 GB, GPU: NVIDIA 4070s-8G). Data for in vivo demonstration are processed on another desktop (CPU: Intel U9-285k, Memory: 256 GB, GPU: NVIDIA RTX5060Ti-16G). 33 Supplementary Figures 
+
+Figure S.1: Impact of localization uncertainty on parameter estimation. Medians, 25th and 75th percentiles of estimation errors across all the simulated data samples for the four parameters obtained by the direct and model-based method versus different levels of localization uncertainty that is given by standard deviations of Gaussian noise. 4Figure S.2: Parameter estimation with the ratio of localization uncertainty to radius as 0.1. a) direct estimation errors (denoted as ’D’) versus model-based estimation errors (denoted as ’M’), where the proportion (denoted as ’ br ’) by which the latter is lower than the former is given on the top of the corresponding plot. There are 18 (different numbers of trajectories) × 200 (random sampling repetitions)= 3600 pairs, and Wilcoxon signed rank test implemented by MATLAB signrank function returns p-value <0.001 for each of the four pairs. b) model-based estimation error versus estimation uncertainty with exponential fitting implemented. 5Figure S.3: Optimized cost versus estimation error of the model-based method. URr denotes the ratio of localization uncertainty to radius ratio. 6Figure S.4: Impact of number of trajectories on parameter estimation. Medians, 25th and 75th percentiles of estimation errors obtained by the direct and model-based method versus number of trajectories in each sample group under two levels of localization uncertainty, where the subscript is the ratio of localization uncertainty to radius. 7References 
+
+1. Seeger, M. Gaussian processes for machine learning. International journal of neural systems 14, 69–106 (2004). 2. Bates, O. et al. A probabilistic approach to tomography and adjoint state methods, with an application to full waveform inversion in medical ultrasound. Inverse Problems 38, 045008 (2022). 3. Frangi, A. F., Niessen, W. J., Vincken, K. L. & Viergever, M. A. Multiscale vessel enhancement filtering in 
+
+International conference on medical image computing and computer-assisted intervention (1998), 130–137. 8
