@@ -1,102 +1,88 @@
 ## 最新日报
-- 最新运行日期：2026-06-03
-- 运行时间：2026-06-03 23:02:12 UTC
+- 最新运行日期：2026-06-04
+- 运行时间：2026-06-04 21:18:02 UTC
 - 运行状态：成功
-- 本次总论文数：28
-- 精读区：15
+- 本次总论文数：24
+- 精读区：11
 - 速读区：13
 
 ### 今日简报（AI）
-1) 今日精读28篇论文，高评分聚焦于GPU加速高超声速CFD框架与轻量级多任务傅里叶神经算子。  
-2) 最值得关注的方向：高性能计算与科学机器学习交叉，特别是有限速率化学反应流模拟和稀疏场重建。  
-3) 建议优先精读《MARUT》和《MTL-FNO》，并速览《Differentiable Programming Framework》以了解混沌降阶建模。
-- 详情：[/202606/03/README](/202606/03/README)
+今日精读11篇、速读13篇，重点覆盖流动降阶和流场估计方向。最值得关注的是两篇9分工作：结合神经网络实现稀疏POD模态选择与流形降维，以及利用未标记探针数据的高效半监督流估计方法。普通读者可优先关注CFDTwin开源工具包，它提供POD-NN代理建模的便捷GUI接口。
+- 详情：[/202606/04/README](/202606/04/README)
 
 ### 精读区论文标签
-1. [MARUT: An Exascale-Ready, GPU-Accelerated High-Order CFD Framework with AMR for High-Speed Flows and Finite-Rate Chemistry](/202606/03/2605.26388v2-marut-an-exascale-ready-gpu-accelerated-high-order-cfd-framework-with-amr-for-high-speed-flows-and-finite-rate-chemistry)  
+1. [Sparse POD Mode Selection and Manifold Dimensionality Reduction with Neural Networks](/202606/04/2605.27756v1-sparse-pod-mode-selection-and-manifold-dimensionality-reduction-with-neural-networks)  
    标签：评分：9.0/10、query:flow-field
-   evidence：用于高速流动的GPU加速高阶CFD框架
-2. [MTL-FNO: A Lightweight Multi-Task Fourier Neural Operator for Sparse Field Reconstruction](/202606/03/2605.26718v1-mtl-fno-a-lightweight-multi-task-fourier-neural-operator-for-sparse-field-reconstruction)  
+   evidence：使用稀疏POD和神经网络流形学习的降阶建模
+2. [Data-efficient semi-supervised learning for flow estimation using unlabelled probe data](/202606/04/2605.28245v2-data-efficient-semi-supervised-learning-for-flow-estimation-using-unlabelled-probe-data)  
    标签：评分：9.0/10、query:flow-field
-   evidence：使用傅里叶神经算子的稀疏场重构
-3. [Supervised machine learning of compressible flow past a rotating cylinder](/202606/03/2605.26806v1-supervised-machine-learning-of-compressible-flow-past-a-rotating-cylinder)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：监督机器学习应用于可压缩流提供数据驱动流场建模
-4. [Asymmetric particle transport in turbulent flows within concentric annular ducts](/202606/03/2605.26981v1-asymmetric-particle-transport-in-turbulent-flows-within-concentric-annular-ducts)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：环形管道湍流直接数值模拟使用计算方法预测流场
-5. [CFDTwin: An open-source GUI and Python toolkit for POD-NN surrogate modeling of ANSYS Fluent simulations](/202606/03/2605.27725v1-cfdtwin-an-open-source-gui-and-python-toolkit-for-pod-nn-surrogate-modeling-of-ansys-fluent-simulations)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：POD-NN降阶建模的开源工具包
-6. [Data-efficient semi-supervised learning for flow estimation using unlabelled probe data](/202606/03/2605.28245v2-data-efficient-semi-supervised-learning-for-flow-estimation-using-unlabelled-probe-data)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：从稀疏探针数据重构流场
-7. [Bow-shock instability in entry, descent, and landing vehicles under high-enthalpy conditions](/202606/03/2605.28357v1-bow-shock-instability-in-entry-descent-and-landing-vehicles-under-high-enthalpy-conditions)  
-   标签：评分：9.0/10、query:profile-1
-   evidence：高焓条件下再入飞行器弓激波不稳定性研究直接涉及高超声速热防护和激波边界层干扰
-8. [Surrogate modeling for convection-dominated parametric problems based on error learning](/202606/03/2605.29769v1-surrogate-modeling-for-convection-dominated-parametric-problems-based-on-error-learning)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：基于降阶模型和神经网络的输运主导流场代理建模
-9. [Reducing Experimental Testing in Space Propulsion Film Cooling Analyses by Pixelwise Generative Image Interpolation](/202606/03/2605.29911v1-reducing-experimental-testing-in-space-propulsion-film-cooling-analyses-by-pixelwise-generative-image-interpolation)  
-   标签：评分：9.0/10、query:q2
-   evidence：航天推进中气膜冷却分析的机器学习方法
-10. [Neural-Network-based Viscosity Closure for Non-Newtonian Multiphase Flows](/202606/03/2605.30659v1-neural-network-based-viscosity-closure-for-non-newtonian-multiphase-flows)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：用于多相流模拟的神经网络粘度闭合模型
-11. [Lattice Boltzmann Methods for Compressible (Magneto)hydrodynamics](/202606/03/2606.00641v1-lattice-boltzmann-methods-for-compressible-magnetohydrodynamics)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：用于可压缩流的格子玻尔兹曼方法，计算流场预测
-12. [Cellular Sheaf Neural Operators for Structure-Preserving Surrogate Modeling of Constrained PDEs](/202606/03/2606.00937v1-cellular-sheaf-neural-operators-for-structure-preserving-surrogate-modeling-of-constrained-pdes)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：细胞层神经算子用于偏微分方程的结构保持代理建模
-13. [Efficient Approximation for Encoder--Decoder Neural Operators via Variation Spaces](/202606/03/2606.01244v1-efficient-approximation-for-encoder--decoder-neural-operators-via-variation-spaces)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：编码器-解码器神经算子的近似界
-14. [A model for pulsation in high-speed double cone flow](/202606/03/2606.01942v1-a-model-for-pulsation-in-high-speed-double-cone-flow)  
+   evidence：利用半监督学习从稀疏探针数据重构流场
+3. [Bow-shock instability in entry, descent, and landing vehicles under high-enthalpy conditions](/202606/04/2605.28357v1-bow-shock-instability-in-entry-descent-and-landing-vehicles-under-high-enthalpy-conditions)  
    标签：评分：9.0/10、query:q1
-   evidence：马赫6双锥流脉动模型
-15. [Reduced Order Model for a Convective Rotating Annulus with Localized Forcing](/202606/03/2606.03275v1-reduced-order-model-for-a-convective-rotating-annulus-with-localized-forcing)  
+   evidence：高焓火星进入条件下的弓形激波不稳定性
+4. [Sequential Physics-Constrained Neural Operator Forward Modeling for the $\textit{Norne}$ Reservoir System](/202606/04/2605.28909v1-sequential-physics-constrained-neural-operator-forward-modeling-for-the-textitnorne-reservoir-system)  
    标签：评分：9.0/10、query:flow-field
-   evidence：局部强迫旋转流体环的低阶模型
+   evidence：物理约束神经算子的油藏流体动力学建模
+5. [Reducing Experimental Testing in Space Propulsion Film Cooling Analyses by Pixelwise Generative Image Interpolation](/202606/04/2605.29911v1-reducing-experimental-testing-in-space-propulsion-film-cooling-analyses-by-pixelwise-generative-image-interpolation)  
+   标签：评分：9.0/10、query:q2
+   evidence：航天推进气膜冷却分析中图像回归的机器学习方法
+6. [Cellular Sheaf Neural Operators for Structure-Preserving Surrogate Modeling of Constrained PDEs](/202606/04/2606.00937v1-cellular-sheaf-neural-operators-for-structure-preserving-surrogate-modeling-of-constrained-pdes)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：用于结构保持PDE代理的神经算子
+7. [Identifying sensitivity-dominant parameters via active subspaces in reduced-order modeling of fluid dynamics](/202606/04/2606.02315v1-identifying-sensitivity-dominant-parameters-via-active-subspaces-in-reduced-order-modeling-of-fluid-dynamics)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：主动子空间和POD用于流体动力学降阶建模
+8. [Correcting Neural Operator Spectral Bias via Diffusion Posterior Sampling with Sparse Observations](/202606/04/2606.03936v1-correcting-neural-operator-spectral-bias-via-diffusion-posterior-sampling-with-sparse-observations)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：通过扩散后验采样利用稀疏传感器观测纠正神经算子谱偏差
+9. [Reconstructing Unobservable Temperature Fields via Simulation-Aided Intelligent Sensing](/202606/04/2606.04582v1-reconstructing-unobservable-temperature-fields-via-simulation-aided-intelligent-sensing)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：使用模拟训练的神经网络从稀疏传感器重建温度场
+10. [Learning Control-Affine Reduced-Order Models via Autoencoders](/202606/04/2606.05045v1-learning-control-affine-reduced-order-models-via-autoencoders)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：基于自编码器的降阶建模
+11. [Deep Embedded Multiplicative DMD for Algebra-Preserving Koopman Learning](/202606/04/2606.05131v1-deep-embedded-multiplicative-dmd-for-algebra-preserving-koopman-learning)  
+   标签：评分：9.0/10、query:pclso
+   evidence：强制执行Koopman乘积法则的深度学习潜在空间
 
 ### 速读区论文标签
-1. [A Differentiable Programming Framework for Accurate and Stable Reduced-Order Modeling of Chaotic Flows](/202606/03/2605.26416v1-a-differentiable-programming-framework-for-accurate-and-stable-reduced-order-modeling-of-chaotic-flows)  
+1. [CFDTwin: An open-source GUI and Python toolkit for POD-NN surrogate modeling of ANSYS Fluent simulations](/202606/04/2605.27725v1-cfdtwin-an-open-source-gui-and-python-toolkit-for-pod-nn-surrogate-modeling-of-ansys-fluent-simulations)  
    标签：评分：8.0/10、query:flow-field
-   evidence：用于混沌流降阶建模的可微分编程框架
-2. [Recursive Flow Matching](/202606/03/2605.26535v1-recursive-flow-matching)  
+   evidence：POD-NN代理建模用于CFD
+2. [An Architecture-Agnostic High-Order Discontinuous Galerkin Framework for Compressible Flows](/202606/04/2605.28627v1-an-architecture-agnostic-high-order-discontinuous-galerkin-framework-for-compressible-flows)  
    标签：评分：8.0/10、query:flow-field
-   evidence：递归流匹配用于时空预测
-3. [Predictive Moving Sample Method for Physics-Informed Neural Solvers of Time-Dependent PDEs](/202606/03/2605.26745v1-predictive-moving-sample-method-for-physics-informed-neural-solvers-of-time-dependent-pdes)  
+   evidence：用于可压缩流CFD模拟的高阶DGSEM框架
+3. [History-aware adaptive reduced-order models via incremental singular value decomposition](/202606/04/2605.28684v1-history-aware-adaptive-reduced-order-models-via-incremental-singular-value-decomposition)  
    标签：评分：8.0/10、query:flow-field
-   evidence：物理信息神经网络求解PDE
-4. [Sub-surface turbulence and free-surface features](/202606/03/2605.26746v1-sub-surface-turbulence-and-free-surface-features)  
+   evidence：通过增量SVD的自适应降阶模型
+4. [Surrogate modeling for convection-dominated parametric problems based on error learning](/202606/04/2605.29769v1-surrogate-modeling-for-convection-dominated-parametric-problems-based-on-error-learning)  
    标签：评分：8.0/10、query:flow-field
-   evidence：利用表面数据实验重建流场
-5. [Sparse POD Mode Selection and Manifold Dimensionality Reduction with Neural Networks](/202606/03/2605.27756v1-sparse-pod-mode-selection-and-manifold-dimensionality-reduction-with-neural-networks)  
-   标签：评分：8.0/10、query:flow-field
-   evidence：稀疏POD模态选择与神经网络流形降维
-6. [Direct Numerical Simulation of Vertical-Axis Wind Turbine Near-Wake Dynamics](/202606/03/2605.27626v1-direct-numerical-simulation-of-vertical-axis-wind-turbine-near-wake-dynamics)  
+   evidence：结合投影降阶模型和深度学习的混合代理模型
+5. [Revisit the simplified lattice Boltzmann method: dissipation, dispersion and stability](/202606/04/2605.29887v1-revisit-the-simplified-lattice-boltzmann-method-dissipation-dispersion-and-stability)  
+   标签：评分：8.0/10、query:q5
+   evidence：简化格子玻尔兹曼方法用于流体流动模拟
+6. [Adapting Automotive Aerodynamics Surrogates to New Vehicle Families via Transfer Learning](/202606/04/2605.27968v1-adapting-automotive-aerodynamics-surrogates-to-new-vehicle-families-via-transfer-learning)  
    标签：评分：7.0/10、query:flow-field
-   evidence：风力涡轮机尾流直接数值模拟
-7. [Adapting Automotive Aerodynamics Surrogates to New Vehicle Families via Transfer Learning](/202606/03/2605.27968v1-adapting-automotive-aerodynamics-surrogates-to-new-vehicle-families-via-transfer-learning)  
+   evidence：气动代理模型的迁移学习
+7. [Tail observability and fourth-order closure recovery in physics-informed neural networks for Bhatnagar-Gross-Krook normal shocks](/202606/04/2605.29211v1-tail-observability-and-fourth-order-closure-recovery-in-physics-informed-neural-networks-for-bhatnagar-gross-krook-normal-shocks)  
    标签：评分：7.0/10、query:flow-field
-   evidence：迁移学习气动代理模型
-8. [History-aware adaptive reduced-order models via incremental singular value decomposition](/202606/03/2605.28684v1-history-aware-adaptive-reduced-order-models-via-incremental-singular-value-decomposition)  
+   evidence：用于激波闭合恢复的PINN
+8. [Deep Adaptive Dimension Reduction for Bayesian Inference in Inverse Problems](/202606/04/2605.29373v2-deep-adaptive-dimension-reduction-for-bayesian-inference-in-inverse-problems)  
+   标签：评分：7.0/10、query:pclso
+   evidence：基于VAE的PDE逆问题降维方法
+9. [An IMEX-DG solver with non-conforming mesh refinement for atmospheric dynamics with rotation](/202606/04/2605.29598v1-an-imex-dg-solver-with-non-conforming-mesh-refinement-for-atmospheric-dynamics-with-rotation)  
    标签：评分：7.0/10、query:flow-field
-   evidence：通过增量SVD的降阶建模
-9. [Tail observability and fourth-order closure recovery in physics-informed neural networks for Bhatnagar-Gross-Krook normal shocks](/202606/03/2605.29211v1-tail-observability-and-fourth-order-closure-recovery-in-physics-informed-neural-networks-for-bhatnagar-gross-krook-normal-shocks)  
-   标签：评分：7.0/10、query:flow-field
-   evidence：用于BGK激波的物理信息神经网络
-10. [Reconstructing 3D Neural Hemodynamics using Sparse Ultrasound Localization Microscopy Data](/202606/03/2605.26752v1-reconstructing-3d-neural-hemodynamics-using-sparse-ultrasound-localization-microscopy-data)  
+   evidence：用于可压缩Euler方程的IMEX-DG求解器
+10. [Random Process Flow Matching: Generative Implicit Representations of Multivariate Random Fields](/202606/04/2605.28625v1-random-process-flow-matching-generative-implicit-representations-of-multivariate-random-fields)  
    标签：评分：6.0/10、query:flow-field
-   evidence：从稀疏超声数据重建血流动力学
-11. [Lattice Boltzmann Methods with Anisotropic Equilibrium Distributions](/202606/03/2605.27004v1-lattice-boltzmann-methods-with-anisotropic-equilibrium-distributions)  
+   evidence：使用生成模型从稀疏数据重建
+11. [Learning effective models from network dynamics data with multiple initial conditions using weak form SINDy](/202606/04/2605.30432v1-learning-effective-models-from-network-dynamics-data-with-multiple-initial-conditions-using-weak-form-sindy)  
    标签：评分：6.0/10、query:flow-field
-   evidence：各向异性流体流动的格子玻尔兹曼方法
-12. [Towards Drone-based Mapping of Volcanic Gases using Gas Tomography](/202606/03/2605.27180v2-towards-drone-based-mapping-of-volcanic-gases-using-gas-tomography)  
+   evidence：弱形式SINDy从数据中学习控制方程，可应用于流体动力学
+12. [A scalable Ewald-free BIE framework for periodic Stokes flow via hierarchical proxy sums](/202606/04/2605.30805v1-a-scalable-ewald-free-bie-framework-for-periodic-stokes-flow-via-hierarchical-proxy-sums)  
    标签：评分：6.0/10、query:flow-field
-   evidence：无人机稀疏测量的气体层析重建
-13. [PINNsur: Physics-Informed Neural Networks for PDEs on Curved Surfaces](/202606/03/2605.27308v1-pinnsur-physics-informed-neural-networks-for-pdes-on-curved-surfaces)  
+   evidence：周期性斯托克斯流的可扩展BIE框架，计算流场预测
+13. [Color-gradient lattice Boltzmann modeling of wetting boundary condition on curved solid boundaries](/202606/04/2605.30878v1-color-gradient-lattice-boltzmann-modeling-of-wetting-boundary-condition-on-curved-solid-boundaries)  
    标签：评分：6.0/10、query:flow-field
-   evidence：用于曲面PDE的PINN可迁移至流体流动
+   evidence：格子玻尔兹曼CFD方法
 
