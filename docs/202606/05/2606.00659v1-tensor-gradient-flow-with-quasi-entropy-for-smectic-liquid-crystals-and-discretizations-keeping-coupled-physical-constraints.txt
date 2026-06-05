@@ -1,0 +1,3385 @@
+Title: Tensor gradient flow with quasi-entropy for smectic liquid crystals and discretizations keeping coupled physical constraints
+
+URL Source: https://arxiv.org/pdf/2606.00659v1
+
+Published Time: Tue, 02 Jun 2026 00:56:26 GMT
+
+Number of Pages: 33
+
+Markdown Content:
+# Tensor gradient flow with quasi-entropy for smectic liquid crystals and discretizations keeping coupled physical constraints 
+
+## Jie Xu ∗
+
+## , Xiaomei Yao †
+
+Abstract 
+
+A gradient flow for the concentration and a 2 × 2 tensor is constructed to describe smectic liquid crystals. The free energy consists of the entropy term and interaction term involving squared sec-ond order spatial derivatives. The entropy term incorporates the concentration in the quasi-entropy originally proposed for the tensor only, which is a strictly convex and lower semicontinuous function imposing coupled constraints between the concentration and the tensor. An evolution equation for the boundary normal derivative of the concentration is proposed in addition to the equations for the concentration and the tensor, giving an energy dissipation system. Numerical schemes are designed with emphases on using the entropy term to keep the coupled constraints, and the discretization of the boundary normal derivatives satisfying summation by parts. Existence, uniqueness, energy dis-sipation and error estimates are established. Numerical results indicate the efficiency and robustness of the scheme. Configurations of defects different from other layer structures are observed. 
+
+Keywords. Smectic liquid crystals; Tensor model; Gradient flow; Coupled constraints; Bound-ary evolution equations; Stability and error analysis 
+
+# 1 Introduction 
+
+The properties of liquid crystals are determined to a great extent by local anisotropy typically gen-erated by orientational distribution of non-spherical molecules with rigidity. The local anisotropy may either dominate the orientational structure, resulting in nematic phases [14, 51, 49, 50, 6, 44, 57, 30, 70], or couple with concentration modulation, giving rise to smectic and columnar phases [13, 45, 26, 38, 53, 15, 31, 22, 37, 47]. Furthermore, the local anisotropy leads to more possibilities of struc-tural imperfections when external forces, such as geometric confinements, boundary anchorings or preferences, are present. For nematics, topological defects of various kinds have been studied ex-tensively [46, 33, 25, 27, 23, 16, 11, 21, 57, 70, 39, 69, 20, 18, 3]. Defects in smectics exhibit distinctive configurations since they may involve interruptions of both layer structures and the orientational or-der [24, 28, 43, 58]. On the theoretical and computational aspect, some cases are discussed preliminarily while many more remain to be examined [17, 32, 61, 60, 48]. Computational investigations of smectics can be coarsely classified into microscopic and macroscopic approaches. Microscopic approaches, such as molecular simulations of small rigid molecules and self-consistent field simulations of polymer chains with rigid monomers [55, 34, 58, 10, 35, 59], generally require high computational costs as they need to compute the state of every single molecule. In macro-scopic approaches, the system is typically governed by a free energy of field variables for both concentra-tion and local anisotropy, whether the focus is equilibrium states or dynamics. For rod-like molecules, depending on the variables for the local anisotropy, the models can be categorized into tensor mod-els [36, 9, 7, 32, 4, 61, 40, 60, 5] and vector models [13, 12, 42, 29, 2, 1, 41, 72]. The free energy necessarily has terms for the coupling between local anisotropy and concentration variations, basically 
+
+> ∗
+
+SKLMS, Institute of Computational Mathematics and Scientific/Engineering Computing (ICMSEC), Academy of Mathematics and Systems Science (AMSS), Chinese Academy of Sciences, Beijing, China. Email: xujie@lsec.cc.ac.cn 
+
+> †
+
+School of Mathematics and Physics, North China Electric Power University, Beijing, China. Email: yaoxm16@ncepu.edu.cn 
+
+1
+
+> arXiv:2606.00659v1 [math.NA] 30 May 2026
+
+written down according to assumptions on layer modulation. Another point to be noted is that vector models possess fewer variables but are known to have limitations when studying defects. Hence, it would be more appropriate to use tensor models, which typically describe the local anisotropy by a second-order symmetric traceless tensor, to examine defects in smectics. The free energy in tensor models can also be constructed by expansion from the microscopic theory, which does not require a priori assumptions on structural configurations. Such a procedure has been applied to the studies of nematic phases of different kinds [52, 8, 17, 66, 54], as well as smectic phases of rod-like molecules [17, 32]. One advantage of this class of free energies is that they include possible couplings up to certain order, so that they might be more suitable for structural imperfections. However, to obtain a model ready for the computational studies, especially dynamics, of defects in smectics, many efforts need to be made on both modeling and numerical methods. For the tensor free energy derived from microscopic theory, it is known that the free energy always contains an entropy term. For nematic phases where the concentration is constant, the entropy term is derived through the maximum entropy state under the given value of the tensor. The advantage of having this entropy term is that it constrains the eigenvalues of the tensor within the physical range. However, it is an implicit function of the tensor involving integrals on the directions of rods. Such a formulation poses substantial computational challenges, since the implicit function needs to be solved at every grid point. On the other hand, the role of the entropy term is stabilization making the system tend to the isotropic state and is independent of the interactions between rod-like molecules. In this light, it is appropriate to seek for an alternative function in simple form with the essential properties of the entropy term to take its place. To this end, the quasi-entropy is proposed [63] for general rigid molecules in the case of constant concentration. It maintains several crucial mathematical properties of the original entropy term, including strict convexity, ability to constrain the covariance matrix positive definite, rotational invariance, and consistency in symmetry reductions. It is also verified for several representative rigid molecules that the free energy with the quasi-entropy captures the underlying physics in the spatially homogeneous systems. Furthermore, for spatially inhomogeneous systems, numerical methods are constructed for a gradient flow with emphases on maintaining the physical range and energy dissipation [56]. The evolution of defect patterns also proves to be consistent with previous results. In this work, we discuss rod-like molecules exhibiting smectic phases (so that the concentration varies spatially) confined in a bounded 2D region with their directions lying in a plane. In this case, the tensor describing local anisotropy is 2 × 2 symmetric traceless, whose physical range of eigenvalues now depends on the concentration. It is known that confined systems of the nematic phase typically possess multiple local energy minimizers. Their configurations are significant whether or not they are global minimizers. To explore these energy minimizers and their relations, it is necessary to evolve from different initial states according to certain equations. To this end, we aim to construct a tensor gradient flow, and discuss numerical methods maintaining its essential properties. A gradient flow is an energy dissipative system, determined not only by the free energy but also by its dissipation operator. Here, we choose the dissipation operator as simple as possible, just to ensure that it keeps the mass conservation and the tensor symmetric traceless. In this way, we could pay more attention dealing with the free energy. It shall be noted that this choice does not imply that the dissipation operator is an ingredient less significant. Actually, the dissipation operator might be highly coupled if one considers dynamic models from the microscopic theory [71, 67], resulting in other problems to be discussed later separately. So, we could concentrate on the tensor free energy. Since the concentration may vary spatially, the free energy shall be a functional of the concentration and the tensor. For the free energy derived from microscopic theory, the major difference from the case with constant concentration lies within the entropy term. Therefore, one of the core targets in this work is to extend the quasi-entropy to incorporate concentration variations. We shall write down its form and show the essential mathematical properties. In particular, the quasi-entropy for the varying concentration has a domain neither open nor closed. This arises from the definition when the concentration takes zero. It turns out that the quasi-entropy cannot be continuous here, but we can still show that it is strictly convex and lower semicontinuous. 2Meanwhile, the quasi-entropy satisfies rotational invariance, and acts as a barrier function imposing coupled constraints on the concentration and the tensor, which is analogous to the case of constant concentration. Another problem arises in the boundary conditions. The description of smectic phases involves concentration modulation that calls for at least squared second-order spatial derivative terms in the free energy. If we consider Dirichlet type boundary conditions, both function values and normal derivatives are necessary. However, there lacks the information to determine the value of normal derivatives no matter by measurements or theoretical derivations. In this situation, we would introduce an evolution equation for the normal derivatives from the free energy. Combined with the gradient flow for the concentration and the tensor, we show that these equations form an energy dissipative system. The quasi-entropy and the gradient flow will be discussed in Sec. 2. Next, we propose numerical methods in Sec. 3, including both time and spatial discretizations, for the gradient flow system. Since the gradient flow is written down mainly for studying various steady states, more emphasis shall be put on keeping essential structures and properties of the gradient flow. In particular, due to the pattern of the smectic phases, the concentration and the tensor may become very close to the boundary of the domain. Therefore, it requires special care to maintain the coupled constraints of the concentration and the tensor. The coupled constraints are handled by utilizing the properties of the quasi-entropy, which is treated implicitly. We show that the resulting scheme, first-order in time, is uniquely solvable within the domain of the concentration and the tensor, nonzero almost everywhere, and is energy dissipative. In the proof, the convexity and lower semicontinuity of the quasi-entropy play key roles. The error estimate is then established with the normal derivatives on the boundaries included. For the spatial discretization, we consider the finite difference in a rectangular region. Since both high-order derivatives inside and normal derivatives on the boundaries are present, the scheme needs delicate choice to be consistent with the continuous case. This can be done by discretizing the free energy in each rectangular cell, followed by finding out the corresponding discretized variational derivatives. To accomplish this goal, ghost points are necessarily included outside the rectangular region. The spatial truncation error is second-order. We verify that the finite difference scheme satisfies the crucial summation by parts involving the normal derivatives on the boundaries. Armed with these equalities, we show that the fully discrete scheme has a unique solution, with the coupled constraints for the concentration and the tensor satisfied for the grid points inside. Following that, the energy dissipation and the error estimates are established. The careful construction of numerical methods is indeed necessary, as we realize from the numerical examples in Sec. 4. If we adopt a simple linear semi-implicit scheme, the numerical solution easily goes out of the domain, unless a extremely small time step is chosen. On the contrary, the scheme proposed in the previous section allows time steps several magnitues larger. Meanwhile, it does not require many nonlinear iterations, so that in total it has superiority in efficiency and stability. Then, a few cases on the evolution of defects in smectic phases are examined. We observe that the local anisotropy affect to a large extent the disruption of layer structures, exhibiting evident distinctions from the defects in layer structures without local anisotropy. Although in this work we discuss the special case of the concentration coupled with the 2 × 2 tensor, the quasi-entropy can be written in the same way for the 3 × 3 tensor, and further multiple tensors if nonaxisymmetric rigid molecules are examined. The quasi-entropy for the concentration coupled with tensors can also be useful in the dynamic tensor models derived from microscopic theory. For these problems, we shall give a few concluding remarks in Sec. 5. 
+
+# 2 Tensor Model and Gradient Flow 
+
+## 2.1 Order parameters 
+
+The system we study consists of rigid, rod-like molecules with their directions lying in a plane. Let 
+
+f (r, m) ≥ 0 denote the number density of molecules at position r ∈ R2 with orientation m ∈ S1. The order parameters are defined as directional moments of f . A rod-like molecule is assumed to have 3the head-to-tail symmetry, so that f (r, −m) = f (r, m), which means that the odd-order moments of 
+
+m vanish. We introduce zeroth and second moments characterizing the concentration and the local anisotropy at certain position r,
+
+c(r) = 
+
+Z
+
+> S1
+
+f (r, m) d m, Q(r) = 
+
+Z
+
+> S1
+
+
+
+m ⊗ m − 12 I
+
+
+
+f (r, m) d m,
+
+where ⊗ represents the tensor product, d m is the uniform unit measure on S1 (i.e., R 
+
+> S1
+
+dm = 1), and the tensor m ⊗ m can be understood as a 2 × 2 matrix. In the above, we subtract from the second moment a half of the 2 × 2 identity matrix I for the integrand to make Q(r) symmetric traceless. For conveniences of further discussions, we define the directional density function ρ(r, m) = f (r, m)/c (r), which satisfies R 
+
+> S1
+
+ρdm = 1 (if c(r) = 0, ρ(r, m) can be chosen as any normalized density). By the definition, when c is zero, Q is also the zero matrix. When c is positive, we have Q + cI/ 2 = R 
+
+> S1
+
+m ⊗ mf dm positive definite. In other words, the physical range of ( c, Q ) is given by 
+
+Qphys =
+
+n
+
+(c, Q ) c = 0 , Q = 0 , or c > 0, Q = Qt, tr Q = 0 , λ (Q) ∈
+
+
+
+− c
+
+2 , c
+
+2
+
+o 
+
+,
+
+where λ(Q) represents the eigenvalues of Q.We consider the case where the rod-like molecules are located within a bounded 2D region Ω, so that the mass conservation is assumed, 1
+
+V (Ω) 
+
+Z
+
+> Ω
+
+c(r)d r = c0, (2.1) where V (Ω) represents the area of Ω. The dot product of two tensors is given by summing up the products of corresponding components, i.e. 
+
+U · V = Uij Vij . Hereafter, we adopt the convention of summation on repeated indices. The differential operators can then be expressed as ∆ = ∂ii , ∆ 2 = ∂iijj . If necessary, the identity tensor (matrix) is also written as Iij = δij using the Kronecker delta. The dot product between identical tensors is denoted as 
+
+|U |2 = U · U , and similarly |∇ u|2 = ∂iu∂ iu, |∇ U |2 = ∂iUjk ∂iUjk , etc. The inner product ( U, V ) on Ω is defined as R 
+
+> Ω
+
+U · V dr, and the L2-norm is denoted as ∥U ∥2 = ( U, U ). When we mention other norms, we shall specify it in the subscript, such as ∥ · ∥ H2(Ω) .
+
+## 2.2 Free energy with quasi-entropy incorporating concentration variations 
+
+The free energy derived from molecular theory consists of an entropy term and interaction terms, denoted as 
+
+E[c, Q ] = Eent + Er .
+
+The interaction energy Er is obtained from gradient expansion. Its complete form has been obtained for general rigid molecules in preceding works [17], where a rigid molecule may undergo any rotation in SO (3). Although in this work the rod-like molecule is only allowed to rotate within a plane, the terms in the gradient expansion can be deduced in the same way, and the results are actually identical. The interaction energy contains bulk terms that do not involve spatial derivatives, and elastic terms that do involve them. To describe smectic structures, in elastic terms it would be necessary to include quadratic terms of spatial derivatives up to second-order. All the quadratic terms of first-order spatial derivatives are included, since they characterize the essential couplings between the orientational order and modulations (cf. Sec. V of [65]). For the quadratic terms of second-order derivatives, we keep them to the minimally required, that is, only one term |∆c|2 = ∂ii c∂ jj c is included to stabilize modulations (cf. discussions in [32]). Consequently, the interaction energy is written as 
+
+Er =
+
+Z
+
+> Ω
+
+c00 c2 + c02 |Q|2 + ge dr,
+
+4where 
+
+ge = c20 ∂kc∂ kc + c21 ∂kQij ∂kQij + c22 ∂iQij ∂kQkj + c23 ∂j c∂ iQij + c40 ∂ii c∂ jj c. (2.2) For the squared elastic terms, the coefficients c40 , c 21 , c 22 > 0 stabilize the energy, while c20 < 0characterizes concentration modulations [32]. We turn to Eent [c, Q ]. Let us start from the entropy term given by the density function f (r, m), 
+
+Z
+
+> Ω×S1
+
+f log f drdm +
+
+Z
+
+> Ω
+
+(M − c) log(1 − c/M )d r.
+
+where the second term describes a saturation value c ≤ M . Separating the contribution of the orienta-tional density ρ from the entropy term, we rewrite the integrand with respect to d r as 
+
+c log c + ( M − c) log(1 − c/M ) + c
+
+Z
+
+> S1
+
+ρ log ρ dm.
+
+Notice that R 
+
+> S1
+
+ρ log ρdm represents the entropy of the normalized orientational distribution. Hence, a reasonable structure of Eent [c, Q ] is 
+
+c log c + ( M − c) log(1 − c/M ) + cζ (Q/c )for some function ζ, where by definition Q/c is the tensor averaged by ρ, which is exactly the tensor adopted for the nematic liquid crystals. One choice of ζ is to deduce from the maximum entropy state [17, 32]. It leads to a function with nice properties while implicitly defined through the normalized density function ρ. For rigid molecules allowing SO (3) rotations, an elementary function satisfying these properties given by the maximum entropy state has been proposed as a substitution, called the quasi-entropy [63]. The quasi-entropy is defined as the log-determinant of the covariance matrix. For rod-like molecules in a plane, we consider the quasi-entropy in a similar way. The covariance matrix now reads Z
+
+> S1
+
+m ⊗ mρ dm −
+
+Z 
+
+> S1
+
+mρ dm
+
+
+
+⊗
+
+Z 
+
+> S1
+
+mρ dm
+
+
+
+.
+
+Since ρ(r, −m) = ρ(r, m), it holds R 
+
+> S1
+
+mρ dm = 0. Therefore, the covariance matrix is exactly R 
+
+> S1
+
+m ⊗
+
+mρdm = Q/c + I/ 2. The quasi-entropy is then given by 
+
+q(Q/c ) = − log det 
+
+ Qc + I
+
+2
+
+
+
++ log det 
+
+ I
+
+2
+
+
+
+. (2.3) Let νq take the place of ζ for some ν > 0. We finally arrive at Eent = R 
+
+> Ω
+
+Ξ( c, Q )d r, with Ξ( c, Q ) = c log c + ( M − c) log 
+
+
+
+1 − cM
+
+
+
++ cνq (Q/c ). (2.4) The function (2.4) possesses several properties that are crucial for the structures of the gradient flow and its numerical schemes, which we discuss in what follows. We begin with the function q (2.3), whose properties result from the log-determinant. 
+
+Lemma 2.1. The function − log det S is strictly convex w.r.t. positive definite S ∈ Rn×n.
+
+For the proof, see for example [56]. The function q(S) is defined for any symmetric traceless tensor S with its eigenvalues lying in (−1/2, 1/2). If the eigenvalues exceed this range, we define its value as + ∞.
+
+Proposition 2.2. The function q(S) has the following properties. 1. It is strictly convex w.r.t. S, with the unique minimizer S = 0 .
+
+52. q(S) is invariant under rotations: for T ∈ R2×2 satisfying T tT = I, it holds q(T ST t) = q(S).3. It gives a barrier function in the sense that lim |λ(S)|→ (1 /2) − q(S) = + ∞.Proof. The convexity follows directly from Lemma 2.1. Denote by ±λ two eigenvalues of S. Since det 
+
+
+
+S + I
+
+2
+
+
+
+=
+
+ 12 + λ
+
+ 12 − λ
+
+
+
+≤ 14 ,
+
+where the equality holds only when λ = 0, the unique minimizer is S = 0. The rotational invariance is recognized by the equality det( T AT t) = det T det A det T t = det A.The third property is deduced by taking the limit λ → (1 /2) − in the equality above. We then turn to the function (2.4). Notice that the tensor Q defined in this paper is proportional to the concentration c. One fine consequence of this definition is that the interaction energy consists of quadratic terms. A seemingly drawback is that in Ξ we have to deal with the term q(Q/c ) which may involve singular variables. But it turns out that defining Q in this way actually leads to convexity of Ξ that is crucial for the gradient flow and its numerical methods. Let us first clarify the domain of Ξ. It is easy to see that Ξ is well-defined and takes finite value in the set 
+
+QM 
+
+> phys
+
+= {(c, Q ) ∈ Q phys |c ≤ M }. (2.5) 
+
+Theorem 2.3. QM 
+
+> phys
+
+is a bounded convex set. Proof. The boundedness follows from the fact that each component in a symmetric matrix is controlled by its maximum and minimum eigenvalues. For the convexity, choose two different elements ( c1, Q 1), (c2, Q 2) ∈ Q phys with c1 ≤ c2. If c1 = 0, we have (( c1+c2)/2, (Q1+Q2)/2) = ( c2/2, Q 2/2) and λ(Q2/c 2) ∈ (−1/2, 1/2), so that ( c2/2, Q 2/2) ∈ Q M
+
+> phys
+
+.If c1 > 0, it holds that Q1/c 1 +I/ 2 and Q2/c 2 +I/ 2 are positive definite. Thus, their linear combination with positive coefficients, 
+
+Q1 + Q2
+
+c1 + c2
+
++ I
+
+2 = c1
+
+c1 + c2
+
+ Q1
+
+c1
+
++ I
+
+2
+
+
+
++ c2
+
+c1 + c2
+
+ Q2
+
+c2
+
++ I
+
+2
+
+
+
+,
+
+is also positive definite, yielding ( c1+c2 
+
+> 2
+
+, Q1+Q2 
+
+> 2
+
+) ∈ Q M
+
+> phys
+
+.It is worth noting that QM 
+
+> phys
+
+is neither open nor closed. A related consequence is that Ξ is NOT continuous at ( c, Q ) = (0 , 0). This can be recognized readily by examining 
+
+Q = diag 
+
+ c
+
+2 − c exp 
+
+
+
+− 1
+
+c2
+
+
+
+, − c
+
+2 + c exp 
+
+
+
+− 1
+
+c2
+
+
+
+.
+
+When c → 0+, we have Ξ( c, Q ) → +∞ but Ξ(0 , 0) = 0. Nevertheless, we find that Ξ still possesses several properties necessary in the analysis. To be prepared for our discussions afterwards, we introduce the interior and the closure of QM
+
+> phys
+
+, given by (QM
+
+> phys
+
+)◦ =
+
+n
+
+(c, Q ) 0 < c < M, Q = Qt, tr Q = 0 , λ (Q) ∈
+
+
+
+− c
+
+2 , c
+
+2
+
+o 
+
+.
+
+QM 
+
+> phys
+
+=
+
+n
+
+(c, Q ) 0 ≤ c ≤ M, Q = Qt, tr Q = 0 , λ (Q) ∈
+
+h
+
+− c
+
+2 , c
+
+2
+
+io 
+
+.
+
+Similar to the function q, in QM 
+
+> phys
+
+we let Ξ take + ∞ when |λ(Q)| = c/ 2 > 0. Moreover, its partial derivatives, 
+
+∂Ξ
+
+∂c = log M c M − c − ν
+
+
+
+log det 
+
+ Qc + I
+
+2
+
+
+
+− log det 
+
+ I
+
+2
+
+
+
++ νc
+
+ Qc + I
+
+2
+
+−1
+
+> ij
+
+Qij ,∂Ξ
+
+∂Q ij 
+
+= −ν
+
+ Qc + I
+
+2
+
+−1
+
+> ij
+
+,
+
+are only defined for ( c, Q ) ∈ (QM
+
+> phys
+
+)◦.6Theorem 2.4. The quasi-entropy Ξ( c, Q ) has the following properties: 1. It is invariant under rotations: for any 2 × 2 matrix T satisfying T T t = I, it holds Ξ( c, T QT t) = Ξ( c, Q ).2. It is strictly convex on QM 
+
+> phys
+
+with a finite lower bound. 3. It is lower semicontinuous on QM
+
+> phys
+
+.Proof. The rotation invariance follows the same argument as the proof of Proposition 2.2. The finite lower bound follows from the fact that q has a finite lower bound. For the strict convexity of Ξ( c, Q ), notice that c log c + ( M − c) log(1 − c/M ) is strictly convex w.r.t. 
+
+c. We show that ϕ(c, Q ) = cνq (Q/c ) is convex w.r.t. ( c, Q ). Let ( c1, Q 1), (c2, Q 2) ∈ Q M
+
+> phys
+
+. For c1 = 0, 
+
+c2 > 0, we calculate directly that 12
+
+ ϕ(c1, Q 1) + ϕ(c2, Q 2) = 12 ϕ(c2, Q 2) = ϕ
+
+ c2
+
+2 , Q2
+
+2
+
+
+
+= ϕ
+
+ c1 + c2
+
+2 , Q1 + Q2
+
+2
+
+
+
+.
+
+If c1, c 2 > 0, we deduce from the strict convexity of q that 
+
+ϕ
+
+ c1 + c2
+
+2 , Q1 + Q2
+
+2
+
+
+
+= c1 + c2
+
+2 νq 
+
+ Q1 + Q2
+
+c1 + c2
+
+
+
+= c1 + c2
+
+2 νq 
+
+ c1
+
+c1 + c2
+
+· Q1
+
+c1
+
++ c2
+
+c1 + c2
+
+· Q2
+
+c2
+
+
+
+≤ c1 + c2
+
+2
+
+c1
+
+c1 + c2
+
+νq 
+
+ Q1
+
+c1
+
+
+
++ c2
+
+c1 + c2
+
+νq 
+
+ Q2
+
+c2
+
+!
+
+= c1
+
+2 νq 
+
+ Q1
+
+c1
+
+
+
++ c2
+
+2 νq 
+
+ Q2
+
+c2
+
+
+
+= 12
+
+ ϕ(c1, Q 1) + ϕ(c2, Q 2),
+
+where the equality holds only when Q1/c 1 = Q2/c 2. If Ξ( c1, Q 1) + Ξ( c2, Q 2) = 2Ξ(( c1 + c2)/2, (Q1 +
+
+Q2)/2), the term c log c + ( M − c) log(1 − c/M ) implies that c1 = c2, so that Q1 = Q2. Thus, the strict convexity of Ξ is established. To show the lower semicontinuity of Ξ( c, Q ), let ( c(k), Q (k)) → (ˆ c, ˆQ) ∈ Q M
+
+> phys
+
+. Since Ξ( c, Q ) is continuous in QM
+
+> phys
+
+\(0 , 0), we only need to consider two cases: 1. (ˆ c, ˆQ) = (0 , 0); 2. ˆ c > 0, |λ( ˆQ)| = ˆ c/ 2, i.e. Ξ(ˆ c, ˆQ) = + ∞.For the former case, we deduce from the lower-boundedness of q(S) ≥ q(0) that lim inf  
+
+> k→+∞
+
+c(k)νq (Q(k)/c (k)) ≥ lim inf  
+
+> k→+∞
+
+c(k)νq (0) = 0 .
+
+Together with the continuity of c log c + ( M − c) log(1 − c/M ) on [0 , M ], we arrive at lim inf  
+
+> k→+∞
+
+Ξ( c(k), Q (k)) ≥ 0 = Ξ(0 , 0) .
+
+For the latter case, we have lim k→+∞ |λ(Q(k)/c (k))| = 1 /2. Hence, by the third property in Proposition 2.2, lim  
+
+> k→+∞
+
+c(k)νq (Q(k)/c (k)) = + ∞.
+
+Notice again the continuity of c log c + ( M − c) log(1 − c/M ) on [0 , M ] to conclude the proof. 7Corollary 2.5. For the quasi-entropy Ξ( c, Q ), it holds 
+
+ ∂Ξ( c1, Q 1)
+
+∂c 1
+
+− ∂Ξ( c2, Q 2)
+
+∂c 2
+
+
+
+(c1 − c2) + 
+
+ ∂Ξ( c1, Q 1)
+
+∂Q 1
+
+− ∂Ξ( c2, Q 2)
+
+∂Q 2
+
+
+
+· (Q1 − Q2) ≥ 0,∂Ξ( c1, Q 1)
+
+∂c 1
+
+(c1 − c2) + ∂Ξ( c1, Q 1)
+
+∂Q 1
+
+· (Q1 − Q2) ≥ Ξ( c1, Q 1) − Ξ( c2, Q 2),
+
+where (c1, Q 1), (c2, Q 2) ∈ (QM
+
+> phys
+
+)◦, c1, c 2 > 0. The equalities hold only when c1 = c2 and Q1 = Q2.Proof. Define 
+
+h(s) = Ξ ( s(c1, Q 1) + (1 − s)( c2, Q 2)) .
+
+When ( c1, Q 1)̸ = ( c2, Q 2), it follows that h(t) is strictly convex since Ξ is strictly convex w.r.t. ( c, Q ). The two inequalities are deduced from h′(1) > h ′(0) and h′(1) > h (1) − h(0), respectively, by the chain rule. For convenience, we denote the bulk energy within the integral w.r.t. d r as 
+
+gb(c, Q ) = Ξ( c, Q ) + c00 c2 + c02 |Q|2 . (2.6) Summarizing (2.6) and (2.2), the total free energy is given by 
+
+E[c, Q ] = 
+
+Z
+
+> Ω
+
+gb(c, Q ) + ge(c, Q )d r. (2.7) In the above, a positive coefficient ν is introduced. When the anisotropic part q(Q/c ) dominates in the entropy term, the choice of ν is actually not quite significant. This is because, after discarding the terms that depend only on c, a rescaling by c/c 0 shows that the effective parameter is c0/ν .
+
+## 2.3 Gradient Flow 
+
+In the gradient flow, it is necessary to ensure that c satisfies mass conservation and that Q is sym-metric. To this end, we introduce projection operators below, 
+
+G A = A − 1
+
+V (Ω) 
+
+Z
+
+> Ω
+
+Adr, (PQ)ij = 12 (Qij + Qji ) − 12 δij Qkk .
+
+For ψ(r) satisfying R 
+
+> Ω
+
+ψ dr = 0, it holds (G ϕ, ψ ) = ( ϕ, ψ ).
+
+For any symmetric traceless tensor S, it holds 
+
+Q · S = PQ · S. 
+
+Following the idea to make the dissipation operator simple, we consider the gradient flow driven by the variational derivatives on which the above projection operators are imposed, 
+
+∂c ∂t = −G δE δc , (2.8) 
+
+∂Q ∂t = −P δE δQ . (2.9) The gradient flow above needs to be supplemented by suitable boundary conditions. We shall consider Dirichlet type boundary conditions, giving prescribed values of c and Q on ∂Ω, 
+
+c = cbnd , Q = Qbnd , on ∂Ω. (2.10) 8They shall be given such that there exists some ( c, Q ) satisfying 
+
+Z
+
+> Ω
+
+cdr = c0, (c, Q ) a.e. in Ω , E[c, Q ] < +∞, (c, Q ) = ( cbnd , Q bnd ) on ∂Ω. (2.11) Moreover, the c40 term in the free energy (2.7) requires additional boundary conditions on the normal derivatives of c. If we adopt Dirichlet type boundary conditions, the normal derivative ∂nc is also needed, where n = ( n1, n 2) denotes the outward unit normal vector. However, it turns out to be not easy to give reasonable values of ∂nc. So, we instead propose an evolution equation for ∂nc. The equation shall be able to maintain the energy dissipation dictated by the gradient flow. To find out the equation of ∂nc, let us revisit the calculations of the variational derivatives, 
+
+δE =
+
+Z
+
+> Ω
+
+ ∂Ξ
+
+∂c + 2 c00 c
+
+
+
+δc + 2 c20 ∂ic∂ iδc + c23 ∂iQij ∂j δc + 2 c40 ∂ii c∂ jj δc 
+
++
+
+ ∂Ξ
+
+∂Q ij 
+
++ 2 c02 Qij 
+
+
+
+δQ ij + 2 c21 ∂kQij ∂kδQ ij + 2 c22 ∂kQkj ∂iδQ ij + c23 ∂ic∂ j δQ ij dr
+
+=
+
+Z
+
+> Ω
+
+ ∂Ξ
+
+∂c + 2 c00 c − 2c20 ∆c − c23 ∂ij Qij + 2 c40 ∆2c
+
+
+
+δc 
+
++
+
+ ∂Ξ
+
+∂Q ij 
+
++ 2 c02 Qij − 2c21 ∆Qij − 2c22 ∂ik Qkj − c23 ∂ij c
+
+
+
+δQ ij dr
+
++
+
+Z
+
+> ∂Ω
+
+ 2c20 ∂nc + c23 ∂iQij nj − 2c40 ∂n∆cδc + 2 c40 ∆cδ (∂nc)+  2c21 ∂nQij + 2 c22 ∂kQkj ni + c23 ∂j cn i
+
+δQ ij dS. (2.12) Thus, the variational derivatives are given by 
+
+δE δc = ∂Ξ
+
+∂c + 2 c00 c − 2c20 ∆c − c23 ∂ij Qij + 2 c40 ∆2c, (2.13) 
+
+δE δQ ij 
+
+= ∂Ξ
+
+∂Q ij 
+
++ 2 c02 Qij − 2c21 ∆Qij − 2c22 ∂ik Qkj − c23 ∂ij c. (2.14) On the boundary, both δc and δQ are zero because of the Dirichlet boundary conditions. For ∂nc, the evolution equation is written down following the similar structure for c and Q in Ω, that is, 
+
+∂(∂nc)
+
+∂t = −∆c, on ∂Ω. (2.15) The gradient flow system is given by (2.8)–(2.15). 
+
+Theorem 2.6. The gradient flow system (2.8) –(2.10) , (2.13) –(2.15) follows the energy dissipation law 
+
+ddt E[c, Q ] = −
+
+
+
+G δE δc , G δE δc 
+
+
+
+−
+
+
+
+P δE δQ ij 
+
+, P δE δQ ij 
+
+
+
+− 2c40 
+
+Z
+
+> ∂Ω
+
+(∆ c)2dS. 
+
+Proof. The derivation follows the same route as calculating the energy variation δE , just to replace δϕ 
+
+by ∂ϕ/∂t for ϕ taking E, c, Q, and ∂nc. Notice that the Dirichlet boundary conditions (2.10) imply that ∂c/∂t , ∂Q/∂t are zero on ∂Ω. Then, substituting the time derivatives according to (2.8), (2.9) and (2.15), the energy dissipation law is established. 
+
+Remark 2.7. If the free energy contains a boundary integral on ∂Ω, we can follow the same route to construct a gradient flow involving these terms. 
+
+The gradient flow system (2.8)–(2.10), (2.13)–(2.15) is featured in two aspects: one is the coupled constraints for c and Q given by the domain QM 
+
+> phys
+
+to ensure the terms involving Ξ make sense, the other is the compliance of the boundary evolution equation (2.15) with the energy dissipation law. It is crucial for numerical schemes to maintain these properties and structures, which we discuss in the next section. 93 Numerical Methods 
+
+To construct numerical schemes for the gradient flow system (2.8)–(2.10), (2.13)–(2.15), we discuss time discretizations first, followed by spatial discretizations. In smectic liquid crystals, the spatial changing of the concentration is quite drastic. As a result, it would be more probable for the numerical solutions to go out of QM 
+
+> phys
+
+with simple, especially linearly implicit schemes. Actually, we have encountered this problem frequently, which we will report in the following section. The emphasis of ( c, Q ) ∈ Q M 
+
+> phys
+
+urges us to deal with the derivatives of Ξ implicitly in time. Since Ξ is convex, it is then natural to adopt the idea of convex splitting for the time discretization, which also applies to the boundary evolution equations. It turns out that the presence of the boundary evolution equations indeed is compatible with the argument for establishing the theoretical results, including the existence and uniqueness in QM
+
+> phys
+
+, the energy dissipation, as well as the error estimates. The convexity and lower semicontinuity of Ξ turn out to play a key role in the derivations. For spatial discretizations, we write down a second order finite difference scheme with special care for its consistency with the integration by parts involving high order spatial derivatives and normal derivatives. In this way, the theoretical results for the time discretizations also hold for the full discretizations. 
+
+## 3.1 Time Discretization 
+
+When the normal derivative on the boundary is not prescribed, the convexity can still be recognized, as we will show below. 
+
+Proposition 3.1. When γ ≥   min {c20 − c223  
+
+> 4c22
+
+, 0}2/(4 c40 ), the functional 
+
+Z
+
+> Ω
+
+ge(c, Q ) + γc 2dr,
+
+with ge given in (2.2) , is convex w.r.t. (c, Q ) for c ∈ H2(Ω) , c = cbnd on ∂Ω, Q ∈ H1(Ω) .Proof. For 4 γ1c22 ≥ c223 , it is easy to verify that 
+
+c22 ∂j Qij ∂kQik + c23 ∂ic∂ j Qij + γ1∂ic∂ ic ≥ 0.
+
+Thus, we write 
+
+Z
+
+> Ω
+
+ge(c, Q ) + γc 2dr =
+
+Z
+
+> Ω
+
+c22 ∂j Qij ∂kQik + c23 ∂ic∂ j Qij + γ1∂ic∂ ic
+
++ c40 ∂ii c∂ jj c + ( c20 − γ1)∂ic∂ ic + γc 2dr.
+
+(3.1) If c20 ≥ γ1, the proof is done since the functional is quadratic and nonnegative. If c20 < γ 1, we utilize 
+
+Z
+
+> Ω
+
+∂ic∂ icdr =
+
+Z
+
+> ∂Ω
+
+c∂ ncdS −
+
+Z
+
+> Ω
+
+c∂ ii cdr,
+
+to write the second line as 
+
+Z
+
+> Ω
+
+c40 ∂ii c∂ jj c − (c20 − γ1)c∂ ii c + γc 2dr + ( c20 − γ1)
+
+Z
+
+> ∂Ω
+
+cbnd · ∂ncdS. (3.2) For 4 γc 40 ≥ (c20 − γ1)2, it holds 
+
+c40 ∂ii c∂ jj c − (c20 − γ1)c∂ ii c + γc 2 ≥ 0.
+
+We complete the proof noting that the boundary integral is linear w.r.t. c.10 Together with the convexity of the quasi-entropy Ξ, the free energy can be expressed as the difference of two convex functionals, 
+
+E[c, Q ] = 
+
+Z
+
+> Ω
+
+Ξ( c, Q ) + g+(c, Q ) − g−(c, Q )d r, (3.3) where g+(c, Q ) = ge(c, Q ) + γc 2,g−(c, Q ) = ( γ − c00 )c2 − c02 Q2, (3.4) and γ ≥ c00 is chosen according to the above lemma. Let ( cn, Q n) denote the numerical solution at tn = nδt . In the spirit described in the beginning of this section, we construct the scheme below, 
+
+cn+1 − cn
+
+δt = −G
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂c n+1 + 2( c00 − γ)cn + 2 γc n+1 − 2c20 ∆cn+1 
+
+− c23 ∂ij Qn+1  
+
+> ij
+
++ 2 c40 ∆2cn+1 
+
+
+
+(3.5) 
+
+Qn+1  
+
+> ij
+
+− Qnij 
+
+δt = −P
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂Q n+1 
+
+
+
+> ij
+
++ 2 c02 Qnij − 2c21 ∆Qn+1 
+
+> ij
+
+− 2c22 ∂ik Qn+1  
+
+> kj
+
+− c23 ∂ij cn+1 
+
+!
+
+, (3.6) 
+
+∂ncn+1 − ∂ncn
+
+δt = −∆cn+1 , on ∂Ω, (3.7) with the boundary values of cn+1 and Qn+1 given by (2.10). In the following, we shall establish the existence and uniqueness, energy dissipation and error estimate for the scheme (3.5)–(3.7). 
+
+Theorem 3.2. Assume that ∂Ω is smooth. For any δt > 0, the scheme (3.5) –(3.7) has the properties below: 1. It has a unique solution cn+1 ∈ H2(Ω) , Qn+1 ∈ H1(Ω) and (cn+1 , Q n+1 ) ∈ (QM
+
+> phys
+
+)◦ a.e. in Ω.2. It is mass conservative, i.e. R 
+
+> Ω
+
+cn+1 dr = R 
+
+> Ω
+
+cndr.3. It satisfies the energy dissipation law, 
+
+E[cn+1 , Q n+1 ] + 1 − (c00 − γ)δt δt ∥cn+1 − cn∥2 + 1 − c02 δt δt (∥Qn+1 − Qn∥2)+
+
+Z
+
+> Ω
+
+g+(cn+1 − cn, Q n+1 − Qn)d r + 2c40 
+
+δt 
+
+Z
+
+> ∂Ω
+
+(∂ncn+1 − ∂ncn)2dS ≤ E[cn, Q n]. (3.8) 
+
+Proof. We first discuss the existence, which is established by recognizing the solution to the scheme as the minimizer of a convex functional. For the presence of the boundary normal derivative ∂ncn+1 , it is necessary to include a boundary integral in such a functional, written as 
+
+F [cn+1 , Q n+1 ] = 
+
+Z
+
+> Ω
+
+Ξ( cn+1 , Q n+1 )d r + F1[cn+1 , Q n+1 ],
+
+where 
+
+F1[cn+1 , Q n+1 ] = 12δt 
+
+
+
+∥cn+1 − cn∥2 + ∥Qn+1 − Qn∥2 + 2 c40 
+
+Z
+
+> ∂Ω
+
+(∂ncn+1 − ∂ncn)2dS
+
+
+
+11 +
+
+Z
+
+> Ω
+
+g+(cn+1 , Q n+1 ) + 2( c00 − γ)cn · cn+1 + 2 c02 Qn · Qn+1 dr.
+
+Theorem 2.4 and Proposition 3.1 guarantee the convexity of R
+
+> Ω
+
+(Ξ + g+)d r. So, we can verify that the functional F [cn+1 , Q n+1 ] given above is strictly convex because the remaining are squared and linear terms. We further show that the functional F [cn+1 , Q n+1 ] is bounded from below. The proof of Proposition 3.1 (cf. (3.2)) implies that R 
+
+> Ω
+
+g+(c, Q )d r ≥ (c20 −γ1) R 
+
+> ∂Ω
+
+cbnd ∂ncdr, which can be controlled by the squared term in the boundary integral. Together with Theorem 2.4 giving the lower-boundedness of Ξ, and the fact that cn and Qn are constrained in the bounded domain QM
+
+> phys
+
+, the lower bound of the functional F [cn+1 , Q n+1 ] is recognized. We show that there exists a unique minimizer of the functional F under the constraint R 
+
+> Ω
+
+cn+1 dr =R 
+
+> Ω
+
+cndr. Recall that we have assumed in (2.11) when specifying the boundary values that there exists some ( c, Q ) such that E[c, Q ] < +∞. It is easy to show that F [c, Q ] − E[c, Q ] ≤ A(∥c∥2 + ∥Q∥2 +
+
+∥cn∥2 + ∥Qn∥2) for some A > 0, so that F [c, Q ] < +∞. Therefore, we can choose a sequence ( c(k), Q (k))satisfying R 
+
+> Ω
+
+c(k)dr = R 
+
+> Ω
+
+cndr and lim  
+
+> k→+∞
+
+F [c(k), Q (k)] = inf F [cn+1 , Q n+1 ] < +∞.
+
+The functional F ensures that ∥Q(k)∥H1 and ∥∆c(k)∥L2 are bounded, with the latter implying ∥c(k)∥H2
+
+bounded using the regularity of Poisson’s equation. In addition, the fact that H1(Ω) is a compact embedding into L2(∂Ω) implies that ∥∂nc∥L2(∂Ω) is controlled by ∥c∥H2(Ω) . Thus, we could choose a subsequence, still denotes as ( c(k), Q (k)), such that {c(k)} converges H2-weakly to ¯ c, and {Q(k)}
+
+converges H1-weakly to ¯Q, respectively. Then we have lim  
+
+> k→+∞
+
+F1[c(k), Q (k)] = F1[¯ c, ¯Q],
+
+We further choose an a.e. convergent subsequence by the Riesz theorem. Now, it is necessary to use the lower semicontinuity of Ξ on QM
+
+> phys
+
+, followed by the Fatou’s lemma, to arrive at 
+
+Z
+
+> Ω
+
+Ξ(¯ c, ¯Q)d r ≤
+
+Z
+
+> Ω
+
+lim inf  
+
+> k→+∞
+
+Ξ( c(k), Q (k))d r ≤ lim inf 
+
+> k→+∞
+
+Z
+
+> Ω
+
+Ξ( c(k), Q (k))d r.
+
+Hence, 
+
+F [¯ c, ¯Q] ≤ lim  
+
+> k→+∞
+
+F1[c(k), Q (k)] + lim inf 
+
+> k→+∞
+
+Z
+
+> Ω
+
+Ξ( c(k), Q (k))d r ≤ inf F [cn+1 , Q n+1 ],
+
+which implies that (¯ c, ¯Q) is the minimizer of F [cn+1 , Q n+1 ]. Its uniqueness could be obtained directly from the strict convexity of F [cn+1 , Q n+1 ]. Next, we show that (¯ c, ¯Q) is a.e. in ( QM
+
+> phys
+
+)◦. Since the minimizing energy is finite, the set on which 
+
+q( ¯Q/ ¯c) = + ∞ has measure zero. Hence q( ¯Q/ ¯c) < +∞ a.e. on {0 < ¯c < M }. Define Ω1 = {r ∈ Ω|¯c(r) = 0 }, Ω2 = {r ∈ Ω|¯c(r) = M },
+
+with their measures denoted by |Ω1|, |Ω2|. Assume that ξ > 0 and let (˜ c, ˜Q) =  ξc + (1 − ξ)¯ c, ξQ + (1 − ξ) ¯Q,
+
+According to our discussions and assumptions above, it holds that F1[c, Q ], F1[¯ c, ¯Q], R 
+
+> Ω
+
+Ξ( c, Q )d r, and 
+
+R 
+
+> Ω
+
+Ξ(¯ c, ¯Q)d r all take some finite values. Below, we shall use Ai to denote some finite constants. By convexity, we deduce that 
+
+F1[˜ c, ˜Q] − F1[¯ c, ¯Q] ≤ ξ
+
+
+
+F1[c, Q ] − F1[¯ c, ¯Q]
+
+
+
+= A1ξ. 
+
+12 and 
+
+Z
+
+> Ω\(Ω 1∪Ω2)
+
+Ξ(˜ c, ˜Q) − Ξ(¯ c, ¯Q)d r ≤ ξ
+
+Z
+
+> Ω\(Ω 1∪Ω2)
+
+Ξ( c, Q ) − Ξ(¯ c, ¯Q)d r = A2ξ. 
+
+For the region Ω 1 ∪ Ω2, we calculate that 
+
+Z
+
+> Ω1
+
+Ξ(˜ c, ˜Q) − Ξ(¯ c, ¯Q)d r =
+
+Z
+
+> Ω1
+
+ξc log( ξc ) + ( M − ξc ) log(1 − ξc/M ) + ξcνq (Q/c )d r
+
+≤ ξ
+
+
+
+log( ξM )
+
+Z
+
+> Ω1
+
+cdr +
+
+Z
+
+> Ω1
+
+(M − c) log(1 − c/M ) + cνq (Q/c )d r
+
+
+
+≤ ξ
+
+
+
+log( ξM )
+
+Z
+
+> Ω1
+
+cdr + A3
+
+
+
+,
+
+and 
+
+Z
+
+> Ω2
+
+Ξ(˜ c, ˜Q) − Ξ(¯ c, ¯Q)d r ≤
+
+Z
+
+> Ω2
+
+(˜ c − ¯c) log M − ˜cM ˜c + ˜ cνq ( ˜Q/ ˜c) − ¯cνq ( ¯Q/ ¯c)d r
+
+≤ ξ log( ξM )
+
+Z
+
+> Ω2
+
+(M − c)d r +
+
+Z
+
+> Ω2
+
+˜cνq ( ˜Q/ ˜c) − M νq ( ¯Q/M )d r.
+
+Recall that ϕ(c, Q ) = cνq (Q/c ), defined in the proof of Theorem 2.4, is also convex. We thus obtain 
+
+Z
+
+> Ω2
+
+˜cνq ( ˜Q/ ˜c) − M νq ( ¯Q/M )d r ≤ ξ
+
+Z
+
+> Ω2
+
+
+
+cνq (Q/c ) − M νq ( ¯Q/M )
+
+
+
+dr = A4ξ. 
+
+Note that 
+
+A0 ≜
+
+Z
+
+> Ω1
+
+cdr +
+
+Z
+
+> Ω2
+
+(M − c)d r ≥ 0.
+
+Combining the estimates above, we arrive at 
+
+F [˜ c, ˜Q] − F [¯ c, ¯Q] ≤ ξ(A0 log( ξM ) + A1 + A2 + A3 + A4).
+
+If A0 > 0, there exists sufficiently small ξ > 0 to make the right-hand side negative, leading to a contradiction. Hence A0 = 0, which, by 0 < c < M a.e. in Ω, implies |Ω1| = |Ω2| = 0. By calculating the variation of F [cn+1 , Q n+1 ] similar to (2.12), the minimizer of F gives a solution to the scheme (3.5)–(3.7). We now turn to uniqueness, since it is not guaranteed that every solution of the scheme is a minimizer of F [cn+1 , Q n+1 ]. Suppose that the scheme has two solutions ( cn+1 ,1, Q n+1 ,1) and ( cn+1 ,2, Q n+1 ,2). Denote α = cn+1 ,1 − cn+1 ,2, U = Qn+1 ,1 − Qn+1 ,2. They obey the following equations, 
+
+αδt = −G
+
+ ∂Ξ  cn+1 ,1, Q n+1 ,1
+
+∂c n+1 ,1 − ∂Ξ  cn+1 ,2, Q n+1 ,2
+
+∂c n+1 ,2 + 2 γα − 2c20 ∆α
+
+− c23 ∂ij Uij + 2 c40 ∆2α
+
+
+
+,Uij 
+
+δt = −P
+
+ ∂Ξ( cn+1 ,1, Q n+1 ,1)
+
+∂Q n+1 ,1
+
+
+
+> ij
+
+−
+
+ ∂Ξ( cn+1 ,2, Q n+1 ,2)
+
+∂Q n+1 ,2
+
+
+
+> ij
+
+− 2c21 ∆Uij 
+
+− 2c22 ∂ik Ukj − c23 ∂ij α
+
+!
+
+,∂nαδt = −∆α, α = Uij = 0 , on ∂Ω.
+
+13 Taking the inner product of these equations with α, U, ∂ nd, respectively, we obtain 1
+
+δt (∥α∥2 + ∥U ∥2) + 
+
+Z
+
+> Ω
+
+∂Ξ  cn+1 ,1, Q n+1 ,1
+
+∂c n+1 ,1 − ∂Ξ  cn+1 ,2, Q n+1 ,2
+
+∂c n+1 ,2
+
+!
+
+α
+
++ ∂Ξ  cn+1 ,1, Q n+1 ,1
+
+∂Q n+1 ,1 − ∂Ξ  cn+1 ,2, Q n+1 ,2
+
+∂Q n+1 ,2
+
+!
+
+· U + 2 g+(α, U )d r
+
++ 2 c40 
+
+Z
+
+> ∂Ω
+
+(∂nα)2
+
+δt dS = 0 .
+
+(3.9) As  cn+1 ,1, Q n+1 ,1 ,  cn+1 ,2, Q n+1 ,2 ∈ Q phys are a.e. in Ω, we have 
+
+∂Ξ  cn+1 ,1, Q n+1 ,1
+
+∂c n+1 ,1 − ∂Ξ  cn+1 ,2, Q n+1 ,2
+
+∂c n+1 ,2
+
+!
+
+α
+
++ ∂Ξ  cn+1 ,1, Q n+1 ,1
+
+∂Q n+1 ,1 − ∂Ξ  cn+1 ,2, Q n+1 ,2
+
+∂Q n+1 ,2
+
+!
+
+· U ≥ 0, a.e. in Ω ,
+
+according to Corollary 2.5. Thus, the left-hand side of (3.9) is nonnegative, which implies that α =0, U = 0 a.e. in Ω and ∂nα = 0 a.e. in ∂Ω. We turn to the energy dissipation. Taking the inner product of the (3.5)–(3.7) with ( cn+1 − cn), (Qn+1 − Qn), ∂ncn+1 − ∂ncn, respectively, we deduce that 
+
+∥cn+1 − cn∥2
+
+δt = −
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂c n+1 , c n+1 − cn
+
+
+
+− 2(( c00 − γ)cn + γc n+1 , c n+1 − cn)+ 2 c20 (∆ cn+1 , c n+1 − cn) − 2c40 (∆ 2cn+1 , c n+1 − cn)+ c23 (∂ij Qn+1  
+
+> ij
+
+, c n+1 − cn),
+
+∥Qn+1 − Qn∥2
+
+δt = −
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂Q n+1 , Q n+1 − Qn
+
+
+
+− 2c02 (Qn, Q n+1 − Qn)+ 2 c21 
+
+ ∆Qn+1 , Q n+1 − Qn + 2 c22 (∂ik Qn+1  
+
+> kj
+
+, Q n+1  
+
+> ij
+
+− Qnij )+ c23 (∂ij cn+1 , Q n+1  
+
+> ij
+
+− Qnij ),
+
+1
+
+δt 
+
+Z
+
+> ∂Ω
+
+(∂ncn+1 − ∂ncn)2dS = −
+
+Z
+
+> ∂Ω
+
+(∂ncn+1 − ∂ncn)∆ cn+1 dS. 
+
+According to Corollary 2.5, 
+
+∂Ξ( cn+1 , Q n+1 )
+
+∂c n+1 (cn+1 − cn) + ∂Ξ( cn+1 , Q n+1 )
+
+∂Q n+1 (Qn+1 − Qn)
+
+≥ Ξ( cn+1 , Q n+1 ) − Ξ( cn, Q n).
+
+For the other terms, we utilize the identity 
+
+u1(v1 − v2) + v1(u1 − u2) = u1v1 − u2v2 + ( u1 − u2)( v1 − v2).
+
+Note that (∆ 2cn+1 , c n+1 − cn) =  ∆cn+1 , ∆( cn+1 − cn) −
+
+Z
+
+> ∂Ω
+
+∆cn+1 ∂n(cn+1 − cn)d S. 
+
+Summing up the above three equalities, we derive the energy law (3.8). Note that R 
+
+> Ω
+
+g+(cn+1 −
+
+cn, Q n+1 − Qn)d r ≥ 0 because cn+1 − cn = 0 and Qn+1 − Qn = 0 on ∂Ω. 14 The error estimate of the scheme (3.5)–(3.7) involves the normal derivative. As we will see below, the propagation of error is not broken by the boundary integral emerged from integration by parts because the coupling term is cancelled. Define ηn(r) = c(r, t n) − cn(r), Rn(r) = Q(r, t n) − Qn(r), and 
+
+εn = ∥ηn∥2 + 2 c40 
+
+R 
+
+> ∂Ω
+
+(∂nηn)2dS + ∥Rn∥2.
+
+Theorem 3.3. Assume that ∂tt c, ∂ tt Q, ∂ tc, ∂ tQ ∈ L2(0 , T ; L2(Ω)) , ∂tt ∂nc ∈ L2 0, T ; L2(∂Ω) . For the scheme (3.5) –(3.7) , it holds 
+
+εn ≤ C exp  (1 − Cδt )−1tnδt 2 ·
+
+Z tn
+
+> 0
+
+
+
+∥∂tt c∥2 + ∥∂tt Q∥2
+
++ ∥∂tc∥2 + ∥∂tQ∥2 +
+
+Z
+
+> ∂Ω
+
+(∂tt ∂nc)2dS
+
+
+
+dt, 
+
+(3.10) 
+
+where the constant C depends on c00 − γ, c02 and c40 .Proof. We deduce from (3.5)–(3.7) the equations for the error, 
+
+ηn+1 − ηn
+
+δt + T nc = −G
+
+ ∂Ξ  c(r, t n+1 ), Q (r, t n+1 )
+
+∂c (r, t n+1 ) − ∂Ξ  cn+1 (r), Q n+1 (r)
+
+∂c n+1 (r)+ 2( c00 − γ)( ηn + θnc ) + 2 γη n+1 − 2c20 ∆ηn+1 − c23 ∂ij Rn+1  
+
+> ij
+
++ 2 c40 ∆2ηn+1 
+
+,Rn+1  
+
+> ij
+
+− Rnij 
+
+δt + T nij = −P ∂Ξ  c(r, t n+1 ), Q (r, t n+1 )
+
+∂Q (r, t n+1 )
+
+!
+
+> ij
+
+− ∂Ξ  cn+1 (r), Q n+1 (r)
+
+∂Q n+1 (r)
+
+!
+
+> ij
+
++ 2 c02 (Rnij + Θ nij ) − 2c21 ∆Rn+1  
+
+> ij
+
+− 2c22 ∂ik Rn+1  
+
+> kj
+
+− c23 ∂ij ηn+1 
+
+!
+
+,∂nηn+1 − ∂nηn
+
+δt + T n∂Ω = −∆ηn+1 , ηn+1 = 0 , Rn+1 = 0 , on ∂Ω.
+
+where the truncation errors are 
+
+T nc = 1
+
+δt 
+
+ c(r, t n+1 ) − c(r, t n) − ∂tc(r, t n+1 ) = 1
+
+δt 
+
+Z tn+1 
+
+> tn
+
+(tn − s)∂tt c dt, θnc = c(r, t n+1 ) − c(r, t n) = 
+
+Z tn+1 
+
+> tn
+
+∂tc dt, T n = 1
+
+δt 
+
+Z tn+1 
+
+> tn
+
+(tn − s)∂tt Q dt, 
+
+Θn = Q(r, t n+1 ) − Q(r, t n) = 
+
+Z tn+1 
+
+> tn
+
+∂tQ dt, T n∂Ω = 1
+
+δt 
+
+ ∂nc(r, t n+1 ) − ∂nc(r, t n) − ∂t∂nc(r, t n+1 )= 1
+
+δt 
+
+Z tn+1 
+
+> tn
+
+(tn − s)∂tt ∂nc dt. 
+
+Take the inner product of the three equations above with ηn+1 , Rn+1 , ∂nηn+1 , respectively and sum them up. Notice that ηn+1 = G ηn+1 and Rn+1 = PRn+1 , so that the projection operators do not affect. We only emphasize the derivations Ξ and the boundary terms. For the Ξ terms, we deduce from Corollary 2.5 that 
+
+∂Ξ  c(r, t n+1 ), Q (r, t n+1 )
+
+∂c (r, t n+1 ) − ∂Ξ  cn+1 (r), Q n+1 (r)
+
+∂c n+1 (r)
+
+!
+
+ηn+1 
+
++ ∂Ξ  c(r, t n+1 ), Q (r, t n+1 )
+
+∂Q (r, t n+1 ) − ∂Ξ  cn+1 (r), Q n+1 (r)
+
+∂Q n+1 (r)
+
+!
+
+· Rn+1 ≥ 0.
+
+15 For the boundary terms, we have 
+
+Z
+
+> Ω
+
+
+
+− 2γη n+1 + 2 c20 ∆ηn+1 + c23 ∂ij Rn+1  
+
+> ij
+
+− 2c40 ∆2ηn+1 
+
+ηn+1 
+
++
+
+
+
+2c21 ∆Rn+1  
+
+> ij
+
++ 2 c22 ∂ik Rn+1  
+
+> kj
+
++ c23 ∂ij ηn+1 
+
+Rn+1  
+
+> ij
+
+dr
+
+= −
+
+Z
+
+> Ω
+
+2ge(ηn+1 , R n+1 ) + 2 γ(ηn+1 )2dr + 2 c40 
+
+Z
+
+> ∂Ω
+
+∆ηn+1 ∂nηn+1 dS, 
+
+with Z
+
+> ∂Ω
+
+∆ηn+1 ∂nηn+1 dS
+
+=
+
+Z
+
+> ∂Ω
+
+  − ∂nηn+1 − ∂nηn
+
+δt − T n∂Ω
+
+∂nηn+1 dS
+
+≤ 12δt 
+
+Z
+
+> ∂Ω
+
+(∂nηn)2 − (∂nηn+1 )2dS + 12
+
+Z
+
+> ∂Ω
+
+(T n∂Ω)2 + ( ∂nηn+1 )2dS. 
+
+Therefore, we arrive at 12δt 
+
+
+
+∥ηn+1 ∥2 − ∥ ηn∥2 + 2 c40 
+
+Z
+
+> ∂Ω
+
+(∂nηn+1 )2 − (∂nηn)2dS + ∥Rn+1 ∥2 − ∥ Rn∥2
+
+
+
+≤ ∥ ηn+1 ∥2 + ∥Rn+1 ∥2 + ∥T nc ∥2 + ∥T n∥2 + c40 
+
+Z
+
+> ∂Ω
+
+(T n∂Ω)2 + ( ∂nηn+1 )2dS
+
+− (c00 − γ) ∥ηn+1 ∥2 + ∥ηn∥2 + ∥θnc ∥2 − 2c02 
+
+ ∥Rn+1 ∥2 + ∥Rn∥2 + ∥Θn∥2,
+
+that is, 12δt 
+
+ εn+1 − εn ≤ C
+
+
+
+εn+1 + εn + ∥T nc ∥2 + ∥T n∥2
+
++ ∥θnc ∥2 + ∥Θn∥2 +
+
+Z
+
+> ∂Ω
+
+(T n∂Ω)2dS
+
+
+
+,
+
+where C depends on ( c00 − γ), c 02 and c40 . The truncation errors can be estimated as 
+
+∥T nc ∥2 + ∥T n∥2 ≤ Cδt 
+
+Z tn+1 
+
+> tn
+
+∥∂tt c∥2 + ∥∂tt Q∥2dt, 
+
+∥θnc ∥2 + ∥Θn∥2 ≤ Cδt 
+
+Z tn+1 
+
+> tn
+
+∥∂tc∥2 + ∥∂tQ∥2dt, 
+
+Z
+
+> ∂Ω
+
+(T n∂Ω)2dS ≤ Cδt 
+
+Z tn+1 
+
+> tn
+
+Z
+
+> ∂Ω
+
+(∂tt ∂nc)2dS dt. 
+
+Using Gronwall’s inequality, we deduce (3.10). 
+
+## 3.2 Full Discretization 
+
+In the spatial discretizations, to keep the properties above, it is significant for the energy and its variation to be consistent. To this end, we shall discretize the energy first, then derive the scheme by taking derivatives w.r.t. the discrete variables. In particular, the normal derivatives on the boundary need to be handled carefully. Here, we consider a square region Ω = [0 , L ]2, and divide it into N 2 cells uniformly. Denote h = L/N .We denote by the index ( l, m ) the point ( lh, mh ), and by Γ l,m the cell whose lower left index is ( l, m ). In addition, for the discussions of the boundary equation, we introduce the notations σxl, 0 (resp. σxl,N )to represent the boundary cell x ∈ [lh, (l + 1) h], y = 0 (resp. y = L), and σy 
+
+> 0,m
+
+(resp. σyN,m ) for the boundary cell y ∈ [lh, (l + 1) h], x = 0 (resp. x = L). 16 In the free energy, we need to discretize ∂1u∂ 1v, ∂1u∂ 2v, ∂11 u∂ 11 v and ∂11 u∂ 22 v on each cell. Generally speaking, discrete second order spatial derivatives are defined on the nodes. But first order spatial derivatives are different for various cases. On the cell Γ l,m , ∂1u∂ 1v is discretized as (D1uD 1v)Γl,m = 12
+
+ ul+1 ,m − ul,m 
+
+h
+
+  vl+1 ,m − vl,m 
+
+h
+
+
+
++ 12
+
+ ul+1 ,m +1 − ul,m +1 
+
+h
+
+  vl+1 ,m +1 − vl,m +1 
+
+h
+
+
+
+.
+
+(3.11) The variational derivative of ∂1u∂ 1v w.r.t. v is −∂11 u. Its discretization at ( l, m ) is obtained by taking the derivative w.r.t. vl,m . Here, we need to sum up all the cells involving vl,m for the term D1uD 1v. It leads to the commonly used second difference, 
+
+−(D11 u)l,m = − ul−1,m − 2ul,m + ul+1 ,m 
+
+h2 . (3.12) The term ∂1u∂ 2v is discretized as (D1uD 2v)Γl,m = 14h2 (ul+1 ,m +1 + ul+1 ,m − ul,m +1 − ul,m ) ( vl+1 ,m +1 − vl+1 ,m + vl,m +1 − vl,m ) .
+
+The discretization of its variational derivative, −∂12 u, is calculated by taking the derivative w.r.t. vl,m ,yielding 
+
+−(D12 u)l,m = −(D21 u)l,m = −ul−1,m −1 − ul+1 ,m +1 + ul−1,m +1 + ul+1 ,m −1
+
+4h2 .
+
+Then we turn to the squared second order derivatives in the free energy. Since second order derivatives have been defined on the nodes, it is natural to discretize ∂11 u∂ 11 v as the average on the four nodes of the cell, i.e. (D11 uD 11 v)Γl,m = 14
+
+h
+
+(D11 uD 11 v)l,m + ( D11 uD 11 v)l+1 ,m 
+
++ ( D11 uD 11 v)l,m +1 + ( D11 uD 11 v)l+1 ,m +1 
+
+i
+
+,
+
+(3.13) where ( D11 u)l,m is deduced above in (3.12). Because ∂1111 u is the variational derivative of ∂11 u∂ 11 v
+
+w.r.t. v, we deduce its discretization by taking the derivatives of vl,m . For 2 ≤ l, m ≤ N − 2, the sum of terms involving vl,m is given by (D11 uD 11 v)l−1,m + ( D11 uD 11 v)l,m + ( D11 uD 11 v)l+1 ,m .
+
+Thus, we deduce that ∂1111 u is discretized as (D1111 u)l,m = ul−2,m − 4ul−1,m + 6 ul,m − 4ul+1 ,m + ul+2 ,m 
+
+h4 . (3.14) The term ∂11 u∂ 22 v is handled in the same way, yielding (D1122 u)l,m = 1
+
+h4
+
+ ul−1,m −1 − 2ul−1,m + ul−1,m +1 − 2ul,m −1 + 4 ul,m − 2ul,m +1 
+
++ ul+1 ,m −1 − 2ul+1 ,m + ul+1 ,m +1 
+
+.
+
+For l = 1 , N − 1, or m = 1 , N − 1, the discretized free energy involving the node ( l, m ) are different. For example, the sum of terms (3.13) involving v1,m is 12 (D11 uD 11 v)0,m + ( D11 uD 11 v)1,m + ( D11 uD 11 v)2,m .
+
+17 To be consistent with the case 2 ≤ l, m ≤ N − 2, we introduce ghost nodes outside and adopt the discretization of ∂nv on the boundary nodes below, (Dx
+
+> n
+
+v)0,m = v−1,m − v1,m 
+
+2h , (Dx
+
+> n
+
+v)N,m = vN +1 ,m − vN −1,m 
+
+2h ,
+
+(Dy
+
+> n
+
+v)l, 0 = vl, −1 − vl, 1
+
+2h , (Dy
+
+> n
+
+v)l,N = vl,N +1 − vl,N −1
+
+2h . (3.15) Then, we can write 12 (D11 v)0,m = 1
+
+h
+
+ (Dx
+
+> n
+
+v)0,m + 1
+
+h (v1,m − v0,m ). (3.16) Now, we regard these discrete normal derivatives as independent variables in addition to vl,m for 1 ≤
+
+l, m ≤ N − 1. Under this viewpoint, we take derivative w.r.t. v1,m to obtain (3.14). The truncation errors of the discretizations above are O(h2), which are summarized below. 
+
+Lemma 3.4. For u ∈ C6(Ω) , we have 
+
+|(∂11 u − D11 u)l,m | ≤ h2
+
+12 max 
+
+> Ω
+
+|∂1111 u|, |(∂12 u − D12 u)l,m | ≤ h2
+
+3 max 
+
+> Ω,k =1 ,2
+
+|∂12 kk u|,
+
+|(∂1111 u − D1111 u)l,m | ≤ h2
+
+6 max 
+
+> Ω
+
+|∂111111 u|, |(∂1122 u − D1122 u)l,m | ≤ h2
+
+6 max 
+
+> Ω,k =1 ,2
+
+|∂1122 ∂kk u|.
+
+Let Ωh = [ −h, L + h]2. For v ∈ C3(Ω h), we have 
+
+|(∂nv − Dx
+
+> n
+
+v)0,m | ≤ h2 max 
+
+> Ωh
+
+|∂111 v|, |(∂nv − Dy
+
+> n
+
+v)l, 0| ≤ h2 max 
+
+> Ωh
+
+|∂222 v|.
+
+The discretizations keep the positive definiteness of quadratic terms. 
+
+Lemma 3.5. For any u and v,
+
+h2(D1uD 1u + D2vD 2v + 2 D1uD 2v)Γl,m ≥ 0.
+
+Proof. It can be calculated as 14
+
+
+
+(ul+1 ,m − ul,m + vl,m +1 − vl,m )2 + ( ul+1 ,m − ul,m + vl+1 ,m +1 − vl+1 ,m )2
+
++ ( ul+1 ,m +1 − ul,m +1 + vl,m +1 − vl,m )2 + ( ul+1 ,m +1 − ul,m +1 + vl+1 ,m +1 − vl+1 ,m )2
+
+.
+
+Corollary 3.6. When 4γ1c22 ≥ c223 , we have 
+
+(c22 DiQij DkQkj + c23 DiQij Dj c + γ1Dj cD j c)Γl,m ≥ 0.
+
+Proof. Write it as 
+
+c22 D1(Q11 + c)D1(Q11 + c) + c23 D1(Q11 + c)D2Q21 + γ1D2Q21 D2Q21 
+
++ c22 D1Q11 D1Q11 + c23 D1Q11 D2(Q21 + c) + γ1D2(Q21 + c)D2(Q21 + c).
+
+Then use Lemma 3.5 for each line. For u defined on interior nodes, denote its summation over all interior nodes as P 
+
+> P
+
+uP . For boundary nodes, they belong to some boundary cells. When specifying a boundary cell σ, the normal derivative has a definite meaning of whether it is Dx 
+
+> n
+
+or Dy
+
+> n
+
+, so we may denote it as Dn. Then, we denote by uσ
+
+the average of u on the two endpoints of a cell σ, and by P 
+
+> σ
+
+uσ the summation of u over all boundary cells. For v defined on interior cells, denote its summation over all cells as P 
+
+> Γ
+
+vΓ.Let ∆ h, ∆2 
+
+> h
+
+denote D11 + D22 and D1111 + 2 D1122 + D2222 , respectively. The summation by parts below can be established. 18 Lemma 3.7. If u takes zero on all boundary nodes (l = 0 , N or m = 0 , N ), then we have 
+
+− X
+
+> P
+
+(uD 11 v)P = X
+
+> Γ
+
+(D1uD 1v)Γ,
+
+− X
+
+> P
+
+(uD 12 v)P = X
+
+> Γ
+
+(D1uD 2v)Γ = X
+
+> Γ
+
+(D2uD 1v)Γ.
+
+Lemma 3.8. For any u, v , it holds 
+
+h2 X
+
+> Γ
+
+(DkuD kv)Γ = h X
+
+> σ
+
+(uD nv)σ − h2 X
+
+> Γ
+
+(u∆hv)Γ, (3.17) 
+
+If v satisfies v|∂Ω = 0 , it also holds 
+
+h2 X
+
+> Γ
+
+(∆ hu∆hv)Γ = h X
+
+> σ
+
+(∆ huD nv)σ + h2 X
+
+> P
+
+(v∆2
+
+> h
+
+u)P . (3.18) The proof is left to Appendix. Now we are able to write down a splitting similar to (3.3). Define ˆE(c, Q ) = h2 X
+
+> P
+
+ Ξ( c, Q ) 
+
+> P
+
++ ˆE+(c, Q ) − ˆE−(c, Q ) + A, 
+
+with ˆE+(c, Q ) = h2 X
+
+> Γ
+
+
+
+c20 DicD ic + c21 DiQjk DiQjk + c22 DiQij DkQkj + c23 Dj cD iQij 
+
++ c40 (∆ hc)2
+
+> Γ
+
++ h2 X
+
+> P
+
+ γc 2 
+
+> P
+
+,
+
+ˆE−(c, Q ) = h2 X
+
+> P
+
+  − (c00 − γ)c2 − c02 Q2 
+
+> P
+
+,
+
+and A is a constant determined by the value of c and Q on the boundary nodes. 
+
+Proposition 3.9. ˆE+(c, Q ) is convex w.r.t. cl,m , Q l,m , (Dnc)l,m .Proof. Follow the same procedure as Proposition 3.1, where Corollary 3.6 and the summation by parts (3.17) is necessary. Define Lc[c, Q ] = 2 γc − 2c20 Dkk c − c23 Dij Qij + 2 c40 ∆2
+
+> h
+
+c, LQij [c, Q ] = −2c21 Dkk Qij − 2c22 Dik Qkj − c23 Dij c. 
+
+The definition is given on each node. Hereafter we omit the index ( l, m ) when it is unnecessary to specify. The above discretizations keep the structures of the energy variation given by (2.12). 
+
+Proposition 3.10. The differential of the energy is given by 
+
+d ˆE =h2 X
+
+> P
+
+ ∂Ξ( c, Q )
+
+∂c + 2( c00 − γ)c + Lc[c, Q ]
+
+
+
+dc
+
+
+
+> P
+
++ 2 c40 h X
+
+> σ
+
+(∆ hcdDnc)σ
+
++ h2 X
+
+> P
+
+ ∂Ξ( c, Q )
+
+∂Q + 2 c02 Qij + LQij [c, Q ]
+
+
+
+dQij 
+
+
+
+> P
+
+.
+
+Proof. For interior points, the differential is given by our construction. For the boundary normal derivatives, only the ∆ hc∆hc term is involved. Using the summation by parts (3.18) and the fact that dc = 0 on boundary nodes, we have 
+
+h2d X
+
+> Γ
+
+(∆ hc∆hc)Γ = 2 h X
+
+> σ
+
+(∆ hcdDnc)σ + 2 h2 X
+
+> P
+
+(∆ 2
+
+> h
+
+cdc)P .
+
+19 Now we are ready to write down the fully discretized scheme, 
+
+cn+1 − cn
+
+δt = − ˆG
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂c n+1 + 2( c00 − γ)cn + Lc[cn+1 , Q n+1 ]
+
+
+
+, (3.19) 
+
+Qn+1  
+
+> ij
+
+− Qnij 
+
+δt = −P
+
+ ∂Ξ( cn+1 , Q n+1 )
+
+∂Q n+1 
+
+
+
+> ij
+
++ 2 c02 Qnij + LQij [cn+1 , Q n+1 ]
+
+!
+
+, (3.20) 
+
+Dncn+1 − Dncn
+
+δt = −∆hcn+1 , on ∂Ω, (3.21) where the projection operator G is also discretized as ˆG , satisfying ˆG A = A − 1#P
+
+X
+
+> P
+
+AP ,
+
+where # P is the number of the interior nodes. By the midpoint rule of integral, G also yields a truncation error of O(h2). Since the above full discretized scheme is consistent with the time discretized scheme (3.5)–(3.7), they satisfy the same properties and the proofs are also similar. In the following, we only briefly discuss the energy dissipation and error estimation. 
+
+Theorem 3.11. For any δt and h, the scheme (3.19) –(3.21) has a unique solution. Moreover, the scheme satisfies the discrete energy law, 
+
+ˆE[cn+1 , Q n+1 ] + h2h 1 − (c00 − γ)δt δt 
+
+X
+
+> P
+
+(cn+1 − cn)2 
+
+> P
+
++ 1 − c02 δt δt 
+
+X
+
+> P
+
+(Qn+1  
+
+> ij
+
+− Qnij )2
+
+> P
+
+i
+
++ ˆE+(cn+1 − cn, Q n+1 − Qn) + 2 c40 
+
+hδt 
+
+X
+
+> σ
+
+(Dncn+1 − Dncn)2 
+
+> σ
+
+≤ ˆE[cn, Q n].
+
+Proof. The proof follows a similar procedure as Theorem 3.2. Consider the function of cn+1  
+
+> l,m
+
+, Qn+1  
+
+> l,m
+
+,(Dnc)l,m ,ˆF [cn+1 ,Q n+1 ] = 12δt 
+
+
+
+h2 X
+
+> P
+
+ cn+1 − cn2 
+
+> P
+
++  Qn+1  
+
+> ij
+
+− Qnij 
+
+2
+
+> P
+
+
+
++ 2 c40 h X
+
+> σ
+
+(Dncn+1 − Dncn)2
+
+> σ
+
+
+
++ h2 2( c00 − γ) cn · cn+1  
+
+> P
+
++ 2 c02 
+
+ Qnij · Qn+1 
+
+> ij
+
+ 
+
+> P
+
++ X
+
+> P
+
+ Ξ( cn+1 , Q n+1 )
+
+> P
+
+!
+
++ ˆE+
+
+ cn+1 , Q n+1  ,
+
+where cn+1  
+
+> l,m
+
+satisfies X
+
+> P
+
+cn+1  
+
+> P
+
+= X
+
+> P
+
+cnP .
+
+To establish that it is strictly convex and lower bounded, we need Corollary 3.6 and Proposition 3.9. Therefore it possesses a unique minimizer such that ( cn+1 , Q n+1 )l,m ∈ Q M
+
+> phys
+
+. Then, we are able to verify that the minimizer must be taken with ( cn+1 , Q n+1 )l,m ∈ (QM
+
+> phys
+
+)◦ by a similar approach in Theorem 3.2. It enables us to take derivatives of discrete variables to arrive at ˆG
+
+ ∂ ˆF∂(cn+1 )l,m 
+
+
+
+= 0 , P
+
+ ∂ ˆF∂(Qn+1  
+
+> ij
+
+)l,m 
+
+
+
+= 0 , ∂ ˆF∂(Dncn+1 )l,m 
+
+= 0 .
+
+which is exactly (3.19)–(3.21) using Proposition 3.10. The energy law can be established by taking the dot product of (3.19)–(3.21) with cn+1 − cn, Qn+1  
+
+> ij
+
+−
+
+Qnij , Dncn+1 − Dncn, respectively, followed by taking the P 
+
+> P
+
+and P 
+
+> σ
+
+. The summation by parts, Lemma 3.7 and 3.8 are needed. 20 Define the error for the full discretization as 
+
+εn ≜ h2 X
+
+> P
+
+
+
+|ηn|2 
+
+> P
+
++ |Rn|2
+
+> P
+
+
+
++ h X
+
+> σ
+
+ Dnηn2 
+
+> σ
+
+. (3.22) 
+
+Theorem 3.12. Assume that c(r, t ) ∈ C6(Ω × [0 , T ]) , Q (r, t ) ∈ C4(Ω × [0 , T ]) . The error of the scheme 
+
+(3.19) –(3.21) has the estimate 
+
+εn ≤ C(δt 2 + h4).
+
+The constant C depends on T , the coefficients c02 , c 40 , and the maximum derivatives of c, Q ij in Ω ×
+
+[0 , T ].Proof. The equations for ηn, R nij are derived as 
+
+ηn+1 − ηn
+
+δt = − ˆG
+
+ ∂Ξ( cn+1 (r), Q n+1 (r)) 
+
+∂c n+1 (r) − ∂Ξ( c(r, t n+1 ), Q (r, t n+1 )) 
+
+∂c (r, t n+1 )+ 2( c00 − γ)ηn + Lc[ηn+1 , R n+1 ]
+
+
+
++ U nh .Rn+1  
+
+> ij
+
+− Rnij 
+
+δt = −P
+
+ ∂Ξ( cn+1 (r), Q n+1 (r)) 
+
+∂Q n+1  
+
+> ij
+
+(r) − ∂Ξ( c(r, t n+1 ), Q (r, t n+1 )) 
+
+∂Q ij (r, t n+1 )+ 2 c02 Rnij + LQij [ηn+1 , R n+1 ]
+
+
+
++ V nh .Dnηn+1 − Dnηn
+
+δt = −∆hηn+1 + ZnB .
+
+The truncation errors can be estimated using Lemma 3.4 and the results for the time discretization in (3.1), 
+
+|U nh | + |V nh | ≤ C(δt + h2), |ZnB | ≤ C(δt + h2),
+
+with C dependent on the maximum derivatives on Ω × [0 , T ]. Take dot product on three equations with 
+
+ηn+1 , Rn+1  
+
+> ij
+
+, Dnηn+1 , respectively. Armed with summation by parts, we are able to follow the same derivation of (3.10) to conclude the proof. 
+
+# 4 Numerical Results 
+
+Computations are carried out in the square domain Ω = [0 , L ] × [0 , L ] where L takes a few different values. Fix M = 100 , ν = 0 .1, while the average concentration c0 varies (defined in (2.1)). The parameters in the free energy are chosen according to the calculations in [17] from the hard repulsive potential, which prove to effectively describe the smectic structures [32]: c00 = 0 .112, c02 = −0.0735, 
+
+c20 = −0.00442, c21 = 0 .00091, c22 = 0 .0034, c23 = −0.0083, and c40 = 0 .00014. The scheme (3.5)– (3.7) is nonlinear, which we solve by damped Newton’s method: whenever the iteration goes out of the domain ( QM
+
+> phys
+
+)◦, the step size is halved until the trial lies within ( QM
+
+> phys
+
+)◦.To illustrate the numerical results, we use λmax (Q/c ) to denote the maximum eigenvalue of Q/c , which quantifies the intensity of anisotropy. It ranges in [0 , 0.5), with the value λmax (Q/c ) = 0 representing the isotropic state. The corresponding eigenvector indicates the direction along which the molecules are aligning. 
+
+## 4.1 Uniform boundary concentration anchorings 
+
+On the boundary ∂Ω, let c = c0, λ max (Q/c ) = 0 .4 with the principal eigenvector chosen parallel to the boundary. The initial condition is chosen as c = c0, λ max (Q/c ) = 0 .4 with the principal eigenvector taking a constant vector ( −1/√2, 1/√2) T . This setting is analogous to the confined nematic liquid crystals with parallel boundary anchorings [70, 19], but concentration variations are incorporated. We 21 0 0.2 0.4 0.6 0.8 1                      
+
+> t
+> 0.4 0.45 0.5 0.55 0.6
+> 6max (Q=c )
+> /t= 0 :1
+> /t= 0 :05
+> /t= 0 :01
+> /t= 0 :005
+> /t= 0 :001
+> 010 20 30 40 50
+> t
+> 0.4 0.45 0.5 0.55 0.6
+> 6max (Q=c )
+> /t= 0 :1
+> /t= 0 :5
+> /t= 1
+> 010 20 30 40 50
+> t
+> 456789
+> iter num
+> iter num for /t= 1
+> (a) Semi-implicit scheme (b) Scheme (3 :5)-(3 :7) (c) Iteration number
+
+Figure 1: (a) Maximum eigenvalues of Q/c for the semi-implicit scheme. (b) Maximum eigenvalues of 
+
+Q/c for the scheme (3.5)–(3.7). (c) Number of Newton’s iteration for δt = 1. shall examine the results from two aspects: the performance of the scheme, and how the configurations change with c0, L.
+
+Performance of the scheme. We choose L = √10 and c0 = 20. Under this average concentration, the free energy shall exhibit the smectic phase as its minimizer. However, the anchoring c = c0 on the boundary would reconstruct the structures to a large extent. To investigate the performance of the scheme, we also employ a simple semi-implicit scheme, where the linear terms are discretized implicitly while the nonlinear terms are treated explicitly. The semi-implicit scheme is written as 
+
+cn+1 − cn
+
+δt = −G
+
+ ∂Ξ( cn, Q n)
+
+∂c n + 2 c00 cn+1 − 2c20 ∆cn+1 
+
+− c23 ∂ij Qn+1  
+
+> ij
+
++ 2 c40 ∆2cn+1 
+
+
+
+,Qn+1  
+
+> ij
+
+− Qnij 
+
+δt = −P
+
+ ∂Ξ( cn, Q n)
+
+∂Q n
+
+
+
+> ij
+
++ 2 c02 Qn+1  
+
+> ij
+
+− 2c21 ∆Qn+1 
+
+> ij
+
+− 2c22 ∂ik Qn+1  
+
+> kj
+
+− c23 ∂ij cn+1 
+
+!
+
+,
+
+with the boundary equation conditions discretized as (3.7). As it turns out, the scheme (3.5)–(3.7) significantly outperforms the semi-implicit scheme. The major point affecting the performance lies in the fact that the semi-implicit scheme is unable to ensure the numerical solution lying within ( QM
+
+> phys
+
+)◦. We plot the maximum eigenvalue of Q/c in Fig. 1 (a) using various time steps. For δt no less than 0 .005, the maximum eigenvalue exceeds 1 /2 before t = 1, which results in a forced stop in simulation. Only when δt takes 0 .001 could the simulation be carried out through t = 1. In contrast, for the scheme (3.5)–(3.7) the computations can be done up to δt = 1 (Fig. 1 (b)). In other words, compared with the semi-implicit scheme, a time step at least 200 times larger can be adopted for the scheme (3.5)–(3.7). Indeed, solving the nonlinear scheme costs more in each time step due to nonlinear iterations. Nevertheless, the number of Newton’s iterations, plotted in Fig. 1 (c), is no greater than ten and decreases to four with time. Therefore, the increase in the computational cost for each time step can be sufficiently compensated by the capacity of using large δt .Actually, in this example, the solution only exhibits mild variations both in time and in space, as we can realize from the energy dissipation (Fig. 2(a)) and the configuration at t = 50 (Fig. 2(b)). In this sense, constraining the numerical solution within ( QM
+
+> phys
+
+)◦ is a quite difficult task and deserves special care, for which an implicit discretization of the entropy term Ξ is well suited. Next, we examine the accuracy using the solution at t = 50. The reference solution is acquired with 
+
+N = 64 and a small time step δt = 3 .125 × 10 −4. For the temporal error, we fix the spatial resolution at N = 64 and vary the time step as δt = 0 .04 , 0.02 , 0.01 , 0.005. The numerical error ε is plotted in 22 0 10 20 30 40 50     
+
+> t
+> 70 71 72 73 74 75
+> total energy
+> total energy
+> 0510 15 20 25 30
+> 00.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45
+> (a) Total energy (b) The concentration and maximum eigenvalue at t= 50
+> c6max (Q=c )
+
+Figure 2: (a) Energy. (b) The concentration and eigenvalue at t = 50, computed on a mesh N = 64 and time step δt = 3 .125 × 10 −4. The principal eigenvectors are plotted in the figure of concentration. Fig.3(a), confirming the first order accuracy. Then, for the spatial error, we choose δt = h2/10 and vary 
+
+N = L/h . The error ε is plotted in Fig.3(b), where a second order accuracy is recognized. To visualize the development towards the steady state, we present some snapshots of the solution in Fig.4. From the spatially homogeneous orientation, streamlines are formed connecting the upper-left and lower-right corners. Then, spatial variations of the concentration gradually emerge, which disturb the streamlines to align with concentration gradients. Layer structures are formed along the diagonal of the square. -5.5 -5 -4.5 -4 -3.5 -3 
+
+log 2(/t)     
+
+> -8 -7 -6 -5 -4 -3
+> log 2(")
+> "
+> slope=1
+> -7 -6 -5 -4 -3 -2
+
+log 2(h)
+
+> -14 -12 -10 -8 -6 -4 -2
+> log 2(")
+> "
+> slope=2
+
+(a) Temporal accuracy (b) Spatial accuracy 
+
+Figure 3: The error ε with different (a) time steps for N = 64; and (b) spatial discretizations with 
+
+δt = h2/10. 
+
+Effect of average concentration and domain size. It is known that the average concentration 
+
+c0 greatly affects the structures. To comprehend its role, we examine two cases of lower concentration, 
+
+c0 = 5 , 10. The steady states are illustrated in Fig. 5 to compare with the configuration in Fig. 2. For 
+
+c0 = 5, the result is very close to that for the nematic liquid crystals (cf. [68, 70]). When the average concentration increases to c0 = 10, the layer structure can be observed ambiguously. The size of the computational region is another significant parameter that influences the structures. We investigate the cases L = √5, √20, drawn in Fig. 5. For a smaller region L = √5, we only observe an accumulation in concentration, while for a larger region L = √20 four layers can be clearly distinguished. 23 (a) t = 0 (b) t = 5 (c) t = 10 (d) t = 15 (e) t = 25 (f ) t = 50 Figure 4: Snapshots of the solution for c0 = 20 and L = √20. The colorbar is the same as the density profile shown in Fig.2. 
+
+## 4.2 Smectic boundary anchorings 
+
+We turn to studying the configurations where the boundary is anchored with the smectic layers. In what follows, the average density is fixed at c0 = 20. To impose the boundary conditions, we need the profile of the ideal smectic phase. It is obtained by minimizing the free energy for 1D periodic functions. The minimization also needs to be done w.r.t. the length of period d. As a result, the minimization problem is posed as follows, min 
+
+> c(x),Q (x),d
+
+E[c(x), Q (x)] 
+
+d , s.t. 1
+
+d
+
+Z d
+
+> 0
+
+c(x)d x = c0, c (d) = c(0) , Q (d) = Q(0) . (4.1) The optimized length of period d is the layer thickness of the ideal smectic phase. We choose L to be an integer multiple of d, and set the boundary values of c and Q according to the 1D periodic minimizer. Two cases L = 4 d, 8d are studied, with different initial conditions leading to different steady states. For L = 4 d, an initial state of uniform vertical alignment results in smectic layers along the side direction of the square region (Fig.6 (a)), while an initial state of uniform 135 ◦
+
+alignment evolves towards layers along the diagonal with bending. For both cases, dislocations are found prone to have sharp corners. This pattern is more evident in the case L = 8 d, for which we also examine two initial configurations. One has the principal vector pointing towards 45 ◦ in the left half and 135 ◦ in the right half of the square region. The other has the uniform 135 ◦ alignment. The evolutions from the above two initial states are given in Fig. 7 and Fig. 8, respectively. It is clear that the layer structures tend to keep the side directions of the square region, which are consistent with the boundary anchorings. In particular, when two layer structures with different directions touch, their connections do not tend to be chevron or Omega-shaped that are frequently observed in layer structures without local anisotropy [4, 61], but prefer T-junction or sharp corner. We can also see from the snapshots that the layer structures are induced by the principal eigenvector to a large extent. This 24 0510 15 20 25 30                   
+
+> 0510 15 20 25 30
+> 01234567
+> 0510 15
+> (a)c0= 5 ; L =p10 (b)c0= 10 ; L =p10 (c)c0= 20 ; L =p5(d)c0= 20 ; L =p20
+
+Figure 5: The steady states for (a) c0 = 5, L = √10; (b) c0 = 10, L = √10; (c) c0 = 20, L = √5; (d) 
+
+c0 = 20, L = √20. explains the fact that in Fig. 7 the system eventually forms layers throughout the two opposite sides of the square region, because near the center of the region the principal vector is almost vertical. Instead, in Fig. 8 the principal vector near the center of the region is roughly 135 ◦, so that the layers change their directions here. From the energy plot we are aware of the fact that the state in Fig. 7 is lower than Fig. 8, but the latter is indeed a minimizer since we perturb it and it evolves towards the same state. The examples we present above indicate that in smectic phases, the interplay between the local anisotropy, the layer structures, and the defects would be quite complicated. Multiple minimizers, i.e. locally stable states, would be commonly encountered. The gradient flow as well as the numerical methods in this paper shall be useful for further explorations. 
+
+# 5 Conclusions 
+
+We construct a tensor gradient flow for the smectic rod-like liquid crystals with the orientation restrained within the plane. The free energy is featured by the quasi-entropy as a strictly convex, lower semicontinuous function of the concentration and the tensor giving the coupled constraints. For the squared Laplacian term, an evolution equation for the boundary normal derivative is proposed consistent with the energy dissipation law. The numerical scheme is designed with special attention to the coupled constraints by discretizing the quasi-entropy implicitly. Spatial discretizations are carefully written down to be consistent with the boundary evolution equation, keeping the dissipation structure. As a result, we establish the existence and uniqueness, energy dissipation and error estimates for both the time discretization and the full discretization. The scheme proves to be crucial for the efficiency and robustness in the computation, especially for maintaining the coupled constraints that would be otherwise difficult to attain. Defects are found distinct from other layer structures due to the presence 25 0510 15 20 25 
+
+> 0510 15 20 25
+
+(a) (b)Figure 6: The steady states for L = 4 d correspond to the initial states of (a) uniform vertical alignment and (b) uniform 135 ◦ alignment. 0 40 80 120 160 
+
+t
+
+> 7.2 7.3 7.4 7.5 7.6 7.7
+> total energy
+> #10 4
+
+(a)(b) t = 20 (c) t = 40 (d) t = 70 (e) t = 120 (f ) t = 160 
+
+Figure 7: When the initial state consists of left-half 45 ◦ alignment and right-half 135 ◦ alignment for 
+
+L = 8 d, the total energy versus time is shown in (a), and (b)-(f) are snapshots of the solution evolution at t = 20 , 40 , 70 , 120 , 160. The color bar corresponds to the density profile shown in Fig.6. 26 0 30 60 90 120 150 
+
+> t
+> 7.2 7.3 7.4 7.5 7.6 7.7
+> total energy
+> #10 4
+
+(a)(b) t = 10 (c) t = 30 (d) t = 60 (e) t = 100 (f ) t = 150 Figure 8: When the initial state is set to be 135 ◦ alignment for L = 8 d, the total energy versus time is shown in (a), and (b)-(f) are snapshots of the solution evolution at t = 10 , 30 , 60 , 100 , 150. The colorbar follows the same scale as the density profile shown in Fig.6. of local anisotropy. The entropy term proposed in the current work can be extended to handle liquid crystals formed by rigid molecules allowing SO (3) rotations, which may possess complex architectures [65, 62, 64, 63]. Another significant problem is to incorporate dissipation operators derived from the microscopic theory, which typically involve high order tensors. 
+
+Acknowledgements. This work is partially supported by Beijing Natural Science Foundation (No. JQ25002), National Natural Science Foundation of China (Nos. 12301552, 12288201, 12371414), the Strategic Priority Research Program of the Chinese Academy of Sciences (No. XDB0510201), National Key R&D Program of China (No. 2023YFA1008802). 
+
+# A Summation by parts 
+
+Firstly, we derive the equality in (3.17). By direct computation,  
+
+> N−1
+
+X
+
+> l=0
+
+(ul+1 ,m − ul,m )( vl+1 ,m − vl,m ) = 
+
+> N
+
+X
+
+> l=1
+
+−h2ul,m D11 vl,m − u0,m (v1,m − v0,m ) + uN,m (vN,m − vN −1,m ).
+
+(A.1) Substituting (3.16) and corresponding identities into (A.1), and then substituting the resulting expres-sion into (3.11), we have 
+
+X
+
+> Γ
+
+(D1uD 1v)Γ = − X
+
+> Γ
+
+(uD 11 v)Γ + 12h 
+
+> N−1
+
+X
+
+> m=0
+
+
+
+(uD x
+
+> n
+
+v)0,m + ( uD x
+
+> n
+
+v)0,m +1 + ( uD x
+
+> n
+
+v)N,m + ( uD x
+
+> n
+
+v)N,m +1 
+
+
+
+.
+
+(A.2) 27 Similarly, we have 
+
+X
+
+> Γ
+
+(D2uD 2v)Γ = − X
+
+> Γ
+
+(uD 22 v)Γ + 12h 
+
+> N−1
+
+X
+
+> l=0
+
+
+
+(uD y
+
+> n
+
+v)l, 0 + ( uD y
+
+> n
+
+v)l+1 ,0 + ( uD y
+
+> n
+
+v)l,N + ( uD y
+
+> n
+
+v)l+1 ,N 
+
+
+
+.
+
+(A.3) The sum of (A.2) and (A.3) gives (3.17). Next, we focus on the equality in (3.18). For m = 0 , . . . , N , combining with the boundary conditions 
+
+v0,m = vN,m = 0, we derive  
+
+> N−1
+
+X
+
+> l,m =0
+
+ D11 uD 11 v
+
+> l,m
+
+= 
+
+> N−1
+
+X
+
+> l,m =0
+
+ D11 u
+
+> l,m
+
+vl−1,m − 2vl,m + vl+1 ,m 
+
+h2
+
+= 
+
+> N−1
+
+X
+
+> m=0
+
+ N −1X
+
+> l=1
+
+ D11 u 
+
+> l+1 ,m
+
+− 2 D11 u 
+
+> l,m
+
++  D11 u
+
+> l−1,m
+
+h2 vl,m +  D11 u
+
+> 0,m
+
+v−1,m 
+
+h2 −  D11 u
+
+> N,m
+
+vN −1,m 
+
+h2
+
+
+
+= 
+
+> N−1
+
+X
+
+> l,m =1
+
+ D1111 u
+
+> l,m
+
+vl,m + 
+
+> N−1
+
+X
+
+> m=0
+
+ D11 u
+
+> 0,m
+
+v−1,m 
+
+h2 −  D11 u
+
+> N,m
+
+vN −1,m 
+
+h2
+
+
+
+.
+
+(A.4) Similarly, together with the boundary conditions vl, 0 = vl,N = 0 for l = 0 , . . . , N , we have  
+
+> N−1
+
+X
+
+> l,m =0
+
+ D11 uD 11 v 
+
+> l+1 ,m
+
+= 
+
+> N−1
+
+X
+
+> l,m =1
+
+ D1111 u
+
+> l,m
+
+vl,m + 
+
+> N−1
+
+X
+
+> m=0
+
+
+
+−  D11 u
+
+> 0,m
+
+v1,m 
+
+h2 +  D11 u
+
+> N,m
+
+vN +1 ,m 
+
+h2
+
+
+
+, 
+
+> N−1
+
+X
+
+> l,m =0
+
+ D11 uD 11 v 
+
+> l,m +1
+
+= 
+
+> N−1
+
+X
+
+> l,m =1
+
+ D1111 u
+
+> l,m
+
+vl,m + 
+
+> N−1
+
+X
+
+> m=0
+
+ D11 u
+
+> 0,m +1
+
+v−1,m +1 
+
+h2 −  D11 u
+
+> N,m +1
+
+vN −1,m +1 
+
+h2
+
+
+
+, 
+
+> N−1
+
+X
+
+> l,m =0
+
+ D11 uD 11 v 
+
+> l+1 ,m +1
+
+= 
+
+> N−1
+
+X
+
+> l,m =1
+
+ D1111 u
+
+> l,m
+
+vl,m + 
+
+> N−1
+
+X
+
+> m=0
+
+
+
+−  D11 u
+
+> 0,m +1
+
+v1,m +1 
+
+h2 +  D11 u
+
+> N,m +1
+
+vN +1 ,m +1 
+
+h2
+
+
+
+.
+
+(A.5) Substituting (A.4) and (A.5) into the summation of (3.13) in space, we derive that 
+
+X
+
+> Γ
+
+(D11 uD 11 v)Γ
+
+= 
+
+> N−1
+
+X
+
+> l,m =1
+
+ vD 1111 u 
+
+> l,m
+
++ 
+
+> N−1
+
+X
+
+> m=0
+
+12h
+
+ D11 uD x
+
+> n
+
+v 
+
+> 0,m
+
++  D11 uD x
+
+> n
+
+v 
+
+> 0,m +1
+
++  D11 uD x
+
+> n
+
+v 
+
+> N,m
+
++  D11 uD x
+
+> n
+
+v
+
+> N,m +1
+
+
+
+.
+
+(A.6) 28 In similar ways, we can also derive that 
+
+X
+
+> Γ
+
+(D22 uD 11 v)Γ = 
+
+> N−1
+
+X 
+
+> m=1
+> N−1
+
+X
+
+> l=1
+
+ vD 2211 u 
+
+> l,m
+
++ 
+
+> N−1
+
+X
+
+> m=0
+
+12h
+
+ D22 uD x
+
+> n
+
+v 
+
+> 0,m
+
++  D22 uD x
+
+> n
+
+v
+
+> 0,m +1
+
++  D11 uD x
+
+> n
+
+v 
+
+> N,m
+
++  D11 uD x
+
+> n
+
+v
+
+> N,m +1
+
+
+
+,
+
+X
+
+> Γ
+
+(D11 uD 22 v)Γ = 
+
+> N−1
+
+X 
+
+> m=1
+> N−1
+
+X
+
+> l=1
+
+ vD 1122 u 
+
+> l,m
+
++ 
+
+> N−1
+
+X
+
+> l=0
+
+12h
+
+ D11 uD y
+
+> n
+
+v 
+
+> l, 0
+
++  D11 uD y
+
+> n
+
+v
+
+> l+1 ,0
+
++  D11 uD y
+
+> n
+
+v 
+
+> l,N
+
++  D11 uD y
+
+> n
+
+v
+
+> l+1 ,N
+
+
+
+,
+
+X
+
+> Γ
+
+(D22 uD 22 v)Γ = 
+
+> N−1
+
+X 
+
+> m=1
+> N−1
+
+X
+
+> l=1
+
+ vD 2222 u 
+
+> l,m
+
++ 
+
+> N−1
+
+X
+
+> l=0
+
+12h
+
+ D22 uD y
+
+> n
+
+v 
+
+> l, 0
+
++  D22 uD y
+
+> n
+
+v
+
+> l+1 ,0
+
++  D22 uD y
+
+> n
+
+v 
+
+> l,N
+
++  D22 uD y
+
+> n
+
+v
+
+> l+1 ,N
+
+
+
+.
+
+(A.7) Thus, the sum of (A.6) and (A.7) proves (3.18). 
+
+# References 
+
+[1] N. M. Abukhdeir and A. D Rey. Defect kinetics and dynamics of pattern coarsening in a two-dimensional smectic-A system. New J. Phys. , 10(6):063025, 2008. [2] N. M. Abukhdeir and A. D. Rey. Simulation of surface-enhanced ordering in smectic films. Solid State Phenom. , 139:135–140, 2008. [3] C. Bahr. Flow-induced disclination lines in nematic liquid crystals. Phys. Rev. E , 112:045408, 2025. [4] J. M. Ball and S. J. Bedford. Discontinuous order parameters in liquid crystal theories. Mol. Cryst. Liq. Cryst. , 612(1):1–23, 2015. [5] J. M. Ball, G. Canevari, and B. Stroffolini. A free discontinuity model for smectic thin films. Liq. Cryst. , 50(7-10):1439–1448, 2023. [6] D. A. Beller, M. A. Gharbi, and I. B. Liu. Shape-controlled orientation and assembly of colloids with sharp edges in nematic liquid crystals. Soft Matter , 11(6):1078–1086, 2015. [7] P. Biscari, M. C. Calderer, and E. M. Terentjev. Landau-de Gennes theory of isotropic-nematic-smectic liquid crystal transitions. Phys. Rev. E , 75:051707, 2007. [8] F. Bisi, E. G. Virga, E. C. Gartland Jr., G. De Matteis, A. M. Sonnet, and G. E. Durand. Universal mean-field phase diagram for biaxial nematics obtained from a minimax principle. Phys. Rev. E ,73:051709, 2006. [9] H. R. Brand, P. K. Mukherjee, and H. Pleiner. Macroscopic dynamics near the isotropic-smectic-A phase transition. Phys. Rev. E , 63:061708, 2001. [10] Y. Cai. Tilt modulus of bilayer membranes self-assembled from rod–coil diblock copolymers. Lang-muir , 38(18):5820–5828, 2022. [11] G. Canevari, A. Majumdar, and A. Spicer. Order reconstruction for nematics on squares and hexagons: A Landau–de Gennes study. SIAM J. Appl. Math. , 77(1):267–293, 2017. [12] J. Chen and T. C. Lubensky. Landau-Ginzburg mean-field theory for the nematic to smectic-C and nematic to smectic-A phase transitions. Phys. Rev. A , 14:1202–1207, 1976. 29 [13] P. G. de Gennes. An analogy between superconductors and smectics A. Solid State Commun. ,10(9):753–756, 1972. [14] P. G. de Gennes and J. Prost. The Physics of Liquid Crystals . Oxford University Press, 1993. [15] D. Duque, K. Katsov, and M. Schick. Theory of T junctions and symmetric tilt grain boundaries in pure and mixed polymer systems. J. Chem. Phys. , 117(22):10315–10320, 2002. [16] I. C. Gˆ arlea, P. Mulder, J. Alvarado, O. Dammone, D. G. A. L. Aarts, M. P. Lettinga, G. H. Koenderink, and B. M. Mulder. Finite particle size drives defect-mediated domain structures in strongly confined colloidal liquid crystals. Nat. Commun. , 7:12112, 2016. [17] J. Han, Y. Luo, W. Wang, P. Zhang, and Z. Zhang. From microscopic theory to macroscopic theory: a systematic study on modeling for liquid crystals. Arch. Ration. Mech. An. , 215(3):741–809, 2015. [18] Y. Han, J. Lagerwall, and A. Majumdar. Topological defects as nucleation points of the nematic-isotropic phase transition in liquid crystal shells. Phys. Rev. E , 109:064702, 2024. [19] Y. Han, J. Yin, P. Zhang, A. Majumdar, and L. Zhang. Solution landscape of a reduced Landau-de Gennes model on a hexagon. Nonlinearity , 34:2048–2069, 2021. [20] N. P. Haputhanthrige, S. Paladugu, M. O. Lavrentovich, and O. D. Lavrentovich. Trapping of isotropic droplets by disclinations in nematic liquid crystals controlled by surface anchoring and elastic constant disparity. Phys. Rev. E , 109:064703, 2024. [21] S. M. Hashemi, U. Jagodiˇ c, M. R. Mozaffari, M. R. Ejtehadi, I. Muˇ seviˇ c, and M. Ravnik. Fractal nematic colloids. Nat. Commun. , 8(1):14026–14026, 2017. [22] H. Hu, M. Gopinadhan, and C. O. Osuji. Directed self-assembly of block copolymers: a tutorial review of strategies for enabling nanotechnology with soft matter. Soft Matter , 10:3867–3889, 2014. [23] Y. Hu, Y. Qu, and P. Zhang. On the disclination lines of nematic liquid crystals. Commun. Comput. Phys. , 19(2):354–379, 2016. [24] S. Kralj and S. ˇZumer. Smectic-A structures in submicrometer cylindrical cavities. Phys. Rev. E ,54:1610–1617, 1996. [25] O. D. Lavrentovich. Defects in liquid crystals: Surface and interfacial anchoring effects. In Patterns of Symmetry Breaking , pages 161–195, Dordrecht, 2003. Springer Netherlands. [26] F. M. Leslie, I. W. Stewart, and M. Nakagawa. A continuum theory for smectic C liquid crystals. 
+
+Mol. Cryst. Liq. Cryst. , 198(1):443–454, 1991. [27] A. H. Lewis, I. Garlea, J. Alvarado, O. J. Dammone, P. D. Howell, A. Majumdar, B. M. Mulder, M. P. Lettinga, G. H. Koenderink, and D. G. A. L. Aarts. Colloidal liquid crystals in rectangular confinement: theory and experiment. Soft Matter , 10:7865, 2014. [28] H. Liang, J. Noh, R. Zentel, P. Rudquist, and J. P. F. Lagerwall. Tuning the defect configurations in nematic and smectic liquid crystalline shells. Philos. Trans. R. Soc. A , 371(1988):20120258, 2013. [29] A. Linhananta and D. E. Sullivan. Phenomenological theory of smectic-A liquid crystals. Phys. Rev. A , 44:8189–8197, 1991. [30] M. R. M, R. K. Pujala, and S. Dhara. Colloidal analogues of polymer chains, ribbons and 2D crystals employing orientations and interactions of nano-rods dispersed in a nematic liquid crystal. 
+
+Sci. Rep. , 9(1):4652, 2019. [31] Y. Mai and A. Eisenberg. Self-assembly of block copolymers. Chem. Soc. Rev. , 41:5969–5985, 2012. 30 [32] S. Mei and P. Zhang. On a molecular based Q-tensor model for liquid crystals with density variations. Multiscale Model. Sim. , 13(3):977–1000, 2015. [33] S. Mkaddem and E. C. Gartland Jr. Fine structure of defects in radial nematic droplets. Phys. Rev. E , 62(5):6694–6705, 2000. [34] P. A. Monderkamp, R. Wittmann, L. B. G. Cortes, D. G. A. L. Aarts, F. Smallenburg, and H. L¨ owen. Topology of orientational defects in confined smectic liquid crystals. Phys. Rev. Lett ,127:198001, 2021. [35] P. A. Monderkamp, R. Wittmann, M. te Vrugt, A. Voigt, R. Wittkowski, and H. L¨ owen. Topological fine structure of smectic grain boundaries and tetratic disclination lines within three-dimensional smectic liquid crystals. Phys. Chem. Chem. Phys. , 24:15691–15704, 2022. [36] P. K. Mukherjee, H. Pleiner, and H. R. Brand. Simple Landau model of the smectic-A-isotropic phase transition. Eur. Phys. J. E , 4(3):293–297, 2001. [37] I. R. Nemitz, A. J. Ferris, E. Lacaze, and C. Rosenblatt. Chiral oily streaks in a smectic-A liquid crystal. Soft Matter , 12:6662–6668, 2016. [38] R. R. Netz, D. Andelman, and M. Schick. Interfaces of modulated phases. Phys. Rev. Lett. ,79(6):1058–1061, 1997. [39] I. Nys, B. Berteloot, J. Beeckman, and K. Neyts. Disclination lines in nematic liquid crystal between a structured photoalignment layer and a homeotropic alignment layer. J. Mol. Liq. , 352:118710, 2022. [40] J. Paget, U. Alberti, M. G. Mazza, A. J. Archer, and T. N. Shendruk. Smectic layering: Landau theory for a complex-tensor order parameter. J. Phys. A , 55(35):354001, 2022. [41] M. Y. Pevnyi, J. V. Selinger, and T. Sluckin. Modeling smectic layers in confined geometries: order parameter and defects. Phys. Rev. E , 90(3):032507, 2014. [42] A. Poniewierski and T. J. Sluckin. Phase diagram for a system of hard spherocylinders. Phys. Rev. A, 43:6837–6842, 1991. [43] A. Repula and E. Grelet. Elementary edge and screw dislocations visualized at the lattice period-icity level in the smectic phase of colloidal rods. Phys. Rev. Lett. , 121:097801, 2018. [44] M. Robinson, C. Luo, P. E. Farrell, R. Erban, and A. Majumdar. From molecular to continuum modelling of bistable liquid crystal devices. Liq. Cryst. , 14-15:2267–2284, 2017. [45] H. Sackmann. Plenary lecture. smectic liquid crystals. a historical review. Liq. Cryst. , 5(1):43–55, 1989. [46] N. Schopohl and T. J. Sluckin. Hedgehog structure in nematic and magnetic systems. J. Phys. ,49(7):1097–1101, 1988. [47] M. Selmi, J.-C. Loudet, P. V. Dolganov, T. Othman, and P. Cluzeau. Structures in the meniscus of smectic membranes: the role of dislocations? Soft Matter , 13:3649–3663, 2017. [48] B. Shi, Y. Han, C. Ma, A. Majumdar, and L. Zhang. A modified Landau-de Gennes theory for smectic liquid crystals: Phase transitions and structural transitions. SIAM J. Appl. Math. ,85(2):821–847, 2025. [49] M. ˇSkarabot, M. Ravnik, S. ˇZumer, U. Tkalec, I. Poberaj, D. Babiˇ c, N. Osterman, and I. Muˇ seviˇ c. Two-dimensional dipolar nematic colloidal crystals. Phys. Rev. E , 76(5):051406, 2007. 31 [50] M. Soares e Silva, J. Alvarado, J. Nguyen, N. Georgoulia, B. M. Mulder, and G. H. Koenderink. Self-organized patterns of actin filaments in cell-sized confinement. Soft Matter , 7:10631–10641, 2011. [51] H. Stark. Physics of colloidal dispersions in nematic liquid crystals. Phys. Rep. , 351(6):387–474, 2001. [52] J. P. Straley. Ordered phases of a liquid of biaxial particles. Phys. Rev. A , 10:1881–1887, 1974. [53] Y. Tsori, D. Andelman, and M. Schick. Defects in lamellar diblock copolymers: Chevron- and 
+
+ω-shaped tilt boundaries. Phys. Rev. E , 61(3):2848–2858, 2000. [54] W. Wang, L. Zhang, and P. Zhang. Modelling and computation of liquid crystals. Acta Numerica ,30:765–851, 2021. [55] X. Wang, S. Li, and Y. Cai. Analytical calculation of the elastic moduli of self-assembled liquid-crystalline bilayer membranes. J. Phys. Chem. B , 125(20):5309–5320, 2021. [56] Y. Wang and J. Xu. Q-tensor gradient flow with quasi-entropy and discretizations preserving physical constraints. J. Sci. Comput. , 94(1), 2023. [57] Y. Wang, P. Zhang, and J. Z. Y. Chen. Formation of three-dimensional colloidal crystals in a nematic liquid crystal. Soft Matter , 14:6756–6766, 2018. [58] R. Wittmann, L. B. G. Cortes, H. L¨ owen, and D. G. A. L. Aarts. Particle-resolved topological defects of smectic colloidal liquid crystals in extreme confinement. Nat. Commun. , 12:623, 2021. [59] R. Wittmann, P. A. Monderkamp, J. Xia, L. B. G. Cortes, I. Grobas, P. E. Farrell, D. G. A. L. Aarts, and H. L¨ owen. Colloidal smectics in button-like confinements: Experiment and theory. 
+
+Phys. Rev. Res. , 5:033135, 2023. [60] J. Xia and P. Farrell. Variational and numerical analysis of a Q-tensor model for smectic-A liquid crystals. ESAIM Math. Model. Num. , 57(2):693–716, 2023. [61] J. Xia, S. Maclachlan, T. J. Atherton, and P. E. Farrell. Structural transitions in geometrically frustrated smectics. Phys. Rev. Lett. , 126(17):177801, 2021. [62] J. Xu. Classifying local anisotropy formed by rigid molecules: symmetries and tensors. SIAM J. Appl. Math. , 80(6):2518–2546, 2020. [63] J. Xu. Quasi-entropy by log-determinant covariance matrix and application to liquid crystals. 
+
+Physica D , 435:133308, 2022. [64] J. Xu. Symmetry-consistent expansion of interaction kernels between rigid molecules. CSIAM Trans. Appl. Math. , 3:383–427, 2022. [65] J. Xu and J. Z. Y. Chen. General liquid-crystal theory for anisotropically shaped molecules: Symmetry, orientational order parameters, and system free energy. Phys. Rev. E , 102:062701, 2020. [66] J. Xu, F. Ye, and P. Zhang. A tensor model for nematic phases of bent-core molecules based on molecular theory. Multiscale Model. Simul. , 16(4):1581–1602, 2018. [67] J. Xu and P. Zhang. Onsager-theory-based dynamic model for nematic phases of bent-core molecules and star molecules. J. Non-Newton Fluid , 251:43–55, 2018. [68] X. Yao, H. Zhang, and J. Z. Y. Chen. Topological defects in two-dimensional liquid crystals confined by a box. Phys. Rev. E , 97:052707, 2018. 32 [69] X. Yao, L. Zhang, and J. Z. Y. Chen. Defect patterns of two-dimensional nematic liquid crystals in confinement. Phys. Rev. E , 105:044704, 2022. [70] J. Yin, Y. Wang, J. Z. Y. Chen, P. Zhang, and L. Zhang. Construction of a pathway map on a complicated energy landscape. Phys. Rev. Lett. , 124:090601, 2020. [71] H. Yu, G. Ji, and P. Zhang. A nonhomogeneous kinetic model of liquid crystal polymers and its thermodynamic closure approximation. Commun. Comput. Phys. , 7(2):383–402, 2010. [72] B. Zappone and E. Lacaze. One-dimensional patterns and topological defects in smectic liquid crystal films. Liq. Cryst. Rev. , 11(1-2):1–18, 2023. 33

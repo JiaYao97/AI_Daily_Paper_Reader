@@ -1,0 +1,957 @@
+Title: Neural-Network-based Viscosity Closure for Non-Newtonian Multiphase Flows
+
+URL Source: https://arxiv.org/pdf/2605.30659v1
+
+Published Time: Mon, 01 Jun 2026 00:21:17 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Neural-Network-based Viscosity Closure for Non-Newtonian Multiphase Flows 
+
+Suresh Murugaiyan a, Claire L. Nelson c, Dhruv Gamdha b, Austin Cunni ff c, Cheng-Hau Yang b, Abraham Wiletsky e,Kaitlyn W. Dilley c, Patrick Babb d, Andrew Rhode c, Christopher M. Bates c, Angela A. Pitenis c,Michael L. Chabinyc c, Adarsh Krishnamurthy a,b, ∗, Baskar Ganapathysubramanian a,b, ∗
+
+> aTranslational AI Center, Iowa State University, Ames, IA
+> bDepartment of Mechanical Engineering, Iowa State University, Ames, IA
+> cMaterials Department, University of California, Santa Barbara, CA
+> dDepartment of Mechanical Engineering, University of California, Santa Barbara, CA
+> eDepartment of Chemical and Biological Engineering, University of Colorado Boulder, Boulder, CO
+
+Abstract 
+
+Materials used in polymer-based additive manufacturing processes, such as Digital Light Processing (DLP) and direct ink writing (DIW), typically exhibit non-Newtonian rheology. Carreau–Yasuda and power-law models describe basic shear-thinning and shear-thickening behavior well, but applying them to a new material requires choosing a functional form, deriving it, and re-implementing it inside the flow solver. We present a deployment workflow in which a neural network trained on experimental rheometry data serves as the viscosity closure inside a Cahn–Hilliard–Navier–Stokes (CHNS) finite element solver. Lipschitz regularization during training produces smooth viscosity predictions, and the trained network is exported in the Open Neural Network Exchange (ONNX) format and queried by the solver at runtime via the ONNX runtime, without solver modification or network reimplementation. The framework is built on a parallel octree-based adaptive mesh refinement infrastructure that concentrates resolution at the fluid interface. We validate the CHNS solver against benchmark shear-thinning bubble-rise cases from the literature, reproducing reported bubble shapes across varying power-law indices and Weber numbers. We characterized two silicone ink formulations, recorded their rise dynamics in perfluorodecalin on high-speed video, and used the resulting data to test the full workflow. Simulated rise velocities fall within the experimentally measured spread, and the simulated steady-state droplet shape agrees with the observed one. This work contributes to a growing body of literature on integrating neural constitutive closures into multiphysics simulations, and demonstrates a practical path for deploying experimentally trained rheological surrogates inside finite element solvers. 
+
+Keywords: Data driven constitutive models, Non-Newtonian fluids, Phase field equations, Adaptive mesh refinement 
+
+1. Introduction 
+
+Multiphase flows involving non-Newtonian materials are central to a broad class of polymer-based additive man-ufacturing processes. In Digital Light Processing (DLP), patterned light from a projector cures a photosensitive resin layer by layer; the resin must flow into place for each new layer while solidifying under exposure. In direct ink writing (DIW) and embedded 3D printing, a non-Newtonian ink is extruded into a support bath, and the interaction between the ink and the surrounding fluid governs filament shape, placement, and print fidelity. In both cases, the coupling between flow, solidification, and the shear-dependent rheology of the printing material determines print resolution and the mechanical properties of the final part. This coupling is di ffi cult to probe directly during printing. As a controlled proxy, we analyze the buoyant rise of a non-Newtonian silicone ink droplet through a viscous fluid, a configuration that imposes shear histories comparable to those encountered during extrusion- and resin-based printing. Many empirical constitutive laws have been developed to describe non-Newtonian viscosity. The Carreau– Yasuda [1] and power-law [2] formulations are the standard tools for shear-thinning and shear-thickening behavior 
+
+> ∗Corresponding Authors
+> arXiv:2605.30659v1 [physics.flu-dyn] 28 May 2026
+
+in computational studies, capturing the rheology of many polymeric and soft-matter systems with a small number of interpretable parameters. The fixed, low-dimensional form that gives these models their interpretability also limits them: extending them to viscoelastic, thixotropic, or yield-stress behavior generally requires deriving and implement-ing a new constitutive law inside the flow solver, and refitting parameters for each new system. Freund and Ewoldt [3] used Bayesian inference to show that good fits to rheological data are insu ffi cient grounds for model selection; models with fewer, well-constrained parameters are more credible than empirical forms that achieve closer fits through added flexibility. The same concern applies to data-driven constitutive surrogates, including neural networks, which carry genuine model-selection risk and require appropriate regularization when used as replacements for parameterized constitutive forms. The literature on bubble rise in non-Newtonian fluids and on data-driven constitutive modeling has grown sub-stantially, but the two have rarely been coupled: few studies deploy constitutive surrogates trained on experimental rheometry inside high-fidelity multiphase solvers. The remainder of this section reviews three relevant areas: nu-merical modeling of bubble dynamics in two-phase flow solvers, bubble dynamics in non-Newtonian fluids with established constitutive relations, and recent work on data-driven or machine-learning-assisted constitutive modeling. Bubble dynamics in immiscible fluids has been studied extensively with interface-capturing methods. Two-phase simulations have progressed from qualitative shape comparisons to quantitative benchmarks that track bubble circu-larity, center-of-mass height, and mean rise velocity, providing reproducible targets for code verification in capillary-sensitive flows [4]. Three-dimensional studies [5–8] have captured complex deformation, instability, and breakup behavior under varied flow conditions. Tripathi et al. [9] mapped the transitions between axisymmetric rise, skirt formation, path instability, and breakup as functions of the Galilei and Eötvös numbers, and the same group sub-sequently showed that thermocapillary e ff ects in self-rewetting fluids can reverse or arrest bubble motion [10]. The Cahn–Hilliard–Navier–Stokes (CHNS) formulation [11–13] has become a standard di ff use-interface approach for in-terfacial evolution, coalescence, and breakup with thermodynamic consistency [14–16]. CHNS solvers paired with adaptive mesh refinement [17–20] resolve steep gradients at phase boundaries e ffi ciently [14]. The studies above mostly concern Newtonian fluids. In non-Newtonian systems [21–24], viscosity varies with local shear rate and a ff ects bubble deformation, rise velocity, and interfacial stability. Premlata et al. [25] studied an air bubble rising in shear-thinning and shear-thickening liquids with the Carreau–Yasuda model, finding that stronger shear-thinning raises rise velocity and reduces deformation, and that higher Galilei numbers increase shape distortion. Zhang et al. [24] combined experiment and simulation for a single bubble rising in shear-thinning Carreau fluids and reported that stronger shear-thinning lowers local viscosity near the bubble surface, enhances rise velocity, and produces oblate shapes with high-viscosity wakes. Pang and Lu [26] examined bubbles rising in shear-thinning power-law fluids under varied gravity conditions and showed that a lower power-law index produces a detached high-viscosity region behind the bubble, while higher Galilei and Eötvös numbers produce larger wake structures and stronger deformation. Hu and Pang [27] added that the liquid-to-bubble viscosity ratio also a ff ects rise velocity, with high ratios inducing unsteady deformation at low power-law indices. Data-driven constitutive modeling has emerged as an alternative to fixed parametric forms when the rheology is di ffi cult to capture in closed form. Physics-informed neural networks (PINNs) have been used to infer unknown con-stitutive relations and material parameters from sparse or indirect flow observations. Tartakovsky et al. [28] showed that PINNs can recover nonlinear di ff usion and transport relations from limited state measurements without prescrib-ing a functional form. Reyes et al. [29] extended this approach to non-Newtonian fluids, learning shear-dependent viscosity distributions from velocity data in three-dimensional flows. For viscoelastic fluids, where stress depends on both kinematics and material memory, Thakur et al. [30] introduced ViscoelasticNet, which infers stress fields and material parameters from velocity data alone, even with sparse or noisy inputs. Mahmoudabadbozchelou and Jamali [31] introduced Rheology-Informed Neural Networks (RhINNs), which em-bed systems of ordinary di ff erential equations describing thixotropic and viscoelastic behavior into the network archi-tecture. The same model predicts stress evolution under varied flow protocols and infers hidden material parameters from limited experimental data, providing accurate forward and inverse solutions for thixotropic elasto-viscoplastic fluids even under sparse or noisy inputs. A later extension [32] combines sparse regression with automatic di ff eren-tiation to construct closed-form constitutive relations from experimental data without relying on a predefined model, identifying the dominant physical terms in a material’s stress response and producing compact, thermodynamically consistent equations that generalize across flow protocols. Tucny et al. [33] used PINNs to recover e ff ective viscosity functions in rarefied gas flows governed by the generalized Stokes model, learning transport coe ffi cients consistent 2with kinetic theory in regimes where continuum assumptions fail. Lardy et al. [34] inferred viscoplastic constitutive laws directly from velocity field data, identifying parameters and selecting between Herschel–Bulkley and Carreau models even under noisy or sparse sampling. The present work develops a deployment workflow for using neural-network viscosity closures inside a Cahn– Hilliard–Navier–Stokes multiphase flow solver. We train a Lipschitz-regularized neural network on experimental rheometry data to serve as a surrogate for shear-dependent viscosity; the regularization ensures the learned function remains smooth enough to use as a constitutive closure in a flow solver. The trained network is exported to the Open Neural Network Exchange (ONNX) format and queried at each iteration of the finite element solver, allowing neural constitutive models to be integrated into existing multiphase flow frameworks without reimplementation or solver modification. We characterized two silicone ink formulations, recorded their rise dynamics in perfluorodecalin on high-speed video, and used the resulting data to test the full workflow; simulated rise velocities fall within the experimentally measured spread across four independent cases. The paper is organized as follows. Section 2 presents the governing Cahn–Hilliard–Navier–Stokes equations and their nondimensional form. Section 3 describes the solution strategy and the neural-network-based viscosity model, including its integration into the finite element solver via ONNX. Section 4 details the experimental setup and rheological characterization of the two silicone ink formulations. Section 5 presents the validation results and the comparison against experimental droplet rise dynamics. Section 6 summarizes the findings and outlines directions for future work. The image processing pipeline used to extract rise velocities from the high-speed video is described in Appendix A. 
+
+2. Governing Equations 
+
+The governing Cahn-Hilliard-Navier-Stokes [14] equations are given in equations (1a) to (3c). In these equations, 
+
+u[ms −1] is the velocity vector, ρ[kgm −3] is the mixture density, J[kgm −2 s−1] is the di ff usive flux, σ[Nm −1] is the surface tension, ϵ[m] is the interfacial thickness, ϕ is the dimensionless phase field, p[Nm −2] is the pressure, η[N s m −2] is the mixture viscosity, g[ms −2] is the gravitational acceleration, m[kg −1m3 s] is the mobility and μ[Nm −2] is the chemical potential. The quantities ρ+ and ρ− denote the densities of the two fluid phases, while η+ and η− represent their corresponding viscosities. The phase field ϕ distinguishes the two fluids by taking the value +1 in one phase and −1 in the other, and varies continuously across the interface between them. The index i and j denote the number of spatial dimensions. In the present work, η+ denotes the viscosity of the non-Newtonian fluid, while η− corresponds to that of the Newtonian phase. The non-Newtonian viscosity is evaluated using a neural network trained on rheological data (Eq. 3a). The network takes the local shear rate (˙ γ[s−1]) as input and predicts the corresponding viscosity (Eq. 3b). The shear rate, in turn, is computed from the strain-rate tensor ( Di j [s−1]) as defined in Eq. 3c. 
+
+∂ui
+
+∂xi
+
+= 0 (1a) 
+
+∂(ρui)
+
+∂t + ∂(ρuiu j)
+
+∂x j
+
++ ∂(J jui)
+
+∂x j
+
++ σϵ ∂∂x j
+
+∂ϕ ∂xi
+
+∂ϕ ∂x j
+
+!
+
++ ∂p
+
+∂xi
+
+− ∂∂x j
+
+η ∂ui
+
+∂x j
+
+!
+
+− ρgi = 0 (1b) 
+
+∂ϕ ∂t + ∂(uiϕ)
+
+∂xi
+
+− ∂∂xi
+
+m ∂μ ∂xi
+
+!
+
+= 0 (2a) 
+
+σϵ ϕ3 − σϵ ϕ − σϵ ∂∂xi
+
+∂ϕ ∂xi
+
+!
+
+− μ = 0 (2b) Here, J j = (ρ− − ρ+)2 m ∂μ ∂x j
+
+, ρ = ρ+ + ρ−
+
+2 + ρ+ − ρ−
+
+2 ϕ and η = η+ + η−
+
+2 + η+ − η−
+
+2 ϕ
+
+3η+ = η+(Neural Network ) (3a) ˙γ =
+
+q
+
+2 Di j Di j (3b) 
+
+Di j = 12
+
+∂ui
+
+∂x j
+
++ ∂u j
+
+∂xi
+
+!
+
+(3c) 
+
+2.1. Dimensionless form of Cahn–Hilliard–Navier–Stokes equations 
+
+The dimensionless form of the Cahn–Hilliard–Navier–Stokes equations is obtained by introducing length scale 
+
+lr, time scale tr, velocity scale ur, density scale ρr, di ff usive flux scale Jr, pressure scale pr, viscosity scale ηr,gravitational acceleration scale gr and chemical potential scale μr. Surface tension σ, interfacial thickness ϵ and mobility m are taken as constants. The following are the derived scales, non-dimensional numbers and hence the dimensionless form of the governing equations, where Re is the Reynolds number, Fr is the Froude number, We is the Weber number, Pe is the Peclet number and Cn is the Cahn number. 
+
+tr = lr
+
+ur
+
+, pr = σ
+
+lr
+
+, μr = σ
+
+lr
+
+, Jr = ρrmσ
+
+l2
+
+> r
+
+Re = urρrlr
+
+ηr
+
+, Fr = ur
+
+pgrlr
+
+, We = ρr u2 
+
+> r
+
+lr
+
+σ , Pe = ur l2
+
+> r
+
+m σ , Cn = ϵ
+
+lr
+
+∂ui
+
+∂xi
+
+= 0 (4a) 
+
+∂(ρui)
+
+∂t + ∂(ρuiu j)
+
+∂x j
+
++ 1
+
+Pe 
+
+∂(J jui)
+
+∂x j
+
++ Cn We 
+
+∂∂x j
+
+∂ϕ ∂xi
+
+∂ϕ ∂x j
+
+!
+
++ 1
+
+We 
+
+∂p
+
+∂xi
+
+− 1
+
+Re 
+
+∂∂x j
+
+η ∂ui
+
+∂x j
+
+!
+
+− 1
+
+Fr 2 ρgi = 0 (4b) 
+
+∂ϕ ∂t + ∂(uiϕ)
+
+∂xi
+
+− 1
+
+Pe 
+
+∂∂xi
+
+∂μ ∂xi
+
+!
+
+= 0 (5a) 1
+
+Cn ϕ3 − 1
+
+Cn ϕ − Cn ∂∂xi
+
+∂ϕ ∂xi
+
+!
+
+− μ = 0 (5b) Here, J j = (ρ− − ρ+)2
+
+∂μ ∂x j
+
+, ρ = ρ+ + ρ−
+
+2 + ρ+ − ρ−
+
+2 ϕ and η = η+ + η−
+
+2 + η+ − η−
+
+2 ϕη+ = η+(Neural Network )˙γ =
+
+q
+
+2 Di j Di j 
+
+Di j = 12
+
+∂ui
+
+∂x j
+
++ ∂u j
+
+∂xi
+
+!
+
+(6) 
+
+3. Numerical Methodology 
+
+3.1. Solution Strategy 
+
+The solver builds on the in-house Cahn–Hilliard–Navier–Stokes (CHNS) framework developed by Khanwale et al. [15]. The coupled system is advanced with a block-iterative time-stepping strategy: at each time step, the Cahn– Hilliard equations are solved first, followed by the Navier–Stokes equations (Figure 1). The coupling variables from one equation are held constant during the solve of the other. 4Start Time, t = 0
+
+Initialize ϕ, μ, u, p
+
+Begin Inner Iteration, k = 0
+
+Solve Cahn-Hilliard Equations 
+
+Solve Navier- Stokes Equations Compute u, p
+
+using ϕ, μ 
+
+Compute ϕ, μ 
+
+Check if k = kmax ?
+
+Advance Inner Iteration, 
+
+k = k + 1
+
+No 
+
+Check if t = tmax ?
+
+Yes 
+
+Advance Time, 
+
+t = t + ∆ t
+
+No 
+
+End Time, t = tmax 
+
+Yes  
+
+> Figure 1: Flow Chart for the Solution Strategy
+
+The Cahn–Hilliard equation is treated as a nonlinear system and solved with the Newton-Raphson method. For the Navier–Stokes system, a projection-based semi-implicit scheme [15] is used, with the convection term ∂ j(uiu j)linearized [35] using the advecting velocity from the previous time step. The same block-iterative philosophy ap-plies within the Navier–Stokes solve: the velocity prediction, pressure Poisson, and velocity correction equations are solved as separate sub-problems. The projection procedure computes an intermediate velocity using the current pressure, solves a pressure Poisson equation, and corrects the velocity to enforce incompressibility. This decoupling avoids the cost of the fully-coupled saddle-point solve, while preserving second-order accuracy, energy stability, and mass conservation. The residual-based variational multiscale (RBVMS) formulation [35] provides stabilization in 5advection-dominated regimes. The framework is parallelized with octree-based adaptive mesh refinement (AMR), concentrating resolution near the moving fluid interface. For highly deforming cases such as a rising bubble, the AMR mesh provides a substantial speedup over a uniform fine mesh [15]. 
+
+3.2. Neural Network for Viscosity Prediction 
+
+A neural network learns the viscosity-shear-rate relation directly from data, without committing to a functional form such as power-law or Carreau–Yasuda. To keep the learned function smooth and bounded in derivative, Lipschitz regularization [36, 37] is applied during training. Lipschitz continuity bounds how rapidly a function can vary with respect to its input. A function f (x) is Lipschitz continuous if there exists a constant λL > 0 such that 
+
+∥ f (x1) − f (x2)∥ ≤ λL ∥x1 − x2∥.
+
+For di ff erentiable functions, the Mean Value Theorem (Eq. 7) relates this to the norm of the derivative, so a bounded derivative (Eq. 8) is su ffi cient for Lipschitz continuity with constant λL.
+
+∥ f (x1) − f (x2)∥∥x1 − x2∥ = ∥ f ′(x)∥ (7) 
+
+∥ f ′(x)∥ ≤ λL, (8) Mean squared error (MSE) loss alone is often insu ffi cient when the training data contains noise: the network can overfit by learning highly oscillatory functions with large derivatives (Figure 2a), which then generalize poorly to unseen inputs and produce non-physical viscosity predictions. Lipschitz regularization addresses this by adding a penalty on the input gradient, bounding how rapidly the network output can change with respect to its input (Figure 2b). The total loss is given in Eq. 9, where α is the regularization weight and ∇x fθ(x) is the gradient of the network output with respect to its input. 
+
+Ltotal = MSE |{z} 
+
+> data fit
+
++ α ∥∇ x fθ(x)∥
+
+| {z }
+
+> smoothness
+
+, (9) We use a fully connected feedforward neural network with two hidden layers of 64 neurons each and hyperbolic-tangent (Tanh) activations. The network takes the scalar shear rate ˙ γ as input and returns the scalar viscosity η+.The shear-rate and viscosity data span several decades, so training is carried out in log–log space, with log 10 ˙γ as input and ln η+ as output; the transforms are absorbed into a thin wrapper at export time, so the deployed ONNX model accepts physical shear rate and returns physical viscosity directly. Training uses the Adam optimizer with a -1 -0.5 0 0.5 1-1 -0.5 00.5 1        
+
+> (a) Regular neural network -1 -0.5 00.5 1-1 -0.5 00.5 1(b) Lipschitz regularized neural network
+> Figure 2: Comparison between regular and Lipschitz regularized neural networks in predicting a noisy function.
+
+6Input Layer 
+
+| {z }
+
+> Hidden Layers
+
+| {z }
+
+> Output Layer
+
+| {z } 
+
+> Figure 3: Neural network architecture
+
+learning rate of 10 −3, full-batch updates, and 50 ,000 epochs. The loss function is the Lipschitz-regularized mean-squared error in Eq. 9, with regularization weight α = 10 −4 selected by manual tuning. The benchmark networks (Section 5.1) are trained on shear-rate /viscosity pairs generated from the analytical Carreau–Yasuda formula with the parameters in Table 1; one network per parameter set. The droplet-rise networks (Section 5.3) are trained on 31 shear-rate /viscosity pairs per material, obtained by averaging three independent rheometer sweeps over 0 .1–100 s −1 as described in Section 4. In both settings the data are split 80 /20 into training and validation subsets, and the weights that minimize validation loss are retained for export. Reducing the hidden-layer width from 64 to 16 neurons produces an essentially identical η(˙ γ) curve, so the result is insensitive to network width over this range. On the silicone-ink rheometer data, where measurement noise is modest, the Lipschitz regularization functions less as a denoising mechanism and more as a smoothness prior that controls extrapolation behavior outside the sampled shear-rate range. The architecture is shown in Figure 3. The trained network is exported to the Open Neural Network Exchange (ONNX) format [38], a framework-independent representation of machine learning models. The exported model is loaded into the flow solver at runtime via the ONNX runtime: at each iteration, the solver passes the local shear rate to the model and receives the corresponding viscosity. This avoids reimplementing the network inside the solver, and avoids the overhead of calling out to a separate Python process for each evaluation. 
+
+4. Experimental Set Up 
+
+4.1. Bubble Rise with Non-Newtonian Fluid Droplet 
+
+Silicone oil (polydimethylsiloxane, PDMS, 1000 cSt, Gelest), fumed silicon dioxide, and perfluorodecalin was purchased from ThermoFisher Scientific and a pigment, Silc Blue Pig, was purchased from Smooth-on. Droplet inks were made by combining PDMS with 1.0 weight percent Silc Blue Pig to provide visual contrast within the high-speed motion videos. Either 1.0 weight percent fumed silicon dioxide (Material A) or 0.5 weight percent fumed silicon dioxide (Material B) was also incorporated to provide di ff erent viscous behavior. Each ink formulation was rigorously mixed using a Hauschild SpeedMixer at 3000 rpm for three minutes. The experimental setup for the bubble rise is shown in Figure 4. An acrylic box was made to protect the experiment from external air drafts or dust contamination. The needle to form droplets, either a 20G (outer diameter of 0.908 mm) or 25G (outer diameter of 0.515 mm), was attached to a customized acrylic cuvette. The dimensions of the cuvette were chosen to mitigate edge e ff ects on the rising droplet. The cuvette was mounted on a lab jack with a 1 /4-inch breadboard and placed on an isolation table to remove external vibrations. Samples were loaded into a syringe and connected to the needle in the acrylic cuvette by appropriately sized tubing. The syringe was driven by a syringe pump, where minimum pressure was applied to allow droplets to form in the bath in the cuvette and to snap o ff with minimal initial velocity. The cuvette was filled with perfluorodecalin to maximize the travel height of each droplet within the imaging frame. Videos were captured using a Phantom Miro C211 with a 20 mm lens and a frame rate of 1000 fps. Videos were processed using PCC software (Phantom) and ImageJ. 7Customized acrylic box 
+
+> Customized acrylic
+> cuvette with needle
+> Lab jack with
+> ¼” breadboard
+> Isolation
+> vibration table Syringe pump
+> Camera mount
+> High -speed camera
+> Computer
+
+Figure 4: Schematic for rising droplet experimental setup.         
+
+> 10 −110 010 110 2
+> 1.5
+> 2
+> 2.5
+> Shear rate [1 /s]
+> Viscosity [Pa·s]
+> (a) Material A (1.0 wt% fumed silica)
+> 10 −110 010 110 2
+> 1
+> 1.1
+> 1.2
+> 1.3
+> Shear rate [1 /s]
+> Viscosity [Pa·s]
+> (b) Material B (0.5 wt% fumed silica)
+
+Figure 5: Steady-shear viscosity as a function of shear rate for the two silicone ink formulations used in the droplet rise experiments. 
+
+4.2. Bubble Ink Characterization 
+
+Shear rate vs. viscosity plots were generated using an AR-G2 Rheometer from TA Instruments using 40 mm parallel plates at a gap height of 0.5 mm. Samples were pre-sheared at 100 s −1 for 60 seconds, followed by an equilibration time of 60 minutes to account for thixotropic behavior. After equilibration, logarithmic sweeps were performed from 0.1 s −1 to 100 s −1. This was repeated three times for each material and averaged to be used for simulations. The averaged shear-rate–viscosity curves for the two materials are shown in Figure 5. The surface tension of the fluids was measured by performing reverse pendant drop tensiometry using a Theta Flex tensiometer from Biolin Scientific. A customized acrylic cuvette, similar to the cuvette in Figure 4, was filled with perfluorodecalin. A 1 mL precision syringe with a hooked needle attachment to form the pendant drop was filled with either Material A or Material B, which was then submerged into the cuvette. The surface tension was measured by taking the average of three separate 10-second videos. Rise velocities and droplet trajectories were extracted from the high-speed video recordings using a custom OpenCV-based image processing algorithm that performs adaptive thresholding, morphological cleanup, and inter-face tracking across successive frames. A full description of the algorithm, together with a representative illustration of the detected interfaces, is provided in Appendix A; the implementation is available at https://github.com/ baskargroup/fluidFlowVideoAnalysis .85. Results and Discussion 
+
+5.1. Validation with Benchmark Problems 
+
+We validate the framework against the benchmark of a single bubble rising in a quiescent shear-thinning fluid reported by Pang and Lu [26], in which the background fluid follows the Carreau–Yasuda law. We compare bubble shapes at a quasi-steady time across four cases at varying power-law index n and Weber number We (Cases 1–4, Table 1). For each case we compare three shapes: the one reported by Pang and Lu, the one from our solver with the analytical Carreau–Yasuda closure, and the one from our solver with a Lipschitz-regularized neural network closure trained on synthetic shear-rate /viscosity data generated from the same analytical formula and exported to ONNX. For an additional case at Re = 3, We = 5, n = 0.4 (Case 5), we also compare the simulated rise velocity against the terminal velocity reported by Pang and Lu. Agreement between the analytical-CY and NN runs isolates the neural-constitutive pipeline itself, encompassing the trained network, its ONNX export, and its integration with the solver; agreement of both with Pang and Lu confirms that the underlying solver is consistent with prior work. The non-dimensional Carreau–Yasuda law used by Pang and Lu [26] is 
+
+η+(˙ γ) = η+ 
+
+> ∞
+
++  η+ 
+
+> o
+
+− η+
+
+> ∞
+
+ h 1 + (λ˙γ)2i(n−1) /2
+
+, (10) where, in non-dimensional form, η+ 
+
+> o
+
+and η+ 
+
+> ∞
+
+are the zero-shear and infinite-shear viscosities, λ is the relaxation time constant, n is the power-law index, and ˙ γ is the shear rate defined in Eq. 6. We use this law in two ways: as the analytical reference closure inside our solver, and as the generator of synthetic training data for the neural-network closure. Parameters for the four shape-comparison cases are given in Table 1. Case 5 shares the structural settings of Case 4, with the power-law index changed to n = 0.4. Figure 6 shows the problem setup. The simulations in this section are two-dimensional, matching the setup of Pang and Lu [26]. The computational domain has length l = 4.0 and height h = 8.0, with a circular bubble of radius ro = 0.5placed initially at ( xo, yo) = (2 .0, 2.0). With no characteristic velocity available, the reference velocity is chosen so that the Froude number is unity, ur = pgr lr. The Peclet number follows from the scaling relation Pe = 1/(3 Cn 2)for the chosen Cahn number Cn [39]. The bubble diameter is the length scale ( lr = 2r0), and the heavier fluid sets the density and viscosity scales ( ρr = ρ+, ηr = η+). The top and bottom walls are no-slip ( ui = 0). The side walls use free-slip ( u1 = 0, ∂u2/∂ x1 = 0). The phase field is given zero normal gradient on all walls ( ni ∂ϕ/∂ xi = 0, 
+
+ni ∂μ/∂ xi = 0). 
+
+l
+
+h
+
+Top Boundary Bottom Boundary Left Boundary Right Boundary 
+
+xo, yo
+
+ro
+
+(+)(–) ⃗
+
+g
+
+x
+
+y 
+
+> Figure 6: Schematic for droplet rising problem.
+
+90 0.5 1 1.5 2 2.5 3 3.5 4                        
+
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 1.2
+> Non-dimensional time t
+> Normalized rise velocity  U/Un=0.2
+> Pang & Lu
+> Carreau–Yasuda (present)
+> Neural network (present)
+> Figure 7: Normalized rise velocity versus non-dimensional time for Case 5 ( Re =3, We =5, n=0.4). Velocities are normalized by the corresponding n=0.2 terminal velocity, matching the convention of Figure 10 in Pang and Lu [26]. The solid blue curve uses the analytical Carreau–Yasuda closure and the dashed red curve uses the trained neural-network closure; the black dashed horizontal line is the terminal velocity reported by Pang and Lu for the Ga =3, Eo =5, n=0.4 case. The two simulated trajectories are visually indistinguishable and both plateau close to the Pang and Lu reference.
+> Table 1: Benchmark simulation parameters for the four bubble-shape comparison cases. For each case, synthetic shear-rate /viscosity training data are generated from the Carreau–Yasuda formula with the listed parameters, and a dedicated neural network is trained on that dataset and used as the viscosity closure in the simulation.
+
+Parameter Case 1 Case 2 Case 3 Case 4 Reynolds number Re 3 3 3 3Weber Number We 20 20 20 5Froude Number Fr 1.0 1.0 1.0 1.0 Cahn Number Cn 0.01 0.01 0.01 0.01 Peclet Number Pe 3333.33 3333.33 3333.33 3333.33 Density of heavy fluid ρ+ 1.0 1.0 1.0 1.0 Density of light fluid ρ− 0.001 0.001 0.001 0.001 Zero-shear viscosity of heavy fluid η+ 
+
+> o
+
+1.0 1.0 1.0 1.0 Infinite-shear viscosity of heavy fluid η+ 
+
+> ∞
+
+1/50 1/50 1/50 1/50 Viscosity of light fluid η− 0.01 0.01 0.01 0.01 Power-law index n 0.8 0.4 0.6 0.6 Relaxation time constant λ 48.5 48.5 48.5 48.5 For Case 5, Pang and Lu [26] report a terminal velocity, which lets us compare it against both of our simulated trajectories. Figure 7 shows the normalized rise velocities from our solver with the analytical Carreau–Yasuda closure and with the trained neural-network closure, along with the Pang and Lu terminal velocity as a horizontal dashed line. All values are normalized by the corresponding n = 0.2 terminal velocity, matching the convention of Pang and Lu’s Figure 10. Both simulated trajectories rise monotonically, reach a peak, and settle onto a quasi-steady plateau. The NN plateau is 0 .9608 and the analytical-CY plateau is 0 .9609, a di ff erence of about 0 .01%. Both di ff er from the Pang and Lu reference value of 0 .9533 by approximately 0 .8%. Figure 8 shows the three-way shape comparisons for the four cases. In each case, the analytical-CY and neural-network shapes are visually indistinguishable, confirming that the neural closure reproduces the analytical target inside the solver. Both also agree with the shapes reported by Pang and Lu [26], confirming solver consistency with prior work. 10 Pang and Lu [26] Analytical Carreau–Yasuda Neural network                                
+
+> (a) Case 1 ( n=0.8, We =20).
+> Pang and Lu [26] Analytical Carreau–Yasuda Neural network
+> (b) Case 2 ( n=0.4, We =20).
+> Pang and Lu [26] Analytical Carreau–Yasuda Neural network
+> (c) Case 3 ( n=0.6, We =20).
+> Pang and Lu [26] Analytical Carreau–Yasuda Neural network
+> (d) Case 4 ( n=0.6, We =5).
+> Figure 8: Comparison of the bubble shape between experimental, analytical, and our neural network-based approach.
+
+The shapes vary with the governing dimensionless parameters in the expected way. Across Cases 1–3 (all at 
+
+We = 20, Figures 8a–8c), reducing the power-law index n from 0 .8 to 0 .4 produces progressively greater deformation and a more pronounced skirted shape: lower n means stronger shear-thinning, which lowers the e ff ective viscosity around the bubble and lets it deform more easily under buoyancy. Comparing Case 3 ( n = 0.6, We = 20, Figure 8c) with Case 4 ( n = 0.6, We = 5, Figure 8d) shows the e ff ect of Weber number: at We = 5, surface tension dominates inertia and the bubble retains a near-elliptical shape. The agreement among Pang and Lu, the analytical-CY runs, and the NN runs across this range of n and We supports both the solver and the neural-constitutive pipeline. 
+
+5.2. Synthetic Non-Monotonic Case 
+
+The benchmark cases in Section 5.1 use a Carreau–Yasuda constitutive law, which is monotone in shear rate. To test the pipeline on a viscosity shape outside this family, we construct a synthetic constitutive law in which η(˙ γ) first decreases with shear rate and then increases at high shear: 
+
+η+(˙ γ) = η+ 
+
+> ∞
+
++  η+ 
+
+> o
+
+− η+
+
+> ∞
+
+ h 1 + (λ˙γ)2i(n1−1) /2
+
++ K ˙γ n2 . (11) The first two terms reproduce a Carreau–Yasuda-type shear-thinning branch with zero-shear viscosity η+ 
+
+> o
+
+, infinite-shear floor η+
+
+> ∞
+
+, relaxation time λ, and exponent n1 < 1. The third term adds a power-law thickening branch with coe ffi cient K and exponent n2 > 1, so the viscosity curve is non-monotonic in ˙ γ. Parameters are listed in Table 2. 11 Table 2: Constitutive parameters for the synthetic non-monotonic case. 
+
+Parameter Symbol Value Zero-shear viscosity η+ 
+
+> o
+
+20.0 Infinite-shear viscosity η+ 
+
+> ∞
+
+0.2 Relaxation time λ 8.0 Shear-thinning exponent n1 0.35 Thickening coe ffi cient K 0.015 Thickening exponent n2 1.3      
+
+> 10 −210 −110 010 110 2
+> 0
+> 5
+> 10
+> 15
+> 20
+> Shear rate ˙ γ
+> Viscosity  η+
+> Analytical law
+> Figure 9: Synthetic non-monotonic constitutive law.
+
+Shear-thinning–to–thickening crossovers of this kind are reported for associative polymer solutions and concentrated particulate suspensions [40]. The flow setup matches Case 4 of Section 5.1: Re = 3, We = 5, Fr = 1, Cn = 0.01, Pe = 3333 .33, with the same domain, initial bubble position, and boundary conditions. Only the constitutive law changes. We run two simulations: one in which the solver evaluates Eq. 11 directly at each iteration, and one in which the solver evaluates a Lipschitz-regularized neural network trained on shear-rate /viscosity pairs generated from Eq. 11 and exported to ONNX. The training procedure is the same as in Section 5.1. Figure 10a compares the bubble shapes at the quasi-steady time, and Figure 10b compares the rise velocity trajec-tories. The analytical-law and network simulations produce matching results in both. This shows that the workflow handles a constitutive shape outside the standard shear-thinning class without modification to the network architec-ture, training procedure, or solver. Compared with the purely shear-thinning benchmark Case 4 at the same flow conditions, the bubble here remains nearly spherical. This is consistent with the non-monotonic constitutive law: the shear-thickening branch increases viscosity in regions of high strain rate, which resists deformation. 
+
+5.3. Droplet Rise Simulations 
+
+The experiments use two silicone-based materials, Material A and Material B, containing 1 .0 and 0 .5 weight percent silica respectively. Their measured viscosity-shear-rate curves are shown in Figure 5; Material A has the higher zero-shear viscosity. For each material, the viscosity at each shear rate was averaged over three independent rheometer trials, and the averaged data were used as input to the simulations. Droplets were generated using two needle gauges, 20G (outer diameter 0 .908 mm) and 25G (outer diameter 0 .515 mm). Cases 1 and 3 use the 20G needle and Cases 2 and 4 use the 25G needle. In our setup the droplet size at detachment is set by the combined e ff ects of needle geometry, ink viscosity, and pinch-o ff dynamics, and is only weakly sensitive to needle outer diameter in the range tested; the four cases therefore span two ink formulations and two release conditions, giving an independent test of the framework for each material. 12 1.5 2 2.5
+
+2
+
+2.5
+
+x
+
+> y
+
+Analytical 
+
+Neural network  
+
+> (a) Bubble shape at quasi-steady time.
+
+0 2 4 6 8 10 12 
+
+0.008 
+
+0.01 
+
+0.012 
+
+0.014 
+
+0.016 
+
+t
+
+> U
+
+Analytical 
+
+Neural network   
+
+> (b) Rise velocity versus non-dimensional time.
+> Figure 10: Synthetic non-monotonic case. (a) Bubble shape at quasi-steady time. (b) Rise velocity versus non-dimensional time. In both panels: solid blue is the solver with the analytical constitutive law as closure; red is the solver with the neural-network closure trained on data from the analytical law.
+
+10 −3 10 −2 10 −1 10 0
+
+200 
+
+300 
+
+400 
+
+500 
+
+Non-dimensional shear rate ˙ γ∗
+
+> Non-dimensional viscosity  η∗
+
+NN prediction 
+
+Experimental data  
+
+> (a) Material A (1.0 wt% fumed silica)
+
+10 −3 10 −2 10 −1 10 0
+
+200 
+
+220 
+
+240 
+
+Non-dimensional shear rate ˙ γ∗
+
+> Non-dimensional viscosity  η∗
+
+NN prediction 
+
+Experimental data   
+
+> (b) Material B (0.5 wt% fumed silica)
+> Figure 11: Comparison of the trained Lipschitz-regularized neural network closure with the averaged rheometer measurements for the two silicone ink formulations. Open circles: experimental rheometer data. Solid blue line: prediction from the trained neural network used as the viscosity closure in the droplet rise simulations. Both axes are non-dimensional, scaled by the reference quantities defined in Section 5.3.
+
+The simulations in this section are three-dimensional, matching the experiments. We non-dimensionalize using the following reference scales. The reference length lr is the maximum horizontal extent of the initial droplet shape extracted from the experiment. The reference density and viscosity are those of the Newtonian background fluid (perfluorodecalin): ρr = ρbg = 1920 kg /m3 and ηr = ηbg = 0.0051 Pa · s. The reference gravity is gr = 9.81 m /s2.With no characteristic velocity available from the experiments, the reference velocity is set so that the Froude number is unity, ur = pgr lr, with corresponding time scale tr = lr/ur. The Peclet number follows from the scaling relation 
+
+Pe = 1/(3 Cn 2) for the chosen Cahn number Cn [39]. Figure 11 shows the trained network alongside the rheometer measurements in non-dimensional form. Figures 13– 16 show the phase-field evolution for the four cases. Each simulation is initialized with the droplet shape extracted directly from the corresponding experimental frame, so the initial geometries di ff er between cases. In every case, the droplet evolves toward a near-spherical shape as it rises, regardless of its initial shape. The Material B curve shows a mild change in slope around ˙ γ∗ ≈ 5×10 −3, suggesting more than one shear-thinning regime. The neural closure learns this shape directly from the data, without committing to a functional form. To quantify shape agreement, we compute the Hausdor ff [41] and Chamfer [42] distances between the simulated 13 Table 3: Simulation parameters for the droplet rise cases — dimensional. 
+
+Parameter Case 1 Case 2 Case 3 Case 4 Material A A B BNeedle gauge 20G 25G 20G 25G Density of background fluid ( kg /m3) ρbg 1920 1920 1920 1920 Density of droplet ( kg /m3) ρd 970 970 970 970 Viscosity of background fluid ( Pa · s) ηbg 0.0051 0.0051 0.0051 0.0051 Horizontal Extent of droplet ( mm ) d 1.2771 1.2800 1.4401 1.3812 Surface Tension ( N/m) σ 0.0047 0.0047 0.0047 0.0047  
+
+> Table 4: Simulation parameters for the droplet rise cases — non-dimensional.
+
+Parameter Case 1 Case 2 Case 3 Case 4 Material A A B BReynolds number Re 53.8149 53.9984 64.4399 60.5272 Froude Number Fr 1.0 1.0 1.0 1.0 Cahn Number Cn 0.01 0.01 0.01 0.01 Peclet Number Pe 3333.33 3333.33 3333.33 3333.33 Weber Number We 6.536 6.566 8.311 7.645 Density of background fluid ρbg 1.0 1.0 1.0 1.0 Density of droplet ρd 0.51 0.51 0.51 0.51 Viscosity of background fluid ηbg 1.0 1.0 1.0 1.0     
+
+> Table 5: Hausdor ff and Chamfer distances between the simulated and experimentally observed droplet contours for the four droplet rise cases. Each contour is normalized by the average of its horizontal and vertical extents ( lr,avg ) before comparison, accounting for the changing aspect ratio of deforming droplets; the reported values are dimensionless fractions of the average droplet size. Normalizing instead by the initial droplet horizontal extent d(Table 3) yields relative errors within the same range. Smaller values indicate closer agreement.
+
+Metric Case 1 Case 2 Case 3 Case 4 Hausdor ff distance 0.044282 0.078821 0.050732 0.066279 Chamfer distance 0.040280 0.062229 0.051514 0.056702 droplet contour and the experimental contour extracted from the high-speed video, for each of the four cases. For two finite point sets A and B, these are defined as 
+
+dH (A, B) = max 
+
+
+
+max  
+
+> a∈A
+
+min  
+
+> b∈B
+
+∥a − b∥, max  
+
+> b∈B
+
+min  
+
+> a∈A
+
+∥a − b∥
+
+
+
+, (12) 
+
+dC (A, B) = 1
+
+|A|
+
+X
+
+> a∈A
+
+min  
+
+> b∈B
+
+∥a − b∥ + 1
+
+|B|
+
+X
+
+> b∈B
+
+min  
+
+> a∈A
+
+∥a − b∥, (13) where ∥ · ∥ is the Euclidean norm. The Hausdor ff distance is the worst-case nearest-neighbor deviation; the Chamfer distance is the symmetric mean nearest-neighbor deviation. Table 5 reports the values for all four cases. 14 −0.5 0 0.5
+
+−0.5
+
+0
+
+0.5
+
+x/lr,avg  
+
+> y/lr,avg
+> (a) Case 1
+
+−0.5 0 0.5
+
+−0.5
+
+0
+
+0.5
+
+x/lr,avg  
+
+> (b) Case 2
+
+−0.5 0 0.5
+
+−0.5
+
+0
+
+0.5
+
+x/lr,avg  
+
+> (c) Case 3
+
+−0.5 0 0.5
+
+−0.5
+
+0
+
+0.5
+
+x/lr,avg  
+
+> (d) Case 4
+
+Figure 12: Overlay of simulated and experimental droplet contours for the four cases. Solid red line: experimental contour. Dashed blue line: simulated contour.                
+
+> (a) t=0(b) t=2.5 (c) t=5(d) t=10
+
+Figure 13: Case 1 (Material A, 20G needle): phase-field evolution.                
+
+> (a) t=0(b) t=2.5 (c) t=5(d) t=10
+
+Figure 14: Case 2 (Material A, 25G needle): phase-field evolution. 
+
+15 (a) t = 0 (b) t = 2.5 (c) t = 5 (d) t = 10                  
+
+> Figure 15: Case 3 (Material B, 20G needle): phase-field evolution.
+> (a) t=0(b) t=2.5 (c) t=5(d) t=10
+> Figure 16: Case 4 (Material B, 25G needle): phase-field evolution.
+
+The Hausdor ff distances span 0 .044–0 .079 and the Chamfer distances span 0 .040–0 .062, with the smallest values for Case 1 and the largest for Case 2. Each contour is normalized by the average of its horizontal and vertical extents before comparison, so these values are fractions of the average droplet size: simulated and experimental contour points are within 4–6% of the average droplet size (Chamfer), and the worst-case deviation is bounded by about 8% (Hausdor ff ). Figure 12 shows the simulated and experimental contours overlaid for each case, with the simulated shape closely tracking the experimental one across all four. The neural-constitutive workflow therefore reproduces the experimentally observed droplet shape to within a few percent across all four cases. Figure 17 shows the rise velocity for all four cases. The simulations use one trained Lipschitz-regularized neural network per material as the non-Newtonian viscosity closure, trained on the rheometer data in Figure 5 and exported to ONNX. The rise velocity is computed by tracking the topmost point of the droplet interface in both simulation and experiment. The violin plots show the distribution of measured rise velocities across each experimental trial. The simulated trajectory increases, reaches a peak, and oscillates around a quasi-steady value, falling within the experimental spread for all four cases. 
+
+5.4. Scope of the Validation and Practical Considerations 
+
+The two validation studies test di ff erent aspects of the framework. In the benchmark cases (Section 5.1), the neural network is trained on synthetic data generated from an analytical Carreau–Yasuda law, and the analytical law is also available as a reference inside our solver, so the comparison checks the neural-constitutive pipeline against a known 16 Time                                        
+
+> 012345678
+> Rise Velocity
+> 0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7 (a) Case 1 Time
+> 012345678
+> Rise Velocity
+> 0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7 (b) Case 2 Time
+> 012345678
+> Rise Velocity
+> 0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> (c) Case 3 Time
+> 012345678
+> Rise Velocity
+> 0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7 (d) Case 4
+> Figure 17: Computed and experimentally measured rise velocities for the four droplet cases (Cases 1–2: Material A; Cases 3–4: Material B). The violin plots show the distribution of measured rise velocities over the duration of each droplet’s rise, and the curve shows the simulated rise velocity from the neural-constitutive CHNS solver.
+
+target. In the droplet cases (Section 5.3), the network is trained on experimental rheometry and the “true” constitutive law is unknown, so the comparison checks the full end-to-end workflow on real data. Agreement in both is needed before drawing conclusions from the pipeline. In Figure 17, the violin plots show the distribution of measured rise velocities over the duration of each droplet’s rise. We compare the simulated quasi-steady rise velocity against this distribution; in all four cases it falls within the measured range. ONNX inference for a scalar-input, scalar-output network of this size is cheap compared to the linear-algebra cost of the Navier–Stokes and Cahn–Hilliard solves at each time step, so replacing the analytical viscosity evaluation with a neural one adds negligible runtime overhead. The rheometer sweeps cover shear rates from 0 .1 to 100 s −1, while local shear rates near the droplet interface can briefly exceed this range. In this regime the Lipschitz regularization bounds the rate at which the predicted viscosity can change with respect to input shear rate, which prevents unphysical oscillations outside the training distribution. 
+
+6. Conclusions 
+
+We presented a deployment workflow for data-driven constitutive modeling in non-Newtonian multiphase flows, with a Lipschitz-regularized neural network as the viscosity closure inside a Cahn–Hilliard–Navier–Stokes finite el-ement solver. The network is trained on experimental rheological data and exported in the Open Neural Network Exchange (ONNX) format, so it can be loaded into the solver at runtime without reimplementation or solver modifi-cation. We validated the underlying CHNS solver against benchmark bubble rise cases in shear-thinning fluids, with agreement on bubble shape across varying power-law indices and Weber numbers. We then applied the workflow to silicone ink droplets rising in perfluorodecalin. Simulated rise velocities fell within the experimentally measured spread for all four cases, and simulated and experimental droplet contours agreed in Hausdor ff distance to within approximately 8% and in Chamfer distance to within approximately 6% of the average droplet size. 17 Code and Data Availability 
+
+The trained ONNX viscosity models, training scripts, averaged rheometer data, and benchmark input data sup-porting this study are available at https://github.com/baskargroup/neuralViscosityCHNS . The image pro-cessing pipeline used to extract rise velocities from the high-speed video is available at https://github.com/ baskargroup/fluidFlowVideoAnalysis .
+
+Acknowledgments 
+
+This work was funded by the National Science Foundation under award number DMREF 2323715 /2323716. 
+
+References 
+
+[1] K. Yasuda, R. Armstrong, R. Cohen, Shear flow properties of concentrated solutions of linear and star branched polystyrenes, Rheologica Acta 20 (1981) 163–178. [2] T. F. Tadros, Rheology of dispersions: principles and applications, John Wiley & Sons, 2011. [3] J. B. Freund, R. H. Ewoldt, Quantitative rheological model selection: good fits versus credible models using bayesian inference, Journal of Rheology 59 (2015) 667–701. [4] S. Hysing, S. Turek, D. Kuzmin, N. Parolini, E. Burman, S. Ganesan, L. Tobiska, Quantitative benchmark computations of two-dimensional bubble dynamics, International Journal for Numerical Methods in Fluids 60 (2009) 1259–1288. [5] B. Bunner, G. Tryggvason, Direct numerical simulations of three-dimensional bubbly flows, Physics of Fluids 11 (1999) 1967–1969. [6] M. Sussman, E. G. Puckett, A coupled level set and volume-of-fluid method for computing 3d and axisymmetric incompressible two-phase flows, Journal of computational physics 162 (2000) 301–337. [7] J. Hua, J. F. Stene, P. Lin, Numerical simulation of 3d bubbles rising in viscous liquids using a front tracking method, Journal of Computational Physics 227 (2008) 3358–3382. [8] M. R. Pivello, M. M. Villar, R. Serfaty, A. M. Roma, A. d. Silveira-Neto, A fully adaptive front tracking method for the simulation of two phase flows, International Journal of Multiphase Flow 58 (2014) 72–82. [9] M. K. Tripathi, K. C. Sahu, R. Govindarajan, Dynamics of an initially spherical bubble rising in quiescent liquid, Nature communications 6 (2015) 6268. [10] M. K. Tripathi, K. Sahu, G. Karapetsas, K. Sefiane, O. Matar, Non-isothermal bubble rise: non-monotonic dependence of surface tension on temperature, Journal of Fluid Mechanics 763 (2015) 82–108. [11] R. Chella, J. Vinals, Mixing of a two-phase fluid by cavity flow, Physical Review E 53 (1996) 3832. [12] D. Jacqmin, Calculation of two-phase navier–stokes flows using phase-field modeling, Journal of computational physics 155 (1999) 96–127. [13] V. E. Badalassi, H. D. Ceniceros, S. Banerjee, Computation of multiphase systems with phase field models, Journal of computational physics 190 (2003) 371–397. [14] M. A. Khanwale, Energy stable and conservative numerical schemes for simulating two-phase flows using Cahn-Hilliard Navier Stokes equations, Ph.D. thesis, Iowa State University, 2021. [15] M. A. Khanwale, K. Saurabh, M. Ishii, H. Sundar, J. A. Rossmanith, B. Ganapathysubramanian, A projection-based, semi-implicit time-stepping approach for the cahn-hilliard navier-stokes equations on adaptive octree meshes, Journal of Computational Physics 475 (2023) 111874. 18 [16] A. Rabeh, M. A. Khanwale, J. J. Lee, B. Ganapathysubramanian, Modeling and simulations of high-density two-phase flows using projection-based cahn-hilliard navier-stokes equations, arXiv preprint arXiv:2406.17933 (2024). [17] M. J. Berger, P. Colella, Local adaptive mesh refinement for shock hydrodynamics, Journal of computational Physics 82 (1989) 64–84. [18] K. Schmidmayer, F. Petitpas, E. Daniel, Adaptive mesh refinement algorithm based on dual trees for cells and faces for multiphase compressible flows, Journal of Computational Physics 388 (2019) 252–278. [19] C.-H. Yang, G. Scovazzi, A. Krishnamurthy, B. Ganapathysubramanian, Simulating incompressible flows over complex geometries using the shifted boundary method with incomplete adaptive octree meshes, Journal of Computational Physics (2025) 114334. [20] C.-H. Yang, G. Scovazzi, A. Krishnamurthy, B. Ganapathysubramanian, Octree-based adaptive mesh refinement and the shifted boundary method for e ffi cient fluid dynamics simulations, Advances in Computational Science and Engineering 4 (2025) 57–84. [21] R. P. Chhabra, S. A. Patel, Bubbles, drops, and particles in non-Newtonian fluids, CRC press, 2023. [22] J. Tsamopoulos, Y. Dimakopoulos, N. Chatzidai, G. Karapetsas, M. Pavlidis, Steady bubble rise and deformation in newtonian and viscoplastic fluids and conditions for bubble entrapment, Journal of Fluid Mechanics 601 (2008) 123–164. [23] R. Clift, J. Grace, M. Weber, Drops, bubbles and particles, 1978. [24] L. Zhang, C. Yang, Z.-S. Mao, Numerical simulation of a bubble rising in shear-thinning fluids, Journal of Non-Newtonian Fluid Mechanics 165 (2010) 555–567. [25] A. Premlata, M. K. Tripathi, B. Karri, K. C. Sahu, Dynamics of an air bubble rising in a non-newtonian liquid in the axisymmetric regime, Journal of non-Newtonian fluid mechanics 239 (2017) 53–61. [26] M. Pang, M. Lu, Numerical study on dynamics of single bubble rising in shear-thinning power-law fluid in di ff erent gravity environment, Vacuum 153 (2018) 101–111. [27] B. Hu, M. Pang, Numerical study on the influence of liquid viscosity ratio on the hydrodynamics of a single bubble in shear-thinning liquid, Applied Mathematical Modelling 103 (2022) 122–140. [28] A. M. Tartakovsky, C. O. Marrero, P. Perdikaris, G. D. Tartakovsky, D. Barajas-Solano, Learning parameters and constitutive relationships with physics informed deep neural networks, arXiv preprint arXiv:1808.03398 (2018). [29] B. Reyes, A. A. Howard, P. Perdikaris, A. M. Tartakovsky, Learning unknown physics of non-newtonian fluids, Physical Review Fluids 6 (2021) 073301. [30] S. Thakur, M. Raissi, A. M. Ardekani, Viscoelasticnet: A physics informed neural network framework for stress discovery and model selection, Journal of Non-Newtonian Fluid Mechanics 330 (2024) 105265. [31] M. Mahmoudabadbozchelou, S. Jamali, Rheology-informed neural networks (RhINNs) for forward and inverse metamodelling of complex fluids, Scientific reports 11 (2021) 12015. [32] M. Mahmoudabadbozchelou, K. M. Kamani, S. A. Rogers, S. Jamali, Unbiased construction of constitutive re-lations for soft materials from experiments via rheology-informed neural networks, Proceedings of the National Academy of Sciences 121 (2024) e2313658121. [33] J.-M. Tucny, M. Durve, A. Montessori, S. Succi, Learning of viscosity functions in rarefied gas flows with physics-informed neural networks, Computers & Fluids 269 (2024) 106114. 19 [34] M. Lardy, S. Tlili, S. Gsell, Inferring viscoplastic models from velocity fields: a physics-informed neural network approach, arXiv preprint arXiv:2506.17681 (2025). [35] B. Khara, S. Murugaiyan, S. Dhakshinamoorthy, M. Khanwale, M.-C. Hsu, B. Ganapathysubramanian, Asemi-implicit variational multiscale formulation for the incompressible navier-stokes equations via exact adjoint linearization, arXiv preprint arXiv:2512.21773 (2025). [36] E. Negrini, G. Citti, L. Capogna, System identification through lipschitz regularized deep neural networks, Journal of Computational Physics 444 (2021) 110549. [37] H.-T. D. Liu, F. Williams, A. Jacobson, S. Fidler, O. Litany, Learning smooth neural functions via lipschitz regularization, in: ACM SIGGRAPH 2022 Conference Proceedings, 2022, pp. 1–13. [38] O. R. developers, Onnx runtime, https://onnxruntime.ai/ , 2021. Version: 1.15.1. [39] F. Magaletti, F. Picano, M. Chinappi, L. Marino, C. M. Casciola, The sharp-interface limit of the cahn– hilliard /navier–stokes model for binary fluids, Journal of Fluid Mechanics 714 (2013) 95–126. [40] N. J. Wagner, J. F. Brady, Shear thickening in colloidal dispersions, Physics Today 62 (2009) 27–32. [41] D. P. Huttenlocher, G. A. Klanderman, W. J. Rucklidge, Comparing images using the hausdor ff distance, IEEE Transactions on pattern analysis and machine intelligence 15 (2002) 850–863. [42] G. Borgefors, Hierarchical chamfer matching: A parametric edge matching algorithm, IEEE Transactions on pattern analysis and machine intelligence 10 (1988) 849–865. 20 Appendix A. Image Processing Framework 
+
+To extract rise velocity and trajectory data from the high-speed videos, a custom image processing algorithm was developed for systematic detection and tracking of bubble interfaces across successive video frames. Bubble interfaces are the boundaries between the bubble and surrounding medium that appear as distinct contours in video recordings. The methodology employs a series of image processing steps to transform raw video frames into clearly defined bubble boundaries that can be tracked over time. The processing pipeline begins with frame-by-frame prepro-cessing to enhance the visibility of interfaces. Each frame undergoes grayscale conversion, adaptive thresholding to handle varying lighting conditions, and morphological operations to clean up noise and enhance boundary definition. This process results in binary images where the bubble interfaces appear as connected black regions against a white background. Original Frames Bubble Tracking  
+
+> Figure A.18: Bubble tracking process showing original video frames (top row) and corresponding frames with tracked bubbles after detection (bottom row).
+
+Once the interfaces are identified in each frame, a tracking system follows their movement across the video se-quence. The tracking algorithm uses multiple features to establish correspondence between interfaces in consecutive frames. For each detected interface, the system extracts key properties including its central position, area, shape char-acteristics, and boundary curvature. These properties serve as a “signature” that helps identify the same interface in subsequent frames. The tracking process works by comparing interface properties between frames and establishing the most likely matches based on several factors: spatial proximity (interfaces typically move limited distances between frames), area consistency (interfaces usually maintain similar size), and morphological similarity (shape characteris-tics tend to evolve gradually). When a match is found, the interface position is added to the existing trajectory. If no suitable match exists, a new interface track is initialized. 21 The algorithm is implemented using OpenCV for image processing with Python as the base language. This implementation e ffi ciently handles challenges such as occlusion, bubble merging or splitting, and tracking multiple interfaces simultaneously. The system maintains unique identifiers for each tracked interface, enabling consistent analysis of individual bubble behavior throughout the video sequence. The code repository is available at https: //github.com/baskargroup/fluidFlowVideoAnalysis .
+
+Algorithm 1 Bubble Interface Detection and Tracking 
+
+Require: F (frame directory), τ (frame template), Θ (parameter set) 
+
+Ensure: B (set of bubbles with kinematic data)  
+
+> 1:
+
+Image Preprocessing:  
+
+> 2:
+
+for each frame fi ∈ F do  
+
+> 3:
+
+Convert fi to grayscale representation Ii 
+
+> 4:
+
+Apply adaptive thresholding: Ti = AdaptiveThreshold( Ii, ΘblockSize , ΘconstantSub ) 
+
+> 5:
+
+Apply morphological closing with kernel size Θkernel  
+
+> 6:
+
+Generate labeled components with connectivity Θconnectivity  
+
+> 7:
+
+Filter components by area threshold ΘminSize  
+
+> 8:
+
+if ΘfillHoles = True then  
+
+> 9:
+
+Fill enclosed regions in remaining components  
+
+> 10:
+
+end if  
+
+> 11:
+
+Store binary frame Bi 
+
+> 12:
+
+end for  
+
+> 13:
+
+Interface Detection and Tracking:  
+
+> 14:
+
+Initialize bubble set B ← ∅  
+
+> 15:
+
+for each binary frame Bi in temporal sequence do  
+
+> 16:
+
+Extract connected regions representing bubble-surrounding interfaces Ri = {ri,1, ri,2, . . . , ri,k} 
+
+> 17:
+
+for each interface region ri, j ∈ Ri do  
+
+> 18:
+
+Extract interface properties (centroid xi, j, area, shape, boundary curvature)  
+
+> 19:
+
+Find potential matching interfaces in existing tracked bubbles based on proximity  
+
+> 20:
+
+if interface match found then  
+
+> 21:
+
+Select best match using interface position, area, and morphological similarity  
+
+> 22:
+
+Update existing bubble trajectory with new interface position  
+
+> 23:
+
+else  
+
+> 24:
+
+Initialize new bubble with current interface position and properties  
+
+> 25:
+
+end if  
+
+> 26:
+
+end for  
+
+> 27:
+
+end for  
+
+> 28:
+
+Data Export and Visualization:  
+
+> 29:
+
+Generate trajectory plots with consistent axis scales  
+
+> 30:
+
+Export interface data for subsequent analysis 22
