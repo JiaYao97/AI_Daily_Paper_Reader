@@ -1,88 +1,91 @@
 ## 最新日报
-- 最新运行日期：2026-06-05
-- 运行时间：2026-06-05 22:04:43 UTC
+- 最新运行日期：2026-06-06
+- 运行时间：2026-06-06 21:19:55 UTC
 - 运行状态：成功
-- 本次总论文数：24
-- 精读区：11
+- 本次总论文数：25
+- 精读区：12
 - 速读区：13
 
 ### 今日简报（AI）
-今日精读11篇速读13篇，聚焦空间推进薄膜冷却的智能图像插值降本与多孔介质两相流保界能量耗散统一框架。最值得关注的是AI生成图像减少实验试错，以及流固耦合问题的高效降阶模型。建议普通读者优先从速读的代理建模与风电场耦合文章入手，快速掌握工程简化方法的核心思路。
-- 详情：[/202606/05/README](/202606/05/README)
+今日处理25篇论文，精读12篇，其中《随机多尺度拉格朗日湍流重建》获满分10分。最值得关注的是基于引导扩散模型的湍流重建与对称Hermite求积的线性系统学习。建议优先精读高分论文，并速览PINNs过拟合分析和概率降水预报新方法。
+- 详情：[/202606/06/README](/202606/06/README)
 
 ### 精读区论文标签
-1. [Reducing Experimental Testing in Space Propulsion Film Cooling Analyses by Pixelwise Generative Image Interpolation](/202606/05/2605.29911v1-reducing-experimental-testing-in-space-propulsion-film-cooling-analyses-by-pixelwise-generative-image-interpolation)  
-   标签：评分：9.0/10、query:q2
-   evidence：航天推进中的气膜冷却分析
-2. [A unified framework of fully decoupled, bound-preserving and energy-dissipative schemes for two-phase flow in porous media](/202606/05/2605.30004v1-a-unified-framework-of-fully-decoupled-bound-preserving-and-energy-dissipative-schemes-for-two-phase-flow-in-porous-media)  
+1. [Stochastic Multiscale Reconstruction of Lagrangian Turbulence via Guided Diffusion Models](/202606/06/2606.05783v1-stochastic-multiscale-reconstruction-of-lagrangian-turbulence-via-guided-diffusion-models)  
+   标签：评分：10.0/10、query:flow-field
+   evidence：使用扩散模型从粗粒度数据重建湍流
+2. [Symmetric Hermite quadrature-based balanced truncation for learning linear dynamical systems from derivative data](/202606/06/2606.00298v1-symmetric-hermite-quadrature-based-balanced-truncation-for-learning-linear-dynamical-systems-from-derivative-data)  
    标签：评分：9.0/10、query:flow-field
-   evidence：两相流数值预测方案
-3. [Limits of Resolution Equivariance in Fourier Neural Operators](/202606/05/2606.00677v1-limits-of-resolution-equivariance-in-fourier-neural-operators)  
+   evidence：数据驱动线性动力系统降阶建模
+3. [Cellular Sheaf Neural Operators for Structure-Preserving Surrogate Modeling of Constrained PDEs](/202606/06/2606.00937v1-cellular-sheaf-neural-operators-for-structure-preserving-surrogate-modeling-of-constrained-pdes)  
    标签：评分：9.0/10、query:flow-field
-   evidence：用于流体动力学的神经算子
-4. [Let There Be Light: Reflection, Refraction and Scattering for Neural Operators](/202606/05/2606.03262v1-let-there-be-light-reflection-refraction-and-scattering-for-neural-operators)  
+   evidence：PDE神经算子
+4. [MsFEM-Inspired CNNs with Transfer Learning for Multiscale Model Reduction](/202606/06/2606.01259v1-msfem-inspired-cnns-with-transfer-learning-for-multiscale-model-reduction)  
    标签：评分：9.0/10、query:flow-field
-   evidence：光启发的神经算子用于PDE
-5. [Reconstructing Unobservable Temperature Fields via Simulation-Aided Intelligent Sensing](/202606/05/2606.04582v1-reconstructing-unobservable-temperature-fields-via-simulation-aided-intelligent-sensing)  
+   evidence：基于CNN的降阶模型与迁移学习
+5. [A first-optimize-then-reduce framework for optimal control with the shifted proper orthogonal decomposition](/202606/06/2606.02064v1-a-first-optimize-then-reduce-framework-for-optimal-control-with-the-shifted-proper-orthogonal-decomposition)  
    标签：评分：9.0/10、query:flow-field
-   evidence：使用合成数据训练的神经网络从稀疏传感器重建温度场
-6. [Learning symplectic model reduction based on a approximation theorem of symplectic embeddings](/202606/05/2606.04623v1-learning-symplectic-model-reduction-based-on-a-approximation-theorem-of-symplectic-embeddings)  
+   evidence：移位POD用于最优控制的降阶建模
+6. [EqGINO: Equivariant Geometry-Informed Fourier Neural Operators for 3D PDEs](/202606/06/2606.03260v1-eqgino-equivariant-geometry-informed-fourier-neural-operators-for-3d-pdes)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：用于3D PDE的等变傅里叶神经算子
+7. [The Right Measure for Physics-Constrained Generation: A Co-Area Correction for Posterior-Consistent PDE Inverse Problems](/202606/06/2606.04804v2-the-right-measure-for-physics-constrained-generation-a-co-area-correction-for-posterior-consistent-pde-inverse-problems)  
    标签：评分：9.0/10、query:pclso
-   evidence：辛自动编码器降阶模型
-7. [Learning Control-Affine Reduced-Order Models via Autoencoders](/202606/05/2606.05045v1-learning-control-affine-reduced-order-models-via-autoencoders)  
+   evidence：带有正确后验测度的物理约束生成
+8. [Learning Control-Affine Reduced-Order Models via Autoencoders](/202606/06/2606.05045v1-learning-control-affine-reduced-order-models-via-autoencoders)  
+   标签：评分：9.0/10、query:pclso
+   evidence：自编码器用于控制仿射系统的降阶建模
+9. [Deep Embedded Multiplicative DMD for Algebra-Preserving Koopman Learning](/202606/06/2606.05131v1-deep-embedded-multiplicative-dmd-for-algebra-preserving-koopman-learning)  
+   标签：评分：9.0/10、query:pclso
+   evidence：具有精确代数约束的深度Koopman潜在动力学
+10. [Mamba-Assisted Non-Markovian Closure for Reduced-Order Modeling](/202606/06/2606.05371v1-mamba-assisted-non-markovian-closure-for-reduced-order-modeling)  
    标签：评分：9.0/10、query:flow-field
-   evidence：基于自编码器的降阶模型
-8. [Mamba-Assisted Non-Markovian Closure for Reduced-Order Modeling](/202606/05/2606.05371v1-mamba-assisted-non-markovian-closure-for-reduced-order-modeling)  
+   evidence：基于Mamba的非马尔可夫闭合用于降阶建模
+11. [Wall Shear Stress Reconstruction from Concentration: Differentiable Physics and Physics-Informed Neural Networks](/202606/06/2606.06313v1-wall-shear-stress-reconstruction-from-concentration-differentiable-physics-and-physics-informed-neural-networks)  
    标签：评分：9.0/10、query:flow-field
-   evidence：非马尔可夫闭合的降阶建模
-9. [On the training of physics-informed neural operators for solving parametric partial differential equations](/202606/05/2606.06164v1-on-the-training-of-physics-informed-neural-operators-for-solving-parametric-partial-differential-equations)  
+   evidence：用于标量到壁面剪切应力重建的物理信息神经网络
+12. [DAS-PINNs for high-dimensional partial differential equations: extending deep adaptive sampling to spacetime domains](/202606/06/2606.06314v1-das-pinns-for-high-dimensional-partial-differential-equations-extending-deep-adaptive-sampling-to-spacetime-domains)  
    标签：评分：9.0/10、query:flow-field
-   evidence：物理信息神经算子的训练，适用于参数化PDE，可用于流体动力学
-10. [Error Analysis of Tr-PINNs Algorithm for 2D Incompressible Navier-Stokes Equations with Non-Homogeneous Boundary Conditions](/202606/05/2606.06268v1-error-analysis-of-tr-pinns-algorithm-for-2d-incompressible-navier-stokes-equations-with-non-homogeneous-boundary-conditions)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：物理信息神经网络求解Navier-Stokes方程
-11. [Wall Shear Stress Reconstruction from Concentration: Differentiable Physics and Physics-Informed Neural Networks](/202606/05/2606.06313v1-wall-shear-stress-reconstruction-from-concentration-differentiable-physics-and-physics-informed-neural-networks)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：利用物理信息神经网络和可微物理从稀疏浓度重建壁面剪切应力
+   evidence：将深度自适应采样扩展到PINNs以求解高维PDE
 
 ### 速读区论文标签
-1. [Surrogate modeling for convection-dominated parametric problems based on error learning](/202606/05/2605.29769v1-surrogate-modeling-for-convection-dominated-parametric-problems-based-on-error-learning)  
+1. [Neural-Network-based Viscosity Closure for Non-Newtonian Multiphase Flows](/202606/06/2605.30659v1-neural-network-based-viscosity-closure-for-non-newtonian-multiphase-flows)  
    标签：评分：8.0/10、query:flow-field
-   evidence：通过对流主导PDE的降阶建模，混合ROM和DNN误差校正
-2. [Revisit the simplified lattice Boltzmann method: dissipation, dispersion and stability](/202606/05/2605.29887v1-revisit-the-simplified-lattice-boltzmann-method-dissipation-dispersion-and-stability)  
+   evidence：Navier-Stokes求解器中的神经网络粘度闭合
+2. [PINNs Failure Modes are Overfitting](/202606/06/2605.30910v1-pinns-failure-modes-are-overfitting)  
    标签：评分：8.0/10、query:flow-field
-   evidence：简化格子玻尔兹曼方法分析
-3. [Two-way coupling of gravity waves and wind farm wakes: a reduced-order boundary-layer model](/202606/05/2605.30077v1-two-way-coupling-of-gravity-waves-and-wind-farm-wakes-a-reduced-order-boundary-layer-model)  
+   evidence：PINN失效模式过拟合研究，适用于流体流动偏微分方程
+3. [Probabilistic Precipitation Nowcasting with Rectified Flow Transformers](/202606/06/2605.31204v1-probabilistic-precipitation-nowcasting-with-rectified-flow-transformers)  
    标签：评分：8.0/10、query:flow-field
-   evidence：用于风电场尾流的降阶边界层模型
-4. [Neural Operator-Based Surrogate Model for CFD:Helical Coil Steam Generator in Small Modular Reactor](/202606/05/2605.30277v1-neural-operator-based-surrogate-model-for-cfdhelical-coil-steam-generator-in-small-modular-reactor)  
+   evidence：使用整流流Transformer进行概率降水临近预报
+4. [Continuous Data Assimilation with Learned Surrogate Dynamics](/202606/06/2606.00480v1-continuous-data-assimilation-with-learned-surrogate-dynamics)  
    标签：评分：8.0/10、query:flow-field
-   evidence：用于CFD代理的神经算子降阶模型
-5. [Neural-Network-based Viscosity Closure for Non-Newtonian Multiphase Flows](/202606/05/2605.30659v1-neural-network-based-viscosity-closure-for-non-newtonian-multiphase-flows)  
+   evidence：基于学习代理的动力系统部分观测状态估计
+5. [Taming the Loss Landscape of PINNs with Noisy Feynman-Kac Supervision: Operator Preconditioning and Non-Asymptotic Error Bounds](/202606/06/2606.00643v1-taming-the-loss-landscape-of-pinns-with-noisy-feynman-kac-supervision-operator-preconditioning-and-non-asymptotic-error-bounds)  
    标签：评分：8.0/10、query:flow-field
-   evidence：非牛顿多相流的神经网络粘度闭合模型
-6. [Tail observability and fourth-order closure recovery in physics-informed neural networks for Bhatnagar-Gross-Krook normal shocks](/202606/05/2605.29211v1-tail-observability-and-fourth-order-closure-recovery-in-physics-informed-neural-networks-for-bhatnagar-gross-krook-normal-shocks)  
-   标签：评分：7.0/10、query:q6
-   evidence：用于激波的物理信息神经网络与超音速冷却剂注入相关
-7. [A Novel Tensor Product-Based Neural Network for Solving Partial Differential Equations](/202606/05/2605.29688v1-a-novel-tensor-product-based-neural-network-for-solving-partial-differential-equations)  
+   evidence：改进适用于流体流动的PINN训练
+6. [A scalable Ewald-free BIE framework for periodic Stokes flow via hierarchical proxy sums](/202606/06/2605.30805v1-a-scalable-ewald-free-bie-framework-for-periodic-stokes-flow-via-hierarchical-proxy-sums)  
    标签：评分：7.0/10、query:flow-field
-   evidence：通过张量积神经网络求解PDE
-8. [Visual Spatial Learning: Single-Field Spatial Interpolation Using Convolutional Neural Networks](/202606/05/2605.30167v1-visual-spatial-learning-single-field-spatial-interpolation-using-convolutional-neural-networks)  
+   evidence：周期性斯托克斯流的边界积分方法
+7. [Learning Permutation-invariant Macroscopic Dynamics](/202606/06/2605.30812v1-learning-permutation-invariant-macroscopic-dynamics)  
+   标签：评分：7.0/10、query:pclso
+   evidence：自编码器用于宏观动力学
+8. [Multi-Scale Separable Fourier Neural Networks for Solving High-Frequency PDEs](/202606/06/2605.31027v1-multi-scale-separable-fourier-neural-networks-for-solving-high-frequency-pdes)  
    标签：评分：7.0/10、query:flow-field
-   evidence：基于CNN的稀疏传感器场重建
-9. [IGA-ODIL: Optimizing DIscretre robust Loss with Isogeometric Analysis to solve forward and inverse problems faster using machine learning tools](/202606/05/2605.30272v1-iga-odil-optimizing-discretre-robust-loss-with-isogeometric-analysis-to-solve-forward-and-inverse-problems-faster-using-machine-learning-tools)  
+   evidence：傅里叶神经网络求解PDE可应用于流体动力学
+9. [Scalable Bayesian Inference for Nonlinear Conservation Laws](/202606/06/2605.31127v1-scalable-bayesian-inference-for-nonlinear-conservation-laws)  
    标签：评分：7.0/10、query:flow-field
-   evidence：基于样条的残差最小化框架用于偏微分方程
-10. [DisjunctiveNet: Neural Symbolic Learning via Differentiable Convexified Optimization Layers](/202606/05/2605.30456v1-disjunctivenet-neural-symbolic-learning-via-differentiable-convexified-optimization-layers)  
-   标签：评分：6.0/10、query:pclso
-   evidence：基于可微优化的神经符号学习用于物理约束
-11. [Scalable Bayesian Inference for Nonlinear Conservation Laws](/202606/05/2605.31127v1-scalable-bayesian-inference-for-nonlinear-conservation-laws)  
+   evidence：非线性守恒律的贝叶斯推理用于流场预测
+10. [Physics-Informed Coarsening for Multigrid Graph Neural Surrogates](/202606/06/2605.31013v1-physics-informed-coarsening-for-multigrid-graph-neural-surrogates)  
    标签：评分：6.0/10、query:flow-field
-   evidence：用于稀疏数据下非线性守恒律的贝叶斯推断
-12. [Probabilistic Precipitation Nowcasting with Rectified Flow Transformers](/202606/05/2605.31204v1-probabilistic-precipitation-nowcasting-with-rectified-flow-transformers)  
+   evidence：物理信息多重网格图神经代理用于PDE，可应用于流体。
+11. [A holomorphic neural network framework for 3D boundary value problems governed by harmonic potentials](/202606/06/2605.31231v1-a-holomorphic-neural-network-framework-for-3d-boundary-value-problems-governed-by-harmonic-potentials)  
    标签：评分：6.0/10、query:flow-field
-   evidence：数据驱动的流场预测用于天气预报
-13. [Tensor gradient flow with quasi-entropy for smectic liquid crystals and discretizations keeping coupled physical constraints](/202606/05/2606.00659v1-tensor-gradient-flow-with-quasi-entropy-for-smectic-liquid-crystals-and-discretizations-keeping-coupled-physical-constraints)  
+   evidence：神经网络框架求解含调和势的3D边界值问题
+12. [Data Enrichment for Symbolic Regression Using Diffusion Models](/202606/06/2606.00988v1-data-enrichment-for-symbolic-regression-using-diffusion-models)  
    标签：评分：6.0/10、query:pclso
-   evidence：在类似流体的近晶液晶中学习物理约束
+   evidence：物理引导的潜在扩散用于符号回归
+13. [Accelerating physics-informed neural networks for full waveform inversion using a hybrid quantum-classical finite-basis architecture](/202606/06/2606.01110v1-accelerating-physics-informed-neural-networks-for-full-waveform-inversion-using-a-hybrid-quantum-classical-finite-basis-architecture)  
+   标签：评分：6.0/10、query:flow-field
+   evidence：混合量子-经典PINN用于反演问题
 
