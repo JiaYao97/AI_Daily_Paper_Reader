@@ -1,0 +1,1376 @@
+Title: Surrogate-Based Aerodynamic Shape Optimization in Multiscale Flows via the Implicit Unified Gas-Kinetic Scheme
+
+URL Source: https://arxiv.org/pdf/2606.00645v1
+
+Published Time: Tue, 02 Jun 2026 00:55:02 GMT
+
+Number of Pages: 31
+
+Markdown Content:
+> Under consideration for publication in J. Fluid Mech.
+
+Banner appropriate to article type will appear here in typeset article 
+
+# Surrogate-Based Aerodynamic Shape Optimization in Multiscale Flows via the Implicit Unified Gas-Kinetic Scheme 
+
+Xiaozhe Xi 1, Wenpei Long 1, Wenzhi Guo 1, Junzhe Cao 1 and Kun Xu 1, 2, 3 
+
+> 1
+
+Department of Mathematics, Hong Kong University of Science and Technology, Hong Kong, China 
+
+> 2
+
+Department of Mechanical and Aerospace Engineering, Hong Kong University of Science and Technology, Hong Kong, China 
+
+> 3
+
+HKUST Shenzhen Research Institute, Shenzhen, 518057, China 
+
+Corresponding author: Kun Xu, makxu@ust.hk (Received xx; revised xx; accepted xx) 
+
+While hypersonic glide vehicles such as the HTV-2 continue to be a focal point in aerospace research, their aerodynamic characteristics in complex near-space environments are not yet fully understood. Because traditional continuum assumptions fail to accurately capture multiscale flow features across varying rarefied altitudes, this study investigates the aerodynamic shape optimization of an HTV-2-type aircraft across multiple flow regimes. An automated optimization framework is developed by coupling surrogate-based optimization (SBO) with the implicit unified gas-kinetic scheme (IUGKS). To ensure relevance to practical engineering requirements, both volumetric and center-of-pressure constraints are incorporated into the optimization process. The resulting optimized configurations are subsequently validated through high-fidelity computations, detailed flow-field evaluations, and global sensitivity analyses. Under volumetric constraints, the optimized lift-to-drag ratio ( 𝐿 /𝐷 ) increases significantly at altitudes ranging from 70 km to 100 km. The optimal aerodynamic strategy is shown to shift with altitude: at 70 km, reducing the windward radius ( 𝑅 1) weakens the oblique shock wave, whereas at highly rarefied altitudes, reducing the leeward radius ( 𝑅 3) enhances the expansion wave. Correspondingly, sensitivity analyses confirm that as flow rarefaction increases, aerodynamic dominance shifts toward 𝑅 3. Furthermore, reducing the wingtip bluntness (𝑅 2)yields consistent aerodynamic benefits across the entire flight envelope, ultimately driving the optimized geometries toward a flatter and more slender profile. 
+
+Key words: Hypersonic Technology Vehicle; Surrogate-based optimization; Global sensitivity analysis; Implicit unified gas-kinetic scheme; Multiple flow regimes; 
+
+Abstract must not spill onto p.2 0 X0-1 
+
+> arXiv:2606.00645v1 [physics.flu-dyn] 30 May 2026
+
+Xiaozhe Xi et al. 
+
+> 1. Introduction
+
+Driven by the demand for higher speeds, increased altitudes, and enhanced trajectory control, hypersonic vehicles remain a primary focus in aerospace research. Current technological developments are primarily centered on air-breathing propulsion systems and hypersonic glide vehicles. To achieve global-scale, point-to-point flight, these config-urations must balance high volumetric efficiency with superior aerodynamic performance. As an evolution of earlier experimental platforms such as the Common Aero Vehicle, the Hypersonic Technology Vehicle 2 (HTV-2) represents a technical transition from traditional boost-glide trajectories to high lift-to-drag ratio ( 𝐿 /𝐷 ) glide flight (Walker 
+
+et al. 2008; Ken et al. 2004). The HTV-2 utilizes a lifting-body configuration featuring a sharp leading edge and swept-back trailing-edge flaps, demonstrating a clear design trend toward waverider geometries. This aerodynamic layout is intended to maximize 
+
+𝐿 /𝐷 to support long-duration and long-range flight trajectories (up to 16,000 km) within the atmosphere (Walker & Rodgers 2005). However, despite the integration of advanced thermal protection systems—such as a tantalum-based shell with a melting point of 3290K – flight test anomalies in 2010 and 2011 indicate that aerodynamic stability and unsteady flow mechanisms in complex near-space environments are not yet fully understood. Existing studies on HTV-2-type aircraft have primarily focused on high-temperature effects on aerodynamic characteristics (Liu et al. 2015), electromagnetic scattering during thermochemical ablation (Shao et al. 2016), aerothermodynamic optimization (Shi et al. 
+
+2017), and near-field sonic phenomena (Zou et al. 2024). While these investigations have provided valuable insights into various aspects of the vehicle’s aerodynamics, the pronounced multiscale flow effects encountered across different near-space altitudes remain insufficiently characterized. According to the trajectory profiles reported by Walker et al. 
+
+(2008), the typical flight envelope of the HTV-2 spans an altitude range of 50 to 120 km. Within this near-space environment, the flow field around the vehicle exhibits strong multiscale characteristics, extending from the high-density shock compression region at the nose to the highly rarefied expansion region at the tail. For context, the local Knudsen number along the surface of similar hypersonic platforms, such as the X-38, can vary by up to five orders of magnitude (Jiang et al. 2019). Such distinct cross-regime features cannot be accurately captured using traditional continuum assumptions. Instead, resolving the underlying physical processes across all flow regimes necessitates the use of gas-kinetic methods based on the Boltzmann equation. Therefore, investigating the multiscale aerodynamic mechanisms of HTV-2-type aircraft and optimizing their aerodynamic layouts across multiple flow regimes are essential steps toward understanding their performance evolution and advancing hypersonic glide flight technologies. The intensification of hypersonic research in rarefied flow regimes has catalyzed a surge in the development of optimization frameworks based on kinetic theory. Beyond early explorations into topology optimization using discrete velocity methods (DVM)(Sato et al. 
+
+2019) and adjoint direct simulation Monte Carlo (DSMC) frameworks (Caflisch et al. 
+
+2021; Yang et al. 2023), research has expanded to encompass cross-regime aerodynamic shape optimization. As multiscale methods become more computationally efficient, the associated reduction in overhead has made aerodynamic shape optimization across multiple flow regimes an active area of research. Within the realm of deterministic methodologies, recent efforts have advanced adjoint- and surrogate-based optimization utilizing schemes such as DUGKS and GSIS (Yuan & Wu 2024, 2025; Zhang et al. 2025; Li et al. 2025). However, because kinetic solvers must discretize both physical and velocity spaces, the resulting prohibitive memory footprints and computational overheads restrict these studies primarily to two-dimensional or simplified geometries. Consequently, the refined opti- 
+
+> 0X0-2
+
+Journal of Fluid Mechanics 
+
+mization of complex 3D configurations remains nearly intractable. Alternatively, stochastic approaches—such as DSMC and the unified stochastic particle (USP) method—have been coupled with machine learning techniques to capture cross-regime aerodynamic effects (Liu 
+
+et al. 2025). Nevertheless, the inherent statistical noise of these methods severely hinders stable sensitivity analysis during the optimization process. Furthermore, the stringent resolution requirements associated with stochastic methods in the near-continuum regime render them computationally prohibitive for full-envelope design. In this work, the deterministic implicit unified gas-kinetic scheme (IUGKS) is employed for surrogate-based shape optimization of an HTV-2-type aircraft. By directly modeling the underlying physical laws within a discretized space, the unified gas-kinetic scheme (UGKS)(Xu & Huang 2010) overcomes the microscopic scale limitations typical of near-continuum flows. Specifically, its integral solution of the kinetic model is utilized to construct fluxes that couple the free transport and collision effects of the gas distribution function, thereby recovering the gas-kinetic scheme (GKS)(Xu 2001) in the continuum regime. The UGKS has been successfully applied to a diverse range of physical systems, including hypersonic flows (Long et al. 2024), microscale flows (Liu & Xu 2020), thermal and chemical non-equilibrium flows (Wei et al. 2024, 2025), radiation transport (Quan 
+
+et al. 2025), plasma transport (Pu & Xu 2025), and multiphase systems (Liu et al. 2019). Through a series of numerical advancements (Zhu et al. 2016, 2019; Xu et al. 2022), the integration of implicit iteration techniques and an unstructured velocity space (Wei et al. 
+
+2024) has improved computational efficiency by one to three orders of magnitude. This acceleration, combined with the inherent accuracy of the kinetic solver, enables the IUGKS to efficiently handle large-scale non-equilibrium flow simulations, ultimately making the cross-regime shape optimization presented in this study computationally feasible. The remainder of this paper is organized as follows. Section 2 introduces the IUGKS methodology. Next, the geometric model of an HTV-2-type aircraft is detailed in Section 3. Section 4 describes the surrogate-based optimization (SBO) framework and the Sobol global sensitivity analysis. The optimization results, along with an analysis of the aero-dynamic characteristics at various altitudes, are discussed in Section 5. Finally, Section 6 summarizes the conclusions of this study. 
+
+> 2. Numerical method
+
+To achieve computational efficiency in multiscale flow regimes, the IUGKS is adopted. Under the framework of the finite volume method, the implicit evolution of gas distribution function 𝑓 𝑖,𝑘 at the discrete velocity 𝒖 𝑘 with the backward Euler method is 
+
+𝑓 𝑛 +1 
+
+> 𝑖,𝑘
+
+= 𝑓 𝑛 𝑖,𝑘 − Δ𝑡 𝑖 
+
+Ω𝑖 ∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+ℱ𝑛 +1 
+
+> 𝑖 𝑗,𝑘
+
+𝒜 𝑖 𝑗 + Δ𝑡 𝑖 
+
+𝜏 𝑛 +1
+
+> 𝑖
+
+
+
+𝑔 𝑛 +1 
+
+> 𝑖,𝑘
+
+− 𝑓 𝑛 +1
+
+> 𝑖,𝑘
+
+
+
+, (2.1) where Ω𝑖 is the cell volume, Δ𝑡 𝑖 is the local numerical time step, 𝒜 𝑖 𝑗 denotes the area of cell interface 𝑖 𝑗 , and 𝑁 (𝑖 ) represents the set of neighboring cells. For the collision term, the kinetic BGK-Shakhov model is employed to characterize it, 
+
+𝜕 𝑓 𝜕𝑡 + 𝒖 · 𝜕 𝑓 𝜕 𝒙 = 𝑔 − 𝑓 𝜏 , (2.2) where 𝜏 is the relaxation time which is determined by 𝜏 = 𝜇 /𝑝 with the macroscopic pressure 𝑝 and dynamic viscosity 𝜇 . And 𝑔 is defined as follows (Shakhov 1968) to result 
+
+0 X0-3 Xiaozhe Xi et al. 
+
+in a realistic Prandtl number (Pr), 
+
+𝑔 = 𝑔 𝑒𝑞 
+
+
+
+1 + ( 1 − Pr )( 𝒖 − 𝑼 ) · 𝑞 
+
+ (𝒖 − 𝑼 )2 + 𝝃 2
+
+𝑅𝑇 − 5
+
+
+
+/( 5𝑝𝑅𝑇 )
+
+
+
+,𝑔 𝑒𝑞 (𝑥, 𝑡, 𝒖 ) = 𝜌 ( 𝜆 𝜋 ) K+32 𝑒 −𝜆 [ ( 𝒖 −𝑼 )2+𝝃 2 ] .
+
+(2.3) Here, 𝑔 𝑒𝑞 represents the local equilibrium Maxwellian distribution, 𝑅 is the gas constant, K is the internal degree of freedom of gas, and 𝜆 is related to the temperature 𝑇 by 
+
+𝜆 = 1/2𝑅𝑇 . 𝝃 = (𝜉 1, 𝜉 2, ..., 𝜉 K) is the internal variable. The relation of macroscopic conservative variables of density, total momentum, and total energy in the control volume 
+
+𝑾 = (𝜌, 𝜌 𝑼 , 𝜌𝐸 )𝑇 and the distribution function 𝑓 is 
+
+𝑾 =
+
+∫
+
+𝑓 𝝍 d𝜩 , (2.4) where 𝝍 = (1, 𝒖 , 12 (𝒖 2 + 𝝃 2)) 𝑇 and d 𝜩 = d𝒖 d𝝃 . Therefore, 𝑔 𝑛 +1 
+
+> 𝑖,𝑘
+
+and 𝜏 𝑛 +1 
+
+> 𝑖
+
+in Eq. 2.1 are calculated from the macroscopic conservative variables ˜𝑾 𝑛 +1 
+
+> 𝑖
+
+given by macroscopic implicit prediction as ˜𝑾 𝑛 +1 
+
+> 𝑖
+
+= 𝑾 𝑛 𝑖 − Δ𝑡 𝑖 
+
+Ω𝑖 ∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+𝑭 𝑛 +1 
+
+> 𝑖 𝑗
+
+𝒜 𝑖 𝑗 . (2.5) For the macroscopic implicit prediction part, by subtracting the time-averaged flux 
+
+𝑭 𝑛 𝑖 𝑗 corresponding to the macroscopic variables at time step 𝑛 from both sides of the macroscopic implicit prediction formula Eq. 2.5, we can rewrite it in the Δ form 
+
+Ω𝑖 
+
+Δ𝑡 𝑖 
+
+Δ𝑾 𝑖 +∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+Δ𝑭 𝑖 𝑗 𝒜 𝑖 𝑗 = 𝑹 𝑖 , (2.6) where Δ𝑾 𝑖 = ˜𝑾 𝑛 +1 
+
+> 𝑖
+
+− 𝑾 𝑛 𝑖 , Δ𝑭 𝑖 𝑗 = 𝑭 𝑛 +1 
+
+> 𝑖 𝑗
+
+− 𝑭 𝑛 𝑖 𝑗 , and 𝑹 𝑖 is the residual 
+
+𝑹 𝑖 = −∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+𝑭 𝑛 𝑖 𝑗 𝒜 𝑖 𝑗 . (2.7) For the UGKS, the macroscopic flux 𝑭 𝑛 𝑖 𝑗 is provided by taking moments of the time-average flux of the discrete gas distribution function, 
+
+𝑭 𝑛 𝑖 𝑗 =∑︁ 
+
+> 𝑘
+
+ℱ𝑛 𝑖 𝑗,𝑘 𝝍 𝑘 𝒱 𝑘 . (2.8) where 𝒱 𝑘 is the corresponding weight in the discrete velocity space. The time-averaged flux modeled by the integral solution is expressed as 
+
+ℱ𝑛 𝑖 𝑗,𝑘 = 𝒖 𝑘 · 𝒏 𝑖 𝑗 
+
+
+
+𝐿 𝑢  
+
+> 1
+
+𝑔 𝑘 + 𝐿 𝑢  
+
+> 2
+
+𝒖 𝑘 · 𝜕𝑔 𝑘 
+
+𝜕 𝒙 + 𝐿 𝑢 
+
+> 3
+
+𝜕𝑔 𝑘 
+
+𝜕𝑡 + 𝐿 𝑢  
+
+> 4
+
+𝑓 𝑘 + 𝐿 𝑢  
+
+> 5
+
+𝒖 𝑘 · 𝜕 𝑓 𝑘 
+
+𝜕 𝒙 
+
+
+
+, (2.9) 
+
+0 X0-4 Focus on Fluids articles must not exceed this page length Journal of Fluid Mechanics 
+
+where 𝒏 𝑖 𝑗 is the unit normal direction of the interface 𝑖 𝑗 , and 𝐿 𝑢  
+
+> 1
+
+to 𝐿 𝑢  
+
+> 5
+
+are scale-related time coefficients considering the local time step 
+
+𝐿 𝑢  
+
+> 1
+
+= 1 − 𝜏 
+
+Δ𝑡 𝑖 𝑗 
+
+
+
+1 − 𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 
+
+,𝐿 𝑢  
+
+> 2
+
+= −𝜏 + 2𝜏 2
+
+Δ𝑡 𝑖 𝑗 
+
+− 𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 
+
+ 2𝜏 2
+
+Δ𝑡 𝑖 𝑗 
+
++ 𝜏 
+
+
+
+,𝐿 𝑢  
+
+> 3
+
+= 12 Δ𝑡 𝑖 𝑗 − 𝜏 + 𝜏 2
+
+Δ𝑡 𝑖 𝑗 
+
+
+
+1 − 𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 
+
+,𝐿 𝑢  
+
+> 4
+
+= 𝜏 
+
+Δ𝑡 𝑖 𝑗 
+
+
+
+1 − 𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 
+
+,𝐿 𝑢  
+
+> 5
+
+= 𝜏𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 − 𝜏 2
+
+Δ𝑡 𝑖 𝑗 
+
+
+
+1 − 𝑒 −Δ𝑡 𝑖 𝑗 /𝜏 
+
+.
+
+(2.10) The Δ𝑭 𝑖 𝑗 is approximated by the Euler equations-based flux splitting method as 
+
+Δ𝑭 𝑖 𝑗 = 12
+
+Δ𝑻 𝑖 + Δ𝑻 𝑗 + 𝛤 𝑖 𝑗 (Δ𝑾 𝑖 − Δ𝑾 𝑗 ) , (2.11) where Δ𝑻 𝑖 = 𝑻 𝑛 +1 
+
+> 𝑖
+
+−𝑻 𝑛 𝑖 . 𝑻 represents the Euler flux calculated from macroscopic variables by 
+
+𝑻 = ©«
+
+𝜌𝑈 𝑛 
+
+𝜌 𝑼 𝑈 𝑛 + 𝑝 𝒏 𝑖 𝑗 
+
+(𝜌𝐸 + 𝑝 )𝑈 𝑛 
+
+ª®¬
+
+, (2.12) where 𝑈 𝑛 = 𝑼 · 𝒏 𝑖 𝑗 . 𝛤 𝑖 𝑗 represents the spectral radius of the Euler flux Jacobian matrix, and an additional stabilizing term related to kinetic viscosity is added considering the viscous effects 
+
+𝛤 𝑖 𝑗 = |𝑼 · 𝒏 𝑖 𝑗 | + 𝑐 + 2𝜇 𝜌 |𝒏 𝑖 𝑗 · ( 𝒙 𝑗 − 𝒙 𝑖 )| , (2.13) where 𝑐 is sound speed. By substituting the expression of Δ𝑭 𝑖 𝑗 in Eq. 2.11 into Eq. 2.6, the macroscopic linear system is 
+
+©«
+
+Ω𝑖 
+
+Δ𝑡 𝑖 
+
++ 12∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+𝛤 𝑖 𝑗 𝒜 𝑖 𝑗 ª®¬
+
+Δ𝑾 𝑖 + 12∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+(Δ𝑻 𝑗 − 𝛤 𝑖 𝑗 Δ𝑾 𝑗 )𝒜 𝑖 𝑗 = −∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+𝑭 𝑛 𝑖 𝑗 𝒜 𝑖 𝑗 , (2.14) where Δ𝑻 𝑗 can be obtained by the direct differential calculation 
+
+Δ𝑻 𝑗 = 𝑻 (𝑾 𝑛 𝑗 + Δ𝑾 𝑗 ) − 𝑻 (𝑾 𝑛 𝑗 ). (2.15) When solving the macroscopic variables prediction equation, Eq. 2.14, on a finite volume mesh, a large sparse matrix is obtained. After a simple renumbering process, the point relaxation scheme (Rogers 1995) is adopted. Instead of one forward-backward scanning process of the traditional lower –upper symmetric Gauss-Seidel (LU-SGS) method, the point relaxation scheme adopts multiple iteration steps. For the [𝑚 ] th forward scanning 
+
+0 X0-5 Xiaozhe Xi et al. 
+
+process, 
+
+©«
+
+Ω𝑖 
+
+Δ𝑡 𝑖 
+
++ 12∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+𝛤 𝑖 𝑗 𝒜 𝑖 𝑗 ª®¬
+
+Δ𝑾 ∗ 
+
+> 𝑖
+
++
+
+12∑︁ 𝑗 ∈ 𝐿 (𝑖 )
+
+𝒜 𝑖 𝑗 
+
+h
+
+𝑻 (𝑾 𝑛 𝑗 + Δ𝑾 ∗ 
+
+> 𝑗
+
+) − 𝑻 (𝑾 𝑛 𝑗 ) − 𝛤 𝑖 𝑗 Δ𝑾 ∗
+
+> 𝑗
+
+i
+
++
+
+12∑︁ 𝑗 ∈𝑈 (𝑖 )
+
+𝒜 𝑖 𝑗 
+
+h
+
+𝑻 (𝑾 𝑛 𝑗 + Δ𝑾 [𝑚 −1] 
+
+> 𝑗
+
+) − 𝑻 (𝑾 𝑛 𝑗 ) − 𝛤 𝑖 𝑗 Δ𝑾 [𝑚 −1]
+
+> 𝑗
+
+i
+
+= 𝑹 𝑖 ,
+
+(2.16) and the [𝑚 ]-th backward scanning process is 
+
+©«
+
+Ω𝑖 
+
+Δ𝑡 𝑖 
+
++ 12∑︁ 𝑗 ∈ 𝑁 (𝑖 )
+
+𝛤 𝑖 𝑗 𝒜 𝑖 𝑗 ª®¬
+
+Δ𝑾 [𝑚 ] 
+
+> 𝑖
+
++
+
+12∑︁ 𝑗 ∈ 𝐿 (𝑖 )
+
+𝒜 𝑖 𝑗 
+
+h
+
+𝑻 (𝑾 𝑛 𝑗 + Δ𝑾 ∗ 
+
+> 𝑗
+
+) − 𝑻 (𝑾 𝑛 𝑗 ) − 𝛤 𝑖 𝑗 Δ𝑾 ∗
+
+> 𝑗
+
+i
+
++
+
+12∑︁ 𝑗 ∈𝑈 (𝑖 )
+
+𝒜 𝑖 𝑗 
+
+h
+
+𝑻 (𝑾 𝑛 𝑗 + Δ𝑾 [𝑚 ] 
+
+> 𝑗
+
+) − 𝑻 (𝑾 𝑛 𝑗 ) − 𝛤 𝑖 𝑗 Δ𝑾 [𝑚 ]
+
+> 𝑗
+
+i
+
+= 𝑹 𝑖 ,
+
+(2.17) where 𝑾 [𝑚 −1] 
+
+> 𝑗
+
+is the result of [𝑚 − 1]-th iteration and Δ𝑾 ∗ 
+
+> 𝑖
+
+is the result of [𝑚 ]-th forward scanning process. 𝐿 (𝑖 ) and 𝑈 (𝑖 ) are subsets of 𝑁 (𝑖 ), which denotes neighboring cells occupying the lower and upper triangular area of the large matrix, respectively. After the macroscopic implicit prediction, the equilibrium distribution function ˜ 𝑔 𝑛 +1 and relaxation time ˜ 𝜏 𝑛 +1 at 𝑛 + 1 step can be directly calculated from the predicted ˜ 𝑾 𝑛 +1. By substituting ˜ 𝑔 𝑛 +1 and ˜ 𝜏 𝑛 +1, and subtracting the time-averaged microscopic flux at 𝑛 step, the delta-form of the microscopic implicit iteration equation is 
+
+Ω𝑖 
+
+Δ𝑡 𝑖 
+
++ Ω𝑖 
+
+˜𝜏 𝑛 +1
+
+> 𝑖
+
+!
+
+Δ 𝑓 𝑖,𝑘 +∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+Δℱ𝑖 𝑗,𝑘 𝒜 𝑖 𝑗 = 𝑟 𝑖,𝑘 , (2.18) where 𝑟 𝑖,𝑘 is the residual of discretized gas distribution function at 𝒖 𝑘 
+
+𝑟 𝑖,𝑘 = Ω𝑖 
+
+˜𝜏 𝑛 +1
+
+> 𝑖
+
+
+
+˜𝑔 𝑛 +1 
+
+> 𝑖,𝑘
+
+− 𝑓 𝑛 𝑖,𝑘 
+
+
+
+−∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+ℱ𝑛 𝑖 𝑗,𝑘 𝒜 𝑖 𝑗 . (2.19) For microscopic distribution function flux, a single first-order upwind scheme is adopted 
+
+Δℱ𝑖 𝑗,𝑘 = ¯𝑢 𝑖 𝑗,𝑘 
+
+𝐻 ( ¯𝑢 𝑖 𝑗,𝑘 )Δ 𝑓 𝑖,𝑘 + 1 − 𝐻 ( ¯𝑢 𝑖 𝑗,𝑘 ) Δ 𝑓 𝑗,𝑘 . (2.20) By substituting the microscopic distribution function flux Eq. 2.20 into the implicit governing equation Eq. 2.18, we have 
+
+𝐷 𝑖,𝑘 Δ 𝑓 𝑖,𝑘 +∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+𝐷 𝑗,𝑘 Δ 𝑓 𝑗,𝑘 = 𝑟 𝑖,𝑘 , (2.21) 
+
+0 X0-6 Journal of Fluid Mechanics θ  
+
+> (a) Back view θ
+> θ(b) Side view X
+> Y
+> Z
+> (c) Isometric view (d) Top view
+
+Figure 1. Geometric layout of the HTV-2 type baseline configuration. 
+
+where 
+
+𝐷 𝑖,𝑘 = Ω𝑖 
+
+Δ𝑡 𝑖 
+
++ Ω𝑖 
+
+˜𝜏 𝑛 +1
+
+> 𝑖
+
++∑︁    
+
+> 𝑗 ∈𝑁 (𝑖 )
+
+¯𝑢 𝑖 𝑗,𝑘 𝒜 𝑖 𝑗 𝐻 ( ¯𝑢 𝑖 𝑗,𝑘 ),𝐷 𝑗,𝑘 = ¯𝑢 𝑖 𝑗,𝑘 𝒜 𝑖 𝑗 
+
+1 − 𝐻 ( ¯𝑢 𝑖 𝑗,𝑘 ) .
+
+(2.22) Considering the computation cost of the discrete velocity space operations, the microscopic implicit equation adopts the traditional LU-SGS method to decompose the process into a forward scanning process 
+
+𝐷 𝑖,𝑘 Δ 𝑓 ∗ 
+
+> 𝑖,𝑘
+
++∑︁    
+
+> 𝑗 ∈𝐿 (𝑖 )
+
+𝐷 𝑗,𝑘 Δ 𝑓 ∗ 
+
+> 𝑗,𝑘
+
++∑︁   
+
+> 𝑗 ∈𝑈 (𝑖 )
+
+𝐷 𝑗,𝑘 Δ 𝑓 𝑛 𝑗,𝑘 = 𝑟 𝑖,𝑘 , (2.23) and a backward scanning process 
+
+𝐷 𝑖,𝑘 Δ 𝑓 𝑛 +1 
+
+> 𝑖,𝑘
+
++∑︁    
+
+> 𝑗 ∈𝐿 (𝑖 )
+
+𝐷 𝑗,𝑘 Δ 𝑓 ∗ 
+
+> 𝑗,𝑘
+
++∑︁   
+
+> 𝑗 ∈𝑈 (𝑖 )
+
+𝐷 𝑗,𝑘 Δ 𝑓 𝑛 +1 
+
+> 𝑗,𝑘
+
+= 𝑟 𝑖,𝑘 . (2.24) Further details regarding the algorithm can be found in Long et al. (2024). 
+
+3. Geometric model and CFD results 
+
+3.1. Baseline configuration and aerodynamic characteristics 
+
+The baseline configuration in this study is patterned after the HTV-2 type geometry described by Niu et al. (Niu et al. 2019). The principal geometric dimensions, which maintain high fidelity to the HTV-2 platform featuring a sharp leading edge and a pronounced sweep-back angle, are detailed in Tab. 1, with the corresponding three-dimensional geometry and three-view projections illustrated in Fig. 1. 
+
+0 X0-7 Xiaozhe Xi et al.                                                           
+
+> Main geometric parameters Values Width of fuselage 𝑙 12.20 m Length of fuselage 𝑙 23.67 m Height of fuselage 𝑙 30.88 m Base width 𝑙 41.80 m Windward surface radius 𝑅 15.70 m Wing tip bluntness radius 𝑅 20.16 m Leeward surface radius 𝑅 30.88 m Forebody compression angle 𝜃 111 .3◦
+> Leeward expansion angle 𝜃 27.6◦
+> Side slope angle 𝜃 380 ◦
+> Table 1. The main geometric parameters of the HTV-2 type baseline configuration. Altitudes (km) 𝑈 ∞(m/s)𝜌 ∞(kg /m3)𝑇 ∞(K)Kn ∞
+> 70 2401.48 7.42 ×10 −5217 8.74 ×10 −4
+> 85 2241.68 8.22 ×10 −6189 7.63 ×10 −3
+> 100 2274.61 5.60 ×10 −7195 0.11 120 3089.95 2.22 ×10 −8360 3.29
+> Table 2. Freestream conditions at different altitudes.
+
+In this section, four altitudes (70, 85, 100, and 120 km) are selected to evaluate the aerodynamic performance of the baseline configuration. Numerical simulations are performed using the multiscale UGKS method described in Sec. 2 at a constant Mach number of 8. For the gas properties, the molecular weight is 28, and the Prandtl number is set to 0.72. Additionally, the variable hard sphere (VHS) model is employed with an exponent of 0.74, where the reference temperature is 273 K, and the reference viscosity is 1.66 × 10 −5 kg /( m · s). The detailed freestream conditions (Atmosphere 1976) are listed in Tab. 2, with 85 km defined as the design point. As observed from the table, the freestream Knudsen number across these altitudes spans nearly four orders of magnitude. To determine the specific flight attitude for the aerodynamic shape optimization, the influence of the angle of attack ( 𝐴𝑜 𝐴 ) on the aerodynamic forces is systematically investigated at the 85 km design point. Fig. 2 illustrates the variations of the lift coefficient (𝐶 𝐿 ), drag coefficient ( 𝐶 𝐷 ), and 𝐿 /𝐷 across a range of 𝐴𝑜 𝐴 . As depicted in the figure, to maintain an adequate safety margin, an 𝐴𝑜 𝐴 of 18 ◦ is conservatively selected as the target condition for the subsequent shape optimization. To further investigate the aerodynamic characteristics of HTV-2 type aircraft, the flow field around the configuration at a freestream Mach number of 8 and an AoA of 18 ◦ is analyzed. Fig. 3 illustrates the pressure coefficient ( 𝐶 𝑝 ) distributions on the symmetry plane across different altitudes. As shown in the figure, due to the relatively large incident angle, a strong shock wave forms on the windward side, while an expansion wave develops over the leeward surface. Furthermore, as the flight altitude increases and the freestream density drops, the shock wave layer becomes noticeably thicker and more diffuse, which is a typical feature of high-altitude rarefied aerodynamics. Consequently, in highly rarefied conditions, 𝐶 𝑝 near the windward side is generally higher than that at lower altitudes. This phenomenon is fundamentally driven by the gas relaxation process. As the altitude decreases from 120 km to 85 km, 𝐶 𝑝 on the windward surface drops significantly. 
+
+0 X0-8 Journal of Fluid Mechanics         
+
+> (a) 𝐶 𝐿 and 𝐶 𝐷 (b) 𝐿 /𝐷
+> Figure 2. Effect of 𝐴𝑜 𝐴 on the aerodynamic performance of the HTV-2 type baseline configuration at 85 km.
+
+This mechanism can be understood by taking the free molecular flow as a baseline, as illustrated in the upper schematic of Fig. 4. In the collisionless limit, 𝐶 𝑝 at the wall is strictly proportional to the number flux of the freestream particles. Although particles exhibit random thermal motion, the uniformity of the incoming flow ensures that the net particle flux toward the wall remains unaffected. However, as Kn decreases, intermolecular collisions drive the gas toward a local near-equilibrium state behind the bow shock. Because the shock is curved, the macroscopic temperature is highest at the central stagnation region and decreases radially outward. Consequently, particles near the center acquire a higher thermal velocity. Driven by this temperature gradient, a net flux of particles migrates radially outward from the high-temperature center. This outward migration reduces the local particle density impacting the central windward surface, thereby lowering 
+
+𝐶 𝑝 compared to the large-Kn case (as shown in the lower schematic). As the altitude drops further to 70 km, the difference in the 𝐶 𝑝 distribution becomes marginal, because the flow approaches the continuum regime where inviscid mechanisms dominate the surface pressure. Ultimately, these altitude-dependent physical mechanisms dictate the distinct, cross-regime optimization strategies discussed in Sec. 5. In this study, the degree of local thermal non-equilibrium is characterized by the gradient length local Knudsen number, Kn GLL . Following the criteria established in Refs. (Wei 
+
+et al. 2023; Hash & Hassan 1996; Sun et al. 2004; Schwartzentruber et al. 2007), Kn GLL 
+
+is defined as: Kn GLL = 𝜆 mfp 
+
+𝜌 /|∇ 𝜌 | , (3.1) where 𝜆 mfp represents the local mean free path. This parameter is employed to identify non-equilibrium regions by coupling the local macroscopic gradient with the microscopic characteristic length. Generally, flow regions where Kn GLL > 0.05 are considered to be in a highly rarefied, non-equilibrium state. Fig. 3 illustrates the Kn GLL distributions on the symmetry plane. The contours clearly demonstrate a significant magnification of multiscale effects as the altitude rises. At 70 km, the rarefied region is strictly confined to a small area in the wake of the fuselage. At 85 km, the non-equilibrium multiscale effects become more pronounced around the fuselage. By 100 km, almost the entire flow field is highly rarefied, except for a small compression region near the windward surface. Ultimately, at 120 km, the aircraft is completely immersed in 
+
+0 X0-9 Xiaozhe Xi et al.                              
+
+> (a) 𝐶 𝑝 at 70 km (b) 𝑇 at 70 km (c) Kn GLL at 70 km
+> (d) 𝐶 𝑝 at 85 km (e) 𝑇 at 85 km (f) Kn GLL at 85 km
+> (g) 𝐶 𝑝 at 100 km (h) 𝑇 at 100 km (i) Kn GLL at 100 km
+> (j) 𝐶 𝑝 at 120 km (k) 𝑇 at 120 km (l) Kn GLL at 120 km
+> Figure 3. Comparison of the aerodynamic performance on the symmetry plane of the HTV-2 type baseline configuration at varying altitudes.
+
+a free-molecular-like rarefied environment. This phenomenon indicates the necessity and validity of employing a multiscale kinetic solver for the current study. It is worth noting that at an altitude of 120 km, the flow is extremely rarefied, resulting in minimal aerodynamic loads. In this regime, the generated lift is entirely insufficient to counteract gravity, whereas the drag penalty remains prominent. Consequently, aerody-namic shape optimization at this altitude requires not only maximizing the 𝐿 /𝐷 . As this falls outside the scope of the present study, it will be addressed in dedicated future research. Therefore, the subsequent shape optimization and performance analyses in this paper will focus exclusively on the altitudes of 70, 85, and 100 km. All numerical simulations are executed on a high-performance computing cluster utilizing 96 cores across multiple Intel 8358 nodes via cross-node parallelization. For the various grid resolutions evaluated, the computational cost for a single converged case 
+
+0 X0-10 Rapids articles must not exceed this page length Journal of Fluid Mechanics free molecular flow                                                 
+
+> more
+> continuous
+> blunt body
+> blunt body
+> relaxation
+> shock wave
+> Figure 4. Schematic of the 𝐶 𝑝 variation mechanism. Altitudes (km) 𝛿 (m) 𝐹 𝑦 Δ𝐹 𝑦 𝐹 𝑧 Δ𝐹 𝑧 𝑀 𝑥 Δ𝑀 𝑥
+> 70 1.0×10 −356 .40.48% 274 −0.01% 531 −0.01% 5.0×10 −456 .20.18% 274 0.01% 531 0.01% 1.0×10 −456 .1274 531 85 1.0×10 −310 .70.03% 3.17 −0.09% 5.53 −0.10% 5.0×10 −410 .73.17 5.53
+> Table 3. Aerodynamic forces of the HTV-2 type configuration with different physical grids.
+
+at the 85 km altitude is approximately 4 hours of wall-clock time, and the calculation time for the 100 km cases ranges from 4 to 5 hours. 3.2. Grid independence verification 
+
+Considering the varying Knudsen numbers across the flight trajectory, the flow physics span from the slip regime to the highly rarefied regime. At an altitude of 100 km, the flow is highly rarefied, and the numerical accuracy is predominately governed by the velocity space resolution rather than the physical mesh density. Therefore, the physical grid independence study is systematically conducted at the altitudes of 70 km and 85 km. To ensure both the accuracy and efficiency of the numerical simulations, three different physical grid densities—categorized as coarse, medium, and refined—are generated for the HTV-2 type configuration. These grids share identical topological structures, with the thickness of the first near-wall cell ( 𝛿 ) set to 1 .0 × 10 −3 m, 5 .0 × 10 −4 m, and 1 .0 × 10 −4 m, respectively. The computational conditions are listed in Tab. 2, specifically utilizing an angle of attack ( 𝐴𝑜 𝐴 ) of 18 ◦ at 70 km and 5 ◦ at 85 km. The dimensionless aerodynamic forces obtained using these different physical grid sizes are summarized in Tab. 3. At 70 km, compared to the refined grid, the aerodynamic forces calculated by the medium grid display minor variances, with a maximum relative difference of only 0.18%. Similarly, at 85 km, the coarse grid demonstrates negligible discrepancies compared to the medium grid, with the maximum difference being just 0.14%. Consequently, to strike an optimal balance between computational fidelity and efficiency, the medium grid (with 
+
+𝛿 = 5.0 × 10 −4 m, containing approximately 1 million unstructured cells) is selected for 
+
+0 X0-11 Xiaozhe Xi et al.                       
+
+> Velocity space 𝐹 𝑦 Δ𝐹 𝑦 𝐹 𝑧 Δ𝐹 𝑧 𝑀 𝑥 Δ𝑀 𝑥
+> 8213 10.7 -1.03% 3.17 -2.21% 5.54 -2.37% 13429 10.7 -0.63% 3.26 0.4% 5.70 0.48% 17343 10.8 3.24 5.67
+> Table 4. Aerodynamic forces of the HTV-2 type configuration with different discrete velocity spaces at 85 km.
+
+the physical space discretization at 70 km, whereas the coarse grid (with 𝛿 = 1.0 × 10 −3 m) is adopted for the 85 km cases. Furthermore, Fig. 5(a) and Fig. 5(b) present the scale distribution of the medium grid on the symmetry plane at 70 km. For single-scale microscopic method, the cell size ℎ
+
+is limited by the 𝜆 𝑚 𝑓 𝑝 . For example, in DSMC, ℎ is commonly required to be less than 1/3 𝜆 𝑚 𝑓 𝑝 . In Fig. 5(a), concentrating on the flow field, ℎ is calculated by root of cell volume. While in Fig. 5(b), for the detailed mesh at the wall, it is obvious that the mesh independence is achieved under the case that most mesh size is much larger than 1/3 𝜆 𝑚 𝑓 𝑝 ,including the windward side and farfield, which is a significant efficiency advantage of the multiscale UGKS. Due to the kinetic nature of the flow solver in the rarefied regime, an unstructured discrete velocity space (DVS) is adopted. An independence test for the DVS is equally crucial. Tab. 4 presents the aerodynamic forces computed at 85 km using three different discrete velocity space sizes: 8213, 13429, and 17343 points. The data indicates that the intermediate DVS (13429 points) yields a maximum variation of 0.815% compared to the finest velocity grid, whereas the coarsest DVS (8213 points) produces a larger deviation of up to 2.68% in the 𝐹 𝑧 component. Therefore, the DVS with 13429 discrete points is adopted. Fig. 5(c) and Fig. 5(d) visually depict the selected coarse physical computational grid alongside the corresponding unstructured discrete velocity space. 
+
+4. Optimization and sensitivity model 
+
+4.1. Surrogate-based optimization 
+
+To overcome the prohibitive computational expense of high-fidelity aerodynamic analysis of hypersonic configurations, a SBO (Forrester & Keane 2009; Forrester et al. 2008) framework is established. As illustrated in Fig. 6, this automated procedure aims to decouple expensive kinetic simulations from iterative design loops. Beginning with the baseline configuration, the SBO algorithm proceeds by generating the dataset for optimization, constructing the surrogate model, and then utilizing the optimization algorithm to attain the final optimization outcome. To efficiently explore the multi-dimensional design space, an optimal latin hypercube sampling (OLHS) (Morris & Mitchell 1995) strategy is implemented for the design of experiments (DoE), ensuring a space-filling distribution of training samples with minimal correlation. To circumvent the curse of dimensionality, the parameterization is restricted to a set of variables. Guided by the HTV-2 design principles (Sec. 3), five relatively independent parameters are chosen: base width, windward surface radius, wing tip bluntness radius, leeward surface radius, and side slope angle. Their prescribed bounds are detailed in Tab. 5. Using the OLHS algorithm, this design space is iteratively permuted to extract a strictly 
+
+0 X0-12 Journal of Fluid Mechanics λ
+
+(a) Physical mesh scale at symmetry plane at 70 km δ/λ   
+
+> XY
+> Z
+
+(b) The first near-wall cell scale at 70 km Y
+
+> Z
+> X
+
+(c) Physical mesh consisting of 987796 cells at 85 km X  
+
+> YZ
+
+(d) Unstructured DVS mesh consisting of 13429 cells at 85 km 
+
+Figure 5. Schematic diagrams of the adopted discretization strategies. HTV-2 baseline   
+
+> configuration
+> Design variables
+> and space Design of experiment
+> CAD model and grid
+> generation CFD
+> Data container
+> Surrogate model
+> Optimization
+> algorithm
+> Optimum
+> SBO optimizer
+
+Figure 6. Framework of SBO process. 
+
+0 X0-13 Xiaozhe Xi et al.                           
+
+> Design parameters 𝑙 4(m) 𝑅 1(m) 𝑅 2(m) 𝑅 3(m) 𝜃 3(◦)Lower bound 1100 2700 80 400 45 Baseline configuration 1800 5700 160 880 80 Upper bound 1820 8700 200 900 125
+> Table 5. Design space of variables.
+
+orthogonal, space-filling dataset, yielding 51 training samples for surrogate construction and 30 independent samples for accuracy validation. To establish a high-fidelity mapping from the design space to the aerodynamic responses, the Kriging method (Hoerl & Kennard 1970; Tikhonov & Arsenin 1977) is employed. This model assumes that the observed aerodynamic responses 𝒚 = {𝑦 (1) , 𝑦 (2) , . . . , 𝑦 (𝑛 ) }𝑇 from the sampling matrix 𝑿 = {𝒙 (1) , 𝒙 (2) , . . . , 𝒙 (𝑛 ) }𝑇 are realizations of a stochastic process with a global mean 1𝜇 and covariance 𝜎 2𝜳 . The spatial correlation between any two sample points 𝒙 (𝑖 ) and 𝒙 (𝑙 ) is defined as cor [Y(𝒙 (i) ), Y(𝒙 (l) )] = exp ©«
+
+−
+
+> d
+
+∑︁ 
+
+> j=1
+
+𝜃 j |x(i) 
+
+> j
+
+− x(l) 
+
+> j
+
+|pj ª®¬
+
+, (4.1) where 𝜃 𝑗 and 𝑝 𝑗 denote the correlation decay rate and smoothness parameter, respectively, populating the 𝑛 × 𝑛 symmetric correlation matrix 𝜳 . To filter potential numerical noise from high-fidelity CFD simulations and prevent overfitting, a regression constant 𝜆 is added to the main diagonal of 𝜳 . Consequently, the regression-type Kriging predictor at an untried point 𝒙 is formulated as ˆ𝑦 𝑟 = ˆ𝜇 𝑟 + 𝝍 𝑇 (𝜳 + 𝜆 𝑰 )−1 (𝒚 − 1 ˆ𝜇 𝑟 ), (4.2) where 𝝍 is the correlation vector between 𝒙 and the training data, 𝑰 is the identity matrix. And the optimal estimate of the global mean ˆ 𝜇 𝑟 is ˆ𝜇 𝑟 = 1𝑇 (𝜳 + 𝜆 𝑰 )−1 𝒚 
+
+1𝑇 (𝜳 + 𝜆 𝑰 )−11 . (4.3) Before executing the optimization search, the generalization capability of the established surrogate is quantified using independent testing samples via the coefficient of determina-tion ( 𝑅 2)
+
+𝑅 2 = 1 −
+
+Í𝑛 test  
+
+> 𝑖 =1
+
+(𝑦 𝑖 − ˆ𝑦 (𝑖 ) 
+
+> 𝑟
+
+)2
+
+Í𝑛 test  
+
+> 𝑖 =1
+
+(𝑦 𝑖 − ¯𝑦 )2 , (4.4) where ˆ 𝑦 (𝑖 ) 
+
+> 𝑟
+
+and 𝑦 𝑖 denote the predicted and actual responses for the testing set. In this research, since the aerodynamic optimization of the HTV-2 type configuration involves multiple coupled objectives, including 𝐿 /𝐷 , center of pressure ( 𝑋 𝑐 𝑝 ), and volumetric efficiency ( 𝜂 ) etc., it is necessary to establish individual regression Kriging models for each response. The 𝜂 serves as a critical geometric constraint for vehicle capacity, which is defined as 
+
+𝜂 = 𝑉 2/3
+
+𝑆 wet 
+
+, (4.5) where 𝑆 wet represents the wet area of the configuration. To fully utilize the extracted sampling plan and assess the generalization capability, the accuracy of these established 
+
+0 X0-14 Journal of Fluid Mechanics                    
+
+> Target parameters Mean relative error (%) Maximum relative error (%) 𝑅 2
+> 𝐶 𝐿 0.04160 0.1433 0.9976
+> 𝐶 𝐷 0.04677 0.1486 0.9981
+> 𝐿 /𝐷 0.05757 0.1491 0.9991
+> 𝑋 𝑐 𝑝 0.02194 0.06094 0.9992
+> 𝜂 0.07817 0.3072 0.9991
+> Table 6. Test error of surrogate model at 85 km.
+
+models is rigorously examined at the design condition of 85 km altitude. As detailed in Tab. 6, validation results for the dimensionless parameters demonstrate high fitting accuracy, with a maximum relative error strictly below 0.31% and an 𝑅 2 approaching 0.99. These stringent metrics confirm the reliability of the established Kriging models, fully justifying their use as efficient replacements for the expensive kinetic solver in the subsequent optimization search. To efficiently and accurately locate the global extrema over the highly nonlinear aerodynamic response surface, a gradient-free hybrid optimization strategy is proposed. Relying solely on local search methods may lead to premature convergence, while pure heuristic algorithms often suffer from limited solution precision. Therefore, a cascaded framework combining a Genetic Algorithm (GA) (Holland 1992) and the Nelder-Mead (NM) simplex method (Ja 1965) is adopted. In this approach, the GA performs a broad global exploration guided by the Kriging surrogates, handling volumetric constraints via a penalty function to locate the optimal basin. Subsequently, the NM algorithm utilizes the best GA solution as its initial vertex to conduct local refinement, precisely pinpointing the global optimum. The detailed execution of this hybrid procedure is summarized in Algorithm 1. 4.2. Sensitivity model 
+
+Sensitivity analysis investigates the impact of variations in model inputs on outputs. To overcome the limitations of local derivatives, the Sobol global sensitivity method (Sobol 2001; Xi et al. 2024) decomposes the total variance of outputs into the sum of variances of the individual parameters and groups of parameters, evaluating by each parameter’s contribution ratio to the output variance. Consider an aerodynamic response function 𝑦 = 𝑓 (𝒙 ) defined within an 𝑛 -dimensional unit hypercube, where the input vector is 𝒙 = {𝑥 1, · · · , 𝑥 𝑛 }. This function can be decomposed into summands of increasing dimensionality 
+
+𝑓 (𝒙 ) = 𝑓 0 +
+
+> 𝑛
+
+∑︁ 
+
+> 𝑠 =1
+
+∑︁ 1≤𝑖 1 <··· <𝑖 𝑠 ≤𝑛 
+
+𝑓 𝑖 1 ··· 𝑖 𝑠 (𝑥 𝑖 1 , · · · , 𝑥 𝑖 𝑠 ), (4.6) where 𝑓 0 is a constant representing the expected value of the response, and each subsequent term depends only on its explicitly specified subset of variables. This decomposition is strictly unique if the following orthogonality condition is established: 
+
+∫ 10
+
+𝑓 𝑖 1 ··· 𝑖 𝑠 (𝑥 𝑖 1 , · · · , 𝑥 𝑖 𝑠 )d𝑥 𝑘 = 0 for 𝑘 = 𝑖 1, · · · , 𝑖 𝑠 . (4.7) 
+
+0 X0-15 Xiaozhe Xi et al. 
+
+Input: Population 𝑁 , max gen 𝐺 , crossover prob. 𝑝 𝑐 , mutation prob. 𝑝 𝑚 , bounds 
+
+[xmin , xmax ].
+
+Output: Global optimum x∗
+
+> opt
+
+.
+
+Phase 1: Global Exploration via Genetic Algorithm 
+
+Initialize population 𝑃 0 within bounds 
+
+for 𝑔 = 1 → 𝐺 do for 𝑖 = 1 → 𝑁 do 
+
+(𝐿 /𝐷 )𝑖 , 𝜂 𝑖 ← Kriging (x𝑖 )
+
+𝐹 (x𝑖 ) ← −( 𝐿 /𝐷 )𝑖 + max (0, 𝜂 0 − 𝜂 𝑖 ) × 𝜆 
+
+end for 
+
+Best individual xelite ← arg min x 𝐹 (x)
+
+𝑃 parent ← Tournament (𝑃 𝑔 −1)
+
+𝑃 child ← Crossover (𝑃 parent , 𝑝 𝑐 )
+
+𝑃 child ← Mutate (𝑃 child , 𝑝 𝑚 )
+
+𝑃 𝑔 ← 𝑃 child ∪ { xelite }
+
+end for x∗ 
+
+> GA
+
+← xelite 
+
+Phase 2: Local Refinement via Nelder-Mead Simplex 
+
+Initialize simplex S = {v1, . . . , v𝑑 +1} around x∗
+
+> GA
+
+while NM convergence criteria not met do 
+
+Sort S such that 𝐹 (v1) ≤ 𝐹 (v2) ≤ · · · ≤ 𝐹 (v𝑑 +1)
+
+¯v ← 1
+
+> 𝑑
+
+Í𝑑 𝑖 =1 v𝑖 
+
+Reflection point v𝑟 ← ¯v + 𝛼 ( ¯v − v𝑑 +1)
+
+if 𝐹 (v𝑟 ) < 𝐹 (v1) then 
+
+Expansion point v𝑒 ← ¯v + 𝛾 (v𝑟 − ¯v)
+
+v𝑑 +1 ← v𝑒 if 𝐹 (v𝑒 ) < 𝐹 (v𝑟 ) else v 𝑟 
+
+else if 𝐹 (v𝑟 ) ≥ 𝐹 (v𝑑 ) then 
+
+Contraction point v𝑐 ← ¯v + 𝛽 (vworst − ¯v)
+
+if 𝐹 (v𝑐 ) < 𝐹 (vworst ) then v 𝑑 +1 ← v𝑐 
+
+else Shrink simplex v𝑖 ← v1 + 𝛿 (v𝑖 − v1) for 𝑖 > 1
+
+else v𝑑 +1 ← v𝑟 
+
+end if end while Return x ∗ 
+
+> opt
+
+← v1
+
+Algorithm 1: Gradient-Free Hybrid Optimization Strategy (GA-NM) Members in Eq. 4.6 can be expressed as integrals of 𝑓 (𝒙 ),
+
+∫
+
+𝑓 (𝒙 )d𝒙 = 𝑓 0 for d 𝒙 = d𝑥 1 · · · d𝑥 𝑛 ,
+
+∫
+
+𝑓 (𝒙 )
+
+Ö
+
+> 𝑘 ≠𝑖
+
+d𝑥 𝑘 = 𝑓 0 + 𝑓 𝑖 (𝑥 𝑖 ),
+
+∫
+
+𝑓 (𝒙 )
+
+Ö
+
+> 𝑘 ≠𝑖, 𝑗
+
+d𝑥 𝑘 = 𝑓 0 + 𝑓 𝑖 (𝑥 𝑖 ) + 𝑓 𝑗 (𝑥 𝑗 ) + 𝑓 𝑖 𝑗 (𝑥 𝑖 , 𝑥 𝑗 ).
+
+(4.8) 
+
+0 X0-16 Journal of Fluid Mechanics 
+
+The variance of 𝑦 can be defined as Var(Y) =
+
+∫
+
+𝑓 2 (𝒙 )𝑑 𝒙 − 𝑓 20
+
+=
+
+> 𝑛
+
+∑︁ 
+
+> 𝑠 =1
+> 𝑛
+
+∑︁  
+
+> 𝑖 1<··· <𝑖 𝑠
+
+∫
+
+𝑓 2  
+
+> 𝑖 1··· 𝑖 𝑠
+
+d𝑥 𝑖 1 · · · d𝑥 𝑖 𝑠 .
+
+(4.9) And the variances based on effects of input 𝒙 can be written as Var (Y𝑖 1 ··· 𝑖 𝑠 ) =
+
+∫
+
+𝑓 2  
+
+> 𝑖 1··· 𝑖 𝑠
+
+d𝑥 𝑖 1 · · · d𝑥 𝑖 𝑠 , (4.10) where Var(Y) = Í𝑛 𝑠 =1
+
+Í𝑛 𝑖 1 <··· <𝑖 𝑠 Var (Y𝑖 1 ··· 𝑖 𝑠 ). The corresponding Sobol global sensitivity indices can be expressed as 
+
+𝑆 𝑖 1 ··· 𝑖 𝑠 = Var (Y𝑖 1 ··· 𝑖 𝑠 )
+
+Var(Y) . (4.11) In this case, the first-order sensitivity indices which represent the contribution to the output variance of an individual input 𝑥 𝑖 , which can be written as: 
+
+𝑆 𝑖 = Var (Y𝑖 )
+
+Var(Y) =
+
+∫ 𝑓 2 
+
+> 𝑖
+
+d𝑥 𝑖 
+
+∫ 𝑓 2 (𝒙 )𝑑 𝒙 − 𝑓 20
+
+. (4.12) 
+
+5. Results and analyses 
+
+In this section, based on the established Kriging surrogate models, the single-objective aerodynamic optimization of the HTV-2 type configuration is independently executed across three representative altitudes: 70 km, 85 km (the primary design condition), and 100 km. To ensure comparative consistency, the freestream conditions for the 70 km and 100 km cases are prescribed in reference to the 85 km baseline, as detailed in Sec. 3. 5.1. Aerodynamic optimization at 85 km. 
+
+The single-objective aerodynamic optimization under the primary design condition at the altitude of 85 km is mathematically expressed as follows: min 𝐹 ( 𝑿 ) = −𝐿 /𝐷, 
+
+where 𝑿 = (𝑙 4, 𝑅 1, 𝑅 2, 𝑅 3, 𝜃 3),
+
+s.t. 
+
+𝑋 𝑐 𝑝 ∈ [ 0.9𝑋 𝑐𝑔 , 1.1𝑋 𝑐𝑔 ]
+
+𝜂 ≥ 0.92 𝜂 0
+
+,
+
+(5.1) where 𝑿 is the design space shown in Tab. 5, 𝑋 𝑐𝑔 denotes the center of gravity, empirically located at 0 .63 𝑙 2 based on engineering practice, and 𝜂 0 represents the volumetric efficiency of the baseline configuration. During the hypersonic cruising phase, the achievable range is positively correlated with the aerodynamic efficiency. Therefore, maximizing the 𝐿 /𝐷 
+
+is chosen as the optimization goal. To ensure the adequate ability to trim and control the aircraft, a constraint is imposed on the longitudinal shift of the center of pressure. Its allowable variation is restricted within a ±10% margin relative to the center of gravity. Furthermore, to guarantee sufficient internal space for payload packaging and subsystem integration, a volumetric constraint is incorporated, ensuring that the configuration’s volume parameter reduces strictly less than 8% 𝜂 0. To enforce these constraints during the evolutionary search, an exterior penalty function is adopted. By heavily penalizing 
+
+0 X0-17 Xiaozhe Xi et al.                                         
+
+> Parameters Baseline Optimum Variation
+> 𝑙 4(m) 1800.00 1379.38 -23.37%
+> 𝑅 1(m) 5700.00 3619.58 -36.50%
+> 𝑅 2(m) 160.00 83.45 -47.84%
+> 𝑅 3(m) 880.00 639.42 -27.34%
+> 𝜃 3(◦)80.00 97.57 21.96%
+> 𝐶 𝐿 58.977 60.033 1.79%
+> 𝐶 𝐷 50.594 48.351 -4.43%
+> 𝐿 /𝐷 1.166 1.242 6.55%
+> 𝑋 𝑐 𝑝 2.261 2.321 2.64%
+> 𝜂 0.1278 0.1176 -7.99%
+> Table 7. Comparison of geometric parameters and aerodynamic performance between baseline and optimized configuration at 85 km.
+> Figure 7. Geometric profile comparison between the baseline and optimized configurations at 85 km.
+
+violations of both the minimum volume limit and the allowable 𝑋 𝑐 𝑝 shift, the modified unconstrained objective function 𝐹 ′ ( 𝑿 ) is formulated as: min 𝐹 ′ ( 𝑿 ) = 𝐹 ( 𝑿 ) + 𝜆 
+
+h
+
+max (0, 0.92 𝜂 0 − 𝜂 ) + max (0, |𝑋 𝑐 𝑝 − 𝑋 𝑐𝑔 | − 0.1𝑋 𝑐𝑔 )
+
+i
+
+, (5.2) where the penalty factor 𝜆 ≫ 0 ensures strict constraint satisfaction. 5.1.1. Optimization results 
+
+Enabled by the Kriging surrogate models, the proposed hybrid strategy efficiently eval-uates over 80,000 geometric configurations—a process that would demand months of computational time using multiscale UGKS solvers—in merely a few minutes. During the execution, the initial GA ( 𝑁 = 200) successfully establishes a stable global basin around generation 100, followed by the NM refinement to swiftly pinpoint the optimum. This rapid and smooth convergence strongly demonstrates the exceptional computational efficiency and robustness of the framework in addressing strictly constrained aerodynamic design problems. The design variables and aerodynamic forces before and after optimization are presented in Tab. 7. As indicated in the table, compared with the baseline configuration, the base width and all radius dimensions of the optimum decrease, whereas the side slope angle increases. The relative variations of these geometric parameters generally range from 20% to 50%. Notably, the wing tip bluntness radius experiences the most significant reduction, reaching -47.84%. As can be seen in the Fig. 7, the optimized geometry trends toward a flatter and more slender profile to maximize the 𝐿 /𝐷 in the rarefied regime. Meanwhile, all engineering constraints, including the trim control and volume, are strictly satisfied. In terms of aerodynamic forces, the 𝐶 𝐿 of the optimized configuration rises by 1.79%, and the 𝐶 𝐷 decreases by 4.43%. Consequently, the 𝐿 /𝐷 is improved by 6.55%. These 
+
+0 X0-18 Journal of Fluid Mechanics                                       
+
+> Parameters Kriging Predictions Multiscale UGKS results Relative error
+> 𝐶 𝐿 60.033 59.921 0.19%
+> 𝐶 𝐷 48.351 48.244 0.22%
+> 𝐿 /𝐷 1.242 1.242 -0.0037%
+> 𝑋 𝑐 𝑝 2.321 2.320 0.022%
+> 𝜂 0.1176 0.1176 -0.0057%
+> Table 8. Validation of the optimized aerodynamic performance at 85 km.
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 8. Comparison of the pressure distribution of the HTV-2 type configurations along the longitudinal and axial cross-sections at 85 km.
+
+results demonstrate that the optimization effectively enhances the cruising performance of the HTV-2 type configuration when strict volume constraints are applied. To assess the reliability of the optimum results, the optimized configuration is calculated by multiscale UGKS method. As demonstrated in Tab. 8, the maximum relative deviation between the optimized and UGKS results is less than 0.22%, indicating a high feasibility of the optimization outcomes. 5.1.2. Aerodynamic characteristic analysis 
+
+To further investigate the aerodynamic mechanisms, the flow field structures before and after the optimization are analyzed by extracting cross-sectional contours at various longitudinal and axial stations. As depicted in the lateral view of Fig. 8, due to the relatively large freestream 𝐴𝑜 𝐴 , a strong compression shock wave is generated on the windward side of the vehicle, while a distinct expansion wave forms over the leeward surface. Moreover, the highly rarefied flow at this altitude exhibits strong multiscale effects. Fig. 9 illustrates the Kn GLL distributions on the symmetry plane and various cross-sectional views. Compared to the baseline, the optimized configuration demonstrates enhanced rarefaction around the fuselage, particularly in the vicinity of the wing surfaces. The contours reveal a more pronounced flow expansion on the leeward side of the vehicle. To understand the underlying physical mechanisms of the aerodynamic gains, the pressure distribution on the body surface is further analyzed. Fig. 10(a) illustrates the 
+
+0 X0-19 Xiaozhe Xi et al.                     
+
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 9. Distributions of Kn GLL for the baseline and optimized configurations at 85 km.
+
+surface pressure coefficient ( 𝐶 𝑝 ) distribution at the spanwise slice of 𝑦 = 2.9m. As shown in Fig. 8 and Fig. 10(a), on the leeward surface, the reduced wing tip bluntness radius and the climb of the slide slope angle shift the wing shock downward and attenuate its intensity. Furthermore, the decreased leeward surface radius creates a larger overall curvature on the leeward body, which significantly enhances the expansion waves. As a result, a more pronounced pressure drop is observed across the leeward region, directly contributing to the increase in 𝐶 𝐿 .On the windward surface, the reductions in both the windward surface radius and base width increase the local surface curvature. This geometric modification weakens the windward compression shock, leading to a pressure reduction, particularly near the symmetry axis. Together, these localized pressure variations modulate the aerodynamic forces, ultimately leading to the overall improvement of the 𝐶 𝐿 .Fig. 10(b) compares the skin friction coefficient ( 𝐶 𝑓 ) distributions at the spanwise slice of 𝑦 = 2.9m. As previously noted, the heightened rarefaction in the leeward region leads to a localized reduction in skin friction, which is physically consistent with the diminished molecular collision frequency in these low-density zones. Notably, the optimum features characteristic drooped wing tips. This geometric adaptation successfully mitigates the local shear stress near the wing edges, further reducing the friction drag. Ultimately, the effective reduction in friction drag components, acting simultaneously with the enhancement of 𝐶 𝐿 ,comprehensively explains the substantial rise in the overall 𝐿 /𝐷 of the optimized HTV-2 type configuration. 5.1.3. Global sensitivity analysis 
+
+The first-order global sensitivity indices ( 𝑆 1) of the geometric parameters within the design space are presented in Fig. 11. As indicated in the figure, 𝑅 3 exhibits the most dominant influence on the 𝐶 𝐿 , with an 𝑆 1 value reaching approximately 0.76, far exceeding those of the other parameters. Physically, the reduction of 𝑅 3 enhances the flow expansion effect on the leeward surface, which lowers the pressure coefficient and predominantly drives the 
+
+𝐶 𝐿 increment under the current freestream condition. Additionally, 𝑅 1 plays a secondary 
+
+0 X0-20 Journal of Fluid Mechanics     
+
+> (a) 𝐶 𝑝 (b) 𝐶 𝑓
+
+Figure 10. Aerodynamic coefficient distributions along x axis at 𝑦 = 2.9m at 85 km. l4 R1 R2 R3 3          
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> S1
+> CL
+> (a) l4R1R2R33
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> S1
+> CD(b) l4R1R2R33
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> S1
+> L/D(c)
+
+Figure 11. Sobol first-order sensitivity indices at 85 km. 
+
+but crucial role in 𝐶 𝐿 generation, primarily because its reduction mitigates the windward shock intensity. In contrast to the 𝐶 𝐿 , the 𝐶 𝐷 is more evenly influenced by multiple geometric parameters, with 𝑅 1, 𝑅 3, 𝑅 2, and 𝜃 3 all showing comparable sensitivities. Notably, 𝑅 2 contributes moderately to both 𝐶 𝐿 and 𝐶 𝐷 , but emerges as the second most influential parameter governing the overall 𝐿 /𝐷 . Furthermore, the sensitivity indices for the base width ( 𝑙 4) are negligible across all aerodynamic responses. This suggests that, under the premise of a fixed overall fuselage width, variations in the base width have a minimal impact on the aerodynamic performance of the HTV-2 type configuration. To conclude, the Sobol sensitivity analysis identifies the contour radii ( 𝑅 3, 𝑅 1, and 𝑅 2) as the primary geometric drivers of aerodynamic performance. These sensitivity distributions physically confirm that a more aggressive configuration—characterized by optimized radii and flatter profiles—effectively yields superior aerodynamic efficiency within the design envelope at this altitude. 5.2. Optimization Extensions to 70 km and 100 km 
+
+Building upon the aforementioned results, the framework is further applied to the extended flight conditions at the altitudes of 70 km and 100 km. Due to the significant variations in freestream conditions, the 𝑋 𝑐 𝑝 of the HTV-2 type baseline configuration at an 18 ◦ 𝐴𝑜 𝐴 
+
+deviates substantially from the center of gravity. To prevent over-constraining the problem 
+
+0 X0-21 Xiaozhe Xi et al.                                                                    
+
+> Parameters 70 km 100 km Baseline Optimum Variation Baseline Optimum Variation
+> 𝑙 4(m) 1800.00 1174.40 -34.76% 1800.00 1137.56 -36.80%
+> 𝑅 1(m) 5700.00 2700.74 -52.62% 5700.00 4572.37 -19.78%
+> 𝑅 2(m) 160.00 80.00 -50.00% 160.00 80.00 -50.00%
+> 𝑅 3(m) 880.00 729.01 -17.16% 880.00 640.29 -27.24%
+> 𝜃 3(◦)80.00 122.08 52.60% 80.00 107.05 33.81%
+> 𝐶 𝐿 62.390 62.103 -0.46% 54.809 56.446 2.99%
+> 𝐶 𝐷 35.401 33.554 -5.22% 98.909 93.422 -5.55%
+> 𝐿 /𝐷 1.762 1.857 5.37% 0.554 0.604 9.00%
+> 𝜂 0.1278 0.1176 -7.99% 0.1278 0.1176 -7.99%
+> Table 9. Optimization outcomes at 70 km and 100 km: Comparison of geometric and aerodynamic parameters.
+
+and to maintain a sufficiently broad feasible design space, the strict trim constraint on the longitudinal pressure center shift is relaxed for these subsequent cases. Therefore, the optimization problem is reformulated to maximize the 𝐿 /𝐷 while exclusively enforcing the minimum volume requirement. Utilizing the exterior penalty method, the modified optimization problem is mathematically expressed as follows: min 𝐹 ′ ( 𝑿 ) = 𝐹 ( 𝑿 ) + 𝜆 max (0, 0.92 𝜂 0 − 𝜂 )
+
+where 𝐹 ( 𝑿 ) = −𝐿 /𝐷 
+
+𝑿 = (𝑙 4, 𝑅 1, 𝑅 2, 𝑅 3, 𝜃 3)
+
+s.t. 𝜂 ≥ 0.92 𝜂 0
+
+(5.3) 5.2.1. Optimization results 
+
+Tab. 9 provides a detailed quantitative comparison of the geometric parameters and aerodynamic performance before and after the optimization at 70 km and 100 km. Overall, the geometric variations at both altitudes exhibit a consistent trend, although the specific magnitudes of modification differ. For instance, the 𝑙 4 experiences a similar reduction, and the 𝑅 2 is extremely reduced by 50% in both cases, hitting the lower boundary constraint. This indicates that minimizing the wing tip bluntness is universally beneficial for aerodynamic enhancement across these extended rarefied regimes. Moreover, the 𝜃 3
+
+increases in both scenarios, with a more pronounced increment observed at 70 km (52.60%) than at 100 km (33.81%). It is worth noting that a clear geometric trade-off is observed between the windward and leeward radii under the strict volume constraint. As detailed in the table, the 𝑅 1 is reduced by a substantial 52.62% at 70 km, which is larger than the 19.78% reduction at 100 km. Visually corroborated by Fig. 12, the optimized windward surface at 70 km features a noticeably larger geometric curvature, whereas the 100 km configuration remains relatively flatter. Conversely, the 𝑅 3 undergoes a larger reduction at 100 km (-27.24%) compared to 70 km (-17.16%). The visual comparison reveals that the 70 km optimum retains more spatial volume on the upper body. This physical phenomenon suggests that at 70 km, modifying 𝑅 1 yields a more dominant aerodynamic benefit; therefore, 𝑅 3 is kept relatively larger to strictly satisfy the minimum volume requirement. Regarding the aerodynamic performance, the volumetric efficiency ( 𝜂 ) is strictly main-tained at the allowable lower bound for both cases, verifying the effectiveness of the penalty function. The primary objective 𝐿 /𝐷 is effectively improved. Notably, the 𝐿 /𝐷 
+
+at 100 km achieves a remarkable enhancement of 9.00%, while the 70 km case sees a 
+
+0 X0-22 Journal of Fluid Mechanics                              
+
+> (a) 70 km (b) 100 km
+> Figure 12. Geometric profile comparison between the baseline and optimized configurations at 70 km and 100 km. Parameters 70 km 100 km Kriging Predictions Multiscale UGKS results Relative error Kriging Predictions Multiscale UGKS results Relative error
+> 𝐶 𝐿 62.103 61.889 0.35% 56.446 56.428 0.033%
+> 𝐶 𝐷 33.554 33.241 0.94% 93.422 93.424 -0.0020%
+> 𝐿 /𝐷 1.857 1.862 -0.26% 0.604 0.604 0.00099%
+> 𝜂 0.1176 0.1178 -0.14% 0.1176 0.1175 0.13%
+> Table 10. Validation of the optimized aerodynamic performance at 70 km and 100 km.
+
+solid 5.37% increase. A detailed breakdown of the aerodynamic forces reveals that the 𝐶 𝐷 
+
+is consistently reduced by approximately 5% at both altitudes. However, the 𝐶 𝐿 exhibits converse trends: similar to the 85 km design point, the 𝐶 𝐿 at 100 km increases by 2.99%. In contrast, the 𝐶 𝐿 at 70 km experiences a marginal decrease of 0.46%. This tiny decline indicates that enhancing 𝐶 𝐿 becomes more challenging at lower altitudes with relatively denser freestream conditions. To verify the reliability of the SBO framework at the extended altitudes, the optimized configurations are recalculated using multiscale UGKS solver, with the comparative results presented in Tab. 10. The Kriging surrogate model predictions demonstrate pretty good agreement with the numerical simulations. Specifically, the maximum relative errors across all parameters are merely 0.94% at 70 km and 0.13% at 100 km. These negligible discrepancies conclusively validate the high fidelity and robustness of the constructed surrogate models under varying highly rarefied conditions. 5.2.2. Flow Field Evolution across Rarefied Regimes 
+
+To explore the reasons driving the aerodynamic modifications at 70 km, the flow field evolution is analyzed in detail. As illustrated in Fig. 13, the longitudinal and axial pressure coefficient ( 𝐶 𝑝 ) distributions reveal distinct changes between the baseline and optimized configurations. On the windward side, the substantial reduction of 𝑅 1 weakens the flow compression, thereby reducing the intensity of the oblique shock wave and lowering the overall windward pressure coefficient. On the leeward side, the reductions in the 𝑅 3 and 
+
+𝑅 2 enhance the flow expansion. As observed in the axial cross-sections, the decrease in 𝑅 2
+
+shifts the expansion waves downward, lowering the local pressure near the wing surfaces. However, as illustrated in Fig. 14(a), the 𝐶 𝑝 drop on the windward surface is considerably larger than that on the leeward surface. This relatively modest pressure reduction on the leeward side is primarily because 𝑅 3 was not significantly decreased at 70 km due to the strict volumetric constraints. This asymmetric pressure variation—where the windward 
+
+0 X0-23 Xiaozhe Xi et al.                                 
+
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 13. Comparison of the pressure distribution of the HTV-2 type configurations along the longitudinal and axial cross-sections at 70 km.
+> (a) 𝐶 𝑝 (b) 𝐶 𝑓
+> Figure 14. Comparison of the 𝐶 𝑝 and 𝐶 𝑓 at 𝑦 =2.9 m at 70 km.
+
+pressure loss outweighs the leeward pressure drop—physically explains the slight decrease in total lift observed at this altitude. Fig. 14(b) presents the 𝐶 𝑓 distribution at 𝑦 = 2.9 m. The significant increase in 𝜃 3
+
+amplifies the drooped characteristic of the wings, which reduces the friction on the lower wing surface. Physically, the modified wing shape blocks the cross-flow near the wing edges, which reduces the local velocity gradient and lowers the shear stress. The significant decrease in 𝐶 𝐷 improves the overall 𝐿 /𝐷 .Similarly, the flow field at 100 km is analyzed to understand the performance changes. As shown in Fig. 15, on the leeward side, the reduction of 𝑅 3 and 𝑅 2 increases the curvature radius where the top body meets the wing. This geometry change enhances the flow expansion and lowers the local pressure on the upper surface. Unlike the 70 km case, the oblique shock wave at the nose does not change much. As seen in the surface pressure plots 
+
+0 X0-24 Journal of Fluid Mechanics                                 
+
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 15. Comparison of the pressure distribution of the HTV-2 type configurations along the longitudinal and axial cross-sections at 100 km.
+> (a) 𝐶 𝑝 (b) 𝐶 𝑓
+> Figure 16. Comparison of the 𝐶 𝑝 and 𝐶 𝑓 at 𝑦 =2.9 m at 100 km.
+
+in Fig. 16(a), the pressure coefficient on the windward side stays almost exactly the same before and after optimization. Because the windward high pressure is maintained while the leeward pressure drops, the 𝐶 𝑙 at 100 km increases. For the 𝐶 𝑓 shown in Fig. 16(b), the friction near the wing surface also drops. However, because the air at 100 km is much thinner, this decrease in 𝐶 𝑓 is not as obvious as it is at 70 km. Even so, the combined effect on both drag reduction and lift increase leads to a higher 𝐿 /𝐷 at this highly rarefied altitude. Finally, Fig. 17 and Fig. 18 present the Kn GLL distributions at 70 km and 100 km. Similar to the 85 km case, the local Knudsen number above the wing increases for both optimized configurations, making the local flow more rarefied. Specifically at 70 km, the Kn GLL at the fuselage’s bottom also increases, while the rest of the flow field shows no obvious changes. 
+
+0 X0-25 Xiaozhe Xi et al.                                         
+
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 17. Distributions of Kn GLL for the baseline and optimized configurations at 70 km.
+> (a) 𝑥 =0 m (b) 𝑥 =0 m
+> (c) 𝑦 =0.8 m (d) 𝑦 =2.9 m (e) 𝑦 =3.66 m
+> Figure 18. Distributions of Kn GLL for the baseline and optimized configurations at 100 km.
+
+5.3. Comparative Discussion: Impact of Rarefaction on Optimization 
+
+To further investigate the reasons behind these aerodynamic improvements, this section compares the variations in geometric parameters, aerodynamic forces, and first-order global sensitivity indices as the flow across the three altitudes. This comparison aims to identify the dominant geometric features governing the aerodynamic performance. As shown in Fig. 19(b), the geometric parameters change in the same direction across all three altitudes. This indicates that the basic strategy to improve aerodynamic performance remains consistent within this flight envelope. Overall, the geometric changes are the smallest at 85 km. This is because the freestream condition for the HTV-2 type baseline configuration was chosen at this altitude, making it already closer to an optimal shape. 
+
+0 X0-26 Journal of Fluid Mechanics        
+
+> (a) Geometric profiles l4R1R2R33
+> 40
+> 20
+> 0
+> 20
+> 40
+> Relative Variation (%)
+> 70km
+> 85km
+> 100km
+> (b) Relative variations of variables CLCDL/D8
+> 6
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Relative Variation (%)
+> 70km
+> 85km
+> 100km (c) Aerodynamic improvements
+
+Figure 19. Comparison of the geometric profiles and optimization results across different altitudes. 
+
+Fig. 19(a) illustrates the base profiles of the three optimized configurations. Evidently, all optimized shapes trend toward a flatter design, emphasizing the role of the wing surfaces. Among the design variables, the reduction in the 𝑅 2 is almost identical across all cases. This shows that making the wing tips sharper consistently improves performance regardless of the altitude. The sensitivity analysis in Fig. 20 also confirms that 𝑅 2 maintains a steady and important influence on all aerodynamic forces. In contrast to 𝑅 2, the variations of 𝑅 1 and 𝑅 3 exhibit a strong altitude dependence. Specifically, the 70 km optimized configuration retains a noticeably larger upper volume and a higher windward curvature compared to those at 85 and 100 km. While the upper profiles of the 85 and 100 km configurations are morphologically similar, the 100 km optimum features a flatter windward surface and a much more pronounced curvature transition at the wing-body junction. Fig. 19(c) quantifies the aerodynamic performance shifts of the optimized configurations relative to the baseline. With the exception of a marginal 𝐶 𝐿 decrement at 70 km, the optimized geometries consistently yield elevated 𝐶 𝐿 and reduced 𝐶 𝐷 . Crucially, the magnitude of 𝐶 𝐷 reduction substantially outpaces the 𝐶 𝐿 variations, thereby serving as the primary driver for the overall 𝐿 /𝐷 enhancement. To further describe these improvements, Tab. 11 decomposes the aerodynamic forces into their pressure and skin friction components. As the data illustrates, the 𝐶 𝐿 increment is predominantly governed by pressure contributions, although a slight contribution in friction lift is also observed at 100 km. Conversely, the composition of the drag reduction changes fundamentally with altitude, reflecting the increasing dominance of skin friction in highly rarefied environments. At 70 km, the reduction in 𝐶 𝐷 is almost entirely attributed to a decrease in pressure drag. At 85 km, the reductions in pressure and friction drag 
+
+0 X0-27 Xiaozhe Xi et al. l4 R1 R2 R3 3
+
+> 0
+> 0.01
+> 0.1
+> 1
+> S1
+> CL
+> 70km
+> 85km
+> 100km
+
+(a) l4 R1 R2 R3 3 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> S1
+> CD
+> 70km
+> 85km
+> 100km
+
+(b) l4 R1 R2 R3 3 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> S1
+> L/D
+> 70km
+> 85km
+> 100km
+
+(c) 
+
+Figure 20. Comparison of the Sobol first-order sensitivity indices across different altitudes. Altitude Case 𝐶 𝑝 − 𝐶 𝐿 𝐶 𝑓 − 𝐶 𝐿 𝐶 𝐿 𝐶 𝑝 − 𝐶 𝐷 𝐶 𝑓 − 𝐶 𝐷 𝐶 𝐷 
+
+70 km Base 63.76 -1.47 62.39 28.41 7.23 35.40 Opt 63.44 -1.59 62.10 26.62 6.96 33.55 Variation -0.32 -0.12 -0.29 -1.79 -0.27 -1.85 85 km Base 63.81 -4.85 58.98 29.45 21.13 50.59 Opt 65.00 -5.08 60.03 28.29 19.95 48.35 Variation 1.19 -0.23 1.06 -1.16 -1.18 -2.24 100 km Base 73.49 -18.64 54.81 33.58 65.47 98.91 Opt 74.82 -18.34 56.45 32.28 61.33 93.42 Variation 1.33 0.30 1.64 -1.30 -4.14 -5.49 
+
+Table 11. Comparison of pressure and skin friction contributions to the 𝐶 𝐿 and 𝐶 𝐷 at different altitudes. 
+
+contribute equally. By 100 km, however, the overall decrease in 𝐶 𝐷 is dominated by the reduction in friction drag. At 70 km, where the gas density is relatively high and the Kn is small, pressure drag is the dominant component. Since the windward shock constitutes the primary source of this pressure drag, reducing 𝑅 1 effectively weakens the shock strength, thereby lowering 𝐶 𝐷 .The Sobol indices verify this physics: as shown in Fig. 20, 𝑅 1 exhibits the highest sensitivity for both 𝐶 𝐿 and 𝐶 𝐷 at 70 km, although its influence clearly diminishes at 100 km. On the upper surface, reducing 𝑅 3 enhances the expansion wave, which contributes to an increase in 𝐶 𝐿 . However, this geometric modification concurrently reduces the internal volume. At 70 km, the reduction of 𝑅 3 is relatively restricted to ensure the volumetric requirements are strictly satisfied. In contrast, when the altitude reaches 100 km and the flow becomes highly rarefied, the sensitivity analysis reveals that 𝑅 3 surpasses 𝑅 1 to emerge as the dominant geometric parameter governing the overall 𝐿 /𝐷 .
+
+6. Conclusions 
+
+In this study, an automated optimization framework was constructed by coupling surrogate-based optimization (SBO) with the implicit unified gas-kinetic scheme (IUGKS). This framework was applied to the aerodynamic shape optimization of an HTV-2-type aircraft across multiple flow regimes (spanning altitudes of 70 to 100 km). Based on detailed optimization results, flow field evaluations, and Sobol sensitivity analyses, the main conclusions are summarized as follows: 
+
+r Under strict volumetric constraints, the lift-to-drag ratio 𝐿 /𝐷 of the optimized configu-rations was notably improved across all tested altitudes, achieving increases of 5.37%, 
+
+0 X0-28 Journal of Fluid Mechanics 
+
+6.55%, and 9.00% at 70km, 85km, and 100 km, respectively. Cross-validation using the multiscale UGKS method confirms that the SBO framework maintains high predictive accuracy across all flow regimes. 
+
+r The varying aerodynamic characteristics at different altitudes necessitate distinct op-timization strategies. At 70 km, where pressure drag dominates, the optimized shape drastically reduces the windward surface radius to weaken the oblique shock wave. At the highly rarefied 100 km altitude, where skin friction becomes significantly more pronounced, the optimal configuration reduces the leeward surface radius to enhance upper-surface expansion and recover lift. Furthermore, across all altitudes, an enhanced drooped wingtip design effectively blocks spanwise cross-flow, thereby reducing local shear stress and friction drag. 
+
+r The Sobol sensitivity analysis confirms a clear shift in the dominant geometric param-eters across different flow regimes. As altitude increases and the gas becomes more rarefied, the sensitivity of the overall aerodynamic forces to 𝑅 1 (which controls the oblique shock wave) drops significantly. In contrast, the influence of 𝑅 3 (which controls the expansion wave) rises to become the most dominant factor. Meanwhile, reducing 𝑅 2
+
+provides a consistent aerodynamic benefit throughout the entire flight envelope. Overall, an optimal shape designed for a single altitude cannot fully adapt to the multiscale physical phenomena encountered across different flight regimes. To optimize aerodynamic performance across the entire trajectory, various physical effects must be considered and appropriate trade-offs must be established. Future work will focus on multi-objective optimization across the full flight envelope and the integration of machine learning techniques with larger sample sizes to further enhance the design framework. 
+
+Declaration of AI Usage 
+
+During the preparation of this manuscript, the author used the Gemini large language model (version [Gemini free], accessible at https://gemini.google.com) solely for language polishing and improving text readability. The tool was used in its standard, unmodified form. The AI was not involved in data analysis, idea generation, or drawing academic conclusions. The author takes full responsibility for the final content and integrity of this paper. 
+
+Declaration of competing interest 
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper. 
+
+Acknowledgements 
+
+The current research is supported by National Natural Key R&D Program of China (Grant Nos. 2022YFA1004500), National Natural Science Foundation of China (92371107), and Hong Kong research grant council (16208324).        
+
+> REFERENCES
+> Atmosphere, US Standard 1976 US standard atmosphere . National Oceanic and Atmospheric Administration.
+> Caflisch, Russel, Silantyev, Denis & Yang, Yunan 2021 Adjoint dsmc for nonlinear Boltzmann equation constrained optimization. Journal of Computational Physics 439 , 110404.
+> Forrester, Alexander, Sobester, Andras & Keane, Andy 2008 Engineering design via surrogate modelling: a practical guide . John Wiley & Sons.
+
+0 X0-29 Xiaozhe Xi et al. 
+
+Forrester, Alexander IJ & Keane, Andy J 2009 Recent advances in surrogate-based optimization. Progress in aerospace sciences 45 (1-3), 50–79. 
+
+Hash, DB & Hassan, HA 1996 Assessment of schemes for coupling monte carlo and Navier-Stokes solution methods. Journal of thermophysics and Heat Transfer 10 (2), 242–249. 
+
+Hoerl, Arthur E & Kennard, Robert W 1970 Ridge regression: Biased estimation for nonorthogonal problems. Technometrics 12 (1), 55–67. 
+
+Holland, John H 1992 Adaptation in natural and artificial systems: an introductory analysis with applications to biology, control, and artificial intelligence . MIT press. 
+
+Ja, Nelder 1965 A simplex method for function minimization. Computer journal 7, 308–313. 
+
+Jiang, Dingwu, Mao, Meiliang, Li, Jin & Deng, Xiaogang 2019 An implicit parallel ugks solver for flows covering various regimes. Advances in Aerodynamics 1 (1), 8. 
+
+Ken, Q, Russ, P & Steven, HW 2004 Hypersonic force application and launch technology demonstration. AD report, Project No. A440964 .
+
+Li, Xiaoda, Yuan, Ruifeng, Zhang, Yanbing & Wu, Lei 2025 Surrogate-assisted airfoil optimization in rarefied gas flows. arXiv preprint arXiv:2512.07093 .
+
+Liu, Chang, Wang, Zhao & Xu, Kun 2019 A unified gas-kinetic scheme for continuum and rarefied flows VI: Dilute disperse gas-particle multiphase system. Journal of Computational Physics 386 , 264–295. 
+
+Liu, Chang & Xu, Kun 2020 A unified gas-kinetic scheme for micro flow simulation based on linearized kinetic equation. Advances in Aerodynamics 2 (21). 
+
+Liu, Guangyu, Cui, Ziqi, Jiang, Yifan, Zhang, Linying & Zhang, Jun 2025 Aerodynamic shape optimization of airfoils across rarefied to continuum regimes using deep reinforcement learning. Physics of Fluids 37 (12). 
+
+Liu, Jun, Li, Kai & Liu, Weiqiang 2015 High-temperature gas effects on aerodynamic characteristics of waverider. Chinese Journal of Aeronautics 28 (1), 57–65. 
+
+Long, Wenpei, Wei, Yufeng & Xu, Kun 2024 An implicit adaptive unified gas-kinetic scheme for steady-state solutions of nonequilibrium flows. Physics of Fluids 36 (10). 
+
+Morris, Max D & Mitchell, Toby J 1995 Exploratory designs for computational experiments. Journal of statistical planning and inference 43 (3), 381–402. 
+
+Niu, Qinglin, Yuan, Zhichao, Chen, Biao & Dong, Shikui 2019 Infrared radiation characteristics of a hypersonic vehicle under time-varying angles of attack. Chinese Journal of Aeronautics 32 (4), 861–874. 
+
+Pu, Zhigang & Xu, Kun 2025 Ugks and ugkwp methods for multiscale simulation of electrostatic plasma in quasineutral and hydrodynamic limits. arXiv preprint arXiv:2512.15406 .
+
+Quan, Mingyu, Yang, Xiaojian, Wei, Yufeng & Xu, Kun 2025 Radiative hydrodynamic equations with nonequilibrium radiative transfer. Physical Review D 111 (10), 103038. 
+
+Rogers, Stuart E 1995 Comparison of implicit schemes for the incompressible Navier-Stokes equations. AIAA journal 33 (11), 2066–2072. 
+
+Sato, Ayami, Yamada, Takayuki, Izui, Kazuhiro, Nishiwaki, Shinji & Takata, Shigeru 2019 A topology optimization method in rarefied gas flow problems using the Boltzmann equation. Journal of Computational Physics 395 , 60–84. 
+
+Schwartzentruber, Thomas E, Scalabrin, Leonardo C & Boyd, Iain D 2007 A modular particle– continuum numerical method for hypersonic non-equilibrium gas flows. Journal of Computational Physics 
+
+225 (1), 1159–1174. 
+
+Shakhov, E. M. 1968 Generalization of the Krook kinetic relaxation equation. Fluid Dynamics 3 (5), 95–96. 
+
+Shao, Chun, Nie, Liang & Chen, Weifang 2016 Analysis of weakly ionized ablation plasma flows for a hypersonic vehicle. Aerospace Science and Technology 51 , 151–161. 
+
+Shi, Jiatong, Zhang, Liang, Jiang, Baosen & Ai, Bangcheng 2017 Aerodynamic force and heating optimization of HTV-2 typed vehicle. In 21st AIAA International Space Planes and Hypersonics Technologies Conference , p. 2374. 
+
+Sobol, Ilya M 2001 Global sensitivity indices for nonlinear mathematical models and their monte carlo estimates. Mathematics and computers in simulation 55 (1-3), 271–280. 
+
+Sun, Quanhua, Boyd, Iain D & Candler, Graham V 2004 A hybrid continuum/particle approach for modeling subsonic, rarefied gas flows. Journal of Computational Physics 194 (1), 256–277. 
+
+Tikhonov, Andre¨ ı Nikolaevich & Arsenin, VIAK 1977 Solutions of ill-posed problems. (No Title) .
+
+Walker, Steven & Rodgers, Frederick 2005 Falcon hypersonic technology overview. In AIAA/CIRA 13th International Space Planes and Hypersonics Systems and Technologies Conference , p. 3253. 
+
+Walker, Steven, Sherk, Jeffrey, Shell, Dale, Schena, Ronald, Bergmann, John & Gladbach, Jonathan 
+
+2008 The DARPA/AF falcon program: The hypersonic technology vehicle # 2 (HTV-2) flight demonstration phase. In 15th AIAA International Space Planes and Hypersonic Systems and Technologies Conference , p. 2539. 
+
+0 X0-30 Journal of Fluid Mechanics 
+
+Wei, Yufeng, Cao, Junzhe, Ji, Xing & Xu, Kun 2023 Adaptive wave-particle decomposition in ugkwp method for high-speed flow simulations. Advances in Aerodynamics 5 (1), 25. 
+
+Wei, Yufeng, Cao, Junzhe & Xu, Kun 2025 Unified gas-kinetic scheme for reactive flow with multi-scale transport and chemical non-equilibrium. Journal of Computational Physics p. 114514. 
+
+Wei, Yufeng, Long, Wenpei & Xu, Kun 2024 Adaptive unified gas-kinetic scheme for diatomic gases with rotational and vibrational nonequilibrium. Computer Physics Communications 305 , 109324. 
+
+Xi, Xiaozhe, Li, Guangli, Zhang, Kaikai, Xiao, Yao, Chang, Siyuan & Cui, Kai 2024 Surrogate-based shape optimization and sensitivity analysis on the aerodynamic performance of hcw configuration. Aerospace Science and Technology 152 , 109347. 
+
+Xu, Kun 2001 A gas-kinetic BGK scheme for the Navier-Stokes equations and its connection with artificial dissipation and Godunov method. Journal of Computational Physics 171 (1), 289–335. 
+
+Xu, Kun & Huang, Juan-Chen 2010 A unified gas-kinetic scheme for continuum and rarefied flows. Journal of Computational Physics 229 (20), 7747–7764. 
+
+Xu, Xiaocong, Zhu, Yajun, Liu, Chang & Xu, Kun 2022 Ugks-based implicit iterative method for multiscale nonequilibrium flow simulations. SIAM Journal on Scientific Computing 44 (4), B996–B1017. 
+
+Yang, Yunan, Silantyev, Denis & Caflisch, Russel 2023 Adjoint dsmc for nonlinear spatially-homogeneous Boltzmann equation with a general collision model. Journal of Computational Physics 488 , 112247. 
+
+Yuan, Ruifeng & Wu, Lei 2024 A design optimization method for rarefied and continuum gas flows. Journal of Computational Physics 517 , 113366. 
+
+Yuan, Ruifeng & Wu, Lei 2025 Adjoint shape optimization from the continuum to free-molecular gas flows. 
+
+Journal of Computational Physics 537 , 114102. 
+
+Zhang, Yanbing, Yuan, Ruifeng & Wu, Lei 2025 A fast-converging and asymptotic-preserving method for adjoint shape optimization of rarefied gas flows. arXiv preprint arXiv:2511.18433 .
+
+Zhu, Yajun, Zhong, Chengwen & Xu, Kun 2016 Implicit unified gas-kinetic scheme for steady state solutions in all flow regimes. Journal of Computational Physics 315 , 16–38. 
+
+Zhu, Yajun, Zhong, Chengwen & Xu, Kun 2019 An implicit unified gas-kinetic scheme for unsteady flow in all knudsen regimes. Journal of Computational Physics 386 , 190–217. 
+
+Zou, Shufan, Candler, Graham V, Yang, Suo, Carr, Zakery R, Portoni, Phillip, Zelasko, Thomas & Wadhams, Tim P 2024 Computational and experimental investigation of near-field sonic boom of a HTV-2 type hypersonic boost gliding vehicle. In AIAA SCITECH 2024 Forum , p. 0671. 
+
+0 X0-31
