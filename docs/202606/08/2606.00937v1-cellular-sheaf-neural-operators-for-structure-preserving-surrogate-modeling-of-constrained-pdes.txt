@@ -1,0 +1,683 @@
+Title: Cellular Sheaf Neural Operators for Structure-Preserving Surrogate Modeling of Constrained PDEs
+
+URL Source: https://arxiv.org/pdf/2606.00937v1
+
+Published Time: Tue, 02 Jun 2026 01:46:27 GMT
+
+Number of Pages: 41
+
+Markdown Content:
+# Cellular Sheaf Neural Operators for Structure-Preserving Surrogate Modeling of Constrained PDEs 
+
+Lennon J. Shikhman a,b, ∗, Shane Gilbertie b,c 
+
+> aCollege of Computing, Georgia Institute of Technology, Atlanta, 30332, GA, USA
+> bDepartment of Mathematics and Systems Engineering, Florida Institute of Technology, Melbourne, 32901, FL, USA
+> cDepartment of Aerospace, Physics and Space Sciences, Florida Institute of Technology, Melbourne, 32901, FL, USA
+
+Abstract 
+
+Neural operators provide fast surrogate models for PDE simulations, but standard architectures often treat geometry and discretization as secondary to field data. Physical states are usually represented as grid-channel stacks, even when different quantities naturally belong on vertices, edges, faces, cells, boundaries, or interfaces and must satisfy compatibility constraints. We pro-pose Cellular Sheaf Neural Operators , a discretization-aware framework for structure-preserving neural PDE surrogates. The method represents PDE states on oriented cell complexes, couples local feature spaces through learned restriction maps, and uses incidence/Hodge-informed message passing to fol-low computational geometry. Learned update heads pass through cobound-ary or flux maps, allowing selected constraints to arise from cell-complex structure rather than only from loss penalties. For magnetohydrodynam-ics, this yields face-based magnetic-flux updates driven by edge electromo-tive fields and finite-volume-style fluid updates driven by learned face fluxes and cell sources. On turbulent MHD and fusion-equilibrium surrogate tasks, the method improves structure-sensitive diagnostics, including rollout behav-ior, divergence control, spectral error, and equilibrium-regression accuracy. These results indicate that cellular-sheaf structure is a useful inductive bias    
+
+> ∗Corresponding author
+> Email addresses: lshikhman3@gatech.edu (Lennon J. Shikhman),
+> sgilbertie2025@my.fit.edu (Shane Gilbertie)
+> arXiv:2606.00937v1 [cs.LG] 31 May 2026
+
+for neural PDE surrogates in constrained multiphysics systems. 
+
+Keywords: neural operators, cellular sheaves, PDE surrogate modeling, structure-preserving learning, magnetohydrodynamics, scientific machine learning 
+
+1. Introduction 
+
+Neural operators have become a standard approach for learning fast sur-rogate models of partial differential equation (PDE) solution maps and time-advance operators [1–3]. By amortizing the cost of expensive simulations, these models can accelerate parameter studies, uncertainty quantification, design optimization, and inverse problems. Most neural PDE surrogates, however, represent the simulation state as a homogeneous tensor of grid or mesh channels, a convenient but inaccurate representation for neural ar-chitectures which does not reflect the typed geometric structure of many numerical discretizations. In many PDE solvers, physical quantities are not just interchangeable channels: conserved quantities may be stored in cells, fluxes on faces, circula-tions on edges, and potentials or boundary quantities on vertices. Structure-preserving numerical methods exploit this placement through compatible discretizations, finite-volume updates, incidence matrices, Hodge operators, and identities such as the boundary of a boundary being zero [4–8]. From a machine-learning perspective, this creates an architectural mismatch, in which a neural operator may be trained on fields whose variables have dif-ferent geometric roles, while the model class treats them as a single untyped array. This mismatch can be hidden in one-step prediction error but is critical in autoregressive rollout where small compatibility violations can accumulate quickly into physically inconsistent states [9]. This paper introduces Cellular Sheaf Neural Operators (CSNO), a cochain-valued neural operator framework for structure-preserving, compatibility-aware PDE surrogate models. CSNO replaces the homogeneous channel representation with fields attached to the vertices, edges, faces, and cells of an oriented cell complex. Learned cellular-sheaf restriction maps couple local feature spaces across incidences, while incidence/Hodge-informed mes-sage passing gives the architecture access to the same algebraic structure used by compatible numerical methods. The central design choice is that selected update heads do not directly predict arbitrary next-state channels. Instead, 2they learn fluxes, circulations, source terms, or potentials and route them through coboundary or flux maps. This makes the learned operator class itself compatibility-aware: selected constraints are enforced by cell-complex identities such as dk+1 dk = 0 , rather than only encouraged by loss penalties. Magnetohydrodynamics (MHD) provides a useful testbed because it couples fluid variables with a constrained magnetic field. The magnetic field must satisfy 
+
+∇ · B = 0 . (1) Numerical magnetic divergence can introduce nonphysical effects and dam-age stability [10, 11]. In CSNO, the MHD update follows the constrained-transport idea at the level of the learned operator parameterization. Mag-netic flux is represented as a face cochain, the network predicts an edge-based electromotive field, and the magnetic update passes through the edge-to-face coboundary. The identity d2d1 = 0 then gives a divergence-preserving mag-netic update in the native cochain representation. Fluid variables are ad-vanced through a related finite-volume-style update using learned face fluxes and cell source terms. We evaluate CSNO on turbulent MHD from The Well MHD_64 [12] and on fusion-relevant ideal-MHD equilibrium prediction from ConStellara-tion [13]. The Well MHD_64 evaluates CSNO as a learned time-stepper on three-dimensional turbulent fields, while ConStellaration evaluates whether grouped sheaf-style representations are useful for structured equilibrium re-gression. The experiments compare ordinary one-step prediction accuracy with structure-sensitive behavior, including magnetic-divergence diagnostics, rollout stability, spectral error, parameter efficiency, and equilibrium-regression accuracy. This evaluation reflects the main claim of the paper: learned PDE surrogates should be assessed not only as one-step tensor regressors, but also as autoregressive operators whose inductive biases affect long-horizon and compatibility-sensitive behavior. 
+
+1.1. Contributions 
+
+The main contributions are: 1. We introduce Cellular Sheaf Neural Operators , a cochain-valued neural operator framework that represents PDE states on oriented cell com-plexes rather than as homogeneous grid-channel tensors. 32. We adapt cellular-sheaf message passing to PDE time-advance model-ing by coupling learned restriction maps with incidence/Hodge-informed communication across cells of different dimensions. 3. We define compatibility-preserving update heads that factor learned quantities through coboundary or flux maps, yielding a constrained operator class whose selected compatibility residuals are preserved by identities such as dk+1 dk = 0 .4. We instantiate CSNO for MHD with face-based magnetic flux, edge-based electromotive updates, and cell-based fluid variables, and evalu-ate it on turbulent MHD and fusion-equilibrium surrogate tasks. 
+
+2. Related work 
+
+2.1. Structure-preserving computational methods for constrained PDEs 
+
+Structure preservation is a central principle in numerical methods for constrained PDEs, especially when rollout stability depends on respecting conservation laws, compatibility conditions, or geometric identities. For con-servation laws and convection-dominated systems, finite-volume and discon-tinuous Galerkin methods encode local conservation, numerical fluxes, and stable propagation of discontinuities directly into the discrete update [14–16]. Compatible and mimetic discretizations pursue a related goal for geometric constraints by constructing discrete gradient, curl, and divergence operators that preserve vector-calculus identities and adjoint relationships at the alge-braic level [4, 5, 17, 18]. Discrete exterior calculus and finite element exterior calculus provide a broader language for these ideas by representing fields as cochains or dis-crete differential forms on vertices, edges, faces, and cells, while preserving de Rham complex structure, coboundary maps, Hodge operators, and homo-logical identities in finite-dimensional spaces [6–8, 19]. This perspective is especially natural in computational electromagnetism, where edge and face degrees of freedom reflect the physical roles of circulation, flux, and charge [20]. The central lesson is that stable computation for constrained PDEs often requires preserving the algebraic structure of the continuous problem, not only reducing loss alone. Magnetohydrodynamics is a clear example. The magnetic field must sat-isfy ∇ · B = 0 , and numerical violations can introduce nonphysical forces and degrade stability. Classical MHD solvers therefore use constrained trans-port, divergence-free adaptive mesh refinement, projection-type corrections, 4and hyperbolic or parabolic divergence cleaning to preserve or control mag-netic divergence [11, 21–23]. CSNO brings the structure-preserving tradition to neural PDE surrogate modeling. Rather than predicting all variables as generic grid channels, the proposed method represents fields on cell-complex entities and uses discrete incidence structure to build compatibility into the learned update. 
+
+2.2. Neural operators and surrogate modeling for scientific computing 
+
+Neural operators learn mappings between function spaces and are widely used as surrogate models for PDE solution operators or time-advance maps [1–3]. DeepONet realizes operator learning through branch and trunk net-works and has been demonstrated on deterministic and stochastic differential-equation operators [3]. Fourier Neural Operators parameterize global con-volution kernels in Fourier space and have shown strong performance on grid-based PDE benchmarks, including turbulent-flow surrogate modeling and zero-shot super-resolution [2]. Graph-based neural operators extend this viewpoint to nonuniform discretizations through message-passing approxi-mations of kernel integration, while mesh-based graph simulators provide a related approach for learned time-stepping on adaptive simulation meshes [24, 25]. Geometry-aware variants such as Geo-FNO address the limitation that standard FFT-based FNOs are naturally tied to rectangular uniform grids by learning deformations from physical domains to latent regular grids [26]. These models are attractive in scientific computing because a trained surrogate can amortize the cost of repeated simulations for parameter studies, uncertainty quantification, control, and inverse problems. Physics-informed neural operators further incorporate PDE residual information into operator learning, combining data-driven supervision with physics constraints [27]. Large benchmark suites such as PDEBench and The Well have standardized evaluation across time-dependent PDE datasets and commonly include U-Net, FNO, and related baselines [12, 28]. However, many neural surrogates still operate on a homogeneous channel representation of the physical state. This is convenient for grids, but it can obscure the computational placement of physical variables. A scalar conserved quantity, a face flux, an edge circulation, and a boundary value may all appear as channels even though they play different roles in the discrete PDE update. Boundary data create a related difficulty: changing boundary conditions can induce distinct boundary-indexed operator families, so a single 5boundary-agnostic surrogate may fail under boundary-condition shift [29]. Together, these issues motivate neural surrogate models that operate not only on functions or grid tensors, but also on algebraic structures used by numerical methods, including incidence matrices, cochains, Hodge maps, and compatibility-preserving updates. 
+
+2.3. Sheaf, geometric, and topological deep learning 
+
+Geometric deep learning designs neural architectures whose inductive bi-ases reflect the structure of the underlying domain, including grids, graphs, manifolds, and meshes [30]. Graph convolutional and message-passing net-works provide the standard framework for learning on relational data by ag-gregating information over local neighborhoods [31, 32], and graph networks have been successfully used as learned physics simulators on interacting sys-tems and meshes [25, 33]. However, ordinary graph neural networks usually attach all learned quantities to nodes and model pairwise relations. This is limiting for PDE systems in which variables naturally live on cells of different dimensions. Topological deep learning extends neural architectures from graphs to richer domains such as simplicial complexes, cellular complexes, hypergraphs, and sheaves [34–36]. Simplicial and cellular neural networks use incidence relations between vertices, edges, faces, and cells to define higher-order mes-sage passing [37–40]. Hodge-based methods use cochain structure and Hodge Laplacians to process edge- or higher-order signals, separating gradient-like, curl-like, and harmonic components [41–43]. These methods are closely aligned with numerical PDE structure because they operate on the same kind of cellwise and incidence-based information used in compatible discretiza-tions. Cellular sheaves add another layer of structure by assigning local vector spaces, or stalks, to cells and using restriction maps to express how neigh-boring local data should agree. The associated sheaf Laplacian measures inconsistency under these restrictions, generalizing graph Laplacians to het-erogeneous local feature spaces [44]. Sheaf Neural Networks, Neural Sheaf Diffusion, and connection-Laplacian models use this structure to replace or-dinary graph diffusion with diffusion over learned stalks, restriction maps, and aligned local spaces [45–47]. The proposed Cellular Sheaf Neural Operator builds on this viewpoint for PDE surrogate modeling. Instead of using sheaf structure only as a graph-learning mechanism, we use it to organize cochain-valued physical variables 6on a cell complex. Learned restriction maps couple local feature spaces, while incidence and Hodge structure provide the algebraic backbone for message passing and compatibility-preserving updates. The resulting architecture uses sheaf structure not only for representation learning, but also for orga-nizing learned PDE updates. 
+
+2.4. Computational magnetohydrodynamics and divergence control 
+
+Magnetohydrodynamics models electrically conducting fluids by coupling fluid conservation laws with electromagnetic field evolution. In ideal and compressible MHD, the state typically includes density, momentum or ve-locity, pressure or total energy, and the magnetic field, whose evolution is governed by the induction equation [48, 49]. This coupling makes MHD a useful test case for structure-preserving surrogate modeling: its variables are strongly coupled, geometrically distinct, and constrained by compati-bility conditions. In turbulent MHD, this structure is also reflected in the decomposition of fluctuations into Alfvén, slow magnetosonic, and fast mag-netosonic modes, whose energy fractions and anisotropies depend on forcing and plasma parameters [50]. A central constraint is the solenoidal condition 
+
+∇ · B = 0 ,
+
+which expresses the absence of magnetic monopoles. Nonzero numerical mag-netic divergence can introduce nonphysical forces, corrupt wave propagation, and degrade the computed MHD solution [10]. Consequently, MHD solvers often treat divergence control as part of the discretization rather than as a secondary diagnostic. Several numerical strategies preserve or control this constraint. Finite-volume and Godunov-type solvers use conservative updates and approximate Riemann solvers for shocks, discontinuities, and nonlinear wave interactions [51, 52]. Constrained-transport methods evolve magnetic fluxes using stag-gered magnetic and electromotive quantities so that a discrete divergence constraint is preserved; modern multidimensional MHD codes combine this idea with shock-capturing Godunov updates for stable high-resolution sim-ulation [53, 54]. Other approaches include divergence cleaning, projection corrections, and compatible discretizations based on discrete gradient, curl, and divergence operators. Recent neural-operator work for MHD similarly suggests that surrogate models benefit from architectures and losses that re-flect numerical-flux structure and divergence-related physics [55]. The MHD 7version of CSNO follows this geometric placement principle. Magnetic flux is represented on faces, electromotive quantities on edges, and the magnetic update is built from the edge-to-face coboundary map. Since the discrete coboundary satisfies d2d1 = 0 , updating face magnetic flux through an edge electromotive field preserves discrete magnetic divergence. Thus, MHD pro-vides a demanding test case for cochain placement, incidence structure, and compatibility-preserving learned updates. 
+
+3. Cellular Sheaf Neural Operator 
+
+The Cellular Sheaf Neural Operator (CSNO) is designed for constrained PDE systems whose variables have different geometric and computational roles. Rather than representing the full state as a homogeneous stack of channels, CSNO represents physical quantities as cochain-valued fields on an oriented cell complex. Learned cellular-sheaf restriction maps couple local feature spaces across incidences, while incidence and Hodge structure pro-vide the algebraic backbone for message passing and compatibility-preserving updates. 
+
+3.1. Cell complexes and cochain-valued states 
+
+Let K be an oriented cell complex with k-cells Kk, k = 0 , . . . , d . In three dimensions, 
+
+K = K0 ∪ K1 ∪ K2 ∪ K3,
+
+where K0 denotes vertices, K1 edges, K2 faces, and K3 volume cells. The oriented boundary maps are 
+
+∂k : Ck(K) → Ck−1(K),
+
+and the corresponding coboundary maps are 
+
+dk−1 = ∂⊤ 
+
+> k
+
+: Ck−1(K) → Ck(K).
+
+These maps satisfy the exact algebraic identity 
+
+dkdk−1 = 0 , (2) the discrete analogue of vector-calculus identities such as ∇ · (∇ × A) = 0 .This identity is central in discrete exterior calculus, finite element exterior calculus, and compatible discretizations [6–8, 19]. 8A cochain-valued PDE state assigns features to cells of different dimen-sions: 
+
+u =  u(0) , u (1) , . . . , u (d) , u(k) ∈ Ck(K; Rck ). (3) Here u(k) is a feature array on k-cells, and ck is the number of physical or learned channels associated with that cell dimension. This representation allows the model to distinguish quantities by their computational role. Ver-tex data, edge circulations, face fluxes, cell-centered conserved variables, and boundary or interface quantities need not be collapsed into the same channel space. This cochain-valued viewpoint is consistent with recent work on learn-ing with differential k-forms and higher-order fields on simplicial or cellular domains [56]. The time-dependent surrogate-learning problem is to approximate a dis-crete evolution map 
+
+G∆t : un 7 → un+1 ,
+
+or, with m input states, 
+
+G∆t :  un−m+1 , . . . , u n 7 → un+1 .
+
+When data are stored as structured tensors, the model first maps them to cochain fields on an associated cell complex, applies the cellular-sheaf update, and then projects the prediction back to the dataset storage format. 
+
+3.2. Cellular sheaves and learned restriction maps 
+
+A cellular sheaf assigns a vector space, or stalk, to each cell of a cell complex, together with restriction maps that compare data across incident cells [44, 45]. For a cell σ ∈ K, let 
+
+F(σ) ∼= Rrdim σ
+
+denote the learned feature space attached to σ. If τ ≤ σ, meaning τ is a face of σ, a restriction map 
+
+ρσ→τ : F(σ) → F (τ )
+
+describes how information on σ is compared or communicated to τ .In CSNO, these restriction maps are trainable. For an incidence τ ≤ σ,we use 
+
+ρθσ→τ = Rθ   
+
+> dim σ, dim τ
+
+,
+
+9with optional dependence on local geometry: 
+
+ρθσ→τ = Rθ  
+
+> dim σ, dim τ
+
+ gσ, g τ , g στ 
+
+.
+
+The geometric features gσ, gτ , and gστ may include cell volumes, face ar-eas, edge lengths, centroids, normals, orientations, or boundary tags. Shared restriction maps tie parameters across incidences of the same type, while geometry-conditioned maps allow the coupling to adapt to local mesh struc-ture. The learned restrictions do not impose a fixed PDE law. They define a structured communication pattern over the cell complex. This is the central distinction between CSNO and a standard channel-mixing neural operator. Information is passed through the incidence geometry of the computational domain rather than through a single homogeneous feature tensor. 
+
+3.3. Sheaf coboundary and Hodge message passing 
+
+The learned restriction maps define sheaf coboundary operators 
+
+δF,k : Ck(K; F) → Ck+1 (K; F), (4) which generalize ordinary coboundary matrices to heterogeneous learned fea-ture spaces. A corresponding sheaf-Hodge Laplacian on k-cochains is 
+
+LF,k = δ⊤F,k δF,k + δF,k −1δ⊤F,k −1. (5) This operator measures inconsistency under the learned restrictions and gen-eralizes graph Laplacian diffusion to cellular sheaves [44, 46, 47]. A cellular CSNO block updates hidden cochains 
+
+hℓk ∈ Ck(K; Rrk ), k = 0 , . . . , d, 
+
+using within-dimension updates, upward incidence messages, downward in-cidence messages, and optional sheaf-Hodge diffusion: 
+
+hℓ+1  
+
+> k
+
+= σ  Akhℓk + BkLF,k hℓk + CkδF,k −1hℓk−1 + Dkδ⊤F,k hℓk+1 
+
+ . (6) Here Ak, B k, C k, D k are learned channel maps, σ is a nonlinear activation, and terms involving nonexistent dimensions are omitted. Incidence message passing is the default update mechanism; sheaf-Hodge Laplacian filtering can be enabled as an additional diffusion-like component. This construction is 10 related to higher-order message-passing architectures on cellular complexes, including equivariant cellular networks, but here the cell-complex message passing is used inside a neural PDE time-advance surrogate rather than only as a representation-learning layer [57]. Geometric Hodge weights enter through diagonal mass-like operators Mk,defining weighted inner products 
+
+⟨a, b ⟩k,h = a⊤Mkb. 
+
+For cubical complexes, these weights are derived from edge lengths, face ar-eas, and cell volumes. For general cell complexes, the same interface supports geometry-dependent diagonal Hodge weights supplied with the mesh. 
+
+3.4. General cochain update heads 
+
+After L cellular-sheaf blocks, the model has hidden cochains 
+
+hL =  hL 
+
+> 0
+
+, . . . , h Ld
+
+ .
+
+CSNO does not require every output to be predicted on the same cell dimen-sion. Task-specific output heads produce cochain-valued quantities on the dimensions appropriate to the PDE discretization: 
+
+bq(k) = Pk(hL 
+
+> 0
+
+, . . . , h Ld ), bq(k) ∈ Ck(K; Rmk ).
+
+These heads may predict next-state variables directly, residuals, fluxes, sources, potentials, or constraint-carrying auxiliary quantities. A general residual update can be written as 
+
+bu(k),n +1 = u(k),n + ∆ t U(k) 
+
+> θ
+
+(hL, K ),
+
+where U(k) 
+
+> θ
+
+is a learned cochain update. For structure-preserving tasks, these heads may instead produce auxiliary cochains that are routed through coboundary or flux maps. The resulting factorized update and its compati-bility guarantee are stated in section 3.5. Flux-form updates are another important case. For cell-centered quanti-ties U ∈ Cd(K), a finite-volume-style update can be written 
+
+bU n+1 = U n − ∆t d d−1Fθ + ∆ t S θ, (7) where Fθ ∈ Cd−1(K) is a learned flux cochain and Sθ ∈ Cd(K) is a learned source or residual. This form separates flux-like information from cell-centered state information and aligns the neural update with conservative discretiza-tion structure. 11 3.5. Structural guarantees 
+
+The identity dk+1 dk = 0 is classical; the architectural choice in CSNO is to make selected learned update heads factor through the coboundary dk. This turns a standard algebraic property of the cell complex into a constraint on the learned time-stepper. Let K be an oriented cell complex with coboundary maps 
+
+Ck(K) dk
+
+−→ Ck+1 (K) dk+1 
+
+−−→ Ck+2 (K), dk+1 dk = 0 .
+
+For a constrained (k + 1) -cochain, CSNO parameterizes the update as 
+
+bu(k+1) ,n +1 = u(k+1) ,n + dka(k) 
+
+> θ
+
+, (8) where a(k) 
+
+> θ
+
+∈ Ck(K) is produced by the cellular-sheaf network from the hidden cochains hL. Thus, the network does not directly predict an arbitrary residual in Ck+1 (K). Instead, its residual is constrained to lie in 
+
+im( dk) ⊆ Ck+1 (K),
+
+and the learned update lies in the affine space 
+
+u(k+1) ,n + im( dk).
+
+Equivalently, the constrained CSNO update head has the operator form 
+
+Gθ = I + dk ◦ Φθ, (9) where Φθ is the learned cellular-sheaf map that produces the generating cochain. This is the structural difference between a CSNO compatibility-preserving head and a direct channel-wise residual predictor. 
+
+Proposition 1 (Compatibility preservation of the CSNO update head) . Let 
+
+u(k+1) ,n ∈ Ck+1 (K) be updated by the CSNO factorized head in (8) . Then 
+
+dk+1 bu(k+1) ,n +1 = dk+1 u(k+1) ,n .
+
+Consequently, if dk+1 u(k+1) ,0 = 0 , then dk+1 u(k+1) ,n = 0 for every rollout step generated by this update head. Proof. Applying dk+1 to the CSNO update in (8) gives 
+
+dk+1 bu(k+1) ,n +1 = dk+1 u(k+1) ,n + dk+1 dka(k) 
+
+> θ
+
+.
+
+12 The second term vanishes because dk+1 dk = 0 . Therefore 
+
+dk+1 bu(k+1) ,n +1 = dk+1 u(k+1) ,n .
+
+Repeating the same argument at each rollout step gives the final statement. The guarantee is independent of the particular neural-network weights, optimizer, or training error. It follows from the CSNO output parameteriza-tion itself. A direct residual head of the form 
+
+bu(k+1) ,n +1 = u(k+1) ,n + r(k+1) 
+
+> θ
+
+has the same preservation property only if 
+
+r(k+1)  
+
+> θ
+
+∈ ker( dk+1 )
+
+for every input. A standard U-Net, FNO, or unconstrained channel-wise neural operator does not enforce this condition. CSNO enforces it by con-structing the residual as dka(k) 
+
+> θ
+
+, which automatically belongs to ker( dk+1 ) by the cochain-complex identity. For the MHD specialization, the constrained head is applied with k = 1 .CSNO predicts an edge cochain 
+
+Enθ ∈ C1(K; RcE )
+
+and updates the face-based magnetic flux by 
+
+bBn+1 = Bn − ∆t d 1Enθ . (10) The discrete magnetic divergence is d2B. Applying Proposition 1 gives 
+
+d2 bBn+1 = d2Bn. (11) Thus, the CSNO magnetic update cannot introduce native cochain-divergence drift. This is the learned-surrogate analogue of the constrained-transport principle: the neural network learns the edge-based electromotive quantity, but the cell complex determines how that learned quantity changes face mag-netic flux. 13 This native guarantee is distinct from the projected grid-space divergence diagnostic used for cross-model evaluation. The datasets store fields as grid tensors, so CSNO uses projection maps 
+
+Πdata →K and ΠK→data .
+
+Let Dh denote the finite-difference divergence diagnostic applied after pro-jecting a predicted cochain field back to the tensor representation. Even when (11) holds exactly, the reported grid diagnostic measures 
+
+DhΠK→data ( bB)
+
+rather than d2 bB. The discrepancy is controlled by the noncommutation between the projection and the diagnostic: 
+
+DhΠK→data ( bB) − ΠK→data (d2 bB) ≤ ∥ DhΠK→data − ΠK→data d2∥ ∥ bB∥.
+
+(12) The operator 
+
+DhΠK→data − ΠK→data d2
+
+is the projection-commutator error. It vanishes only when the projection and grid diagnostic commute with the cochain divergence. In practice, interpola-tion from cell-centered magnetic channels to face cochains, projection back to stored tensor channels, and finite-difference boundary treatment can make the projected divergence nonzero even when the native cochain divergence is preserved. The same factorization clarifies the rollout behavior measured in the ex-periments. A direct predictor can accumulate error both in the physical state and in the compatibility residual dk+1 u. For the constrained CSNO head, the selected compatibility residual is invariant under rollout: 
+
+dk+1 GNθ (u) = dk+1 u for all N ≥ 1. (13) The model can still accumulate ordinary prediction error through an imper-fect learned generating cochain a(k) 
+
+> θ
+
+, but it cannot accumulate error through drift in the preserved compatibility quantity. This explains why CSNO can differ from direct tensor predictors in long-horizon diagnostics even when one-step pointwise error is not minimized. 14 3.6. MHD specialization 
+
+The placement of variables on the cell complex is problem-dependent. For the MHD experiments, we use the placement suggested by compatible discretizations and constrained-transport methods. Fluid variables are asso-ciated with volume cells, 
+
+U n ∈ C3(K; RcU ),
+
+magnetic flux is associated with faces, 
+
+Bn ∈ C2(K; RcB ),
+
+and electromotive quantities are associated with edges, 
+
+Enθ ∈ C1(K; RcE ).
+
+This placement mirrors the geometric roles of volume quantities, face fluxes, and edge circulations in compatible MHD methods [20, 21, 53, 54]. Rather than directly predicting the next magnetic field, the model pre-dicts an edge-based electromotive field and updates face magnetic flux by 
+
+bBn+1 = Bn − ∆t d 1Enθ . (14) The discrete magnetic divergence is represented by 
+
+d2B, d2 : C2(K) → C3(K).
+
+Applying d2 to (14) gives 
+
+d2 bBn+1 = d2Bn − ∆t d 2d1Enθ = d2Bn, (15) since d2d1 = 0 . Thus, if the initial magnetic flux satisfies d2B0 = 0 , the learned magnetic update preserves this discrete divergence up to numerical precision. For the fluid variables, the model predicts face-based fluxes 
+
+F nθ ∈ C2(K; RcU )
+
+and optional cell-centered source or residual terms 
+
+Snθ ∈ C3(K; RcU ).
+
+15 The cell-centered fluid state is updated by 
+
+bU n+1 = U n − ∆t d 2F nθ + ∆ t S nθ . (16) This form mirrors finite-volume structure, where the change in a cell quantity is determined by fluxes across the cell boundary [14]. Unlike the magnetic update, this flux form does not by itself guarantee exact conservation of every physical invariant, because the learned fluxes and source terms may contain modeling error. Its purpose is to align the neural update with the algebraic structure of conservative discretizations. 
+
+3.7. Projection, training, and implementation 
+
+Many scientific datasets are stored as arrays rather than native cochain data. To use them with CSNO, we define projection operators 
+
+Πdata →K : Xdata →
+
+> d
+
+M
+
+> k=0
+
+Ck(K; Rck )
+
+and 
+
+ΠK→data :
+
+> d
+
+M
+
+> k=0
+
+Ck(K; Rck ) → X data .
+
+For the structured-grid datasets used here, 
+
+Xdata = RC×Nx×Ny ×Nz .
+
+A cubical complex is constructed from the preprocessed grid. Cell-centered variables are assigned to volume cells. Magnetic vector components are as-signed to oriented faces according to their normal direction; when the raw data provide cell-centered magnetic components, the projection uses a con-sistent interpolation to face cochains. After the cellular update, predicted cochains are projected back to the channel layout used by the supervised target tensor. For time-dependent prediction, the primary supervised loss is computed after projecting the cochain prediction back to the dataset representation. For grid-valued outputs, we use mean-squared error and relative L2 error: 
+
+Lpred = 1
+
+|Ω|C
+
+> C
+
+X
+
+> c=1
+
+X
+
+> x∈Ω
+
+|buc(x) − uc(x)|2 + λrel 
+
+∥bu − u∥2
+
+∥u∥2
+
+. (17) 16 Additional compatibility diagnostics or regularizers are defined on native cochains. For a constraint represented by a coboundary residual dkq(k), we track 
+
+Dk(q) = ∥dkq(k)∥2.
+
+When used as a regularizer, the corresponding term is 
+
+Lcomp = ∥dk bq(k)∥22.
+
+The total training objective is 
+
+L = Lpred + λcomp Lcomp .
+
+For update heads that preserve a compatibility relation by construction, the corresponding term is primarily a diagnostic or a safeguard against projection error. For ConStellaration, which is an equilibrium-regression task rather than a time-dependent field-prediction problem, we use a finite-dimensional sheaf-style variant. Input features are partitioned into groups, lifted to learned fibers, coupled through restriction-style maps, and concatenated before the final regression head. This variant applies the same principle of grouped local feature spaces and learned coupling without using the time-dependent cochain update heads. Algorithm 1 summarizes one supervised training step. The task-specific map Uθ may be an unconstrained residual predictor or a compatibility-preserving update built from coboundary or flux maps. 
+
+4. Experimental design 
+
+The experiments evaluate CSNO on time-dependent turbulent MHD and fusion-equilibrium regression. The evaluation includes pointwise prediction error, magnetic-divergence behavior, autoregressive rollout stability, per-field accuracy, spectral behavior, equilibrium-regression accuracy, and computa-tional cost. The numerical study uses two datasets: The Well MHD_64 and ConStellaration [12, 13]. These datasets serve as complementary MHD and plasma-physics applications of the broader cellular-sheaf surrogate frame-work. All time-dependent three-dimensional experiments use the same prepro-cessed input and target tensors across models. The Well fields are cropped 17 Algorithm 1 One training step of the Cellular Sheaf Neural Operator 
+
+Require: Input batch x, target batch y, cell complex K, coboundaries {dk} 
+
+> 1:
+
+Project data to cochains: un = Π data →K (x) 
+
+> 2:
+
+Lift physical cochains to hidden cochains h0
+
+> k
+
+, k = 0 , . . . , d  
+
+> 3:
+
+for ℓ = 0 , . . . , L − 1 do  
+
+> 4:
+
+Update each hℓk using within-dimension maps, learned sheaf restric-tions, incidence messages, and optional sheaf-Hodge filtering  
+
+> 5:
+
+end for  
+
+> 6:
+
+Apply task-specific update heads: bun+1 = Uθ(un, h L, K ) 
+
+> 7:
+
+Project back to the dataset representation: by = Π K→data (bun+1 ) 
+
+> 8:
+
+Compute supervised loss and optional cochain compatibility diagnostics  
+
+> 9:
+
+Update parameters by backpropagation from the native grid before training. The U-Net and FNO baselines operate directly on these channel-first tensors. The Cellular Sheaf Neural Operator first maps the same tensors to cochain-valued fields on a cubical cell complex, applies the cellular-sheaf update internally, and then projects the prediction back to the common tensor representation for supervised training and eval-uation. 
+
+4.1. Datasets 
+
+The Well MHD_64 benchmark provides three-dimensional compressible MHD turbulence derived from the Catalogue for Astrophysical Turbulence Simulations and standardized as part of The Well benchmark collection [12, 58]. ConStellaration provides quasi-isodynamic stellarator plasma bound-aries, optimization benchmarks, and ideal-MHD equilibrium data, and is used here as a fusion-equilibrium surrogate-modeling benchmark [13]. The Well MHD_64 task is formulated as a supervised time-dependent prediction problem. Given one or more previous field states, the model pre-dicts the next field state. If multiple input frames are used, the temporal his-tory is stacked along the channel dimension before being passed to the model. ConStellaration is treated separately as a supervised equilibrium-regression task. Numeric features parsed from boundary, metric, configuration, and, when joinable, equilibrium records are mapped to selected numeric targets. For The Well MHD_64, stored samples have channel-first tensor form 
+
+un ∈ RC×Nx×Ny ×Nz ,
+
+18 where (Nx, N y, N z ) denotes the preprocessed spatial grid. The state is con-structed from density, magnetic-field, and velocity channels, ordered as den-sity, Bx, By, Bz , vx, vy, and vz . Training uses deterministic index-seeded random 48 3 crops by default, while validation and testing use deterministic centered crops unless cropping is disabled. For CSNO, each preprocessed The Well grid is associated with a cu-bical cell complex. Cell-centered state channels are mapped to volume-cell cochains, magnetic components are mapped to face-based magnetic-flux cochains, and learned electromotive quantities are represented on edges. Pre-dictions are projected back to the common channel-first tensor format so that CSNO, U-Net, and FNO are trained and evaluated against the same targets. Preprocessed samples are cached locally after field extraction, channel construction, temporal stacking, cropping, normalization metadata construc-tion, and tensor assembly. For CSNO, cubical-complex incidence, cobound-ary, and Hodge-related data are constructed and reused through an internal complex cache when the grid shape, spacing, periodicity, device, and dtype match. These caches reduce repeated HDF5 parsing, tensor assembly, and cell-complex construction overhead without changing the train, validation, or test splits. The Well benchmark tests turbulent MHD scalability and diagnostics on a regular cubical complex. ConStellaration tests whether grouped sheaf-style representations and learned restrictions are useful for fusion-relevant equilibrium prediction, although it is not treated as a time-dependent cochain simulation. 
+
+4.2. Baseline methods 
+
+For the time-dependent three-dimensional MHD task, we compare CSNO with a three-dimensional convolutional U-Net [59] and a three-dimensional Fourier Neural Operator [1, 2]. The U-Net provides a strong local convo-lutional baseline, while the FNO provides a global spectral neural-operator baseline. Both baselines operate directly on homogeneous channel-first grid tensors. The Cellular Sheaf Neural Operator differs from these baselines in both representation and update structure. It maps grid tensors to cochain-valued fields on a cell complex, represents magnetic flux on faces, predicts edge-based electromotive quantities, and advances fluid variables through learned face fluxes and cell source terms. Cell-local feature spaces are coupled through 19 incidence-aligned restriction maps and optional sheaf-Hodge-Laplacian mes-sage terms. In the current implementation, the magnetic update has the form 
+
+Bn+1 = Bn − ∆t d 1Eθ,
+
+and the fluid-state update uses learned face fluxes and cell source terms. This allows the native magnetic update to be checked against the cochain identity 
+
+d2d1 = 0 . These design choices make CSNO a comparison against U-Net and FNO not only at the level of neural backbone, but also at the level of computational representation and update parameterization. For ConStellaration, the baseline is a fully connected regression model that maps flattened numeric features to equilibrium targets. The sheaf-style equilibrium model instead partitions the flattened feature vector into learned fibers, couples those fibers through restriction-style maps, and then predicts the selected equilibrium quantities. 
+
+4.3. Evaluation metrics 
+
+The primary accuracy metrics are mean-squared error, mean absolute error, and relative L2 error: 
+
+MSE( bu, u ) = 1
+
+|Ω|C
+
+> C
+
+X
+
+> c=1
+
+X
+
+> x∈Ω
+
+|buc(x) − uc(x)|2 , (18) 
+
+RelL2( bu, u ) = ∥bu − u∥2
+
+∥u∥2
+
+. (19) We also report per-channel or per-target relative errors for the variables present in each dataset, including density, magnetic-field components, ve-locity components, and ConStellaration equilibrium-related targets. For cropped data, all grid-based metrics are computed on the preprocessed grid used for model input and output. Because magnetic-divergence control is central to the MHD application, we report grid-based magnetic-divergence diagnostics for all time-dependent models when magnetic channels are available. The diagnostic is computed after predictions are represented in channel-first tensor form: 
+
+∇h · B = DxBx + DyBy + Dz Bz . (20) The current implementation uses periodic finite differences for this diagnos-tic. We report the root-mean-square magnetic-divergence magnitude and 20 a relative magnetic-divergence measure normalized by magnetic-field mag-nitude. These diagnostics are motivated by the known role of numerical magnetic divergence in producing nonphysical MHD behavior [10, 11]. For CSNO, we additionally verify the native cochain-level magnetic up-date. Since 
+
+d2Bn+1 − d2Bn = −∆t d 2d1Eθ, (21) the preservation error should be controlled by the discrete identity d2d1 = 0 .This verification checks the structure-preserving update in the model’s native representation. The main cross-model divergence metrics are still computed on projected grid tensors so that CSNO, U-Net, and FNO are compared in a common representation. Temporal stability is evaluated through autoregressive rollouts for The Well MHD_64. Starting from an initial state, predictions are fed back as inputs to generate future states. We report rollout relative L2 error over time, rollout MSE over time, rollout magnetic divergence over time, mean rollout relative L2 error, final-step relative L2 error, and whether the roll-out develops non-finite values or exceeds a configured large-value instability threshold. The implementation also reports an energy-like one-step drift based on 0.5 mean( u2) relative to the target value. It does not, by default, compute a physically decomposed kinetic-plus-magnetic rollout drift relative to the initial condition. For turbulent or multiscale fields, we compute a spectral diagnostic when the prediction is a three-dimensional grid tensor. The implemented metric compares isotropic three-dimensional power spectra computed from FFTs [12, 28]. For ConStellaration, we report mean-squared error, mean abso-lute error, relative L2 error, and per-target relative error. We also report computational metrics available from the runner, including parameter count, inference time per batch, epoch timing, throughput in samples per second, and GPU memory allocation and reservation when CUDA is available. 
+
+4.4. Statistical protocol 
+
+The final reported experiments are repeated over multiple random seeds. Unless otherwise stated, final comparisons use ten seeds; reduced exploratory or fast-development runs may use fewer seeds and are labeled accordingly. Each seed controls Python, NumPy, and PyTorch random number genera-tion, data-loader shuffling, model initialization, and stochastic training oper-ations. For each seed, the runner saves both the best validation checkpoint 21 and the final checkpoint. In the current experiment script, validation and test metrics are computed from the trained model instance after fitting unless an analysis script explicitly reloads the best validation checkpoint. For scalar metrics, we report mean performance with variability across seeds. Paired comparisons are performed across matching seeds between the Cellular Sheaf Neural Operator and each baseline. For each paired comparison, we report the mean paired difference, relative percentage improvement, bootstrap con-fidence interval, and paired significance test when appropriate. Deterministic bootstrap confidence intervals over seeds are computed using up to 10 ,000 
+
+resamples. Raw per-seed metrics are saved to support reproducibility and independent post-processing. 
+
+4.5. Hardware and software 
+
+All experiments were run on a local Linux workstation with an NVIDIA RTX PRO 6000 Blackwell Workstation Edition GPU, an Intel Core Ultra 9 285K CPU, and 128 GB of DDR5 ECC memory. Experiments were im-plemented in Python using PyTorch with CUDA acceleration [60]. Mod-els were trained in single-GPU mode using bfloat16 automatic mixed preci-sion on CUDA, with parameters and optimizer states kept in full precision. TensorFloat-32 operations were enabled where supported. PyTorch compi-lation was enabled for selected dense baselines and disabled by default for FNO, CSNO, and the sheaf-equilibrium model. All timing and memory mea-surements were collected on the same workstation using the same software environment. The software stack included Python, PyTorch, CUDA, NumPy, SciPy, pandas, h5py, tqdm, and Matplotlib. Sparse cell-complex operations used PyTorch sparse operations, with mixed precision disabled around sparse ma-trix multiplications when required. The Well MHD_64 data were loaded from local HDF5 files, and the ConStellaration subset was loaded from lo-cal JSONL records. Cached tensor samples, optimized data loaders, and cached cell-complex incidence, coboundary, and geometric data were used when compatible. Code, preprocessing scripts, configurations, and repro-ducibility scripts will be made publicly available upon publication. 22 5. Numerical results 
+
+5.1. One-step prediction accuracy 
+
+Table 1 and Fig. 1 show that U-Net gives the lowest one-step pointwise error on The Well MHD_64. Its mean MSE, MAE, and relative L2 error are lower than both neural-operator models. CSNO therefore should not be interpreted as a uniformly better short-horizon field predictor than the convolutional baseline. The comparison with FNO is more favorable. CSNO reduces one-step MSE from 1.342 to 1.234 , MAE from 0.430 to 0.417 , and relative L2 error from 0.405 to 0.388 . These correspond to relative reductions of approxi-mately 8.0% , 2.8% , and 4.4% , respectively. Thus, CSNO improves over FNO on ordinary one-step prediction metrics, while U-Net remains substantially stronger on pointwise reconstruction. 
+
+5.2. Magnetic divergence control 
+
+CSNO gives the lowest aggregate magnetic-divergence diagnostics among the three time-dependent models. Its mean grid-space magnetic-divergence 
+
+L2 value is 0.235 , compared with 0.242 for FNO and 0.250 for U-Net. The relative magnetic-divergence values are 0.195 for CSNO, 0.202 for FNO, and 
+
+0.203 for U-Net. This corresponds to a relative-divergence reduction of ap-proximately 3.3% against FNO and 3.7% against U-Net. These improvements are modest but consistent with the intended role of the architecture. The reported grid-space divergence is computed after all predictions are represented in the common tensor format. For CSNO, this is distinct from the native cochain-level update, where the magnetic field is advanced so that d2Bn+1 = d2Bn up to numerical precision. The 
+
+Table 1: Aggregate The Well MHD_64 metrics over ten random seeds. Values are mean with two-sided 95% confidence intervals in parentheses. Lower is better for all metrics                                                        
+
+> Metric U-Net FNO CSNO MSE 0.329 (0 .325 ,0.333) 1.342 (1 .338 ,1.346) 1.234 (1 .229 ,1.240)
+> MAE 0.250 (0 .248 ,0.252) 0.430 (0 .429 ,0.430) 0.417 (0 .417 ,0.418)
+> Relative L20.209 (0 .208 ,0.211) 0.405 (0 .405 ,0.406) 0.388 (0 .387 ,0.388)
+> Magnetic divergence L20.250 (0 .249 ,0.252) 0.242 (0 .242 ,0.243) 0.235 (0 .235 ,0.236)
+> Relative magnetic divergence 0.203 (0 .202 ,0.203) 0.202 (0 .201 ,0.202) 0.195 (0 .195 ,0.195)
+> Spectral error 0.0814 (0 .0761 ,0.0867) 0.0465 (0 .0408 ,0.0523) 0.0233 (0 .0228 ,0.0237)
+> Mean rollout relative L20.608 (0 .605 ,0.612) 0.510 (0 .508 ,0.512) 0.486 (0 .484 ,0.487)
+> Final-step rollout relative L20.899 (0 .893 ,0.905) 0.625 (0 .620 ,0.629) 0.591 (0 .587 ,0.594)
+
+23 MSE Rel. L2 MAE 
+
+0
+
+1
+
+2
+
+3
+
+4
+
+> Norm. error
+
+One-step errors 
+
+Div. Rollout Spectral 
+
+0
+
+1
+
+2
+
+3
+
+> Norm. error
+
+Structure-sensitive errors 
+
+U-Net FNO CSNO  
+
+> Figure 1: Aggregate The Well MHD_64 diagnostics, normalized by the best model for each metric. Lower is better
+
+grid-space diagnostic is therefore an end-to-end test that includes both the learned update and the projection between cochains and stored tensor fields. 
+
+5.3. Rollout stability 
+
+Autoregressive rollout is the clearest empirical advantage for CSNO on The Well MHD_64. The mean rollout relative L2 error is 0.486 for CSNO, compared with 0.510 for FNO and 0.608 for U-Net. The final-step rollout relative L2 error is 0.591 for CSNO, 0.625 for FNO, and 0.899 for U-Net. CSNO therefore reduces mean rollout error by approximately 4.7% relative to FNO and 20 .1% relative to U-Net. At the final rollout step, the corresponding reductions are 5.5% relative to FNO and 34 .3% relative to U-Net. 24 U-Net 
+
+FNO 
+
+CSNO 
+
+> Figure 2: Representative one-step prediction examples from seed 0 on The Well MHD_64. All panels use the same visualization format produced by the evaluation pipeline
+
+This result separates one-step interpolation quality from dynamical use-fulness. Although U-Net gives the lowest one-step error, its autoregressive error grows much more severely. CSNO has higher one-step pointwise er-ror than U-Net, but produces more stable rollout behavior. This supports the main computational claim of the paper: a surrogate organized around cochain placement and compatibility-preserving updates can improve long-horizon behavior even when it does not minimize one-step tensor error. 
+
+5.4. Spectral and physical diagnostics 
+
+The spectral diagnostic also favors CSNO. The mean isotropic three-dimensional spectral error is 0.0233 for CSNO, compared with 0.0465 for FNO and 0.0814 for U-Net. CSNO therefore reduces spectral error by ap-proximately 50 .0% relative to FNO and 71 .4% relative to U-Net. This is 25 U-Net FNO CSNO       
+
+> 0.23
+> 0.24
+> 0.24
+> 0.25
+> 0.25
+> 0.26
+> Magnetic-divergence  L2
+> Figure 3: Aggregate magnetic-divergence L2diagnostic on The Well MHD_64 over ten random seeds. Error bars show two-sided 95% confidence intervals. CSNO obtains the lowest mean magnetic-divergence error among the three models
+
+notable because FNO is explicitly built around Fourier-domain operators and might be expected to have an advantage on spectral quantities. The energy-like one-step drift gives a more mixed picture. U-Net obtains the lowest value, 0.106 , while CSNO obtains 0.155 and FNO obtains 0.177 .CSNO improves over FNO by approximately 12 .8% , but does not improve over U-Net on this metric. Therefore, the physical diagnostics do not all favor the same model. CSNO is not uniformly dominant across all physi-cal diagnostics, but improves the metrics most closely tied to the proposed structure-preserving design, especially divergence, spectral error, and rollout behavior. 
+
+5.5. Fusion-equilibrium regression 
+
+ConStellaration is used to evaluate whether the sheaf-style grouped repre-sentation is useful beyond time-dependent grid prediction. On this problem, the sheaf-equilibrium model substantially outperforms the fully connected MLP baseline. Table 2 summarizes the results. The MSE decreases from 
+
+0.0193 to 0.00548 , a reduction of approximately 71 .6% . The MAE decreases from 0.0664 to 0.0296 , and relative L2 error decreases from 0.129 to 0.0643 .The energy-like drift metric also improves from 0.0256 to 0.0174 .These results suggest that learned grouping and restriction-style coupling are useful for structured equilibrium-regression tasks. The sheaf-equilibrium model uses more parameters, with approximately 1.42 million parameters compared with 231 thousand for the MLP. However, the measured inference 26 U-Net FNO CSNO 
+
+0.4
+
+0.45 
+
+0.5
+
+0.55 
+
+0.6
+
+0.65         
+
+> Mean rollout relative  L2
+> Figure 4: Aggregate autoregressive rollout behavior on The Well MHD_64 over ten ran-dom seeds. Error bars show two-sided 95% confidence intervals. CSNO obtains the lowest mean rollout relative L2error despite not having the lowest one-step pointwise error Table 2: ConStellaration equilibrium-regression metrics over ten random seeds. Values are mean with two-sided 95% confidence intervals in parentheses. Lower is better for all metrics
+
+Metric MLP Sheaf-equilibrium MSE 0.0193 (0 .0184 , 0.0202) 0.00548 (0 .00526 , 0.00570) 
+
+MAE 0.0664 (0 .0658 , 0.0670) 0.0296 (0 .0292 , 0.0299) 
+
+Relative L2 0.129 (0 .126 , 0.131) 0.0643 (0 .0632 , 0.0654) 
+
+Energy-like drift 0.0256 (0 .0221 , 0.0290) 0.0174 (0 .0166 , 0.0182) 
+
+Inference time per batch 2.975 (2 .963 , 2.986) 2.972 (2 .964 , 2.981) 
+
+Parameter count 230 ,927 1,419 ,279 
+
+time per batch is essentially unchanged, with both models near 2.97 in the recorded units. 
+
+5.6. Computational cost 
+
+CSNO is substantially more parameter-efficient than the dense baselines on The Well MHD_64. It uses 60 ,393 parameters, compared with 2.10 mil-lion for FNO and 1.29 million for U-Net. This corresponds to approximately 
+
+97 .1% fewer parameters than FNO and 95 .3% fewer parameters than U-Net. This parameter efficiency does not translate directly into faster infer-ence. The mean inference time per batch is 0.0212 for CSNO, compared with 0.0128 for FNO and 0.0109 for U-Net. Thus, CSNO is approximately 27 U-Net FNO CSNO 
+
+0
+
+2 · 10 −2
+
+4 · 10 −2
+
+6 · 10 −2
+
+8 · 10 −2
+
+0.1  
+
+> Spectral error
+> Figure 5: Aggregate isotropic three-dimensional spectral error on The Well MHD_64 over ten random seeds. Error bars show two-sided 95% confidence intervals. CSNO obtains the lowest spectral error Table 3: The Well MHD_64 computational cost. CSNO is substantially smaller than both dense baselines, but has higher measured inference time per batch
+
+Model Parameters Inference time per batch Relative size vs. CSNO U-Net 1,290 ,343 0.0109 21 .4×
+
+FNO 2,102 ,919 0.0128 34 .8×
+
+CSNO 60 ,393 0.0212 1.0×
+
+1.65 × slower than FNO and 1.94 × slower than U-Net in the measured infer-ence loop. This reflects the overhead of cochain projection, sparse incidence operations, learned restrictions, and Hodge-weighted message passing. The practical value of CSNO therefore depends on the application. If the goal is only minimum one-step tensor error or fastest inference, U-Net is preferable in this experiment. If the goal is improved rollout behavior, spectral fidelity, divergence diagnostics, and compact parameterization, CSNO provides a fa-vorable tradeoff. Altogether, the results highlight CSNO as a structure-aware surrogate designed for stable, physically organized prediction rather than only for min-imizing one-step error. Although U-Net is stronger on one-step pointwise accuracy and the dense baselines are faster at inference, CSNO delivers bet-ter rollout behavior, spectral fidelity, magnetic-divergence diagnostics, and parameter efficiency. 28 6. Discussion 
+
+The results point to a broader issue in learned PDE surrogate modeling; a model which is accurate as a one-step regressor is not necessarily the best learned time-stepper. For applications such as forecasting, control, design iteration, and uncertainty propagation, the surrogate is often used autore-gressively, so accumulated error, compatibility drift, spectral distortion, and constraint violation become more important than pointwise reconstruction. CSNO is designed to access the algebraic organization of the discretization rather than treating the state as a tensor of channels. The magnetic-divergence results illustrate the value of this representa-tion. The gain in projected grid-space divergence is modest, but the native magnetic update has a stronger interpretation because it factors through the edge-to-face coboundary. This separates two questions that are often conflated in neural surrogate evaluation: whether the architecture preserves a discrete compatibility relation internally, and whether the projected grid diagnostic fully reflects that preservation. For constrained systems, this dis-tinction matters because physically meaningful structure may live in the com-putational representation rather than in the storage format of the dataset. The comparison with FNO suggests that spectral parameterization is not the only route to good multiscale behavior. FNO is a natural baseline for grid-based PDE data, but CSNO improves the spectral diagnostic despite not being primarily a Fourier-domain architecture. This indicates that orga-nizing variables by their geometric role can affect how multiscale structure is learned. In MHD, fluxes, circulations, and cell-centered quantities are not interchangeable channels; preserving this organization can improve behavior that is not captured by a generic global convolution alone. The comparison with U-Net highlights the complementary tradeoff. Aconvolutional encoder–decoder is highly effective for short-horizon field re-construction, but its strong one-step accuracy does not automatically trans-late into better autoregressive dynamics. CSNO gives up pointwise accuracy for stronger rollout, divergence, and spectral behavior, which is more relevant for models used as surrogate time-steppers. The ConStellaration results sug-gest that the same principle extends beyond MHD rollouts. Grouped feature spaces and learned restriction-style coupling also improve structured equilib-rium regression. Taken together, these results argue for evaluation protocols that treat rollout growth, constraint violation, spectral structure, and model size as first-class quantities rather than secondary diagnostics. 29 7. Limitations 
+
+The empirical results have several limitations. CSNO does not achieve the best one-step pointwise accuracy on The Well MHD_64, and its projected grid-space magnetic-divergence improvements are modest. The divergence maps are also affected by boundary-sensitive finite-difference artifacts from cropped fields. The native cochain update preserves the corresponding alge-braic quantity by construction, but the projected grid diagnostic still depends on interpolation, projection, and boundary handling. CSNO is also slower at inference than both dense baselines despite using far fewer parameters. Finally, the time-dependent validation is centered on The Well MHD_64; ConStellaration is an equilibrium-regression task rather than a second au-toregressive PDE benchmark. These limitations make the current experi-ments a validation of the cellular-sheaf inductive bias, not a final benchmark of the full generality of the framework. The strongest gains are concentrated in structure-sensitive diagnostics, so the method may be less attractive when ordinary one-step tensor error is the primary objective. The method also has design limitations. The framework is intended for general oriented cell complexes, but the time-dependent experiments use cu-bical complexes induced by structured-grid data, so performance on gen-uinely unstructured production meshes remains untested. Exact preserva-tion claims apply to native cochain updates, not necessarily to every pro-jected grid diagnostic. CSNO also introduces modeling choices beyond U-Net or FNO, including variable placement, learned restriction parameterization, Hodge weights, cochain projection, and task-specific update heads. These choices are meaningful because structure-preserving neural discretizations depend on the chosen complex and function spaces [61, 62], but they re-quire ablation studies. Like other neural operator surrogates, CSNO remains data-dependent: approximation and generalization depend on representa-tion, training distribution, and operator class [63, 64], and autoregressive use can still accumulate one-step errors [65]. Future work should focus on unstructured meshes and non-cubical cell complexes, where the cellular representation is more distinct from ordinary grid-based neural operators. Additional priorities include optimizing sparse and mixed dense–sparse workloads, performing component-wise ablations of restriction maps and update heads, and extending the framework to resis-tive or Hall MHD, adaptive meshes, boundary-aware projections, and longer rollout horizons. 30 8. Conclusions 
+
+This work introduced Cellular Sheaf Neural Operators, a discretization-aware neural operator framework for structure-preserving PDE surrogate modeling. CSNO represents physical states as cochain-valued fields on ori-ented cell complexes, couples local feature spaces through learned restriction maps, and uses incidence/Hodge-informed message passing to follow the ge-ometry of the computational discretization. Its main architectural contri-bution is the use of compatibility-preserving update heads, where learned fluxes, circulations, sources, or potentials are routed through coboundary or flux maps so selected constraints are enforced by cell-complex identities. The MHD instantiation demonstrates this idea in a setting where geomet-ric compatibility is central. Magnetic flux is represented on faces and updated through an edge-based electromotive field, giving a constrained-transport-like magnetic update based on d2d1 = 0 . Fluid variables are advanced through learned face fluxes and cell source terms. This does not make CSNO a re-placement for a conservative MHD solver, but it gives learned surrogates an update structure closer to compatible discretizations. The numerical results show that CSNO is strongest on structure-sensitive diagnostics. On The Well MHD_64, U-Net achieves the lowest one-step pointwise error, but CSNO achieves the best rollout behavior, magnetic-divergence diagnostics, spectral error, and parameter efficiency. Compared with FNO, CSNO improves both one-step prediction metrics and long-horizon diagnostics while using far fewer parameters. On ConStellaration, the sheaf-equilibrium model improves equilibrium-regression accuracy over the MLP baseline, suggesting that learned restriction-style coupling is useful beyond time-dependent MHD prediction. Overall, cochain-valued representations and compatibility-preserving up-date heads provide a useful inductive bias for learned PDE surrogates in con-strained multiphysics systems. The results also show that evaluation should not rely only on one-step tensor error, since rollout behavior, constraint viola-tion, spectral structure, and parameter efficiency can change model rankings and reveal advantages hidden by short-horizon metrics. 31 Data availability 
+
+The Well MHD_64 dataset used in this study is publicly available through The Well benchmark collection. The ConStellaration dataset used for the fusion-equilibrium regression experiments is publicly available from the dataset release described in the cited ConStellaration reference. The processed train, validation, and test splits used in this work are generated from these public datasets by the preprocessing scripts provided with the accompanying code repository. Code for reproducing the experiments, generating the figures, and com-puting the reported metrics is available at https://github.com/lennonshikhman/sheaf-neural-operator. The repository includes the model implementations, pre-processing scripts, experiment configurations, evaluation scripts, and plot-ting utilities. Intermediate cached tensors, trained model checkpoints, and per-seed metric files can be regenerated from the public datasets using the provided scripts. 
+
+Declaration of competing interest 
+
+The authors declare the following financial interests/personal relation-ships which may be considered as potential competing interests: computa-tional resources used in this work were provided by Dell Technologies. The authors declare no other known competing financial interests or personal re-lationships that could have appeared to influence the work reported in this paper. 
+
+CRediT authorship contribution statement Lennon J. Shikhman: Conceptualization, Data curation, Formal anal-ysis, Funding acquisition, Investigation, Methodology, Project administra-tion, Resources, Software, Supervision, Validation, Visualization, Writing – original draft, Writing – review and editing. 
+
+Shane Gilbertie: Investigation, Writing – review and editing. 
+
+Acknowledgements 
+
+Computational Resources. The authors gratefully acknowledge Dell Tech-nologies, and in particular the Dell Pro Precision division, for providing computational resources that supported the experiments in this work. All 32 experiments were conducted on a Dell Pro Max T2 workstation equipped with an Intel Core Ultra 9 285K processor, 128 GB of DDR5 ECC memory, and an NVIDIA RTX PRO 6000 Blackwell GPU. 
+
+References 
+
+[1] N. Kovachki, Z. Li, B. Liu, K. Azizzadenesheli, K. Bhattacharya, A. Stu-art, A. Anandkumar, Neural operator: Learning maps between function spaces with applications to pdes, Journal of Machine Learning Research 24 (2023) 1–97. [2] Z. Li, N. B. Kovachki, K. Azizzadenesheli, B. liu, K. Bhattacharya, A. Stuart, A. Anandkumar, Fourier neural operator for parametric partial differential equations, in: International Conference on Learn-ing Representations, 2021. URL: https://openreview.net/forum?id= c8P9NQVtmnO .[3] L. Lu, P. Jin, G. Pang, Z. Zhang, G. E. Karniadakis, Learning nonlinear operators via deeponet based on the universal approxima-tion theorem of operators, Nature Machine Intelligence 3 (2021) 218–229. URL: http://dx.doi.org/10.1038/s42256-021-00302-5 .doi: 10.1038/s42256-021-00302-5 .[4] J. M. Hyman, M. Shashkov, The adjoint operators for the natural dis-cretizations of the divergence, gradient and curl on logically rectangular grids, Applied Numerical Mathematics 25 (1997) 413–442. [5] J. M. Hyman, M. Shashkov, The orthogonal decomposition theorems for mimetic finite difference methods, SIAM Journal on Numerical Analysis 36 (1999) 788–818. [6] M. Desbrun, A. N. Hirani, M. Leok, J. E. Marsden, Discrete ex-terior calculus, 2005. URL: https://arxiv.org/abs/math/0508341 .
+
+arXiv:math/0508341 .[7] D. N. Arnold, R. S. Falk, R. Winther, Finite element exterior calculus, homological techniques, and applications, Acta Numerica 15 (2006) 1– 155. doi: 10.1017/S0962492906210018 .33 [8] D. N. Arnold, R. S. Falk, R. Winther, Finite element exterior calculus: From hodge theory to numerical stability, Bulletin of the American Mathematical Society 47 (2010) 281–354. [9] L. Shikhman, Diagnosing failure modes of neural operators across di-verse PDE families, Transactions on Machine Learning Research (2026). URL: https://openreview.net/forum?id=0S1LWZHQYn .[10] J. Brackbill, D. Barnes, The effect of nonzero ∇· B on the numerical solu-tion of the magnetohydrodynamic equations, Journal of Computational Physics 35 (1980) 426–430. URL: https://www.sciencedirect.com/ science/article/pii/0021999180900790 . doi: https://doi.org/10. 1016/0021-9991(80)90079-0 .[11] G. Tóth, The ∇ · B = 0 constraint in shock-capturing magnetohydro-dynamics codes, Journal of Computational Physics 161 (2000) 605–652. doi: 10.1006/jcph.2000.6519 .[12] R. Ohana, M. McCabe, L. Meyer, R. Morel, F. J. Agocs, M. Beneitez, M. Berger, B. Burkhart, S. B. Dalziel, D. B. Fielding, D. Fortunato, J. A. Goldberg, K. Hirashima, Y.-F. Jiang, R. R. Kerswell, S. Maddu, J. Miller, P. Mukhopadhyay, S. S. Nixon, J. Shen, R. Watteaux, B. R.-S. Blancard, F. Rozet, L. Parker, M. Cranmer, S. Ho, The well: a large-scale collection of diverse physics simulations for machine learning, in: A. Globerson, L. Mackey, D. Belgrave, A. Fan, U. Paquet, J. Tom-czak, C. Zhang (Eds.), Advances in Neural Information Processing Systems, volume 37, Curran Associates, Inc., 2024, pp. 44989–45037. URL: https://proceedings.neurips.cc/paper_files/paper/2024/ file/4f9a5acd91ac76569f2fe291b1f4772b-Paper-Datasets_and_ Benchmarks_Track.pdf . doi: 10.52202/079017-1430 .[13] S. A. Cadena, A. Merlo, E. Laude, A. Bauer, A. Agrawal, M. Pascu, M. Savtchouk, E. Guiraud, L. Bonauer, S. Hudson, M. Kaiser, Constella-ration: A dataset of qi-like stellarator plasma boundaries and optimiza-tion benchmarks, 2025. URL: https://arxiv.org/abs/2506.19583 .
+
+arXiv:2506.19583 .[14] R. J. LeVeque, Finite Volume Methods for Hyperbolic Problems, Cam-bridge University Press, Cambridge, 2002. 34 [15] B. Cockburn, C.-W. Shu, Runge–kutta discontinuous galerkin methods for convection-dominated problems, Journal of Scientific Computing 16 (2001) 173–261. [16] J. S. Hesthaven, T. Warburton, Nodal Discontinuous Galerkin Methods: Algorithms, Analysis, and Applications, volume 54 of Texts in Applied Mathematics , Springer, 2008. [17] J. Hyman, Mimetic finite difference methods for maxwell’s equations and the equations of magnetic diffusion, Progress In Electromagnetics Research 32 (2000). doi: 10.2528/PIER00080104 .[18] F. Brezzi, K. Lipnikov, M. Shashkov, Convergence of the mimetic finite difference method for diffusion problems on polyhedral meshes, SIAM Journal on Numerical Analysis 43 (2005) 1872–1896. [19] A. N. Hirani, Discrete Exterior Calculus, Ph.D. thesis, California Insti-tute of Technology, 2003. [20] A. Bossavit, Computational Electromagnetism: Variational Formula-tions, Complementarity, Edge Elements, Academic Press, San Diego, 1998. [21] C. R. Evans, J. F. Hawley, Simulation of magnetohydrodynamic flows: A constrained transport method, The Astrophysical Journal 332 (1988) 659–677. [22] D. S. Balsara, Divergence-free adaptive mesh refinement for magneto-hydrodynamics, Journal of Computational Physics 174 (2001) 614–648. URL: http://dx.doi.org/10.1006/jcph.2001.6917 . doi: 10.1006/ jcph.2001.6917 .[23] A. Dedner, F. Kemm, D. Kröner, C.-D. Munz, T. Schnitzer, M. Wesen-berg, Hyperbolic divergence cleaning for the mhd equations, Journal of Computational Physics 175 (2002) 645–673. [24] Z. Li, N. Kovachki, K. Azizzadenesheli, B. Liu, K. Bhattacharya, A. Stu-art, A. Anandkumar, Neural operator: Graph kernel network for par-tial differential equations, 2020. URL: https://arxiv.org/abs/2003. 03485 . arXiv:2003.03485 .35 [25] T. Pfaff, M. Fortunato, A. Sanchez-Gonzalez, P. Battaglia, Learning mesh-based simulation with graph networks, in: International Confer-ence on Learning Representations, 2021. URL: https://openreview. net/forum?id=roNqYL0_XP .[26] Z. Li, D. Z. Huang, B. Liu, A. Anandkumar, Fourier neural operator with learned deformations for pdes on general geometries, Journal of Machine Learning Research 24 (2023) 1–26. [27] Z. Li, H. Zheng, N. Kovachki, D. Jin, H. Chen, B. Liu, K. Azizzade-nesheli, A. Anandkumar, Physics-informed neural operator for learning partial differential equations, ACM / IMS J. Data Sci. 1 (2024). URL: 
+
+https://doi.org/10.1145/3648506 . doi: 10.1145/3648506 .[28] M. Takamoto, T. Praditia, R. Leiteritz, D. MacKinlay, F. Alesiani, D. Pflüger, M. Niepert, Pdebench: an extensive benchmark for scientific machine learning, in: Proceedings of the 36th International Conference on Neural Information Processing Systems, NIPS ’22, Curran Associates Inc., Red Hook, NY, USA, 2022. [29] L. Shikhman, One operator to rule them all? on boundary-indexed operator families in neural PDE solvers, in: AI&PDE: ICLR 2026 Workshop on AI and Partial Differential Equations, 2026. URL: https: //openreview.net/forum?id=lDjWQ9UxRy .[30] M. M. Bronstein, J. Bruna, T. Cohen, P. Veličković, Geometric deep learning: Grids, groups, graphs, geodesics, and gauges, 2021. URL: 
+
+https://arxiv.org/abs/2104.13478 . arXiv:2104.13478 .[31] T. N. Kipf, M. Welling, Semi-supervised classification with graph convo-lutional networks, in: International Conference on Learning Represen-tations, 2017. URL: https://openreview.net/forum?id=SJU4ayYgl .[32] J. Gilmer, S. S. Schoenholz, P. F. Riley, O. Vinyals, G. E. Dahl, Neural message passing for quantum chemistry, in: International Conference on Machine Learning, PMLR, 2017, pp. 1263–1272. [33] A. Sanchez-Gonzalez, N. Heess, J. T. Springenberg, J. Merel, M. Ried-miller, R. Hadsell, P. Battaglia, Graph networks as learnable physics en-gines for inference and control, in: J. Dy, A. Krause (Eds.), Proceedings 36 of the 35th International Conference on Machine Learning, volume 80 of 
+
+Proceedings of Machine Learning Research , PMLR, 2018, pp. 4470–4479. URL: https://proceedings.mlr.press/v80/sanchez-gonzalez18a. html .[34] M. Hajij, G. Zamzmi, T. Papamarkou, N. Miolane, A. Guzmán-Sáenz, K. N. Ramamurthy, T. Birdal, T. K. Dey, S. Mukherjee, S. N. Samaga, N. Livesay, R. Walters, P. Rosen, M. T. Schaub, Topological deep learn-ing: Going beyond graph data, 2023. URL: https://arxiv.org/abs/ 2206.00606 . arXiv:2206.00606 .[35] M. Papillon, S. Sanborn, M. Hajij, N. Miolane, Architectures of topological deep learning: A survey of message-passing topological neural networks, 2024. URL: https://arxiv.org/abs/2304.10031 .
+
+arXiv:2304.10031 .[36] T. Papamarkou, T. Birdal, M. M. Bronstein, G. E. Carlsson, J. Curry, Y. Gao, M. Hajij, R. Kwitt, P. Lio, P. Di Lorenzo, V. Maroulas, N. Mi-olane, F. Nasrin, K. Natesan Ramamurthy, B. Rieck, S. Scardapane, M. T. Schaub, P. Veličković, B. Wang, Y. Wang, G. Wei, G. Za-mzmi, Position: Topological deep learning is the new frontier for re-lational learning, in: R. Salakhutdinov, Z. Kolter, K. Heller, A. Weller, N. Oliver, J. Scarlett, F. Berkenkamp (Eds.), Proceedings of the 41st In-ternational Conference on Machine Learning, volume 235 of Proceedings of Machine Learning Research , PMLR, 2024, pp. 39529–39555. URL: 
+
+https://proceedings.mlr.press/v235/papamarkou24a.html .[37] S. Ebli, M. Defferrard, G. Spreemann, Simplicial neural networks, arXiv preprint arXiv:2010.03633 (2020). [38] C. Bodnar, F. Frasca, Y. Wang, N. Otter, G. F. Montufar, P. Lió, M. Bronstein, Weisfeiler and lehman go topological: Message passing simplicial networks, in: M. Meila, T. Zhang (Eds.), Proceedings of the 38th International Conference on Machine Learning, volume 139 of Pro-ceedings of Machine Learning Research , PMLR, 2021, pp. 1026–1037. URL: https://proceedings.mlr.press/v139/bodnar21a.html .[39] M. Hajij, K. Istvan, G. Zamzmi, Cell complex neural networks, in: TDA & Beyond, 2020. URL: https://openreview.net/forum?id= 6Tq18ySFpGU .37 [40] C. Bodnar, F. Frasca, N. Otter, Y. G. Wang, P. Liò, G. Montu-far, M. M. Bronstein, Weisfeiler and lehman go cellular: CW net-works, in: A. Beygelzimer, Y. Dauphin, P. Liang, J. W. Vaughan (Eds.), Advances in Neural Information Processing Systems, 2021. URL: 
+
+https://openreview.net/forum?id=uVPZCMVtsSG .[41] T. M. Roddenberry, S. Segarra, Hodgenet: Graph neural networks for edge data, 2019. doi: 10.1109/IEEECONF44664.2019.9049000 .[42] T. M. Roddenberry, N. Glaze, S. Segarra, Principled simplicial neu-ral networks for trajectory prediction, in: M. Meila, T. Zhang (Eds.), Proceedings of the 38th International Conference on Machine Learn-ing, volume 139 of Proceedings of Machine Learning Research , PMLR, 2021, pp. 9020–9029. URL: https://proceedings.mlr.press/v139/ roddenberry21a.html .[43] M. T. Schaub, Y. Zhu, J.-B. Seby, T. M. Roddenberry, S. Segarra, Signal processing on higher-order networks: Livin’ on the edge... and beyond, Signal Processing 187 (2021) 108149. URL: https://www. sciencedirect.com/science/article/pii/S0165168421001870 .doi: https://doi.org/10.1016/j.sigpro.2021.108149 .[44] J. Hansen, R. Ghrist, Toward a spectral theory of cellular sheaves, Journal of Applied and Computational Topology 3 (2019) 315–358. doi: 10.1007/s41468-019-00038-7 .[45] J. Hansen, T. Gebhart, Sheaf neural networks, in: TDA & Beyond, 2020. URL: https://openreview.net/forum?id=GgcgIJsT8HD .[46] C. Bodnar, F. Di Giovanni, B. Chamberlain, P. Lió, M. Bronstein, Neu-ral sheaf diffusion: A topological perspective on heterophily and over-smoothing in gnns, in: S. Koyejo, S. Mohamed, A. Agarwal, D. Bel-grave, K. Cho, A. Oh (Eds.), Advances in Neural Information Process-ing Systems, volume 35, Curran Associates, Inc., 2022, pp. 18527–18541. URL: https://proceedings.neurips.cc/paper_files/paper/2022/ file/75c45fca2aa416ada062b26cc4fb7641-Paper-Conference.pdf .[47] F. Barbero, C. Bodnar, H. Sáez de Ocáriz Borde, M. Bronstein, P. Veličković, P. Liò, Sheaf neural networks with connection lapla-cians, in: A. Cloninger, T. Doster, T. Emerson, M. Kaul, I. Ktena, 38 H. Kvinge, N. Miolane, B. Rieck, S. Tymochko, G. Wolf (Eds.), Pro-ceedings of Topological, Algebraic, and Geometric Learning Work-shops 2022, volume 196 of Proceedings of Machine Learning Research ,PMLR, 2022, pp. 28–36. URL: https://proceedings.mlr.press/ v196/barbero22a.html .[48] J. P. Goedbloed, S. Poedts, Principles of Magnetohydrodynamics: With Applications to Laboratory and Astrophysical Plasmas, Cambridge Uni-versity Press, Cambridge, 2004. [49] J. P. Freidberg, Ideal MHD, Cambridge University Press, Cambridge, 2014. [50] K. D. Makwana, H. Yan, Properties of magnetohydrodynamic modes in compressively driven plasma turbulence, Phys. Rev. X 10 (2020) 031021. URL: https://link.aps.org/doi/10.1103/ PhysRevX.10.031021 . doi: 10.1103/PhysRevX.10.031021 .[51] K. G. Powell, P. L. Roe, T. J. Linde, T. I. Gombosi, D. L. De Zeeuw, A solution-adaptive upwind scheme for ideal magnetohydrodynamics, Journal of Computational Physics 154 (1999) 284–309. doi: 10.1006/ jcph.1999.6299 .[52] T. Miyoshi, K. Kusano, A multi-state HLL approximate riemann solver for ideal magnetohydrodynamics, Journal of Computational Physics 208 (2005) 315–344. doi: 10.1016/j.jcp.2005.02.017 .[53] T. A. Gardiner, J. M. Stone, An unsplit Godunov method for ideal MHD via constrained transport in three dimensions, Journal of Computational Physics 227 (2008) 4123–4141. doi: 10.1016/j.jcp.2007.12.017 .[54] J. M. Stone, T. A. Gardiner, P. Teuben, J. F. Hawley, J. B. Simon, Athena: A new code for astrophysical MHD, The Astrophysical Journal Supplement Series 178 (2008) 137–177. doi: 10.1086/588755 .[55] T. Kim, Y. Ha, M. Kang, Neural operators learn the lo-cal physics of magnetohydrodynamics, Computers & Fluids 297 (2025) 106661. URL: https://www.sciencedirect.com/science/ article/pii/S0045793025001215 . doi: https://doi.org/10.1016/j. compfluid.2025.106661 .39 [56] K. Maggs, C. Hacker, B. Rieck, Simplicial representation learning with neural $k$-forms, in: The Twelfth International Conference on Learn-ing Representations, 2024. URL: https://openreview.net/forum?id= Djw0XhjHZb .[57] V. Kova˘ c, E. Bekkers, P. Lió, F. Eijkelboom, E(n) equivariant message passing cellular networks, in: S. Vadgama, E. Bekkers, A. Pouplin, S.-O. Kaba, R. Walters, H. Lawrence, T. Emerson, H. Kvinge, J. Tomczak, S. Jegelka (Eds.), Proceedings of the Geometry-grounded Representa-tion Learning and Generative Modeling Workshop (GRaM), volume 251 of Proceedings of Machine Learning Research , PMLR, 2024, pp. 173–186. URL: https://proceedings.mlr.press/v251/kovac-24a.html .[58] B. Burkhart, S. Appel, S. Bialy, J. Cho, A. Christensen, D. Collins, C. Federrath, D. Fielding, D. Finkbeiner, A. Hill, et al., The catalogue for astrophysical turbulence simulations (cats), The Astrophysical Jour-nal 905 (2020) 14. [59] O. Ronneberger, P. Fischer, T. Brox, U-net: Convolutional networks for biomedical image segmentation, in: N. Navab, J. Hornegger, W. M. Wells, A. F. Frangi (Eds.), Medical Image Computing and Computer-Assisted Intervention – MICCAI 2015, Springer International Publish-ing, Cham, 2015, pp. 234–241. [60] A. Paszke, S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan, T. Killeen, Z. Lin, N. Gimelshein, L. Antiga, A. Desmaison, A. Köpf, E. Yang, Z. DeVito, M. Raison, A. Tejani, S. Chilamkurthy, B. Steiner, L. Fang, J. Bai, S. Chintala, PyTorch: an imperative style, high-performance deep learning library, Curran Associates Inc., Red Hook, NY, USA, 2019. [61] B. D. Shaffer, S. Koohy, B. Kinch, M. A. Hsieh, N. Trask, Structure-preserving learning improves geometry generalization in neural pdes, 2026. URL: https://arxiv.org/abs/2602.02788 . arXiv:2602.02788 .[62] B. Kinch, B. Shaffer, E. Armstrong, M. Meehan, J. Hewson, N. Trask, Structure-preserving digital twins via conditional neural whitney forms, 2025. URL: https://arxiv.org/abs/2508.06981 . arXiv:2508.06981 .40 [63] S. Lanthaler, S. Mishra, G. E. Karniadakis, Error estimates for deep-onets: a deep learning framework in infinite dimensions, Transactions of Mathematics and Its Applications 6 (2022) tnac001. URL: https: //doi.org/10.1093/imatrm/tnac001 . doi: 10.1093/imatrm/tnac001 .
+
+arXiv:https://academic.oup.com/imatrm/article-pdf/6/1/tnac001/42785544/tnac001 
+
+[64] B. Adcock, M. Griebel, G. Maier, The sample complexity of learn-ing lipschitz operators with respect to gaussian measures, 2025. URL: 
+
+https://arxiv.org/abs/2410.23440 . arXiv:2410.23440 .[65] M. McCabe, P. Harrington, S. Subramanian, J. Brown, Towards sta-bility of autoregressive neural operators, Transactions on Machine Learning Research (2023). URL: https://openreview.net/forum?id= RFfUUtKYOG .41

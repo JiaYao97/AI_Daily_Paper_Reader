@@ -1,0 +1,2062 @@
+Title: 2606.02005v1.pdf
+
+URL Source: https://arxiv.org/pdf/2606.02005v1
+
+Published Time: Tue, 02 Jun 2026 02:27:46 GMT
+
+Number of Pages: 33
+
+Markdown Content:
+1
+
+# Multiscale Dynamics of Heatwave Persistence and 
+
+# Intensity Under Climate Change 
+
+Md Tasim Ferdous 1, Reda Snaiki 1, Abdelatif Merabtine 1 *  
+
+> 1
+
+Department of Construction Engineering, École de Technologie Supérieure, Université du Québec, 
+
+Montréal, Québec, Canada 
+
+*Corresponding author: abdelatif.merabtine@etsmtl.ca 
+
+Abstract: Climate change is expected to intensify heatwave risk, yet increases in 
+
+exceedance frequency alone do not explain why some regions experience 
+
+disproportionately stronger amplification in event persistence. This study develops an 
+
+integrated event –dynamical workflow to diagnose how warm -season heatwave 
+
+characteristics evolve and to attribute projected changes to coherent, multiscale 
+
+structures of temperature variability. Heatwaves are identified over southern Canada 
+
+using a fixed historical percentile threshold (90th; reference 2001 –2010, 15 -day moving 
+
+window) and a minimum -durat ion constraint and are summarized by frequency (HWF, 
+
+HWN), persistence (HWMD, HWD), and intensity (HWI, HWM). The dynamical 
+
+organization of the daily mean temperature field is characterized using multiresolution 
+
+dynamic mode decomposition (mrDMD). Event an d dynamical perspectives are linked 
+
+through (i) heatwave -conditioned mode participation ratios that identify modes 
+
+preferentially activated during heatwave days and (ii) spatial alignment analyses 
+
+comparing mode -energy footprints to gridded heatwave -metric maps using hotspot 
+
+overlap and Spearman rank association. Applied to CORDEX -NAM12 regional 
+
+simulations (CRCM5 downscaling of CanESM5) under SSP5 –8.5 for 2016 –2025, 2051 –
+
+2060, and 2091 –2100, the results indicate a pronounced shift toward persistence -
+
+domina ted heatwave regimes in the continental interior. Late -century increases in 
+
+seasonal heatwave days are accompanied by substantially longer events , with regional 
+
+HWMD reaching up to ~26.66 days/event and HWD up to ~6 9 days, alongside marked 
+
+intensification of above -threshold heatwave intensity, with regional HWI reaching up to 
+
+~6 .8 8 K). Dynamical diagnostics show a redistribution of dominant activity toward 
+
+lower -frequency levels and weaker effective damping in interior regions, whereas coast al 
+
+and maritime regions exhibit smaller shifts. Heatwave -relevant low -frequency modes 
+
+display sustained activation during long events and spatial footprints that align with 
+
+persistence and intensity hotspots, supporting a process -informed interpretation of 
+
+regional heatwave amplification under climate change. 
+
+Keywords: Heatwaves; Climate change; Persistence; Multiresolution dynamic mode 
+
+decomposition. 2
+
+1. Introduction 
+
+Heatwaves are among the most consequential climate hazards, with impacts that extend 
+
+from a cute heat -related mortality and morbidity to cascading stresses on energy systems, 
+
+transportation, water resources, and ecosystem function (Ebi et al., 2021; Kirchmeier -
+
+Young et al., 2025; Smith et al., 2023) . A warming climate is expected to increase the 
+
+likelihood of extreme high -temperature conditions, but changes in heatwav e risk are not 
+
+governed by shifts in mean temperature alone; they also depend on how variability, 
+
+persistence, and the spatio -temporal organization of warm -season temperatures evolve 
+
+(Barriopedro et al., 2023; Luo et al., 2024; Perkins -Kirkpatrick & Lewis, 2020) . In many 
+
+regions, the most disruptive events are those that persist for multiple days to weeks, 
+
+because cumulative expo sure limits physiological recovery, amplifies nighttime heat 
+
+stress, and compounds risks through concurrent drought, wildfire potential, and air -
+
+quality degradation (Liu et al., 2025; Sutanto et al., 2020; Tripathy et al., 2023) . These 
+
+concerns are particularly salient for Canada, where rapid warming and increasing warm -
+
+season extremes are already straining public health and infrastructure planning, 
+
+especially in densely populated southern corridor s (Clark et al., 2025; Henderson et al., 
+
+2022) . Despite substantial p rogress in heatwave detection and statistical projection, a 
+
+persistent gap remains in translating projected changes in frequency, duration, and 
+
+intensity into a physically interpretable understanding of why certain regions exhibit 
+
+disproportionately strong amplification, especially in event persistence (Barriopedro et 
+
+al., 2023; Bhattarai et al., 2025; Khodayar Pardo & Paredes -Fortuny, 2024; Perkins -
+
+Kirkpatrick & Lewis, 2020) . Addressing this gap requires diagnostic approaches that 
+
+connect event -based heatwave metrics to the underlying dynamical structures that can 
+
+sustain prolonged exceedance conditions (Hochman et al., 2020; Ren et al., 2023) .
+
+A large body of work has therefore focused on quantifying heatwaves through event -
+
+based indices derived from daily temperature time series, typically u sing percentile 
+
+exceedance thresholds and minimum -duration criteria to construct event catalogues and 
+
+summarize frequency, duration, and intensity at gridded and regional scales (Keellings 
+
+et al., 2018; Kirchmeier -Youn g et al., 2025; Perkins & Alexander, 2013) . These approaches 
+
+are well -suited for mapping where heatwave hazard increases and for comparing 
+
+scenarios, but they remain largely descriptive: they do not directly reveal the dynamical 
+
+mechanisms that organize warm -season variability and govern whether exceedance 
+
+conditions dissipate quickly or persist for extended periods (Cowan et al., 2014; Fischer 
+
+& Schär, 2010; Kirchmeier -You ng et al., 2025) . Mechanistic interpretations are often 
+
+invoked indirectly, through associations with synoptic blocking, quasi -stationary 
+
+circulation anomalies, land –atmosphere coupling, soil -moisture feedbacks, or regional 
+
+advection regimes, but these links are challenging to establish consistently across large 
+
+spatial domains and across climate projections, particularly when the goal is to attribute 
+
+changes in event persistence rather than event occurrence alone  (Adeyeri et al., 2025; 3
+
+Barriopedro et al., 2023; Cai et al., 2024; Zhang et al., 2025) . As a result, projections can 
+
+robustly indicate that heatwaves become more frequent and intense while leaving open 
+
+a central question for risk assessment: which components of the temperature field’s 
+
+multi -scale dynamics are most responsible for the emergence of long -duration 
+
+exceedance regimes, and how do those components evolve under future forcing? 
+
+Recent studies hav e started to bridge this gap by adopting dynamical -systems and 
+
+reduced -order representations that express climate fields as superpositions of coherent 
+
+spatio -temporal structures, making dominant time scales and persistence more explicit 
+
+than in purely even t-statistical summaries (Ann et al., 2026; Çelik & Altunkaynak, 2024; 
+
+Mankovich et al., 2025) . A range of decomposition approaches has been explored for this 
+
+purpose. Classical empirical orthogonal function / principal component decompositions 
+
+(EOF/PCA) and their engineering analogues, such as proper orthogonal decomposition 
+
+(POD), provide compact energy -ranked bases that are widely used to id entify dominant 
+
+spatial patterns and their temporal variability (Bauer -Marschallinger et al., 2013; 
+
+Forootan et al., 2016; Volkov, 2014) . However, because these bases are typically optimized 
+
+for varian ce capture over an entire analysis window, they can mix multiple physical 
+
+processes and time scales, and they do not directly encode characteristic frequencies or 
+
+decay rates; consequently, connecting leading modes to event persistence or to the onset 
+
+and termination of transient extremes often requires additional assumptions or post -
+
+processing (Mankovich et al., 2025; Zhang et al., 2014; Zhao et al., 2019) . Extensions that 
+
+emphasize spectral separation (such as wavelet -based multiscale analysis, singular 
+
+spectrum analysis, and spectral/space –time POD) enable direct interrogation of 
+
+variability across frequency bands and can better isolate low -frequency contributions 
+
+relevant to persistence (Ghil et al., 2002; Towne et al., 2018) . Yet these approaches may 
+
+still face practical limitations for attribution of extremes: results can be sensitive to 
+
+window choices, band definitions, or stationarity assumptions , and the extracted 
+
+components do not necessarily provide a compact set of coherent structures whose 
+
+activation can be tracked straightforwardly on heatwave days versus non -heatwave 
+
+conditions (Ann et al., 2026; Mankovich et al., 2025; Schmidt & Colonius, 2020) . In 
+
+parallel, Koopman -inspired and operator -theoretic methods, including dynamic mode 
+
+decomposition (DMD), offer a complementary lens by extracting modes wit h
+
+characteristic frequencies and decay rates, thereby providing interpretable diagnostics of 
+
+oscillatory content and damping that relate directly to persistence mechanisms (Kutz, 
+
+2013; Manohar, 2018; Sato et al., 2024; Schmid, 2010) . A t the same time, standard DMD is 
+
+commonly applied over fixed windows and can be sensitive to noise and non -
+
+stationarity; for climate fields, this can complicate interpretation when dynamical 
+
+organization evolves within a season or when the goal is to separ ate slowly varying 
+
+background structures from shorter -lived variability while preserving event -scale 
+
+interpretability  (Colbrook, 2023; Hemati et al., 2017; Kutz et al., 2016; Lapo et al., 2025) .4
+
+Despite this methodological progress, applications that explicitly connect dynamical 
+
+decompositions to heatwave event catalogues remain limited, and a clear need persists 
+
+for workflows that link proj ected changes in heatwave frequency, duration, and intensity 
+
+to the evolving dynamical structures that can sustain prolonged exceedance conditions 
+
+and shape the spatial geography of heat -risk hotspots (Ann et al., 2026; Velagar et al., 
+
+2025) .
+
+Motivated by this gap, this study proposes and applies an integrated event –dynamical 
+
+framework to quantify regional heatwave amplif ication and to interpret projected 
+
+changes in terms of the multiscale organization of warm -season temperature variability. 
+
+The approach combines a percentile -based heatwave event catalogue, used to compute 
+
+standard frequency, persistence, and intensity met rics at grid -cell and subregional scales, 
+
+with a multiresolution dynamic mode decomposition (mrDMD) of the raw daily mean 
+
+temperature field to extract coherent modes organized by characteristic time scale and 
+
+damping behavior. A cut -off sensitivity and rec onstruction sufficiency analyses are used 
+
+to select the retained low -frequency content relevant for persistence, after which two 
+
+attribution diagnostics link the dynamical and event perspectives: a heatwave -
+
+conditioned participation ratio ranks modes by preferential activation during heatwave 
+
+days, and a spatial alignment analysis evaluates whether the energy footprints of the 
+
+heatwave -relevant modes coincide with persistence and intensity hotspots. The 
+
+framework is demonstrated over southern Canada using high -resolution regional climate 
+
+simul ations under a high -emissions pathway for present -day , mid -century, and late -
+
+century periods. By jointly diagnosing what changes and why, the study provides 
+
+process -informed evidence of persistence -driven heatwave regime shifts and offers 
+
+transferable diag nostics to support model evaluation and climate -risk assessment. 
+
+2. Methodology 
+
+2.1 Framework overview 
+
+To systematically investigate how climate change alters the persistence and severity of 
+
+regional heat risks, this study develops an integrated workflow ( Fig. 1) that couples 
+
+heatwave event diagnostics with a multiscale dynamical decomposition of warm -season 
+
+temperature variability. The workflow is designed to translate projected changes in 
+
+heatwave characteristics (i.e., frequency, duration, and intensity) into mechanistic insight 
+
+by isolating the coherent dynamical structures that organize temperature anomalies and 
+
+sustain exceedances. Heatwave amplification under future climate scenarios is therefore 
+
+interpreted in terms of changes in the spatio -temporal organization of the warm -season 
+
+temperature field, rather than summary statistics alone. 
+
+The first branch of the framework operates in an event -statistical setting. Heatwave days 
+
+and events are identified using a percentile -based exceedance threshold combi ned with 5
+
+a minimum -duration constraint, producing an event catalogue from which standard 
+
+metrics are computed. These metrics summarize occurrence (e.g., heatwave -day 
+
+frequency and number of events), persistence (mean and maximum duration), and 
+
+magnitude (i ntensity indices). They are first evaluated at the grid -cell level and then 
+
+aggregated over user -defined subregions to support robust regional interpretation and 
+
+inter -scenario comparison. In parallel, the second branch provides a dynamical 
+
+representation of the temperature field using multiresolution dynamic mode 
+
+decomposition (mrDMD). The primary analysis applies mrDMD directly to the daily 
+
+mean temperature field, ensuring that the extracted modes represent the full warm -
+
+season signal used for the event d iagnostics and impact interpretation. By separating 
+
+variability across characteristic time scales, mrDMD isolates coherent spatio -temporal 
+
+structures that can plausibly contribute to multi -day persistence and regional synchrony, 
+
+features that are central t o heatwave sustainment. 
+
+The final stage of the workflow integrates the event and dynamic branches through two 
+
+attribution -oriented diagnostics. First, a heatwave -conditioned participation analysis 
+
+uses the temporal modal coefficients to identify modes pref erentially activated on 
+
+heatwave days relative to non -heatwave days. Second, a spatial association analysis 
+
+compares mode -energy (or amplitude) patterns with gridded maps of heatwave metrics 
+
+to quantify alignment with persistence and intensity hotspots. Fi nally, reconstruction -
+
+based checks assess whether the retained modal representation reproduces the dominant 
+
+warm -season variability relevant to heatwave behavior, providing a transparent 
+
+sufficiency test that grounds the ensuing physical interpretation.   
+
+> Fig. 1Schematic of the general analysis framework used in this study to relate heatwave
+> diagnostics derived from gridded temperature data to a multiscale dynamical interpretation of
+> the underlying temperature variability. 6
+
+2.2 Heatwave identification and metrics 
+
+Heatwave events are identified at each grid cell 𝒙 from the daily mean temperature time 
+
+series 𝑇 (𝒙 , 𝑡 ), where 𝑡 indexes days. For each calendar day (or day -of -season) 𝑑 , a grid -
+
+cell -specific exceedance threshold 𝜃 𝑝 (𝒙 , 𝑡 ) is defined as the p-th percent ile of 
+
+temperatures in a reference climatology, estimated using a moving window centered on 
+
+𝑑 to ensure robust sampling. Let 𝑑 (𝑡 ) map 𝑡 to its corresponding calendar day -of -season. 
+
+A heatwave day is then defined through the exceedance indicator: 
+
+𝐼 (𝒙 , 𝑡 ) = { 1, 𝑖𝑓 𝑇 (𝒙 , 𝑡 ) > 𝜃 𝑝 (𝒙 , 𝑑 (𝑡 ))
+
+0, otherwise (1) 
+
+Here 𝑝 is set to the 90 th percentile. Heatwave events correspond to contiguous runs of 
+
+exceedance days {𝐼 (𝒙 , 𝑡 ) = 1} with duration 𝐿 ≥ 𝐿 𝑚𝑖𝑛 (e.g., 𝐿 𝑚𝑖𝑛 = 3 days). Event start 
+
+and end dates are obtained by segmenting 𝐼 (𝒙 , 𝑡 ) into consecutive sequences and 
+
+retaining those meeting t he minimum -duration criterion. Based on the resulting event 
+
+catalogue, a set of heatwave metrics is computed over an analysis window 𝒯 (e.g., a 
+
+season) to summarize occurrence, persistence, and magnitude. Heatwave frequency 
+
+(HWF) is defined as the total n umber of heatwave days: 
+
+HWF (𝒙 ) = ∑ 𝐼 (𝒙 , 𝑡 )𝑡 ∈𝒯 (2) 
+
+where 𝒯 denotes the set of days in the analysis window. The Heatwave Number (HWN) 
+
+is the count of retained heatwave events within 𝒯 . Persistence is quantified using event 
+
+durations 𝐿 𝑗 (𝒙 ) (in days) for even ts 𝑗 = 1, … , HWN (𝑥 ), including the Maximum Duration 
+
+(HWD): 
+
+HWD (𝒙 ) = max  
+
+> 𝑗
+
+𝐿 𝑗 (𝒙 ) (3) 
+
+The Mean Duration (HWMD) is defined as: 
+
+HWMD (𝒙 ) = 1 
+
+> HWN (𝒙 )
+
+∑ 𝐿 𝑗 (𝒙 )HWN (𝒙 ) 
+
+> 𝑗 =1
+
+(4) 
+
+with the convention that HWMD = 0 when HWN = 0. Heatwave intensity ( HWI ) is 
+
+summarized using an exceedance -based formulation computed on heatwave days, 
+
+defined as the mean temperature anomaly above the threshold: 
+
+HWI (𝒙 ) = 1 
+
+> HWF (𝒙 )
+
+∑ 𝐼 (𝒙 , 𝑡 )𝑡 ∈𝒯 (𝑇 (𝒙 , 𝑡 ) − 𝜃 𝑝 (𝒙 , 𝑑 (𝑡 ))) (5) 
+
+with HWI = 0 when HWF = 0. In addition to HWI , t he maximum h eatwave magnitude 
+
+(HWM) is defined here as the largest threshold exceedance attained on heatwave days 
+
+within the analysis window: 
+
+HWM (𝒙 ) = 𝑚𝑎𝑥 𝑡 ∈𝒯 [𝐼 (𝒙 , 𝑡 ) (𝑇 (𝒙 , 𝑡 ) − 𝜃 𝑝 (𝒙 , 𝑑 (𝑡 )))] (6) 7
+
+with HWM = 0 when HWF = 0. Alternative intensity indices (e.g., event -mean 
+
+exceedance, or cumulative exceedance) can be defined analogously, provided the 
+
+temperature statistic used for intensity is consistent with that used to construct 𝜃 𝑝 . All 
+
+metrics are first com puted at the grid -cell scale to preserve spatial heterogeneity, and 
+
+regional summaries are then obtained by area -weighted aggregation of grid -cell metrics 
+
+over the defined subregions. These regional summaries describe regional heatwave 
+
+exposure and are dis tinct from the regional heatwave -day definition adopted in the later 
+
+participation analysis. 
+
+2.3 Multiresolution dynamic mode decomposition 
+
+Multiresolution dynamic mode decomposition (mrDMD) is used to represent the warm -
+
+season daily -mean temperature field as a superposition of coherent spatio -temporal 
+
+structures, explicitly organized by characteristic time scales. The decomposition is 
+
+applied to the raw daily mean temperature 𝑇 (𝐱 , 𝑡 𝑘 ) over the warm season to remain 
+
+consistent with the event -based heatwave diagnostics described in Section 2.2, which are 
+
+defined from exceedances of percentile -based thresholds in the original temperature 
+
+field. Restricting the analysis to the warm season limits the influence of the annual cycle, 
+
+while the multiresolution hierarchy separates slowly varying background variability 
+
+from subseasonal structures most relevant to multi -day persistence. Let 𝐱 𝑘 ∈ ℝ𝑛 denot e
+
+the gridded temperature field at day 𝑘 (𝑘 = 1, … , 𝑚 ), where 𝑛 is the number of spatial grid 
+
+points and 𝑚 is the number of daily samples in the analysis window. The snapshot 
+
+sequence is arranged into a data matrix 𝐗 as summarized in Eq. ( 7). From 𝐗 , two t ime -
+
+shifted matrices are formed from consecutive snapshots, 𝐗 1 = [x1, … , x𝑚 −1] and 𝐗 2 =
+
+[x2, … , x𝑚 ], which defines the one -step evolution used in DMD: 
+
+𝐱 𝑘 = vec (𝑇 (𝐱 , 𝑡 𝑘 )) ∈ ℝ𝑛 (7)
+
+Standard DMD approximates the best -fit linear operator 𝐀 that advances the state by one 
+
+sampling interval ∆𝑡 (with ∆𝑡 = 1 day here) through 𝐗 2 ≈ 𝐴 𝑋 1. To improve numerical 
+
+stability and filter noise, a truncated singular value decomposition is applied to 𝐗 1 ,
+
+retaining rank 𝑟 = 20 (selected to capture approximately 98% of the variance). The 
+
+reduced operator is then constructed in the 𝑟 -dimensional subspace, and eigen -
+
+decomposed to obtain DMD eigenvalues 𝜆 𝑘 and modes 𝜙 𝑘 . The corresponding temporal 
+
+coeff icients 𝑏 𝑘 (𝑡 ) provide a time -resolved representation of modal activity over the 
+
+analysis window. Eigenvalues are interpreted in continuous time using 𝜔 𝑘 = ln (𝜆 𝑘 ) Δ𝑡 ⁄ ,
+
+where Im (𝜔 𝑘 ) characterizes the oscillation content, with associated period 𝑃 𝐶 =
+
+2𝜋 |Im (𝜔 𝑘 )|⁄ ) and Re (𝜔 𝑘 ) controls exponential decay. Persistence is quantified through 
+
+an e -folding time scale 𝜏 𝑘 = 1 |Re (𝜔 𝑘 )|⁄ (days), so that weakly damped modes (large 𝜏 𝑘 )
+
+correspond to slowly varying, potentially heatwav e-relevant structures, while strongly 
+
+damped modes represent short -lived variability. 8
+
+MrDMD extends DMD by repeating this decomposition over a hierarchy of nested time 
+
+windows (schematically illustrated in Fig. 2). At level ℓ , the analysis window is 
+
+partit ioned into 2ℓ non -overlapping segments, and DMD is performed independently 
+
+within each segment. Coarser levels emphasize low -frequency, long -lived variability, 
+
+whereas finer levels isolate shorter -lived dynamics. The maximum level is set to 𝐿 = 9,
+
+yielding a shortest resolved window length of approximately (𝑚 2𝐿 )∆𝑡 ≈ 3⁄ days. In the 
+
+mrDMD implementatio n, mode retention is controlled by a user -defined cut -off 
+
+parameter 𝐹 𝑐 reported in Table 1, that specifies the maximum number of oscillations 
+
+permitted within a given time window. For a window of length 𝑇 ℓ at level ℓ, the 
+
+corresponding level -dependent cut -off is 𝐹 ℓ = 𝐹 𝑐 /𝑇 ℓ . Modes are retained when their 
+
+oscillat ory content falls below this level -dependent threshold, so the retained set consists 
+
+of modes that are slow relative to the time window at that level. A reconstruction -based 
+
+sufficiency check is then used to verify that the retained mrDMD representation captures 
+
+the dominant warm -season variability relevant to heatwave behavior. Reconstructions 
+
+based on the retained modes are evaluated against the original temperature field using 
+
+domain - and region -aggregated skill metrics, including RMSE , NRMSE , and 𝑅 2 over the 
+
+analysis window (Chicco et al., 2021; Ranatunga et al., 2016) . These diagnostics provide 
+
+a transparent criterion for interpreting modal persistence and attribution results in 
+
+subsequent sections.   
+
+> Fig. 2Schematic of the mrDMD framework, illustrating the hierar chical time -window
+> partitioning and scale -separated extraction of dynamic modes across decomposition levels.
+
+2.4 Integrated dynamical attribution 
+
+To identify which dynamical structures are most relevant to heatwave behavior, the 
+
+mrDMD representation (Section 2.3) is coupled to the event -based classification of days 
+
+into heatwave and non -heatwave conditions (Section 2.2). For each mrDMD mode 𝑘 , the 9
+
+associated temporal coefficient 𝑏 𝑘 (𝑡 ) describes the time -varying contribution of that 
+
+mode to the reconstructed temperature field. Because 𝑏 𝑘 (𝑡 ) is generally complex, a scalar 
+
+amplitude is defined as 𝐴 𝑘 (𝑡 ) = |𝑏 𝑘 (𝑡 )|, providing a non -negative measure of mod al 
+
+activity that is independent of phase. Similarly, 𝜙 𝑘 (𝑥 ) denotes the spatial value of the 
+
+mode 𝑘 at grid point 𝑥 , and |𝜙 𝑘 (𝑥 )| represents its magnitude. 
+
+A mode participation ratio 𝑃 𝑘 is then computed to quantify preferential activation during 
+
+heatwave conditions. Let ℋ and 𝒩  denote, respectively,  the sets of heatwave and non -
+
+heatwave days over the analysis window . For this binary regional classification, a 
+
+regional heatwave day is defined by the area -weighted fraction of grid cells experiencing 
+
+heatwa ve conditions within each subregion. A day is classified as a regional heatwave 
+
+day when this fraction exceeds 50%; otherwise, it is classified as non -heatwave. Because 
+
+the computation of 𝑃 𝑘 requires a day -by -day classification of heatwave and non -
+
+heatw ave conditions, this binary regional classification is introduced separately from the 
+
+area -weighted regional summaries described above (Section 2.2) , which represent 
+
+aggregated exposure metrics rather than a day -by -day regional event mask. The 
+
+participation ratio is then defined as the ratio of the mean modal amplitude on heatwave 
+
+days to that on non -heatwave days: 
+
+𝑃 𝑘 = 〈𝐴 𝑘 (𝑡 )〉𝑡 ∈ℋ 〈𝐴 𝑘 (𝑡 )〉𝑡 ∈𝒩 ⁄ (8)
+
+where 〈 . 〉 denotes a temporal average. Values 𝑃 𝑘 > 1 indicate that mode 𝑘 is more active 
+
+during heatw ave days than during non -heatwave conditions, whereas 𝑃 𝑘 ≈ 1 indicates 
+
+comparable activation across both regimes. Modes are ranked by 𝑃 𝑘 , and the subset with 
+
+the highest participation ratios is interpreted as the dominant set of heatwave -relevant 
+
+dynamic al structures for the considered region and climate period. 
+
+To evaluate whether these dominant modes also organize the spatial distribution of 
+
+heatwave impacts, a spatial association analysis is conducted between gridded heatwave 
+
+metrics and the composite footprint of the retained heatwave -relevant low -frequency 
+
+modes . For each region and period, a composite dynamical footprint 𝐸 𝐻𝑊 (𝐱 ) is 
+
+constructed from the 𝑡𝑜𝑝 − 𝑘 heatwave -relevant low -frequency modes identified by the 
+
+participation analysis: 
+
+𝐸 HW (𝑥 ) = ∑ 𝜔 𝑘 |𝜙 𝑘 (𝑥 )|2 
+
+> 𝑘 ∈𝒦
+
+(9) 
+
+where 𝒦 denotes the retained heatwave -relevant modes and 𝜔 𝑘 is a non -negative weight 
+
+proportional to the heatwave -conditioned modal activity (e.g., 𝜔 𝑘 ∝ 〈|𝑏 𝑘 (𝑡 )|〉𝑡 ∈𝐻 ).
+
+Throughout the main spatial -attribution analyses, 𝑘 = 5. This construction emphasizes 
+
+spatial patterns expressed by modes that are both low -frequency and preferentially 
+
+activated during heatwave conditions. T he correspondence between 𝐸 𝐻𝑊 (𝐱 ) and the 
+
+gridded heatwave -metric map s 𝑀 (𝐱 ) ∈ {HWMD (𝐱 ), HWI (𝐱 )} is quantified using two 
+
+complementary measures: (i) an area -weighted Spearman rank correlation: 10 
+
+𝜌 𝐻𝑊 ,𝑀 = corr 𝑆 (𝐸 𝐻𝑊 (𝐱 ), 𝑀 (𝐱 )) (10 )
+
+and (ii) a hotspot -overlap diagnostic based on the intersection of the upper -tail hotspot 
+
+areas of 𝐸 𝐻𝑊 (𝐱 ) and 𝑀 (𝐱 ), where hotspots are defined as the top 20% of grid cells in each 
+
+field. Large |𝜌 𝐻𝑊 ,𝑀 | values and strong hotspot overlap indicate that the composite 
+
+dynamical footprint aligns closely with the geography of heatwave persistence and 
+
+intensity hotspots .
+
+3. Case St udy 
+
+3.1 Case study description and data specification 
+
+The analysis focuses on the southern latitudes of Canada, where warm -season heat 
+
+exposure and associated impacts are most concentrated. The study domain is partitioned 
+
+into eight subregions for regional interpretation based on administrative boundaries: 
+
+British Columbia (BC), Alberta (AB), Saskatchewan (SK), Manitoba (MB), Ontario (ON), 
+
+Québec (QC), New Brunswick (NB), and Newfoundland and Labrador (NL). All 
+
+computations are restricted to land grid cells; ocean points are excluded using the land –
+
+sea mask dataset (Strandgren, 2023) . The spatial extent of the domain and the adopted 
+
+subregional partitioning are shown in Fig. 3.   
+
+> Fig. 3Study domain and regional part itioning over southern Canada.
+
+Daily mean near -surface air temperature 𝑇 𝑚𝑒𝑎𝑛 is taken from the CORDEX North 
+
+America (NAM -12) regional climate simulations, using the OURANOS CRCM5 
+
+dynamical downscaling of CanESM5 under the SSP5 –8.5 scenario (CanESM5 Hourly 
+
+Dataset ). As the source archive provides hourly near -su rface air temperature fields , daily 
+
+𝑇 𝑚𝑒𝑎𝑛 was computed by temporally averaging the hourly values for each day prior to the 
+
+analyses. The resulting f ields are analyzed on a regular latitude –longitude grid at 0.11° 
+
+(≈12 km) horizontal resolution. After land masking, the analysis includes 𝑛 = 36 ,163 land 11 
+
+grid cells over the full domain. The analysis is restricted to the extended warm season 
+
+(May –September) to capture the full life cycle of heatwave activity. Heatwave 
+
+characteristics are evaluated over three 10 -year time slices: a present -day period (2016 –
+
+2025), a mid -century period (2051 –2060), and a late -century period (2091 –2100). Ten -year 
+
+windows provide a pr actical balance between sampling of sub -seasonal extremes and 
+
+limiting non -stationarity within each analysis block. 
+
+Heatwaves are defined using a fixed, grid -cell -specific percentile threshold derived from 
+
+a historical reference climatology (2001 –2010) (CanESM5 Hourly Dataset ). For each grid 
+
+cell and calendar day within May –September, the exceedance threshold 𝜃 𝑝 (𝑥 , 𝑡 ) is 
+
+estimated as the 𝑝 -th percentile with 𝑝 = 90 , using a centered moving window of width 
+
+𝜔 = 15 days to in crease sampling robustness while preserving the seasonal progression. 
+
+This window length was selected to provide sufficient sample size for robust estimation 
+
+of calendar -day percentile thresholds while retaining seasonal specificity, consistent with 
+
+establ ished percentile -based heatwave methodologies (Barriopedro et al., 2023; Perkins 
+
+& Alexander, 2013; Perkins -Kirkpatrick & Lewis, 2 020) . The threshold field is then held 
+
+fixed across all periods , so that projected changes quantify exceedances relative to a 
+
+consistent historical baseline. 
+
+Heatwave events are identified using a minimum duration criterion of 𝐿 𝑚𝑖𝑛 = 3
+
+consecutive day s above 𝜃 𝑝 (𝑥 , 𝑡 ). Grid -cell metrics are subsequently aggregated within 
+
+each subregion using area -weighted averaging to obtain regional summaries consistent 
+
+with the reporting in Section 3.2. For the mrDMD analysis, the maximum decomposition 
+
+level is set t o 𝐿 = 9 to resolve daily -to -subseasonal variability, and the truncation rank is 
+
+set to 𝑟 = 20 (where 𝑟 denotes the number of singular modes retained at each local 
+
+decomposition in the reduced -order mrDMD representation ) selected so that the 
+
+cumulative singu lar -value energy captured from the corresponding snapshot matrix is 
+
+approximately 98%, while suppressing noise. Table 1 summarizes the dataset, analysis 
+
+periods, and key parameter settings.                                                                     
+
+> Table 1Summary of Experimental Design and Parameters
+> Category Parameter Setting
+> Dataset
+> Model Chain CORDEX NAM -12 (OURANOS CRCM5 /
+> CanESM5)
+> Scenario SSP5 -8.5 (High Emissions)
+> Variable Daily Mean Temperature (𝑇 𝑚𝑒𝑎𝑛 )
+> Resolution 0.11° (~12 km)
+> Time Domain
+> Time period May –September
+> Present -Day Period 2016 –2025
+> Mid -Century Period 2051 –2060
+> Late -Century Period 2091 –2100 12
+> Heatwave
+> Definition
+> Threshold 90th Percentile
+> Reference Period 2001 –2010 (Fixed Baseline)
+> Window 15 -day centered moving window
+> Min. Duration (𝐿 𝑚𝑖𝑛 )≥3consecutive days
+> mrDMD Settings
+> Max. Levels (𝐿 )9
+> Decomposition Input Raw temperature
+> Truncation rank (r)20
+> mrDMD cut -off
+> frequency (𝐹 𝑐 )2
+
+3.2 Heatwave metrics 
+
+This subsection summarizes the projected evolution of heatwave occurrence, persistence, 
+
+and magnitude across the eight subregions using threshold -based event diagnostics. All 
+
+metrics are computed at the grid -cell level for each May –September season and the n
+
+aggregated regionally to facilitate inter -regional comparison. Spatial maps are presented 
+
+using consistent colour scales across periods to enable direct visual comparison. 
+
+3.2.1 Spatial patterns 
+
+Figure 4 summarizes the gridded evolution of heatwave characteristics across southern 
+
+Canada for the present -day period (2016 –2025), mid -century (2051 –2060), and late -
+
+century (2091 –2100). For clarity, Fig. 4 presents only the spatial distributions of HWF, 
+
+HWMD, and HWI; the complementary persistence and peak -intensity metrics HWD and 
+
+HWM are discussed through regional summaries in Section 3.2.2 and Table 2 rather than 
+
+mapped here. The heatwave -frequency maps (HWF; heatwave days per May –September 
+
+season) indicate a clear intensification and spatial exp ansion of exceedance conditions 
+
+over time. During the present -day period, exceedances of the fixed historical percentile 
+
+threshold remain spatially heterogeneous, with the largest HWF values concentrated 
+
+over continental interiors. By mid -century, HWF incr eases across nearly all land grid 
+
+cells, with a domain -wide shift toward more frequent heatwave days. Across the 
+
+southern Canada domain, typical values rise from about 7 –8 days/season in the present -
+
+day period to 38 –39 days/season in the mid -century period . Late -century conditions 
+
+exhibit widespread exceedance days across the domain and the emergence of 
+
+pronounced frequency hotspots over the Prairie provinces, with SK showing peak HWF 
+
+values of about 97 days/season. 
+
+The strongest qualitative change is obser ved in the persistence -related behaviour, clearly 
+
+reflected in the mapped HWMD field and further supported by the regional HWD 
+
+summaries reported in Section 3.2.2. In the present -day period, heatwave events are 
+
+typically limited to short episodes (e.g., HW MD ≈ 3.49 days/event; HWD ≈ 4 days), 
+
+whereas late -century maps show the development of multi -week persistence hotspots in 13 
+
+several interior regions (e.g., HWD increasing up to 69 days in SK/MB and adjacent 
+
+areas). This spatial transition indicates that projected changes are not limited to how often 
+
+heatwave conditions occur, but also involve a marked increase in how long exceedance 
+
+conditions persist once established, consistent w ith a shift toward warm -season regimes 
+
+dominated by extended exceedance sequences rather than isolated extremes. 
+
+Intensity metrics also strengthen across the domain. The mapped mean intensity (HWI) 
+
+also exhibit s systematic increases from the present -day to the late century, with the 
+
+largest intensification concentrated over the continental interior (e.g., SK/MB HWI 
+
+increasing from 2.26 to 6.88 𝐾 above threshold; HWM reaching 15 .65 𝐾 ), while the 
+
+regional HWM summaries confirm that peak exceedances intensi fy as well . In contrast, 
+
+coastal and maritime -influenced regions exhibit comparatively weaker intensification 
+
+and/or shorter persistence; for example, late -century HWMD reaches 26.66 and 23.46 
+
+days/event in SK and MB, compared with 22.56 in BC, 17.68 in NB , and 16.01 in NL, while 
+
+HWI reaches 6.88 and 6.80 K in SK and MB versus 5.81 K in BC, 4.48 K in NB, and 6.54 K 
+
+in NL. Overall, the spatial patterns in Fig. 4 demonstrate that late -century amplification 
+
+is characterized by the co -emergence of higher exceed ance magnitudes and substantially 
+
+longer event persistence, motivating the regional diagnostics in Section 3.2.2 where 
+
+changes in event counts and durations are explicitly quantified .14     
+
+> Fig. 4Spatial evolution of heatwave characteristics over southern Canada under SSP5 –8.5. Maps
+> show (a –c) heatwave frequency (HWF; heatwave days over May –September season), (d –f)
+> mean heatwave duration (HWMD; days), and (g –i) mean heatwave intensity (HWI; K abov e
+> 𝑇 90 ) for 2016 –2025, 2051 –2060, and 2091 –2100.
+
+3.2.2 Regional evolution of frequency, persistence, and intensity 
+
+To complement the gridded patterns in Section 3.2.1, heatwave characteristics are 
+
+summarized at the subregional scale by aggregating grid -cel l metrics over BC, AB, SK, 
+
+MB, ON, QC, NB, and NL (area -weighted). Results are reported for the present -day 
+
+(2016 –2025), mid -century (2051 –2060), and late century (2091 –2100) periods using the 
+
+fixed historical threshold defined in Section 3.1. Regional frequency, persistence, and 
+
+intensity metrics are summarized in Table 2 for the present -day , mid -century, and l ate -
+
+century periods. 
+
+Across all regions, the aggregated metrics indicate strong amplification in regional 
+
+heatwave exposure, with pronounced geographical contrasts. At present -day , regional 
+
+HWF spans approximately 5 –11 days per warm season, increasing to 9 0–97 days by the 
+
+late century. At the same time, the regional summaries of HWN and HWMD also 
+
+increase, indicating that the exposure amplification is accompanied by more frequent and 
+
+more persistent heatwave conditions at the grid -cell level. Figure 5a summ arizes the 
+
+regional variation in mean event duration and highlights a systematic shift toward longer 
+
+heatwaves across subregions from present -day to late century, with the strongest 
+
+duration amplification concentrated over the continental interior (late -ce ntury HWMD 
+
+reaching 26.66 days/event in SK ). Figure 5b further clarifies the nature of this evolution 
+
+by mapping regional centroids in (HWN, HWMD) space. The displacement of centroids 
+
+across periods indicates that late -century amplification cannot be expla ined by event 
+
+counts alone. Several regions exhibit a marked persistence -driven shift (substantial 
+
+increase in HWMD with a comparatively smaller increase in HWN), whereas others show 
+
+a more balanced diagonal shift in which both the number of events and the ir typical 
+
+duration increase. This diagnostic therefore supports the interpretation that the heatwave 
+
+regime evolves toward more persistent exceedance sequences in key interior regions 
+
+under SSP5 –8.5, consistent with the persistence hotspots identified in Section 3.2.1. 15 
+
+Fig. 5 Regional duration amplification and heatwave regime shift under SSP5 –8.5. (a) 
+
+Distribution of mean heatwave duration (HWMD; days/event) across the eight subregions for 
+
+2016 –2025, 2051 –2060, and 2091 –2100. (b) Regional centroids in (HWN, HWMD) space (HWN: 
+
+events/season; HWMD: days/event), shown with distinct markers for each period. 
+
+Intensity amplification accompanies the frequency –persistence changes across all 
+
+regions. Regional mean intensity (H WI) increases from present -day values of 
+
+approximately 1.7 -2.4 𝐾 above threshold to late -century values of 4.5 -6.9 𝐾 , with the 
+
+largest increases concentrated over the continental interior ; for example, late -century 
+
+HWI reaches 6.88 K in S K and 6.80 K in MB (Table 2). Peak exceedances (HWM) also 
+
+intensify, with late -century regional maxima reaching 15 .65 𝐾 above threshold. 
+
+Collectively, these results indicate that future heat risk is shaped simultaneously by more 
+
+frequent exceedance, greater persistence, and higher above -threshold magnitude, 
+
+motivating the dynamical attribution analyses in Sections 3.3 –3.4 to assess whether 
+
+projected persistence amplification is associated with changes in the dominant low -
+
+frequency structures of warm -season temperature var iability. 
+
+Table 2 Regional heatwave frequency, persistence, and intensity metrics under SSP5 –8.5.                                                                        
+
+> Region Period HWF
+> (days/season)
+> HWN
+> (events/season)
+> HWMD
+> (days/event)
+> HWD (days) HWI (K) HWM (K)
+> BC
+> 2016 -2025 723.23 41.76 3.49
+> 2051 -2060 42 67.41 16 2.89 7.42
+> 2091 -2100 95 622.56 60 5.81 13.42
+> AB
+> 2016 -2025 823.42 41.98 4.20
+> 2051 -2060 38 66.35 13 2.72 6.91
+> 2091 -2100 95 524.22 63 6.35 14.64
+> SK
+> 2016 -2025 11 24.09 52.26 4.92
+> 2051 -2060 42 67.19 15 2.73 7.23
+> 2091 -2100 97 526.66 69 6.88 15.65
+> MB 2016 -2025 823.79 42.11 4.52
+> 2051 -2060 41 67.06 14 3.05 7.76
+
+16                                                                               
+
+> 2091 -2100 94 523.46 69 6.80 15.55
+> ON
+> 2016 -2025 613.17 42.14 4.26
+> 2051 -2060 31 55.70 10 3.11 7.83
+> 2091 -2100 92 617.33 56 5.80 14.34
+> QC
+> 2016 -2025 823.58 42.22 4.60
+> 2051 -2060 38 66.44 13 3.25 8.85
+> 2091 -2100 97 618.03 58 5.79 15.16
+> NL
+> 2016 -2025 723.11 42.21 4.47
+> 2051 -2060 41 76.80 14 3.52 9.86
+> 2091 -2100 92 716.01 48 6.54 14.12
+> NB
+> 2016 -2025 512.31 31.81 3.64
+> 2051 -2060 33 65.29 92.57 6.93
+> 2091 -2100 90 717.68 51 4.48 12.05
+
+3.3 mrDMD analysis of temperature variability 
+
+3.3.1 Selection of the dynamical content retained for attribution 
+
+The attribution analyses that follow rely on a reduced mrDMD representation that retains 
+
+the dominant components of warm -season temperature variability while filtering 
+
+variability that is either too short -lived or too weak to support persistent exceedance 
+
+conditions. A sensitivity analysis is therefore performed to select the retained dynamical 
+
+content (cut -off parameter and associated mode set) and to verify that this choice 
+
+provides a faithful reconstruction of the warm -season temperature field. The selec tion is 
+
+guided by two criteria: (i) interpretability for persistence, favoring low -frequency 
+
+structures expected to sustain multi -day heatwave conditions, and (ii) reconstruction 
+
+sufficiency, ensuring that the retained modes reproduce the dominant variabil ity relevant 
+
+to heatwave diagnostics. 
+
+Candidate mode sets are constructed by applying a mrDMD cut -off parameter 𝐹 𝑐 defined 
+
+in Section 2.3 . Five candidate cut -offs are evaluated, 𝐹 𝑐 = 1, 1.5, 2, 2.5, and 3. For each 
+
+candidate cut -off, the retained -mode reconstruction 𝑇 ̂ (𝑥 , 𝑡 ) is formed and compared 
+
+against the original warm -season temperature field 𝑇 (𝑥 , 𝑡 ) over the analysis window. 
+
+Reconstruction sensitivity to the five candidate cut -offs is summarized in Fig. 6a using 
+
+time -averaged, domain -wide skill metrics. The results indicate that reconstruction skill 
+
+varies systematically with the selected cut -off parameter . In particular, increasing 𝐹 𝑐 from 
+
+1 to 2 reduces RMSE from 1.65 to 1.51 K and i mproves 𝑅 2 . Beyond 𝐹 𝑐 = 2, reconstruction 
+
+skill deteriorates slightly, with RMSE increasing again for 𝐹 𝑐 = 2.5 and 𝐹 𝑐 = 3. Similar 
+
+behavior is observed for region -aggregated time -averaged metrics, indicating that the 
+
+selected representation maintains consistent fidelity across subregions (regional RMSE 
+
+range: 1.45 to1.61 𝐾 ). 17          
+
+> Fig. 6Sensitivity of reconstruction skill to the mrDMD cut -off parameter .(a) Time -average d
+> domain -wide reconstruction RMSE for five cut -off parameters , and (b -d) illustrative snapshots
+> comparing the original temperature field, the reconstructed field using the selected cut -off, and
+> the corresponding error maps over southern Canada (land -only).
+
+The retained dynamical content is also supported by the distribution of modal amplitude 
+
+across mrDMD levels and periods. Fig. 7 (mrDMD level –period amplitude maps) 
+
+highlights a progressive redistribution of dominant activity toward lower -frequency 
+
+levels in the continental interior (e.g., SK) relative to coastal and maritime regions (e.g., 
+
+BC and NL), consistent with the emergence of stronger persistence hotspots in Section 
+
+3.2. This behavior motivates an emphasis on the low -frequenc y structures most plausibly 
+
+associated with multi -day persistence. 
+
+Based on the sensitivity analysis in Fig. 6a and the dynamical evidence in Fig. 7, the 
+
+intermediate cut -off 𝐹 𝑐 = 2 is adopted for the subsequent attribution results because it 
+
+provides a ro bust compromise between reconstruction sufficiency and interpretability: it 
+
+targets the range of time scales where the redistribution toward low -frequency activity is 
+
+most apparent while maintaining high reconstruction skill . To contextualize the choice of 
+
+mrDMD, we compared its reconstruction skill with POD and standard DMD under the 
+
+same analysis window and retained -rank setting. For the selected domain, mrDMD 
+
+yielded the best overall reconstruction fidelity (time -averaged RMSE = 1.51 K, NRMSE = 
+
+3 %, 𝑅 2 = 0.94), compared with POD (1.92 K, 4 %, 0.91) and DMD (2.18 K, 5 %, 0.89), 
+
+supporting its use for the subsequent attribution analysis. Illustrative warm -season 
+
+snapshots comparing 𝑇 (𝑥 , 𝑡 ), 𝑇 ̂ (𝑥 , 𝑡 ), and the residual 𝑇 − 𝑇 ̂ for the selected cut -off are 
+
+show n in Fig. 6b –d, providing a visual sufficiency check over land grid cells and 
+
+confirming that the retained modes reproduce the dominant spatial organization relevant 18 
+
+to the ensuing attribution analyses. The chosen cut -off and retained -mode configuration 
+
+ar e applied consistently across regions and periods to enable physically meaningful 
+
+comparisons of modal persistence, heatwave -conditioned activation, and spatial 
+
+alignment in the following sections.   
+
+> Fig. 7mrDMD time –frequency amplitude maps across regions and periods. Checkerboard
+> maps show the distribution of modal amplitude across mrDMD levels for BC, SK, and NL
+> during 2016 –2025, 2051 –2060, and 2091 –2100, highlighting a progressive redistribution of
+> domi nant activity toward lower -frequency levels in the interior relative to coastal regions.
+
+3.3.2 Modal damping and persistence under climate change 
+
+The retained mrDMD representation in Section 3.3.1 enables a direct characterization of 
+
+warm -season persistenc e through the damping properties of the dominant modes. Here, 
+
+damping refers to the rate at which the amplitude of a dynamical mode decays in time: 
+
+strongly damped modes decay rapidly and therefore represent short -lived variability, 
+
+whereas weakly damped modes persist longer and can support sustained warm 
+
+anomalies relevant to heatwave duration. For each retained mode 𝑘 , persistence is 
+
+quantified by the real part of the continuous -time eigenvalue 𝜔 𝑘 (Section 2.3). 
+
+Specifically, Re (𝜔 𝑘 ) controls exponentia l decay and is summarized via an e -folding time 
+
+scale 𝜏 𝑘 = 1 |Re (𝜔 𝑘 )|⁄ (days), such that larger 𝜏 𝑘 indicates weaker damping and a greater 
+
+propensity for sustained anomalies. This persistence perspective is directly relevant to 
+
+the duration amplification reported in Section 3.2, where changes in heat risk are 
+
+expressed most strongly through longer event persistence. 19 
+
+The persistence shift is also evident in the complex -plane dis tributions of the dominant 
+
+mrDMD eigenvalues (Fig. 8). Relative to the present -day , late -century eigenvalues in 
+
+interior regions shift toward the weak -damping limit, consistent with reduced decay 
+
+rates and longer e -folding time scales. In contrast, coastal and maritime regions exhibit 
+
+comparatively smaller shifts in the eigenvalue cloud, aligning with their weaker duration 
+
+amplification. This complex -plane diagnostic therefore provides an independent 
+
+dynamical signature supporting the emergence of a more pe rsistence -dominated warm -
+
+season regime in the continental interior. 
+
+Consistent with Fig. 8, the distribution of 𝜏 𝑘 shifts upward by mid -century and further 
+
+by late century, with the largest changes occurring over interior regions associated with 
+
+strong p ersistence amplification (e.g., SK/MB). For example, the median e -folding time 
+
+increases from 12 days ( present -day ) to 23 days (late century) in the Prairie interior, 
+
+whereas representative coastal/maritime regions (e.g., BC/NL) exhibit smaller changes 
+
+(me dian 𝜏 𝑘 from 15 to 19 days). Complementarily, the fraction of retained modes 
+
+exceeding a persistence threshold 𝜏 𝑘 ≥ 𝜏 0 (with 𝜏 0 = 10 days) increases from 92% to 95% 
+
+in the interior, indicating an expanding set of slowly decaying structures capable of 
+
+sup porting multi -day exceedance conditions. 
+
+To connect these damping changes to the scale structure emphasized by mrDMD, 
+
+persistence is also summarized by decomposition level. Coarser levels (longer window 
+
+lengths and lower characteristic frequencies) exhibit systematically larger 𝜏 𝑘 than finer 
+
+levels, as expected, but late -century changes are not uniform across levels. Instead, 
+
+interior regions show a disproportionate strengthening of persistence at the lower -
+
+frequency levels retained by the selected cut -of f 𝐹 𝑐 , consistent with the redistribution of 
+
+modal amplitude toward these levels noted in Fig. 7. This pattern supports the 
+
+interpretation that late -century duration amplification is associated not only with more 
+
+frequent exceedance, but also with a dynamical reweighting toward slow, weakly 
+
+damped structures that sustain persistent warm -season temperature anomalies. 
+
+These damping diagnostics provide a compact dynamical explanation for the regime shift 
+
+observed in Fig. 5: as the warm -season dynamics be come increasingly dominated by 
+
+weakly damped low -frequency structures, exceedance sequences are more likely to 
+
+persist once initiated, increasing HWMD and HWD without requiring a proportional 
+
+increase in event counts. The subsequent attribution results, th erefore, focus on the subset 
+
+of retained modes with both high heatwave -conditioned participation and weak 
+
+damping, and evaluate whether their spatial energy patterns align with regional hotspots 
+
+of persistence and intensity. 20   
+
+> Fig. 8Complex -plane distributions of dominant mrDMD eigenvalues for British Columbia,
+> Saskatchewan, and Newfoundland and Labrador across 2016 –2025, 2051 –2060, and 2091 –2100.
+
+3.3.3 Spatial structure of dominant modes 
+
+Having established that late -century dynamics exhibit weaker damping and a
+
+redistribution of activity toward low -frequency levels (Sections 3.3.1 –3.3.2), the spatial 
+
+structure of the dominant retained modes is examined to assess whether persistence 
+
+amplification is accompanied by increased spatial co herence. This analysis focuses on the 
+
+leading low -frequency mrDMD mode (i.e., the mode with the largest contribution within 
+
+the retained low -frequency band under the selected cut -off 𝐹 𝑐 ), because such modes are 
+
+the most plausible candidates for organizin g sustained, spatially extensive warm -season 
+
+anomalies. 
+
+Figure 9 maps the normalized spatial amplitude |𝜙 𝑘 | of this leading low -frequency mode 
+
+for BC, SK and NL across the present -day , mid -century, and late -century periods. Two 
+
+contrasts are apparent. First, the interior region (SK) exhibits a progressive strengthening 
+
+and spatial consolidation of the dominant low -frequency pattern: relative to the present -
+
+day , the late -century mode di splays higher -amplitude contiguous structures and reduced 
+
+small -scale fragmentation, consistent with an increasingly coherent, large -scale 
+
+background conducive to multi -day persistence. Second, the coastal/maritime region 
+
+(NL) exhibits comparatively weaker changes in spatial organization across periods, with 
+
+the dominant mode remaining more spatially diffuse and/or fragmented. These 21 
+
+differences align with the regional contrasts in duration amplification (Section 3.2.2) and 
+
+the weaker interior -to -coastal shi ft in eigenvalue damping identified in Fig. 8. 
+
+Overall, Fig. 9 indicates that persistence amplification in interior regions is accompanied 
+
+by an increasingly coherent low -frequency spatial structure, supporting the 
+
+interpretation that late -century heatwave regimes are shaped by slowly varying, spatiall y
+
+organized background anomalies. This motivates the integrated attribution analysis in 
+
+Section 3.4, which evaluates whether modes exhibiting high heatwave -conditioned 
+
+participation also align spatially with regional patterns of heatwave persistence and 
+
+in tensity.         
+
+> Fig. 9Spatial amplitude of the dominant low -frequency mrDMD mode across periods. Maps
+> show normalized |𝜙 𝑘 |for the leading low -frequency mode in BC, SK, and NL during 2016 –
+> 2025, 2051 –2060, and 2091 –2100.
+
+3.4 Integrated attribution: linking mrDMD and heatwaves 
+
+This subsection links the event -based heatwave diagnostics (Section 3.2) with the 
+
+multiscale dynamical structures extracted by mrDMD (Section 3.3) to identify which 
+
+coherent modes are most relevant to hea twave behavior and to assess whether these 
+
+modes organize the spatial geography of heatwave persistence and intensity. The 
+
+attribution is implemented through two complementary diagnostics. First, a heatwave -
+
+conditioned participation ratio 𝑃 𝑘 (Section 2.4 ; Eq. 8) ranks modes by preferential 
+
+activation during heatwave days relative to non -heatwave conditions, thereby isolating 22 
+
+structures that are dynamically engaged during exceedance episodes rather than simply 
+
+energetic in an unconditional sense. Second, a spatial alignment analysis compares the 
+
+energy footprints of the heatwave -relevant low -frequency modes against gridded 
+
+heatwave metrics (HWMD and HWI in this study) using hotspot overlap and rank -based 
+
+association (Spearman correlation), quantifying the e xtent to which the identified 
+
+coherent structures explain the spatial organization of persistence and intensity hotspots. 
+
+3.4.1 Heatwave -conditioned mode participation 
+
+To identify dynamical structures that are preferentially engaged during heatwave 
+
+conditi ons, the mrDMD modal coefficients are conditioned on heatwave days defined by 
+
+the event -detection procedure in Section 2.2, using the integrated attribution framework 
+
+in Section 2.4. For each retained mode 𝑘 , heatwave relevance is quantified by the 
+
+partic ipation ratio 𝑃 𝑘 (Eq. 8), defined as the ratio between the mean modal amplitude 
+
+during heatwave days and the mean modal amplitude during non -heatwave days, where 
+
+𝐴 𝑘 (𝑡 ) = |𝑏 𝑘 (𝑡 )| is the phase -independent modal amplitude. Modes with 𝑃 𝑘 ≫ 1 therefore 
+
+represen t coherent structures whose activity increases disproportionately during 
+
+exceedance conditions and are interpreted here as heatwave -relevant, in contrast to 
+
+modes that may be energetic in an unconditional sense but exhibit comparable activity 
+
+across heatwa ve and non -heatwave regimes. 
+
+For each region and period, modes are ranked by 𝑃 𝑘 within the retained low -frequency 
+
+band selected in Section 3.3.1, and a small subset of dominant heatwave -relevant modes 
+
+is retained for interpretatio n. Throughout the main a ttribution analyses, interpretation is 
+
+based on the top 5 heatwave -relevant modes. For the event -scale analysis in Fig. 10, 
+
+however, event -integrated modal activity is computed from the top 10 modes to provide 
+
+a broader cumulative representation of low -fre quency activity. This subset captures a 
+
+substantial fraction of the heatwave -day dynamical signal (explaining nearly 50% of the 
+
+cumulative heatwave -day modal activity), indicating that heatwave conditions are 
+
+associated with a relatively compact set of coherent low -frequency structures rather than 
+
+a diffuse contribution across many modes. 
+
+Across periods, the participati on spectrum evolves in a manner consistent with the 
+
+persistence -driven regime shift reported in Section 3.2. In interior regions, the highest -
+
+participation modes are increasingly concentrated in the longest retained time scales, and 
+
+the contrast between he atwave and non -heatwave activation strengthens toward the late 
+
+century. Coastal and maritime -influenced regions exhibit comparatively weaker 
+
+participation contrasts and a more distributed set of heatwave -relevant modes, consistent 
+
+with their smaller durati on amplification. 
+
+Figure 10 provides event -scale evidence linking heatwave persistence to heatwave -
+
+relevant dynamical activity in a representative interior region (SK). Figures 10a –c show 23 
+
+the seasonal evolution of the amplitude of a selected low -frequency heatwave -relevant 
+
+mode, with heatwave episodes shaded for each period. In the present -day climate, 
+
+elevated modal amplitudes occur intermittently and are associated with relatively short 
+
+heatwave episodes. By mid -century and especially by late century, the modal signal 
+
+exhibits more frequent and stronger episodic amplifications during heatwave periods, 
+
+with some bursts coinciding with longer events. In Fig. 10(c), the extended pink shading 
+
+corresponds to a long continuous sequence of regional heatwave days in the selected late -
+
+century season used for illustration. This linkage is quantified in Fig. 10d, which relates 
+
+event duration to event -integrated modal activity (summed over the top 10 heatwave -
+
+relevant modes ). The positive but moderate association (Spea rman 𝜌 = 0.45 ) indicates 
+
+that longer heatwaves tend to occur during periods of greater cumulative low -frequency 
+
+modal activity. 
+
+These results suggest that duration amplification in interior regions is associated with 
+
+recurrent activation of a small number of coherent low -frequency modes, while also 
+
+indicating that additional processes beyond the modal activity shown here contribute to 
+
+event persistence. This motivates the spatial attribution analysis in Section 3.4.2, which 
+
+assesses whether the dominant hea twave -relevant modes also align with the geography 
+
+of heatwave persistence and intensity hotspots.      
+
+> Fig. 10 Event -scale linkage between heatwaves and heatwave -relevant dynamical modes.
+> Seasonal evolution of the amplitude of the highest -participation low -frequency mrDMD mode
+> in SK for (a) 2016 –2025, (b) 2051 –2060, and (c) 2091 –2100, with heatwave episodes shaded ;(d) 24
+> event duration versus event -integrated modal activity, showing that longer heatwaves are
+> associated with more sustained modal activation.
+
+3.4.2 Spatial alignment between heatwave metrics and heatwave -relevant mode 
+
+footprints 
+
+While Section 3.4.1 ident ifies modes that are preferentially activated during heatwave 
+
+days, the key remaining question is whether those same modes also organize the spatial 
+
+geography of heatwave persistence and intensity. This is assessed by comparing gridded 
+
+heatwave -metric maps with the spatial energy footprints of the heatwave -relevant low -
+
+frequency modes , as defined in Section 2.4 . For each region and period, the analysis is 
+
+based on the top 5 heatwave -relevant low -frequency modes identified by the 
+
+participation analysis. This construction emphasizes spatial patterns expressed by modes 
+
+that are not only low -frequency, but also demonstrably more active during exceedance 
+
+conditions. 
+
+Figure 11 compares the resulting dynamical footprints against the spatial distribution of 
+
+heatwave persistence and intensity. Panels 11a and 11e show gridded maps of persistence 
+
+(HWMD) and intensity (HWI), respectively, while panels 11b and 11f show the 
+
+cor responding composite footprint 𝐸 HW (𝑥 ). The maps reveal a clear correspondence in 
+
+the interior: regions exhibiting large HWMD and elevated HWI also tend to coincide with 
+
+high -amplitude, spatially coherent dynamical footprints, consistent with the 
+
+interpreta tion that persistent exceedance conditions preferentially emerge where the 
+
+dominant heatwave -relevant low -frequency structures express most strongly. This 
+
+correspondence is quantified in two complementary ways. First, a hotspot overlap 
+
+analysis (Fig. 11c, g) evaluates whether upper -tail regions of the heatwave metrics 
+
+coincide with upper -tail regions of the dynamical footprint. Hotspots are defined as grid 
+
+cells exceeding a chosen upper percentile threshold (e.g., top 𝑞 = 20% ) for each field, and 
+
+overlap is summarized by an overlap score , where 0 indicates no overlap, and 1 indicates 
+
+complete overlap. Second, Fig. 11 (d, h) quantif ies grid -cell association using Spearman 
+
+rank correlation between 𝐸 HW (𝑥 ) and each heatwave metric field. For the representative 
+
+ent ire -domain case shown in Fig. 11, the spatial association is stronger for intensity (HWI) 
+
+than for persistence (HWMD), indicating that the heatwave -relevant low -frequency 
+
+footprint aligns more directly with the geography of intensity amplification in this case 
+
+(HWMD , 𝜌 = 0.15 ; HWI , 𝜌 = 0.45 ). Coastal and maritime -influenced regions show 
+
+weaker hotspot overlap and smaller rank correlations, consistent with their reduced 
+
+persistence amplification and the smaller dynamical shifts identified in Sections 3.3.1 –
+
+3.3.3. 
+
+Overall, Fig. 11 provides spatial evidence that the modes identified as heatwave -relevant 
+
+by participation encode the spatial organization of heatwave impacts. Notably, the spatial 
+
+alignment is moderate for event intensity ( 𝜌 = 0.45 ), while the association with event 25 
+
+persistence is more limited ( 𝜌 = 0.15 ), suggesting that while these modes temporally 
+
+sustain heatwaves, their spatial energy footprints most directly govern the magnitude of 
+
+the extreme temperatures .       
+
+> Fig. 11 Spatial alignment between heatwave metrics and heatwave -relevant dynamical mode
+> footprints for the representative late -century (entire Canada domain) . Maps compare (a,e)
+> heatwave persistence (HWMD) and intensity (HWI) with (b,f) t he composite footprint of
+> heatwave -relevant low -frequency mrDMD modes; (c,g) show hotspot overlap (upper -tail
+> regions), and (d,h) quantify grid -cell association using Spearman rank correlation.
+
+Taken together, the participation and spatial -alignment result s indicate that late -century 
+
+duration amplification is not merely a statistical consequence of warming, but is 
+
+associated with a systematic strengthening of specific low -frequency dynamical 
+
+structures. In interior regions, these modes (i) exhibit weaker da mping and increased 
+
+low -frequency dominance (Section 3.3), (ii) activate preferentially during heatwave days 
+
+and remain elevated through multi -day events (Fig. 10), and (iii) align spatially with 
+
+persistence and intensity hotspots (Fig. 11). Coastal and ma ritime regions show weaker 
+
+dynamical shifts and weaker footprint –metric alignment, consistent with their smaller 
+
+persistence amplification. These findings support a dynamical interpretation of the 
+
+projected heatwave regime shift in which persistent exceeda nce emerges from 
+
+increasingly coherent, weakly damped low -frequency organization of warm -season 
+
+temperature variability. 
+
+4. Discussion 
+
+4.1 Interpretation of the projected heatwave regime shift 26 
+
+The results indicate that projected heatwave amplification under SSP5 –8.5 is not 
+
+adequately described as a uniform increase in exceedance frequency alone. Instead, the 
+
+most consequential change, particularly over the continental interior, takes the form of a
+
+regime shift toward persistence -dominated exceedance. Event -based diagnostics show 
+
+that future increases in seasonal heatwave days arise from a combined effect of more 
+
+frequent exceedances and, critically, longer event durations, with the largest persis tence 
+
+amplification occurring over interior regions (Fig. 5). This shift is reflected in the 
+
+dynamical decomposition: the mrDMD representation reveals a progressive 
+
+redistribution of dominant activity toward lower -frequency levels in the interior relative 
+
+to coastal and maritime regions (Fig. 7), accompanied by eigenvalue distributions 
+
+indicative of weaker damping and longer e -folding time scales (Fig. 8). 
+
+The integrated attribution analysis provides a consistent mechanistic interpretation of 
+
+these statisti cal changes. Modes that are preferentially activated during heatwave days 
+
+are concentrated in the retained low -frequency band and exhibit increasingly sustained 
+
+amplitudes through multi -day events in late -century conditions (Fig. 10). Moreover, the 
+
+spatial energy footprints of these heatwave -relevant modes align with the geography of 
+
+persistence and intensity hotspots (Fig. 11), indicating that the coherent structures 
+
+identified by mrDMD are not merely correlated with heatwave timing but also encode 
+
+the spa tial organization of heatwave impacts. Taken together, the evidence supports the 
+
+interpretation that late -century duration amplification is associated with an increasing 
+
+dominance of slowly varying, weakly damped structures that promote sustained 
+
+exceedanc e once heatwave conditions are initiated. 
+
+This perspective helps reconcile why similar levels of mean warming can yield markedly 
+
+different regional heatwave outcomes. Regions where the low -frequency dynamical 
+
+background becomes more coherent and weakly dam ped are more prone to prolonged 
+
+exceedance sequences, even if changes in event counts are comparatively modest. 
+
+Conversely, coastal and maritime -influenced regions exhibit weaker shifts in low -
+
+frequency dominance and damping, consistent with smaller persis tence amplification 
+
+and weaker footprint –metric alignment. These contrasts suggest that regional differences 
+
+in heatwave risk under climate change reflect not only thermodynamic forcing (warmer 
+
+baseline temperatures), but also changes in the dynamical orga nization of warm -season 
+
+variability that modulate persistence. 
+
+From an impact’s perspective, the dominance of persistence changes has direct relevance 
+
+for risk assessment and adaptation planning. Longer events compound health and 
+
+infrastructure stress thro ugh cumulative exposure, reduce nighttime recovery 
+
+opportunities, and increase the likelihood of concurrent stresses (e.g., drought and 
+
+wildfire risk) during extended warm -season anomalies. The dynamical framing provided 
+
+here therefore complements conventi onal event -statistical projections by identifying the 27 
+
+time -scale structures most responsible for sustained exceedance, offering a pathway to 
+
+more process -informed diagnostics of future heat risk and to targeted evaluation of 
+
+whether climate models reproduc e the relevant low -frequency persistence mechanisms 
+
+in the historical climate. 
+
+4.2 Implications, robustness, and limitations 
+
+The integrated event –dynamical framework provides a compact way to move from 
+
+projected heatwave changes to a physically interpretab le explanation rooted in the time -
+
+scale organization of warm -season temperature variability. A key implication is that 
+
+persistence is an emergent property of the dominant low -frequency background, not 
+
+simply a by -product of higher mean temperatures. In the interior, the attribution results 
+
+indicate that duration amplification is associated with increasingly weakly damped, 
+
+spatially coherent low -frequency structures that are preferentially activated during 
+
+heatwave days and that align with regional persisten ce and intensity hotspots (Figs. 8 –
+
+11). This suggests that assessments of future heat risk , and especially adaptation -relevant 
+
+questions such as multi -day exposure and compound impacts , should place as much 
+
+emphasis on diagnosing changes in low -frequency v ariability and persistence as on 
+
+changes in exceedance frequency alone. 
+
+The framework also offers practical diagnostic targets for model evaluation. 
+
+Conventional validation of temperature statistics (means, variances, percentile 
+
+thresholds) is necessary bu t may be insufficient for persistence -dominated hazards. The 
+
+present results point to additional “process -level” checks, including whether historical 
+
+simulations reproduce (i) the distribution of damping time scales 𝜏 𝑘 for warm -season 
+
+low -frequency modes , (ii) the relative contribution of low -frequency levels to warm -
+
+season variability (as in Fig. 7), and (iii) the event -scale linkage between sustained modal 
+
+activation and long -duration heatwaves (as in Fig. 10). These diagnostics can be applied 
+
+across climate model ensembles to determine whether persistence amplification is robust 
+
+across model formu lations and to identify whether inter -model spread is tied to 
+
+differences in low -frequency variability rather than to differences in mean warming 
+
+alone. 
+
+Several limitations and robustness considerations should be noted. First, the analysis is 
+
+based on a si ngle downscaled model chain (CRCM5 driven by CanESM5) and a single 
+
+forcing pathway (SSP5 –8.5). While SSP5 –8.5 provides a high -signal scenario for 
+
+diagnosing mechanisms, the quantitative magnitude of duration amplification and the 
+
+strength of dynamical shif ts may differ under lower -emissions pathways. Second, the 
+
+event definition is tied to a fixed historical percentile threshold; this choice is appropriate 
+
+for identifying changes relative to a consistent present -day , but alternative definitions 
+
+(e.g., thres holds based on future climatologies, absolute health -relevant thresholds, or 
+
+humidity -adjusted indices) may yield different perspectives on risk. Third, some 28 
+
+methodological choices influence interpretability and should be reported transparently. 
+
+These incl ude the retained mrDMD cut -off parameter 𝐹 𝑐 (Fig. 6), the truncation rank 𝑟 ,
+
+and the criteria used to identify heatwave -relevant modes (top - 𝐾 selection). The 
+
+sensitivity analysis in Section 3.3.1 suggests that the principal conclusions are not artifac ts 
+
+of a single cut -off choice, but the numerical values of correlations and hotspot overlap 
+
+may vary with these settings. Reporting the selected parameters and providing limited 
+
+sensitivity results (e.g., alternative 𝐹 𝑐 values) strengthens reproducibilit y and makes clear 
+
+which aspects of the attribution are robust versus configuration -dependent. 
+
+Overall, the results support a shift in emphasis from purely event -statistical projections 
+
+toward combined diagnostics that explicitly track the dynamical structures governing 
+
+persistence. This provides a pathway to (i) more process -informed interpretation of 
+
+regional heatwave amplification, (ii) improved comparability across models and 
+
+scenarios, and (iii) targeted evaluation of whether the variability structures that matter 
+
+most for long -duration heat risk are credibly represented in climate simulations. 
+
+5. Conclusion 
+
+This study developed an integrated event –dynamical workflow to assess how climate 
+
+change alters regional heatwave risk and to interpret projected amplification in terms of 
+
+the multiscale organization of warm -season temperature variability. Heatwaves were 
+
+characterized using percentile -based event diagnostics that quantify frequency, duration, 
+
+and intensity, and multiresolution dynamic mode decomposition (mrDMD) was then 
+
+used to extract coherent spatio -temporal structures from the raw daily mean temperature 
+
+field. Linking these perspectives through heatwave -conditioned modal activation and 
+
+spatial alignment diagnostics enables a transition from documenting projected changes 
+
+to identifying the dynamical structures most strongly associated with those changes. T he 
+
+results indicate that projected heatwave amplification under SSP5 –8.5 is characterized 
+
+not only by more frequent exceedance, but by a pronounced intensification of persistence 
+
+in the continental interior. In these regions, increases in seasonal heatwave days are 
+
+accompanied by substantially longer events, pointing to a shift toward persistence -
+
+dominated exceedance regimes. Dynamical diagnostics provide consistent evidence for 
+
+this shift: interior regions exhibit a redistribution of dominant activity towa rd lower -
+
+frequency content together with weaker effective damping, while coastal and maritime 
+
+regions show comparatively smaller changes in low -frequency dominance and 
+
+persistence. Integrated attribution further shows that a compact set of low -frequency 
+
+mo des becomes preferentially activated during heatwave days, remains elevated through 
+
+long events, and exhibits spatial energy footprints that align with the geography of 
+
+persistence and intensity hotspots. Taken together, these findings support a dynamical 
+
+interpretation in which late -century duration amplification reflects increasing dominance 
+
+and spatial coherence of weakly damped low -frequency structures that sustain 29 
+
+prolonged exceedance once heatwave conditions are initiated. Beyond the specific case 
+
+stu dy, the framework provides process -informed diagnostics that complement 
+
+conventional event -statistical projections. By explicitly isolating the time -scale structures 
+
+governing persistence, it offers actionable targets for model evaluation and a basis for 
+
+comparing persistence mechanisms across regions, scenarios, and model ensembles. 
+
+Future extensions include multi -model and multi -scenario applications to quantify 
+
+robustness and uncertainty, and conditioning on impact -relevant heat metrics to connect 
+
+persis tence -oriented dynamics more directly to health and infrastructure risk. 
+
+Appendix 
+
+Figures S1 –S2 provide supplementary summaries that support the regional heatwave 
+
+projections and the integrated dynamical attribution results presented in the main text. 
+
+All metrics are computed over the May –September season using the fixed historical 
+
+threshold and event definition described in Section 3.1. Fig. S1 reports the regional 
+
+distributions of heatwave metrics across the eight subregions (BC, AB, SK, MB, ON, QC, 
+
+NL, N B) for 2016 –2025, 2051 –2060, and 2091 –2100. For each metric, values are first 
+
+computed at the grid -cell level and then aggregated to each subregion using area -
+
+weighted averaging. Distributions summarize interannual variability within each 10 -year 
+
+period (o ne regional value per year).   
+
+> Fig. S1 Regional distributions of heatwave metrics (May –September). Distributions are shown
+> for BC, AB, SK, MB, ON, QC, NB, and NL during 2016 –2025, 2051 –2060, and 2091 –2100: (a)
+> HWF (days/season), (b) HWN (events/season), (c ) HWMD (days/event), (d) HWD (maximum
+> event duration; days), (e) HWI (mean exceedance intensity; K above threshold), and (f) HWM
+> (maximum exceedance intensity; K above threshold). 30
+
+Fig. S2 provides a compact cross -region summary of the spatial alignment between 
+
+gridded heatwave metrics and the composite energy footprint of heatwave -relevant low -
+
+frequency modes. For each subregion and period, the footprint constructed from the top -
+
+𝐾 heatwave -relevant modes (𝐾 = 5) is compared against each metric map using (i) an 
+
+area -weighted Spearman rank correlation and (ii) a hotspot overlap score based on the 
+
+intersection of upper -tail grid cells. This summary is included to facilitate comparison of 
+
+alignment strength across metrics, regions, and periods.     
+
+> Fi g. S2 Province -scale summary of spatial alignment between heatwave metrics and heatwave -
+> relevant mode footprints. (a) Area -weighted Spearman rank correlation 𝜌 between gridded
+> heatwave -metric maps and the composite mode -energy footprint derived from the top -𝐾
+> heatwave -relevant low -frequency modes, reported for each subregion and period. (b)
+> Corresponding hotspot overlap score based on the intersection of upper -tail regions (top
+> 𝑝 =20%).
+
+Declaration of Competing Interest 
+
+The authors declare that they have no known competing financial interests or personal 
+
+relationships that could have appeared to influence the work reported in this paper. 
+
+Acknowledgements 
+
+This project was supported by École de Technologie Supérieure (ETS) Startup Fund 
+
+(number 102690) and the Natural Sciences and Engineering Research Council of Canada 
+
+(NSERC) ( grant number RGPIN 2022 –03492) 31 
+
+References 
+
+Adeyeri, O. E., Zhou, W., Ndehedehe, C. E., Ishola, K. A., Laux, P., Akinsanola, A. A., Dieng, M. D. B., & 
+
+Wang, X. (2025). Global Heatwaves Dynamics Under Climate Change Scenarios : Multidimensional 
+
+Drivers and Cascading Impacts. Earth’s Future , 13 (6), e2025EF006486. 
+
+https://doi.org/10.1029/2025EF006486 
+
+Ann, M., Behrens, J., & Sillmann, J. (2026). Dynamic mode decomposition of extreme events. Nonlinear 
+
+Processes in Geophysics , 33 (1) , 85 –102. https://doi.org/10.5194/npg -33 -85 -2026 
+
+Barriopedro, D., García‐Herrera, R., Ordóñez, C., Miralles, D. G., & Salcedo‐Sanz, S. (2023). Heat Waves: 
+
+Physical Understanding and Scientific Challenges. Reviews of Geophysics , 61 (2), e2022RG000780. 
+
+https: //doi.org/10.1029/2022RG000780 
+
+Bauer -Marschallinger, B., Dorigo, W. A., Wagner, W., & Dijk, A. I. J. M. van. (2013). How Oceanic Oscillation 
+
+Drives Soil Moisture Variations over Mainland Australia: An Analysis of 32 Years of Satellite Observations .
+
+https:/ /doi.org/10.1175/JCLI -D-13 -00149.1 
+
+Bhattarai, S., Bokati, L., Sharma, S., & Talchabhadel, R. (2025). Understanding spatiotemporal variation of 
+
+heatwave projections across US cities. Scientific Reports , 15 (1), 10643. https://doi.org/10.1038/s41598 -025 -
+
+95097 -5
+
+Cai, F., Liu, C., Gerten, D., Yang, S., Zhang, T., Lin, S., & Kurths, J. (2024). Pronounced spatial disparity of 
+
+projected heatwave changes linked to heat domes and land -atmosphere coupling. Npj Climate and 
+
+Atmospheric Science , 7(1), 225. https://doi.or g/10.1038/s41612 -024 -00779 -y
+
+CanESM5 hourly dataset . (2026a, March 15). 
+
+https://pavics.ouranos.ca/twitcher/ows/proxy/thredds/ncss/grid/datasets/simulations/RCM -
+
+CMIP6/CORDEX/NAM -12/1hr/NAM -12_CanESM5_ssp585_r1i1p2f1_OURANOS_CRCM5_v1 -
+
+r1_1hr_201501010000 -2100 12312300.ncml/dataset.html 
+
+CanESM5 hourly dataset . (2026b, March 15). 
+
+https://pavics.ouranos.ca/twitcher/ows/proxy/thredds/ncss/grid/datasets/simulations/RCM -
+
+CMIP6/CORDEX/NAM -12/1hr/NAM -12_CanESM5_historical_r1i1p2f1_OURANOS_CRCM5_v1 -
+
+r1_1hr_195001010000 -20 1412312300.ncml/dataset.html 
+
+Çelik, A., & Altunkaynak, A. (2024). Optimization of Precipitation Monitoring Network via Robust 
+
+Empirical Orthogonal Function Analysis with QR Column Pivoting. Journal of Hydrologic Engineering ,
+
+29 (3), 04024007. https://doi.or g/10.1061/JHYEFF.HEENG -5947 
+
+Chicco, D., Warrens, M. J., & Jurman, G. (2021). The coefficient of determination R -squared is more 
+
+informative than SMAPE, MAE, MAPE, MSE and RMSE in regression analysis evaluation. PeerJ 
+
+Computer Science , 7, e623. https://doi. org/10.7717/peerj -cs.623 
+
+Clark, D. G., Liang, K. E., Cheng, I., Ford, J. D., & Gossack -Keenan, K. (2025). Climate disaster effects on 
+
+acute health care: A case study and model of the 2021 heatwave in British Columbia, Canada. The Lancet 
+
+Planetary Health , 9(5), e356 –e363. https://doi.org/10.1016/S2542 -5196(25)00075 -0
+
+Colbrook, M. J. (2023). The Multiverse of Dynamic Mode Decomposition Algorithms (arXiv:2312.00137). arXiv. 
+
+https://doi.org/10.48550/arXiv.2312.00137 
+
+Cowan, T., Purich, A., Perkins, S., Pezza, A. , Boschat, G., & Sadler, K. (2014). More Frequent, Longer, and 
+
+Hotter Heat Waves for Australia in the Twenty -First Century . https://doi.org/10.1175/JCLI -D-14 -00092.1 
+
+Ebi, K. L., Capon, A., Berry, P., Broderick, C., De Dear, R., Havenith, G., Honda, Y., Kov ats, R. S., Ma, W., 
+
+Malik, A., Morris, N. B., Nybo, L., Seneviratne, S. I., Vanos, J., & Jay, O. (2021). Hot weather and heat 
+
+extremes: Health risks. The Lancet , 398 (10301), 698 –708. https://doi.org/10.1016/S0140 -6736(21)01208 -3
+
+Fischer, E. M., & Schär, C. (2010). Consistent geographical patterns of changes in high -impact European 
+
+heatwaves. Nature Geoscience , 3(6), 398 –403. https://doi.org/10.1038/ngeo866 32 
+
+Forootan, E., Khandu, Awange, J. L., Schumacher, M., Anyah, R. O., van Dijk, A. I. J. M., & Kusche, J. (2016). 
+
+Quantifying the impacts of ENSO and IOD on rain gauge and remotely sensed precipitation products 
+
+over Australia. Remote Sensing of Environment , 172 , 50 –66. https://doi.org/10.1016/j.rse.2015.10.027 
+
+Ghil, M., Allen, M. R., Dettinger, M. D., Ide, K., Kondrashov, D., Mann, M. E., Robertson, A. W., Saunders, 
+
+A., Tian, Y., Varadi, F., & Yiou, P. (2002). Advanced Spectral Methods for Climatic Time Series. Reviews 
+
+of Geophysics , 40 (1), 3 -1-3–41. https://doi .org/10.1029/2000RG000092 
+
+Hemati, M. S., Rowley, C. W., Deem, E. A., & Cattafesta, L. N. (2017). De -biasing the dynamic mode 
+
+decomposition for applied Koopman spectral analysis of noisy datasets. Theoretical and Computational 
+
+Fluid Dynamics , 31 (4), 349 –368. https://doi.org/10.1007/ s00162 -017 -0432 -2
+
+Henderson, S. B., McLean, K. E., Lee, M. J., & Kosatsky, T. (2022). Analysis of community deaths during the 
+
+catastrophic 2021 heat dome: Early evidence to inform the public health response during subsequent 
+
+events in greater Vancouver, Ca nada. Environmental Epidemiology , 6(1), e189. 
+
+https://doi.org/10.1097/EE9.0000000000000189 
+
+Hochman, A., Scher, S., Quinting, J., Pinto, J. G., & Messori, G. (2020). A New View of Heat Wave Dynamics 
+
+and Predictability over the Eastern Mediterranean . Earth system change: climate prediction. 
+
+https://doi.org/10.5194/esd -2020 -37 
+
+Keellings, D., Bunting, E., & Engström, J. (2018). Spatiotemporal changes in the size and shape of heat waves 
+
+over North America. Climatic Change , 147 (1 –2), 165 –178. https://doi.org/10.1 007/s10584 -018 -2140 -3
+
+Khodayar Pardo, S., & Paredes -Fortuny, L. (2024). Uneven evolution of regional European summer 
+
+heatwaves under climate change. Weather and Climate Extremes , 43 , 100648. 
+
+https://doi.org/10.1016/j.wace.2024.100648 
+
+Kirchmeier -Young, M. C ., Li, G., Wan, H., & Zhang, X. (2025). Heat Wave Trends in Canadian Regions. 
+
+Atmosphere -Ocean , 63 (4), 241 –251. https://doi.org/10.1080/07055900.2025.2521501 
+
+Kutz, J. N. (2013). Data -driven modeling & scientific computation: Methods for complex systems & b ig data (First 
+
+edition). Oxford University Press. 
+
+Kutz, J. N., Fu, X., & Brunton, S. L. (2016). Multiresolution Dynamic Mode Decomposition. SIAM Journal on 
+
+Applied Dynamical Systems , 15 (2), 713 –735. https://doi.org/10.1137/15M1023543 
+
+Lapo, K., Ichinaga, S. M., & Kutz, J. N. (2025). A method for unsupervised learning of coherent 
+
+spatiotemporal patterns in multiscale data. Proceedings of the National Academy of Sciences , 122 (7), 
+
+e2415786122. https://doi.org/10.1073/pnas.2415786122 
+
+Liu, J., Kim, H., Hashizume, M., Lee, W., Honda, Y., Kim, S. E., He, C., Kan, H., & Chen, R. (2025). Nonlinear 
+
+exposure -response associations of daytime, nighttime, and day -night compound heatwaves with 
+
+mortality amid climate change. Nature Communications , 16 (1), 635. https://doi.org /10.1038/s41467 -025 -
+
+56067 -7
+
+Luo, M., Wu, S., Lau, G. N. -C., Pei, T., Liu, Z., Wang, X., Ning, G., Chan, T. O., Yang, Y., & Zhang, W. (2024). 
+
+Anthropogenic forcing has increased the risk of longer -traveling and slower -moving large contiguous 
+
+heatwaves. Scie nce Advances , 10 (13), eadl1598. https://doi.org/10.1126/sciadv.adl1598 
+
+Mankovich, N., Bouabid, S., Nowack, P., Bassotto, D., & Camps -Valls, G. (2025). Analyzing climate 
+
+scenarios using dynamic mode decomposition with control. Environmental Data Science , 4, e16. 
+
+https://doi.org/10.1017/eds.2025.8 
+
+Manohar, K. (n.d.). Data -Driven Sensor Placement Methods .
+
+Perkins, S. E., & Alexander, L. V. (2013). On the Measurement of Heat Waves. Journal of Climate , 26 (13), 
+
+4500 –4517. https://doi.org/10.1175/JCLI -D-12 -00383.1 
+
+Perkins -Kirkpatrick, S. E., & Lewis, S. C. (2020). Increasing trends in regional heatwaves.  Nature 
+
+Communications , 11 (1), 3357. https://doi.org/10.1038/s41467 -020 -16970 -7
+
+Ranatunga, T., Tong, S. T. Y., & Yang, Y. J. (2016).  An approach to measure parameter sensitivity in 
+
+watershed hydrological modelling. Hydrological Sciences Journal , 1–17. 
+
+https://doi.org/10.1080/02626667.2016.1174335 33 
+
+Ren, Y., Liu, J., Zhang, T., Shalamzar i, M. J., Arshad, A., Liu, T., Willems, P., Gao, H., Tao, H., & Wang, T. 
+
+(2023). Identification and Analysis of Heatwave Events Considering Temporal Continuity and Spatial 
+
+Dynamics. Remote Sensing , 15 (5), 1369. https://doi.org/10.3390/rs15051369 
+
+Sato, T., Hino, H., & Kusaka, H. (2024). Separating urban heat island circulation and convective cells 
+
+through dynamic mode decomposition. Atmospheric Science Letters , 25 (12), e1279. 
+
+https://doi.org/10.1002/asl.1279 
+
+Schmid, P. J. (2010). Dynamic mode decomposition o f numerical and experimental data. Journal of Fluid 
+
+Mechanics , 656 , 5 –28. https://doi.org/10.1017/S0022112010001217 
+
+Schmidt, O. T., & Colonius, T. (2020). Guide to Spectral Proper Orthogonal Decomposition. AIAA Journal ,
+
+58 (3), 1023 –1033. https://doi.org/10 .2514/1.J058809 
+
+Smith, K. E., Burrows, M. T., Hobday, A. J., King, N. G., Moore, P. J., Sen Gupta, A., Thomsen, M. S., 
+
+Wernberg, T., & Smale, D. A. (2023). Biological Impacts of Marine Heatwaves. Annual Review of Marine 
+
+Science , 15 (1), 119 –145. https://doi .org/10.1146/annurev -marine -032122 -121437 
+
+Strandgren, J. (2023). Global Land Water Mask [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.10076199 
+
+Sutanto, S. J., Vitolo, C., Di Napoli, C., D’Andrea, M., & Van Lanen, H. A. J. (2020). Heatwaves, droughts, 
+
+and fires: Exploring compound and cascading dry hazards at the pan -European scale. Environment 
+
+International , 134 , 105276. https://doi.org/10.1016/j.envint.2019.105276 
+
+Towne, A., Schmidt, O. T., & Colonius, T. (2018). Spectral proper orthogonal decompositio n and its 
+
+relationship to dynamic mode decomposition and resolvent analysis. Journal of Fluid Mechanics , 847 ,
+
+821 –867. https://doi.org/10.1017/jfm.2018.283 
+
+Tripathy, K. P., Mukherjee, S., Mishra, A. K., Mann, M. E., & Williams, A. P. (2023). Climate change will 
+
+accelerate the high -end risk of compound drought and heatwave events. Proceedings of the National 
+
+Academy of Sciences , 120 (28), e2219825120. https://doi.org/10.1073/pnas.2219825120 
+
+Velagar, M., Keller, C., & Kutz, J. N. (2025). Optimized dynamic mode decomposition for reconstruction 
+
+and forecasting of atmospheric chemistry data. Geoscientific Model Development , 18 (14), 4667 –4684. 
+
+https://doi.org/10.5194/gmd -18 -4667 -2025 
+
+Volkov, D. L. (2014). Do the North Atlantic winds drive the nonseasonal variabilit y of the Arctic Ocean sea 
+
+level? Geophysical Research Letters , 41 (6), 2041 –2047. https://doi.org/10.1002/2013GL059065 
+
+Zhang, Q., Liu, Y., & Wang, S. (2014). The identification of coherent structures using proper orthogonal 
+
+decomposition and dynamic mode decomposition. Journal of Fluids and Structures , 49 , 53 –72. 
+
+https://doi.org/10.1016/j.jfluidstructs.2014.04.002 
+
+Zhang, Q ., Yin, J., Liu, P., Zhu, W., Gu, X., & Gu, L. (2025).  Moisture -modulated heatwaves: Tracking 3D 
+
+evolution patterns and projected changes. Environmental Research Letters , 20 (4), 044037. 
+
+https://doi.org/10.1088/1748 -9326/adc1e5 
+
+Zhao, Y., Zhao, M., Li, X., L iu, Z., & Du, J. (2019). A modified proper orthogonal decomposition method for 
+
+flow dynamic analysis. Computers & Fluids , 182 , 28 –36. https://doi.org/10.1016/j.compfluid.2019.01.020

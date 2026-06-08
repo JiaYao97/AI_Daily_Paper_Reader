@@ -1,0 +1,1459 @@
+Title: End-to-end optimization of subgrid scale models for discontinuous spectral element schemes based on the discrete adjoint method
+
+URL Source: https://arxiv.org/pdf/2606.01150v1
+
+Published Time: Tue, 02 Jun 2026 01:23:33 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+END-TO-END OPTIMIZATION OF SUBGRID SCALE MODELS FOR DISCONTINUOUS SPECTRAL ELEMENT SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+NICOLA CLINCO 1, NICCOLÒ TONICELLO 1, PAOLA CINNELLA 2 AND GIANLUIGI ROZZA 11 mathLab, Mathematics Area, SISSA, via Bonomea 265, I-34136 Trieste, Italy  
+
+> 2
+
+Institut Jean Le Rond D’Alembert, Sorbonne Université, CNRS, 4 Place Jussieu, Paris, France 
+
+Abstract. In computational fluid dynamics, among turbulence modeling strategies, the Large Eddy Simulation (LES) formalism offers a compelling balance between accuracy and computational cost by resolving large-scale flow structures while modeling the effects of unresolved subgrid scales. However, the predictive capacity of LES is critically dependent on the choice and calibration of subgrid-scale (SGS) models, which often involve problem-dependent parameters and exhibit intricate interactions with the underlying numerical discretization. In this work, we propose a discrete-adjoint framework to optimize the control parameters of SGS models in the loop , leveraging automatic differentiation within a high-order Spectral Difference (SD) solver. Coarse-grained simulations of Forced Homogeneous Isotropic Turbulence (FHIT), together with reference filtered Direct Numerical Simulation (DNS) data, are employed to optimize a limited set of parameters for classical SGS models, including the Smagorinsky model and non-linear tensor-basis formulations. When applied to chaotic systems, such as LES, the choice of the objective function plays a crucial role in the stability and overall accuracy of the proposed approach. In this work, we consider the spatio-temporally averaged decay of the Legendre modal coefficients as the relevant quantity of interest for the SD scheme. The optimization is performed across different grid resolutions and polynomial orders, highlighting the impact of the numerical discretization on the resulting model performance. The same methodology has been applied to one-dimensional Burgers and to fully three-dimensional turbulence. The trained models are subsequently assessed on a range of out-of-sample configurations, including Decaying Homogeneous Isotropic turbulence (DHIT) and the Taylor-Green vortex. Variations in polynomial order, grid resolution, and Reynolds number are considered to evaluate the robustness and generalization capabilities of the approach. In all test cases, the optimized models consistently demonstrate significant improvements over baseline SGS closures. 
+
+1. Introduction 
+
+The continuous advancement of computational resources has considerably increased the capabilities in performing high-fidelity simulations of turbulent flows [100]. In particular, Direct Numerical Simulation (DNS) and Large-Eddy Simulation (LES) have become two fundamental approaches for the simulation of turbulent flows at different levels of detail. DNS resolves all turbulent structures down to the Kolmogorov scale , providing the most accurate representation of the flow dynamics. However, its computational cost is still prohibitive for many practical applications. LES, on the other hand, offers a more affordable alternative by explicitly resolving the large-scale structures while modeling the effects of the smaller, sub-grid scales [94, 33]. The modelization of the unresolved sub-grid scales is commonly referred to as Sub-Grid Scale (SGS) modeling. Approaches such as DNS and LES can significantly benefit from highly resolving spatial discretizations, such as the high-order Spectral Element Methods (SEMs). These include Discontinuous Spectral Element Methods (DSEMs) such as the Discontinuous Galerkin (DG) [45, 23, 24], the Flux Reconstruction (FR) [49] and the Spectral Difference (SD) [55, 60, 115] schemes. In the context of LES paradigm, two main approaches are commonly distinguished in the literature. The first is referred as Explicit Large-Eddy Simulation (ELES), which consists in modeling the unre-solved scales by an analytical model, function of the large-scale, resolved variables and their gradients (e.g. Smagorisnky [101], WALE [83], Vreman [111], Sigma [83] and many others). The second approach, known as Implicit Large-Eddy Simulation approach (ILES), instead, aims at modeling the unresolved scales through the numerical dispersion and diffusion of the numerical scheme itself [40, 39]. In this work, we focus on ELES. SGS closure models generally involve free parameters that require calibra-tion in order to achieve satisfactory performance. The optimal choice of these parameters tends to be  
+
+> 1
+> arXiv:2606.01150v1 [physics.flu-dyn] 31 May 2026 2OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD
+
+problem-dependent, as it can vary significantly with both the numerical discretization and the charac-teristics of the flow under consideration. In particular, the interaction between the SGS model and the numerical scheme may strongly influence the resulting flow dynamics. Consequently, parameter values that provide accurate results for a given numerical method or flow configuration may not necessarily remain optimal when different discretizations or flow regimes are considered [74, 51, 62]. In recent years, several methodologies have been proposed for the development of SGS models. In particular, the rapid growth of machine learning techniques has generated significant interest within the CFD community [28, 95]. In this context, data-driven SGS modeling strategies can be broadly divided into two categories. The first one, commonly referred to as a-priori modeling, constructs SGS closures without direct interaction with the CFD solver. In this setting, the training procedure relies entirely on precomputed high-fidelity data ( i.e. filtered DNS) and, upon a proper definition of the model architecture, a usable function between resolved and under-resolved scales can be learned from data and utilized as SGS model. Although this methodology has demonstrated promising results in various applications [118, 89, 22, 6, 48, 41], it does not explicitly account for the discretization errors introduced by the numerical solver. This limitation is particularly relevant in LES, where discretization errors can be of the same order of magnitude as the modeled SGS contributions [37, 57, 20]. This is closely related to the well known differences between a-priori and a-posteriori analyses of LES: models which correlate well with filtered DNS data generally perform poorly when used in a-posteriori simulations. At the same time, models which are not particularly excellent in a-priori analyses have shown to be robust and perform well in a-posteriori simulations [71, 88]. As a consequence, developing SGS models that remain consistent with the underlying numerical discretization is of paramount importance. Training SGS models directly in the loop (i.e. , by employing the LES solver within the training process) overcomes the main limitations of a-priori training. This methodology allows the development of models that are not only physics-informed by the specific PDE at hand, but are also aware of their discretization and thus incorporate the numerical error of the LES solver directly during training. In this paradigm, two methodologies that have been proven effective can be found in the use of Reinforcement Learning (RL) and Ensemble Kalman Filter (EnKF). Within the RL framework, the model parameters, or control policies, are iteratively adapted based on feedback from the environment ( i.e. , the LES solver). Alternatively, EnKF-based methodologies provide a gradient-free statistical assimilation framework in which model states and parameters are continuously updated using observational data. Both approaches have been successfully applied in adaptive and closed-loop learning settings, as demonstrated in previous studies on reinforcement learning–based control [58, 8] and data assimilation using EnKF methods [114, 109]. However, such approaches require a large number of costly LES, which tends to increase with the search space dimensionality. Another strategy enabling training-in-the-loop models is represented by the broad category of differ-entiable solvers [107, 97]. In this setting, the optimization is performed within the PDE solver itself, thereby naturally incorporating discretization effects during the training process. Several differentiable CFD solvers have recently been developed. Bezgin et al. [11] proposed a fully differentiable finite-volume solver implemented in JAX , while Wang et al. [113] developed a differentiable discontinuous Galerkin solver in JAX for two-dimensional applications. Similarly, Agdestein & Sanderse [2] implemented a dif-ferentiable solver for the incompressible Navier–Stokes equations in Julia . In all these approaches, the optimization relies on the construction of the complete computational graph of the solver, enabling gradient propagation through the entire time-integration procedure. While this strategy provides exact derivatives of the discrete objective function, building and storing the full computational graph may become prohibitively expensive for LES applications, especially for large computational grids and long integration horizons. One way to keep the computational cost due to the training affordable is to compute the sensitivities of the objective functional using adjoint-based methods [85, 38, 99, 52]. The first application of the adjoint method in CFD was pioneered by Jameson in 1988 [50]. The continuous adjoint method was employed to optimize aircraft wing configurations using both a potential flow solver and three-dimensional inviscid Euler equations, marking a foundational step toward modern adjoint-based shape optimization frameworks. Among these, applications to optimal boundary control of the compressible Navier-Stokes equations [96] and to aero-acoustic simulations for noise reduction [116, 53] are worth mentioning. Within this framework, the continuous adjoint formulation introduces an additional equation for the adjoint variable, derived from the continuous primal equations. This equation is first obtained analytically and then discretized and solved numerically. The discrete-adjoint, instead, generates an additional equation directly from the discretized primal equations. As a consequence, the discrete-adjoint formulation is consistent with the discretization and provides exact gradients of the objective function [46, OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 3
+
+80, 81]. Although the continuous adjoint approach has proven effective in previous works [85, 53, 96], the accuracy of the resulting sensitivities can in some cases depend on the underlying discretization. This is particularly relevant for applications in which the numerical scheme has a strong influence on the overall accuracy of the prediction [80], such as in LES. Moreover, the determination of appropriate boundary conditions for the adjoint variables introduces additional difficulties for complex flow scenarios [42, 46, 86]. These conditions do not always follow directly from the primal problem and require careful derivation to ensure consistency and well-posedness. In contrast, the discrete-adjoint method differentiates the primal equations only after they have been discretized as a set of residual equations. On one hand, this approach produces an adjoint system that is consistent with the numerical scheme at the discrete level and yields machine-accurate gradients with respect to the discrete objectives, while also avoiding the ambiguity in adjoint boundary conditions. On the other hand, the discrete approach is considerably more complicated to implement with respect to the continuous setting. Its construction requires differentiating every component of the numerical solver, including flux evaluations, turbulence models, and linear or nonlinear solution procedures, which can lead to a large and highly coupled adjoint system. Although the adjoint approach is well established in the context of design optimization in CFD, only a limited number of studies have focused on its application to SGS modeling. In particular, the use of adjoint-based methods for the analysis, calibration, or optimization of SGS models remains relatively unexplored compared with their widespread adoption in aerodynamic shape optimization and flow control problems, even more so for discrete-adjoint frameworks. A recent application of the continuous adjoint method for SGS modeling was proposed by Sirignano et al. [99]. They trained a data-driven SGS model with a continuous adjoint method using three-dimensional decaying homogeneous isotropic turbulence. The resulting model was shown to be effective in a-posteriori simulations and to outperform models built entirely in a-priori fashion. Generalization of the methodology to unstructured cases as well as to more challenging flow scenarios were given in [98, 63]. In a related work, Yuan Zelong et al. [119] employed a continuous adjoint framework for the construction of a mixed SGS model, obtaining improved predictions of turbulence statistics compared with classical closures such as the Smagorinsky [101] and dynamic Smagorinsky [35] models. To the best of the authors’ knowledge, this is the first work to propose a discrete-adjoint frame-work for the optimization of subgrid-scale models for fully three-dimensional turbulence. Furthermore, it represents the first application of such an approach within the context of the Discontinuous Spectral Element Method. Even though the specific framework herein proposed is based on the spectral difference scheme, the same concepts are easily extendable to other DSEMs such as DG or FR schemes. Although previous works have developed discrete adjoint-based optimizations of SGS models, they mostly con-sidered two-dimensional problems and a small amount of training data such as a few snapshots. We emphasize that one of the main objectives of LES is the development of models capable of reproducing the long-time statistical behavior of turbulent flows. Consequently, the optimization procedure should rely on a loss function constructed on a sufficiently large number of snapshots to ensure statistical sig-nificance. In this work, we then construct a loss function that is based on the time- and space-averaged modal energy in the space of Legendre polynomials rather than individual flow realizations. However, satisfying these requirements requires an efficient computational framework capable of addressing the substantial performance and memory constraints associated with the optimization procedure of large-scale systems. Furthermore, even if the applications herein considered are mostly focused on optimizing a limited number of control parameters in well-established training benchmarks, the real contribution of this work lies in the methodological developments of such a framework. The possibilities in terms of model optimization are significantly wide: from targeted turbulence models, to optimal shock-capturing, de-aliasing techniques and near wall modeling. This paper is organized as follows. Section 2 introduces the filtered equations and the concept of Large Eddy Simulations for both one-dimensional forced Burgers turbulence and for the fully compress-ible three-dimensional Navier–Stokes equations. In Section 3 we introduce the spectral difference scheme, highlighting the main algorithmic operations to be differentiated and their impact on the overall accu-racy of the methodology. In Section 4, the discrete-adjoint approach applied to the spectral difference framework is introduced, with emphasis on the implementation details and on the role of the loss func-tion in the optimization process. Section 5 includes the first part of results of the proposed framework applied to the forced Burgers test case through the optimization of the Smagorinsky coefficient using a loss function based on modal energy content. Finally, Section 6 extends the methodology to the fully compressible Navier–Stokes equations, where a more advanced mixed SGS model, incorporating both eddy-viscosity and structural contributions, is considered and optimized using the proposed approach. 4 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+The resulting optimized models are shown to generalize successfully to flow configurations outside the training conditions. 2. Problem Definition: filtered equations 
+
+Although the concept of LES is commonly used in CFD, the same rationale can be applied to a large variety of non-linear equations. One classical setting used to study LES and SGS modelling can be found in the one-dimensional forced Burgers turbulence case [102, 76]: 
+
+∂u ∂t + 12
+
+∂u 2
+
+∂x = A
+
+∆t
+
+> Nc
+
+X
+
+> n=1
+
+σn(t)
+
+√πn cos 
+
+Å 2πn L x
+
+ã
+
+(1) where σn(t) is a standard Gaussian random function, A = 0 .04 . This source term results from the sum of Nc Fourier modes with amplitude σn(t)/√πn .In LES, the governing equations are spatially filtered to separate the large scales, which are resolved, from the small-scale motions, which are modeled. The filtering operator (·) denotes the spatial filtering operation which is commonly assumed to be a convolution operation with a kernel function G:
+
+ϕ(x, t ) = G(x; ∆) ⋆ ϕ (x, t ) = 
+
+Z
+
+G(x − x′; ∆) ϕ(x′)dx′. (2) The kernel function G is influenced by the cutoff length scale ∆, which defines the threshold separating resolved and under-resolved scales. Applying the above filter to equation 1 leads to: 
+
+∂u ∂t + 12
+
+∂u 2
+
+∂x = A
+
+∆t
+
+> Nc
+
+X
+
+> n=1
+
+σn(t)
+
+√πn cos 
+
+Å 2πn L x
+
+ã
+
+− ∂τ SGS 
+
+∂x (3) with 
+
+τ SGS = 12
+
+ u2 − u2. (4) The forcing term is typically applied at large scales, so filtering does not modify its functional form. Rewriting the above equation in terms of a single unknown (namely, u) leads to what is commonly referred to as the SGS closure problem. The objective is then to determine a suitable model for τ SGS . The expression in equation (4), in fact, depends on u2 which is, in general, unknown. The classical approach is to relate τ SGS to large scale quantities such as u and its gradients. Alternatively, it is also possible to fine-tune the parameters of the numerical discretization so that its intrinsic numerical dissipation acts as an implicit SGS model. Both approaches have been successfully applied to the Burgers equations in the past (see for example [69]). Such concepts will be further expanded below when applied to the compressible Navier-Stokes equations. In fact, as mentioned above, the use of LES is most often applied to three-dimensional equations of fluid dynamics. In the particular setting of this work, we will consider the compressible Navier-Stokes equations written in conservative form: 
+
+∂ρ ∂t + ∂∂x j
+
+(ρu j ) = 0 , (5) 
+
+∂∂t (ρu i) + ∂∂x j
+
+(ρu iuj + pδ ij ) = ∂∂x j
+
+(Σ ij ) , (6) 
+
+∂∂t (ρE ) + ∂∂x j
+
+[( ρE + p) uj ] = − ∂q j
+
+∂x j
+
++ ∂∂x j
+
+(Σ ij ui) , (7) where ρ is the fluid density, ui is the i-th velocity component, p is the pressure, E is the total energy per unit mass, Σij is the viscous stress tensor and qj represents the heat flux. Furthermore, δij indicates the Kronecker-delta. The system (5)-(7) is closed by a thermodynamic equation of state for the pressure which, based on the assumption that air behaves like an ideal gas, is given by: 
+
+p = ρ
+
+
+
+E − uiui
+
+2
+
+
+
+(γ − 1) , (8) where γ = cp/c v is the specific heat ratio and by suitable constitutive relations for the viscous stresses 
+
+Σij . Hereafter, we consider a Newtonian fluid, with a constant viscosity and a constant Prandtl number. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 5
+
+For compressible turbulent flows, the Favre-filtering technique is applied to equations (5)-(7). For a general function ϕ, the Favre-filtered quantity is defined as ›(ϕ) = ρϕ/ρ .
+
+∂ρ ∂t + ∂∂x j
+
+(ρ ‹uj ) = 0 , (9) 
+
+∂∂t (ρ‹ui) + ∂∂x j
+
+(ρ‹ui ‹uj + pδ ij ) = ∂∂x j
+
+ Σij 
+
+ − ∂τ SGS 
+
+> ij
+
+∂x j
+
+, (10) 
+
+∂∂t 
+
+Äρ‹Eä + ∂∂x j
+
+îÄ ρ‹E + pä ‹uj
+
+ó = − ∂q j
+
+∂x j
+
++ ∂∂x j
+
+ Σij ui
+
+ − ∂q SGS 
+
+> j
+
+∂x j
+
+, (11) where τ SGS  
+
+> ij
+
+= ρu iuj − ρ‹ui ‹uj represents the subgrid scale tensor and qSGS  
+
+> j
+
+= ρEu j + pu j − (ρ‹E ‹uj + p ‹uj )
+
+accounts for the subgrid scale energy flux. Further terms arise from the non-linearity of the viscous term when non-linear dependence of the viscosity with respect to the temperature (such as Sutherland law) is used. However, these terms are often negligible and τ SGS  
+
+> ij
+
+and qSGS  
+
+> j
+
+are usually the main focus of modeling efforts in compressible LES [112]. It is important to point out that the numerical discretization used to resolve the filtered equations plays a crucial role. In this work, we will focus on the spectral difference scheme, which is a specific variant of the Spectral Element Method [55, 60, 115]. In the context of Spectral Element Methods, the treatment of non-linear terms and numerical flux functions significantly influences the accuracy and stability of ILES . The Riemann solver, for example, plays a critical role in regulating small-scale features by introducing controlled dissipation, which acts as an implicit turbulence model in ILES [31, 64]. Gassner & Kopriva [34] demonstrated that in DG Methods, upwind schemes primarily introduce dissipation errors at high wave numbers, while lower and mid-range wave numbers remain largely unaffected. Moreover, as the accuracy order increases, the dissipation peak shifts toward higher wave numbers. As a result, leveraging polynomial order to regulate numerical dissipation makes DSEM methods well-suited for ILES. Along similar lines, De Wiart 
+
+et.al [27] showed that the Riemann solver has a significant impact on the spectral distribution of the dissipation in the case of homogeneous turbulence. They compared the Lax-Friedrichs flux and the Roe flux, and they found that the former was better suited for fully turbulent flows. Moreover, for high order polynomials, de-aliasing techniques ( e.g. , over-integration, split forms, explicit filtering) applied to non linear terms can be of significant importance in providing stable results for under-resolved flows within DSEMs [7, 9, 117]. 3. The Spectral Difference scheme 
+
+For simplicity, let us consider the general one-dimensional conservation law of the form 
+
+∂u (x, t )
+
+∂t + ∂f (u)
+
+∂x + ∂∂x 
+
+Å
+
+g
+
+Å
+
+u, ∂u ∂x 
+
+ãã 
+
+= s(u, x, t ), (12) where f (u) denotes the flux depending solely on the conserved variable u, g(u, ∂u/∂x ) denotes the first-order flux depending on the variable u and its first derivative and s(u, x, t ) represents a source term for simplicity depending only on the conserved variable u, spatial coordinate x and time variable t. Even though equation (12) represents a general conservation law we will often refer to the argument of the first order term as inviscid flux and the argument of the second-order term as viscous flux. Notice that the Burgers equation introduced before can be easily written like equation (12). Also the compressible Navier-Stokes can be seen as a multivariate generalization of the above equation. For more details regarding the SD discretization of the compressible Navier-Stokes equations the reader is referred to [55, 60, 115]. In the SD scheme, the solution is approximated with a polynomial of degree N
+
+ˆu(ˆ x) = 
+
+> N
+
+X
+
+> i=0
+
+uilsi (ˆ x). (13) within the reference element Ωn = {ˆx| − 1 ≤ ˆx ≤ 1}. In the one-dimensional case, the map linking the reference element to the physical element, and consequently ˆx with x, is a simple linear transformation, acting on the length of the element. Let us first focus on the first-order term involving the inviscid flux 
+
+f (u).The values of the conserved variables can be extrapolated at the flux points as 
+
+ˆu(ˆ xfj ) = 
+
+> N
+
+X
+
+> i=0
+
+uilsi (ˆ xfj ), j = 0 , ..., N + 1 , (14) 6 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+and then used to compute fluxes on the same collocation basis: 
+
+fj = ˆf (ˆ xfj ) = ˆf (ˆ u(ˆ xfj )) . (15) Then, a continuous flux polynomial of degree N + 1 is constructed, by Lagrange interpolation, using the fluxes evaluated from the interpolated solution at the interior flux points and the numerical fluxes at the element interfaces: 
+
+ˆf (ˆ x) = ˆf ILlf 
+
+> 0
+
+(ˆ x) + 
+
+> N
+
+X
+
+> j=1
+
+fj lfj (ˆ x) + ˆf IRlfN +1 (ˆ x). (16) In other words, the interpolated values of the flux at elements extrema are substituted by the interface numerical fluxes ˆf IL and ˆf IR. Finally, the flux divergence is evaluated at the solution points, 
+
+d ˆfdˆx (ˆ xsi ) = ˆf IL
+
+dl f
+
+> 0
+
+dˆx (ˆ xsi ) + 
+
+> N
+
+X
+
+> j=1
+
+fj
+
+dl fj
+
+dˆx (ˆ xsi ) + ˆf IR
+
+dl fN +1 
+
+dˆx (ˆ xsi ). (17) Second-order fluxes can be computed in a similar fashion. We begin by extrapolating the solution to the flux points as 
+
+ˆu(ˆ xfj ) = 
+
+> N
+
+X
+
+> i=0
+
+uilsi (ˆ xfj ), j = 0 , . . . , N + 1 . (18) At this stage, we can follow the same procedure used for the computation of inviscid fluxes, simply considering the identity flux f (u) = u. This leads to the interpolated solution 
+
+ˆu(ˆ x) = ˆ uILlf 
+
+> 0
+
+(ˆ x) + 
+
+> N
+
+X
+
+> j=1
+
+uj lfj (ˆ x) + ˆ uIRlfN +1 (ˆ x). (19) By differentiating this expression and evaluating it at the solution points, we obtain the first derivative of the conserved variable at ˆxsi :
+
+dˆudˆx (ˆ xsi ) = ˆ uIL
+
+dl f
+
+> 0
+
+dˆx (ˆ xsi ) + 
+
+> N
+
+X
+
+> j=1
+
+uj
+
+dl fj
+
+dˆx (ˆ xsi ) + ˆ uIR
+
+dl fN +1 
+
+dˆx (ˆ xsi ). (20) Unlike the inviscid case, we now need to define interfacial values for the conserved variable in order to compute its first derivative within each element. This choice is flexible, similarly to numerical fluxes, and is often taken as a combination of left and right states. In this work, we adopt a centered evaluation. Once the first derivative is available at the solution points, the same procedure used for inviscid fluxes can be applied. Defining ˆv := ∂ ˆu/∂ ˆx, we extrapolate it to the flux points as 
+
+ˆv(ˆ xfj ) = 
+
+> N
+
+X
+
+> i=0
+
+vilsi (ˆ xfj ), j = 0 , . . . , N + 1 . (21) The second-order fluxes can then be evaluated at the flux points: 
+
+gj = ˆ g(ˆ xfj ) = ˆ g(ˆ u(ˆ xfj ), ˆv(ˆ xfj )) . (22) By introducing appropriate numerical fluxes at element interfaces, we construct the following interpolant: 
+
+ˆg(ˆ x) = ˆ gILlf 
+
+> 0
+
+(ˆ x) + 
+
+> N
+
+X
+
+> j=1
+
+gj lfj (ˆ x) + ˆ gIRlfN +1 (ˆ x). (23) Finally, differentiating this expression and evaluating it at the solution points yields the derivative of the second-order flux at ˆxsi :
+
+dˆgdˆx (ˆ xsi ) = ˆ gIL
+
+dl f
+
+> 0
+
+dˆx (ˆ xsi ) + 
+
+> N
+
+X
+
+> j=1
+
+gj
+
+dl fj
+
+dˆx (ˆ xsi ) + ˆ gIR
+
+dl fN +1 
+
+dˆx (ˆ xsi ). (24) Similarly to the inviscid case, the numerical fluxes ˆgIL/R generally depend on the left and right states of the first derivative of the solution and implicitly on the choice of the intermediate interfacial values 
+
+ˆuIL/R introduced in equation (19). These common fluxes can be computed as a function of the average interface solution and the solution gradients [103]. Alternatively, an interior penalty (IP) flux can be adopted [44]. In this case, the numerical viscous flux at each element interface is obtained by combining the arithmetic mean of the (discontinuous) viscous fluxes evaluated to the left and to the right of the interface with an added penalty term proportional to the jump in the solution across the interface. For any of these choices, while inviscid fluxes in the n-th element depend only on the reconstructed solutions OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 7
+
+of the neighboring elements ( i.e. , n − 1 and n + 1 ), the computation of viscous fluxes requires information from a wider stencil, involving also the elements n − 2 and n + 2 . This concept will be crucially important when introducing the adjoint formulation for the SD scheme. Finally, once first- and second-order terms are evaluated at the solution points, the numerical solution can be advanced in time using a suitable time integration scheme discretizing the following equation: 
+
+dˆudt = − d ˆfdˆx (ˆ xsi ) − dˆgdˆx (ˆ xsi ) + s(ˆ u(ˆ xsi ), ˆxsi , t ) = R(ˆ xsi ). (25) A specific SD method is then completely defined by: (1) the location of both solution and flux points; (2) the expression of inviscid interface fluxes ˆf IL/R .(3) the expression of viscous interface fluxes ˆgIL/R .(4) the expression for the intermediate interfacial conserved variables ˆuIL/R .As will be discussed in detail in the following sections, each of these choices will be properly defined, as they generally depend on the specific equation being discretized using the SD method. As a simple example, it is nevertheless useful to consider the case of homogeneous linear advection, for which a specific SD method is completely defined by the first two components. In this simplified setting, the numerical flux ˆfL/R is typically chosen from a family of fluxes of the form: 
+
+ˆf IL = (1 − α)ˆ un−1(+1) + αˆun(−1) and ˆf IR = (1 − α)ˆ un(+1) + αˆun+1 (−1) , (26) where, for α = 0 .5 we recover a centered flux and for α = 0 an upwind scheme. It is well known that given a proper discretization of the linear advection equation it is possible to introduce concepts such as numerical dissipation and dispersion of a given scheme. The dispersion and dissipation curves for the SD scheme using a fully upwind numerical flux are respectively reported in figures 1 and 2 along with the same curves for a classical nodal DG for reference. 0.0 0.5 1.0 1.5 2.0 2.5 3.0        
+
+> θh N+1
+> 012345
+> Re (˜ ω)hN +1 0.00.51.01.52.02.53.0
+> θh N+1
+> 012345
+> Re (˜ ω)hN +1
+
+Figure 1. Dispersion curves for Spectral Difference (left) and Discontinuous Galerkin (right) methods for order from p = 3 to p = 7 (color gradient from ocher to black). Dashed line indicates the analytical solution. In this section we introduced the SD scheme for a general one-dimensional conservation law including both first- and second-order terms. We also briefly mentioned the more simplified setting of linear advection, where specific choices of numerical fluxes and polynomial order are directly linked to the classical numerical dispersion/dissipation eigenanalysis. There exists a large body of literature discussing dispersion/diffusion analyses of DSEMs, ranging from classical temporal eigenanalysis applied to various formulations [110, 79, 108, 18], to spatial eigenanal-ysis [75, 73, 72, 106] and non-modal analysis [29], including both constant and non-constant advection velocities [65, 105]. All these approaches aim to investigate the role played by the numerical scheme in coarse-grained simulations such as Large-Eddy Simulations. The specific choices within the numerical scheme, such as polynomial order and numerical fluxes (both inviscid and viscous), can have a significant impact on the numerical description of physical phenomena [27, 77, 56]. A large part of the community working on DSEMs for turbulent flows often relies on so-called Implicit Large-Eddy Simulations [40, 78, 30, 32, 64], where the numerical scheme is 8 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 0.0 0.5 1.0 1.5 2.0 2.5 3.0        
+
+> θh N+1
+> −7
+> −6
+> −5
+> −4
+> −3
+> −2
+> −10
+> Im (˜ ω)hN +1 0.00.51.01.52.02.53.0
+> θh N+1
+> −7
+> −6
+> −5
+> −4
+> −3
+> −2
+> −10
+> Im (˜ ω)hN +1
+
+Figure 2. Disssipation curves for Spectral Difference (left) and Discontinuous Galerkin (right) methods for order from p = 3 to p = 7 (color gradient from ocher to black). Dashed line indicates the analytical solution. designed to act as an implicit SGS model, providing an appropriate level of numerical dissipation at small scales. Another part of the turbulence modeling community instead relies on numerical schemes that intrinsically preserve kinetic energy (and entropy, for compressible solvers), so that the only mechanism for kinetic energy dissipation is through explicit SGS modeling. This brief digression, rather than advocating for a universally optimal approach, is meant to highlight the tight connection between the numerical scheme and SGS modeling. We therefore believe that, once the numerical scheme is chosen, any decision regarding turbulence modeling, whether based on implicit or explicit LES approaches, requires tailored optimization for that specific scheme. We then propose the use of PDE-constrained optimization as a possible way to tailor SGS models to the specific numerical characteristics of the SD method. In a similar way, we expect that applying the same procedure to different schemes, or even to the same scheme with different discretization choices (such as numerical fluxes and polynomial orders), would lead to different optimal models. This concepts will be the focus of following sections and related discussions. Within the framework of discontinuous spectral element methods, in addition to Fourier modes, the Legendre modes within each element are often considered for modeling purposes [16, 61, 36, 91, 90]. The solution within each element, in fact, can be represented as an expansion of orthogonal polynomials in the reference element [−1, 1] as: 
+
+u(x) = 
+
+> N
+
+X
+
+> i=1
+
+βiPi(x), (27) where {Pi(x)}i=1 ,...,N is the i-th Legendre polynomial and βi its corresponding modal coefficient. Being the Legendre polynomials ordered here for increasing polynomial degree, it is often useful, in DSEMs, to investigate how the modal coefficients decay for increasing orders of accuracy in order to assess the effective resolution of the numerical method. In the next section, the Legendre modal coefficients will be used in the definition of the objective functional used for the discrete adjoint method. 4. PDE-constrained formulation: the discrete-adjoint method 
+
+As discussed in the introduction, the accuracy of the sensitivities computed using the continuous adjoint approach may depend on the discretization, particularly in applications where the numerical discretization significantly influences the prediction of the continuous system. Having in mind the specific application of LES, we expect the numerical footprint of the scheme to be relevant on the overall prediction of the problem of interest. In this work, we consequently employ the discrete adjoint approach in order to be consistent with the discrete dynamical system. The numerical solver is differentiated by source-code transformation using the Tapenade tool [43]. To assemble the necessary Jacobian matrices for the adjoint formulation in parallel, the method employs ghost cells. The implementation of the discrete adjoint method relies on an interface to the adjoint module library implemented in PETSc [4, 120]. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 9
+
+The discrete adjoint method is used to compute sensitivities of an objective function with respect to parameters in systems governed by PDEs in a computationally efficient way. Let the discrete form of our governing equation be represented as: 
+
+R(u; θ) = 0 , (28) where u ∈ RNdof ×Nt is the vector of discrete state variables with Nt the total number of time steps, and 
+
+θ ∈ RNp represents design or control parameters. Notice that for time-dependent problems, such as the ones herein considered, the u variable has to be interpreted as the full spatio-temporal solution of the discrete system of equations. The objective functional can be written as an integral computed along the trajectory: 
+
+J (Ψ; Ψref ) = 
+
+Z tf
+
+> t0
+
+r(Ψ(t, θ ), Ψref (t); θ)dt , (29) where with Ψ we denote a quantity of interest computed with the flow-state variables and Ψref is the reference quantity we would like to match. A change in the design parameters results in: 
+
+dJ = ∂J
+
+∂Ψ
+
+∂Ψ
+
+∂u du + ∂J
+
+∂θ dθ. (30) Similarly, the variation of the residual is zero: 
+
+dR = ∂R ∂u du + ∂R ∂θ dθ = 0 . (31) Since the variation of the residual is zero, we can enforce the PDE-constraint in the loss function by multiplying equation (31) by a Lagrangian multiplier λ and subtract it to equation (30): 
+
+dJ = ∂J
+
+∂Ψ
+
+∂Ψ
+
+∂u du + ∂J
+
+∂θ dθ − λT
+
+Å ∂R ∂u du + ∂R ∂θ dθ 
+
+ã
+
+=
+
+Å ∂J
+
+∂Ψ
+
+∂Ψ
+
+∂u − λT ∂R ∂u
+
+ã
+
+du +
+
+Å ∂J
+
+∂θ dθ − λT ∂R ∂θ 
+
+ã
+
+dθ = 0 .
+
+(32) Choosing λ to satisfy the adjoint equation: 
+
+Å ∂R ∂u
+
+ãT
+
+λ = ∂J
+
+∂Ψ
+
+∂Ψ
+
+∂u , (33) the first term in equation (32) is eliminated. Consequently, we can compute the derivative of the objective functional with respect to the parameters: 
+
+dJ
+
+dθ = ∂J
+
+∂θ − λT ∂R ∂θ . (34) Note that equation (34) does not depend on the flow-state variables. Consequently, we can compute the gradient of the objective functional with respect to the parameters without further flow-field evaluations. This makes the adjoint-based approach extremely efficient for the computation of the sensitivities. The proposed methodology combines the full-order model solver with a discrete adjoint framework to efficiently propagate the derivatives through the solver. The derivatives are used for optimizing end-to-end turbulence model coefficients of SGS models ( e.g. , Smagorinsky model). The overall workflow involves: (1) Starting with an initial estimate of the control parameters. (2) Solving a forward run of a given trajectory. (3) Computing the statistics needed for the definition of the loss function. (4) Computing adjoint sensitivities with respect to model parameters. (5) Iteratively updating the parameters with a gradient-descent method ( e.g. , Adam optimizer [54]). A schematic overview of the methodology is shown in figure 3. When applying the adjoint-based approach to strongly non-linear and chaotic systems many difficulties arise. Chaotic systems are extremely sensitive to initial conditions. Moreover, the adjoint approach requires a backward in time integration. As a result, adjoint variables can lead to numerical instabilities and meaningless sensitivities. In chaotic systems, small changes in the control parameters of the model may lead to large variations of the trajectories during the forward run. As a result, the practical optimization horizon requires proper temporal windowing and a proper choice of the loss function to avoid spurious effects in the computation of the sensitivities. In the context of turbulence modeling, the choice of the loss function is of paramount importance. As discussed in [10], considering longer trajectories leads, in general, to better solutions ( i.e. , solutions which provide more accurate target statistics). However, as the time horizon increases, the possibility 10 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+Figure 3. A schematic diagram of the optimization algorithm. of introducing spurious effects due to the chaotic nature of the system increases. As a result, a tradeoff between these limit cases needs to be considered. At the same time, constructing a loss function based only on quantities sampled at the final time is not effective because of the chaotic nature of the solution. Identifying the mechanisms underlying a given effect is essential for designing an effective loss function. As shown in [10], minimizing a quantity indirectly related to the target objective may yield better results than optimizing the target itself. Therefore, the chosen loss function should capture both the relevant flow physics and numerical features of the problem. In the present work, we build a loss function which takes into account both numerics and flow physics. Due to the crucial relevance of Legendre modes for DSEMs [16, 36, 91, 90], we consider an objective functional which relies on the energy associated to Legendre modes. Since modal energies may span several orders of magnitude, the loss function is formulated in logarithmic space in order to balance the contribution of all modes. For simplicity, we present the loss function definition in the one-dimensional case for a single scalar variable. Consequently, we consider the following loss function: 
+
+J = X
+
+> i
+
+Älog( ⟨“Ei⟩) − log( ⟨“Eref  
+
+> i
+
+⟩)ä2
+
+, (35) where ⟨“Ei⟩ is computed as: 
+
+⟨“Ei⟩ = 1∆T L 
+
+Z tf
+
+> t0
+> Ne
+
+X
+
+> e
+
+β2
+
+> e,i
+
+!
+
+dt , (36) where ∆T = tf − t0 is the trajectory length, L is the dimension of the domain and β2 
+
+> e,i
+
+is the modal energy of the i-th mode in the e-th element. Furthermore, ⟨“Eref  
+
+> i
+
+⟩ denotes the reference modal decay, obtained from time-averaged filtered data across all the elements. In the Navier–Stokes case, the modal energy is computed by averaging the modal energies associated to the velocities in each element. We refer to the work by Chapelier & Lodato [17] for further details. This quantity is representative of the numerical footprint for the DSEM methods [17, 82]. 4.1. Implementation details. The discrete adjoint method (33) requires the product of the adjoint variable with the Jacobian of the right-hand side of the discretized system. To assemble this product in parallel, we employ ghost cells to manage the communication of the degrees of freedom (DoFs) needed for local assembly. Each processor is responsible for computing its own local contribution. It is important to note that the computational stencil differs between the viscous and inviscid oper-ators [66, 67]. For a purely inviscid operator, each spectral element depends only on elements located at most one cell away, resulting in a stencil of total Ndof = (p + 1) × 7 degrees of freedom, where p is the polynomial order. For the viscous operator, instead, the dependency extends up to two cells away, OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 11 
+
+resulting in a wider stencil involving Ndof = (p + 1) × 25 total degrees of freedom. A schematic drawing of the computational stencil for both viscous and inviscid operators is given in figure 4.    
+
+> (a) Inviscid operator. (b) Viscous operator.
+
+Figure 4. A schematic drawing of the computational stencil for the spectral difference scheme. Stencil for the inviscid (left) and viscous (right) operators. The wider stencil arises from the coupling introduced by the gradient computation. In fact, as ex-plained in Section 3, the computation of second-order terms requires an additional interpolation step and an extra correction at the interfaces between elements with respect to first-order derivatives. As a result, each DoF within a given element is coupled with all DoFs belonging to the elements included in the stencil. Since the right-hand side operator includes both viscous and inviscid contributions, two layers of ghost cells per processor are required. This ensures that the vector–Jacobian product can be assembled locally. In the case of the one-dimensional Burgers’ equation, the vector–Jacobian product is constructed by explicitly assembling the Jacobian matrix, as this step is not particularly computationally demanding in the one-dimensional case and allows for straightforward and efficient evaluation of the linearized operator. In contrast, for the three-dimensional Navier–Stokes equations, a matrix-free approach is adopted due to the significantly higher computational cost and memory requirements associated with assembling and storing the full Jacobian. The vector–Jacobian product, which has to be resolved for the adjoint variables, is computed by directly using automatic differentiation in reverse (adjoint) mode. This is achieved using the tool 
+
+Tapenade [43]. Such an approach has the double advantage of saving computational time while also avoiding the storage of the Jacobian matrix. However, the framework requires careful planning and implementation, since the adjoint mode auto-matic differentiation requires to reverse the entire code of the right hand side operator. For clarity, we report here a schematic view of the evaluation of the right-hand side operator for the Navier–Stokes equations in figure 5. Starting from the vector of the conservative variables stored at the so-lution points ˆu(ˆ xs), the variables are interpolated to the flux points through the InterpolateToFluxPoints 
+
+subroutine. The fluxes are then computed, distinguishing between inviscid and viscous contributions. While the inviscid flux depends directly on the interpolated state, the viscous flux additionally involves gradient computations, leading to a wider computational stencil. Finally, both contributions are com-bined to assemble the residual R(ˆ u(ˆ xs)) . In contrast, the vector-jacobian product λT J is computed by propagating the adjoint variable λ backward through the same reversed sequence of transposed opera-tions. Each single subroutine is differentiated by Tapenade [43] in backward mode. After computing the local vector-jacobian product from the differentiated subroutines, a global gathering operation is performed for the assembly of the global vector-jacobian product. The ghost cells allow us to evaluate the vector-jacobian product in parallel in each processor. More specifically, DoFs of the “neighbors” processors are gathered into ghost cells. This operation ensures that all stencil-dependent contributions 12 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+Figure 5. Assembly of the right hand side operator and reverse-mode mode compu-tation of the vector-jacobian product. For the computation of the right hand side, following the green arrows: the state vector is interpolated to flux points, where invis-cid and viscous fluxes are evaluated and combined to form the residual. Each of these steps is schematically shown on the right side of the scheme. Following the blue arrows, instead, we show the reverse-mode mode computation of the vector-jacobian product: the adjoint variable λ is propagated backward trough the same sequence of operations. can be computed locally within each processor. The scattering and gathering are performed using the high performance computing library PETSc [4]. 5. Forced Burgers turbulence 
+
+In order to assess the methodology of section 4 for the optimization of SGS models, the forced Burgers turbulence [102, 76] test-case is considered here. We start by considering different Implicit Large-Eddy Simulations of the Forced Burgers test case for different resolutions in order to assess the impact of the numerical scheme on the overall solution. Details regarding the space discretization (resolution and polynomial order) are reported in table 1. Given the total number of degrees of freedom and polynomial order of the SD scheme, the number of elements can be evaluated by Ndof /(p + 1) . The domain is a one-dimensional segment Ω = [ −1, 1] with periodic boundary conditions. The initial solution is set to u0 = 1 . Time integration is carried out using the three-stages third order Runge-Kutta SSP scheme. Figure 6 shows the time-averaged kinetic energy 
+
+Ndof p = 4 p = 5 p = 6 p = 7 
+
+1024 a4 a5 a6 a7 2048 b4 b5 b6 b7 4096 c4 c5 c6 c7 8192 (Ref) d4 
+
+Table 1. Test cases considered in this study. spectra for the test cases considered. The spectra are obtained from successive applications of Taylor’s hypothesis over the interval 300 ≤ t ≤ 450 . Each spectrum was evaluated by probing the solution at 
+
+x = 0 over time windows of δt = L/u 0 = 2 . For all the cases considered here, the value Nc = 80 was employed in equation (3). As a result, the kinetic energy spectra shown in figure 6 exhibit a −5/3 slope up to log 10 (kc) = log 10 (πN c) ≈ 2.4, as expected from the form of the applied forcing. Beyond this range, the characteristic −2 slope of Burgers turbulence is recovered. All resolutions considered here have been selected so that the effect of numerical dissipation lies within this second range, while energy is injected OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 13 
+
+into the system at large scales through the forcing term. By inspecting the ILES profiles in figure 6, similarly to what is commonly observed in the kinetic energy spectra of under-resolved three-dimensional turbulence, we can observe an accumulation of kinetic energy occurs near the cutoff. This effect suggests that, although simplified, Burgers turbulence can provide useful insights into kinetic energy cascade and, in particular, in the role played by the numerical scheme in its dissipation at small scales. 1.5 2.0 2.5 3.5 log 10 (k)
+
+10 −2
+
+10 0
+
+10 2
+
+10 4
+
+> E(k)
+
+p = 3 p = 4 p = 5 p = 6 p = 7   
+
+> (a) Ndof = 1024 .
+
+1.5 2.0 2.5 3.5 log 10 (k) (b) Ndof = 4096 .
+
+Figure 6. Kinetic energy spectra for various resolutions and for different polynomial orders considered in the study. Symbols indicate the reference. Figure 7 shows the modal energy (36) for different polynomial orders and different resolutions in the Burgers case. In this framework, Legendre modes can be interpreted similarly to Fourier modes: low-order modes are associated with large-scale structures, whereas higher-order modes represent progressively finer scales. Note that lower resolutions present a less pronounced modal decay with respect to higher resolutions. This aspect was also found by Chapelier & Lodato [17] for the Navier-Stokes turbulence. 1 2 3 4 5 6 7 8
+
+# N
+
+10 −8
+
+10 −6
+
+10 −4
+
+10 −2
+
+10 0̂
+
+> Ei
+
+p = 3 p = 4 p = 5 p = 6 p = 7   
+
+> (a) Ndof = 1024 .
+
+1 2 3 4 5 6 7 8
+
+# N (b) Ndof = 4096 .
+
+Figure 7. Time- and space-average of the modal energy associated by each mode for different resolutions and different polynomial orders. Line with symbols indicate the reference. In order to assess how the number of DoFs influences the resolution capability of the scheme, figure 8 compares the solution snapshots at t = 400 for p = 7 using the coarsest and finest resolutions ( 1024 and 
+
+4096 DoFs). From the zoomed view, we note that the low resolution simulation presents more spikes. This behavior is expected for the DSEM, which relies on high-order polynomial representations within each element. When the resolution is low, the polynomial basis cannot accurately capture all relevant scales. As a result, unresolved high-frequency content contaminates the numerical solution, manifesting 14 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+itself as spurious oscillations or wiggles. Moreover, notice that although an upwind numerical flux is used for the inviscid flux computation, it is insufficient to suppress these oscillations when the polynomial order is significantly high. 0.0 1.0 2.0 
+
+# x
+
+# 0.90 
+
+# 0.95 
+
+# 1.00 
+
+# 1.05 
+
+# 1.10 
+
+> u(x)
+
+## DoF = 4096 DoF = 1024 
+
+Figure 8. Comparison between solutions at t = 400 s for p = 7 for the coarsest ( Ndof =1024 ) and the finest resolution ( Ndof = 4096 ). The solution with Ndof = 1024 contains many wiggles as a consequence of under-resolution. In the previous paragraphs, we discussed the role played by numerics in this particular setting. As representative parameter associated to the discretization, we considered the polynomial order, noticing its significant impact on the overall accuracy of the solution. It is then clear that any closure model for such problem should vary with the polynomial order and consequently, in general, adapt for different hyper-parameters of the discretization. In developing such model it is then important both the model formulation but also the particular loss function we want to optimize the control parameter on. 5.1. Optimization of the Smagorinsky constant. In order to assess the framework, we start by optimizing the Smagorisnky constant for each test-case. Previous studies carried on the decaying Burgers test-case [69] revealed that the best value should be around Cs ≃ 0.5.In particular, referring to the nomenclature introduced in section 2 we will consider the simple closure: 
+
+τ SGS = −νt
+
+∂eu∂x with νt = ( Cs∆) 2 ∂eu∂x (37) Theoretically, the constant should be universal ( i.e. , equal at each resolution and for each polynomial). However, this assumption is based only on physical reasoning, without considering the impact of the numerical scheme. In the context of LES, the numerical scheme interacts with the SGS model. Conse-quently, the optimum value of the constant is expected to change for different hyper-parameters of the numerical scheme. Finally, optimizing the Smagorinsky constant can also be seen as optimizing the filter width ∆ which can have multiple definitions in DSEMs. 5.1.1. Training. In order to have a sufficiently large number of snapshots for accumulating statistics, we set the time window to ∆T = 4 s. Time integration is carried out using a three-stage Runge-Kutta time scheme with δt = 10 −4. The reference modal energy was derived from high-fidelity data generated by a fine simulation with Ne=1024 elements and a polynomial order p=7, corresponding to 8192 DoFs. It is important to highlight that we are considering a chaotic system. Consequently, it is expected that different time horizons, could, in principle, lead to different outcomes. Previous studies have examined the influence of the optimization horizon in the context of the incompressible Navier–Stokes equations [59], where it was generally observed that longer trajectories tend to improve optimization outcomes. However, the approach presented in [59] is characterized by significant differences in terms of numerical scheme, optimization algorithm, and physical system. We consequently do not necessarily expect the same type of results. In this work, in order to ensure statistical reliability, we decided to gather data over OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 15 
+
+a sufficiently long trajectory. Consequently, as we fix the time-step to δt = 10 −4, we accumulate and store thousands of snapshots during the forward simulation. This is clearly feasible within the one-dimensional Burgers equation case whereas it requires several improvements in order to deal with three-dimensional Navier-Stokes turbulence. The challenges regarding such an extension will be discussed later on. In this work, we set the initial value of the constant to Cs = 1 . Since we optimize only a single parameter, we employ a quasi-Newton–type optimizer. This method approximates the action of the inverse Hessian using a limited-memory quasi-Newton scheme [68, 84]. Table 2 shows the optimized Smagorinsky constants obtained at the end of the optimization for all the cases considered in this study. We can clearly notice that higher polynomial orders tend to have larger coefficients. This is in agreement with the results of the standard linear analysis, in which high order polynomials lead to better conservation of energy [79, 73, 72]. By considering p = 7 , we observe 
+
+Ndof p = 7 p = 6 p = 5 p = 4 
+
+1024 0.641 0.563 0.510 0.453 2048 0.600 0.568 0.525 0.469 4096 0.550 0.546 0.497 0.446 
+
+Table 2. Optimized Smagorinsky constants for different resolutions and different poly-nomial orders for ∆T = 4 .that for a fixed time window, the optimal value of the constant decreases as the resolution increases. This behavior is expected: in fact, the under-resolution decreases as the the number of DoF increases. Consequently, a smaller coefficient is enough for the stability of the solution. This observation is also consistent with the qualitative analysis on the kinetic energy spectrum presented in Figure 6, where low-resolution simulations were shown to exhibit stronger spurious oscillations than well-resolved ones. Consequently, a larger stabilization constant is required at coarse resolutions to damp oscillations and ensure a stable solution. A similar behavior is also found for lower polynomial orders. However, as the polynomial order decreases the optimization becomes more difficult. At low polynomial orders, the loss function includes only a limited number of modes, and the energy associated with the higher modes is significantly smaller compared to the dominant, lower-order ones. Consequently, achieving an exact match for the modal energy of the few higher-order modes becomes difficult. In order to investigate the behavior of the Legendre modes for the different optimized models, figure 9 shows the modal energy at the end of the optimization. These results are compared with the energy obtained using Cs = 1 and with the reference modal energy derived from the reference data ( i.e. , Ndof =8192 ), considering all polynomial orders at both the highest and lowest resolutions ( i.e. , Ndof = 1024 
+
+and Ndof = 4096 ). Since Cs = 1 is too high, its modal decay curve lies below the reference curve. Consequently, the energy associated with each mode is expected to be lower than in the reference case. Instead, the curves at the end of the optimization are perfectly in line with the reference. A slight difference is observed for the highest mode, where, in general, the modal energy of the optimized model is slightly lower with respect to the reference. 5.1.2. Testing. In this subsection we will assess the optimized model in a-posteriori runs. The models will be tested a-posteriori outside the time window considered for the training. Figure 10 shows the kinetic energy spectrum obtained during the a-posteriori run by the optimized models across all the polynomial orders for the intermediate resolution Ndof = 2048 . As shown by the figures, the optimized model successfully produces a clean scaling range in the inertial subrange in accordance with the reference and eliminates the spurious accumulation of energy at high wavenumbers. Notice, however, that p = 4 is slightly under-dissipative as the model does not fully eliminate the hump. This behavior is most probably related to the definition of the loss function, which is based on Legendre modes. By reducing the polynomial orders, fewer modes contribute to the loss, making the optimization inherently more challenging. Consequently, the optimization becomes more difficult: at low orders it is challenging to capture the influence of high order modes as their magnitude is several orders of magnitude smaller with respect to the first modes. In order to compare the a-posteriori results for other resolutions, figure 11 compares the kinetic energy spectrum obtained by the optimized model with the ILESs for different polynomial orders for the lowest and the highest resolutions considered in this study. Across all polynomial orders, the curves relative to the highest resolution ( Ndof = 4096 ) consistently remain closer to the reference energy decay, while the curves relative to the coarsest resolution ( Ndof = 1024 ) deviate earlier as the wavenumber increases. 16 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 10 −7
+
+10 −5
+
+10 −3
+
+10 −1̂
+
+> Ei
+
+1 2 3 4 5
+
+N
+
+10 −7
+
+10 −5
+
+10 −3
+
+10 −1̂
+
+> Ei
+
+1 2 3 4 5 6
+
+N
+
+1 2 3 4 5 6 7
+
+N
+
+1 2 3 4 5 6 7 8
+
+N
+
+> p = 4 p = 5 p = 6 p = 7
+
+Figure 9. Comparison of the modal decay obtained at the beginning of the optimiza-tion and the optimized one for the various polynomial orders. Top row, Ndof = 1024 ;Bottom row, Ndof = 4096 . Solid lines, optimized solution; dotted lines, baseline model (Cs = 1 .0). Lines with symbols indicate the reference. This behavior reflects the impact of spatial resolution: for the high resolution case small-scale energy is preserved for a longer range of modes, maintaining a smoother and more gradual decay. Even for these resolutions, the curves obtained by the optimized model are almost overlapped to the reference curve up to the cutoff. Similarly to the results previously found ( i.e. , for Ndof = 2048 ), the curves obtained for p > 4 are in good agreement with reference data. The kinetic energy spectrum for p = 4 , instead, is slightly under-dissipative with respect to the reference. This is expected as the optimization becomes more challenging as the polynomial order decreases. All these analyses confirm that the specific choice of the loss function is effective in capturing the impact of the numerical scheme on the flow physics. Even though a direct and explicit relationship between the Legendre spectrum and the Fourier spectrum is not available in the DSEM framework [76, 75, 65], the optimization built entirely on Legendre modes has a beneficial effect on the global kinetic energy spectrum too. In other words, optimizing the model in modal space (Legendre) leads to improvements in physical space and wavenumber space (Fourier), demonstrating that the chosen loss function successfully drives the solution toward the desired spectral behavior. 6. Three-dimensional compressible Navier-Stokes equations 
+
+In this section we extend our methodology to the much more challenging three-dimensional compress-ible Navier-Stokes equations. From a computational point of view, the implementation of the framework becomes significantly more demanding. In particular, the discrete-adjoint approach requires the evaluation of vector–Jacobian products assembled at the fully discrete level, resulting in a substantial increase in implementation complexity and computational cost. Efficient memory storage and parallel computing are mandatory in order to make the whole setting feasible for practical applications. Secondly, while the forced Burgers test case can be useful for highlighting certain features of the numerical footprint of the scheme [76, 69], it does not capture the richness of the dynamics encountered in fully three-dimensional turbulent flows. The latter involve more complex interactions across scales, making the assessment of model performance substantially more stringent. Although some resembling of kinetic energy cascade can be observed within the stochastically forced Burgers equations, it will only roughly approximate the complexity of three-dimensional turbulence. Consequently, a model calibrated or formulated within the simplified setting of the Burgers test case may not retain its performance when applied to the fully compressible Navier–Stokes equations. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 17 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4
+
+> E(k)
+
+(a) p = 4 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4 
+
+> E(k)
+
+(b) p = 5 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4
+
+> E(k)
+
+(c) p = 6 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4 
+
+> E(k)
+
+(d) p = 7 
+
+Figure 10. Comparison of the kinetic energy spectrum between ILESs and optimized Smagorinsky for different polynomial orders for Ndof = 2048 . Solid lines, optimized Smagorinsky; dotted lines, ILES. Symbols indicate the reference. 6.1. Optimization of the Smagorinsky constant. Like in the forced-Burgers test case, we start by optimizing the Smagorinsky constant within a statistically steady state setting ( i.e. , FHIT). In particular, referring to the nomenclature introduced in section 2 we will consider the following closure: 
+
+τ SGS  
+
+> ij
+
+= −2νt eSij with eSij = 12
+
+Å ∂eui
+
+∂x j
+
++ ∂euj
+
+∂x i
+
+ã
+
+and νt = ( Cs∆) 2
+
+»
+
+2 eSij eSij . (38) Although the framework herein proposed is fully compressible, we will always consider low-Mach test cases. Consequently, the closure for the SGS heat flux is simply set to zero for all models presented here. For the same reason, we will always use the fully compressible notation of f(·) even though the Favre-filtering will always be very close to the classical filtering operation (·) for the flow regimes considered in this work. 
+
+A-priori studies conducted by Meyers & Sagaut [74] for decaying homogeneous isotropic turbulence revealed that the coefficient of the Smagorinsky model should range from 0.06 to 0.10 , depending on the specific quantities of interest to be matched for a given grid resolution. Based on these findings, we expect the optimal Smagorinsky constant obtained in the present study lie in this range. At the same time, we also expect some differences arising from the a-posteriori nature of the present work. In particular, the numerical discretization, the training configuration, and the definition of the objective functional are all expected to influence the estimated coefficient. The initial velocity field for the LESs are generated by filtering the DNS fields followed by a projection onto the LES grids. Moreover, the optimization is carried out after performing a number of time steps sufficient to suppress the spurious effects caused by the projection. For clarity, a schematic diagram of 18 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4
+
+> E(k)
+
+DoF=4096 DoF=1024  
+
+> (a)
+
+p = 4 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4  
+
+> E(k)(b)
+
+p = 5 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4 
+
+> E(k)
+> (c)
+
+p = 6 1.5 2.0 2.5 3.5 log 10 (k)
+
+# 10 −2
+
+# 10 0
+
+# 10 2
+
+# 10 4  
+
+> E(k)(d)
+
+p = 7 
+
+Figure 11. Comparison of the kinetic energy spectrum between ILESs and the opti-mized Smagorinsky for different polynomial orders for the coarsest ( Ndof = 1024 ) and the finest resolution ( Ndof = 4096 ). Solid lines, optimized Smagorinsky; dotted lines, ILES. Symbols indicate the reference. the methodology is shown in figure 12. After projection, the LES solution goes through a short transient before recovering the expected kinetic energy enforced via the forcing term. In the first interval ∆T1
+
+a forward run of the solver is performed. Only after this interval, sensitivities are computed using the adjoint loop in the second time window ∆T .6.1.1. Training. For training, we consider a statistically steady state turbulent flow scenario, namely the forced homogeneous isotropic Turbulence test case. The computational domain consists of a three-dimensional box of of size [0 , 2π]3 with periodic boundary conditions. An initial turbulent kinetic energy spectrum is imposed [19] and the Rogallo procedure is employed for the initialization [93]. To maintain a statistically steady state, an isotropic linear forcing term is then applied in the momentum balance [26]. The Reynolds number based on the Taylor microscale is fixed to Re λ ≃ 160 . As DNS we consider a simulation based on a mesh made of Nel = 43 element with a polynomial degree p = 5 resulting in a total number of DoF Ndof = 258 3. In order to gather significant statistics, the DNS is advanced up to t = 15 , which corresponds to around 20 eddy turn-over times. Given the high chaotic nature of the Navier-Stokes equations, the time window used for the optimization should be sufficiently small to avoid the adjoint variable to blow-up [3, 14] and sufficiently large to yield non-negligible sensitivities. In this work, we choose to optimize our parameters on a time window which contains about 1200 Runge-Kutta steps. From numerical experiments presented later on, this choice of time window was found to be large enough to provide good convergence of the modal energy during the forward run. We choose a third-order, three stages Runge-Kutta time scheme with a fixed time step of δt = 5 .0e − 5. This time step OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 19 
+
+Figure 12. Schematic of the 3D FHIT methodology: a forward run over ∆T1 is first performed, after which sensitivities are computed using the adjoint loop over the interval 
+
+∆T .10 0 10 1 10 2
+
+k
+
+> 10 −7
+> 10 −6
+> 10 −5
+> 10 −4
+> 10 −3
+> 10 −2
+> 10 −1
+> 10 0
+> E(k)
+
+DNS fDNS 
+
+k−5/3
+
+Figure 13. Example of instantaneous vorticity field (left) and spatio-temporally aver-aged kinetic energy spectrum (right) for the FHIT case. The filtered DNS, shown in the right figure in red, refers to the cutoff ∆LES = 4∆ DNS which corresponds to a total of number of degrees of freedom of Ndof = 64 3.is small enough to make the backward loop for the adjoint stable. As a consequence, the time window used for the optimization is ∆T = 0 .02 which corresponds to approximately 0.027 eddy turn-over times. Although such an interval can seem insufficiently small to provide fully converged statistics, from the numerical experiments contained in the following section, it was found to be large enough to capture the main characteristics of coarse-grained simulations and to carry the necessary information needed to match the filtered DNS data. Within the optimization framework presented in section 4, the control parameter to optimize coincides with the Smagorinsky coefficient, which was initially set to θ(0) = Cs = 0 .187 .The optimization is performed on two different coarse resolutions with respect to DNS, namely we consider coarse-grain simulations involving Ndof = 64 3 and Ndof = 80 3 total solution points. Within this framework, we consider different polynomial orders varying from p = 4 to p = 6 .Figure 14 shows the evolution of the normalized loss functions for the two resolutions and for all the polynomial orders considered. The objective function becomes one-tenth of the initial value after 20 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 0 10 20 30 it 
+
+0.5 
+
+1.0   
+
+> J/J 0
+> p = 4 p = 5 p = 6
+> (a) Ndof = 64
+
+0 10 20 30 it 
+
+0.5 
+
+1.0    
+
+> J/J 0(b) Ndof = 80
+
+Figure 14. Normalized loss functions for different polynomial orders for Ndof = 64 
+
+(left) and for Ndof = 80 (right). about 30 iterations for both resolutions. The loss function decreases smoothly for all polynomial orders indicating that the overall procedure is stable and, with limited number of iterations, gives significant improvements in terms of objective function minimization. A slightly different trend is observed at the highest resolution ( Ndof = 80 ) for p = 5 . Nevertheless, after 30 iterations, the loss function converges to values very similar to those obtained for the other polynomial orders. In analogy with the Burgers test case, figures 15 reports the space- and time-averaged modal energy at the end of the optimization procedure for the two resolutions considered in this study. These results are compared against the modal energy obtained using the baseline model with Cs = 0 .187 (dotted lines) and the reference decay obtained by filtering and then projecting the DNS onto the LESs grids (symbols). In agreement with the observations from the forced Burgers test case, the baseline model exhibits ex-cessive dissipation, resulting in a modal decay curve that lies below the reference. Instead, the optimized model shows good agreement with the reference decay. However, a difference is observed for the largest mode, where, in general, the modal energy of the optimized model is lower with respect to the reference. This difference may be due to projection effects, which can artificially increase the energy content of the highest mode. Table 3 shows the optimized Smagorinsky constants obtained at the end of the optimization for the two resolutions considered in the study. The optimized constants range from 0.080 to 0.105 overall. This is broadly consistent with the a-priori analysis of Meyers & Sagaut [74], where optimal constants were found to vary between 0.06 and 0.10 depending on the resolution. The values obtained in the present study are in good agreement with those reported by Meyers & Sagaut [74], despite the significant differences between the two frameworks. In particular, the numerical solver, the optimization objective, the test case under consideration, and the type of analysis performed (a-priori versus a-posteriori) differ substantially. Consequently, although the optimal coefficients are found to be of similar magnitude, an exact agreement for a fixed resolution is not necessarily expected, given the methodological and numerical differences between the two studies. This observation further highlights that the coefficients of any turbulence model are inherently depen-dent on the specific numerical discretization. It is therefore expected that different numerical schemes, characterized by distinct intrinsic properties, will lead to different optimal parameters. This, in turn, underscores the importance of optimizing these coefficients using the numerical solver itself within the optimization loop, as the discretization directly impacts the overall prediction. Even within the same numerical strategy, by varying the polynomial order, we notice significant differences in the optimal coefficients. In fact, as observed in the forced Burgers test case, the optimal value decreases when the resolution increases. Moreover, the constant decreases as the polynomial order decreases. This is again in agreement with the results of the standard linear analysis, in which high order polynomials lead to better conservation of energy. 6.1.2. Testing. Hereafter, the optimized model is evaluated on three unseen flow configurations: forced homogeneous turbulence over an extended time horizon (using a time window longer than that employed during training), decaying homogeneous isotropic turbulence, and the Taylor–Green vortex breakdown OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 21 10 −3
+
+10 −2
+
+10 −1
+
+10 0̂
+
+> Ei
+
+1 2 3 4 5
+
+## N
+
+10 −3
+
+10 −2
+
+10 −1
+
+10 0̂
+
+> Ei
+
+1 2 3 4 5 6
+
+## N 1 2 3 4 5 6 7
+
+## N
+
+p = 4 p = 5 p = 6 
+
+Figure 15. Comparison of the modal decay obtained at the beginning of the optimiza-tion and the optimized one for the various polynomial orders. Top row, Ndof = 64 ;Bottom row, Ndof = 80 . Solid lines, optimized Smagorinsky model; dotted lines, base-line model ( Cs = 0 .187 ). Lines with symbols indicate the filtered DNS data. 
+
+Ndof p = 6 p = 5 p = 4 
+
+64 0.1032 0.104 0.0995 80 0.0915 0.0845 0.0805 
+
+Table 3. Optimized Smagorinsky constants for the different resolutions and different polynomial orders considered in this study. at Re = 5000 . These test cases are designed to assess the ability of the optimized model to generalize beyond the flow configuration considered during training. 6.1.3. Forced Homogeneous turbulence. Starting from the FHIT test case, we run our simulations a-posteriori in a time window ∆T = 1 , corresponding to approximately 1.2 large-eddy turnover times. This duration is significantly longer than the time window used during the optimization phase. This choice allows us to assess the model’s ability to generalize beyond the temporal conditions it was exposed to during training. The initial field is the same field used for the optimization, namely the field obtained by filtering and projecting the initial DNS data. The models are evaluated with the same resolution used for the training Ndof = 64 . We consider the a-posteriori space- and time-averaged modal decay as evaluation metric in order to assess our model generalization. Figure 16 presents the space- and time-averaged modal energy for all polynomial orders considered in the study. For all polynomial orders, the optimized model is able to achieve a good matching with the modal energy given by filtered DNS. In contrast, the ILESs exhibit significantly higher modal energy compared to the filtered DNS. This behavior indicates insufficient numerical dissipation, leading to an accumulation of energy that it is not properly dissipated. We can therefore conclude that, even though the time window considered during training is relatively short, the modal energy is already close to statistical convergence. Indeed, extending the a-posteriori time interval to ∆T = 1 results in negligible changes in the modal energy (see figure 17). This behavior is likely due to the combined spatial and temporal averaging procedure. As a result, despite the limited temporal extent, the spatial distribution of information is sufficient to ensure good statistical convergence. Notice that the highest mode of the reference solution slightly differs from the optimized modal. This discrepancy is not unexpected, as the highest mode of the reference is likely affected from errors arising 22 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 1 2 3 4 5
+
+N     
+
+> 10 −3
+> 10 −2
+> 10 −1
+> 10 0̂
+> Ei
+> 123456
+
+N      
+
+> 1234567
+
+N
+
+> p = 4 p = 5 p = 6
+
+Figure 16. Time and space-averaged modal energy for different polynomial orders. Solid lines, optimized Smagorinsky; dotted lines ILES. Line with symbols indicate the filtered DNS. 1 2 3 4 5
+
+N     
+
+> 10 −3
+> 10 −2
+> 10 −1
+> 10 0̂
+> Ei
+> 123456
+
+N      
+
+> 1234567
+
+N
+
+> p = 4 p = 5 p = 6
+
+Figure 17. Time and space-averaged modal energy for different polynomial orders. Solid lines, ∆T = 1 ; dash-dotted lines ∆T = 0 .02 . Line with symbols indicate the filtered DNS. from the projection of the filtered DNS onto the LES grid. Consequently, all the analyses on the modal energy should be considered valid for all the modes except the last one, which is the one most likely affected by the projection error. 6.1.4. Decaying Homogeneous Turbulence. In this section, we will assess the optimized models in a DHIT test case [13, 104]. In the present work, the DHIT test case is employed to further validate the proposed modeling strategy under conditions that differ from the forced turbulence setup, thereby providing a complementary assessment of its predictive capabilities. This test case is widely used to assess the performance of numerical methods and subgrid-scale models, in particular for data-driven SGS models [8, 1, 12, 48]. In this context, an initial velocity field characterized by an imposed kinetic energy spectrum is allowed to evolve freely under no external forcing. The incompressible velocity field is constructed as proposed by Rogallo [93], with an initial spectrum of the kinetic energy given by Chasnov in [19]. We use a total of 258 3 DoF for the DNS [25, 48]. The decay of kinetic energy is then dictated by the viscous dissipation and nonlinear interactions developed during the time evolution. Starting from Ndof = 64 , figure 18 illustrates the temporal evolution of the kinetic energy and viscous dissipation for all polynomial orders. The ILES approaches exhibit a clear under-dissipative behavior, as both the kinetic energy and viscous dissipation levels remain significantly higher than those of the reference solution. This is again related to the inability of the numerical scheme to properly dissipate small scale features which ultimately lead to an accumulation of kinetic energy at those scales. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 23 2 4 6
+
+## t
+
+## 0.0
+
+## 0.5
+
+## 1.0 
+
+> Ek
+> p = 4 p = 5 p = 6
+> (a) Kinetic Energy.
+
+## 0 2 4 6
+
+## t
+
+## 0.0
+
+## 0.2
+
+## 0.4
+
+## 0.6
+
+## 0.8  
+
+> v(b) Viscous Dissipation.
+
+Figure 18. Time evolution of the kinetic energy (left) and viscous dissipation (right) for NDoF = 64 . Solid lines, optimized Smagorinsky model; dotted lines, ILES. Symbols indicate the filtered DNS data at the given resolution. In contrast, the optimized model shows good agreement with the reference data for both quantities of interest. Small differences can still be identified, particularly in the viscous dissipation curves shown in figure 18b. For these models, the peak of viscous dissipation occurs at approximately t ≃ 0.90 , which is reached slightly earlier compared to the filtered DNS. To better understand how the optimized models behave, we compute the spectrum for the kinetic energy and the viscous dissipation near the enstrophy peak, specifically, at t = 1 in figure 19. By inspecting the kinetic energy spectrum on the left plot, we can notice that ILESs are under-dissipative, leading to an excess of energy at the smallest resolved scales compared to the reference solution. In contrast, the optimized Smagorinsky model provides an appropriate level of dissipation, yielding a kinetic energy spectrum that closely matches the reference, although minor discrepancies remain near the cutoff region, where some differences between the various polynomial orders are visible. Notice, however, that although the kinetic energy spectrum provides information regarding the amount of energy across the scales, it does not explain the differences in viscous dissipation shown in figure 18b. To further investigate this aspect, we show in figure 19b the corresponding spectrum of viscous dissipation. The spectrum of viscous dissipation amplifies the discrepancies at high wave numbers. The excess of energy for the ILESs directly translates into an over prediction of viscous dissipation, explaining the differences observed in its temporal evolution (see figure 18). In contrast, the optimized model remains in closer agreement with the reference, indicating a more accurate balance between energy transfer and dissipation at the smallest resolved scales. 6.1.5. Taylor-Green Vortex. Presenting the numerical results, we started by evaluating the performance of the optimized model for a-posteriori runs of the same test case it was trained on ( i.e. , FHIT). Sub-sequently, we passed to a case of decaying HIT, where a different type of dynamics takes place with satisfactory results. In this section, we want to test how the optimized model performs even further from the training condition. We then consider in this section the Taylor-Green Vortex problem. Although it shares some similarities with homogeneous isotropic turbulence (in particular at late stages of the dynamics) it also includes a transition to turbulence from the laminar initial condition. Furthermore, within this setting, we will also investigate how the model performs varying both resolution and Reynolds number. As observed in table 3 the coefficient for the Smagorinsky constant varies with respect to the polyno-mial order. In fact, each discretization has its own numerical characteristics such as numerical dispersion and diffusion that significantly influence the overall result for coarse simulations. In figure 20 we show the viscous dissipation for the TGV case at Re = 5000 at different resolutions and different polynomial orders, comparing the baseline Smagorinsky model and its optimized version. The DNS is obtained from a high-order SD simulation using Nel = 60 elements and a polynomial degree p = 7 resulting in a total of 480 3 DoF [17, 15]. We can observe good agreement with the filtered reference data for all the resolutions, with significant improvements with respect to the baseline model. We can notice that the optimized coefficients are so that the overall influence of the numerical discretization is contained: all the curves are quite close to one another. The variations of the Smagorinsky constant observed in table 24 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 10 0 10 1
+
+# k
+
+# 10 −3
+
+# 10 −2
+
+# 10 −1
+
+> E(k)
+
+p = 4 p = 5 p = 6  
+
+> (a) Kinetic Energy spectrum.
+
+# 10 0 10 1
+
+# k
+
+# 10 −1
+
+# 10 0  
+
+> k2 E(k)(b) Spectrum of the viscous dissipation.
+
+Figure 19. Kinetic energy (left) and viscous dissipation (right) spectra for Ndof = 64 
+
+computed at t = 1 . Solid lines, optimized Smagorinsky model; dotted lines, ILES. Symbols indicate the filtered DNS data at the given resolution. 0 5 10 15 20 
+
+t    
+
+> 0.000
+> 0.001
+> 0.002
+> 0.003
+> 0.004
+> 0.005
+> v
+> p = 4 p = 5 p = 6
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 20. Averaged viscous dissipation for the TGV case at Re = 5000 using the optimized Smagorinsky model (solid lines) and baseline Smagorinsky (dashed lines) for different resolutions and different polynomial orders. From left to right: 64 3, 80 3 and 
+
+96 3. Symbols indicate the filtered DNS data at the given resolution. 3 compensate for the different numerical characteristics of the specific polynomial order. This is in clear agreement with the results presented in the previous sections regarding forced and decaying HIT. We can also notice that the best agreement between LES and filtered DNS is found for the coarsest resolution (i.e. , 64 3 DoF). This is somewhat expected since this is the resolution used for training. We can also notice that the optimized coefficient extrapolates quite nicely also to other resolutions. To further assess the robustness of the proposed approach we also consider the TGV case at a different Reynolds number. In particular, the TGV case is often considered at Re = 1600 too [92]. In this case, we restrict our analyses to p = 5 only. The averaged viscous dissipation and kinetic energy are respectively shown in figures 21 and 22. We can also observe that for Re = 1600 the optimized Smagorinsky coefficient provides significant improvements with respect to the baseline model. Finally, up to this point we only showed comparisons using the optimized Smagorinsky model trained on 64 3 FHIT. As specified in the training section we also trained the same constant at 80 3. In figures 23 we compare the optimized Smagorinsky models trained on different resolutions ( 64 3, 80 3, 96 3) and different polynomial orders ( p = 4 , 5, 6) for the TVG case at Re = 5000 . As expected from inspection of the first column of figure 23, the solid lines are significantly closer to the reference than the dashed ones. This indicates that, for all polynomial orders considered, the model optimized at a given resolution yields the most accurate prediction of the filtered DNS data at that same resolution. In particular, the model trained on the 64 3 dataset performs best OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 25 0 5 10 15 20 
+
+t    
+
+> 0.000
+> 0.002
+> 0.004
+> 0.006
+> 0.008
+> v
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 21. Averaged viscous dissipation for the TGV case at Re = 1600 for differ-ent resolutions. From left to right: 64 3, 80 3 and 96 3. Purple solid lines, optimized Smagorinsky model; purple dashed lines, baseline Smagorinsky model. Symbols indi-cate the filtered DNS data at the given resolution. 0 5 10 15 20 
+
+t    
+
+> 0.02
+> 0.04
+> 0.06
+> 0.08
+> 0.10
+> 0.12
+> Ek
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 22. Averaged kinetic energy for the TGV case at Re = 1600 for different reso-lutions. From left to right: 64 3, 80 3 and 96 3. Purple solid lines, optimized Smagorinsky model; purple dashed lines, baseline Smagorinsky model. Symbols indicate the filtered DNS data at the given resolution. on the corresponding filtered DNS data (first column), while the Smagorinsky model optimized on the 
+
+80 3 forced HIT configuration shows the best agreement with the filtered DNS data at the 80 3 resolution (second column). In the third column, both optimized models are assessed in an extrapolation setting at 96 3. Here, the model trained on a 80 3 resolution gives overall improved predictions compared to the one trained on the coarser resolution. This advantage is particularly evident in the peak enstrophy, while differences are less marked in the decay phase. It is important to emphasize that all models were trained on forced HIT, without any knowledge of transition to turbulence. As such, there is no a priori expectation regarding their relative performance in this scenario. Nonetheless, the results indicate that both models generalize well to the TGV case, across different resolutions and polynomial orders. 6.2. The Tensor basis approach. In the previous section, we focused on optimizing the coefficient of the Smagorinsky model and assessing its performance across different test cases. In this section, we instead aim to optimize more complex SGS models involving a larger number of control parameters. The motivation is twofold. First, this increases the model expressivity by enabling more sophisticated formulations, potentially leading to improved performance. Second, it allows us to assess the robustness of the present framework in the presence of multiple control parameters. In this study, we consider an additional model that depends on the strain-rate tensor eSij and the rotation-rate tensor eΩij :
+
+τ SGS  
+
+> ij
+
+= τ SGS  
+
+> ij
+
+( eSij , eΩij ), (39) 26 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 0.000 
+
+> 0.001
+> 0.002
+> 0.003
+> 0.004
+> 0.005
+> v
+
+p = 4 p = 5 p = 6     
+
+> 0.000
+> 0.001
+> 0.002
+> 0.003
+> 0.004
+> 0.005
+> v
+> 0510 15 20
+
+t    
+
+> 0.000
+> 0.001
+> 0.002
+> 0.003
+> 0.004
+> 0.005
+> v
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 23. Averaged viscous dissipation for the TGV case at Re = 5000 for different resolutions and polynomial orders. From left to right: 64 3, 80 3 and 96 3. From top to bottom: p = 4 , p = 5 and p = 6 . Solid lines, optimized Smagorinsky model at resolution 
+
+64 3; dash-dotted lines, optimized Smagorinsky model at resolution 80 3. Symbols indicate the filtered DNS data at the given resolution. with 
+
+eSij = 12
+
+Å ∂eui
+
+∂x j
+
++ ∂euj
+
+∂x i
+
+ã
+
+eΩij = 12
+
+Å ∂eui
+
+∂x j
+
+− ∂euj
+
+∂x i
+
+ã
+
+. (40) We consider a model form based on a combination of the two second-order tensors eSij and eΩij . The number of independent second-order tensor functions that can be formed from eSij and eΩij is limited to ten due the Caley-Hamilton theorem. Consequently, τ SGS  
+
+> ij
+
+can be written as a linear combination of a finite set of basis functions T kij :
+
+τ SGS  
+
+> ij
+
+= −2
+
+
+
+∆
+
+»
+
+2 eSij eSij 
+
+2
+
+" nX
+
+> k=1
+
+αkT kij 
+
+#
+
+. (41) In order to reduce the computational complexity of the model, we restrict our model to the first three invariants: 
+
+T 1 
+
+> ij
+
+= sij , (42) 
+
+T 2 
+
+> ij
+
+= ( sik ωkj − ωik skj ), (43) 
+
+T 3 
+
+> ij
+
+= ( sik skj − smk skm δij /3) , (44) OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 27 
+
+where sij and ωij are the normalized strain-rate tensor and rotation-rate tensor 
+
+sij = eSij 
+
+»
+
+2 eSij eSij 
+
+ωij = eΩij 
+
+»
+
+2 eSij eSij 
+
+. (45) Note that this model can be seen as a simple correction of an eddy-viscosity model with a structural part given by second order terms T 2 and T 3. It is well known that purely eddy-viscosity models are inherently dissipative and therefore unable to represent backscatter [87, 5, 70]. At the same time, purely structural models typically show good a priori agreement with filtered DNS data, although they often exhibit poor a posteriori performance. In this framework, the proposed model can be viewed as a mixed formulation, in which the second-order terms introduce a structural component capable of capturing backscatter effects, thereby compensating for the deficiencies of purely dissipative closures while retaining their intrinsic stability properties. Moreover, we aim to develop a simple model that is easily interpretable from a physical standpoint, while still being able to adapt to the underlying flow physics. For a given set of optimal coefficients αk, we will refer to the correspondent model as TB 3.In the following sections we will compare the present model with the similar models developed in [92]. Their formulation is basically equivalent to the one presented here except for a coefficient of √2 in the first term of the expansion. This is simply due to the adimensionalisation using 
+
+»
+
+2 eSij eSij instead of 
+
+» eSij eSij . In our formulation, in addition, we only consider the first three terms of the expansion instead of four. As we will see in the results, we do not expect particularly different results including additional terms of the expansion. For completeness, the formulation and models proposed by [92] are reported in A. 6.2.1. Training. Following the same approach adopted for the Smagorinsky model, we train the proposed model using the FHIT test case introduced in the previous section. To ensure consistency, we employ the same numerical setup used for the Smagorinsky optimization. Accordingly, the training is performed at the two resolutions considered above ( i.e. , Ndof = 64 and Ndof = 80 ) and for polynomial orders 
+
+p = 4 , 5, 6. As the optimal values of the scalar coefficients are not known a-priori, we set the initial values to α = (0 .035 , 0.0, 0.0) . This is equivalent to start from a Smagorinsky-like model with a constant 
+
+Cs = √α1 ≃ 0.187 .Figure 24 shows the normalized loss functions for both the resolutions and all polynomial orders. In both cases, the loss function decreases to approximately one tenth of its initial value after about 
+
+40 iterations. Since in this case the model incorporates multiple parameters, the optimization is more challenging with respect to the Smagorisnky model. Consequently, at the early stage of the optimization some oscillations can be observed. These oscillations are dampened as the iterations increase, until the loss function reaches a plateau. Consequently, we stop the number of iterations when it = 50 .Regarding the modal energy, we do not report here the modal energy behavior found during the opti-mization as we obtain almost the same results found in the optimized Smagorisnky model. Consequently, the same conclusions of previous sections apply: the baseline approach (which is basically a standard Smagorinky model) is dissipative, leading to excessive damping of the modes. In contrast, the optimized models show good agreement with the reference decay. The left half of table 4 reports the optimized coefficients for the case Ndof = 64 . First, it can be observed that the coefficient α1 is lower for p = 4 than for the higher polynomial orders, namely p = 5 
+
+and p = 6 . This behavior may be attributed to the nature of the first term in the expansion, which is purely dissipative and therefore is expected to increase with polynomial order. Regarding the coefficients relative to the second order terms, we can notice that the coefficient α2 is small in magnitude compared to α3. The latter is consistently negative across all the polynomials, with its largest magnitude observed for p = 6 .Correspondingly, the right half of table 4 shows the optimized coefficients for Ndof = 80 . It is worth noting that the same trends observed at the lower resolution are also recovered here. Furthermore, comparing the same polynomial order for the two resolutions, it can be noted that the first coefficient decreases as the resolution increases. This behavior is expected, as the leading-order coefficient plays the dominant role in the expansion. Consequently, with increasing resolution, the required amount of dissipation is reduced, leading to smaller values of this coefficient. It is worth mentioning that the Clark model [21] can be written in terms of the second order expansion terms, 
+
+τ Clark ij = −2
+
+
+
+∆
+
+»
+
+2 eSij eSij 
+
+2 124 
+
+Å
+
+T 2 
+
+> ij
+
+− T 3 
+
+> ij
+
++ T 4
+
+> ij
+
+ã
+
+. (46) 28 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+p = 4 p = 5 p = 6 
+
+Ndof α1 α2 α3 α1 α2 α3 α1 α2 α3
+
+64 0.0149 -0.0282 0.0061 0.0159 -0.0267 0.0062 0.0154 -0.0405 -0.0002 80 0.0115 -0.0289 0.0135 0.0139 -0.0339 0.0192 0.0138 -0.0368 0.0155 
+
+Table 4. Optimized coefficients of the model expansion for two resolutions and different polynomial degrees. 0 10 20 30 40 50 it 
+
+0.5 
+
+1.0   
+
+> J/J 0
+> p = 4 p = 5 p = 6
+> (a) Ndof = 64
+
+0 10 20 30 40 50 it 
+
+0.5 
+
+1.0    
+
+> J/J 0(b) Ndof = 80
+
+Figure 24. TB 3 model. Normalized-loss functions for different polynomial orders for 
+
+Ndof = 64 (left) and for Ndof = 80 (right). This observation establishes a link between the proposed tensor-basis model and the Clark model, showing that the latter can be interpreted as a specific instance of the expansion with fixed coefficients. In this context, it is interesting to note that the second coefficient is greater, in magnitude, with respect to the third. According to Horiuti [47] this term is responsible for generating vorticity although it is neutral for the generation of subgrid-scale dissipation. 6.2.2. Testing. In figure 25 we show the viscous dissipation for the TGV case at Re = 5000 at different resolutions and different polynomial orders, comparing the TB 3 model optimized on both resolutions 
+
+Ndof = 64 3 and Ndof = 80 3 with the GEP1 and GEP2 models from [92]. We can observe that the model trained on Ndof = 80 3 shows a good agreement with the reference filtered data for all the resolutions. For the coarsest resolution examined in the study (i.e., 64 3), the model reproduces the peak viscous dissipation of the reference filtered data with high accuracy. Furthermore, at the 80 3 resolution, the model agrees well with the reference data during both the laminar and decay phases, although the peak viscous dissipation is slightly under predicted. However, in contrast, the model trained on the lowest resolution, namely, Ndof = 64 3, seems to be a bit more dissipative compared to the model optimized on Ndof = 80 3 as the peak of the viscous dissipation is lower in this case. We can also notice that the model trained on the coarsest resolution performs slightly better in the decaying phase ( i.e. , for t > 12 ) when tested on Ndof = 64 3, while the other is a bit under dissipative, leading to an excessive viscous dissipation. Next, we consider the time evolution of the averaged kinetic energy in figure 26. Also for this quantity of interest, the model shows a good agreement with the reference filtered data for all the resolutions. However, some discrepancies are found when extrapolating at Ndof = 96 . In this scenario, the kinetic energy in the decaying phase is slightly over-predicted for both the models trained on 80 and 96 .It is interesting to note that although the models trained on different resolutions show different behavior in the viscous dissipation, the curves of the kinetic energy are almost overlapped. This may due to the fact that the models are optimized on the modal energy, which is a quantity related to the kinetic energy rather than the viscous dissipation. Since the resolutions used for the training are not too far away each other, the budget of the energy contained in each mode it is not different between the two resolutions. Consequently, the models are able to provide comparable results in terms of kinetic energy. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 29 0 5 10 15 20 
+
+t    
+
+> 0.000
+> 0.001
+> 0.002
+> 0.003
+> 0.004
+> 0.005
+> 0.006
+> v
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 25. Averaged viscous dissipation for the TGV case at Re = 5000 for different resolutions and polynomial orders. From left to right: 64 3, 80 3, 96 3. Solid lines, TB3 model at resolution 80 3; dashed lines, TB3 model at resolution 64 3; blue dash-dotted lines, GEP2 from [92]; blue dotted lines, GEP1 from [92]. Symbols indicate the filtered DNS data at the given resolution. 0 5 10 15 20 
+
+t    
+
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 0.08
+> 0.10
+> 0.12
+> Ek
+> 0510 15 20
+
+t    
+
+> 0510 15 20
+
+t
+
+Figure 26. Averaged kinetic energy for the TGV case at Re = 5000 for different resolutions and polynomial orders. From left to right: 64 3, 80 3, 96 3. Solid lines, TB3 model at resolution 80 3; dashed lines, TB3 model at resolution 64 3; blue dash-dotted lines, GEP2 from [92]; blue dotted lines, GEP1 from [92]. Symbols indicate the filtered DNS data at the given resolution. 7. Conclusions 
+
+In this work, we have presented a discrete-adjoint-based framework for the optimization of SGS model parameters for LESs. The proposed approach enables in-the-loop training by leveraging automatic differ-entiation of a high-order spectral difference solver, thereby accounting for both modeling and discretiza-tion errors during the optimization process. The methodology has been applied to the calibration of classical SGS closures, including the Smagorinsky and tensor-basis models, applied to one-dimensional Burgers equation and to fully three-dimensional turbulence. The training procedure has been carried out on coarse-grained simulations of FHIT, using filtered DNS data as reference. The optimization has been performed across different polynomial orders of the spatial discretization, highlighting the strong coupling between SGS model parameters and the underlying numerical scheme. The resulting optimized coefficients exhibit a clear dependence on the discretization properties, confirming the importance of consistent model calibration. The generalization capabilities of the trained models have been assessed on a range of out-of-sample test cases, including decaying homogeneous isotropic turbulence and the Taylor-Green vortex. Variations in polynomial order, grid resolution, and Reynolds number have been considered. In all cases, the optimized models demonstrate significant improvements over standard baseline closures, providing more accurate predictions of turbulence statistics. 30 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+Aknowledgements 
+
+This study was funded by the European Union - NextGenerationEU, in the framework of the iNEST -Interconnected Nord-Est Innovation Ecosystem (iNEST ECS00000043 – CUP G93C22000610007). The views and opinions expressed are solely those of the authors and do not necessarily reflect those of the European Union, nor can the European Union be held responsible for them. The authors NC, NT and GR acknowledge the support by INdAM-GNCS: Istituto Nazionale di Alta Matematica –– Gruppo Nazionale di Calcolo Scientifico. Paola Cinnella acknowledges support by the French National Research Agency (ANR) under the France 2030 program, within the framework of the IA Cluster initiative (grant ANR-23-IACL-0007). The use of the SD solver originally developed by Antony Jameson’s group at Stanford University is gratefully acknowledged. We are also grateful to Guido Lodato for the invaluable suggestions and guidance, which helped in improving the present work. The authors would like to thank Jean-Baptiste Chapelier for providing the DNS data used as reference in this work. 
+
+Appendix A. Gene Expression Programming models 
+
+In [92] Gene Expression Programming (GEP) was used in order to develop new SGS models within the framework of incompressible Large-Eddy Simulations. In particular, the Caley-Hamilton theorem was used to formulate the unknown SGS stress tensor as a finite series of tensor basis functions T α and coefficients Gα which depend on the invariants of the velocity gradient: 
+
+τ mod  
+
+> ij
+
+= −2∆ 2
+
+> n
+
+X
+
+> α=1
+
+T αGα with Gα = Gα(I1, I 2, ..., I m) (47) In particular, in [92], they set n = 4 and define: 
+
+T 1 
+
+> ij
+
+= sij · | S|, I1 = smn snm , (48) 
+
+T 2 
+
+> ij
+
+= ( sik ωkj − ωik skj ) · | S|2, I2 = ωmn ωnm , (49) 
+
+T 3 
+
+> ij
+
+= ( sik skj − smk skm δij /3) · | S|2, I3 = skm smn snk , (50) 
+
+T 4 
+
+> ij
+
+= ( ωik ωkj − ωmk ωkm δij /3) · | S|2, I4 = ωkm ωmn snk , (51) with sij = Sij /|S|, ωij = Ω ij /|S|,
+
+Sij = 12
+
+Å ∂u i
+
+∂x j
+
++ ∂u j
+
+∂x i
+
+ã
+
+, Ωij = 12
+
+Å ∂u i
+
+∂x j
+
+− ∂u j
+
+∂x i
+
+ã
+
+and |S| =
+
+»
+
+Sij Sij . (52) In [92] they obtained these two optimal models 
+
+τ GEP 1 
+
+> ij
+
+= 2∆ 2(I3 + 0 .04) T 2 
+
+> ij
+
+(53) 
+
+τ GEP 2 
+
+> ij
+
+= −2∆ 2(C1|S|T 1 
+
+> ij
+
+− C2T 2 
+
+> ij
+
++ C3T 3 
+
+> ij
+
+− C4T 4 
+
+> ij
+
+) (54) with C1 = 0 .01 , C2 = 0 .146 , C3 = 0 .01 and C4 = 0 .11 .
+
+References 
+
+[1] S. D. Agdestein and B. Sanderse. Discretize first, filter next: Learning divergence-consistent closure models for large-eddy simulation. Journal of Computational Physics , 522:113577, 2025. [2] S. D. Agdestein and B. Sanderse. A differentiable software suite for accelerated simulation of turbulent flows, 2026. [3] A. S. Ashley, J. Crean, and J. E. Hicken. Towards aerodynamic shape optimization of unsteady turbulent flows. In 
+
+AIAA Scitech 2019 Forum , page 0168, 2019. [4] S. Balay, S. Abhyankar, M. F. Adams, S. Benson, J. Brown, P. Brune, K. Buschelman, E. M. Constantinescu, L. Dalcin, A. Dener, V. Eijkhout, J. Faibussowitsch, W. D. Gropp, V. Hapla, T. Isaac, P. Jolivet, D. Karpeev, D. Kaushik, M. G. Knepley, F. Kong, S. Kruger, D. A. May, L. C. McInnes, R. T. Mills, L. Mitchell, T. Munson, J. E. Roman, K. Rupp, P. Sanan, J. Sarich, B. F. Smith, S. Zampini, H. Zhang, H. Zhang, and J. Zhang. PETSc Web page. https://petsc.org/ , 2025. [5] J. Bardina, J. Ferziger, and W. Reynolds. Improved subgrid-scale models for large-eddy simulation .[6] A. Beck, D. Flad, and C.-D. Munz. Deep neural networks for data-driven les closure models. Journal of Computational Physics , 398:108910, 2019. [7] A. Beck, G. Gassner, and C.-D. Munz. High order and underresolution. In R. Ansorge, H. Bijl, A. Meister, and T. Sonar, editors, Recent Developments in the Numerics of Nonlinear Hyperbolic Conservation Laws , volume 120 of 
+
+Notes on Numerical Fluid Mechanics and Multidisciplinary Design , pages 41–55. Springer Berlin Heidelberg, 2013. Lectures Presented at a Workshop at the Mathematical Research Institute Oberwolfach, Germany, Jan 15 – 21, 2012. [8] A. Beck and M. Kurz. Toward discretization-consistent closure schemes for large eddy simulation using reinforcement learning. Physics of Fluids , 35(12), 2023. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 31 
+
+[9] A. D. Beck, T. Bolemann, D. Flad, H. Frank, G. J. Gassner, F. Hindenlang, and C.-D. Munz. High-order discon-tinuous Galerkin spectral element methods for transitional and turbulent flow simulations. International Journal for Numerical Methods in Fluids , 76(8):522–548, 2014. [10] T. R. Bewley, P. Moin, and R. Temam. Dns-based predictive control of turbulence: an optimal benchmark for feedback algorithms. Journal of Fluid Mechanics , 447:179–225, 2001. [11] D. A. Bezgin, A. B. Buhendwa, and N. A. Adams. Jax-fluids 2.0: Towards hpc for differentiable cfd of compressible two-phase flows. Computer Physics Communications , 308:109433, 2025. [12] D. A. Bezgin, A. B. Buhendwa, S. J. Schmidt, and N. A. Adams. Ml-iles: End-to-end optimization of data-driven high-order godunov-type finite-volume schemes for compressible homogeneous isotropic turbulence. Journal of Com-putational Physics , 522:113560, 2025. [13] L. Biferale. The decay of homogeneous anisotropic turbulence. Physics of Fluids , 15(8):2105–2112, 2003. [14] P. J. Blonigan. New methods for sensitivity analysis of chaotic dynamical systems . PhD thesis, Massachusetts Institute of Technology, 2013. [15] J.-B. Chapelier. A coherent vorticity preserving eddy-viscosity correction for large-eddy simulation. Journal of Com-putational Physics , 359:164–182, 2018. [16] J.-B. Chapelier and G. Lodato. A spectral-element dynamic model for the large-eddy simulation of turbulent flows. 
+
+Journal of Computational Physics , 321:279–302, 2016. [17] J.-B. Chapelier and G. Lodato. A spectral-element dynamic model for the large-eddy simulation of turbulent flows. 
+
+Journal of Computational Physics , 321:279–302, 2016. [18] J.-B. Chapelier and G. Lodato. Optimal high-order spectral difference schemes for the computation of aeroacoustics and turbulence. In 55th AIAA Aerospace Sciences Meeting , page 1228, 2017. [19] J. R. Chasnov. The decay of axisymmetric homogeneous turbulence. Physics of Fluids , 7(3):600–605, 03 1995. [20] F. K. Chow and P. Moin. A further study of numerical errors in Large-Eddy Simulations. Journal of Computational Physics , 184(2):366–380, 2003. [21] R. A. Clark, J. H. Ferziger, and W. C. Reynolds. Evaluation of subgrid-scale models using an accurately simulated turbulent flow. Journal of Fluid Mechanics , 91(1):1–16, 1979. [22] N. Clinco, N. Tonicello, and G. Rozza. A data-driven study on implicit les using a spectral difference method. Journal of Computational Physics , 540:114302, 2025. [23] B. Cockburn and C. Shu. The local discontinuous Galerkin finite element method for convection-diffusion systems. 
+
+SIAM Journal of Numerical Analysis , 35:2440–2463, 1998. [24] B. Cockburn and C. Shu. The Runge-Kutta discontinuous Galerkin finite element method for conservation laws V: Multidimensional systems. Journal of Computational Physics , 141:199–224, 1998. [25] M. de Crouy-Chanel, C. Mimeau, I. Mortazavi, A. Mariotti, and M. V. Salvetti. Large-eddy simulations with remeshed vortex methods: An assessment and calibration of subgrid-scale models. Computers & Fluids , 277:106287, 2024. [26] B. de Laage de Meux, B. Audebert, R. Manceau, and R. Perrin. Anisotropic linear forcing for synthetic turbulence generation in large eddy simulation and hybrid rans/les modeling. Physics of Fluids , 27(3):035115, 03 2015. [27] C. C. De Wiart, K. Hillewaert, L. Bricteux, and G. Winckelmans. Implicit les of free and wall-bounded turbulent flows based on the discontinuous galerkin/symmetric interior penalty method. International Journal for Numerical Methods in Fluids , 78(6):335–354, 2015. [28] K. Duraisamy, G. Iaccarino, and H. Xiao. Turbulence modeling in the age of data. Annual Review of Fluid Mechanics ,51(Volume 51, 2019):357–377, 2019. [29] P. Fernandez, R. C. Moura, G. Mengaldo, and J. Peraire. Non-modal analysis of spectral element methods: Towards accurate and robust large-eddy simulations. Computer Methods in Applied Mechanics and Engineering , 346:43–62, 2019. [30] P. Fernandez, N.-C. Nguyen, and J. Peraire. Subgrid-scale modeling and implicit numerical dissipation in dg-based large-eddy simulation. In 23rd AIAA Computational Fluid Dynamics Conference , page 3951, 2017. [31] P. Fernandez, N.-C. Nguyen, and J. Peraire. On the ability of Discontinuous Galerkin methods to simulate under-resolved turbulent flows. 2018. [32] P. Fernandez, N.-C. Nguyen, and J. Peraire. On the ability of discontinuous Galerkin methods to simulate under-resolved turbulent flows. arXiv preprint arXiv:1810.09435 , 2018. [33] E. Garnier, N. A. Adams, and P. Sagaut. Large-Eddy Simulation for compressible flows , volume 276. Springer, 2009. [34] G. Gassner and D. A. Kopriva. A comparison of the dispersion and dissipation errors of gauss and gauss–lobatto discontinuous galerkin spectral element methods. SIAM Journal on Scientific Computing , 33(5):2560–2579, 2011. [35] M. Germano, U. Piomelli, P. Moin, and W. H. Cabot. A dynamic subgrid-scale eddy viscosity model. Physics of fluids A: Fluid dynamics , 3(7):1760–1765, 1991. [36] Z. Ghiasi, J. Komperda, D. Li, A. Peyvan, D. Nicholls, and F. Mashayek. Modal explicit filtering for Large Eddy simulation in discontinuous spectral element method. Journal of Computational Physics: X , 3:100024, 2019. [37] S. Ghosal. An analysis of numerical errors in Large-Eddy simulations of turbulence. Journal of Computational Physics ,125(1):187–206, 1996. [38] M. B. Giles and N. A. Pierce. An introduction to the adjoint approach to design. Flow, Turbulence and Combustion ,65(3):393–415, Dec 2000. [39] X. Gloerfelt and P. Cinnella. Large eddy simulation requirements for the flow over periodic hills. Flow, Turbulence and Combustion , 103(1):55–91, 2019. [40] R. W. Grinstein FF, Margolin LG. Implicit Large-Eddy Simulation: Computing Turbulent Fluid Dynamics . Cam-bridge University Press, 2007. [41] L. Guastoni. Predictions of turbulent shear flows using deep neural networks. Physical Review Fluids , 4(5):054603, 2019. [42] M. D. Gunzburger. Perspectives in Flow Control and Optimization . Society for Industrial and Applied Mathematics, 2002. 32 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+[43] L. Hascoet and V. Pascual. The tapenade automatic differentiation tool: Principles, model, and specification. ACM Transactions on Mathematical Software , 39(3), May 2013. [44] J. S. Hesthaven and T. Warburton. Nodal discontinuous Galerkin methods: algorithms, analysis, and applications .Springer Science & Business Media, 2007. [45] J. S. Hesthaven and T. Warburton. Nodal Discontinuous Galerkin Methods: Algorithms, Analysis, and Applications .Springer, 2008. [46] M. Hinze, R. Pinnau, M. Ulbrich, and S. Ulbrich. Optimization with PDE Constraints , volume 23 of Mathematical Modelling: Theory and Applications . Springer, Dordrecht / New York / Heidelberg, 1 edition, 2009. [47] K. Horiuti. Roles of non-aligned eigenvectors of strain-rate and subgrid-scale stress tensors in turbulence generation. 
+
+Journal of Fluid Mechanics , 491:65–100, Sept. 2003. [48] X. Huang, S. C. Leung, and H. J. Bae. Consistency requirement of data-driven subgrid-scale modeling in large-eddy simulation. Physical Review Fluids , 11(1):014602, 2026. [49] H. T. Huynh. A flux reconstruction approach to high-order schemes including Discontinuous Galerkin methods. In 
+
+AIAA Paper, 2007-4079 , 2007. [50] A. Jameson. Aerodynamic design via control theory. Journal of Scientific Computing , 3(3):233–260, Sep 1988. [51] J.-C. Jouhaud, P. Sagaut, B. Enaux, and J. Laurenceau. Sensitivity analysis and multiobjective optimization for les numerical parameters. Journal of Fluids Engineering , 130(2):021401, 01 2008. [52] G. K. Kenway, C. A. Mader, P. He, and J. R. Martins. Effective adjoint approaches for computational fluid dynamics. 
+
+Progress in Aerospace Sciences , 110:100542, 2019. [53] J. Kim, D. J. Bodony, and J. B. Freund. Adjoint-based control of loud events in a turbulent jet. Journal of Fluid Mechanics , 741:28–59, 2014. [54] D. P. Kingma and J. Ba. Adam: A method for stochastic optimization. CoRR , abs/1412.6980, 2014. [55] D. A. Kopriva and J. H. Kolias. A conservative staggered-grid Chebyshev multidomain method for compressible flows. 
+
+Journal of Computational Physics , 125:244–261, 1996. [56] J. Kou, O. A. Marino, and E. Ferrer. Jump penalty stabilization techniques for under-resolved turbulence in discon-tinuous galerkin schemes. Journal of Computational Physics , 491:112399, 2023. [57] A. Kravchenko and P. Moin. On the effect of numerical errors in Large-Eddy simulations of turbulent flows. Journal of Computational Physics , 131(2):310–322, 1997. [58] M. Kurz, P. Offenhäuser, and A. Beck. Deep reinforcement learning for turbulence modeling in large eddy simulations. 
+
+International Journal of Heat and Fluid Flow , 99:109094, 2023. [59] B. List, L.-W. Chen, and N. Thuerey. Learned turbulence modelling with differentiable fluid solvers: physics-based loss functions and optimisation horizons. Journal of Fluid Mechanics , 949:A25, 2022. [60] Y. Liu, M. Vinokur, and Z. Wang. Spectral difference method for unstructured grids I: basic formulation. Journal of Computational Physics , 216(2):780–801, 2006. [61] G. Lodato. Characteristic modal shock detection for discontinuous finite element methods. Computers & Fluids ,179:309–333, 2019. [62] D. Lucor, J. Mayers, and P. Sagaut. Sensitivity analysis of large-eddy simulations to subgrid-scale-model parametric uncertainty using polynomial chaos. Journal of Fluid Mechanics , 585:255–279, 2007. [63] J. F. MacArt, J. Sirignano, and J. B. Freund. Embedded training of neural-network subgrid-scale turbulence models. 
+
+Physical Review Fluids , 6(5):050502, 2021. [64] J. Manzanero, E. Ferrer, G. Rubio, and E. Valero. Design of a smagorinsky spectral vanishing viscosity turbulence model for discontinuous galerkin methods. Computers & Fluids , 200:104440, 2020. [65] J. Manzanero, G. Rubio, E. Ferrer, and E. Valero. Dispersion-dissipation analysis for advection problems with non-constant coefficients: Applications to discontinuous Galerkin formulations. SIAM Journal on Scientific Computing ,40(2):A747–A768, 2018. [66] T. Marchal. Extension of the Spectral Difference method to combustion . Theses, Institut National Polytechnique de Toulouse - INPT, Apr. 2023. [67] T. Marchal, H. Deniau, J.-F. Boussuge, B. Cuenot, and R. Mercier. Extension of the Spectral Difference Method to Premixed Laminar and Turbulent Combustion. Flow, Turbulence and Combustion , 110(Issue 3), Apr. 2023. [68] J. R. R. A. Martins and A. Ning. Engineering Design Optimization . Cambridge University Press, 2021. [69] R. Maulik and O. San. Explicit and implicit les closures for burgers turbulence. Journal of Computational and Applied Mathematics , 327:12–40, 2018. [70] O. MCMILLAN and J. FERZIGER. Direct testing of subgrid-scale models .[71] C. Meneveau and J. Katz. Scale-invariance and turbulence models for large-eddy simulation. Annual Review of Fluid Mechanics , 32(Volume 32, 2000):1–32, 2000. [72] G. Mengaldo, D. De Grazia, R. C. Moura, and S. J. Sherwin. Spatial eigensolution analysis of energy-stable flux reconstruction schemes and influence of the numerical flux on accuracy and robustness. Journal of Computational Physics , 358:1–20, 2018. [73] G. Mengaldo, R. Moura, B. Giralda, J. Peiró, and S. Sherwin. Spatial eigensolution analysis of Discontinuous Galerkin schemes with practical insights for under-resolved computations and implicit LES. Computers & Fluids , 169:349–364, 2018. [74] J. Meyers, P. Sagaut, and B. J. Geurts. Optimal model parameters for multi-objective large-eddy simulations. Physics of Fluids , 18(9):095103, 09 2006. [75] R. Moura, M. Aman, J. Peiró, and S. Sherwin. Spatial eigenanalysis of spectral/hp continuous Galerkin schemes and their stabilisation via dg-mimicking spectral vanishing viscosity: Application to high reynolds number flows. Journal of Computational Physics , page 109112, 2019. [76] R. Moura, S. Sherwin, and J. Peiró. Linear dispersion–diffusion analysis and its application to under-resolved turbu-lence simulations using discontinuous galerkin spectral/hp methods. Journal of Computational Physics , 298:695–710, 2015. OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 33 
+
+[77] R. C. Moura, A. da Silva, E. Burman, and S. J. Sherwin. Eigenanalysis of gradient-jump penalty (gjp) stabilisation for cg. Technical report, Tech. rep., Technical report. https://doi. org/10.13140/RG. 2.2. 32887.85924, 2020. [78] R. C. Moura, G. Mengaldo, J. Peiró, and S. J. Sherwin. On the eddy-resolving capability of high-order discontinuous Galerkin approaches to implicit LES/under-resolved DNS of Euler turbulence. Journal of Computational Physics ,330:615–623, 2017. [79] R. C. Moura, S. J. Sherwin, and J. Peiró. Linear dispersion–diffusion analysis and its application to under-resolved tur-bulence simulations using discontinuous Galerkin spectral/hp methods. Journal of Computational Physics , 298:695– 710, 2015. [80] S. Nadarajah and A. Jameson. Studies of the continuous and discrete adjoint approaches to viscous automatic aerodynamic shape optimization. In 15th AIAA computational fluid dynamics conference , page 2530. [81] S. Nadarajah and A. Jameson. A comparison of the continuous and discrete adjoint approach to automatic aerody-namic optimization. In 38th Aerospace Sciences Meeting and Exhibit , 2000. [82] F. Naddei, M. de la Llave Plata, and E. Lamballais. Spectral and modal energy transfer analyses of les using the discontinuous galerkin method and their application to the variational multiscale approach. Journal of Computational Physics , 427:110031, 2021. [83] F. Nicoud and F. Ducros. Subgrid-scale stress modelling based on the square of the velocity gradient tensor. Flow, turbulence and Combustion , 62(3):183–200, 1999. [84] J. Nocedal and S. J. Wright. Numerical Optimization . Springer Series in Operations Research and Financial Engi-neering. Springer, 2 edition, 2006. [85] K. Ou and A. Jameson. Unsteady Adjoint Method for the Optimal Control of Advection and Burger’s Equations Using High-Order Spectral Difference Method . American Institute of Aeronautics and Astronautics, 2011. [86] J. E. Peter and R. P. Dwight. Numerical sensitivity analysis for aerodynamic optimization: A survey of approaches. 
+
+Computers & Fluids , 39(3):373–391, 2010. [87] U. Piomelli. Large-Eddy simulation: achievements and challenges. Progress in Aerospace Sciences , 35(4):335–362, 1999. [88] U. Piomelli, J. Ferziger, P. Moin, et al. Model consistency in large eddy simulation of turbulent channel flows. Physics of Fluids , 31(7):1884, 1988. [89] A. Prakash, K. E. Jansen, and J. A. Evans. Invariant data-driven subgrid stress modeling in the strain-rate eigenframe for large eddy simulation. Computer Methods in Applied Mechanics and Engineering , 399:115457, 2022. [90] M. Ranjbar, D. A. B. Fernandez, F. Mashayek, and J. Komperda. Application of Modal Representation for Instan-taneous Statistical Analysis of Flows Simulated with Spectral Element Method .[91] M. Ranjbar, J. Komperda, and F. Mashayek. Dynamic Explicit Modal Filtering for Large-Eddy Simulation of Tur-bulent Flows with Spectral Element Method .[92] M. Reissmann, J. Hasslberger, R. D. Sandberg, and M. Klein. Application of gene expression programming to a-posteriori les modeling of a taylor green vortex. Journal of Computational Physics , 424:109859, 2021. [93] R. S. Rogallo. Numerical experiments in homogeneous turbulence , volume 81315. National Aeronautics and Space Administration, 1981. [94] P. Sagaut. Large-Eddy simulation for incompressible flows. an introduction. Measurement Science and Technology ,12(10):1745, oct 2001. [95] B. Sanderse, P. Stinis, R. Maulik, and S. E. Ahmed. Scientific machine learning for closure models in multiscale problems: A review. Foundations of Data Science , 7(1):298–337, 2025. [96] S. Scott Collis, K. Ghayour, M. Heinkenschloss, M. Ulbrich, and S. Ulbrich. Optimal control of unsteady compressible viscous flows. International Journal for Numerical Methods in Fluids , 40(11):1401–1429, 2002. [97] V. Shankar, D. Chakraborty, V. Viswanathan, and R. Maulik. Differentiable turbulence: Closure as a partial differ-ential equation constrained optimization. Physical Review Fluids , 10:024605, Feb 2025. [98] J. Sirignano and J. F. MacArt. Deep learning closure models for large-eddy simulation of flows around bluff bodies. 
+
+Journal of Fluid Mechanics , 966:A26, 2023. [99] J. Sirignano, J. F. MacArt, and J. B. Freund. Dpm: A deep learning pde augmentation method with application to Large Eddy simulation. Journal of Computational Physics , 423:109811, 2020. [100] J. Slotnick, A. Khodadoust, J. Alonso, D. Darmofal, W. Gropp, E. Lurie, and D. Mavriplis. CFD vision 2030 study: A path to revolutionary computational aerosciences. Technical report, NASA Langley Research Center, Hampton, Virginia 23681-2199, 2014. NASA Contractor Report 218178. [101] J. Smagorinsky. General circulation experiments with the primitive equations: I. the basic experiement. Monthly Weather Review , 91:99–164, 1963. [102] P. Solán-Fustero, A. Navas-Montilla, E. Ferrer, J. Manzanero, and P. García-Navarro. Application of approximate dispersion-diffusion analyses to under-resolved burgers turbulence using high resolution weno and uwc schemes. 
+
+Journal of Computational Physics , 435:110246, 2021. [103] Y. Sun, Z. Wang, and Y. Liu. High-order multidomain spectral difference method for the Navier-Stokes equations on unstructured hexahedral grids. Communications in Computational Physics , 2(2):310–333, 2007. [104] B. Thornber, A. Mosedale, and D. Drikakis. On the implicit large eddy simulations of homogeneous decaying turbu-lence. Journal of Computational Physics , 226(2):1902–1929, 2007. [105] N. Tonicello, G. Lodato, and L. Vervisch. A comparative study from spectral analyses of high-order methods with non-constant advection velocities. Journal of Scientific Computing , 87:1–38, 2021. [106] N. Tonicello, R. C. Moura, G. Lodato, and G. Mengaldo. Fully-discrete spatial eigenanalysis of discontinuous spectral element methods: Insights into well-resolved and under-resolved vortical flows. Computers & Fluids , 266:106060, 2023. [107] K. Um, R. Brand, Y. R. Fei, P. Holl, and N. Thuerey. Solver-in-the-loop: learning from differentiable physics to inter-act with iterative pde-solvers. In Proceedings of the 34th International Conference on Neural Information Processing Systems , NIPS ’20, Red Hook, NY, USA, 2020. Curran Associates Inc. [108] B. C. Vermeire and P. E. Vincent. On the properties of energy stable flux reconstruction schemes for implicit large eddy simulation. Journal of Computational Physics , 327:368–388, 2016. 34 OPTIMIZATION OF SGS MODELS FOR DSE SCHEMES BASED ON THE DISCRETE ADJOINT METHOD 
+
+[109] L. Villanueva, K. Truffin, and M. Meldi. Synchronization and optimization of Large Eddy simulation using an online ensemble Kalman filter. International Journal of Heat and Fluid Flow , 110:109597, 2024. [110] P. E. Vincent, P. Castonguay, and A. Jameson. Insights from von neumann analysis of high-order flux reconstruction schemes. Journal of Computational Physics , 230(22):8134–8154, 2011. [111] A. Vreman. An eddy-viscosity subgrid-scale model for turbulent shear flow: Algebraic theory and applications. Physics of fluids , 16(10):3670–3681, 2004. [112] A. Vreman, B. Geurts, and J. Kuerten. A priori tests of Large-Eddy simulation of the compressible plane mixing layer. Journal of engineering mathematics , 29(4):299–327, 1995. [113] X. Wang, O. A. Marino, and E. Ferrer. Accelerating high-order energy-stable discontinous Galerkin solver using auto-differentiation and neural networks, 2025. [114] Y. Wang, Z. Yuan, and J. Wang. Ensemble data assimilation-based mixed subgrid-scale model for Large Eddy simulations. Physics of Fluids , 35(8):085107, 08 2023. [115] Z. Wang, Y. Liu, G. May, and A. Jameson. Spectral difference method for unstructured grids II: Extension to the Euler equations. Journal of Scientific Computing , 32(1):45–71, 2007. [116] M. Wei and J. B. Freund. A noise-controlled free shear flow. Journal of Fluid Mechanics , 546:123–152, 2006. [117] A. R. Winters, R. C. Moura, G. Mengaldo, G. J. Gassner, S. Walch, J. Peiro, and S. J. Sherwin. A comparative study on polynomial dealiasing and split form discontinuous galerkin schemes for under-resolved turbulence computations. 
+
+Journal of Computational Physics , 372:1–21, 2018. [118] C. Xie, Z. Yuan, and J. Wang. Artificial neural network-based nonlinear algebraic models for large eddy simulation of turbulence. Physics of Fluids , 32(11):115101, 11 2020. [119] Z. Yuan, Y. Wang, X. Wang, and J. Wang. Adjoint-based variational optimal mixed models for large-eddy simulation of turbulence. Physics of Fluids , 35(7):075105, 07 2023. [120] H. Zhang, E. M. Constantinescu, and B. F. Smith. Petsc tsadjoint: A discrete adjoint ode solver for first-order and second-order sensitivity analysis. SIAM Journal on Scientific Computing , 44(1):C1–C24, 2022.

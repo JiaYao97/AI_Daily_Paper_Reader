@@ -1,0 +1,2731 @@
+Title: 2606.02038v1.pdf
+
+URL Source: https://arxiv.org/pdf/2606.02038v1
+
+Published Time: Tue, 02 Jun 2026 02:29:43 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+1
+
+# Uncertainty -Aware Graph Neural Reconstruction of Urban 
+
+# Temperature Fields from Sparse Sensors under Deployment 
+
+# Constraints 
+
+Reda Snaiki 1; Abdelatif Merabtine 1             
+
+> 1Department of Construction Engineering, École de Technologie Supérieure, Université du Québec,
+> Montréal, Québec, Canada
+
+Abstract : Reconstructing spatially continuous daily temperature fields from sparse 
+
+observations is important for urban climate monitoring and heat -risk analysis, but 
+
+practical deployments are limited by sensor budgets and spacing constraints. This study 
+
+proposes an uncertainty -aware graph neural network (GNN) framework for 
+
+reconstructing daily maximum temperature fields from sparse sensors while supporting 
+
+distance -constrained sensor placement and probabilistic exceedance mapping. The 
+
+model predicts both the temperat ure field and a spatially varying predictive uncertainty 
+
+field using a graph -attention -based mean -residual architecture trained with a Gaussian 
+
+negative log -likelihood. Sensor placement is addressed using a Proper Orthogonal 
+
+Decomposition with QR factoriza tion (POD -QR ) strategy with a 4 km minimum inter -
+
+sensor distance constraint and is compared with random feasible placement and farthest -
+
+point sampling. The framework is evaluated over a Montréal -area polygon using Daymet 
+
+v4.1 daily temperature data (1 km r esolution) under a strict temporal hold -out protocol 
+
+(training: 2020 –2023; testing: 2024). Across sensor budgets (10 –40 sensors), the proposed 
+
+GNN consistently outperforms inverse distance weighting and ordinary kriging in RMSE 
+
+and MAE on unobserved nodes. Sensor -placement effects are most pronounced at low 
+
+budgets and diminish at higher budgets, with a practical saturation regime emerging 
+
+around 30 sensors under the imposed spacing constraint. Probabilistic evaluation further 
+
+shows improved uncertainty cal ibration with increasing sensor density and a better 
+
+sharpness -calibration trade -off than kriging. These results support the proposed 
+
+framework as an effective tool for uncertainty -aware temperature field reconstruction 
+
+and decision -oriented heat -risk mapp ing. 
+
+Keywords: Graph neural networks; temperature reconstruction; sparse sensors; 
+
+uncertainty quantification; sensor placement .
+
+1. Introduction 
+
+High -resolution temperature fields are increasingly needed for urban climate 
+
+monitoring, heat -risk assessment, and operational decision -making. Applications such as 2
+
+heat exposure mapping, hotspot identification, targeted mitigation planning, and 
+
+threshold -based alerting require spatially continuous information, while direct 
+
+observations are usually available only at a limited number of stations or sensors. This 
+
+creates a fundamental mismatch between decision needs and measurement reality: 
+
+practitioners need dense temperature maps, but monitoring systems typically provide 
+
+sparse observations. The challenge is further compounded by practical deployment 
+
+constraints. Sensor locations are often restricted by accessibility, maintenance logistics, 
+
+communications av ailability, security, and spacing requirements intended to avoid 
+
+redundant collocated measurements. As a result, the relevant problem in practice is not 
+
+interpolation from an idealized network, but reconstruction of full temperature fields 
+
+from sparse and constrained sensing configurations. Key challenges include data sparsity 
+
+as limited sensor coverage leads to poor reconstruction accuracy and robustness ; urban 
+
+heterogeneity as a result of variability in land use and building morphology ; uncertainty 
+
+quanti fication ; sensor quality and their deployment strategy (X. Liu & Ren, 2026; Yu et 
+
+al., 2024) .
+
+Classical spatial interpolation met hods remain widely used because they are 
+
+interpretable and relatively easy to implement. Inverse distance weighting is attractive 
+
+for its simplicity, but it relies on a fixed distance -based weighting rule and does not learn 
+
+spatial structure from data  (Chen & Liu, 2012; Fan et al., 2016; Y. Liu et al., 2025; Ozelk an 
+
+et al., 2013; Shahidi & Abedini, 2018; Yan et al., 2021; Zhu et al., 2022) . This can limit its 
+
+ability to represent complex temperature patterns beyond smooth geometric decay, and 
+
+it does not natively provide a principled probabilistic uncertainty estimate. Kriging offers 
+
+a stronger statistical framework and can provide both a predicted mean and an associated 
+
+prediction variance, making it a natural benchmark for uncertainty -aware interpolation. 
+
+However, kriging performance depends stron gly on modeling assumptions, including 
+
+variogram specification and parameter estimation, and its uncertainty quality is tied to 
+
+those assumptions (Qiao et al., 2018) . In heterogeneous urban and peri -urban 
+
+environments, departures from stationarity or other idealized covariance assumptions 
+
+can degrade performance. In addition, repeated kriging analyses across many days, 
+
+sensor budgets, and placement scenarios can become computationally burdensome in 
+
+comparative studies. 
+
+Recent advances in machine learning have demonstrated significant potential as 
+
+alternatives to traditional numerical approaches for spatial field r econstruction from 
+
+sparse observations. Bilevel sparse least‑squares Support Vector Machines (SVMs) and 
+
+U‑Net architectures enhance reconstruction accuracy and robustness without requiring 
+
+dense partial differential equation (PDE) solutions or large traini ng datasets (Delgado -
+
+Enales et al., 2025) . Physics‑Informed Neural Networks (PINNs) integrate sparse sensor 
+
+measurements with governing physical equations to reconstruct temperature and 3
+
+velocity fields, thereby bridging the gap between direct observations and purely 
+
+data‑driven regression models (Lopez et al., 2026) . Low‑rank tensor completion methods 
+
+effectively capture both global and local spatiotemporal patterns, enabling accurate 
+
+reconstruction of dynamic urban states from incomplete data (Wang et al., 2023) .
+
+Furthermore, hybrid deep learning architectures, including CNN‑LSTM, BiGRU, and 
+
+other combined models, consistently outperform standalone approaches by jointly 
+
+modeling spatial and temporal dependencies in urban climate data  (Gu et al., 2024; Khala 
+
+et al., 2025; Vallileka et al., 2025; Yasavoli et al., 2025) .
+
+Incorporating temporal dynamics via spatiotemporal graph models is critical for accurate 
+
+and robust urban temperature field reconstruction from sparse time -varying data 
+
+(Abdullah Al Mamun et al., 2018; Ding et al., 2026; H. He et al., 2026; Inagaki et al., 2022; 
+
+Zhang et al., 2024) . Spatiotemporal graph models encode both spatial and temporal 
+
+relationships, enabling dynamic reconstruction from sparse sensors (Deuri et al., 2025) .
+
+Graph neural networks (GNNs) are well suit ed because they represent spatial domains 
+
+as graphs, support local message passing, and can incorporate positional information 
+
+while handling irregular masks and domain geometries. For temperature mapping, this 
+
+offers a flexible way to learn nonlinear rela tionships between sparse measurements and 
+
+dense spatial fields, potentially outperforming fixed -form interpolation methods when 
+
+spatial dependencies are complex or context -dependent (Delgado -Enales et al., 2025) .
+
+GNNs with attention, diffusion convolution, and spat iotemporal modules are highly 
+
+effective for urban temperature field modeling, especially when integrated with 
+
+uncertainty quantification  (Feng et al., 2023; Fu et al., 2022; M. He et al., 2025; H u et al., 
+
+2024; Just et al., 2025; H. Li et al., 2026; J. Li et al., 2025; Oláh et al., 2025; Sengupta et al., 
+
+2026; Yu et al., 2024) .
+
+However, important gaps remain in current learning -based interpolation approaches. 
+
+As for hybrid models that integra te remote sensing, 3D urban morphology, and physical 
+
+process knowledge for high -resolution temperature estimation (Klimenka et al., 2025; 
+
+Patel et al., 2023; Zang et al., 2023) , many methods em phasize deterministic accuracy and 
+
+provide only point estimates, without calibrated predictive uncertainty. This limits their 
+
+usefulness in risk -oriented applications where confidence -aware outputs are essential. In 
+
+addition, sensor placement and field rec onstruction are often treated as separate 
+
+problems, with model performance evaluated for assumed sensor locations but without 
+
+systematically addressing how placement design under realistic constraints affects 
+
+reconstruction and uncertainty. 
+
+While GNNs improve predictive accuracy by explicitly modeling relational 
+
+dependencies, their deployment in climate -sensitive and decision -critical applications 
+
+necessitates robust uncertainty quantification . Two primary sources of uncertainty are 4
+
+typically distinguis hed in this context: Aleatoric uncertainty, which arises from inherent 
+
+variability and noise in environmental observations and processes (e.g., sensor noise, 
+
+microclimatic fluctuations); and Epistemic uncertainty, which reflects model uncertainty 
+
+due to li mited data coverage, incomplete process representation, or parameter 
+
+uncertainty, and which is reducible with additional information. Within GNN -based 
+
+urban temperature modeling, deep ensembles and Bayesian learning frameworks have 
+
+emerged as leading appro aches for disentangling and quantifying these uncertainty 
+
+components. 
+
+Deep ensemble methods approximate epistemic uncertainty by training multiple 
+
+independently initialized GNNs and aggregating their predictive distributions 
+
+(Gustafsson et al., 2020; Scalia et al., 2020) . Variability across ensemble members captures 
+
+model uncertainty, while each model can ad ditionally be parameterized to estimate 
+
+aleatoric uncertainty through heteroscedastic output distributions. Deep ensembles are 
+
+widely adopted due to their conceptual simplicity, strong empirical performance, and 
+
+compatibility with existing GNN architecture s. 
+
+Bayesian frameworks, including Bayesian neural networks and variational inference 
+
+applied to GNNs, provide a theoretically grounded formulation in which epistemic 
+
+uncertainty is represented through posterior distributions over model parameters 
+
+(Munikoti et al., 2023) . In urban temperature applications, Bayesian GNNs enable 
+
+principled uncertainty propagation across graph structures and temporal dependencies, 
+
+thereby supporting risk -aware fo recasting and spatial generalization assessment. 
+
+However, their practical adoption is sometimes constrained by computational cost and 
+
+optimization complexity, especially for large urban graphs. 
+
+Graph Attention Networks (GATs) improve inference accuracy for environmental sensor 
+
+data by selectively modeling and decoupling short‑ and long‑term relational patterns. In 
+
+their study, Hu et al. (Hu et al., 2024) developed DualSTN model, a spatiotemporal 
+
+inference framework designed to effectively capture both short‑ and long‑term dynamics 
+
+for sparse sensor stations monitoring air quality in Beijing. To this end, the model was 
+
+decomposed into two complementary modules: JST‑GAT and SG‑GRU. The JST‑GAT 
+
+component was dedicated to learning fine‑grained joint spatiotemporal dependencies 
+
+over short horizons, whereas the SG‑GRU module leverages a time‑skipping strategy to 
+
+model long‑ter m temporal patterns. Zhang (Zhang, 2025) noted that, even though some 
+
+studies incorporate physical laws into GAT (e.g. wind speed prediction), this approach 
+
+is underexplored for urban temperature fields, where physical consistency is critical. 
+
+Tong et al. (Tong et al., 2022) and Haghbayan et al.  (Haghbayan et al., 2025) have, 
+
+respectively, applied GAT models for mobile crowd sensing data reconstruction and for 
+
+modeling PM 2.5 concentrations in urban environments and stated that environment 5
+
+parameters (eg. Air t emperature) exhibit complex spatio -temporal correlations, which are 
+
+challenging to model accurately. Moreover, sparse and noisy urban sensing data, due to 
+
+limitations in sensor coverage and environmental factors, pose significant challenges for 
+
+accurate re construction (Mo et al., 2021) .
+
+Existing GAT models often struggle with error propagation and capturing high -order 
+
+dependencies. Gao et al. (Gao et al., 2025) generated an intelligent 3D temperature field 
+
+for cryogenic target surfaces, integrating a GAT -Transformer Network (GTN) with a 
+
+BiLSTM network to intelligently compute time -series prediction data of 3D temperature 
+
+fields that adhere to physical laws. They demonstrated that The GT N effectively 
+
+simulates theoretical infrared temperature fields under cryogenic conditions, producing 
+
+realistic thermal variations to support high -quality training data for target recognition. 
+
+However, high -resolution urban temperature modeling requires sc alable GAT 
+
+architectures since current models often face computational inefficiencies when applied 
+
+to large -scale urban datasets. 
+
+This study addresses these gaps by developing an uncertainty -aware graph neural 
+
+network framework for daily temperature fie ld reconstruction from sparse sensor 
+
+observations under practical spacing constraints. The proposed approach predicts both a 
+
+reconstructed temperature field and a spatially varying predictive uncertainty field, 
+
+enabling accuracy assessment and probabilisti c interpretation within the same 
+
+framework. The evaluation is conducted under a strict temporal generalization protocol, 
+
+with training performed on 2020 –2023 data and testing on 2024 data, and includes both 
+
+deterministic and probabilistic metrics such as R MSE, MAE, CRPS, NLL, and empirical 
+
+coverage. The study also examines distance -constrained sensor placement using a Proper 
+
+Orthogonal Decomposition combined with QR factorization (POD -QR ) with in a 4 km 
+
+minimum inter -sensor spacing requirement, and compares it with random feasible 
+
+placement and farthest -point sampling to quantify how placement design affects 
+
+downstream reconstruction quality. Finally, the predicted uncertainty is translated into 
+
+exceedance probability maps to demonstrate how the framework can support decision -
+
+oriented temperature -risk applications. The remainder of the paper presents the 
+
+methodology, application results, discussion, and conclusions in that order. 
+
+2. Methodology 
+
+2.1 Problem statement and objective 
+
+Urban -scale temperature monitoring is inherently sparse because only a limited number 
+
+of environment sensors can be deployed in practice. However, many applications, 
+
+including heat exposure mapping and operational heat -risk assessment, require spatially 6
+
+co ntinuous temperature fields at fine resolution. Let 𝓎 𝑡 (𝑥 ) denote the daily near -surface 
+
+air temperature (here, daily maximum temperature 𝑡 𝑚𝑎𝑥 ) at day 𝑡 and spatial location 𝑥 
+
+over a discretized domain. After masking invalid pixels (e.g., outside t he study polygon 
+
+or over missing grid cells), the domain is represented by 𝑁 valid grid nodes {𝑥 𝑖 }𝑖 =1 
+
+> 𝑁
+
+, and 
+
+the temperature field at day 𝑡 is written as a vector: 
+
+𝒚 𝑡 = [𝓎 𝑡 ,1, 𝓎 𝑡 ,2, … , 𝓎 𝑡 ,𝑁 ]𝑇 ∈ ℝ𝑁 (1) 
+
+where 𝓎 𝑡 ,𝑖 is the temperature at node 𝑖 (in ℃). On each day 𝑡 , only a subset of nodes is 
+
+observed through a sparse sensor network. Let 𝑆 ⊂ {1, … , 𝑁 } be the index set of sensor 
+
+locations (with |𝑆 | = 𝑚 ), and let 𝒚 𝑡 ,𝑆 denote the corresponding observed temperatures. 
+
+The remaining nodes 𝑆 ̅ = {1, … , 𝑁 }\𝑆 are unobserved and must be inferred. Our goal is 
+
+therefore to learn a spatial reconstruction operator that maps sparse observations to a 
+
+full -field estimate: 
+
+(𝒚 𝑡 ,𝑆 , 𝑆 ) ⟼ 𝝁 ̂ 𝑡 ∈ ℝ𝑁 (2) 
+
+where 𝝁 ̂ 𝑡 is the predicted mean temperature field. Beyond point estimates, decision -
+
+making under sparse observations requires a quantified notion of confidence. We 
+
+therefore seek a second output that characterizes predictive uncertainty at each gr id 
+
+node. Specifically, the model predicts a heteroscedastic (spatially varying) uncertainty 
+
+field , reported in physical units as the predictive standard deviation associated with the 
+
+reconstructed mean field 𝝁 ̂ 𝑡 .:
+
+𝝈 ̂𝑡 = [𝜎 ̂𝑡 ,1, 𝜎 ̂𝑡 ,2, … , 𝜎 ̂𝑡 ,𝑁 ]𝑇 ∈ ℝ+ 
+
+> 𝑁
+
+(3) 
+
+This uncertainty is used to produce decision -oriented products such as exceedance 
+
+probability maps. Finally, because the sensor locations 𝑆 are not arbitrary in practice, a
+
+companion design problem is considered to select informative sensor sets under 
+
+oper ational constraints (e.g., minimum inter -sensor distance) .
+
+2.2 Proposed framework overview 
+
+This section provides a high -level description of the proposed framework for daily 
+
+temperature field reconstruction with uncertainty quantification from sparse 
+
+observations. The framework is designed for the problem introduced in Section 2.1, 
+
+where only a subset of grid nodes is observed at each day 𝑡 , and the objective is to 
+
+reconstruct the full temperature field 𝒚 𝑡 ∈ ℝ𝑁 and quantify prediction confidence over all 
+
+𝑁 valid nodes. 7
+
+Let 𝑆 𝑡 ⊂ {1, … , 𝑁 } denote the set of sensor locations available at day 𝑡 , wit h |𝑆 𝑡 | = 𝑚 , and 
+
+let 𝒚 𝑡 ,𝑆 𝑡 denote the corresponding observed temperatures. In the present work, the sensor 
+
+set may be fixed (for a given placement design) or generated according to a placement 
+
+strategy, but the reconstruction task remains the same: infer the temperature values at 
+
+the unobserved nodes 𝑆 ̅𝑡 . The proposed framework maps sparse observations to two 
+
+spatial outputs: 
+
+(𝒚 𝑡 ,𝑆 𝑡 , 𝑆 𝑡 ) ⟼ (𝝁 ̂ 𝑡 , 𝝈 ̂ 𝑡 ) (4) 
+
+where 𝝁 ̂ 𝑡 ∈ ℝ𝑁 is the reconstructed mean temperature field and 𝝈 ̂𝑡 ∈ ℝ+ 
+
+> 𝑁
+
+is the 
+
+corresponding heteroscedastic predictive standard deviation field. 
+
+At a conceptual level, the framework consists of four coupled components. First, sparse 
+
+observation encoding combines temperatur e values and a binary mask. The observed 
+
+daily temperature values are embedded on the full grid by assigning measured values to 
+
+sensor nodes and a neutral placeholder to unobserved nodes, while the mask explicitly 
+
+distinguishes observed and unobserved node s. This is essential in the temperature 
+
+reconstruction setting because a value of zero in the encoded field should not be 
+
+interpreted as a physical temperature measurement. Second, the valid grid nodes are 
+
+represented as a spatial graph whose topology is c onstructed from geographic proximity 
+
+(k -nearest neighbors in the spatial coordinates), optionally augmented by a global node 
+
+to facilitate long -range information exchange. This graph formulation enables the model 
+
+to exploit the spatial organization of the temperature field while remaining applicable to 
+
+irregular valid -node masks. Third, a GAT -based reconstruction model uses the encoded 
+
+sparse temperature observations, node coordinates (via positional encoding), and mask 
+
+information as input, and predicts a full -field reconstruction in a normalized mean -
+
+residual form. The mean -residual parameterization stabilizes learning by conditioning 
+
+the prediction on daily sensor statistics (sensor mean and standard deviation), which is 
+
+particularly important for tempera ture fields with strong day -to -day shifts in level and 
+
+spread. Fourth, in addition to the reconstructed mean temperature, a heteroscedastic 
+
+uncertainty quantification head predicts a spatially varying uncertainty field through a 
+
+log -variance output. This l atent quantity is then transformed into predictive variance and 
+
+predictive standard deviation for probabilistic evaluation and downstream decision -
+
+oriented products (e.g., exceedance probability maps). 
+
+Figure 1 summarizes this pipeline from sparse tempera ture measurements to 
+
+reconstructed temperature and uncertainty maps. In practice, the framework is trained 
+
+by maximizing the likelihood of unobserved temperatures conditioned on sparse 
+
+observations, while enforcing physically reasonable spatial behavior th rough a mild 
+
+regularization term (details in Sections 2.3 and 2.4). During inference, the same pipeline 8
+
+operates using only the sensor measurements and their locations for a given day 𝑡 , and 
+
+returns both 𝝁 ̂ 𝑡 and 𝝈 ̂𝑡 over the entire temperature grid.   
+
+> Fig. 1Method -centric pipeline for uncertainty -aware temperature field reconstruction from
+> sparse sensors, including sparse observation encoding, spatial graph construction, GAT -based
+> reconstruction, dual mean/uncertainty outputs, an d downstream probabilistic mapping.
+
+It is important to emphasize that the proposed framework is method -centric, in the sense 
+
+that it specifies how sparse temperature observations are transformed into full -field 
+
+predictions and uncertainty estimates. The ap plication -specific evaluation protocol, 
+
+including the temporal train/test split, comparisons with IDW and kriging baselines, and 
+
+the use of uncertainty for decision -relevant exceedance mapping, is introduced later in 
+
+the application and experimental sectio ns. Similarly, sensor placement under a
+
+minimum -distance constraint is treated as a dedicated methodology component (Section 
+
+2.5) and is then evaluated in the application section through comparisons with alternative 
+
+placement strategies. 
+
+2.3 Graph neural n etwork for temperature field reconstruction 
+
+2.3.1 Graph construction for the temperature domain 
+
+Let {𝑥 𝑖 }𝑖 =1 
+
+> 𝑁
+
+, with 𝑥 𝑖 = (𝜆 𝑖 , 𝜙 𝑖 ), denote the longitude -latitude coordinates of the 𝑁 valid grid 
+
+nodes retained after masking invalid pixels. These nodes d efine the vertex set: 
+
+𝒱 = {1,2, … 𝑁 } (5) 
+
+A spatial graph 𝒢 = (𝒱 , ℰ) is constructed using a k -nearest -neighbor (kNN) rule in 
+
+geographic coordinate space. For each node 𝑖 , directed edges are created from its 𝐾 
+
+nearest neighbors (measured in the coordinate embedding used by the implementation), 9
+
+and the graph is then symmetrized to obtain an undirected adjacency. The resulting 
+
+graph captures local spatial continuity in temperature fields while remaining compatibl e
+
+with irregular masks of valid nodes. To facilitate global information exchange (e.g., day -
+
+level temperature regime information that may not propagate efficiently through strictly 
+
+local message passing), the graph is augmented with an additional global no de 𝑔 . The 
+
+augmented vertex set is: 
+
+𝒱 ̃ = 𝒱 ∪ {𝑔 } (6) 
+
+and bidirectional edges are added between the global node and every physical node (i.e., 
+
+(𝑖 , 𝑔 ) ∈ ℰ̃ , (𝑔 , 𝑖 ) ∈ ℰ̃ , ∀𝑖 ∈ 𝒱 ). The final graph used by the network is therefore 𝒢 ̃ = (𝒱 ̃ , ℰ̃ ).
+
+2.3.2 Node features and sparse observation encoding 
+
+For a given day 𝑡 , let 𝑆 𝑡 ⊂ 𝒱 denote the set of observed sensor nodes, with |𝑆 𝑡 | = 𝑚 . The 
+
+observed temperatures are {𝓎 𝑡 ,𝑖 }𝑖 ∈𝑆 𝑡 
+
+. To encode sparse observations on the full graph, we 
+
+define a binary mask: 
+
+𝑚 𝑡 ,𝑖 = {1, 𝑖 ∈ 𝑆 𝑡 
+
+0, 𝑖 ∉ 𝑆 𝑡 
+
+𝑖 ∈ 𝒱 (7) 
+
+A direct embedding of sparse temperature measurements into a full -length vector is 
+
+insufficient because unobserved nodes would be ambiguous (e.g., a placeholder value 
+
+could be mistaken for a physical measurement). Therefore, the model uses both a value 
+
+channel and a mask channel. To improve robustness across days with different mean 
+
+temperature levels and amplitudes, the observed temperatures are no rmalized using 
+
+sensor -wise day statistics 𝓎 ̅𝑡 ,𝑆 𝑡 = 1 
+
+> 𝑚
+
+∑ 𝓎 𝑡 ,𝑖 𝑖 ∈𝑆 𝑡 and 𝑠 𝑡 ,𝑆 𝑡 = √ 1 
+
+> 𝑚 −1
+
+∑ (𝓎 𝑡 ,𝑖 − 𝓎 ̅𝑡 ,𝑆 𝑡 )2 
+
+> 𝑖 ∈𝑆 𝑡
+
+with a 
+
+lower bound applied to 𝑠 𝑡 ,𝑆 𝑡 in implementation to prevent numerical instability on low -
+
+variance days. The normalized sparse input is then defined as: 
+
+𝑧 𝑡 ,𝑖 = { 
+
+> 𝓎 𝑡 ,𝑖 −𝓎 ̅𝑡 ,𝑆 𝑡
+> 𝑠 𝑡 ,𝑆 𝑡
+
+, 𝑖 ∈ 𝑆 𝑡 
+
+0, 𝑖 ∉ 𝑆 𝑡 
+
+(8) 
+
+In addition to the sparse temperature and mask channels, the model receives spatial 
+
+positional information through a Fourier feature encoding of node coordinates. Let 𝐩 𝑖 ∈
+
+ℝ2 denote the normalized coordinates of node 𝑖 . A Fourier mapping 𝛾 (𝐩 𝑖 ) ∈ ℝ𝑑 𝛾 is used 
+
+to represent spatial position: 
+
+𝛾 (𝐩 𝑖 ) = [sin (2𝜋 𝐁 T𝐩 𝑖 ) , cos (2𝜋 𝐁 T𝐩 𝑖 )] (9) 10 
+
+where 𝐁 is a fixed random projection matrix (sampled once and kept fixed). A binary 
+
+indicator 𝛿 𝑖 is also included to distinguish physical nodes from the added global node 𝑔 ,
+
+defined as :
+
+𝛿 𝑖 = {0, 𝑖 ∈ 𝒱 
+
+1, 𝑖 = 𝑔 (10) 
+
+The input feature vector for each node in the augmented graph is thus: 
+
+𝐡 𝑡 ,𝑖  
+
+> (0)
+
+= [𝑧 𝑡 ,𝑖 , 𝑚 𝑡 ,𝑖 , 𝛾 (𝐩 𝑖 ), 𝛿 𝑖 ], 𝑖 ∈ 𝒱 ̃ (11) 
+
+with the convention that the global node receives 𝑧 𝑡 ,𝑔 = 0 and 𝑚 𝑡 ,𝑔 = 0. These feat ures 
+
+are linearly projected to the hidden dimension before graph message passing. 
+
+2.3.3 Mean -residual GAT reconstruction model 
+
+The reconstruction backbone is a multi -layer graph attention network (GAT) -type 
+
+architecture with residual connections and normal ization. Let 𝐡 𝑡 ,𝑖  
+
+> (ℓ)
+
+∈ ℝ𝑑 ℎ denote s the 
+
+hidden representation of node 𝑖 at layer ℓ. At each layer, node features are updated by 
+
+aggregating messages from neighboring nodes in 𝒢 ̃ using learned attention weights: 
+
+𝐡 𝑡 ,𝑖  
+
+> (ℓ+1)
+
+= 𝐡 𝑡 ,𝑖  
+
+> (ℓ)
+
++ ℱ(ℓ) (𝐡 𝑡 ,𝑖 
+
+> (ℓ)
+
+, {𝐡 𝑡 ,𝑖 
+
+> (ℓ)
+
+: 𝑗 ∈ 𝒩 (𝑖 )}) (12) 
+
+where 𝒩 (𝑖 ) denotes the neighbors of node 𝑖 , and ℱ(ℓ)(. ) represents the attention -based 
+
+message passing block (including linear projections, multi -head attention aggregation, 
+
+nonlinearity, and dropout). Layer normalization is applie d within each block to stabilize 
+
+training. The network predicts the normalized residual temperature field rather than the 
+
+absolute temperature field directly. Specifically, the mean branch outputs 𝑟 ̂𝑡 ,𝑖 ∈ ℝ with 
+
+𝑖 ∈ 𝒱 , which is interpreted as a residual in the normalized space defined by 𝓎 ̅𝑡 ,𝑆 𝑡 and 𝑠 𝑡 ,𝑆 𝑡 .
+
+The reconstructed temperature mean s in physical units (℃) is obtained by de -
+
+normalization: 
+
+𝜇 ̂ 𝑡 ,𝑖 = 𝓎 ̅𝑡 ,𝑆 𝑡 + 𝑠 𝑡 ,𝑆 𝑡 𝑟 ̂𝑡 ,𝑖 , 𝑖 ∈ 𝒱 (13) 
+
+This mean -residual parameterization is particularly important in the present temperature 
+
+reconstruction setting because daily temperature fields can vary substantially in mean 
+
+level across seasons and synoptic regimes, and centering by 𝓎 ̅𝑡 ,𝑆 𝑡 removes mu ch of this 
+
+global variability from the learning task. In addition, scaling by 𝑠 𝑡 ,𝑆 𝑡 normalizes the 
+
+amplitude of spatial contrasts and gradients, making them easier to learn and reducing 
+
+optimization sensitivity to warm versus cold days. Finally, the fo rmulation ensures 11 
+
+consistency with sparse observations by conditioning the reconstruction on observed 
+
+sensor statistics, so that the model focuses on learning spatial structure rather than 
+
+reconstructing absolute levels from scratch. The uncertainty branch is built on the same 
+
+graph backbone and is introduced in Section 2.4, where the heteroscedastic predictive 
+
+variance and the corresponding likelihood -based training formulation are defined. 
+
+2. 4 Uncertainty quantification 
+
+In addition to reconstructing the mean temperature field, the proposed model provides 
+
+a node -wise predictive uncertainty estimate for the daily temperature field conditioned 
+
+on sparse observations. This is essential in the present problem because reconstruction 
+
+quality is spatially nonuniform: uncertainty generally depends on the sensor 
+
+configuration, the local spatial context, and the day -specific temperature pattern. 
+
+Accordingly, we adopt a heteroscedastic formulation in which the predictive variance 
+
+varies across nodes and days. 
+
+Let 𝜇 ̂ 𝑡 ,𝑖 denote s the reconstructed mean temperature at node 𝑖 ∈ 𝒱 on day 𝑡 , as defined in 
+
+Section 2.3.3. The uncertainty branch of the network predicts a scalar quantity for each 
+
+node that is interpreted as the log -variance in the normalized residual space. Denoting 
+
+this output by ℓ̂ 𝑡 ,𝑖 
+
+> (𝑛 )
+
+, the corresponding predictive variance in physical units ( ℃2) is 
+
+obtained through the same sensor -based scaling used in the mean -residual 
+
+reconstruction: 
+
+log 𝜎 ̂𝑡 ,𝑖  
+
+> 2
+
+= ℓ̂ 𝑡 ,𝑖  
+
+> (𝑛 )
+
++ 2 log 𝑠 𝑡 ,𝑆 𝑡 , 𝑖 ∈ 𝒱 (14) 
+
+where 𝑠 𝑡 ,𝑆 𝑡 is the standard deviation of the observed sensor temperatures for day 𝑡 
+
+(Section 2.3.2). The predictive standard deviation is then: 
+
+𝜎 ̂𝑡 ,𝑖 = exp (1 
+
+> 2
+
+log 𝜎 ̂𝑡 ,𝑖  
+
+> 2
+
+) (15) 
+
+This parameterization ensures positivity of the variance while preserving c onsistency 
+
+with the mean -residual normalization. Given sparse observations (𝒚 𝑡 ,𝑆 𝑡 , 𝑆 𝑡 ), the 
+
+temperature at each unobserved node 𝑖 ∈ 𝑆 ̅𝑡 is modeled as a Gaussian random variable: 
+
+𝓎 𝑡 ,𝑖 |𝒚 𝑡 ,𝑆 𝑡 , 𝑆 𝑡 ~𝒩 (𝜇 ̂ 𝑡 ,𝑖 , 𝜎 ̂𝑡 ,𝑖  
+
+> 2
+
+) (16) 
+
+This conditional Gaussian assumption yields a tractable likelihood and directly supports 
+
+prediction intervals and exceedance probabilities in the application section. It also 
+
+provides a principled mechanism for balancing reconstruction error against predictive 
+
+sharpness: o verconfident predictions are penalized through the likelihood when errors 12 
+
+are large, while excessively diffuse predictions are penalized through the log -variance 
+
+term. 
+
+Because the values at sensor nodes are given as inputs, training and evaluation should 
+
+focus on the unobserved portion of the field. Let 𝑆 ̅𝑡 = 𝒱 \𝑆 𝑡 denote the set of missing nodes 
+
+on day 𝑡 . The heteroscedastic Gaussian negative log -likelihood (NLL) for one day is 
+
+written as: 
+
+ℒNLL  
+
+> (𝑡 )
+
+= 1 
+
+> |𝑆 ̅𝑡 |
+
+∑ 1 
+
+> 2
+
+[log (2𝜋 ) + log 𝜎 ̂𝑡 ,𝑖  
+
+> 2
+
++ (𝓎 𝑡 ,𝑖 −𝜇 ̂ 𝑡 ,𝑖 )2 
+
+> 𝜎 ̂𝑡 ,𝑖
+> 2
+
+]𝑖 ∈𝑆 ̅𝑡 (17) 
+
+The total data -fit term over a training set 𝔗 train is then: 
+
+ℒNLL = 1 
+
+> |𝔗 train |
+
+∑ ℒNLL  
+
+> (𝑡 )
+> 𝑡 ∈𝔗 train
+
+(18) 
+
+To ensure stable optimization, the predicted log -variance is bounded in implementation 
+
+within a finite interval ℓ̂ 𝑡 ,𝑖  
+
+> (𝑛 )
+
+∈ [ℓmin , ℓmax ] before de -normalization. This prevents 
+
+pathological variance collapse (𝜎 ̂𝑡 ,𝑖 ⟶ 0) or unrealistically large variances during 
+
+training. A small positive floor may also be applied to 𝜎 ̂𝑡 ,𝑖 during inference to avoid 
+
+numerical singularities in downstream cal culations (e.g., exceedance probabilities). In 
+
+addition to the likelihood term, a mild spatial regularization is applied to the 
+
+reconstructed mean field to discourage spurious high -frequency artifacts on the graph. 
+
+Let ℰ𝑔𝑟𝑖𝑑 denote s the set of edges am ong physical nodes (excluding the global node). A 
+
+graph -Laplacian -type smoothness penalty is defined as: 
+
+ℒsmooth  
+
+> (𝑡 )
+
+= 1 
+
+> |ℰ𝑔𝑟𝑖𝑑 |
+
+∑ (𝜇 ̂ 𝑡 ,𝑖 − 𝜇 ̂ 𝑡 ,𝑗 )2 
+
+> (𝑖 ,𝑗 )∈ℰ𝑔𝑟𝑖𝑑
+
+(19) 
+
+The total training objective is: 
+
+ℒtrain = ℒNLL + 𝜆 smooth ℒsmooth (20) 
+
+where 𝜆 smooth is a smal l coefficient chosen so that the likelihood term remains dominant. 
+
+In this work, the smoothness penalty is used only to regularize the mean reconstruction 
+
+and does not directly constrain the uncertainty field. 
+
+The predicted standard deviation 𝜎 ̂𝑡 ,𝑖 shoul d be interpreted as a conditional predictive 
+
+uncertainty associated with the reconstructed temperature at node 𝑖 , given the sparse 
+
+sensor observations and the trained model. In the present formulation, this uncertainty 
+
+is learned through the heteroscedast ic likelihood and is therefore primarily aimed at 
+
+improving predictive calibration and supporting uncertainty -aware decision products. 13 
+
+Its practical quality is assessed in the application section using reliability diagnostics 
+
+(coverage, CRPS, and NLL) on t emporally held -out data. 
+
+2.5 Sensor placement under distance constraints 
+
+The reconstruction framework introduced in Sections 2.3 -2.4 operates for any admissible 
+
+set of sensor locations 𝑆 𝑡 . However, in practical deployments, sensor locations are not 
+
+arbitrary: they are selected under operational, spatial, and budget constraint s. In the 
+
+present study, we focus on the minimum inter -sensor distance constraint, which prevents 
+
+overly clustered deployments and promotes spatial coverage. Within this constrained 
+
+setting, we adopt a POD -QR -based placement strategy to select informative sensor 
+
+locations from the temperature field dynamics observed during the training period. 
+
+2.5.1 Minimum -distance feasibility constraint 
+
+Let 𝑑 (𝑖 , 𝑗 ) denote s the geographic distance (in km) between nodes 𝑖 and 𝑗 , computed from 
+
+their latitude –longitude coordinates using a great -circle distance formula (Haversine 
+
+distance in implementation). The placement is considered feasible if 𝑑 (𝑖 , 𝑗 ) ≥ 𝑑 𝑚𝑖𝑛 , ∀𝑖 , 𝑗 ∈
+
+𝑆 , 𝑖 ≠ 𝑗 . This constraint serves two purposes. First, it re flects practical deployment 
+
+considerations by avoiding redundant colocated sensors. Second, it imposes a physically 
+
+meaningful lower bound on spacing, thereby facilitating fair comparisons among 
+
+placement strategies at a fixed sensor budget 𝑚 . If the requ ested 𝑚 is incompatible with 
+
+the domain size and 𝑑 𝑚𝑖𝑛 , the feasible set may be reduced; in practice, this is handled by 
+
+feasibility screening during the greedy selection process. 
+
+2.5.2 POD basis construction 
+
+To select informative locations, we exploit the dominant spatial structure of the 
+
+temperature field using Proper Orthogonal Decomposition (POD), computed on the 
+
+training period to avoid temporal information leakage. Let 𝔗 train denote the set of 
+
+training days, and let 𝒚 𝑡 ∈ ℝ𝑁 denote the full tempe rature field vector at day 𝑡 . We 
+
+assemble the temperature snapshot matrix 𝐘 train = [𝒚 𝑡 1 
+
+> T
+
+, 𝒚 𝑡 2 
+
+> T
+
+, … , 𝒚 𝑡 𝑛 𝑡𝑟  
+
+> T
+
+] ∈ ℝ𝑛 𝑡𝑟 ×𝑁 , with 𝑡 𝑘 ∈
+
+𝔗 train , where 𝑛 𝑡𝑟 = |𝔗 train |. A temporal mean is removed prior to decomposition so that 
+
+the POD basis captures dominant spatial variability rather than only the climatological 
+
+mean field 𝐘 ̃train = 𝐘 train − 𝟏 𝒚 ̅ 𝑇 with 𝒚 ̅ ∈ ℝ𝑁 the training -period mean across time and 𝟏 ∈
+
+ℝ𝑛 𝑡𝑟 a vector of ones. An economy -size singular value decomposition is then performed: 
+
+𝐘 ̃train = 𝐔 𝚺 𝐕 T (21) 14 
+
+The leading 𝑟 right singular vectors (columns of 𝐕 ) define the retained POD basis 𝚽 =
+
+[𝜙 1, 𝜙 2, … , 𝜙 𝑟 ] ∈ ℝ𝑁 ×𝑟 , where 𝑟 is the retained POD rank. The rows of 𝚽 encode how 
+
+strongly each candidate sensor location participates in the dominant temperature modes. 
+
+This makes 𝚽 a natural matrix for selecting locations that are informative for 
+
+reconstructing the principal spatial dynamics of the temperature field. 
+
+2.5.3 Constraint -aware POD –QR sensor selection 
+
+In the unconstrained setting, POD -based sensor placement is commonly performed by 
+
+QR factorization with column pivoting applied to a matrix derived from 𝚽 (or 
+
+equivalently by greedy maximization of linear independ ence among selected 
+
+measurement rows). Here, we adapt this idea to enforce the minimum -distance feasibility 
+
+constraint. 
+
+Let 𝚽 𝑖 ,: ∈ ℝ𝑟 denote the 𝑖 -th row of the POD basis matrix 𝚽 , corresponding to node 𝑖 . The 
+
+goal is to select a set of rows (sensor locations) that are both: 1) informative (highly 
+
+representative and linearly independent in the POD space), and 2) feasible under the 
+
+spacing constraint. We adopt a greedy constrained selection procedure. At iteration 𝑘 , let 
+
+𝑆 (𝑘 −1) denote the se t of already selected nodes. The candidate set is restricted to nodes 
+
+that satisfy the distance constraint with respect to all previously selected sensors 𝒞 (𝑘 ) =
+
+{𝑖 ∈ 𝒱 \𝑆 (𝑘 −1): 𝑑 (𝑖 , 𝑗 ) ≥ 𝑑 𝑚𝑖𝑛 , ∀𝑗 ∈ 𝑆 (𝑘 −1)}. Among feasible candidates, the next sensor is 
+
+chosen to maximize a POD -space informativeness criterion consistent with pivoted -QR 
+
+selection, i.e., preference is given to rows that contribute maximal new information 
+
+relative to the span of previously selected rows. In implementation, this is achieved 
+
+th rough a greedy residual -based row selection equivalent to a constrained pivoted -QR 
+
+strategy. The process is repeated until 𝑚 sensors are selected or no feasible candidates 
+
+remain. If no feasible candidate exists before reaching 𝑚 , the algorithm terminate s early 
+
+and returns the feasible subset found so far. This behavior is explicitly reported when it 
+
+occurs, since it reflects the interaction between domain geometry, sensor budget, and 
+
+spacing constraint rather than a failure of the reconstruction model. 
+
+The placement strategy determines the sensor set 𝑆 used to generate sparse observations 
+
+for field reconstruction. Once 𝑆 is selected, the graph neural reconstruction model and 
+
+uncertainty quantification framework (Sections 2.3 –2.4) operate s exactly as def ined, with 
+
+no change in architecture or loss function. This separation is deliberate: it allows the 
+
+reconstruction model and the placement strategy to be evaluated independently and 
+
+jointly. In the application section, the proposed POD –QR placement is comp ared against 
+
+alternative strategies (including random feasible placement and farthest -point sampling) 
+
+under the same constraint and sensor budget. This enables a direct assessment of how 15 
+
+sensor placement quality influences both reconstruction accuracy and uncertainty -aware 
+
+temperature mapping. 
+
+3. Application and Results 
+
+3.1 Study domain, dataset, and experimental protocol 
+
+The proposed framework is evaluated for daily maximum near -surface air temperature 
+
+field reconstruction over a Montréal -area polygonal domain using gridded 
+
+meteorological data from Daymet Version 4 R1 (v4.1)  (Thornton et al., 2022) . Daymet 
+
+provides daily surface weather estimates on a 1 km × 1 km grid in CF -compliant NetCDF 
+
+format for North America and other supported regions, including daily maximum and 
+
+minimum temperature s, precipitation, shortwave radiation, vapor pressure, snow water 
+
+equivalent, and day length. In the present study, only the daily maximum temperature 
+
+variable (𝑡 𝑚𝑎𝑥 , in ℃) is used. The selected Daymet product is particularly suitable for this 
+
+application because it provides spatially continuous daily fields at a resolution 
+
+compatible with urban - to regional -scale temperature mapping. 
+
+Fr om the Daymet 𝑡 𝑚𝑎𝑥 product, we extracted a Montr eal polygon subset covering the 
+
+period 1 January 2020 to 31 December 2024 at daily resolution. This yields 1825 daily 
+
+snapshots (including leap years 2020 and 2024). The cropped domain is represented on a 
+
+raw grid of 42 × 34 cells. Because the polygon mask excludes cells outside the study area, 
+
+only valid cells are retained for reconstruction. To avoid temporal inconsistencies, a time -
+
+consistent valid mask is constructed by retaining only grid cells with f inite values at all 
+
+timesteps in the 2020 –2024 record. After masking, the domain contains 𝑁 = 566 valid 
+
+nodes, and each daily temperature field is represented as a vector 𝐲 𝑡 ∈ ℝ566 . This 
+
+vectorized representation is used throughout the reconstruction, basel ine comparison, 
+
+and uncertainty analyses in Sections 3.2 –3.5. 
+
+The experimental protocol follows a strict temporal hold -out design to assess 
+
+generalization across time. Specifically, the data are split into a training period (2020 –
+
+2023) and a test period (2 024). The graph neural network (GNN) reconstruction model 
+
+introduced in Section 2 is trained exclusively on the 2020 –2023 subset, while all 
+
+quantitative results reported in this section are computed on the 2024 hold -out set. To 
+
+prevent information leakage in sensor placement, the POD basis used by the POD –QR 
+
+placement strategy (Section 2.5) is also computed using the training period only. This 
+
+separation is enforced consistently for reconstruction training, sensor placement 
+
+construction, and uncertainty eva luation. 16 
+
+Sensor network design is evaluated under a minimum inter -sensor spacing constraint of 
+
+4 km (Haversine distance), reflecting a practical deployment requirement that 
+
+discourages clustered measurements. Four sensor budgets are considered 𝑚 ∈
+
+{10 ,20 ,30 ,40 }. For each budget, three placement strategies are compared: (i) random 
+
+feasible placement (multiple seeds), (ii) farthest -point sampling (maximin coverage 
+
+under the same spacing constraint), and (iii) constraint -aware POD –QR placement based 
+
+on training -period temperature modes. Figure 2 illustrates representative layouts for 
+
+these strategies at a fixed budget. Because the spacing constraint may limit the achievable 
+
+number of sensors for some strategies and budgets, the actual selected count is tracked 
+
+and reported during benchmarking.   
+
+> Fig. 2Representative sensor layouts under the 4 km minimum -spacing constraint
+
+The reconstruction performance of the proposed uncertainty -aware GNN is compared 
+
+against two classical interpolation baselines: inverse distance weighting (IDW) and 
+
+ordinary kriging. In the implementation used for this study, IDW uses a fixed distance -
+
+power exponent, and kriging is implemented as ordinary kriging with an exponential 
+
+variogram mode l. The comparison is intentionally performed under identical sensor sets 
+
+so that differences in performance reflect the reconstruction method rather than the 
+
+sensor placement. In Sections 3.2 and 3.4, results are reported both across sensor budgets 
+
+and acr oss placement strategies to isolate these two effects. 
+
+All quantitative metrics are computed on the unobserved (missing) nodes only, i.e., 
+
+excluding sensor locations provided to the reconstruction model or interpolation 
+
+baseline. The evaluation metrics inc lude: (i) RMSE and MAE for deterministic 
+
+reconstruction accuracy; (ii) negative log -likelihood (NLL) and continuous ranked 
+
+probability score (CRPS) for probabilistic performance where uncertainty is available; 
+
+(iii) empirical coverage at nominal 50%, 80%, 90%, and 95% prediction intervals together 
+
+with reliability diagrams; and (iv) a Brier score for exceedance -probability evaluation in 17 
+
+the decision -oriented mapping examples (Section 3.5). The corresponding comparative 
+
+results are presented in the reconstru ction accuracy plots and tables (Section 3.2), sensor -
+
+placement analyses (Section 3.3), uncertainty and calibration results (Section 3.4), and 
+
+qualitative reconstruction/exceedance maps (Section 3.5). 
+
+3.2 Reconstruction accuracy 
+
+This subsection evaluates the deterministic reconstruction accuracy of the proposed 
+
+uncertainty -aware GNN against two classical interpolation baselines, IDW and ordinary 
+
+kriging, under a controlled sensor configuration. To isolate the effect of the reconst ruction 
+
+model (rather than the sensor layout), all three methods are first compared using the 
+
+same sensor sets generated by the POD+QR placement strategy under the 4 km spacing 
+
+constraint (Section 2.5). All metrics are computed on the unobserved nodes only in the 
+
+2024 hold -out period. Figure 3 shows a consistent ranking across all tested budgets ( 𝑚 ∈
+
+{10 ,20 ,30 ,40 }): the proposed GNN yields the lowest reconstruction error, followed by 
+
+IDW, while kriging exhibits the largest error in the present configuration. T his ordering 
+
+is observed for both RMSE and MAE, indicating that the improvement is not limited to a 
+
+specific error metric or sensitivity to outliers. The corresponding values summarized in 
+
+Table 1 confirm the same trend quantitatively.   
+
+> Fig. 3Reconstruction accuracy under POD+QR placement
+
+A first notable result is the strong sensitivity of reconstruction error to sensor budget for 
+
+the proposed GNN. Under POD+QR placement, the GNN RMSE decreases markedly as 
+
+the number of sensors increases, with a large reduction between 𝑚 = 10 and 𝑚 = 20 ,
+
+foll owed by additional gains up to 𝑚 = 30 . The same behavior is visible in MAE. In 18 
+
+contrast, both IDW and kriging improve more modestly with increasing sensor count and 
+
+remain substantially less accurate than the GNN at all budgets. In the current results, the 
+
+GNN reaches low -error reconstructions already around 𝑚 = 30 , whereas IDW and 
+
+kriging remain in a significantly higher error regime, particularly for RMSE. This trend 
+
+is consistent with the qualitative reconstruction maps presented later in Section 3.5, 
+
+wher e the GNN better preserves the spatial temperature structure while limiting local 
+
+reconstruction errors. 
+
+A second important observation is the emergence of diminishing returns beyond 
+
+approximately 30 sensors. For the GNN, the gain from 𝑚 = 30 to 𝑚 = 40 is mu ch smaller 
+
+than the gain from 𝑚 = 10 to 𝑚 = 20 , suggesting that the reconstruction problem is 
+
+already well constrained near the 𝑚 ≈ 30 regime for the present domain and spacing 
+
+constraint. This plateau effect is visible in both RMSE and MAE and provides an 
+
+op erationally relevant insight: increasing sensor density beyond this range may yield 
+
+only marginal improvements in deterministic reconstruction accuracy. A similar 
+
+flattening is also visible for the baseline methods, although at a much higher absolute 
+
+error level. In the present results, this behavior is interpreted as a diminishing -returns 
+
+regime, where once the domain becomes sufficiently constrained by the available 
+
+observations, adding more sensors yields only marginal additional gains in 
+
+reconstruction accuracy. Under the present domain geometry and 4 km spacing 
+
+constraint, this practical saturation appears around 𝑚 ≈ 30 .
+
+The gap between the GNN and the classical interpolators becomes especially pronounced 
+
+at moderate and high sensor budgets. This is a m eaningful result from a methodological 
+
+standpoint. IDW relies on a fixed distance -based weighting rule and cannot adapt to day -
+
+specific spatial patterns beyond geometric proximity. Ordinary kriging, while 
+
+statistically principled, remains tied to a prescri bed covariance/variogram structure and 
+
+may be limited in the presence of non -stationarity, trend effects, or spatial behaviors that 
+
+are not well captured by the selected variogram model. By contrast, the proposed GNN 
+
+learns a nonlinear mapping from sparse observations to the full field while explicitly 
+
+exploiting graph connectivity and positional encoding, which appears to translate into 
+
+superior temperature reconstruction on the temporally held -out year. 
+
+The standard deviations reported in Table 1 and illustrated in figure 3 indicate that 
+
+variability across test days is non -negligible, as expected for daily temperature fields 
+
+spanning different seasons and synoptic conditions. Nevertheless, the separation 
+
+between the GNN and the two baselines remains robust relative to this day -to -day 
+
+variability. In other words, the observed ranking is not driven by a small subset of 19 
+
+favorable days, but is persistent across the tested 2024 conditions. Overall, the results in 
+
+Fig. 3 and Table 1 demonstrate that the pr oposed graph -based reconstruction framework 
+
+provides a clear deterministic accuracy advantage over IDW and ordinary kriging across 
+
+all tested sensor budgets under the same placement strategy. This establishes the 
+
+proposed GNN as the strongest reconstructio n method among the compared approaches 
+
+before examining, in Section 3.3, how the choice of sensor placement strategy further 
+
+affects performance under the 4 km spacing constraint. 
+
+Table 1 RMSE and MAE on unobserved nodes for the 202 4 test set under the 4 km spacing 
+
+constraint (mean ± standard deviation across days), comparing the proposed GNN, IDW, 
+
+and kriging across sensor budgets and placement strategies. 
+
+placement  budget  GNN 
+
+RMSE 
+
+GNN 
+
+MAE 
+
+IDW 
+
+RMSE 
+
+IDW 
+
+MAE 
+
+Kriging 
+
+RMSE 
+
+Kriging 
+
+MAE 
+
+POD+QR 
+
+10  0.117 ± 
+
+0.062 
+
+0.084 ± 
+
+0.044 
+
+0.161 ± 
+
+0.074 
+
+0.112 ± 
+
+0.051 
+
+0.170 ± 
+
+0.087 
+
+0.127 ± 
+
+0.067 
+
+20  0.058 ± 
+
+0.028 
+
+0.042 ± 
+
+0.019 
+
+0.107 ± 
+
+0.046 
+
+0.075 ± 
+
+0.032 
+
+0.130 ± 
+
+0.076 
+
+0.093 ± 
+
+0.057 
+
+30  0.031 ± 
+
+0.014 
+
+0.022 ± 
+
+0.009 
+
+0.090 ± 
+
+0.039 
+
+0.062 ± 
+
+0.027 
+
+0.113 ± 
+
+0.075 
+
+0.078 ± 
+
+0.053 
+
+40  0.029 ± 
+
+0.013 
+
+0.021 ± 
+
+0.009 
+
+0.091 ± 
+
+0.040 
+
+0.061 ± 
+
+0.027 
+
+0.112 ± 
+
+0.075 
+
+0.075 ± 
+
+0.053 
+
+Random 
+
+10  0.102 ± 
+
+0.060 
+
+0.068 ± 
+
+0.039 
+
+0.152 ± 
+
+0.068 
+
+0.099 ± 
+
+0.045 
+
+0.150 ± 
+
+0.070 
+
+0.099 ± 
+
+0.047 
+
+20  0.047 ± 
+
+0.025 
+
+0.031 ± 
+
+0.015 
+
+0.130 ± 
+
+0.058 
+
+0.081 ± 
+
+0.035 
+
+0.120 ± 
+
+0.062 
+
+0.072 ± 
+
+0.039 
+
+30  0.032 ± 
+
+0.017 
+
+0.021 ± 
+
+0.010 
+
+0.108 ± 
+
+0.051 
+
+0.068 ± 
+
+0.030 
+
+0.107 ± 
+
+0.065 
+
+0.065 ± 
+
+0.043 
+
+40  0.031 ± 
+
+0.017 
+
+0.021 ± 
+
+0.010 
+
+0.108 ± 
+
+0.051 
+
+0.067 ± 
+
+0.030 
+
+0.106 ± 
+
+0.065 
+
+0.065 ± 
+
+0.043 
+
+Farthest -
+
+point 
+
+10  0.128 ± 
+
+0.061 
+
+0.085 ± 
+
+0.039 
+
+0.168 ± 
+
+0.082 
+
+0.110 ± 
+
+0.051 
+
+0.166 ± 
+
+0.086 
+
+0.108 ± 
+
+0.055 
+
+20  0.038 ± 
+
+0.016 
+
+0.028 ± 
+
+0.012 
+
+0.102 ± 
+
+0.047 
+
+0.073 ± 
+
+0.034 
+
+0.138 ± 
+
+0.085 
+
+0.098 ± 
+
+0.062 
+
+30  0.030 ± 
+
+0.014 
+
+0.021 ± 
+
+0.009 
+
+0.080 ± 
+
+0.034 
+
+0.058 ± 
+
+0.025 
+
+0.113 ± 
+
+0.080 
+
+0.078 ± 
+
+0.058 
+
+40  0.030 ± 
+
+0.014 
+
+0.021 ± 
+
+0.009 
+
+0.080 ± 
+
+0.034 
+
+0.058 ± 
+
+0.025 
+
+0.113 ± 
+
+0.080 
+
+0.078 ± 
+
+0.058 20 
+
+3.3 Effect of sensor placement under spacing constraint 
+
+This subsection analyzes the influence of sensor placement strategy on reconstruction 
+
+performance under the minimum inter -sensor spacing constraint of 4 km. To isolate the 
+
+effect of placement rather than reconstruction methodology, the comparison is 
+
+performed using the proposed GNN reconstruction model while varying sensor 
+
+lo cations according to the three strategies defined in Section 2.5: random feasible 
+
+placement, farthest -point sampling, and constraint -aware POD+QR placement. All 
+
+results are computed over the 2024 hold -out period and evaluated exclusively on 
+
+unobserved node s. 
+
+Figure 4 reports RMSE and MAE versus sensor budget for the three placement strategies. 
+
+The results show that sensor placement has a clear impact on reconstruction quality, 
+
+especially at low sensor budgets, but that the magnitude and direction of this ef fect 
+
+depend on the budget regime. In particular, the differences among strategies are largest 
+
+at 𝑚 = 10 , remain noticeable at 𝑚 = 20 , and become much smaller at 𝑚 = 30 and 𝑚 =
+
+40 , where the performance curves converge.   
+
+> Fig. 4Effect of sensor placement strategy under the 4 km spacing constraint (Proposed GNN)
+
+At the lowest budget ( 𝑚 = 10 ), the random feasible placement yields the lowest average 
+
+reconstruction error in the present experiments, outperformi ng both POD+QR and 
+
+farthest -point sampling. This is an important outcome because it indicates that, under 
+
+severe sparsity and a distance -constrained domain, maximizing modal informativeness 
+
+(POD+QR) or maximizing geometric separation (farthest -point) does not automatically 
+
+guarantee the best reconstruction for the learned GNN. One plausible explanation is that 21 
+
+the GNN is trained with random ly sampled observation masks , which reduces reliance 
+
+on any single fixed sensor configurations and improves robustness to varying sparse 
+
+sensor layouts. This may favor generalization to random feasible placements, especially 
+
+when the number of sensors is too small for any strategy to resolve all dominant spatial 
+
+modes reliably. In addition, random feasible placement may occasionally produce 
+
+favorable sensor allocations with better alignment to day -specific temperature gradients 
+
+than a single deterministic design. 
+
+At the intermediate budget (𝑚 = 20 ), farthest -point sampling becomes highly 
+
+competitive and in the current results achieves the best average error. This suggests that, 
+
+once a minimum number of sensors is available, enforcing broad geometric coverage can 
+
+provide a strong advantage by reducing large unsensed regions and improving the 
+
+conditioni ng of the reconstruction problem. In contrast, POD+QR and random placement 
+
+remain close but slightly inferior on average for this budget. This behavior highlights the 
+
+trade -off between coverage -oriented design (farthest -point) and mode -informativeness -
+
+orie nted design (POD+QR), and indicates that the optimal design criterion may depend 
+
+on the available sensor budget. 
+
+For 𝑚 = 30 and 𝑚 = 40 , the three placement strategies yield very similar RMSE and MAE 
+
+values, with only small differences relative to the low -bud get regime. This convergence 
+
+indicates that the reconstruction problem becomes sufficiently constrained as sensor 
+
+density increases, so that the placement strategy exerts a weaker influence on the final 
+
+error. From an operational perspective, this is a use ful finding: under the present domain 
+
+geometry and 4 km spacing constraint, the benefit of optimizing placement decreases 
+
+once the sensor network reaches a moderate density. Combined with the plateau 
+
+observed in Section 3.2, this suggests a practical “satu ration regime” in which additional 
+
+design effort or additional sensors may produce only marginal gains. 
+
+The representative sensor layouts shown in Fig. 2 (for a fixed budget, e.g., 𝑚 = 30 ) further 
+
+clarify the geometric behavior of the compared strategies. A s expected, farthest -point 
+
+sampling emphasizes spatial spread, POD+QR emphasizes modal informativeness under 
+
+feasibility constraints, and random feasible placement produces a stochastic but 
+
+admissible distribution. The corresponding performance trends in F ig. 4 confirm that 
+
+these geometric differences matter most when the sensor budget is small, whereas at 
+
+higher budgets the domain is sufficiently sampled for the GNN to reconstruct the 
+
+temperature field accurately across all three placement strategies. It i s also important to 
+
+interpret these results in the context of the 4 km minimum -distance constraint. This 
+
+constraint limits the feasible sensor configurations and can reduce the effective difference 
+
+between strategies as the budget increases. In some cases, the feasible solution set may 
+
+become sufficiently restricted that multiple strategies produce sensor networks with 22 
+
+similar coverage characteristics, which contributes to the observed performance 
+
+convergence. For transparency, the actual number of selected sensors is tracked in the 
+
+benchmarking pipeline, enabling verification that the requested sensor budget is feasible 
+
+under each strategy and helping explain any apparent performance plateaus. 
+
+3.4 Uncertainty quantification performance and calibration 
+
+This subsection evaluates the probabilistic performance of the proposed heteroscedastic 
+
+GNN and compares it with the uncertainty estimates provided by ordinary kriging. 
+
+Kriging is used as the baseline in this subsection because, unlike standard IDW, it 
+
+provides a predictive uncertainty estimate and therefore enables direct comparison of 
+
+calibration -oriented metrics such as coverage, reliability, CRPS, and NLL. The analysis 
+
+focuses on the quality of predictive uncertainty in the 2024 hold -out period, using the 
+
+me trics introduced in Section 3.1: negative log -likelihood (NLL), continuous ranked 
+
+probability score (CRPS), and empirical coverage at nominal 50%, 80%, 90%, and 95% 
+
+prediction intervals. The uncertainty comparisons shown in the subsequent figures and 
+
+table are reported under the POD+QR placement strategy so that differences reflect 
+
+uncertainty modeling performance rather than sensor geometry. 
+
+3.4.1 Calibration behavior: reliability and empirical coverage 
+
+Figure 5 compares the reliability behavior of the GNN and kriging through nominal -
+
+versus -empirical coverage curves for multiple sensor budgets. A clear contrast emerges 
+
+between the two methods. Points on the diagonal indicate perfect calibration; curves 
+
+below the diagonal indicate under -coverage (overconfident intervals), whereas curves 
+
+above the diagonal indicate over -coverage (overly wide intervals). For the GNN, the 
+
+empirical coverage curves move progressively toward the ideal diagonal as the sensor 
+
+budget incre ases from 𝑚 = 10 to 𝑚 = 40 . At low budget ( 𝑚 = 10 ), the GNN exhibits 
+
+under -coverage, particularly at the lower nominal levels, indicating that the predictive 
+
+intervals are somewhat too narrow in the strongly sparse regime. This is consistent with 
+
+the increase d difficulty of reconstructing the field from very limited observations. As the 
+
+number of sensors increases ( 𝑚 = 20 ,30 ,40 ), the coverage curves shift upward toward 
+
+the target levels and become substantially better aligned with the diagonal. The 
+
+correspondin g coverage values in Table 2 confirm this trend: the GNN achieves near -
+
+target coverage at the upper interval levels (especially 90% and 95%) for the larger sensor 
+
+budgets, while maintaining significantly improved calibration relative to the 𝑚 = 10 
+
+case. 
+
+In contrast, the kriging reliability curves lie systematically above the diagonal across the 
+
+tested budgets, indicating persistent over -coverage (i.e., prediction intervals that are too 23 
+
+wide). This over -conservative behavior is also evident in the empirical c overage values 
+
+in Table 2, where kriging frequently exceeds the nominal target by a substantial margin, 
+
+especially at the lower nominal levels (e.g., nominal 50% intervals yielding empirical 
+
+coverage far above 0.50). From a practical standpoint, this impli es that kriging 
+
+uncertainty in the present setup is insufficiently sharp, which can reduce the 
+
+discriminative value of probabilistic outputs for downstream decision -making.   
+
+> Fig. 5Reliability diagrams under POD+QR placement
+
+3.4.2 Sharpness –calibration trade -off: CRPS and NLL 
+
+Figure 6 reports CRPS and NLL as functions of sensor budget for the GNN and kriging. 
+
+These metrics jointly assess probabilistic performance by penalizing both inaccurate 
+
+means and mis -scaled uncertainties. Lower CRPS indicates better probabilistic forecasts, 
+
+while lower NLL (more negative values in the present setting) indicates higher likelihood 
+
+assigned to the observed temperatures at unobserved nodes. 24   
+
+> Fig. 6Probabilistic performance under POD+QR placement
+
+The proposed GNN consistently achieves lower CRPS than kriging across all tested 
+
+sensor budgets. Moreover, GNN CRPS decreases steadily as the number of sensors 
+
+increases, reflec ting both improved mean reconstruction and more informative 
+
+uncertainty estimates. Kriging CRPS also improves with additional sensors, but remains 
+
+substantially higher than the GNN values throughout. This gap indicates that the 
+
+proposed model not only reco nstructs the mean more accurately as already reflected by 
+
+the lower RMSE and MAE values in Section 3.2 (Fig. 3 and Table 1), but also translates 
+
+that deterministic advantage into superior probabilistic predictions. A similar pattern is 
+
+observed for NLL. Th e GNN yields markedly lower NLL values than kriging across the 
+
+tested budgets, with performance improving as sensor density increases. Kriging NLL 
+
+decreases more slowly and remains substantially higher than the GNN values , consistent 
+
+with the over -coverage observed in the reliability analysis. In probabilistic terms, this 
+
+suggests that the kriging predictive distributions are too diffuse to achieve competitive 
+
+likelihood scores, even when their empirical coverage appears “safe” or conservative. By 
+
+contrast, the GNN achieves a better balance between calibration and sharpness, 
+
+producing predictive intervals that are both more informative and better aligned with 
+
+observed error behavior. 
+
+These trends are reinforced by the uncertainty summary statistics in Table 2, which show 
+
+coherent improvements in GNN coverage, CRPS, and NLL from 𝑚 = 10 to 𝑚 = 40 , and 
+
+systematically weaker probabilistic performance for kriging in the current 
+
+implementation .25 
+
+3.4.3 Implications for uncertainty -aware temperature mapping 
+
+The uncertainty results in Figs. 5–6 and Table 2 support two key conclusions. First, the 
+
+proposed heteroscedastic GNN provides meaningful and progressively better -calibrated 
+
+uncertainty estimat es as sensor density increases, rather than merely producing 
+
+deterministic reconstructions with heuristic confidence values. Second, the probabilistic 
+
+advantage of the GNN over kriging is not limited to a single metric: it is observed 
+
+simultaneously in rel iability behavior (coverage) and proper scoring rules (CRPS and 
+
+NLL). 
+
+This is particularly important for the decision -oriented analyses considered later in 
+
+Section 3.5, where uncertainty is used to construct exceedance probability maps. In that 
+
+context, ov er -dispersed uncertainty (as observed for kriging) can lead to overly smooth 
+
+or weakly discriminative probability fields, while under -calibrated uncertainty can yield 
+
+overconfident predictions. The results presented here indicate that the proposed GNN 
+
+offe rs a more favorable uncertainty representation for such applications, especially at 
+
+moderate to high sensor budgets where both reconstruction accuracy and calibration 
+
+improve substantially. 
+
+Table 2 Uncertainty performance on unobserved nodes for the 2024 test set under 
+
+POD+QR placement and the 4 km spacing constraint (mean ± standard deviation across 
+
+days), comparing the proposed GNN and kriging.  
+
+> Budget
+
+GNN  Kriging                  
+
+> CRPS NLL Cov50 Cov80 Cov90 Cov95 Brier CRPS NLL Cov50 Cov80 Cov90 Cov95 Brier
+> 10 0.060 ±
+> 0.031
+> -0.922
+> ± 0.578
+> 0.407
+> ±
+> 0.116
+> 0.687
+> ±
+> 0.150
+> 0.799
+> ±
+> 0.136
+> 0.867
+> ±
+> 0.115
+> 0.00093
+> ±
+> 0.01073
+> 0.116
+> ±
+> 0.052
+> -0.088
+> ± 0.516
+> 0.860
+> ±
+> 0.106
+> 0.978
+> ±
+> 0.028
+> 0.989
+> ±
+> 0.012
+> 0.993
+> ±
+> 0.007
+> 0.00158
+> ±
+> 0.01413
+> 20 0.030 ±
+> 0.014
+> -1.637
+> ± 0.468
+> 0.463
+> ±
+> 0.105
+> 0.738
+> ±
+> 0.120
+> 0.841
+> ±
+> 0.104
+> 0.900
+> ±
+> 0.085
+> 0.00032
+> ±
+> 0.00359
+> 0.088
+> ±
+> 0.041
+> -0.380
+> ± 0.531
+> 0.861
+> ±
+> 0.101
+> 0.971
+> ±
+> 0.025
+> 0.985
+> ±
+> 0.014
+> 0.990
+> ±
+> 0.009
+> 0.00108
+> ±
+> 0.01047
+> 30 0.016 ±
+> 0.007
+> -2.245
+> ± 0.400
+> 0.534
+> ±
+> 0.096
+> 0.814
+> ±
+> 0.098
+> 0.900
+> ±
+> 0.079
+> 0.943
+> ±
+> 0.060
+> 0.00014
+> ±
+> 0.00140
+> 0.075
+> ±
+> 0.036
+> -0.551
+> ± 0.555
+> 0.853
+> ±
+> 0.117
+> 0.965
+> ±
+> 0.029
+> 0.982
+> ±
+> 0.016
+> 0.988
+> ±
+> 0.010
+> 0.00083
+> ±
+> 0.00831
+> 40 0.015 ±
+> 0.007
+> -2.313
+> ± 0.411
+> 0.530
+> ±
+> 0.095
+> 0.809
+> ±
+> 0.099
+> 0.896
+> ±
+> 0.081
+> 0.941
+> ±
+> 0.063
+> 0.00014
+> ±
+> 0.00145
+> 0.073
+> ±
+> 0.036
+> -0.579
+> ± 0.558
+> 0.849
+> ±
+> 0.122
+> 0.962
+> ±
+> 0.032
+> 0.980
+> ±
+> 0.017
+> 0.987
+> ±
+> 0.012
+> 0.00077
+> ±
+> 0.00792
+
+3.5 Qualitative field reconstruction and exceedance probability mapping 
+
+This subsection complements the aggregate metrics reported in Sections 3.2 –3.4 by 
+
+examining representative heat -event reconstructions and the corresponding probabilistic 
+
+exceedance maps. The goal is to assess whether the proposed framework produces 26 
+
+spatially coherent mean and uncertainty fields on individ ual high -temperature days, and 
+
+whether these outputs translate into interpretable decision -oriented products. 
+
+Figure 7 presents qualitative temperature -field reconstruction results for the 2024 -06 -18
+
+and 2024 -06 -19 heat event using a fixed POD+QR sensor configuration with 𝑚 = 30 
+
+sensors. For each date, four maps are shown: the ground -truth field, the GNN 
+
+reconstructed mean field, the absolute error field, and the predicted standard deviation 
+
+field. The reconstructed mean fields reproduce the dominant spatial temperature 
+
+gradients and localized structures visible in the ground truth, while the absolute error 
+
+remains low over most of the domain. The error maps indicate that residual discrepancies 
+
+are spatially concentra ted rather than systematic, which is consistent with the low RMSE 
+
+and MAE values reported for the 𝑚 = 30 budget in Sections 3.2 –3.3. The predicted 
+
+standard deviation fields are spatially nonuniform and exhibit higher values in localized 
+
+regions, indicating that the model uncertainty responds to spatial reconstruction 
+
+difficulty rather than acting as a spatially constant confidence band. This behavior is 
+
+consistent with the calibration and CRPS/NLL trends discussed in Section 3.4.    
+
+> Fig. 7Qualitative temperature field reconstruction for the 2024 -06 -18/2024 -06 -219 heat event
+> (POD+QR, m=30)
+
+Figure 8 illustrates the decision -oriented use of the predicted uncertainty through 
+
+exceedance probability mapping for 2024 -06 -19 at an application -relevant threshold of 
+
+32 .5 ℃. The figure includes (a) the ground -truth exceedance indicator (binary field), (b) 27 
+
+the GNN exceedance probability map, and (c) the kriging exceedance probability map. It 
+
+is important to note that the ground -truth exceedance map is binary by definition (0 or 
+
+1), whereas the GNN and kriging maps are probabilistic estimates. Accordingly, 
+
+interm ediate probabilities are expected in regions near the exceedance boundary or in 
+
+areas of higher predictive uncertainty. The objective is therefore not visual equality with 
+
+the binary ground truth, but rather whether the probability field is spatially consi stent 
+
+with the exceedance pattern and whether it is sufficiently discriminative.    
+
+> Fig. 8Exceedance probability mapping for 2024 -06 -19 (threshold = 32.5 ℃)
+
+In the present case, the GNN exceedance probability map exhibits a spatially coherent 
+
+and relatively sharp transition between low - and high -probability regions, with 
+
+intermediate probabilities concentrated near the apparent exceedance boundary and in 
+
+local ized uncertain zones. This is consistent with the structured uncertainty fields 
+
+observed in Fig. 7 and with the improved probabilistic performance (CRPS/NLL and 
+
+calibration behavior) reported in Section 3.4. By contrast, the kriging exceedance 
+
+probability map displays a broader spread of intermediate probabilities across a larger 
+
+portion of the domain, yielding a more diffuse transition pattern. This behavior is 
+
+consistent with the over -conservative coverage tendencies observed for kriging in Fig. 7
+
+and Tab le 2, and reflects a less discriminative uncertainty representation in the current 
+
+setup. 
+
+4. Discussion 
+
+The results presented in Section 3 show that the proposed uncertainty -aware graph 
+
+neural network (GNN) provides a consistent advantage for daily tempera ture field 
+
+reconstruction under sparse sensing, while also yielding practically useful predictive 
+
+uncertainty. Beyond the metric -level comparisons, several methodological and 
+
+application -oriented implications emerge from these results. 28 
+
+A first major outcome is the robust superiority of the GNN over IDW and ordinary 
+
+kriging for deterministic reconstruction accuracy across the tested sensor budgets. This 
+
+improvement is observed in both RMSE and MAE and persists across the 2024 hold -out 
+
+period, indicatin g that the model has learned a transferable mapping rather than 
+
+overfitting to day -specific patterns in the training set. The performance gap is particularly 
+
+pronounced at moderate to high sensor budgets, where the GNN appears able to exploit 
+
+the richer ob servation patterns more effectively than the fixed -form interpolation 
+
+baselines. In the present setting, this likely reflects the ability of the graph -based model 
+
+to represent nonlinear spatial relationships and to integrate both local and global context 
+
+(through graph connectivity, positional encoding, and the global node), whereas IDW 
+
+and kriging remain constrained by geometric weighting rules or prescribed covariance 
+
+structures. 
+
+At the same time, the results also suggest that baseline performance is stro ngly 
+
+implementation - and assumption -dependent, especially for kriging. In the current 
+
+experiments, kriging underperforms both the GNN and IDW in deterministic accuracy 
+
+and exhibits over -conservative uncertainty behavior. While this does not diminish the 
+
+ob served advantage of the proposed method, it should be interpreted in light of the 
+
+chosen kriging configuration (ordinary kriging with a specified variogram model and the 
+
+coordinate handling adopted in the implementation). Temperature fields over urban 
+
+doma ins may exhibit nonstationarity, anisotropy, or trend components that are not fully 
+
+captured by a single stationary variogram model. Accordingly, the present comparison 
+
+demonstrates strong practical gains over a standard kriging setup, while also motivatin g
+
+future sensitivity analyses (e.g., variogram families, anisotropy treatment, detrending) if 
+
+one wishes to further optimize the kriging baseline. 
+
+A second important finding concerns the role of sensor placement under the 4 km 
+
+minimum -distance constraint. The results show that placement matters most in the 
+
+sparse regime, but that the ranking among placement strategies is not uniform across 
+
+budgets. In particular, random feasible placement and farthest -point sampling can 
+
+outperform constraint -aware POD+QR pl acement at low or intermediate budgets in the 
+
+present experiments, while differences shrink substantially at higher budgets. This is a 
+
+valuable result because it underscores that sensor -placement quality is not absolute: it 
+
+depends on the deployment budget , the spatial constraint set, and the downstream 
+
+reconstruction model. In other words, a placement strategy that is optimal under one 
+
+criterion (e.g., modal observability in POD space) may not remain optimal once combined 
+
+with a nonlinear learned reconstru ction model trained on random observation patterns. 
+
+The observed budget dependence therefore supports evaluating placement strategies 
+
+jointly with the intended inference model rather than treating sensor design as a method -
+
+agnostic preprocessing step. 29 
+
+The results also reveal a clear diminishing -returns regime around 𝑚 ≈ 30 sensors for the 
+
+present domain and spacing constraint. This plateau is visible in deterministic accuracy 
+
+(RMSE/MAE) and in probabilistic scores (CRPS/NLL), and is reinforced by the qualita tive 
+
+reconstruction maps in Section 3.5. From an operational perspective, this is one of the 
+
+most useful outcomes of the study: under the tested configuration, increasing the 
+
+network size beyond this range yields only marginal improvements. Such informatio n is 
+
+directly relevant for deployment planning, where sensor procurement, installation, 
+
+maintenance, and telemetry costs must be balanced against expected gains in 
+
+reconstruction quality. In this sense, the framework provides not only a reconstruction 
+
+tool but also a means to identify practical sensor -budget regimes with favorable cost –
+
+benefit characteristics. 
+
+The uncertainty analysis is another central contribution of the study. The proposed GNN 
+
+does not merely produce point estimates; it provides heterosc edastic, spatially varying 
+
+uncertainty estimates that improve in calibration as sensor density increases. The 
+
+reliability diagrams show that the GNN is under -confidently calibrated at low budget 
+
+only to a limited extent (under -coverage at small nominal int ervals), but progressively 
+
+approaches the ideal calibration line for larger budgets. This behavior is consistent with 
+
+the reconstruction task becoming better constrained as more observations are provided. 
+
+By contrast, kriging exhibits persistent over -cover age in the current setup, indicating 
+
+over -dispersed predictive distributions. The CRPS and NLL results reinforce this 
+
+interpretation by showing that the GNN attains a better sharpness –calibration trade -off 
+
+than kriging across all tested budgets. This is pa rticularly significant because proper 
+
+scoring rules penalize both overconfident and overly diffuse predictions; thus, the GNN’s 
+
+advantage reflects genuine probabilistic quality rather than simply broader intervals. 
+
+The practical value of this uncertainty modeling is illustrated in the exceedance 
+
+probability mapping examples. The key lesson from these examples is methodological as 
+
+much as visual: meaningful comparison of probabilistic exceedance maps requires 
+
+informative threshold/day combinations. All -zero or all -one exceedance cases are 
+
+mathematically valid but visually degenerate and can obscure differences among 
+
+methods. Once mixed -event cases are selected, the GNN produces more spatially 
+
+discriminative exceedance probability fields, whereas kriging -based maps tend to be 
+
+smoother and more diffuse, in line with the over -conservative behavior seen in the 
+
+reliability analysis. This strengthens the argument that uncertainty calibration is not an 
+
+abstract modeling objective; it directly affects the interpretabi lity and actionability of 
+
+downstream risk -oriented products. 
+
+Several limitations should nevertheless be acknowledged. First, the sensor observations 
+
+used in this study are virtual sensors sampled from gridded Daymet fields, rather than 30 
+
+measurements from a physical station network. This design is appropriate for controlled 
+
+benchmarking and method development, but real deployments introduce additional 
+
+challenges such as instrument noise, calibration drift, siting effects, and communication 
+
+outages. Second, th e current uncertainty formulation is based on a heteroscedastic 
+
+likelihood learned by a single model and should therefore be interpreted as conditional 
+
+predictive uncertainty within the trained model class, rather than a full decomposition of 
+
+aleatoric and epistemic uncertainty. Third, while the temporal hold -out protocol (train 
+
+2020 –2023, test 2024) is a strong test of time generalization within the same region, cross -
+
+region transferability and robustness to major domain shifts remain open questions. 
+
+These limitations also point naturally to future research directions. A next step would be 
+
+to evaluate the framework against real sensor networks and investigate domain 
+
+adaptation between gridded products and in situ observations. Another direction is to 
+
+enrich uncertainty modeling through ensembles or Monte Carlo approximations to 
+
+capture model -form uncertainty in addition to heteroscedastic predictive variance. On 
+
+the sensor design side, it would be useful to examine multi -objective placement criteria 
+
+that exp licitly trade off coverage, modal informativeness, and uncertainty reduction, 
+
+rather than optimizing a single criterion. Finally, extending the framework to jointly 
+
+reconstruct multiple meteorological variables (e.g., temperature and humidity) could 
+
+improv e applicability for thermal comfort and heat -risk assessment. 
+
+5. Conclusion 
+
+This study presented an uncertainty -aware graph neural network framework for 
+
+reconstructing daily maximum temperature fields from sparse sensor observations under 
+
+practical sensor -spacing constraints. Using a strict temporal hold -out design (train: 2020 –
+
+2023; test: 2024) on a Montreal -area Daymet subset, the proposed approach combined 
+
+graph -based reconstruction, heteroscedastic predictive uncertainty, and constraint -
+
+aware sensor pla cement analysis. The results showed that the proposed GNN 
+
+consistently outperformed IDW and ordinary kriging in deterministic reconstruction 
+
+accuracy (RMSE/MAE) across all tested sensor budgets. Sensor -placement effects were 
+
+strongest at low budgets and be came smaller at higher budgets, while a diminishing -
+
+returns regime emerged near 30 sensors under the 4 km spacing constraint. This provides 
+
+a practically useful indication of a near -saturation sensor density for the study domain. 
+
+The uncertainty analysis s howed that the GNN produced spatially varying uncertainty 
+
+estimates whose calibration improved with sensor density, and that it achieved a better 
+
+probabilistic performance (CRPS/NLL and coverage behavior) than kriging in the tested 
+
+setup. Qualitative heat -event reconstructions and exceedance probability maps further 
+
+demonstrated that the framework can provide spatially coherent temperature and 
+
+uncertainty fields for decision -oriented temperature -risk applications. Overall, the 31 
+
+proposed framework offers an e ffective approach for uncertainty -aware temperature 
+
+field reconstruction from sparse observations, while also enabling evaluation of sensor 
+
+placement strategies under deployment constraints. Future work should focus on 
+
+validation with real sensor networks, richer uncertainty modeling, and extension to 
+
+additional variables and domains. 
+
+Acknowledgment: This work was supported by the Natural Sciences and Engineering 
+
+Research Council of Canada (NSERC) [grant number s: RGPIN 2022 -03492 and RGPIN 
+
+2026 -04810 ]. 
+
+References 
+
+Abdullah Al Mamun, S. M., Lu, C., & Jayaraman, B. (2018). Extreme learning machines as 
+
+encoders for sparse reconstruction. Fluids , 3(4). Scopus. 
+
+https://doi.org/10.3390/fluids3040088 
+
+Chen, F. -W., & Liu, C. -W. (2012). Estimation of the spatial rainfall dist ribution using inverse 
+
+distance weighting (IDW) in the middle of Taiwan. Paddy and Water Environment , 10 (3), 
+
+209 –222. Scopus. https://doi.org/10.1007/s10333 -012 -0319 -1
+
+Delgado -Enales, I., Lizundia -Loyola, J., Molina -Costa, P., & Del Ser, J. (2025). A machine learning 
+
+approach for the efficient estimation of ground -level air temperature in urban areas. Urban 
+
+Climate , 61 . Scopus. https://doi.org/10.1016/j.uclim.2025.102415 
+
+Deuri, P., Nongmaithem, L., & Marchang, N. (2025). Missing Data Inference in Spatio -Temporal 
+
+Mobile Crowd Sensing Using Graph Neural Network . Scopus. 2025 IEEE Guwahati Subsection 
+
+Conference, GCON 2025. https://doi.org/10.1109/GCON65540.2025.11173307 
+
+Ding , L., Tang, Z., Zhang, L., Shen, D., Wang, C., Tao, Z., Zhou, J., Zhang, Y., & Xiong, H. (2026). 
+
+Killing Two Birds with One Stone: A Spatio -temporal Prompt for the Inductive Traffic 
+
+Extrapolation . 15987 LNCS , 181 –190. Scopus. https://doi.org/10.1007/978 -98 1-95 -3830 -0_12 
+
+Fan, Z., Li, J., & Deng, M. (2016).  An adaptive inverse -distance weighting spatial interpolation 
+
+method with the consideration of multiple factors. Wuhan Daxue Xuebao (Xinxi Kexue 
+
+Ban)/Geomatics and Information Science of Wuhan University , 41(6), 842 –847. Scopus. 
+
+https://doi.org/10.13203/j.whugis20140658 
+
+Feng, Z., Qi, K., Shi, B., Mei, H., Zheng, Q., & Wei, H. (2023). Deep evidential learning in diffusion 
+
+convolutional recurrent neural network. Electronic Research Archive , 31 (4), 2252 –2264. 
+
+Scopus. https://doi.org/10.3934/era.2023115 
+
+Fu, H., Shao, Z., Fu, P., Huang, X., Cheng, T., & Fan, Y. (2022). Combining ATC and 3D -CNN for 
+
+reconstructing spatially and temporally continuous land surface temperature. 
+
+International Journal of Applied Earth Ob servation and Geoinformation , 108 . Scopus. 
+
+https://doi.org/10.1016/j.jag.2022.102733 
+
+Gao, J., Liu, Z., Zeng, Z., Chen, L., & Cheng, Y. (2025). Research on the generation of deep -cold 
+
+environment target temperature fields based on GAT -transformer network. I n X. Li & X. 
+
+Tang (Eds.), AOPC 2025: Infrared and Terahertz Technology and Applications (p. 16). SPIE. 
+
+https://doi.org/10.1117/12.3081810 32 
+
+Gu, T., Zhang, Y., & Wang, L. (2024). TCN -BiGRU: A Hybrid Deep Learning Architecture for Enhanced 
+
+Temperature Time Ser ies Forecasting . 590 –594. Scopus. 
+
+https://doi.org/10.1109/RICAI64321.2024.10911112 
+
+Gustafsson, F. K., Danelljan, M., & Schon, T. B. (2020). Evaluating scalable bayesian deep learning 
+
+methods for robust computer vision . 2020 -June , 1289 –1298. Scopus. 
+
+https:/ /doi.org/10.1109/CVPRW50498.2020.00167 
+
+Haghbayan, S., Momeni, M., & Tashayo, B. (2025). Enhancing PM2.5 modeling with 
+
+reinforcement learning: Dynamic ensembling of multi -graph attention networks and deep 
+
+recurrent models. International Journal of Environme ntal Science and Technology , 22 (9), 7797 –
+
+7814. https://doi.org/10.1007/s13762 -024 -06317 -w
+
+He, H., Peng, J., Cai, L., Liu, W., & Huang, Z. (2026). Probabilistic Spatio -Temporal Data Inference 
+
+in Sparse Mobile Crowdsensing With Conditional Diffusion Model. IEEE Transactions on 
+
+Cognitive Communications and Networking , 12 , 5595 –5608. Scopus. 
+
+https://doi.org/10.1109/TCCN.2026.3656287 
+
+He, M., Luo, Z., Xie, X., Wang, P., Wang, H., & Zapata -Lancaster, G. (2025). Gap filling 
+
+crowdsourced air temperature data in citi es using data -driven approaches. Building and 
+
+Environment , 271 . Scopus. https://doi.org/10.1016/j.buildenv.2025.112593 
+
+Hu, J., Liang, Y., Fan, Z., Liu, L., Yin, Y., & Zimmermann, R. (2024). Decoupling Long - and Short -
+
+Term Patterns in Spatiotemporal Inferen ce. IEEE Transactions on Neural Networks and 
+
+Learning Systems , 35 (11), 16328 –16340. Scopus. 
+
+https://doi.org/10.1109/TNNLS.2023.3293814 
+
+Inagaki, Y., Shinkuma, R., Sato, T., & Oki, E. (2022). Data Importance Aware Periodic Machine 
+
+Learning Model Update for Sparse Mobile Crowdsensing . 667 –670. Scopus. 
+
+https://doi.org/10.1109/CCNC49033.2022.9700511 
+
+Just, A. C., Arfer, K. B., Rush, J., & Kloog, I. (2025). XIS -temperature: A daily spatiotemporal 
+
+machine -learning model for air temperature in the contiguous Un ited States. 
+
+Environmental Research , 270 . Scopus. https://doi.org/10.1016/j.envres.2024.120731 
+
+Khala, M., Eloutassi, O., El yanboiy, N., Elabbassi, I., Halimi, M., El Hassouani, Y., & Messaoudi, 
+
+C. (2025).  An Integrated CNN -BiLSTM Approach for Forecasting Extreme Temperature 
+
+in Southeast Morocco: Towards PV Power Plants Efficiency Optimization. Iranian Journal 
+
+of Science and Technology - Transactions of Electrical Engineering . Scopus. 
+
+https://doi.org/10.1007/s40998 -025 -00985 -1
+
+Klimenka, M., Zhao, K., Hillan d, R., Zhang, F., Voogt, J., & Ratti, C. (2025). Instant infrared: 
+
+Estimating urban surface temperatures from street view imagery. Building and 
+
+Environment , 267 . Scopus. https://doi.org/10.1016/j.buildenv.2024.112122 
+
+Li, H., Hou, L., Cui, J., Wang, Y., Tao , Y., Wang, H., Savic, D., Wang, A., & Ren, N. (2026). 
+
+Spatiotemporal Graph Learning on Urban Environments. Environmental Science and 
+
+Technology , 60 (7), 5191 –5207.  Scopus. https://doi.org/10.1021/acs.est.5c12640 
+
+Li, J., Yu, L., Duan, Y., & Zhuo, L. (2025).  Advances in graph neural network -based hyperspectral 
+
+remote sensing image classification. National Remote Sensing Bulletin , 29 (6), 1681 –1704. 
+
+Scopus. https://doi.org/10.11834/jrs.20254290 33 
+
+Liu, X., & Ren, S. (2026). Temperature field reconstruction method using bilevel difference -of -
+
+convex functions optimization and machine learning. Applied Thermal Engineering , 290 .
+
+Scopus. https://doi.org/10.1016/j.applthermaleng.2026.129981 
+
+Liu, Y., Qian, Y., Zhu, Y., Xu, W., Wei, G., Huang, J., Qiao, Y., & Ma, Q. (2025) . Spatial estimation 
+
+of large -scale soil salinity using enhanced inverse distance weighting method and 
+
+identifying its driving factors. Agricultural Water Management , 317 . Scopus. 
+
+https://doi.org/10.1016/j.agwat.2025.109645 
+
+Lopez, C., Herrmann, B., Demarco , R., & Escudero, F. (2026). Sparse Sensor Placement and 
+
+Physics Informed Neural Networks for Temperature and Velocity Fields Reconstruction 
+
+in Non -Premixed Laminar Flames. Combustion Science and Technology . Scopus. 
+
+https://doi.org/10.1080/00102202.2026.26 42891 
+
+Mo, Y., Xu, Y., Chen, H., & Zhu, S. (2021). A Review of Reconstructing Remotely Sensed Land 
+
+Surface Temperature under Cloudy Conditions. Remote Sensing , 13 (14), 2838. 
+
+https://doi.org/10.3390/rs13142838 
+
+Munikoti, S., Agarwal, D., Das, L., & Natarajan, B. (2023). A general framework for quantifying 
+
+aleatoric and epistemic uncertainty in graph neural networks. Neurocomputing , 521 , 1 –10. 
+
+Scopus. https://doi.org/10.1016/j.neucom.2022.11.049 
+
+Oláh, S., Barsi, Á., & Kozma, K. (2025). Smart Cities and Data Enrichment: The Role of LiDAR 
+
+and Point Cloud Upsampling in Sustainable Urban Management. Chemical Engineering 
+
+Transactions , 121 , 97 –102. Scopus. https://doi.org/10.3303/CET25121017 
+
+Ozelkan, E., Bagis, S., Ustundag, B. B., Yucel, M., Ozelkan, E. C., & Ormeci, C. (2013). Land surface 
+
+temperature —Based spatial interpolation using a modified inverse distance weighting method .
+
+110 –115. Scopus. https://d oi.org/10.1109/Argo -Geoinformatics.2013.6621890 
+
+Patel, P., Kalyanam, R., He, L., Aliaga, D., & Niyogi, D. (2023). Deep learning -based urban 
+
+morphology for city -scale environmental modeling.  PNAS Nexus , 2(3). Scopus. 
+
+https://doi.org/10.1093/pnasnexus/pgad02 7
+
+Qiao, P., Lei, M., Yang, S., Yang, J., Guo, G., & Zhou, X. (2018).  Comparing ordinary kriging and 
+
+inverse distance weighting for soil as pollution in Beijing. Environmental Science and 
+
+Pollution Research , 25 (16), 15597 –15608. Scopus. https://doi.org/10.1 007/s11356 -018 -1552 -y
+
+Scalia, G., Grambow, C. A., Pernici, B., Li, Y. -P., & Green, W. H. (2020). Evaluating Scalable 
+
+Uncertainty Estimation Methods for Deep Learning -Based Molecular Property Prediction. 
+
+Journal of Chemical Information and Modeling , 60 (6), 2697 –2717. Scopus. 
+
+https://doi.org/10.1021/acs.jcim.9b00975 
+
+Sengupta, A., Iqbal Middya, A., Mondal, S., & Roy, S. (2026). STNN -based weighted regression 
+
+models for the prediction of urban land surface temperature -a study of spatiotemporal 
+
+association. Theo retical and Applied Climatology , 157 (3). Scopus. 
+
+https://doi.org/10.1007/s00704 -026 -06107 -z
+
+Shahidi, M., & Abedini, M. J. (2018). Optimal selection of number and location of rain gauge 
+
+stations for areal estimation of annual rainfall using a procedure base d on inverse distance 
+
+weighting estimator. Paddy and Water Environment , 16 (3), 617 –629. Scopus. 
+
+https://doi.org/10.1007/s10333 -018 -0654 -y
+
+Thornton, M. M., Shrestha, R., Wei, Y., Thornton, P. E., & Kao, S. -C. (2022). DaymetDaymet: Daily 
+
+Surface Weather Data on a 1 -km Grid for North America, Version 4 R1 (Version 4.1, p. 0 MB) 34 
+
+[netCDF -4]. ORNL Distributed Active Archive Center. 
+
+https://doi.org/10.3334/ORNLDAAC/2129 
+
+Tong, J., Xing, Y., Cao, Z., & Zhao, D. (2022). Multi -Task Multi -Attention Graph Neural Network 
+
+for Mobile Crowd Sensing Data Reconstruction and Prediction. 2022 IEEE 8th International 
+
+Conference on Cloud Computing and Intelligent Systems (CCIS) , 654 –661. 
+
+https://doi.org/10.1109/CCIS57298.2022.10016351 
+
+Vallileka, N., Rajkumar, G. V., Krishnan, R. S. , Shankar, S. V., Francis Raj, J. R., & Karthikeyan, 
+
+M. S. (2025). Hybrid CNN -LSTM Model for Enhanced Weather Forecasting: Leveraging Spatial 
+
+and Temporal Dependencies . 1188 –1195. Scopus. 
+
+https://doi.org/10.1109/ICSADL65848.2025.10933281 
+
+Wang, X., Wu, Y., Zhuang, D., & Sun, L. (2023). Low -Rank Hankel Tensor Completion for Traffic 
+
+Speed Estimation. IEEE Transactions on Intelligent Transportation Systems , 24 (5), 4862 –4871. 
+
+Scopus. https://doi.org/10.1109/TITS.2023.3247961 
+
+Yan, J., Wu, B., & He, Q. (2021). An anisotropic IDW interpolation method with multiple 
+
+parameters cooperative optimization. Cehui Xuebao/Acta Geodaetica et Cartographica Sinica ,
+
+50 (5), 675 –684. Scopus. https://doi.org/10.11947/j.AGCS.2021.20200148 
+
+Yasavoli, B., Habibirad, A., & Javanshiri, Z . (2025). A hybrid deep learning model in predicting 
+
+weather temperature. Earth Science Informatics , 18 (3). Scopus. 
+
+https://doi.org/10.1007/s12145 -025 -01963 -1
+
+Yu, Y., Li, P., Huang, D., & Sharma, A. (2024). Street -level temperature estimation using graph 
+
+neural networks: Performance, feature embedding and interpretability. Urban Climate , 56 .
+
+Scopus. https://doi.org/10.1016/j.uclim.2024.102003 
+
+Zang, Y., Huang, G., Liu, W., Chen, L., Wu, D., Wang, C., & Li, J. (2023). 
+
+DEEPURBANMODELLER (DUM): A PROCESS -INFORMED NEURAL ARCHITECTURE 
+
+FOR HIGH -PRECISION URBAN SURFACE TEMPERATURE PREDICTION . 48 (1/W2 -
+
+2023), 71 –76. Scopus. https://doi.org/10.5194/isprs -archives -XLVIII -1-W2 -2023 -71 -2023 
+
+Zhang, Y. (2025). Regional wind speed prediction model based on graph attention network and 
+
+meteorological coupled equations. International Journal of Information and Communication 
+
+Technology , 26 (47), 71 –88. https://doi.or g/10.1504/IJICT.2025.150606 
+
+Zhang, Y., Yu, D., Zhao, H., Zhang, B., Li, Y., & Zhang, J. (2024). Chasing the heat: Unraveling 
+
+urban hyperlocal air temperature mapping with mobile sensing and machine learning. 
+
+Science of the Total Environment , 927 . Scopus. 
+
+https://doi.org/10.1016/j.scitotenv.2024.172168 
+
+Zhu, L., Hou, G., Song, X., Wei, Y., & Wang, Y. (2022). A Spatial Interpolation Using Clustering 
+
+Adaptive Inverse Distance Weighting Algorithm with Linear Regression . 13369 LNAI , 261 –272. 
+
+Scopus. https://doi.o rg/10.1007/978 -3-031 -10986 -7_21

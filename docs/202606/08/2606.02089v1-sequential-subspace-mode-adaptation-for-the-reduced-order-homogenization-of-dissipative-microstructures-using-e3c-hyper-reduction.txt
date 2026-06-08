@@ -1,0 +1,1604 @@
+Title: Sequential Subspace Mode Adaptation for the Reduced-Order Homogenization of Dissipative Microstructures using E3C Hyper-Reduction
+
+URL Source: https://arxiv.org/pdf/2606.02089v1
+
+Published Time: Tue, 02 Jun 2026 02:33:57 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+# Sequential Subspace Mode Adaptation for the Reduced-Order Homogenization of Dissipative Microstructures using E3C Hyper-Reduction 
+
+Hauke Goldbeck a, Stephan Wulfinghoff a
+
+> aComputational Materials Science, Department of Materials Science, Kiel University, Kaiserstr. 2, 24143 Kiel, Germany
+> {hago,swu }@tf.uni-kiel.de
+
+Abstract 
+
+Three-dimensional inelastic computational homogenization of complex engineering components requires a multitude of nonlinear microstructural simulations, making it computationally ex-pensive. This work investigates a projection-based model order reduction (pMOR) method with ’Sequential Subspace Mode Adaptation’, which can be easily integrated into existing codes us-ing linear subspaces. Starting with a ’conventional’ linear subspace strain approximation, the dynamic online construction of a second – lower dimensional – affine subspace embedded in the linear subspace determined offline leads to a further reduction of the dimensionality. A second novelty is the outline of the E3C hyper-reduction method for non-crystalline dissipa-tive materials with internal variables, introducing a viscous regularization of non-differentiable stress-strain relations. In addition, a theoretical discussion is provided, illustrating that the E3C method aims at satisfaction of a projected and hyper-reduced variant of the classical Hill-Mandel macro-homogeneity condition. The latter theoretically implies equivalence with the high-dimensional model and satisfaction of both the hyper-reduced weak equilibrium and compatibility conditions. The influence of training batch size, material nonlinearity, and microstructure on the perfor-mance are evaluated through parameter studies. Three-dimensional elastoplastic two-scale sim-ulations with hundreds of thousands of macroscopic degrees of freedom illustrate the efficiency and accuracy, with computational times approaching those of single scale simulations. 
+
+Keywords: Hyper-reduction, Reduced order models, Computational homogenization, E3C, Sequential subspace mode adaptation 
+
+1 Introduction 
+
+In recent decades, inelastic simulations of engineering structures have become an indus-trial standard. The main ingredients of these simulations are i) the finite element method (FEM), which is used to solve ii) the linear momentum balance and iii) a set of constitutive equations. While the validity of the first two ( i and ii ) is widely accepted, the constitu-tive equations are often considered the main origin of deviations from experimental results. Therefore, instead of assuming explicit inelastic constitutive laws with limited accuracy, re-cent research focuses on more flexible frameworks, like the automated identification of the constitutive model, selecting a small number of model terms from a large number of candidate expressions (Flaschel et al., 2023), or the use of physics-augmented artificial neural networks for viscoelasticity (Kalina et al., 2025), elastoplasticity (Boes et al., 2025), general inelastic con-stitutive artificial neural networks (ICANNs, see Holthusen et al., 2024; Holthusen and Kuhl, 2026) or convex neural networks approximating the potentials of generalized standard materials (Flaschel et al., 2025). The training data required to calibrate the aforementioned models often  
+
+> Preprint submitted to Journal June 2, 2026
+> arXiv:2606.02089v1 [physics.comp-ph] 1 Jun 2026
+
+stems from experimental data or artificial mechanical tests using a microscopic computational model, resolving the material’s microstructure, in the sense of a ’top-down’ approach. An alternative to macroscopic material modeling is computational homogenization, i.e., the direct coupling of the microscopic and macroscopic models within a two-scale approach, and thus predicting ’bottom up’ the macroscopic mechanical response, using appropriate scale tran-sition techniques. Classically associated with the FE 2-method (Feyel, 1999; Miehe et al., 1999), computational homogenization methods are computationally comparably expensive due to the large number of microscopic problems which need to be solved. Model order reduction (MOR) techniques decrease the dimensionality of the microscale model, and consequentially the com-putational effort, while preserving essential microscopic physical features like the equilibrium conditions or the material laws of the microscopic constituents. There are also hybrid modeling approaches, incorporating features of both, MOR and neural networks. For example, Deep Material Networks (Liu et al., 2019) exhibit a layered structure, similar to that of artificial neural networks. Mimicking equilibrium states of hierarchical laminates, their building blocks are the microstructural material laws. Once trained on a certain microstructure, the consti-tutive equations of the phases may be exchanged, preserving a remarkable accuracy without retraining (Srinivas et al., 2026). Reduced order models (ROMs) require training data – the so-called ’snapshots’, i.e., simulation results obtained from a high-dimensional microscopic model (e.g., an FEM- or FFT-model), based on which a compressed model is derived. This can be achieved by clustering techniques (Cavaliere et al., 2020; Ferreira et al., 2025) or – more frequently – using the proper orthogonal decomposition (POD, e.g., Holmes et al., 1996). Related methods extract global shape func-tions (the ’modes’) from the snapshot data, usually by singular value decomposition (SVD), and thus compress the high-dimensional degrees of freedom into a low-dimensional subspace, being parametrized by the mode coefficients. An early contribution in the homogenization context is the nonuniform transformation field analysis (NTFA) by Michel and Suquet (2003), which generalizes the TFA by Dvorak (1992), allowing for nonuniform modes of the internal variables and their driving forces (Fritzen and Hodapp, 2016). Further reduction of the computational effort is achieved (e.g. Michel and Suquet, 2016, 2017), exploiting ideas that find their origin in nonlinear homogenization theory (e.g. Ponte Casta˜ neda, 1996, 2015). Alternatively, global displacement or displacement fluctuation modes (Yvonnet and He, 2007) are also heavily used in combination with a conventional Galerkin projection. In other words, the microscopic equilibrium condition is projected onto the lower-dimensional linear subspace spanned by the displacement fluctuation modes, hence the name ’projection-based ROMs’ (pROMs). This projection step requires the numerical evaluation of integrals over the whole mi-crostructure, and becomes the computational bottleneck, if the nonlinear material law is evalu-ated at all integration points of the high-dimensional model (sometimes also called ’high-fidelity model’). Hyper-reduced order models (hROMs) aim at a reduction of this effort (Ryckelynck, 2005), such that it scales with the dimensionality of the subspace, rather than that of the high-dimensional model. Most hyper-reduction methods define a ’reduced mesh’, including a subset of the high-dimensional model’s integration points and they can roughly be categorized into the following two classes (Grimberg et al., 2021; Bhattacharyya et al., 2025). So-called ’approximate-then-project’ methods evaluate the material law on the reduced mesh, recon-struct the full field stresses (typically via Gappy POD, see Everson and Sirovich, 1995) and subsequently perform the Galerkin projection. The Discrete Empirical Interpolation Method (DEIM, Chaturantabut and Sorensen, 2010) and the Gauss-Newton with Approximated Ten-sors method (GNAT, Carlberg et al., 2013) are among the most well-known representatives of this hyper-reduction class. In contrast, ’project-then-approximate’ methods first perform the Galerkin projection, and subsequently evaluate the involved integrals on the reduced mesh, which makes them structure preserving. For example, if the underlying model exhibits a poten-2tial structure, project-then-approximate methods do not ruin convexity (if present) and tangent symmetry, resulting in an increased robustness compared to approximate-then-project methods (see the overviews by van Tuijl et al., 2018; Brands et al., 2019). Widespread project-then-approximate hyper-reduction methods include the Energy Conserving Sampling and Weight-ing method (ECSW) by Farhat et al. (2015) and the Empirical Cubature Method (ECM) by Hernandez et al. (2017). The statistically compatible hyper-reduction approach by Wulfinghoff (2024) also falls into the ’project-then-approximate’ category, but it departs from the necessity to evaluate the microscopic strains (used as input for the material law) at integration points of the underlying high-dimensional model. Instead, they are replaced by a set of strain values, which is at any time representative of the overall microscopic strain distribution and compatible in a statistical sense. It is well known that the selection of an optimal subset of the high-fidelity integration points requires the solution of a computationally intractable minimization problem. Motivated by this observation, integration points differing from the underlying high-dimensional model are identified by the continuous empirical cubature method (CECM) of Hern´ andez et al. (2024). The method successfully further reduces the number of integration points by allowing all points of the microstructure as integration point candidates for hyper-reduction. In this work, the Empirically Corrected Cluster Cubature method (E3C) is applied and fur-ther extended. Motivated by the encouraging results of the statistically compatible approach mentioned above, the E3C integration points are also detached from the high-fidelity integra-tion points. Originally introduced as solution of a minimization problem (Wulfinghoff, 2025a), recent work (Wulfinghoff, 2026) demonstrates that the E3C integration points can be inter-preted as approximate solution of an orthogonality condition, ensuring equivalence of the fully integrated ROM and its hyper-reduced counterpart. These orthogonality conditions are unrav-eled in this work to coincide with the well-known Hill-Mandel condition (Hill, 1963; Mandel, 1972), if it is evaluated mode-wise. So far, the method has been successfully applied to mag-netostatics (Wulfinghoff and Hauck, 2025; Goldbeck and Wulfinghoff, 2025), nonlinear elastic-ity (Wulfinghoff and Hauck, 2025), hyperelasticity (Wulfinghoff, 2025b) and crystal plasticity (Wulfinghoff, 2026). In this work, it is formulated for the class of geometrically linear dissipative materials with internal variables and applied to porous and particle-reinforced elastoviscoplas-tic microstructures. As a key novelty, the E3C method is combined with an online ’Sequential Subspace Mode Adaptation’ procedure to further significantly reduce the number of primary unknowns. The Sequential Subspace Mode Adaptation (SSMA) turns out to fall into the class of sequential subspace optimization methods (Narkiss and Zibulevsky, 2005). Starting from a set of modes determined offline, which span a linear subspace, a further reduced affine subspace is deter-mined during the online computation. This strategy is motivated from the observation that further reduction of the dimensionality can be achieved, if the employed linear subspaces are replaced by nonlinear manifolds, as has been successfully demonstrated in fluid mechanics (e.g., Barnett and Farhat, 2022; Barnett et al., 2022; Geelen et al., 2024) and solid mechanics (e.g., Scheunemann and Faust, 2025; Zhang et al., 2026). Typical realizations of such nonlin-ear manifolds range from quadratic or polynomial ansatz spaces (e.g., Barnett and Farhat, 2022; Faust and Scheunemann, 2026) to autoencoders (e.g., Lee and Carlberg, 2020; Fresca and Manzoni, 2022). These approaches are particularly suited for problems exhibiting strong nonlinearities or moving features such as fronts. In that class of ROMs the solution manifold cannot be efficiently represented by a single global linear subspace, as assumed in the classical approaches outlined above. Instead, the solution exhibits locally varying structures that require more flex-ible approximation strategies. A similar idea underlies the so-called adaptive ROMs (e.g., Amsallem et al., 2012, 2015; Carlberg, 2015), which introduce local reduced bases, representing the key features of the solution or 3parameter space (e.g., Peng and Mohseni, 2016; Daniel et al., 2022; Amsallem and Haasdonk, 2016; Faust and Scheunemann, 2024; Scheunemann and Faust, 2025). During the online phase, the corresponding local basis is either selected from a set of precomputed affine bases (e.g., Amsallem and Haasdonk, 2016; Hatefi Ardakani et al., 2026) or constructed online (e.g., Peherstorfer and Willcox, 2015; Carlberg, 2015), based on the current state to increase the accuracy of the approximation. In this sense, the present approach can be thought of as a variation of such a locally adaptive approximation, but without the need of explicitly parti-tioning the space during an offline step. The affine subspace dynamically constructed online by the Sequential Subspace Mode Adapta-tion presented in this work has the advantages that it does not require the choice of a certain nonlinear manifold class (e.g., quadratic), enables a consistent linearization on the macroscale as well as a fast identification of the affine subspace and can be easily integrated into already implemented pROM frameworks. However, it is not expected, that it allows for a further re-duction of integration points compared to the linear subspace model. The remainder of this paper is organized as follows. In Section 2 the first-order homogenization for dissipative microstructures is recalled. Section 3 describes the model order reduction. The E3C hyper-reduction method is introduced in Section 4, followed by the Sequential Subspace Mode Adaptation in Section 5. Next, numerical results are shown in Section 6 and a conclusion is given in Section 7. 
+
+Notation. Scalar quantities are displayed in light face font, such as a or A. Vectors and second-order tensors are represented in boldface font, e.g., b or B, while fourth-order tensors are indicated with blackboard boldface letters, e.g., C. Macroscopic quantities are denoted with (¯ •), while microscopic quantities are written without additional symbol like, e.g., u. The notations (˜ •), δ(•) and ( •)0 mark fluctuations, variations, or a given quantity. At last ( ˙ •)denotes the derivative with respect to time and as per usual ( •)T describes the transpose. 
+
+2 First-order homogenization of dissipative microstructures 
+
+2.1 Continuum-mechanical framework 
+
+A microscopically heterogeneous dissipative solid is considered and the scale-separation assumption is adopted in order to apply the well-established first-order homogenization frame-work (for an overview see Schr¨ oder, 2014). It is assumed that the mechanical small deformation framework summarized in Box 1 defines the micro- and macroscopic problems in addition to the scale transition. The microstructure is assumed to be periodic and composed of Nph dis-tinct phases, characterized by thermodynamically consistent microscopic material models with internal variables, denoted by X (Coleman and Gurtin, 1967). This implies phase-dependent constitutive stress relations σr(ε, X) ( r = 1 , . . . , N ph ) and related evolution equations for the internal variables ˙X = ˇXr(ε, ˙ε, X). The work at hand focuses on elastoplasticity as an impor-tant subclass of this general framework (for details see Sect. 6.2). However, the model order reduction strategy presented is in principle also applicable to other classes of material models. 
+
+2.2 Compatibility 
+
+The microscopic kinematics described by Eq. (5) imply compatibility of the strain field 
+
+ε(x, t ) = ¯ ε + ˜ ε(x, t ), i.e., there exists a periodic field ˜ u(x, t ), such that ˜ ε = sym(grad (˜ u)). One can show that a given symmetric second order field ε is compatible if 
+
+∫
+
+> Ω
+
+ε : δ ˜σ dΩ = 0 (8) for all self-equilibrated trial stress fields δ ˜σ (i.e., satisfying div ( δ ˜σ) = 0 in Ω and [[ δ ˜σ]] n = 0
+
+on ∂Ω) with 〈δ ˜σ〉 = 0. The weak compatibility condition (8) can be considered the dual 4• Macro-problem (neglecting inertia and body forces) 
+
+– Strain (kinematics) ¯ε = sym( grad (¯ u)) in ¯B (1) 
+
+– Equilibrium condition (strong and weak form) 
+
+div ( ¯ σ) = 0 in ¯B,
+
+∫
+
+> ¯B
+
+¯σ : δ¯ε d ¯V = 
+
+∫ 
+
+> ∂¯Bt
+
+¯t0 · δ ¯u d ¯A (2) 
+
+– Boundary conditions ¯σ ¯n = ¯ t0 on ∂ ¯Bt, ¯u = ¯ u0 on ∂ ¯Bu (3) 
+
+• Micro-problem 
+
+– Kinematics 
+
+u(¯ x, x, t ) = ¯ ε(¯ x, t )x + ˜ u(¯ x, x, t ), in Ω , ˜u periodic on ∂Ω (4) 
+
+ε = sym(grad ( u)) = ¯ ε + ˜ ε in Ω (5) 
+
+– Equilibrium condition and antiperiodic tractions (strong and weak form) div ( σ) = 0 in Ω , [[ σ]] n = 0 on ∂Ω,
+
+∫
+
+> Ω
+
+σ : δ˜ε dV = 0 (6) + constitutive law (see text) 
+
+• Scale transition ¯ε = 〈ε〉, ¯σ = 〈σ〉 with 〈•〉 = 1
+
+Ω
+
+∫
+
+> Ω
+
+(•) dΩ (7)                   
+
+> Box 1: Summary of two-scale problem: x,¯x: micro-/ macroscopic position vectors, t: time, u: displacement,
+> ε:strain tensor, σ: stress tensor, t:traction vector, n:unit normal vector, (¯ •): macroscopic quantity, (˜ •): fluctuation, δ(•): virtual quantity, ( •)0:given quantity, ¯B:solid (macroscale), Ω: microstructure. Singular surfaces at phase boundaries are not explicitly discussed, for brevity (but the weak forms hold also in their presence).
+
+5counterpart of the weak equilibrium statement (6) 3. An explanation of Eq. (8) can be found in Appendix A. 
+
+2.3 Hill-Mandel condition 
+
+In order to ensure energetic consistency between macroscopic and microscopic scales, the Hill-Mandel condition (Hill, 1963; Mandel, 1972) is imposed as follows: ¯σ : ˙ ¯ε = 〈σ : ˙ ε〉. (9) If one assumes ¯ σ = 〈σ〉 and ˙ ¯ε = 〈 ˙ε〉 to hold, this leads to: 
+
+〈 ˜σ : ˙ ˜ε〉 = 0 , (10) with respect to the microscopic fluctuations of strain ˜ ε and stress ˜ σ. More generally, Eq. (10) may be interpreted as orthogonality statement in the sense that the functional spaces of stati-cally admissible stress fluctuations (equilibrium fields) and the kinematically admissible (com-patible) strain fluctuations are orthogonal. An alternative representation of the Hill–Mandel condition makes a connection to the principle of virtual work: ¯σ : δ¯ε = 〈σ : δε〉, (11) with δ¯ε and δε denoting the variation of macro-/microscopic strain. Using the assumption that ˜u is periodic, the variation of strain becomes 
+
+δε = sym(grad ( δu)) = δ¯ε + sym(grad ( δ ˜u)) = δ¯ε + δ˜ε (12) with δ¯ε and δ ˜u being arbitrary. Choosing δ ˜u = 0 leads to ¯σ : δ¯ε = 〈σ : δ¯ε〉 = 〈σ〉 : δ¯ε, (13) implying ¯σ = 〈σ〉 and 〈 ˜σ〉 = 〈σ − 〈 σ〉〉 = 〈σ − ¯σ〉 = 0. (14) Thus, as a consequence of Eq. (11) and the kinematic assumption (12), the macroscopic stress is equal to the volumetric average of the microscopic stress and the microscopic stress fluctuations average out. In addition, choosing δ¯ε = 0 results in 
+
+〈σ : δ˜ε〉 = 〈 ˜σ : δ˜ε〉 = 0 , (15) which is nothing but the weak form of the equilibrium condition introduced in Eq. (6). 
+
+2.4 Time discretization 
+
+It is assumed that a suitable time integration algorithm is applied to the evolution equations of the internal variables, such that their value at the end of a given time step ∆ t = tn+1 − tn,denoted by Xn+1 , can be formally given for each phase r by 
+
+Xn+1 = Xr(εn+1 , Xn), (16) where the index ’ n + 1’ will be neglected in the following. If not mentioned otherwise, the subsequent sections concentrate on the time discrete model. 63 Model order reduction 
+
+3.1 Galerkin projection 3.1.1 Discretization in terms of strain modes 
+
+Projection-based reduced order models approximate the microscopic strain fluctuation field ˜ε(x) = ε(x) − ¯ε at time tn+1 by a linear combination of Nmd strain fluctuation modes ˜Ek(x), representing global shape functions, such that 
+
+ε(x) = ¯ ε + ˜ ε(x) ≈ ¯ε +
+
+> Nmd
+
+∑
+
+> k=1
+
+ξk ˜Ek(x) (17) holds, with ξk denoting the mode coefficients. The virtual strain fluctuations δ˜ε(x) are dis-cretized in analogy. Here, the dependence on the macroscopic position ¯ x has been neglected for the sake of notational simplicity. The origin of the modes 1 is of negligible relevance for the concepts developed in the following discussion (see the Introduction for further reference). 
+
+3.1.2 Galerkin projection and solution of the microscopic problem 
+
+The reduced form of the microscopic equilibrium conditions is obtained by insertion of approximation (17) into the weak form (6): 1
+
+Ω
+
+∫
+
+> Ω
+
+σ : δ˜εdV = 1
+
+Ω
+
+∫
+
+> Ω
+
+σ :
+
+(Nmd ∑
+
+> k=1
+
+δξ k ˜Ek(x)
+
+)
+
+dV =
+
+> Nmd
+
+∑
+
+> k=1
+
+( 1
+
+Ω
+
+∫
+
+> Ω
+
+σ : ˜Ek(x)d V
+
+)︸ ︷︷ ︸ 
+
+> Rk=0
+
+δξ k. (18) In this context, the residuals R(ξ) = ( R1, . . . , R Nmd )T form a set of nonlinear equations for the unknown mode coefficients, that can be solved via Newton’s method. The solution 
+
+ξ = ( ξ1, . . . , ξ Nmd )T delivers the microscopic strain distribution via Eq. (17), the internal vari-ables via Eq. (16) and the stresses via the constitutive functions σr(ε, X). Finally, the macro-scopic stress ¯ σ is obtained by averaging (Eq. (7)). 
+
+Remark. In analogy to the strains, the stress fluctuations may also be assumed to occupy a low-dimensional subspace, spanned by stress fluctuation modes ˜Sm(x): 
+
+σ(x) = ¯ σ + ˜ σ(x) = ¯ σ + 
+
+> Nσ
+> md
+
+∑
+
+> m=1
+
+μm ˜Sm(x). (19) Galerkin-projecting the weak compatibility condition (8) onto this reduced subspace yields 1
+
+Ω
+
+∫
+
+> Ω
+
+ε : ˜Sm dΩ = 0 . (20) 
+
+3.1.3 Specification for generalized standard materials 
+
+For generalized standard materials (Halphen and Nguyen, 1975), the solution of the micro-problem, outlined in Box 1, minimizes a time-incremental pseudo-elastic potential, which under certain assumptions takes the form (Ortiz and Stainier, 1999; Miehe, 2002): ¯π∆(¯ ε) = inf 
+
+> ˜u#
+
+〈π∆(x, ε)〉 with π∆(x, ε) = inf  
+
+> X
+
+(ψ(x, ε, X) + ∆ tφ (x, X)) , (21) 
+
+> 1In this contribution, the modes are obtained through singular value decomposition.
+
+7where ’#’ marks the periodicity of ˜ u, ψ is the free energy density, and φ is the dissipation potential. Alternatively, the infimum may be searched for within the space of compatible (i.e., kinematically admissible) strain fluctuations. If it is assumed that the strain fluctuation field resides in the linear subspace spanned by the modes ˜Ek, it is sufficient to restrict the minimization to that lower-dimensional space: inf 
+
+> ˜u#
+
+〈π∆(x, ε)〉 = inf 
+
+> ξ
+
+〈π∆
+
+(x, ε(¯ ε, ξ))〉 with ε(¯ ε, ξ) = ¯ ε +
+
+> Nmd
+
+∑
+
+> k=1
+
+ξk ˜Ek. (22) Under this assumption, Eq. (18) is interpreted as stationarity condition of the minimization problem (22) and delivers the exact solution. Otherwise it is an approximation. 
+
+3.1.4 Mode-restricted Hill-Mandel condition 
+
+The variational form of the Hill-Mandel condition given in Eq. (11) can be naturally trans-ferred the reduced order settings. The fluctuation fields will therefore be approximated in suitable reduced spaces, as shown in the previous section. In particular, the stress fluctuation modes ˜Sm can be obtained as a linear combination of a sufficiently rich set of microscopic stress fluctuation snapshots as ˜Sm(x) = ∑
+
+> n
+
+amn ˜σn(x). (23) Due to the static admissibility of the snapshots ˜ σn, the corresponding modes ˜Sm remain stat-ically admissible (i.e., they satisfy Eq. (6)). Combining Eq. (17) with the equilibrium condi-tion (15) yields 
+
+〈 ˜σ : δ˜ε〉 = ∑
+
+> l
+
+〈 ˜σ : ˜El〉δξ l. (24) The arbitrariness of δξ l implies 〈 ˜σ : ˜El〉 = 0. Further, multiplication with akn and summing over n (see Eq. (23)) delivers 
+
+〈 ˜Sk : ˜El〉 = 0 . (25) This relation can be interpreted as an orthogonality condition between the reduced spaces spanned by the stress and strain fluctuation modes. It is the mode-restricted version of the orthogonality statement in Eq. (10). Equation (25) can thus be understood as reduced-order representation of the Hill-Mandel condition, restricted to the linear subspaces spanned by the fluctuation modes. 
+
+4 E3C Hyper-reduction 
+
+4.1 General numerical integration procedure 
+
+The numerical computation of the residuals Rk (Eq. (18)) and macroscopic stress (Eq. (7)) typically requires an integration/cubature scheme (not necessarily hyper-reduced) of the form 
+
+Rk = 1
+
+Ω
+
+> Nip
+
+∑
+
+> q=1
+
+σq(εq, Xn) : ˜Eqk Ωq = 0 , 〈σ〉 = 1
+
+Ω
+
+> Nip
+
+∑
+
+> q=1
+
+σq(εq, Xn)Ω q (26) with the number of integration points Nip , integration domains/weights Ω q and 
+
+εq = ¯ ε +
+
+> Nmd
+
+∑
+
+> l=1
+
+ξl ˜Eql . (27) 8The averaging operator correspondingly now reads 
+
+〈•〉 = 1
+
+Ω
+
+> Nip
+
+∑
+
+> q=1
+
+(•)qΩq (28) throughout Section 4. The ˜Eqk (k = 1 , . . . , N md ) and Ω q are usually obtained from a high-fidelity model by evaluation at the integration points xq, i.e., in that case ˜Eqk = ˜Ek(xq). The continuous modes ˜E(x) are thus replaced by the integration point-wise resolved modes ˜Ek,which are collected in the matrix of strain fluctuation modes, ˜E, as follows (assuming Mandel notation 2): ˜Ek =
+
+
+
+˜E1
+
+> k
+
+...˜ENip 
+
+> k
+
+ ⇒ ˜E = ( ˜E1 . . . ˜ENmd 
+
+) ⇒ ˜E =
+
+
+
+˜ε1
+
+...˜εNip 
+
+ = ˜Eξ. (29) Thus, ˜Ek is the discrete counterpart of ˜Ek(x). The two quantities are uniquely distinguished by consistently keeping the position-dependence in the notation of the latter. The strain fluc-tuation modes are constrained to vanish on average: 
+
+〈 ˜Ek〉 = 1
+
+Ω
+
+> Nip
+
+∑
+
+> q=1
+
+˜EqkΩq = 0, (30) ensuring that 〈˜ε〉 = 0.For later use, the matrix of macroscopic strain modes, ¯E, is also defined: ¯Em =
+
+
+
+¯E1
+
+> m
+
+...¯ENip 
+
+> m
+
+ ⇒ ¯E = ( ¯E1 . . . ¯E6
+
+) ⇒ E =
+
+
+
+ε1
+
+...
+
+εNip 
+
+ = ¯E¯ε + ˜Eξ (31) with ¯Eq 
+
+> 1
+
+= (1 , 0, 0, 0, 0, 0) T, . . . , ¯Eq 
+
+> 6
+
+= (0 , 0, 0, 0, 0, 1) T (q = 1 , . . . , N ip ). 
+
+Remark. The statement that the ˜Eqk and integration domains Ω q must originate from the discretization of a high fidelity model, can be relaxed by considering the following: One and the same microstructure can be discretized in an infinite number of ways, i.e. the ˜Eqk are not unique. However, all discretizations lead (if they are consistent with the continuum model) to essentially the same results, if a sufficient numerical resolution can be assumed. This approach will be used in the following for the definition of the E3C modes. 
+
+4.2 E3C Hyper-reduction 
+
+In the sequel, a hyper-reduced model is considered, i.e., the number Nip of integration points is significantly smaller than that of the high-fidelity model Nip ≪ Nref ip .In order to derive hyper-reduced modes ˜ET 
+
+> k
+
+= ( ˜E1T  
+
+> k
+
+, . . . , ˜ENip T 
+
+> k
+
+)T (see Eq. (29)), the hyper-reduced model is required to satisfy the Hill-Mandel condition (as introduced in Eq. (11)) ¯σ : δ¯ε = 〈σ : δε〉 = 1
+
+Ω
+
+> Nip
+
+∑
+
+> q=1
+
+σq : δεqΩq (32)       
+
+> 2Mandel notation: σ= ( σ11 , σ 22 , σ 33 ,√2σ23 ,√2σ13 ,√2σ12 )T.
+
+9for any deformation process { ¯σ(t), ¯ε(t), ξ(t)} (or its time-discrete counterpart). Here, ¯ σ (left hand side) and ξ are understood as the high-fidelity solution 3, while the stress σq at generalized integration point q of the hyper-reduced model (right hand side) is obtained by evaluation of the material law σq(εq, Xqn) with input strain 
+
+εq = ¯ ε +
+
+> Nmd
+
+∑
+
+> k=1
+
+ξk ˜Eqk (33) with both ¯ ε and ξk being given by the high-fidelity solution. By construction 〈ε〉 = ¯ ε holds (due to the constraint applied in Eq. (30)), such that ¯σ : δ¯ε = ¯ σ : 〈δε〉 = 〈σ : δε〉 ⇔ 〈(σ − ¯σ) : δε〉 = 0 (34) with averaging operator as introduced in Eq. (28) results. Including the decomposition of the strain into macroscopic and fluctuation parts, i.e., εq = ¯ ε + ˜ εq (compare Eq. (5)), and considering the arbitrariness of δ¯ε, the following two equations are obtained 
+
+〈(σ − ¯σ) : δ˜ε〉 = 0 , 〈σ − ¯σ〉 = 0. (35) A comparison with Eqns. (14) and (15) shows that the hyper-reduced model is consistent with the continuous case. It is noted that the corresponding stress fluctuations ˜ σq := σq − ¯σ
+
+are defined with respect to the macroscopic stresses of the high-fidelity model. As a crucial observation, one can expect these stress fluctuations to reside in a low dimensional subspace, since the strain fluctuations ˜ εq = ˜Eξ exhibit the very same property: 
+
+
+
+˜σ1
+
+...˜σNip 
+
+ = 
+
+> Nσ
+> md
+
+∑
+
+> m=1
+
+μm ˜Sm, (36) where the ˜Sm ∈ R6Nip are not to be confused with the continuous modes ˜Sm(x) in Eq. (19). It is recalled that the strains E = ( ε1T , . . . , εNip T)T = ¯E ¯ε + ˜Eξ are given in terms of pre-scribed macro-strains ¯ ε and prescribed mode coefficients ξ. Furthermore, it is noted that stresses σq (εq, Xn) – and consequentially also the modes ˜Sm – are functions of the strain fluc-tuation modes ˜Ek (trough Eq. (33)). The Hill-Mandel condition in the form (35) holds for arbitrary processes { ¯σ(t), ¯ε(t), ξ(t)}, if 
+
+〈 ˜Sm : ˜En〉 = 0 , 〈 ˜Sm〉 = 0, (37) since in this case 
+
+〈∑
+
+> m
+
+μm ˜Sm : ∑
+
+> n
+
+δξ n ˜En
+
+〉
+
+= 〈 ˜σ : δ˜ε〉 = 0 ,
+
+〈∑
+
+> m
+
+μm ˜Sm
+
+〉
+
+= 〈 ˜σ〉 = 0. (38) This is in analogy to the continuous version introduced in Sec. 2.3 in Eq. (14) and the mode specific versions in Sec. 3.1.4 in Eq. (25). Hyper-reduced strain fluctuation modes, which result            
+
+> 3If the modes ˜EFE
+> kcan be assumed orthonormal (i.e., obtained from a truncated singular value decomposition of finite element snapshot data), then any mode coefficient ξk(k∈ { 1, . . . , N md }) can be directly deduced from a given finite element snapshot EFE (compare Eq. (31)) via projection, i.e., ξk= ˜EFE
+> k·EFE (Barnett and Farhat, 2022).
+
+10 in satisfaction of the hyper-reduced and mode-restricted Hill-Mandel conditions (37), have the following implications: 1. They guarantee equivalence with the high-fidelity model, since for a given history of mode coefficients ξ (taken form the high-fidelity model) multiplication of Eq. (37) with 
+
+μm, summation over m and division by Ω yields Rk = 0 and ¯ σ = 〈σ〉 (Eq. (26)). Here, it has been used that there are always coefficients μm, such that the stress fluctuations can be exactly represented as linear combination of the modes ˜Sqm.2. The reduced-order model satisfies hyper-reduced (and Galerkin-projected) versions of 
+
+• the equilibrium condition (26) 1:
+
+〈σ : ˜Ek〉 = 0 , (39) as is already clear from point 1. 
+
+• the compatibility condition (compare Eq. (20)): 
+
+〈ε : ˜Sm〉 = 0 , (40) which follows from multiplication of Eq. (37) 1 by ξk, summation over k and division by Ω. In addition, use has been made of the property ¯ ε : 〈 ˜Sm〉 = 0.Points 1 and 2 hold under the assumption that both stress and strain fluctuations reside in a finite-dimensional subspace. 
+
+4.3 Computation of the E3C modes 
+
+The solution of Eqns. (37) 1 and (37) 2 is complicated by the fact that the ˜Sm are functions of the ˜En, and these functions are not explicitly given. For this reason, the stress fluctuation modes are replaced by a sufficiently large number of exemplary stress fluctuations. For this purpose, Eqns. (37) are rearranged once again by multiplication with μm, summation over m and division by Ω, leading to Rk = 0 and 〈σ〉 − ¯σ = 0. Squaring, summation over k, multiplication by 1 /2and repeating this procedure for Nsim simulations, yields 
+
+c(˜E) = 1
+
+2
+
+> Nsim
+
+∑  
+
+> s=1
+> Nst−1
+
+∑
+
+> n=0
+
+a
+
+> Nmd
+
+∑
+
+> k=1
+
+〈σsn+1 : ˜Ek〉2
+
+︸ ︷︷ ︸
+
+> (Rsk(n+1) )2
+
++ ∥∥〈σsn+1 〉 − ¯σsn+1 
+
+∥∥2
+
+ = 0 . (41) Here, Nst is the number of time steps of simulation s ∈ { 1, . . . , N sim }. In addition, the strains 
+
+εqs n+1 = ¯ εsn+1 + ˜Eξsn+1 are calculated using the given macroscopic strains and the mode coef-ficients taken from the high-fidelity model. The microscopic stresses are given by the func-tions/algorithms σqs n+1 = σq(εqs n+1 , Xqs n ). Equation (41) is expected to be equivalent to the hyper-reduced and mode-restricted condi-tions (37) (and therefore to the Hill-Mandel condition (32)), if the set of prescribed macroscopic strains ¯ εsn+1 is sufficiently rich. The expression c(˜E) in Eq. (41) allows for the approximate deter-mination of the desired E3C modes 4 ˜E, if it is interpreted as a cost function. The minimization of the latter is thus nothing but the minimization of the error in Eq. (41) (right hand side zero). The first contribution ensures that the model learns the correct micro-equilibrium states 
+
+> 4The initial set of modes is generated through k-means clustering. Compare with Goldbeck and Wulfinghoff (2025) for general insights regarding the approach.
+
+11 (Rk ≈ 0) and the second contribution enforces a meaningful macro-stress prediction ( 〈σ〉 ≈ ¯σ). The user-defined weighting factor a ensures that the two contributions of the cost function are of the same order of magnitude. The exact satisfaction of Eqns. (37), which would theoretically require a certain minimum number of integration points Nip to prevent the equation system from being underdetermined, is thus not necessary. Instead, smaller integration point numbers can also be used, if larger errors are tolerable. In this work, the cost function (41) is minimized by using the Levenberg Marquardt algorithm. The required cost function derivatives can be found in Appendix E. For a more extensive dis-cussion refer to Wulfinghoff (2026). As a novel feature, an additional volumetric damping term has been included, i.e., the damping of the spherical part of the modes ˜Eqk differs from that of the deviatoric part, motivated by the observation that the volumetric strains are (on aver-age) significantly smaller, due to the purely elastic nature of the volumetric material response. Details can be found in Appendix C. 
+
+5 Sequential Subspace Mode Adaptation 
+
+5.1 Motivation 
+
+The offline training simulations for snapshot collection may be considered ’complete’, if the resulting set of strain fluctuation modes ˜Ek(x) (Eq. (17)) spans exactly that reduced subspace of all (kinematically admissible) strain fluctuation fields ˜ ε(x), which is relevant to simulate largely arbitrary deformations of the specific microstructure at hand. However, a specific solu-tion may not require the full wealth of possible deformations encoded within the modes, and it may be beneficial to construct a ’reduced subspace of the reduced subspace’. The ’Sequen-tial Subspace Mode Adaptation’ (SSMA), presented in the following, performs such a second compression step online based on a given set of modes. The SSMA method is independent of the hyper-reduction approach and so is the subsequent pre-sentation. It is meant to be easily integrated into existing implementations and does not require any further offline computations. With this being an advantage over nonlinear manifold-based methods, it should be mentioned that the SSMA, however, does not enable a further reduction of hyper-reduced integration points, and preserves those of the linear subspace-based model. For illustration purposes, the following presentation is restricted to generalized standard mate-rials with incremental potential structure (see Eqns. (21) and (22)). The SSMA method may 
+
+also work for more general material models. 
+
+5.2 Sequential Subspace Mode Adaptation Algorithm 
+
+The Sequential Subspace Mode Adaptation procedure seeks an approximate solution within a low-dimensional affine subspace. The affine subspace is formally defined in terms of the mapping 
+
+ξ(η) = ξ0 + Aη = ξ0 + ∂ξ
+
+∂η η (42) with the reduced coordinates η ∈ RN 0md , constant matrix A = ∂ξ/∂ η and N0md < N md . The corresponding strain field follows as: 
+
+ε(x, ¯ε, η) = ¯ ε +
+
+> Nmd
+
+∑
+
+> k=1
+
+ξk(η)˜Ek(x). (43) The microscopic equilibrium state in terms of the mode coefficients ξ is thus approximated as a minimum of the potential ¯ π∆(¯ ε, ξ) (Eq. (22)) restricted to this affine subspace. If the latter captures the deformation patterns adopted by the high-fidelity model with sufficient accuracy, then the potential minimum in this subspace is expected to be close to the global one (see 12 Fig. 1). At this solution, the potential gradient ∂¯π∆/∂ ξ = R(ξ(η)) is orthogonal to the affine subspace, which can be seen as follows. Using ∂¯π∆/∂ ξ = R, the necessary condition for a minimum reads d¯ π∆ = ∂¯π∆
+
+∂η · dη = ∂¯π∆
+
+∂ξ · ∂ξ
+
+∂η dη = R · dξ = 0 (44) for all d ξ within the affine subspace. This observation has an important consequence: the residual R provides a direction that is not yet contained in the current affine subspace. There-fore, it contains information which can be used to enrich the current affine subspace (roughly) in the direction of the global minimum (see Fig. 1). 
+
+minimum on affine subspace global minimum 
+
+−∂¯π∆
+
+∂ξ
+
+contour lines of ¯ π∆
+
+affine subspace 
+
+ξ0
+
+ξ1
+
+ξ2
+
+ξ3        
+
+> Figure 1: Sketch of the affine subspace extension in a simplified three-dimensional setting. The contour lines of ¯ π∆(dashed lines) are depicted in a plane parallel to the ξ2-ξ3-plane (dotted rectangle). The initial affine subspace is here represented as a straight line in ξ1-direction. At the minimum of the potential ¯ π∆along that line, the gradient ∂¯π∆/∂ ξserves as new direction for the affine subspace extension, which would in this case correspond to the plane spanned by the gradient and the initial affine subspace. Subsequently, the minimum within this plane is sought for.
+
+Whenever the affine subspace minimum deviates too much from the global minimum, the gra-dient thus naturally qualifies as a candidate to extend the set of modes: (˜E1(x), . . . , ˜EN 0md (x)) ←
+
+( ˜E1(x), . . . , ˜EN 0md (x), ˜E(x)R
+
+)
+
+with ˜E(x) = ( ˜E1(x), . . . , ˜ENmd (x)) .
+
+(45) Out of all of the system’s (inactive) degrees of freedom, it thus chooses that degree (or rather linear combination thereof), which instantaneously promises the maximum decrease in poten-tial. The residual can thus be interpreted as capturing missing deformation patterns that are required to further decrease the potential. A repeated extension of the affine subspace will eventually lead to a good approximation of the solution. The leading modes are dominant and can be interpreted as deformation patterns shared by a significant fraction of the microscopic deformation states seen during the training stage using a high-fidelity solution. As a consequence, even the reduced model based exclusively on the leading modes often yields a significant energy reduction compared to the homogeneous strain state. Motivated by these observations, the following Sequential Subspace Mode Adaptation procedure is proposed: 1. For given ¯ ε and given state ξn at time tn, seek an approximate solution at tn+1 in terms 13 of the first N0md mode coefficients, i.e., set 
+
+ξ(η) = ξn + ∂ξ
+
+∂η η, ∂ξ
+
+∂η =
+
+(I
+
+0
+
+)
+
+=
+
+
+
+1 0 . . . 00 1 . . . 0... ... . . . ...0 0 . . . 10 0 . . . 0... ... . . . ...0 0 . . . 0
+
+
+
+∈ RNmd ×N 0md , (46) that is 
+
+ξi(η) = 
+
+{
+
+ξin + ηi, i = 1 , . . . , N 0md ,ξin , i = N0md + 1 , . . . , N md . (47) 2. Project the nonlinear system of equations (18) onto the affine subspace, i.e., find the solution η to 
+
+Rη =
+
+( ∂ξ
+
+∂η
+
+)T
+
+R(ξ(η)) = 0. (48) If the dimension of η reached some user-defined value → stop .3. At the solution η of the reduced equation system (48), increase the dimension of η, i.e., of the affine subspace by one by adding the residual R(ξ(η)) as additional column to 
+
+∂ξ/∂ η. Go to 2. The proposed method can be categorized as sequential subspace optimization (SESOP) algo-rithm (Narkiss and Zibulevsky, 2005). This class of algorithms exhibits pronounced similar-ity with the conjugate gradient (CG) method. In the present computational homogenization context, the advantage of the proposed approach over CG is that it enables (under certain conditions) a consistent linearization of the micro-model with respect to the macro-strain ¯ ε,being a necessary requirement for superior performance of the two-scale model. 
+
+5.3 Implementation aspects 
+
+From a performance point of view, it may be disadvantageous to update the affine subspace at a given macroscopic integration point each time, the microscopic problem is solved. Instead, it is proposed to perform this update only once per time step according to the following strategy. First, a fixed number (typically 3 or 4) macroscopic global Newton iterations are carried out, solving the microscopic problem on the affine subspace determined during the previous time step. Then, the affine subspace is updated according to the approach described above and the remaining Newton iterations are performed with fixed affine subspace, thus enabling a consistent linearization and quadratic convergence. This implies that, each time the update is performed, the active modes are reset to the first N0md modes (see Sect. 6.4.7 and Appendix B for additional details). Furthermore, it is mentioned that the order of the matrix multiplications for the local assembly of the tangent ∂Rη/∂ η (see Eq. (48)) may have a decisive effect on the overall performance. 
+
+6 Results 
+
+6.1 Snapshot collection through Latin Hypercube Sampling 
+
+In order to apply the methods introduced in the previous sections, a set of snapshots is generated from high-fidelity simulations, here based on the finite element method (FEM). 14 The corresponding load path directions are constructed using a Latin Hypercube Sampling (LHS) strategy (compare, e.g., McKay et al., 1979) in strain space to ensure a broad and well-distributed coverage of possible deformation states. Monotonic loading is assumed. Depending on the microstructure, the sampling procedure is slightly adapted. For porous materials, the full strain space is considered, allowing for volumetric deformations. In contrast, for non-porous microstructures, sampling is kept close to the deviatoric subspace by choosing a comparably smaller random value for the trace of the strain tensor, such that the pressure is in the order of the stress deviator magnitude. This is achieved by constructing an explicit basis of the deviatoric strain space and performing the sampling in the corresponding reduced coordinate system. The Latin Hypercube Sampling is applied in this reduced space, resulting in a set of well-distributed sample points within this hypercube (edge length 2). To obtain a more isotropic distribution of strain states, the samples are subsequently restricted to the unit hy-persphere (hyperradius 1) by rejecting points with a norm larger than unity. Points from within the hypersphere are projected to its surface. 
+
+6.2 Constitutive equations and hardening laws 
+
+All subsequently discussed simulations employ a standard elastoviscoplastic material law with power law overstress type flow rule and isotropic hardening: 
+
+ε = εe + εp, σ = C : εe, ˙εp =
+
+√ 2
+
+3 ˙ε0
+
+〈 σvM − σy
+
+σD
+
+〉p σ′
+
+‖σ′‖ (49) with elastic strain εe, plastic strain εp, isotropic stiffness tensor C, stress deviator σ′, von Mises equivalent stress σvM = √3/2 ‖σ′‖ and McAuley brackets 〈•〉 = ( • + | • | )/2. Furthermore, ˙ ε0
+
+denotes the reference strain rate, σD is the drag stress, σy describes the yield stress and p
+
+designates the rate-sensitivity exponent. A rate-dependent flow rule (Eq. (49) 3) is chosen to formally ensure differentiability of the algorithmic tangent and consequentially continuity of the Levenberg Marquardt residual (see also the remark on p. 13 of Wulfinghoff, 2026). Rate-independent behavior with 
+
+f = σvM − σy ≤ 0, λ ≥ 0, λf = 0 , ˙εp = λ ∂f 
+
+∂σ , (50) where f is the yield function and λ denotes the plastic multiplier can be approximated by a corresponding choice of material parameters (in this work: σD = 0 .1 MPa ≪ σy, p = 20, ˙ε0 = 0 .01 s −1). Two hardening laws are considered in this contribution. First, power law hardening is introduced as 
+
+σy(α) = K (α + α0)n (51) with K acting as strength coefficient, n is the strain hardening exponent and α describes the von Mises equivalent plastic strain. Here, α0 is considered for numerical regularization purposes and is set to a small value in the implementation (in this work: α0 = 10 −8). As a second option, Voce hardening is considered as 
+
+σy(α) = σy0 + ( σ∞ − σy0 )
+
+(
+
+1 − e− θ0−θ∞ 
+
+> σ∞− σy0 α
+
+)
+
++ θ∞α, (52) where σy0 is the initial yield stress and σ∞, θ0 and θ∞ are further material parameters. 
+
+6.3 Evaluation of training and ROM parameter influence 6.3.1 General setup for evaluation 
+
+To investigate the influence of the training data amount and ROM parameters, a parameter study is conducted to evaluate the effect of the number of training simulations and the number 15 of modes and generalized integration points on the accuracy for the challenging example of a porous microstructure. The mesh consists of 10061 quadratic tetrahedra with a pore volume fraction of 23 .85%, as shown in Fig. 4 (right). Four different training sets, consisting of 22, 55, 100, and 202 microscopic FEM simulations, are compared. The LHS-generated strain paths exhibit a maximum strain norm of ‖¯ε‖max = 0 .05 for each individual path. Three different material data sets are evaluated here, with data taken from Kalpakjian and Schmid (2023) and shown in Tab 1. Additionally, the power law hardening plots for the three materials are shown in Fig. 2. 
+
+Material E [GPa] ν K [MPa] n
+
+Aluminum 6061-O 69 0.33 205 0.2 
+
+Steel 304 stainless, annealed 193 0.29 1275 0.45 
+
+Titanium-6Al-4V, annealed, 20 °C 114 0.34 1400 0.015            
+
+> Table 1: Different material parameters used for porous microstructure evaluation.
+> a) Al-6061-O Steel 304 Ti-6Al-4V Voce (mounting plate)
+> α[-]
+> σy [MPa]
+> 0200 400 600 800 1000 1200
+> 0.02 0.04 0.06 0.08 0.1
+> b)
+> α[-]
+> σy [MPa]
+> 0200 400 0.02 0.04 0.06 0.08 0.1
+> Figure 2: a) Hardening curves for the different parameter sets in Tab. 1 and for the material introduced in Tab. 2. b) Enlarged view of the smaller yield stress region.
+
+The E3C results are compared with the FEM reference results using a validation data set. This data set contains 100 strain paths that have not been used during the training stage. The RMS-error is defined by 
+
+eRMS =
+
+√ ∑
+
+> sim
+
+∑ 
+
+> t
+
+‖ ¯σFEM − ¯σE3C ‖2
+
+∑
+
+> sim
+
+∑ 
+
+> t
+
+‖ ¯σFEM ‖2 · 100% . (53) 
+
+6.3.2 Evaluation of E3C results with respect to FEM reference model 
+
+Figure 3 a) to c) illustrates the influence of the number of training simulations, modes and generalized IPs on the error (53) for the three different materials introduced in the previous section. For simplicity, the same number of modes and generalized IPs is chosen, based on earlier experience. In general, the largest errors are seen with the smallest set of 10 modes and 10 generalized IPs, regardless of the snapshot set investigated. In addition, the set of 22 training simulations leads mostly to slightly less accurate results than snapshot sets built by more simulations. Nevertheless, in certain applications, the set of 22 training simulations might be sufficient for materials showing a strong strain hardening, such as Steel 304 (see Fig. 3), with errors reaching values below 1% in this investigation. In contrast, for Ti-6Al-4V, a material with very little hardening ( n = 0 .015) the 22 training simulations result in the largest errors seen for this material of ∼ 3% for 50 modes/IPs, while a reduction is achieved by using 55 16 training simulations with errors of ∼ 2%. The sets of 100 and 202 training simulations show some minor difference in errors, the gain being small compared to the jump from 22 to 55 simulations. In case of Al-6061-O, the same trends are found. Generally, an increasing number of modes and generalized IPs leads to a reduction of the RMS-error. This trend is evident for all materials and is shown in Fig. 3 d), which compares the different materials for the set of 202 training simulations. In general, it can be concluded, that for the materials and combination of modes and generalized IPs investigated here, a training dataset from 50 simulations represents a good compromise between accuracy and offline effort.                   
+
+> 22 training simulations 55 training simulations 100 training simulations 202 training simulations Modes/generalized IPs RMS-error in [%] a) Al-6061-O
+> 10/10 20/20 30/30 40/40 50/50 0123456722 training simulations 55 training simulations 100 training simulations 202 training simulations Modes/generalized IPs RMS-error in [%] b) Steel 304
+> 10/10 20/20 30/30 40/40 50/50 012
+> 22 training simulations 55 training simulations 100 training simulations 202 training simulations Modes/generalized IPs RMS-error in [%] c) Ti-6Al-4V
+> 10/10 20/20 30/30 40/40 50/50 123456789
+> Al-6061-O Steel 304 Ti-6Al-4V-20C Modes/generalized IPs RMS-error in [%] d) Comparison for 202 training simulations
+> 10/10 20/20 30/30 40/40 50/50 0123456
+> Figure 3: a) to c) RMS-error for three different materials, highlighting the decrease in RMS-error with an increasing number of modes, generalized IPs, and training simulations. d) Comparison of the different materials for 202 training simulations, demonstrating the impact of material parameters on the accuracy of E3C results.
+
+6.4 Porous mounting plate 6.4.1 Macroscopic problem setup 
+
+In this section, a tensile test of the porous mounting plate shown in Fig. 4 is simulated, assuming a maximum strain of 1% and free lateral contractions. Quadratic tetrahedra are used on both scales. The study compares the performance of two element types on the macroscale. The first element type uses four integration points (standard integration) in all 44,562 elements, leading to a total number of 4 ×44,562=178,248 microscopic problems to be solved. The second element type is a stabilized mean strain element (for details, see Appendix D), which has the advantage that the microscopic problem needs to be solved only once per element. 
+
+6.4.2 Microscopic problem setup 
+
+On the microscale, the viscoelastoplastic material model with Voce hardening, described in Sect. 6.2, is applied. The material parameters are summarized in Tab. 2. The microscopic mesh, shown in Fig. 4 (right), consists of 10,061 quadratic tetrahedra with 44,112 degrees of freedom. The pore volume fraction is 23.85 %. The snapshot data has been generated using the Latin Hypercube Sampling procedure described in Sect. 6.1 with a maximum strain norm of ‖¯ε‖max = 0 .05. Two training sets are investigated, comprising 210 and 49 microscopic FEM 17 Figure 4: Dimensions, mesh and boundary conditions of the porous mounting plate.               
+
+> E[GPa] νσy0 [MPa] σy∞θ0[MPa] θ∞[MPa]
+> 210 0.3 349.9 599.9 1500 10
+> Table 2: Material parameters for mounting plate example
+
+simulations, respectively. The E3C model is trained using 50 modes and 50 generalized IPs. This non-adaptive model is compared with its adaptive counterpart with Sequential Subspace Mode Adaptation (see Sect. 5) with five base modes and four adaptive modes (while retaining the 50 generalized IPs). In other words, the first five modes are identical to the first five modes of the 50-mode non-adaptive model. The four adaptive modes are identified online out of the space spanned by the remaining 45 modes by the procedure described in Sect. 5.2. To limit the computational overhead due to the mode adaptation, the first two macroscopic Newton iterations are performed using the five base and four adaptive modes identified in the previous time step. The adaptive modes are then updated during the third macroscopic Newton iteration and all remaining Newton iterations are performed with the new fixed set of five base and four adaptive modes of the current time step. 
+
+6.4.3 Hard- and Software 
+
+The CPU used throughout this section was an Intel Core TM i9-13980HX CPU with 64 GB RAM (laptop hardware). All simulations were performed with an in-house FEM-code. The microscopic FEM problems for the snapshot collection were solved in parallel using OpenMP (Dagum and Menon, 1998). Each of the 19 threads solved the related linear equation systems via a serial Jacobi-preconditioned CG solver. The E3C modes were computed using an in-house Levenberg-Marquardt implementation. The two-scale simulation used 17 threads for the macro-scopic assembly, involving the solution of the microscopic problems and the PARDISO solver (Schenk and G¨ artner, 2006; Intel Corporation, 2025) for the solution of the macroscopic linear equation systems. Additionally paraview (Ahrens et al., 2005) and gnuplot (Gnuplot Team, 2022) have been used for visualization of the corresponding results. The standalone code performing FEM-simulations for snapshot collection, singular value decomposition, clustering, Levenberg-Marquardt optimization as well as the two-scale simulation, can be downloaded 18 from a git-repository (Goldbeck and Wulfinghoff, 2026). All simulation data is available upon reasonable request. 
+
+6.4.4 Simulation results 
+
+The overall deformation and macroscopic von Mises stress at the end of the simulation are depicted in Fig. 5 (center). On the microscale, the non-adaptive E3C model with 50 modes trained on 210 simulations for snapshot collection was applied. The figure also presents the mi-croscopic deformations and equivalent plastic strain distributions at six macroscopic positions 5.The results show that the small strain hypothesis is violated on the microscale. Nevertheless, they remain of interest, as they demonstrate the robustness of the two-scale simulation under comparatively severe deformation conditions. The macroscopic stress strain curves of the six 
+
+> Figure 5: Two-scale simulation results with a macroscopic deformation scale factor of 5 (the microscopic defor-mations are unscaled).
+
+microscopic problems shown in Fig. 5 are presented in Fig. 6. The E3C predictions (solid lines) are compared with the corresponding FEM results (dashed lines), indicating a good agreement 6.The diagrams reveal that the norm of the macroscopic strain succeeds the maximum value of 0.05 applied during offline training stage, in some cases by more than 100 %. The agreement with the FEM results is hardly affected by that circumstance, suggesting good extrapolation properties of the E3C hyper-reduced model. 
+
+6.4.5 Online and offline performance 
+
+In order to investigate the on- and offline performance, the non-adaptive E3C model with 50 modes is compared to its adaptive counterpart with five base and four adaptive modes. Initially, four macroscopic integration points (IPs) are applied per element. The macroscopic force-displacement diagrams are depicted in Fig. 7 (left) in light green and blue. They are hardly distinguishable, illustrating an excellent match between non-adaptive and adaptive model. Lo-cal stress data is also provided in the right part of the figure. Specifically, the von Mises stress is plotted along the green line depicted in the upper right picture for the four states indicated 
+
+> 5The depicted microscopic contour plots are FEM results obtained by postprocessing the macroscopic strain data collected during the two-scale simulation.
+> 6The FEM model requires smaller time steps than the E3C model. For that reason, the E3C results were also obtained in a postprocessing step, and the time steps were decreased correspondingly, in order to rule out any influence of the time discretization.
+
+19 Figure 6: Comparison of E3C predictions (full lines) with FEM (dashed lines) for microstructures 1)-6) in Fig. 5. The shear stresses/strains are given in Mandel notation (¯ σ∗ 
+
+> ij
+
+= √2/2¯ σij ). 
+
+by small squares in the left diagram. Also in the right diagram, an excellent agreement between both models is found, i.e., the model with Sequential Subspace Mode Adaptation matches the results of the non-adaptive model very well. The computational effort is compared in Fig. 8 (see also Tab. 3). The offline effort is identical for both models and is dominated by the 210 FEM simulations used for the snapshot collection, which took ∼2.5 h. However, the online effort is decreased by a factor of ∼4 from 71 min to 16.7 min, when using Sequential Subspace Mode Adaptation. It is essentially composed of con-tributions from the macroscopic linear solver ( ∼1.2 min) and the assembly process (15.3 min). If one assumes that the computational effort of a purely macroscopic simulation, using a phe-nomenological model instead of E3C, mainly results from the linear equation solver ( ∼1.2 min), then the computational effort of the E3C model with Sequential Subspace Mode Adaptation (16.7 min) is still approximately fourteen times that of a single scale simulation, as shown in Fig. 8 a).  
+
+> wall clock times [min]
+> 4 IPs/non-adapt. 210 snapsh. sim.
+> 4 IPs/adapt. 210 snapsh. sim.
+> mean str./adapt. 210 snapsh. sim.
+> mean str./adapt. 49 snapsh. sim.
+> particle-reinforced
+> online (lin. sol./ assembly)
+
+71.0 (1.2/69.7) 16.7 (1.2/15.3) 5.4 (1.2/4.0) – 3.2 (1.3/1.7)  
+
+> offline (snapshots/Lev. M.)
+
+148.1 / 23.4 148.1 / 23.4 148.1 / 23.4 34.6 / 9.5 5.8 / 0.5 
+
+Table 3: Online and offline efforts (wall clock times): times spent by linear equation solver, assembly process, snapshot collection and Levenberg-Marquardt based cost function minimization. Other offline costs are negligi-ble and not shown. The rightmost column refers to the particle-reinforced microstructure (Sect. 6.4.8). ’4 IPs’: 4 macroscopic integration points, ’mean str.’: mean strain element, ’adapt./non-adapt.’: with/without adaptive modes, ’Lev. M.’: Levenberg-Marquardt. 
+
+6.4.6 Efficiency improvement through mean strain elements and reduced training 
+
+A natural strategy for further efficiency improvement is to use reduced integration or mean strain elements, evaluating the E3C model only once (instead of four times) per macroscopic 20 Figure 7: Left: comparison of the reaction force for the different formulations. Right: von Mises equivalent stress plotted along the green line (upper right picture) for the four states illustrated by the squares in the left diagram. 
+
+> 4 IPs/non-adaptive 4 IPs/adaptive mean strain/adaptive single scale (estim.) a) Online effort wall clock time [min]
+> 010 20 30 40 50 60 70 80
+> 210 snapsh. sim. 49 snapsh. sim. b) Snapshot collection/ LM wall clock time [min]
+> 020 40 60 80 100 120 140 160 180
+> Figure 8: a) Online effort, as described by the Tab. 3. Starting with 4 IPs at the macroscale and the conventional E3C hyper-reduction on the microscale (red column) the online effort can be decreased with ’Sequential Subspace Mode Adaptation’ (orange column). Additional application of the mean strain element (yellow column) leads to online speeds even closer to single scale(green column). b) Exemplary offline effort for 210 and 49 snapshot simulations.
+
+element. Details on the mean strain formulation used here are given in Appendix D. The corresponding force displacement curve (dashed pink line in Fig. 7, left) shows very good agree-ment with the fully integrated elements. The right graph also demonstrates an overall good agreement, but also reveals deviations in region of maximum stress, close to the holes of the mounting plate. While these deviations are clearly perceptible during the first two (and mostly elastic) time steps, they are less pronounced in the plastic regime (upper two curves in Fig. 7, right). The stabilization stiffness (see Appendix D for details) is taken constant and signif-icantly smaller in magnitude than the elastic properties, which might explain the observed deviations in the elastic regime. More advanced stabilization techniques might lead to a better agreement. The computational saving during the assembly process indeed corresponds to the already an-ticipated factor of ∼4, using the mean strain element, as can be seen from Tab. 3. In fact, the microscopic E3C simulations during the macroscopic assembly process take 4 min, while the linear equation solver needs 1.2 min. In other words, the two-scale simulation can be expected to take approximately four times as long as the single scale simulation for the given example, as indicated in Fig. 8 a). This result illustrates that two-scale simulations can significantly benefit 21 from reduced integration schemes. However, the slight deviations observed in the linear regime call for more accurate stabilization techniques or full integration in regions of primary interest in the future. Finally, the snapshot collection dominates the offline effort and shall therefore be investigated in the following. As suggested in the previous evaluation of snapshot data in Sect. 6.1, ∼50 simulations should be sufficient for snapshot collection. Indeed, using 49 FEM simulations for snapshot collection hardly changes the results, as both the force displacement data and the lo-cal von Mises stress data almost coincide with the results obtained after training on snapshots from 210 FEM simulations. As expected, this has almost no effect on the online performance, but significantly reduces the offline effort from ∼2.86 h to 44.1 min (compare with Fig. 8 b)). 
+
+6.4.7 Impact of mode adaptation on macroscopic convergence 
+
+Table 4 (left column) shows representative values of the relative L2-norm of the residual associated with the macroscopic Newton iterations at different time steps. The adaptive modes are identified during the third iteration, which is marked in blue in the table. Strictly speaking, updating the modes during this iteration implies a temporary loss of consistency of the lineariza-tion on the macroscopic level, which could lead to a perturbation in the residual. However, as the table shows, this effect is negligible and the residual continues to decrease in the subsequent iterations. This is different during the first time steps, which are also depicted, illustrating that this effect already diminishes after the first two time steps. The residual perturbation in time step 1 (second column) is larger than in the other steps, which may result from the fact that the first two Newton iterations of the very first step are carried out with the four adaptive modes being taken as modes 6 to 9 of the full 50-mode model. Nevertheless, this effect diminishes quickly and for the following steps the convergence behavior is not affected. Summarizing, the results show, that the Sequential Subspace Mode Adaptation does not noticeably disrupt the convergence.                   
+
+> step 8 step 1 step 2 step 3
+> 1.000E+00 1.000E+00 1.000E+00 1.000E+00 0.128E-02 0.765E-10 0.378E-04 0.116E-02
+> 0.549E-03 0.748E-03 0.665E-04 0.543E-03
+> 0.538E-04 0.109E-14 0.270E-07 0.249E-04 0.162E-05 0.720E-12 0.124E-06 0.342E-08 0.341E-11 0.124E-12
+> Table 4: Relative residual norms of macroscopic Newton iterations for different time steps for the model with Sequential Subspace Mode Adaptation. The blue residuals mark the Newton iteration used for the adaptation of the modes.
+
+6.4.8 Particle-reinforced microstructure 
+
+Next, a particle-reinforced microstructure is considered with matrix material as in the previ-ous section and isotropic linear-elastic particles with E = 300 GPa and ν = 0 .25. The training was performed using 18 snapshot simulations with reduced volumetric strain (compare Sect. 6.1) and a total offline simulation time of 5.8 min (rightmost column in Tab. 3). In comparison to the porous microstructure, a smaller number of 25 modes and 25 E3C integration points were identified by the Levenberg-Marquardt algorithm in 0.5 min. Combining mean strain elements with Sequential Subspace Mode Adaptation (5 base modes and 4 adaptive modes) led to an online effort of 1.7 min for the solution of the microscopic problems, while the macroscopic linear equation solver required 1.3 min, which is in line with the times observed for the porous microstructure. The local stress-strain response was evaluated for the same six positions as for 22 the porous microstucture (Fig. 5) and shows very good agreement with corresponding FEM-simulations (see Fig. 9).    
+
+> two-scale single scale (estim.) wall clock time [min] 01234
+> Figure 9: Comparison of E3C predictions (full lines) with FEM (dashed lines) for particle-reinforced microstruc-tures 1)-6). The shear stresses/strains are given in Mandel notation (¯ σ∗
+> ij =√2/2¯ σij ).
+
+7 Conclusion 
+
+Throughout this contribution, the E3C hyper-reduction is successfully applied to dissipative materials with internal variables, as demonstrated for an exemplary viscoelastoplastic material model. The key idea is to determine the E3C modes that satisfy a hyper-reduced and mode restricted version of the Hill-Mandel condition, ensuring accurate prediction of macroscopic stresses and satisfaction of the microscale equilibrium. The E3C model is constructed to yield results equivalent to those of a high-fidelity model (in this contribution a FEM model). Fur-ther, the Sequential Subspace Mode Adaptation procedure is introduced, which can be rather easily integrated into pROM-codes using linear subspace. This approach enables two-scale simulations of engineering structures, like the ones shown in the Sect. 6, with computational efforts close to that of single scale simulations. The Sequential Subspace Mode Adaptation defines an affine subspace during the online phase, based on the already existing linear sub-space determined during the offline stage. This affine subspace is constructed based on the leading modes of the linear subspace determined offline, enriched by an online extension based on the potential gradient. In this way, deformation patterns not captured by the leading offline modes are incorporated efficiently. By using the Sequential Subspace Mode Adaptation those missing deformation patterns are included in the affine subspace. Keeping the dimension of the subspace significantly smaller than that of a conventional offline-generated subspace. In contrast to nonlinear manifold-based methods, this does not lead to a further reduction of in-tegration points. Further research is necessary to evaluate how the proposed method would perform compared to nonlinear manifold-based methods. The benefits of this approach are demonstrated in the Sect. 6, where two-scale simulations achieve runtimes close to the single scale case. Additionally, the parameter studies shown contain an investigation of the training data influence, highlight two different hardening behaviors to work within the framework, and show results for two representative microstructures, one porous and one containing inclusions. 23 8 Acknowledgement 
+
+This work was funded by the German Research Foundation (Deutsche Forschungsgemein-schaft, DFG) as part of “Statistically Compatible Hyper-Reduction for Multiphysics Homoge-nization” under Grant No. 550055706. This support is gratefully acknowledged. 
+
+9 AI Declaration Statement 
+
+The line of arguments in Appendix A has been found with the help of ChatGPT (OpenAI, 2026). 
+
+10 Appendix Appendix A Weak compatibility condition 
+
+First, it is noted that one can show that Eq. (8) is indeed valid for compatible strain fields in analogy to the weak form of the equilibrium condition (Eq. (6)). It remains to explain why Eq. (8) is violated for an incompatible symmetric second order tensor field ε∗. In fact, it is sufficient to restrict the calculation to the fluctuation part ˜ ε∗ = ε∗ − 〈 ε∗〉 and to search for that compatible field ˜ ε = sym(grad (˜ u)), which is closest to ˜ ε∗ in the sense that the periodic field ˜ u
+
+solves inf 
+
+> ˜u#
+
+∫
+
+> Ω
+
+1
+
+2 (˜ ε − ˜ε∗) : C : (˜ ε − ˜ε∗) dΩ > 0 (54) for some positive-definite ”stiffness-tensor” C. In this setting, ˜ ε∗ can be interpreted as eigen-strain field and expression (54) as strain energy due to ˜ ε∗. At the minimum, the field ˜ σ = C : (˜ ε − ˜ε∗)satisfies the conditions 〈 ˜σ〉 = 0, div ( ˜ σ) = 0 in Ω and [[ ˜ σ]] n = 0 on ∂Ω. As a consequence of the inequality in Eq. (54), it follows that 
+
+∫
+
+> Ω
+
+˜σ : (˜ ε − ˜ε∗) dΩ = −
+
+∫
+
+> Ω
+
+˜σ : ˜ ε∗ dΩ > 0, (55) where use has been made of the equilibrium character of ˜ σ. The inequality in Eq. (55) implies that ε∗ does not satisfy Eq. (8) for all self-equilibrated fields δ ˜σ. In other words, only compatible strain fields satisfy Eq. (8), which was to be demonstrated. Equation (8) is classically known as Donati’s theorem. It is closely related to St. Venant’s compatibility conditions and has been further developed and generalized ever since. For a complete and rigorous treatment and further reading, see Ting (1974), Amrouche et al. (2006), Barbarosie and Toader (2022), and references therein. 
+
+Appendix B Two-scale simulation via Sequential Subspace Mode Adaptation 
+
+Algorithm 1 shows how the Sequential Subspace Mode Adaptation is implemented with respect to each macroscopic integration point within a two-scale framework. 24 Algorithm 1 Macroscopic integration point algorithm 
+
+Input: ¯ε, ¯ εn, ∆ t, ξ, ∂ξ 
+
+> ∂η
+
+, N 0md (number of base modes), N adptv md (number of adaptive modes), adapt modes 
+
+Output: ¯σ, ¯Ca (macr. algor. tangent), ξ, ∂ξ
+
+> ∂η
+
+η ← 0if adapt modes then 
+
+n0 
+
+> η
+
+← N 0md 
+
+Initialize adaptive reduced basis using the base modes: ∂ξ 
+
+> ∂η
+
+←
+
+[IN 0md 
+
+0
+
+]
+
+else 
+
+n0 
+
+> η
+
+← N 0md + N adptv md  
+
+> ∂ξ
+> ∂η
+
+← ∂ξ
+
+> ∂η
+
+end if for nη = n0 
+
+> η
+
+, . . . , N 0md + N adptv md do 
+
+Construct reduced local strain fluctuation modes η ˜Eq from the local fluctuation basis ˜Eq generated offline: (η ˜Eq
+
+> 1
+
+, . . . , η ˜Eqnη
+
+)
+
+←
+
+( ˜Eq
+
+> 1
+
+, . . . , ˜EqNmd 
+
+) ∂ξ
+
+> ∂η
+
+‖R‖old ← ∞ ; niter ← 0
+
+while not converged do R ← 0, Kred ← 0for q = 1 , . . . , N ip do if niter = 0 then 
+
+εq ← ¯εn + ˜Eq ξ
+
+else 
+
+εq ← ¯ε + ˜Eq ξ
+
+end if 
+
+(σq , Caq ) ← evaluate material behavior based on εq and Xn
+
+R ← R + Ωq
+
+> Ω
+
+(˜Eq )T
+
+σq
+
+Kred ← Kred + Ωq
+
+> Ω
+
+(η ˜Eq)T ( dσ
+
+> d
+
+ε
+
+)q η ˜Eq
+
+end for Rred ←
+
+( ∂ξ
+
+> ∂η
+
+)T
+
+Rif ‖Rred ‖ < tol and niter > 0 then exit end if if niter < 2 or ‖Rred ‖ < ‖R‖old then 
+
+‖R‖old ← ‖ Rred ‖
+
+Solve: Kred ∆η = −Rred 
+
+η ← η + ∆ η; ∆ξ ← ∂ξ 
+
+> ∂η
+
+∆η; ξ ← ξ + ∆ ξ
+
+else Reduce step size 
+
+ξ ← ξ − ∆ξ; ∆ξ ← 1 
+
+> 2
+
+∆ξ; ξ ← ξ + ∆ ξ
+
+end if 
+
+niter ← niter + 1 
+
+end while if nη < N 0md + N adptv md then 
+
+Expand: ∂ξ
+
+> ∂
+
+η ←
+
+( ∂ξ
+
+> ∂
+
+η , R
+
+)
+
+end if end for 
+
+¯σ = 〈σ〉 = 1
+
+> Ω
+
+∑ 
+
+> q
+
+Ωqσq
+
+Macroscopic tangent: ¯Ca = 〈Ca〉 − ∑
+
+> k,l
+
+(Kred −1) 
+
+> kl
+
+〈Ca : η ˜Ek〉 ⊗ 〈 Ca : η ˜El〉
+
+Appendix C Enhanced Levenberg Marquardt damping 
+
+The Levenberg Marquardt damping described in Wulfinghoff (2026) (Eq. (53)) is further extended by adding the following matrix to the approximate Hessian ˆH (besides the damping 25 described in that work): 
+
+
+
+D◦ 0 . . . 00 D◦ . . . 0
+
+... ... . . . ...
+
+0 0 . . . D◦
+
+ , D◦ =
+
+
+
+λ◦ λ◦ λ◦ 0 0 0
+
+λ◦ λ◦ λ◦ 0 0 0
+
+λ◦ λ◦ λ◦ 0 0 00 0 0 0 0 00 0 0 0 0 00 0 0 0 0 0
+
+
+
+. (56) In this work, the additional volumetric damping parameter is set to λ◦ = 5 λ.
+
+Appendix D Mean strain stabilized element formulation 
+
+The stabilized mean strain element is formulated based on the following weak form: 
+
+∫
+
+> Ω
+
+(σ∗ + C0 : ( ε − ε∗)) : δε dΩ = 0 , (57) 
+
+∫
+
+> Ω
+
+δσ∗ : ( ε − ε∗) dΩ = 0 , (58) 
+
+∫
+
+> Ω
+
+δε∗ : ( σ(ε∗, Xn) − σ∗ − C0 : ( ε − ε∗)) dΩ = 0 (59) with ε = sym(grad ( u)). The displacement field u is discretized by conventional quadratic shape functions, while the stress σ∗ and the assumed strain ε∗ are approximated element wise constant and standard 4-point integration is used for all three aforementioned integrals on the element level. The reference stiffness is chosen as C0 = λ0I ⊗ I + 2 μ0I, where λ0 = 2 μ0 = σc/ε c
+
+are chosen constant. Here, σc and εc denote characteristic stress and strain values (in this work 
+
+σc = σy0 and εc = 0 .05). For more advanced formulations and further reading on the topic, refer to Nguyen et al. (2018), Wulfinghoff et al. (2018) and references therein. 
+
+Appendix E Cost function minimization and derivatives 
+
+The following sections will show the linearizations used for cost function minimization in combination with internal variables. 
+
+Appendix E.1 Derivatives of cost function c with respect to ˜E
+
+The cost function c(˜E) given in Eq. (41), has to be minimized with respect to the ˜Eqk. In general, the individual parts coming form the two contributions in Eq. (38), in the following denoted as cR and c¯σ, can be considered independently of each other, as 
+
+∂c (˜E)
+
+∂ ˜Eqk
+
+= ∂c R
+
+∂ ˜Eqk
+
++ ∂c ¯σ
+
+∂ ˜Eqk
+
+. (60) The linearization of the first part cR is given by 
+
+∂c R
+
+∂ ˜Eqk
+
+=
+
+> Nsim
+
+∑  
+
+> s=1
+> Nst−1
+
+∑
+
+> n=0
+> Nmd
+
+∑
+
+> m=1
+
+1
+
+Ω2 Rsm(n+1) 
+
+∂R sm(n+1) 
+
+∂ ˜Eqk
+
+, (61) 26 with ∂R sm(n+1) 
+
+∂ ˜Eqk
+
+as (see also Appendix E.2) 
+
+∂R sm(n+1) 
+
+∂ ˜Eqk
+
+=
+
+( ∂σqs n+1 
+
+∂ ˜Eqk
+
+)T
+
+: ˜EqmΩq + σqs n+1 δkm Ωq . (62) The linearization of the second part c¯σ reads 
+
+∂c ¯σ
+
+∂ ˜Eqk
+
+=
+
+> Nsim
+
+∑  
+
+> s=1
+> Nst−1
+
+∑
+
+> n=0
+
+(∂∆ ¯ σsn+1 
+
+∂ ˜Eqk
+
+)T
+
+: ∆ ¯ σsn+1 , (63) with ∆ ¯ σsn+1 = 〈σsn+1 〉 − ¯σsn+1 and ∂∆ ¯ σsn+1 
+
+∂ ˜Eqk
+
+as 
+
+∂∆ ¯ σsn+1 
+
+∂ ˜Eqk
+
+= 1
+
+Ω
+
+> Nip
+
+∑
+
+> p=1
+
+∂σps n+1 
+
+∂ ˜Eqk
+
+Ωp = Ωq
+
+Ω
+
+> Nip
+
+∑
+
+> p=1
+
+∂σps n+1 
+
+∂ ˜Eqk
+
+. (64) In order to ensure that the constraint given in Eq. (30) is valid, a reduced version of modes without the last component is given by ˜Ered :˜Ered =
+
+
+
+˜E1
+
+...
+
+˜ENip −1
+
+
+
+. (65) The linearization of cost function c results in the reduced form: ∆c = ∂c ( ˜E)
+
+∂ ˜E ∆ ˜E
+
+=
+
+> Nip −1
+
+∑
+
+> q=1
+
+∂c 
+
+∂ ˜Eq ∆ ˜Eq + ∂c 
+
+∂ ˜ENip ∆ ˜ENip 
+
+=
+
+> Nip −1
+
+∑
+
+> q=1
+
+( ∂c 
+
+∂ ˜Eq − Ωq
+
+ΩNip 
+
+∂c 
+
+∂ ˜ENip 
+
+)︸ ︷︷ ︸( ∂c 
+
+∂ ˜Ered 
+
+)q
+
+: ∆ ˜Eq (66) 27 Appendix E.2 Linearization of σqs n+1 
+
+The linearization of σqs n+1 is given by ∆σqs n+1 =∆( σq(εqs n+1 ,Xqs n )) = ∂σq(εqs n+1 ,Xqs n )
+
+∂εn+1 
+
+︸ ︷︷ ︸ 
+
+> algo .tangent
+
+: ∆εqs n+1 
+
+︸ ︷︷ ︸  
+
+> ∑Nmd
+> k=1 ξsk(n+1) ∆˜Eqk
+
++ ∂σq(εqs n+1 ,Xqs n )
+
+∂Xn
+
+∆Xqs n
+
+︸ ︷︷ ︸ 
+
+> ∑Nmd
+> k=1
+> ∂Xqs n
+> ∂˜Eqk
+> :∆ ˜Eqk
+
+=
+
+> Nmd
+
+∑
+
+> k=1
+
+(
+
+ξsk (n+1) 
+
+∂σq(εqs n+1 ,Xqs n )
+
+∂εn+1 
+
++ ∂σq(εqs n+1 ,Xqs n )
+
+∂Xn
+
+∂Xqs n
+
+∂ ˜Eqk
+
+)︸ ︷︷ ︸ 
+
+> ∂σqs n+1
+> ∂˜Eqk
+
+: ∆ ˜Eqk. (67) Further, Xqs n+1 = Xq(εqs n+1 ,Xqs n ) has to be linearized to complete the set of equations needed to perform the cost function minimization in Eq. (41): ∆Xqs n+1 =∆( Xq(εqs n+1 ,Xqs n )) = ∂Xq
+
+∂εn+1 
+
+: ∆εqs n+1 
+
+︸ ︷︷ ︸  
+
+> ∑Nmd
+> k=1 ξsk(n+1) ∆˜Eqk
+
++ ∂Xq
+
+∂Xn
+
+∆Xqs n
+
+︸ ︷︷ ︸ 
+
+> ∑Nmd
+> k=1
+> ∂Xqs n
+> ∂˜Eqk
+> :∆ ˜Eqk
+
+=
+
+> Nmd
+
+∑
+
+> k=1
+
+(∂Xq(εqs n+1 ,Xqs n )
+
+∂εn+1 
+
+ξsk (n+1) + ∂Xq(εqs n+1 ,Xqs n )
+
+∂Xn
+
+∂Xqs n
+
+∂ ˜Eqk
+
+)︸ ︷︷ ︸ 
+
+> ∂Xqs n+1
+> ∂˜Eqk
+
+: ∆ ˜Eqk. (68) In this contribution the following non-standard partial derivatives occur with respect to the material laws introduced in Sec. 6.2: 
+
+∂σq(εqs n+1 ,Xqs n )
+
+∂Xn
+
+=
+
+
+
+∂σq
+
+∂εp
+
+> n
+
+∂σq
+
+∂α n
+
+ (69) and 
+
+∂Xq(εqs n+1 ,Xqs n )
+
+∂Xn
+
+=
+
+
+
+∂εp
+
+∂εp
+
+> n
+
+∂εp
+
+∂α n
+
+∂α 
+
+∂εp
+
+> n
+
+∂α 
+
+∂α n
+
+ . (70) The individual partial derivatives are shown here. For simplicity only the first one is written with all details, introducing short notations used in the following. At first the partial derivatives 28 of σq with respect to the previous state, given by εp 
+
+> n
+
+and αn are shown: 
+
+∂σq
+
+∂εp
+
+> n
+
+= −∂σq
+
+∂ε = −λI ⊗ I − 2μIs
+
+︸ ︷︷ ︸
+
+> −C
+
+−6μ2
+
+
+
+> b
+
+︷ ︸︸ ︷
+
+∆t ˙ε0
+
+p
+
+σD
+
+〈√ 3 
+
+> 2
+
+‖(σ′)q‖ − σy
+
+σD
+
+〉p−1
+
+−3 
+
+> 2
+
+b
+
+(
+
+2μ + 2 
+
+> 3
+
+σ′
+
+> y
+
+(α)
+
+)
+
+− 1
+
+︸ ︷︷ ︸
+
+> w
+
+N ⊗ N
+
++ 4μ2∆γ
+
+‖(σ′)Tr ,q ‖
+
+(
+
+Ps − N ⊗ N
+
+)
+
+, (71) 
+
+∂σq
+
+∂α n
+
+= −2
+
+√ 3
+
+2μwσ ′
+
+> y
+
+(α)N . (72) Above and in the following Is denotes the symmetric fourth-order identity tensor, Ps the de-viatoric projection operator and N the direction of flow. Next, the partial derivatives of the internal variables Xn are given: 
+
+∂εp
+
+∂εp
+
+> n
+
+= −∂εp
+
+∂ε = 3 μw N ⊗ N + 2μ
+
+‖(σ′)Tr ,q ‖
+
+(
+
+Ps − N ⊗ N
+
+)
+
++ Is, (73) 
+
+∂εp
+
+∂α n
+
+=
+
+√3
+
+2 wσ ′
+
+> y
+
+(α)N , (74) 
+
+∂α 
+
+∂εp
+
+> n
+
+= −∂α 
+
+∂ε = 3 
+
+√2
+
+3 μw N , (75) 
+
+∂α 
+
+∂α n
+
+= wσ ′
+
+> y
+
+(α) + 1 . (76) 
+
+References 
+
+Ahrens, J., Geveci, B., Law, C., 2005. Paraview: An end-user tool for large data visualization. The visualization handbook 717 (8). Amrouche, C., Ciarlet, P. G., Gratie, L., Kesavan, S., 2006. On the characterizations of matrix fields as linearized strain tensor fields. Journal de math´ ematiques pures et appliqu´ ees 86 (2), 116–132. Amsallem, D., Haasdonk, B., 2016. Pebl-rom: Projection-error based local reduced-order mod-els. Advanced Modeling and Simulation in Engineering Sciences 3 (1), 6. Amsallem, D., Zahr, M. J., Farhat, C., 2012. Nonlinear model order reduction based on local reduced-order bases. International Journal for Numerical Methods in Engineering 92 (10), 891–916. Amsallem, D., Zahr, M. J., Washabaugh, K., 2015. Fast local reduced basis updates for the efficient reduction of nonlinear systems with hyper-reduction. Advances in Computational Mathematics 41 (5), 1187–1230. 29 Barbarosie, C., Toader, A.-M., 2022. Donati representation theorem for periodic functions in relation to homogenization theory. arXiv preprint arXiv:2209.06801. Barnett, J., Farhat, C., 2022. Quadratic approximation manifold for mitigating the kol-mogorov barrier in nonlinear projection-based model order reduction. Journal of Compu-tational Physics 464, 111348. Barnett, J. L., Farhat, C., Maday, Y., 2022. Neural-network-augmented projection-based model order reduction for mitigating the kolmogorov barrier to reducibility of cfd models. arXiv preprint arXiv:2212.08939. Bhattacharyya, S., Tao, J., Gildin, E., Ragusa, J. C., Dec. 2025. Hyper-Reduction Tech-niques for Efficient Simulation of Large-Scale Engineering Systems. Archives of Computa-tional Methods in Engineering 32 (8), 5337–5379. URL https://link.springer.com/10.1007/s11831-025-10299-4 
+
+Boes, B., Simon, J.-W., Holthusen, H., 2025. Accounting for plasticity: An extension of inelastic constitutive artificial neural networks. European Journal of Mechanics-A/Solids, 105998. Brands, B., Davydov, D., Mergheim, J., Steinmann, P., 2019. Reduced-order modelling and ho-mogenisation in magneto-mechanics: A numerical comparison of established hyper-reduction methods. Mathematical and Computational Applications 24 (1), 20. Carlberg, K., 2015. Adaptive h-refinement for reduced-order models. International Journal for Numerical Methods in Engineering 102 (5), 1192–1210. Carlberg, K., Farhat, C., Cortial, J., Amsallem, D., 2013. The gnat method for nonlinear model reduction: effective implementation and application to computational fluid dynamics and turbulent flows. Journal of Computational Physics 242, 623–647. Cavaliere, F., Reese, S., Wulfinghoff, S., 2020. Efficient two–scale simulations of engineering structures using the hashin–shtrikman type finite element method. Computational Mechanics 65 (1), 159–175. Chaturantabut, S., Sorensen, D. C., 2010. Nonlinear model reduction via discrete empirical interpolation. SIAM Journal on Scientific Computing 32 (5), 2737–2764. Coleman, B. D., Gurtin, M. E., 1967. Thermodynamics with internal state variables. The journal of chemical physics 47 (2), 597–613. Dagum, L., Menon, R., 1998. OpenMP: an industry standard API for shared-memory program-ming. IEEE computational science and engineering 5 (1), 46–55. Daniel, T., Casenave, F., Akkari, N., Ketata, A., Ryckelynck, D., 2022. Physics-informed cluster analysis and a priori efficiency criterion for the construction of local reduced-order bases. Journal of Computational Physics 458, 111120. Dvorak, G. J., 1992. Transformation field analysis of inelastic composite materials. Proceedings of the Royal Society of London. Series A: Mathematical and Physical Sciences 437 (1900), 311–327. Everson, R., Sirovich, L., 1995. Karhunen–loeve procedure for gappy data. Journal of the Optical Society of America A 12 (8), 1657–1664. 30 Farhat, C., Chapman, T., Avery, P., 2015. Structure-preserving, stability, and accuracy prop-erties of the energy-conserving sampling and weighting method for the hyper reduction of nonlinear finite element dynamic models. International journal for numerical methods in engineering 102 (5), 1077–1110. Faust, E., Scheunemann, L., 2024. Nonlinear model order reduction using local basis methods on rves: A parameter study and comparison of different variants. PAMM 24 (2), e202400091. Faust, E., Scheunemann, L., 2026. Nonlinear model order reduction on polynomial manifolds for computational homogenisation problems. PAMM 26 (2), e70096. Ferreira, B. P., Coelho, R. C., Pires, F. A., Bessa, M., 2025. Finite strain self-consistent clus-tering analysis under multiplicative kinematics. Computers & Structures 316, 107886. Feyel, F., 1999. Multiscale FE 2 elastoviscoplastic analysis of composite structures. Computa-tional Materials Science 16 (1), 344–354. Flaschel, M., Kumar, S., De Lorenzis, L., 2023. Automated discovery of generalized standard material models with euclid. Computer Methods in Applied Mechanics and Engineering 405, 115867. Flaschel, M., Steinmann, P., De Lorenzis, L., Kuhl, E., 2025. Convex neural networks learn generalized standard material models. Journal of the Mechanics and Physics of Solids 200, 106103. Fresca, S., Manzoni, A., 2022. Pod-dl-rom: Enhancing deep learning-based reduced order mod-els for nonlinear parametrized pdes by proper orthogonal decomposition. Computer Methods in Applied Mechanics and Engineering 388, 114181. Fritzen, F., Hodapp, M., 2016. The finite element square reduced (fe2r) method with gpu acceleration: towards three-dimensional two-scale simulations. International Journal for Nu-merical Methods in Engineering 107 (10), 853–881. Geelen, R., Balzano, L., Wright, S., Willcox, K., 2024. Learning physics-based reduced-order models from data using nonlinear manifolds. Chaos: An Interdisciplinary Journal of Nonlin-ear Science 34 (3). Gnuplot Team, 2022. Gnuplot 5.4: An interactive plotting program. Goldbeck, H., Wulfinghoff, S., 2025. Computational homogenization in three-dimensional mag-netostatics using empirically corrected cluster cubature (e3c) hyper-reduction. International Journal for Numerical Methods in Engineering 126 (22), e70192. Goldbeck, H., Wulfinghoff, S., 2026. Git-repository with code. URL https://cau-git.rz.uni-kiel.de/CMS/public-code/e3c_elastoplasticity_includingfem 
+
+Grimberg, S., Farhat, C., Tezaur, R., Bou-Mosleh, C., 2021. Mesh sampling and weighting for the hyperreduction of nonlinear petrov–galerkin reduced-order models with local reduced-order bases. International Journal for Numerical Methods in Engineering 122 (7), 1846–1874. Halphen, B., Nguyen, Q. S., 1975. Sur les mat´ eriaux standard g´ en´ eralis´ es. Journal de m´ ecanique 14 (1), 39–63. Hatefi Ardakani, S., Zingaro, G., Gracie, R., 2026. An efficient parameterized local reduced order model for drucker-prager plasticity. Computational Mechanics 77 (2), 411–430. 31 Hern´ andez, J., Bravo, J. R., de Parga, S. A., 2024. Cecm: A continuous empirical cubature method with application to the dimensional hyperreduction of parameterized finite element models. Computer Methods in Applied Mechanics and Engineering 418, 116552. Hernandez, J. A., Caicedo, M. A., Ferrer, A., 2017. Dimensional hyper-reduction of nonlinear finite element models via empirical cubature. Computer methods in applied mechanics and engineering 313, 687–722. Hill, R., 1963. Elastic properties of reinforced solids: some theoretical principles. Journal of the Mechanics and Physics of Solids 11 (5), 357–372. Holmes, P., L, L. J., G, B., 1996. Turbulence, coherent structures, dynamical systems and symmetry. Cambridge university press. Holthusen, H., Kuhl, E., 2026. A complement to neural networks for anisotropic inelasticity at finite strains. Computer Methods in Applied Mechanics and Engineering 450, 118612. Holthusen, H., Lamm, L., Brepols, T., Reese, S., Kuhl, E., 2024. Theory and implementation of inelastic constitutive artificial neural networks. Computer Methods in Applied Mechanics and Engineering 428, 117063. Intel Corporation, 2025. Intel oneAPI math kernel library PARDISO solver (version 2025.3). Https://www.intel.com/mkl. Kalina, K. A., Brummund, J., K¨ astner, M., 2025. A physics-augmented neural network frame-work for finite strain incompressible viscoelasticity. arXiv preprint arXiv:2511.02959. Kalpakjian, S., Schmid, S. R., 2023. Manufacturing engineering and technology, eighth edition in si units Edition. Pearson Education Limited, Harlow. Lee, K., Carlberg, K. T., 2020. Model reduction of dynamical systems on nonlinear manifolds using deep convolutional autoencoders. Journal of Computational Physics 404, 108973. Liu, Z., Wu, C., Koishi, M., 2019. A deep material network for multiscale topology learning and accelerated nonlinear modeling of heterogeneous materials. Computer Methods in Applied Mechanics and Engineering 345, 1138–1168. Mandel, J., 1972. Plasticit´ e classique et viscoplasticit´ e. McKay, M. D., Beckman, R. J., Conover, W. J., 1979. A comparison of three methods for select-ing values of input variables in the analysis of output from a computer code. Technometrics 21 (2), 239–245. Michel, J.-C., Suquet, P., 2003. Nonuniform transformation field analysis. International journal of solids and structures 40 (25), 6937–6955. Michel, J.-C., Suquet, P., 2016. A model-reduction approach in micromechanics of materials preserving the variational structure of constitutive relations. Journal of the Mechanics and Physics of Solids 90, 254–285. Michel, J.-C., Suquet, P., 2017. Effective potentials in nonlinear polycrystals and quadrature formulae. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sci-ences 473 (2204), 20170213. 32 Miehe, C., 2002. Strain-driven homogenization of inelastic microstructures and composites based on an incremental variational formulation. International Journal for Numerical Meth-ods in Engineering 55 (11), 1285–1322. Miehe, C., Schr¨ oder, J., Schotte, J., 1999. Computational homogenization analysis in finite plasticity simulation of texture development in polycrystalline materials. Computer methods in applied mechanics and engineering 171 (3-4), 387–418. Narkiss, G., Zibulevsky, M., 2005. Sequential subspace optimization method for large-scale unconstrained problems. Tech. rep., Department of Electrical Engineering, Technion Israel Institute of Technology. Nguyen, P., Doˇ sk´ aˇ r, M., Pakravan, A., Krysl, P., 2018. Modification of the quadratic 10-node tetrahedron for thin structures and stiff materials under large-strain hyperelastic deformation. International Journal for Numerical Methods in Engineering 114 (6), 619–636. OpenAI, 2026. Chatgpt. https://chat.openai.com/ , gPT-5.2, accessed January 29, 2026. Ortiz, M., Stainier, L., 1999. The variational formulation of viscoplastic constitutive updates. Computer Methods In Applied Mechanics and Engineering 171, 419–444. Peherstorfer, B., Willcox, K., 2015. Online adaptive model reduction for nonlinear systems via low-rank updates. SIAM Journal on Scientific Computing 37 (4), A2123–A2150. Peng, L., Mohseni, K., 2016. Nonlinear model reduction via a locally weighted pod method. International Journal for Numerical Methods in Engineering 106 (5), 372–396. Ponte Casta˜ neda, P., 1996. Exact second-order estimates for the effective mechanical properties of nonlinear composite materials. Journal of the Mechanics and Physics of Solids 44 (6), 827– 862. Ponte Casta˜ neda, P., 2015. Fully optimized second-order variational estimates for the macro-scopic response and field statistics in viscoplastic crystalline composites. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences 471 (2184), 20150665. Ryckelynck, D., 2005. A priori hyperreduction method: an adaptive approach. Journal of com-putational physics 202 (1), 346–366. Schenk, O., G¨ artner, K., 2006. On fast factorization pivoting methods for sparse symmetric indefinite systems. Electronic Transactions on Numerical Analysis 23 (1), 158–179. Scheunemann, L., Faust, E., 2025. A manifold learning approach to nonlinear model order reduction of quasi-static problems in solid mechanics: proof of concept and parameter study. Computational Mechanics, 1–41. Schr¨ oder, J., 2014. A numerical two-scale homogenization scheme: the fe2-method. In: Plas-ticity and beyond: microstructures, crystal-plasticity and phase transitions. Springer, pp. 1–64. Srinivas, P. B. K., Kabel, M., Schneider, M., 2026. Rapid offline training for deep material networks via a displacement-based laminate formulation and a novel sampling technique for a compliance-based fatigue model. Computer Methods in Applied Mechanics and Engineering 449, 118517. Ting, T. W., 1974. St. venant’s compatibility conditions. Tensor, NS 28 (5), 12. 33 van Tuijl, R. A., Remmers, J. J., Geers, M. G., 2018. Integration efficiency for model reduction in micro-mechanical analyses. Computational mechanics 62, 151–169. Wulfinghoff, S., 2024. Statistically compatible hyper-reduction for computational homogeniza-tion. Computer Methods in Applied Mechanics and Engineering 420, 116744. Wulfinghoff, S., 2025a. Empirically Corrected Cluster Cubature (E3C). Computer Methods in Applied Mechanics and Engineering 437, 117779. Wulfinghoff, S., 2025b. Homogenization in hyperelasticity using empirically corrected cluster cubature (e3c) hyper-reduction. Computer Methods in Applied Mechanics and Engineering 444, 118137. Wulfinghoff, S., 2026. Computational crystal plasticity homogenization using empirically cor-rected cluster cubature (e3c) hyper-reduction. Computer Methods in Applied Mechanics and Engineering 452, 118681. Wulfinghoff, S., Cavaliere, F., Reese, S., 2018. Model order reduction of nonlinear homogeniza-tion problems using a hashin–shtrikman type finite element method. Computer Methods in Applied Mechanics and Engineering 330, 149–179. Wulfinghoff, S., Hauck, J., 2025. E3C hyper-reduction for computational homogenization in nonlinear mechanics. Computational Mechanics, 1–10. Yvonnet, J., He, Q.-C., 2007. The reduced model multiscale method (R3M) for the non-linear homogenization of hyperelastic media at finite strains. Journal of Computational Physics 223 (1), 341–368. Zhang, Q., Ritzert, S., Zhang, J., Kehls, J., Reese, S., Brepols, T., 2026. A unified multi-perspective quadratic manifold for mitigating the kolmogorov barrier in multiphysics damage. Journal of the Mechanics and Physics of Solids, 106499. 34
