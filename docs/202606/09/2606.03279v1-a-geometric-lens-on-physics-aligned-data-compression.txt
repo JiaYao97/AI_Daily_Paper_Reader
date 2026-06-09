@@ -1,0 +1,1325 @@
+Title: A Geometric Lens on Physics-Aligned Data Compression
+
+URL Source: https://arxiv.org/pdf/2606.03279v1
+
+Published Time: Wed, 03 Jun 2026 00:55:20 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# A Geometric Lens on Physics-Aligned Data Compression 
+
+Aleix Segu´ ı 1 Wesley Armour 1
+
+## Abstract 
+
+In AI for Science, physics-informed losses are increasingly used to train learned compressors for scientific data, but their rate–distortion implica-tions remain poorly understood. At fixed bitrate, these objectives often improve preservation of a target physical observable while degrading stan-dard reconstruction fidelity. We develop a local geometric theory showing that this tradeoff is gov-erned by the interaction of latent-space sensitivi-ties induced by the entropy model, the physical ob-servable, and the distortion metric. At each operat-ing point, these induce preferred directions along which compression noise should be suppressed, yielding an anisotropic error-allocation mecha-nism. When these directions are misaligned, im-proving the observable at fixed rate necessarily worsens standard distortion, establishing a funda-mental limit on simultaneous preservation. We formalise this through a local tangent-space rate– distortion law and introduce a practical alignment diagnostic based on dominant eigenspace overlap. Experiments across scientific domains test the theory and validate that the alignment diagnostic correlates with observed data- and physics-space trade-offs. 
+
+## 1. Introduction 
+
+Scientific instruments and large-scale simulations in climate, fluid dynamics, geophysics, and astrophysics now produce data volumes that make storage and transfer a primary bottle-neck. Yet scientific use rarely depends on pointwise fidelity alone: conclusions are drawn from derived physical ob-servables (spectra, gradients, fluxes, conserved quantities, or event indicators) whose sensitivity to perturbations is structured and often highly anisotropic. 
+
+> 1
+
+Department of Engineering Science, University of Oxford, Oxford, UK. Correspondence to: Aleix Segu ´ı
+
+<aleix.seguiugalde@eng.ox.ac.uk >, Wesley Armour 
+
+<wes.armour@oerc.ox.ac.uk >.
+
+Proceedings of the 43 rd International Conference on Machine Learning , Seoul, South Korea. PMLR 306, 2026. Copyright 2026 by the author(s). 
+
+Learned compression offers strong rate–distortion perfor-mance through latent representations and learned entropy models (Ball ´e et al., 2018; Minnen et al., 2018). This flex-ibility has motivated physics-aware objectives that aim to preserve downstream observables rather than mean-square error (MSE) alone. In scientific compression, this trend ap-pears both in classical quantities-of-interest-aware pipelines and in more recent learned approaches (Ainsworth et al., 2019; Jiao et al., 2022; Lee et al., 2022; Liu et al., 2021a; Galletti et al., 2026). Empirically, such objectives reveal a recurring phenomenon: at fixed bitrate, one can improve preservation of the target observable, but typically at the cost of worse standard reconstruction fidelity. However, the phenomenon remains poorly understood: 
+
+When can a codec preserve physically meaningful quantities under a bitrate constraint, and what governs the resulting trade-offs with standard fidelity measures? 
+
+We address these questions through a local geometric theory of physics-aware compression. Our main result is that, at each latent operating point, preserving the physical observ-able and preserving standard fidelity each prioritise certain eigendirections along which compression noise should be suppressed. The key feature is whether these directions are aligned. When they are not, improving physical observables at fixed rate necessarily worsens standard distortion, provid-ing a geometric explanation for the fixed-rate physics–MSE tradeoff often seen in practice. Formally, we show that, under local perturbations in latent space, physics-aware compression behaves as a sample-conditioned tangent-space rate–distortion law. In this regime, error allocation is governed by three latent-space metrics: a rate metric induced by the entropy model, a 
+
+physics sensitivity metric induced by the observable of in-terest, and a signal fidelity metric induced by signal-space distortion. This yields an explicit inverse-stiffness allocation rule for compression noise. Our theory further motivates a practical alignment measure based on dominant eigenspace overlap. We validate these predictions across several regimes, includ-ing computational fluid dynamics, cosmological simulations, and electron microscopy measurements of cerebral cortex volume. 1
+
+> arXiv:2606.03279v1 [cs.LG] 2 Jun 2026 Physics-Aligned Data Compression
+
+## 2. Related Work 
+
+Foundations and learned compression. Our work builds on the classical rate–distortion tradition (Shannon, 1948; 1959), high-rate quantisation theory (Gersho, 1979), and modern learned compression with autoencoders and learned entropy models (Ball ´e et al., 2018; Minnen et al., 2018). Re-cent advances include expressive entropy and context mod-els, including transformer-based priors (Qian et al., 2022), joint global–local hierarchies (Kim et al., 2022), and data-driven dictionary priors (Lu et al., 2025). Related progress on rate–distortion of discrete representations also appears on task-based vector quantisation (van den Oord et al., 2018; Shlezinger et al., 2019; Gao & Long, 2024; Zandieh et al., 2025). Our contribution differs in focusing on the local geometry induced by the entropy model and its interaction with physics-aware distortion criteria. 
+
+Scientific compression. Scientific data compression has a history in high-performance computing, with widely used compressors prioritising throughput and explicit error guar-antees on floating-point data (Lindstrom, 2014; Di & Cap-pello, 2016; Ballester-Ripoll et al., 2020; Di et al., 2025). More recently, both classical and learned approaches have increasingly emphasised preservation of downstream quan-tities of interest (QoI) rather than only primary-data fidelity. Some works derive explicit theory linking primary-data er-ror to QoI error (Jiao et al., 2022), while others combine learned and classical components to better preserve derived quantities under compression constraints (Ainsworth et al., 2019; Lee et al., 2022; Banerjee et al., 2022; Liu et al., 2021a; 2023; Jia et al., 2025). Domain-specific learned com-pressors further incorporate physics-informed objectives for particular PDE systems, including turbulent flows and plasma simulations (Momenifar et al., 2022; Choi et al., 2021; Galletti et al., 2026). Our work is complementary: rather than proposing another physics-aware objective, we explain geometrically when such objectives induce a trade-off with standard fidelity and when they can be rate-efficient. 
+
+Indirect, semantic, and task-defined distortion. Our formulation is adjacent to information-theoretic treatments where distortion is imposed on an indirectly observed or task-relevant quantity. Early examples include noisy source coding formulations (Dobrushin & Tsybakov, 1962; Wolf & Ziv, 1970) and indirect rate–distortion (Witsenhausen, 1980). Task-aware compression is also closely connected to the information bottleneck (Tishby et al., 2000; Alemi et al., 2019), semantic rate–distortion (Liu et al., 2021b), task-based codecs for computer vision (Duan et al., 2020; Fern ´andez-Mendui ˜na et al., 2026), and perception (Blau & Michaeli, 2019). Our setting is related in spirit, but differs in developing a sample-local tangent-space characterisation, rather than a global operational rate–distortion function. 
+
+## 3. Preliminaries 
+
+3.1. Learned compression setting 
+
+We consider a standard learned compression architecture consisting of an encoder–decoder pair and a learned entropy model. Given data x ∈ X ⊂ Rd, the encoder fϕ maps the input to a latent representation z = fϕ(x) ∈ Z ⊂ Rm,
+
+which is quantised to ˆz and decoded as ˆx = gθ (ˆ z). The latent representation ˆz is modelled via a learned probability density pψ (ˆ z).
+
+3.2. Physical observables 
+
+We assume that data x ∈ X arise as observable realisations of an underlying physical system, and that the scientifically meaningful content of the data can be summarised through suitably chosen observables . These observables express prior knowledge about which aspects of the signal should be preserved by compression. 
+
+Definition 3.1 (Physical Observable) . Let Q : X → Q 
+
+be a differentiable map from data space to a space of physical quantities of interest (QoIs), such as spectra, gradients, fluxes, conservation laws or any other physical quantities. We assess fidelity with respect to physical semantics through a smooth distortion loss 
+
+DQ : Q × Q → R+, (x, ˆx) 7 → DQ(Q(x), Q (ˆ x)) ,
+
+which measures deviation in observable space. The choice of Q specifies which features of x are deemed physically relevant, while DQ determines how discrepancies in those features are penalised. We introduce a running example of physical observable on Fig. 1. 
+
+3.3. Problem formulation 
+
+Physics-aligned compression can be viewed as an indirect 
+
+rate–distortion problem: rather than constraining reconstruc-tion error only in signal space, we also constrain distortion in the space of physically meaningful observables. The aim is to minimise the required coding rate while ensuring (i) accurate preservation of the observables Q(X) and (ii) acceptable overall reconstruction fidelity. 
+
+Definition 3.2 (Physics-Aware Rate–Distortion) . Let X
+
+be a random variable on X , and let Q and DQ be as in Definition 3.1. Let DX : X × X → R+ be a data-space distortion (e.g. mean-square error). For thresholds 
+
+(εQ, ε X ), define the physics-aligned rate-distortion func-tion 2Physics-Aligned Data Compression Velocity ( ‖v‖)           
+
+> ‖v‖error ( β= 0 .00 )
+> ‖v‖error ( β= 0 .50 )
+> Vorticity ( Q(v) = yvx−xvy)
+> Q(v)error ( β= 0 .00 )
+> Q(v)error ( β= 0 .50 )
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 50
+> 0
+> 50
+> 0
+> 5
+> 10
+> 15
+
+Figure 1. As a running example, we use 2D velocity fields from PDEBench (Takamoto et al., 2022) with channels (vx, v y ). The physical observable is vorticity, Q(v) = ∂y vx − ∂xvy . The figure compares pointwise compression errors for the reconstructed velocity field and for the derived vorticity. Two models are trained at the same bitrate, 0.85 bps: β = 0 corresponds to MSE-only training, while β = 0 .5
+
+includes the physics loss, where β is the physics weight defined in Section 6. At the same bitrate, the β = 0 .5 model changes the relative allocation of error between velocity-space and vorticity-space distortions. 
+
+R(εQ, ε X ) := inf 
+
+> p( ˆX|X)
+
+I(X; ˆX) (1) s.t. E
+
+h
+
+DQ
+
+
+
+Q(X), Q ( ˆX)
+
+i 
+
+≤ εQ, (2) 
+
+E
+
+h
+
+DX
+
+
+
+X, ˆX
+
+i 
+
+≤ εX . (3) 
+
+The observable constraint (2) ensures that compression pre-serves the prescribed physical quantities of interest, while the signal-space constraint (3) prevents degenerate solutions that may satisfy (2) yet exhibit severe artifacts or implausi-ble deviations along directions weakly constrained by the chosen observable. This formulation is closely related to indirect and semantic rate–distortion viewpoints (Dobrushin & Tsybakov, 1962; Liu et al., 2021b), where the semantics are accessed through Q(X).
+
+## 4. A Local Geometric Model of Physics-Aligned Compression 
+
+We now develop a local geometric model that characterises how rate constraints and physics-aware distortion jointly shape admissible reconstruction error. The key idea is to analyse compression through small perturbations in latent space, under which both rate and distortion admit tractable second-order structure. 
+
+4.1. Local perturbation model in latent space 
+
+We adopt a local viewpoint in which the effect of quan-tisation and entropy coding is modelled as a small ran-dom perturbation of a reference latent representation. Let 
+
+Z = fϕ(X) denote the latent induced by the encoder, and let ˆZ denote the quantised latent. Locally around a typical 
+
+z = fϕ(x), we model 
+
+ˆZ = Z + η, E[η | X] = 0 , E[ηη ⊤ | X] = Σ , (4) where η captures compression-induced uncertainty (e.g. quantisation noise) and Σ ≻ 0 is its covariance. Through-out, we interpret Σ as the object through which the codec allocates reconstruction error across latent directions. When needed, we will use the Gaussian local channel ap-proximation qΣ(ˆ z | x) ≈ N z(x), Σ, which is both analytically convenient and (among all noise models with covariance Σ) maximises conditional entropy, yielding a conservative “volume” proxy (Gersho & Gray, 1992). 
+
+4.2. Entropy curvature and a local rate surrogate 
+
+To solve the physics-aligned rate-distortion problem defined in Eq. (1) , we must quantify the cost of storing the quan-tised latent ˆZ. However, directly minimising the mutual information I(X; ˆX) is usually intractable. Instead, learned codecs use an entropy model pψ (ˆ z) and optimise a variational latent-rate proxy. If q(ˆ z | x) denotes the conditional distribution over quantised latents induced by the encoder and noise model, we write 
+
+Rvar := Ep(x)
+
+h
+
+KL 
+
+
+
+q( ˆZ | X) ∥ pψ ( ˆZ)
+
+i 
+
+. (5) This is a standard variational upper bound used in learned compression (Ball ´e et al., 2018), which bounds the rate by the expected KL divergence between the posterior and the prior. Indeed, I(X; ˆX) ≤ I(X; ˆZ) ≤ Rvar as shown in Appendix A.1. We now examine this rate locally around a fixed sample x,with latent z = fϕ(x), under the perturbation model (4). 
+
+Proposition 4.1 (Local expansion of the variational rate) .
+
+Assume the local Gaussian channel approximation qΣ(ˆ z |
+
+3Physics-Aligned Data Compression 
+
+x) ≈ N (z, Σ) with Σ ≻ 0, and assume that the negative log-likelihood admits a second-order expansion around z of the form 
+
+− log pψ (z+η) = const .+ 12 η⊤HR(z) η+o(∥η∥2), (6) 
+
+for some symmetric matrix HR(z) ⪰ 0. Then the Σ-dependent part of Rvar satisfies 
+
+Rvar = const .+ 12 Tr  HR(z) Σ − 12 log det Σ+ o(∥Σ∥).
+
+(7) The two terms in (7) have different origins. The neg-ative entropy of the Gaussian local channel contributes 
+
+− 12 log det Σ , penalising shrinking the total volume. The ex-pected negative log-likelihood contributes 12 Tr( HR(z)Σ) ,penalising placing uncertainty in latent directions with high entropy-model curvature. The full derivation is given in Appendix A.2. We therefore use the following local rate surrogate: 
+
+Rsur (Σ; z) := 12 Tr  HR(z)Σ | {z }
+
+> variance placement
+
+− 12 log det Σ 
+
+| {z }
+
+> uncertainty volume
+
+, (8) dropping additive constants independent of Σ. This surro-gate makes the geometry of rate explicit: at fixed uncertainty volume, noise aligned with high-curvature directions of the entropy model costs more bits than noise aligned with low-curvature directions, as illustrated in Fig. 2. In practice, HR should be understood as an effective positive-semidefinite rate metric rather than necessarily the raw Hessian of an arbitrary marginal density. For condi-tional entropy models such as hyperpriors or context models (Minnen et al., 2018), standard conditional likelihoods often give a PSD curvature in z for fixed side information. When the exact Hessian is indefinite or inconvenient, one can in-stead use a PSD surrogate, such as a Fisher-information approximation. The subsequent theory only requires such a PSD local metric satisfying the expansion in (7). 
+
+4.3. Signal fidelity and physical sensitivity 
+
+We now quantify how latent perturbations translate into errors both in the reconstructed field and the physical quan-tities of interest. Under a local tangent-space expansion, both signal-space and physics-aware distortions become quadratic forms in the latent perturbation η. Their expected values are therefore controlled by the covariance Σ intro-duced in (4). We fix an operating point x with latent code z = fϕ(x), and consider a perturbation ˆz = z + η. Linearising the decoder around z gives 
+
+ˆx = gθ (ˆ z) ≈ gθ (z) + Jg (z) η, (9) z     
+
+> Prior −log p(z)
+> High Cost
+> High T r (HRΣ)
+> Optimal
+> Low T r (HRΣ)
+
+Figure 2. The Geometry of Rate. The contours represent the negative log-prior − log p(z). The curvature HR is high (steep) along the vertical axis and low (flat) along the horizontal. Both ellipses represent a noise covariance Σ with the same quantisation volume (same entropy/ log det Σ ). The red dashed ellipse pays a high bit-cost because it has high variance along the steep direction. The green solid ellipse is optimal: it aligns its variance with the flat directions of the prior, minimising the trace cost Tr( HRΣ) .
+
+Figure 3. Illustration of the error mapping from latent space to physical observable space through JQ(x) Jg (z) η.
+
+where Jg (z) := ∇z gθ (z) is the decoder Jacobian. If de-terministic reconstruction bias at the operating point is ne-glected, or treated separately, we may write δx := ˆ x − x ≈
+
+Jg (z)η. Passing this perturbation through the observable map yields 
+
+Q(ˆ x) ≈ Q(x) + JQ(x) δx ≈ Q(x) + JQ(x) Jg (z) η, 
+
+(10) where JQ(x) := ∇xQ(x). Thus, to first order, latent pertur-bations affect the observable through the composed linear operator JQ(x)Jg (z), as illustrated in Fig. 3. To relate these perturbations to distortion, we approximate the losses by local quadratic forms. Let HD (x) ⪰ 0 denote the Hessian of the data-space loss with respect to pertur-bations in x, and let Hℓ(x) ⪰ 0 denote the Hessian of the observable-space loss with respect to perturbations in 
+
+Q(x).1 Pulling these quadratic forms back to latent space gives the following two metrics. 
+
+Definition 4.2 (Fidelity and Sensitivity Metrics) . The 
+
+Fidelity Metric Geff measures the curvature of the recon-struction error in latent space: 
+
+Geff (x) := Jg (z)⊤HD (x)Jg (z). (11) The Physics Sensitivity Metric Weff measures the curva-
+
+> 1
+
+For example, if DX (x, ˆx) = ∥x − ˆx∥22, then HD (x) = 2 I.
+
+4Physics-Aligned Data Compression 
+
+ture of the physical observable loss in latent space: 
+
+Weff (x) := Jg (z)⊤ JQ(x)⊤Hℓ(x)JQ(x)
+
+| {z }
+
+> Observable Stiffness
+
+Jg (z). (12) 
+
+The metrics Geff and Weff determine how the covari-ance of latent perturbations contributes to expected distor-tion. Specifically, for a zero-mean perturbation satisfying 
+
+E[ηη ⊤] = Σ , the expected quadratic loss is given by a trace pairing between the relevant metric and Σ.
+
+Proposition 4.3 (Second-order distortion surrogates) . Un-der the linearisations (9) –(10) and the local quadratic ap-proximations, the Σ-dependent parts of the expected distor-tions satisfy 
+
+E
+
+h
+
+DX
+
+
+
+X, ˆX
+
+
+
+| X = x
+
+i
+
+≈ Tr( Geff (x) Σ) ,
+
+E
+
+h
+
+DQ
+
+
+
+Q(X), Q ( ˆX)
+
+
+
+| X = x
+
+i
+
+≈ Tr( Weff (x) Σ) .
+
+Full details of the derivation are given in Appendix A.3. 
+
+Example 
+
+Power spectra and band energies are common quan-tities of interest in turbulence, seismology, and com-munications. Let yj be the frequency coefficients of an orthonormal transform (e.g, DFT or DCT). For frequency bands Bk, define the log-band energies 
+
+uk(x) = log ek(x), ek(x) = X
+
+> j∈Bk
+
+y2 
+
+> j
+
+.
+
+Consider a quadratic observable loss DQ(u, ˆu) =
+
+PKk=1 σ−2 
+
+> k
+
+(uk − ˆuk)2. Writing Jek (x) for the Jaco-bian of the scalar band energy ek, the induced physics sensitivity takes the schematic form 
+
+JQ(x)⊤HℓJQ(x) ∼
+
+> K
+
+X
+
+> k=1
+
+1
+
+σ2 
+
+> k
+
+ek(x)2 Jek (x)⊤Jek (x).
+
+The factor 1/e k(x)2 acts as a gain control: preserving 
+
+log -energies corresponds to controlling relative band-energy errors. As a result, the observable stiffness weights absolute energy perturbations more strongly in low-energy bands and more weakly in high-energy bands. 
+
+4.4. A local rate–distortion law 
+
+We now introduce our central characterisation of physics-aware compression, using the three quadratic objects in latent space derived previously. Fix an operating point x with z = fϕ(x). We interpret 
+
+(εQ, ε X ) as local budgets for the second-order approxima-tions of DQ and DX , respectively. 
+
+Theorem 4.4 (Local tangent-space rate–distortion law) .
+
+Under the perturbation model (4) and the local approxi-mations of Propositions 4.1 and 4.3, the physics-aligned rate–distortion problem admits the local surrogate 
+
+Rsur (εQ, ε X ; x) := min  
+
+> Σ≻0
+
+Tr( HR(z)Σ) − log det Σ 
+
+(13) 
+
+s.t. Tr( Weff (x)Σ) ≤ εQ, (14) 
+
+Tr( Geff (x)Σ) ≤ εX . (15) 
+
+If the budgets are feasible, the problem has a unique minimiser. Moreover, there exist Lagrange multipliers 
+
+α ≥ 0 and γ ≥ 0 such that 
+
+(Σ ⋆(x)) −1 = HR(z) + αW eff (x) + γG eff (x). (16) The surrogate problem follows by substituting the local rate expansion from Proposition 4.1 and the trace distortion surrogates from Proposition 4.3 into the constrained rate– distortion objective. The objective is strictly convex in Σ,since the trace term is linear and − log det Σ is strictly con-vex on Σ ≻ 0. The inverse-covariance expression follows from Karush–Kuhn–Tucker conditions, with full details in Appendix A.4. 
+
+4.5. Interpretation of physical alignment 
+
+Equation (16) shows that the optimal allocation is additive in precision: 
+
+(Σ ⋆)−1 = HR
+
+|{z} 
+
+> rate curvature
+
++α Weff 
+
+|{z} 
+
+> observable sensitivity
+
++γ Geff 
+
+|{z} 
+
+> signal fidelity
+
+.
+
+This gives a geometric inverse-stiffness interpretation of the covariance. Latent directions with large curvature under 
+
+HR are costly to encode, directions with large curvature under Weff produce large observable-space distortion, and directions with large curvature under Geff produce large signal-space distortion. The optimal covariance therefore as-signs lower variance to directions that are strongly penalised by these metrics. A useful way to separate information cost from physical and signal sensitivity is to work in coordinates normalised by the rate metric (also called rate whitening ). Assuming 
+
+HR ≻ 0, define the rate-whitened metrics 
+
+fW := H−1/2 
+
+> R
+
+Weff H−1/2 
+
+> R
+
+, eG := H−1/2 
+
+> R
+
+Geff H−1/2 
+
+> R
+
+.
+
+(17) Then (16) can be written as 
+
+Σ⋆ = H−1/2
+
+> R
+
+
+
+I + α fW + γ eG
+
+−1
+
+H−1/2 
+
+> R
+
+. (18) 5Physics-Aligned Data Compression 10 3       
+
+> Data Fidelity (‖x−ˆx‖22)
+> 10 1
+> Physics Sensitivity  (‖Q(x) − Q( ˆ x)‖22)
+> Hyperprior
+> (0.80 bps)
+> Factorised
+> (4.02 bps)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Physics weight  β
+> Figure 4. Data and observable space errors for different variational autoencoder models with hyperprior or factorised entropy model. Multiple repetitions are trained for varying physics weight β, trac-ing the Pareto frontier.
+
+In these coordinates, fW and eG measure observable and signal sensitivity per unit rate cost. Physical alignment is therefore determined by the eigendirections of these rate-normalised metrics: if the dominant directions of fW and eG
+
+coincide, physical and signal fidelity suppress uncertainty along similar latent directions; if they differ, the two objec-tives compete for different directions of precision. The same allocation rule also admits a linear-filtering in-terpretation. It is equivalent to the posterior covariance of a linear-Gaussian estimator with prior precision HR and observation precisions αW eff and γG eff . This connects physics-aware compression to the denoising view of autoen-coders, where compressed representations are encouraged to retain task-relevant signal structure (Vincent et al., 2008). In our setting, the denoising geometry is explicit: relative to the local rate metric, latent directions with larger observable or signal sensitivity receive smaller variance. Appendix A.6 gives the full derivation of the equivalence. 
+
+## 5. Consequences of Physical Alignment 
+
+5.1. A Physical No-Free-Lunch 
+
+Figure 4 illustrates the fixed-rate trade-off that motivates the alignment analysis: changing the physics weight β re-allocates error between the primary field and the observ-able. The local theory identifies a geometric condition under which this trade-off is unavoidable. The relevant comparison is between the rate-normalised physics and fi-delity metrics introduced in (17) . If these metrics favour different latent directions, then reducing observable-space distortion at fixed rate requires allocating precision away from directions preferred by the signal-fidelity objective. 
+
+Definition 5.1 (Rate-whitened alignment) . Assume 
+
+HR ≻ 0 and define fW , eG as in (17) . We say that the task and fidelity are rate-aligned if fW and eG commute (admit a common eigenbasis). Otherwise they are not rate-aligned .The following result formalises the fixed-rate consequence of this mismatch. 
+
+Theorem 5.2 (No free lunch on physics fidelity at fixed rate) . Assume HR ≻ 0 and consider the rate-feasible set 
+
+Fρ := {Σ ≻ 0 : Rsur (Σ) ≤ ρ} , (19) 
+
+for some budget ρ > 0, where Rsur is defined in (8) .Define the optimal covariances at rate ρ as 
+
+ΣPhys := arg min 
+
+> Σ∈F ρ
+
+Tr( Weff Σ) ,
+
+ΣMSE := arg min 
+
+> Σ∈F ρ
+
+Tr( Geff Σ) ,
+
+and assume these minimisers are unique. If the task and fidelity are not rate-aligned (Definition 5.1), then improving physics at fixed rate strictly worsens fi-delity, in the sense that 
+
+Tr( Weff ΣPhys ) < Tr( Weff ΣMSE )=⇒ Tr( Geff ΣPhys ) > Tr( Geff ΣMSE ) .
+
+(20) Theorem 5.2 identifies a geometric source of Pareto ten-sion: if the (rate-whitened) metrics are not rate-aligned, any move along the rate-feasible efficient frontier toward better physics fidelity inevitably degrades MSE. Full details of the proof are given in Appendix A.5. The theorem should be read as a sufficient condition for fixed-rate Pareto tension. Non-commutativity of fW and eG
+
+gives a rotational mismatch: the observable and fidelity ob-jectives require precision in different latent eigendirections. This is enough to force a strict trade-off under the theorem assumptions. The converse is not implied. If fW and eG
+
+commute, then the rotational mismatch is absent, but the two objectives may still prefer different allocations through their eigenvalue profiles. Thus, fixed-rate trade-offs can arise either from rotational mismatch, where the relevant eigenspaces differ, or from spectral mismatch, where the eigenspaces are shared but weighted differently. 
+
+5.2. Measuring alignment between physics and fidelity 
+
+The previous result is inspiration for a local alignment score on whether observable fidelity and signal fidelity require precision in the same latent directions. 6Physics-Aligned Data Compression u˜W (x)
+
+u˜
+
+> G
+
+(x)
+
+θ
+
+z = fφ(x)
+
+# Z
+
+z1
+
+z2      
+
+> High alignment
+> Low alignment
+> Figure 5. At each latent point z=fϕ(x), the red and green arrows denote the dominant fidelity-sensitive and physics-sensitive directions, respectively, in the rate-whitened geometry. Their acute angle θ(x)determines the local alignment score shown in the background.
+
+Definition 5.3 (Physical Alignment Score) . Let fW (x)
+
+and eG(x) denote the rate-whitened physics and fidelity metrics at state x. Let UW,k (x) ∈ Rm×k (resp. UG,k (x))have orthonormal columns spanning the top-k eigenspace of fW (x) (resp. eG(x)). We define the k-physical align-ment at x as 
+
+Align k(x) := 1
+
+k UW,k (x)⊤UG,k (x) 2 
+
+> F
+
+∈ [0 , 1] .
+
+(21) Equivalently, if {θi(x)}ki=1 are the principal an-gles between the two subspaces, then Align k(x) =
+
+> 1
+> k
+
+Pki=1 cos 2θi(x). A dataset-level score is obtained by averaging: Align k := EX [Align k(X)] .
+
+Align k(x) measures whether the physics-stiff directions (top eigenvectors of fW ) coincide with the fidelity-stiff direc-tions (top eigenvectors of eG) in the rate-whitened geometry (see Fig. 5). Values Align k ≈ 1 indicate that the leading observable-sensitive and fidelity-sensitive subspaces coin-cide in the rate-whitened geometry, whereas low values 
+
+Align k < 1 indicate a rotational mismatch between the two objectives, consistent with stronger physics–MSE tension at fixed rate. In practice we never form fW or eG explicitly, but access them only through matrix–vector products implemented via automatic differentiation. The dominant k-dimensional eigenspaces are then approximated using a standard ran-domised range-finding procedure: a Gaussian test matrix is propagated through the operator using these matvecs, followed by a small number of subspace-iteration steps to sharpen separation of the leading eigendirections before or-thonormalisation. Full implementation details are given in Appendix B. 
+
+5.3. Spectral rate advantage from anisotropic physics 
+
+Let ˜w1 ≥ ˜w2 ≥ · · · ≥ ˜wm ≥ 0 be the eigenvalues of the rate-whitened physics metric fW . The allocation rule (18) shows that these eigenvalues determine the rate-normalised cost of controlling the observable: directions with large 
+
+˜wi require increased precision, while directions with small 
+
+˜wi can tolerate larger variance. When the spectrum de-cays rapidly, observable sensitivity is concentrated in a low-dimensional subspace. Spectral concentration can therefore produce a rate advantage relative to an isotropic fidelity constraint: for the same observable distortion, fewer rate-normalised directions need to be controlled. We illustrate the modal allocation in the commuting, rate-aligned case in Fig. 6, and report the corresponding rate–distortion be-haviour for the running CFD example in Fig. 7. 
+
+## 6. Experiments 
+
+We evaluate the proposed framework with two aims: first, to test whether the local tangent-space model accurately describes the behaviour of trained codecs; and second, to de-termine whether the proposed alignment diagnostic explains the trade-offs induced by physics-aware compression. The main-text experiments focus on turbulent fluid dynamics, where the geometric predictions can be probed most directly. Additional datasets, observables, and cross-domain analy-ses, which include cosmological simulation and electron microscopy, are reported in the Appendix. 
+
+Data and physical observable. Our primary testbed is the turbulent Navier–Stokes subset of PDEBench, where we compress 2D velocity fields v = ( vx, v y ). Following Fig. 1, the physical observable is vorticity, Q(v) = ∂y vx − ∂xvy ,and the physics loss is an ℓ2 discrepancy in observable space, 
+
+DQ(Q(x), Q (ˆ x)) = ∥Q(x)−Q(ˆ x)∥22. Signal-space fidelity is measured by MSE (and reported as PSNR when plotting rate–distortion curves). Full dataset descriptions, additional observables, preprocessing, and implementation details are deferred to Appendix C. Models are trained by minimising the rate-distortion La-grangian with a physics weight β ∈ [0 , 1] :
+
+min  
+
+> ϕ,θ,ψ
+
+Ltrain := EX∼p(x)
+
+"Rψ ( ˆZ) + λ(1 − β) DX (X, ˆX)+ λβ D Q
+
+ Q(X), Q ( ˆX)#
+
+,Z = fϕ(X), ˆZ = Q(Z), ˆX = gθ ( ˆZ).
+
+(22) where Rψ ( ˆZ) is the variational rate proxy. By construction, 
+
+β = 0 corresponds to MSE-only training and β = 1 to physics-only training. 
+
+Validating the sample-local geometric model. To test the core approximation behind our theory, we probe trained 7Physics-Aligned Data Compression σ−21 σ−22 σ−23 σ−24                        
+
+> 0
+> 2
+> 4
+> 6
+> allocated error precision
+> ˜g1˜g2˜g3˜g4
+> MSE-prioritised
+> σ−21σ−22σ−23σ−24
+> ˜w1
+> ˜w2
+> ˜w3˜w4
+> Physics-prioritised
+> σ−21σ−22σ−23σ−24
+> α˜w1
+> α˜w2α˜w3α˜w4
+> γ˜g1
+> γ˜g2
+> γ˜g3γ˜g4
+> Balanced (α=γ= 0 .5)
+> shared principal directions of ˜Wand ˜G
+
+Figure 6. Assuming fW and eG share a common eigenbasis, the local allocation rule decomposes by mode, with (˜ σ⋆i )−2 = 1 + α ewi + γegi.Each stacked bar shows the corresponding combined precision: gray is the rate baseline (the 1 constant), green the physics contribution (α ewi), and red the fidelity contribution ( γegi). The three panels compare MSE-prioritised, physics-prioritised, and balanced allocations. 1 2 3 4     
+
+> Rate (bps)
+> 10
+> 15
+> 20
+> 25
+> 30
+> Physics PSNR
+> 0.0 0.2 0.4 0.6 0.8
+> Physics weight β
+> 0
+> 10
+> 20
+> 30
+> 40
+> ∆Rate (\%)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Physics weight  β
+
+Figure 7. Rate–distortion curves for a hyperprior model for the physics loss (left) and rate gain (right), computed as the average rate difference over a common PSNR range (Bjontegaard, 2001). 
+
+models locally in latent space. For random validation sam-ples x, we encode z = fϕ(x) and inject controlled perturba-tions η with prescribed covariance (diagonal and full-rank variants), forming ˆz = z + η and decoding ˆx = gθ (ˆ z). We then compare (i) the change in variational rate against the quadratic surrogate in Lemma 4.1, and (ii) the change in signal/physics losses against the trace surrogates in Propo-sition 4.3. We quantify agreement via the coefficient of de-termination ( R2) over a sweep of perturbation magnitudes. Fig. 8 shows that the second-order models remain predictive for moderate noise levels, supporting the use of HR, Weff ,and Geff as local geometry descriptors. Appendix D reports additional low-bitrate experiments. 
+
+Rate–distortion–physics trade-offs at fixed rate. Next we examine the empirical Pareto frontier induced by β. For each target bitrate, we train multiple models with different β
+
+and evaluate both signal distortion DX and observable dis-tortion DQ. Fig. 4 visualises this frontier: increasing β im-proves vorticity fidelity while typically degrading MSE, con-sistent with Theorem 5.2 when the (rate-whitened) physics 0.5 1.0 1.5 2.0            
+
+> Latent noise σ
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> R²
+> ∆‖g(z)‖2vs εTJTgJgε
+> ∆‖Q(g(z)) ‖2vs εTW ε
+> ∆R(z)vs εTHRε
+
+Figure 8. Averaged R2 statistic between the quadratic approxima-tions and their counterparts. Values are averaged over various data samples, models, and hyperparameter configurations. 
+
+8Physics-Aligned Data Compression 0.0 0.2 0.4 0.6 0.8                  
+
+> Physics weight β
+> 0.60
+> 0.65
+> 0.70
+> 0.75
+> 0.80
+> 0.85
+> Align k(W, G )
+> k= 8 (44% Tr( W))
+> k= 16 (52% Tr( W))
+> k= 32 (61% Tr( W))
+> Figure 9. Align kmetric for k= 8 ,16 ,32 , averaged over data samples, on a hyperprior model. For every k, the percentage of trace coverage is indicated.
+
+and fidelity metrics are not aligned. Importantly, this be-havior reflects reallocation of error into directions that are weakly sensed by Q rather than a uniform improvement. This is also observed in the additional physical observables included in Appendix D. 
+
+Spectral alignment as an explanatory diagnostic. Fi-nally, we connect the observed trade-offs and rate gains to the rate-whitened geometry (18). We compute the phys-ical alignment score Align k (Definition 5.3) using only matrix–vector products with the implicit operators fW and eG,avoiding explicit formation of dense matrices. Fig. 9 shows that Align k increases systematically with β, indicating that physics-aware training reshapes the representation so that physics-stiff directions increasingly overlap with fidelity-stiff directions in the rate-whitened geometry. This trend helps explain when improved physics fidelity is achieved with mild MSE degradation, and it is consistent with the rate advantages observed in Fig. 7 when sensitivity is spectrally concentrated (Section 5.3). Appendix D shows that the di-agnostic remains informative across additional domains and observables. 
+
+## 7. Limitations 
+
+• Alignment is described, not enforced. While the theory explains how physical alignment relates to trade-offs and rate efficiency, a full analysis of how training objectives and regularisers help improve the alignment is left for future work. • Reconstruction bias is not modelled explicitly. The analysis treats compression through local latent per-turbations around an operating point, so it cap-tures uncertainty-induced error rather than systematic encoder–decoder bias from finite model capacity or imperfect optimisation. 
+
+## 8. Conclusions 
+
+This paper gives a local geometric explanation of physics-aware learned compression. The central insight is that pre-serving a physical observable and preserving standard fi-delity each privilege certain latent directions, and that the alignment of these directions determines whether physics-aware training yields a tradeoff. Misalignment explains the fixed-rate physics–MSE tension often seen in practice, while spectral concentration explains when preserving physics can remain efficient. We made this precise through a local tangent-space rate– distortion law, an explicit inverse-stiffness allocation rule for compression noise, and a practical diagnostic based on dominant eigenspace overlap. Experiments across several scientific domains support the theory and show that the diagnostic is predictive in practice. 
+
+Take-aways 
+
+• Physics-aware compression has local geometry. 
+
+At each latent operating point, rate, observable sen-sitivity, and signal fidelity induce a local allocation law for compression noise. • Misalignment implies a fixed-rate trade-off. Un-der the local model, when physical observables and fidelity metrics are not aligned, improving observ-able fidelity at fixed rate worsens standard distor-tion. • Alignment can be estimated in practice. The physical alignment score provides a computable diagnostic for assessing physics–fidelity trade-offs. • Anisotropy can yield rate advantages. Physics-aware compression can be rate-efficient when observable sensitivity concentrates in a low-dimensional subspace. 
+
+## Acknowledgements 
+
+Aleix received the support of a fellowship from the “la Caixa” Foundation (ID 100010434), under fellowship code LCF/BQ/PFA25/110000. We thank Ryan Cherian for the relevant discussion during the development of the work. 
+
+## Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here. 9Physics-Aligned Data Compression 
+
+## References 
+
+Ainsworth, M., Tugluk, O., Whitney, B., and Klasky, S. Multilevel techniques for compression and reduction of scientific data-quantitative control of accuracy in derived quantities. SIAM Journal on Scientific Computing , 41(4): A2146–A2171, 2019. Alemi, A. A., Fischer, I., Dillon, J. V., and Murphy, K. Deep variational information bottleneck, 2019. URL 
+
+https://arxiv.org/abs/1612.00410 .Almgren, A. S., Bell, J. B., Lijewski, M. J., Luki ´c, Z., and Van Andel, E. Nyx: A massively parallel amr code for computational cosmology. The Astrophysical Journal ,765(1):39, feb 2013. doi: 10.1088/0004-637X/765/1/39. URL https://doi.org/10.1088/0004-637X/ 765/1/39 .Ball ´e, J., Minnen, D., Singh, S., Hwang, S. J., and Johnston, N. Variational image compression with a scale hyperprior. In International Conference on Learning Representations (ICLR) , 2018. Ballester-Ripoll, R., Lindstrom, P., and Pajarola, R. Tthresh: Tensor compression for multidimensional visual data. 
+
+IEEE Transactions on Visualization and Computer Graph-ics , 26(9):2891–2903, 2020. doi: 10.1109/TVCG.2019. 2904063. Banerjee, T., Choi, J., Lee, J., Gong, Q., Chen, J., Klasky, S., Rangarajan, A., and Ranka, S. Scalable hybrid learning techniques for scientific data compression, 2022. URL 
+
+https://arxiv.org/abs/2212.10733 .Bjontegaard, G. Calculation of average PSNR differences between RD-curves. ITU-T VCEG Document VCEG-M33, April 2001. Bj ¨orck, A. and Golub, G. H. Numerical methods for com-puting angles between linear subspaces. Mathematics of computation , 27(123):579–594, 1973. Blau, Y. and Michaeli, T. Rethinking lossy compression: The rate-distortion-perception tradeoff. In International Conference on Machine Learning , pp. 675–685. PMLR, 2019. Boyd, S., Parikh, N., Chu, E., Peleato, B., and Eckstein, J. Distributed optimization and statistical learning via the alternating direction method of multipliers. Found. Trends Mach. Learn. , 3(1):1–122, January 2011. ISSN 1935-8237. doi: 10.1561/2200000016. URL https: //doi.org/10.1561/2200000016 .Choi, J., Churchill, M., Gong, Q., Ku, S.-H., Lee, J., Ran-garajan, A., Ranka, S., Pugmire, D., Chang, C., and Klasky, S. Neural data compression for physics plasma simulation. In Neural Compression: From Information Theory to Applications–Workshop@ ICLR 2021 , 2021. Di, S. and Cappello, F. Fast error-bounded lossy hpc data compression with sz. In 2016 IEEE International Parallel and Distributed Processing Symposium (IPDPS) , pp. 730– 739, 2016. doi: 10.1109/IPDPS.2016.11. Di, S., Liu, J., Zhao, K., Liang, X., Underwood, R., Zhang, Z., Shah, M., Huang, Y., Huang, J., Yu, X., Ren, C., Guo, H., Wilkins, G., Tao, D., Tian, J., Jin, S., Jian, Z., Wang, D., Rahman, M. H., Zhang, B., Song, S., Calhoun, J., Li, G., Yoshii, K., Alharthi, K., and Cappello, F. A survey on error-bounded lossy compression for scientific datasets. 
+
+ACM Comput. Surv. , 57(11), June 2025. ISSN 0360-0300. doi: 10.1145/3733104. URL https://doi.org/10. 1145/3733104 .Dobrushin, R. and Tsybakov, B. Information transmission with additional noise. IRE Transactions on Information Theory , 8(5):293–304, 1962. doi: 10.1109/TIT.1962. 1057738. Duan, L., Liu, J., Yang, W., Huang, T., and Gao, W. Video coding for machines: A paradigm of collabora-tive compression and intelligent analytics. Trans. Img. Proc. , 29:8680–8695, January 2020. ISSN 1057-7149. doi: 10.1109/TIP.2020.3016485. URL https://doi. org/10.1109/TIP.2020.3016485 .Fern ´andez-Mendui ˜na, S., Pavez, E., and Ortega, A. Image coding for machines via feature-preserving rate-distortion optimization. IEEE Transactions on Multimedia , pp. 1– 14, 2026. doi: 10.1109/TMM.2026.3664944. Galletti, G., Gutenbrunner, G., Cranganore, S. S., Hornsby, W., Zanisi, L., Carey, N., Pamela, S., Brandstetter, J., and Paischer, F. Physics-informed neural compression of high-dimensional plasma data, 2026. URL https: //arxiv.org/abs/2602.04758 .Gao, J. and Long, C. Rabitq: Quantizing high-dimensional vectors with a theoretical error bound for approximate nearest neighbor search. Proceedings of the ACM on Management of Data , 2(3):1–27, 2024. Gersho, A. Asymptotically optimal block quantization. 
+
+IEEE Transactions on Information Theory , 25(4):373– 380, 1979. doi: 10.1109/TIT.1979.1056067. Gersho, A. and Gray, R. M. Vector Quantization and Sig-nal Compression . The Springer International Series in Engineering and Computer Science. Springer, New York, NY, 1 edition, 1992. ISBN 978-0-7923-9181-4. doi: 10.1007/978-1-4615-3626-0. 10 Physics-Aligned Data Compression 
+
+Halko, N., Martinsson, P.-G., and Tropp, J. A. Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. SIAM review , 53(2):217–288, 2011. Hutchinson, M. F. A stochastic estimator of the trace of the influence matrix for laplacian smoothing splines. Com-munications in Statistics-Simulation and Computation ,18(3):1059–1076, 1989. Jia, W., Hu, Z., Liu, Y., Zhang, B., Wang, J., Liu, J., Niu, W., Kalafatis, S., Huang, J., Jin, S., Wang, D., Tian, J., and Yin, M. Neurlz: An online neu-ral learning-based method to enhance scientific lossy compression. In Proceedings of the 39th ACM Inter-national Conference on Supercomputing , ICS ’25, pp. 26–42, New York, NY, USA, 2025. Association for Com-puting Machinery. ISBN 9798400715372. doi: 10. 1145/3721145.3725763. URL https://doi.org/ 10.1145/3721145.3725763 .Jiao, P., Di, S., Guo, H., Zhao, K., Tian, J., Tao, D., Liang, X., and Cappello, F. Toward quantity-of-interest preserv-ing lossy compression for scientific data. Proc. VLDB Endow. , 16(4):697–710, December 2022. ISSN 2150-8097. doi: 10.14778/3574245.3574255. URL https: //doi.org/10.14778/3574245.3574255 .Kim, J.-H., Heo, B., and Lee, J.-S. Joint global and local hierarchical priors for learned image compression. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 5992–6001, 2022. URL https://openaccess.thecvf. com/content/CVPR2022/html/Kim_Joint_ Global_and_Local_Hierarchical_Priors_ for_Learned_Image_Compression_CVPR_ 2022_paper.html . arXiv:2112.04487. Lee, J., Gong, Q., Choi, J., Banerjee, T., Klasky, S., Ranka, S., and Rangarajan, A. Error-bounded learned scientific data compression with preservation of derived quantities. 
+
+Applied Sciences , 12(13), 2022. ISSN 2076-3417. doi: 10.3390/app12136718. URL https://www.mdpi. com/2076-3417/12/13/6718 .Lindstrom, P. Fixed-rate compressed floating-point arrays. 
+
+IEEE Transactions on Visualization and Computer Graph-ics , 20(12):2674–2683, 2014. doi: 10.1109/TVCG.2014. 2346458. Liu, J., Di, S., Zhao, K., Jin, S., Tao, D., Liang, X., Chen, Z., and Cappello, F. Exploring autoencoder-based error-bounded compression for scientific data. In 2021 IEEE International Conference on Cluster Computing (CLUS-TER) , pp. 294–306, 2021a. doi: 10.1109/Cluster48925. 2021.00034. Liu, J., Zhang, W., and Poor, H. V. A rate-distortion frame-work for characterizing semantic information. In 2021 IEEE International Symposium on Information Theory (ISIT) , pp. 2894–2899, 2021b. doi: 10.1109/ISIT45174. 2021.9518240. Liu, J., Di, S., Jin, S., Zhao, K., Liang, X., Chen, Z., and Cappello, F. Scientific error-bounded lossy compression with super-resolution neural networks. In 2023 IEEE International Conference on Big Data (BigData) , pp. 229– 236, 2023. doi: 10.1109/BigData59044.2023.10386682. Lu, J., Zhang, L., Zhou, X., Li, M., Li, W., and Gu, S. Learned image compression with dictionary-based en-tropy model. In Proceedings of the Computer Vision and Pattern Recognition Conference , pp. 12850–12859, 2025. Minnen, D., Ball ´e, J., and Toderici, G. D. Joint autoregres-sive and hierarchical priors for learned image compres-sion. Advances in neural information processing systems ,31, 2018. Momenifar, M., Diao, E., Tarokh, V., and Bragg, A. D. A physics-informed vector quantized autoencoder for data compression of turbulent flow. In 2022 Data Com-pression Conference (DCC) , pp. 01–10, 2022. doi: 10.1109/DCC52660.2022.00039. Pearlmutter, B. A. Fast exact multiplication by the hessian. 
+
+Neural computation , 6(1):147–160, 1994. Qian, Y., Lin, M., Sun, X., Tan, Z., and Jin, R. Entroformer: A transformer-based entropy model for learned image compression. In Interna-tional Conference on Learning Representations (ICLR) ,2022. URL https://openreview.net/forum? id=VrjOFfcnSV8 . arXiv:2202.05492. Shannon, C. E. A mathematical theory of communication. 
+
+Bell System Technical Journal , 27(3):379–423, 1948. doi: 10.1002/j.1538-7305.1948.tb01338.x. Shannon, C. E. Coding theorems for a discrete source with a fidelity criterion. In IRE National Convention Record ,1959. Shlezinger, N., Eldar, Y. C., and Rodrigues, M. R. D. Hardware-limited task-based quantization. IEEE Trans-actions on Signal Processing , 67(20):5223–5238, 2019. doi: 10.1109/TSP.2019.2935864. Takamoto, M., Praditia, T., Leiteritz, R., MacKinlay, D., Alesiani, F., Pfl ¨uger, D., and Niepert, M. Pdebench: An extensive benchmark for scientific machine learning. 
+
+Advances in Neural Information Processing Systems , 35: 1596–1611, 2022. 11 Physics-Aligned Data Compression 
+
+Tishby, N., Pereira, F. C., and Bialek, W. The informa-tion bottleneck method. arXiv preprint physics/0004057 ,2000. van den Oord, A., Vinyals, O., and Kavukcuoglu, K. Neural discrete representation learning, 2018. URL https: //arxiv.org/abs/1711.00937 .Vincent, P., Larochelle, H., Bengio, Y., and Manzagol, P.-A. Extracting and composing robust features with de-noising autoencoders. In Proceedings of the 25th Inter-national Conference on Machine Learning , ICML ’08, pp. 1096–1103, New York, NY, USA, 2008. Associa-tion for Computing Machinery. ISBN 9781605582054. doi: 10.1145/1390156.1390294. URL https://doi. org/10.1145/1390156.1390294 .Witsenhausen, H. Indirect rate distortion problems. IEEE Transactions on Information Theory , 26(5):518–521, 1980. Wolf, J. and Ziv, J. Transmission of noisy information to a noisy receiver with minimum distortion. IEEE Transac-tions on Information Theory , 16(4):406–411, 1970. doi: 10.1109/TIT.1970.1054469. Zandieh, A., Daliri, M., Hadian, M., and Mirrokni, V. Tur-boquant: Online vector quantization with near-optimal distortion rate, 2025. URL https://arxiv.org/ abs/2504.19874 .12 Physics-Aligned Data Compression 
+
+## A. Additional details for proofs 
+
+A.1. Proof of variational rate bounds 
+
+We prove the chain of inequalities I(X; ˆX) ≤ I(X; ˆZ) ≤ Rvar .
+
+Step 1: Data processing I(X; ˆX) ≤ I(X; ˆZ). By assumption ˆX = gθ ( ˆZ) for a measurable decoder gθ , hence X →
+
+ˆZ → ˆX is a Markov chain. By the data processing inequality, 
+
+I(X; ˆX) ≤ I(X; ˆZ).
+
+Step 2: Variational upper bound I(X; ˆZ) ≤ Rvar . Let q(ˆ z) = R q(ˆ z | x)p(x) dx be the induced marginal under 
+
+p(x)q(ˆ z | x). We expand the variational rate: 
+
+Rvar = Ep(x)
+
+h
+
+KL 
+
+
+
+q( ˆZ | X) ∥ pψ ( ˆZ)
+
+i 
+
+= Ep(x)Eq(ˆ z|x)
+
+ log q(ˆ z | x) − log pψ (ˆ z).
+
+Add and subtract log q(ˆ z) inside the expectation: 
+
+Rvar = Ep(x)Eq(ˆ z|x)
+
+ log q(ˆ z | x) − log q(ˆ z) + Ep(x)Eq(ˆ z|x)
+
+ log q(ˆ z) − log pψ (ˆ z)
+
+= Iq (X; ˆZ) + KL 
+
+
+
+q( ˆZ) ∥ pψ ( ˆZ)
+
+
+
+≥ Iq (X; ˆZ),
+
+since KL divergence is nonnegative. Identifying Iq (X; ˆZ) with I(X; ˆZ) under the joint p(x)q(ˆ z | x) yields I(X; ˆZ) ≤ Rvar ,completing the proof. 
+
+A.2. Proof of Proposition 4.1 
+
+We evaluate the variational rate at a fixed input x with latent representation z = z(x). The variational posterior is given by the local Gaussian channel qΣ(ˆ z | x) = N (ˆ z; z, Σ) . By definition: 
+
+Rvar (x) = EqΣ [log qΣ(ˆ z | x)] 
+
+| {z }
+
+> (i)
+
+− EqΣ [log pψ (ˆ z)] 
+
+| {z }
+
+> (ii)
+
+. (23) Let ˆz = z + η, where η ∼ N (0 , Σ) . We analyze the two terms separately. 
+
+(i) Negative Entropy: The first term is the negative differential entropy of a multivariate Gaussian N (z, Σ) in m dimensions. Using the standard entropy formula: 
+
+EqΣ [log qΣ(ˆ z | x)] = −H(qΣ) = − 12 log det(2 πe Σ) = − 12 log det Σ + C1, (24) where C1 collects terms independent of Σ.
+
+(ii) Expected Prior Log-Likelihood: For the second term, we apply the local expansion of the prior log-likelihood assumed in (6) around the center z:
+
+− log pψ (z + η) = − log pψ (z) + ∇[− log pψ (z)] ⊤η + 12 η⊤HR(z)η + o(∥η∥2). (25) Taking the expectation with respect to η ∼ N (0 , Σ) : The constant term − log pψ (z) remains unchanged; the linear term vanishes because E[η] = 0 ; the quadratic term becomes 12 E[η⊤HR(z)η] = 12 Tr( HR(z)Σ) using the cyclic property of the trace. Thus, 
+
+−EqΣ [log pψ (ˆ z)] = const . + 12 Tr( HR(z)Σ) + o(∥Σ∥). (26) Combining (i) and (ii) yields the local expansion: 
+
+Rvar (x) = const . + 12 Tr( HR(z)Σ) − 12 log det Σ + o(∥Σ∥). (27) Averaging over p(x) preserves this form up to an additive constant, proving the lemma. 13 Physics-Aligned Data Compression 
+
+A.3. Proof of Proposition 4.3 
+
+We analyze the expected distortion induced by the local perturbation ˆz = z + η, where η has zero mean and covariance Σ.
+
+Linearisation. Let Jg (z) be the Jacobian of the decoder gθ at z. Linearising the decoder around z, the deviation in the data space is: 
+
+δx := ˆ x − x ≈ gθ (z) + Jg (z)η − x ≈ Jg (z)η, 
+
+where we assume the deterministic reconstruction error is negligible or absorbed into higher-order terms. 
+
+Quadratic Expectation. We rely on a standard result for quadratic expansions under zero-mean noise. For any smooth loss L(u, ˆu) minimised at ˆu = u, the second-order expansion with deviation δ = Aη satisfies: 
+
+E[L(u, u + δ)] = const . + 12 Eη⊤A⊤HL(u)Aη  + o(∥η∥2) ≈ const . + 12 Tr  A⊤HL(u)AΣ,
+
+where HL is the Hessian with respect to the second argument. Throughout the main text we absorb the universal factor 1/2
+
+into the normalisation of the local distortion budgets. 
+
+Signal-Space Distortion ( DX ). Using the general result with the mapping A = Jg (z) and Hessian HD (x), we immedi-ately obtain: 
+
+E[DX (x, ˆx)] ≈ const . + 12 Tr  Jg (z)⊤HD (x)Jg (z)Σ . (28) Defining Geff (x) = Jg (z)⊤HD (x)Jg (z) recovers the result. 
+
+Physics Loss ( DQ). The observable map linearises as Q(ˆ x) ≈ Q(x) + JQ(x)δx . The effective linear mapping from noise 
+
+η to observable deviation is therefore A = JQ(x)Jg (z). Applying the general result with Hessian Hℓ(x):
+
+E[DQ] ≈ const . + 12 Tr  (JQJg )⊤Hℓ(JQJg )Σ . (29) Defining Weff (x) = Jg (z)⊤JQ(x)⊤Hℓ(x)JQ(x)Jg (z) recovers the result. 
+
+A.4. Proof of Theorem 4.4 
+
+We prove that the solution to (13)–(15) is Σ⋆ = ( HR + αW eff + γG eff )−1 for suitable multipliers α, γ ≥ 0.
+
+Step 1: Convexity and existence/uniqueness. The feasible set {Σ ≻ 0 : Tr( Weff Σ) ≤ εQ, Tr( Geff Σ) ≤ εX } is convex because the constraints are linear in Σ. The objective f (Σ) = Tr( HRΣ) − log det Σ is strictly convex over Σ ≻ 0 because 
+
+Tr( HRΣ) is linear and − log det Σ is strictly convex. Hence the problem admits at most one minimiser; under Slater’s condition (feasible interior), a minimiser exists and KKT conditions are necessary and sufficient. 
+
+Step 2: Lagrangian and stationarity. Form the Lagrangian 
+
+L(Σ , α, γ ) = Tr( HRΣ) − log det Σ + α  Tr( Weff Σ) − εQ
+
+ + γ  Tr( Geff Σ) − εX
+
+,
+
+with α, γ ≥ 0. The derivative identities 
+
+∇Σ Tr( AΣ) = A, ∇Σ(− log det Σ) = −Σ−1
+
+yield the stationarity condition 
+
+0 = ∇ΣL = HR − Σ−1 + αW eff + γG eff .
+
+Rearranging gives 
+
+Σ−1 = HR + αW eff + γG eff ,
+
+and therefore 
+
+Σ⋆ =  HR + αW eff + γG eff 
+
+−1.
+
+14 Physics-Aligned Data Compression 
+
+Step 3: Complementary slackness and feasibility. Together with primal feasibility and dual feasibility, the remaining KKT conditions are 
+
+α ≥ 0, γ ≥ 0, Tr( Weff Σ⋆) ≤ εQ, Tr( Geff Σ⋆) ≤ εX ,
+
+and complementary slackness: 
+
+α  Tr( Weff Σ⋆) − εQ
+
+ = 0 , γ  Tr( Geff Σ⋆) − εX
+
+ = 0 .
+
+Since the problem is strictly convex, any (Σ ⋆, α, γ ) satisfying KKT is the unique global optimum. This completes the proof. 
+
+A.5. Proof of Theorem 5.2 
+
+Fix a surrogate rate budget ρ. The proof proceeds in three steps: (1) simplified coordinates (whitening), (2) a general optimisation lemma, and (3) establishing the trade-off via contradiction. 
+
+Whitening the Prior. To simplify the rate constraint, we work in a coordinate system whitened by the prior curvature HR.Assume HR ≻ 0 and define the transformed variables: 
+
+eΣ := H1/2 
+
+> R
+
+ΣH1/2 
+
+> R
+
+, fW := H−1/2 
+
+> R
+
+Weff H−1/2 
+
+> R
+
+, eG := H−1/2 
+
+> R
+
+Geff H−1/2 
+
+> R
+
+. (30) In these coordinates, the variational rate Rsur simplifies to an isotropic form (up to a constant independent of Σ): 
+
+eR(eΣ) = 12 Tr( eΣ) − 12 log det eΣ.
+
+Consequently, the feasible set becomes eF˜ρ = {eΣ ≻ 0 : eR(eΣ) ≤ ˜ρ}. Furthermore, the trace objectives are invariant under whitening: Tr( Weff Σ) = Tr( fW eΣ) . Thus, it suffices to prove the theorem in the whitened domain. 
+
+General Optimisation Result. Consider minimising a linear objective Tr( AeΣ) with A ⪰ 0 over the feasible set eF˜ρ.
+
+Lemma A.1. The unique minimiser eΣ∗ of min eΣ∈ eF˜ρ Tr( AeΣ) satisfies the form: 
+
+(eΣ∗)−1 = I + λA, for some scalar λ ≥ 0. (31) 
+
+Proof. The problem is strictly convex (as − log det is strictly convex), ensuring a unique solution. The Lagrangian is 
+
+L(eΣ, μ ) = Tr( AeΣ) + μ( eR(eΣ) − ˜ρ). The stationarity condition ∇eΣL = 0 yields: 
+
+A + μ
+
+2 (I − eΣ−1) = 0 =⇒ eΣ−1 = I + 2
+
+μ A. 
+
+Setting λ = 2 /μ ≥ 0 completes the lemma. 
+
+Distinctness and Strict Inequalities. Let eΣPhys and eΣMSE be the unique minimisers for the physics loss ( fW ) and MSE ( eG) respectively. By the lemma, their inverses are: 
+
+eΣ−1Phys = I + λW fW , eΣ−1MSE = I + λG eG. (32) We argue by contradiction. Suppose there is no trade-off, i.e., the optimal covariances are identical ( eΣPhys = eΣMSE ). Then: 
+
+I + λW fW = I + λG eG =⇒ fW ∝ eG. 
+
+This implies fW and eG are proportional (and thus commute), which violates the assumption that the task and fidelity are not rate-aligned (Definition 5.1). Therefore, eΣPhys ̸ = eΣMSE .
+
+Conclusion. Since eΣPhys is the unique minimiser of the physics loss: 
+
+Tr( fW eΣPhys ) < Tr( fW eΣMSE ).
+
+Mapping back to the original coordinates via the trace invariance established in Step 1 yields: 
+
+Tr( Weff ΣPhys ) < Tr( Weff ΣMSE ).
+
+The reverse inequality for the MSE loss follows symmetrically. 15 Physics-Aligned Data Compression 
+
+A.6. Physics Alignment as Linear-Gaussian Filtering 
+
+We can reinterpret the optimal error allocation not as a compression problem, but as a classical linear-Gaussian estimation problem. Suppose we wish to estimate the latent perturbation η ∈ Rm based on three independent sources of information: a prior belief and two noisy ”measurements” corresponding to the physics and fidelity constraints. 
+
+The Estimation Setup. Let the ”true” perturbation be η. We treat the rate constraint as a Gaussian prior centered at zero (reflecting the bit-cost of deviations): 
+
+η ∼ N (0 , H −1 
+
+> R
+
+). (33) Next, we view the penalties on physics and signal fidelity as noisy linear observations. We define linearised observation operators A and B via the matrix square roots of the loss Hessians: 
+
+A := H1/2 
+
+> ℓ
+
+JQ(x)Jg (z), (34) 
+
+B := H1/2 
+
+> D
+
+Jg (z). (35) We model the constraints as observing ”zero error” targets with additive Gaussian white noise: 
+
+rQ = Aη + ξQ, ξQ ∼ N (0 , α −1I), (36) 
+
+rX = Bη + ξX , ξX ∼ N (0 , γ −1I). (37) Here, the noise variances α−1 and γ−1 represent our tolerance for error in the physics and signal domains, respectively. 
+
+The Posterior Precision. We seek the posterior distribution p(η | rQ = 0 , r X = 0) . By Bayes’ rule, the log-posterior is the sum of the log-prior and log-likelihoods. Focusing on the quadratic terms (which determine the covariance): 
+
+− log p(η | · ) = 12 η⊤HRη
+
+| {z }
+
+> Prior
+
++ α
+
+2 ∥Aη ∥22
+
+| {z }
+
+> Physics Likelihood
+
++ γ
+
+2 ∥Bη ∥22
+
+| {z }
+
+> Fidelity Likelihood
+
++ ( linear in η) + const. (38) 
+
+= 12 η⊤  HR + αA ⊤A + γB ⊤B η + . . . (39) Recognising that A⊤A = Weff and B⊤B = Geff , we see that the posterior precision matrix is exactly the inverted covariance matrix from Theorem 4.4: 
+
+Λpost = HR + αW eff + γG eff = (Σ ⋆)−1. (40) 
+
+The Wiener Filter Interpretation. This equivalence implies that the optimal physics-aligned codec shapes its quantisation noise Σ⋆ to match the posterior uncertainty of an ideal Bayesian estimator that has observed the physics and fidelity constraints. In the eigenbasis of the rate metric (where HR = I), the variance along each mode i shrinks according to the canonical Wiener/Ridge factor: 
+
+(˜ σ⋆i )2 = 11 + α ˜wi
+
+|{z} 
+
+> Physics SNR
+
++ γ˜gi
+
+|{z} 
+
+> Fidelity SNR
+
+. (41) This confirms that the method allocates bits (reduces variance) strictly in proportion to the ”Signal-to-Noise Ratio” of the physical and signal constraints relative to the rate cost. 
+
+## B. Computing the physical alignment score 
+
+We estimate the alignment score from Section 5.2 without explicitly forming the dense rate-whitened operators eG(x) and 
+
+fW (x). Algorithm 1 summarises the resulting procedure. Throughout this appendix we fix a latent point z = fϕ(x) and suppress the dependence on x.The operators are accessed only through matrix–vector products. Starting from the pullback metrics of Definition 4.2, a whitened matvec has the form 
+
+v 7 → eGv = H−1/2 
+
+> R
+
+Geff 
+
+ H−1/2 
+
+> R
+
+v, v 7 → fW v = H−1/2 
+
+> R
+
+Weff 
+
+ H−1/2 
+
+> R
+
+v.
+
+16 Physics-Aligned Data Compression 
+
+Algorithm 1 Estimating Align k(x) at z = fϕ(x)
+
+Require: Matvecs for Geff and Weff ; rate metric HR; rank k; oversampling p; subspace iterations q
+
+Set ℓ ← k + p
+
+Build matvecs for eG and fW using H−1/2
+
+> R
+
+for A ∈ { eG, fW } do 
+
+Draw Ω ∈ Rn×ℓ with i.i.d. Gaussian entries 
+
+Y ← AΩ
+
+for t = 1 , . . . , q do 
+
+Q ← orth( Y )
+
+Y ← AQ 
+
+end for 
+
+Q ← orth( Y )
+
+B ← 12 (Q⊤AQ + Q⊤A⊤Q)
+
+Compute B = VAΛAV ⊤
+
+> A
+
+UA,k ← Q V A(: , 1 : k)
+
+end for return Align k(x) = k−1∥U ⊤
+
+> W,k
+
+UG,k ∥2
+
+> F
+
+The products with Geff and Weff are computed using Jacobian–vector and vector–Jacobian products, following standard directional second-order automatic differentiation (Pearlmutter, 1994). For high-dimensional latent spaces, HR may be replaced by a diagonal approximation in the whitening factors. For each operator A ∈ { eG, fW }, we estimate its dominant k-dimensional eigenspace with randomised range finding (Halko et al., 2011). We draw a Gaussian test matrix Ω ∈ Rn×ℓ, with ℓ = k + p, form Y = AΩ, and apply q subspace-iteration steps. After orthonormalising the resulting basis Q, we solve the small eigenproblem B = Q⊤AQ and lift the leading eigenvectors back to the latent space. This gives bases UG,k and UW,k , from which 
+
+Align k(x) = 1
+
+k U ⊤
+
+> W,k
+
+UG,k 
+
+> 2
+> F
+
+is the average squared cosine of the principal angles between the two subspaces (Bj ¨orck & Golub, 1973). For computing diagnostics (i.e., trace coverage of the top-k eigenspace) we use Hutchinson trace estimates (Hutchinson, 1989). 
+
+## C. Experimental Setup and Additional Details 
+
+This section summarises the datasets, observables, preprocessing steps, and training details used in our experiments. 
+
+C.1. Domains, compressed fields, and observables 
+
+We evaluate the proposed framework across three scientific domains chosen to span different spatial structure, observables, and downstream priorities: turbulent fluid dynamics, cosmological simulations, and electron microscopy. For each domain, we specify both the compressed field and the observable used to define the physics-aware objective. Data samples are shown in Fig. 10. 
+
+Turbulent Fluid Dynamics (PDEBench). We use data from PDEBench (Takamoto et al., 2022), focusing on the 2D compressible Navier–Stokes equations in a turbulent regime. The flow is nearly incompressible ( M = 0 .1), while the very small shear and bulk viscosities ( η, ζ = 10 −8) induce a high-Reynolds-number regime with fine-scale vortical structure. We compress the velocity field v = ( vx, v y ).The main observable used in the experiments of Section 6 is the vorticity ,
+
+ω(v) = ∂y vx − ∂xvy ,
+
+which is highly sensitive to local compression artefacts because it depends on spatial derivatives. In the additional appendix 17 Physics-Aligned Data Compression Original Vorticity Enstrophy 
+
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> speed
+> 75
+> 50
+> 25
+> 0
+> 25
+> 50
+> 75
+> vorticity
+> 1
+> 2
+> 3
+> log 10  (enstrophy  + 10 −6)
+
+CFD sample Original Baryon Fraction Thermo State 
+
+> 0
+> 1
+> 2
+> log 10  (baryondensity  + 10 −6)
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> fraction
+> 4.5
+> 5.0
+> 5.5
+> 6.0
+> 6.5
+> 7.0
+> log 10  (thermostate  + 10 −6)
+
+Nyx sample Original Contour Detail Coarse Structures 
+
+> 0.40
+> 0.45
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> intensity
+> 2.5
+> 2.0
+> 1.5
+> 1.0
+> log 10  (detail  + 10 −6)
+> 0.350
+> 0.325
+> 0.300
+> 0.275
+> 0.250
+> 0.225
+> log 10  (structure  + 10 −6)
+
+Microns sample 
+
+Figure 10. A sample for every data source: original (left) and two observables (middle and right). 
+
+experiments, we also consider a windowed enstrophy observable, 
+
+qens (x) = 1
+
+|W |
+
+X 
+
+> v∈W(x)
+
+ω(v)2,
+
+which emphasises localised rotational activity while smoothing pixel-scale fluctuations, hence carrying meaning about larger scale energy flows. 
+
+Nyx cosmological simulations. We use slices from Nyx , a massively parallel cosmological hydrodynamics code designed to simulate baryonic gas and dark matter on large scales (Almgren et al., 2013). In this domain, we consider observables derived from baryon density, dark-matter density, and temperature. Our first observable is the local baryon fraction ,
+
+fb = ρb
+
+ρb + ρdm + ε ,
+
+which emphasises local compositional structure. Our second observable is a thermodynamic-state proxy , defined from 
+
+p = ρbT, s = T ρ −(γ−1)  
+
+> b
+
+, qthermo = p + s, 
+
+which highlights thermodynamic regimes, especially hot and dense regions. 18 Physics-Aligned Data Compression 
+
+Electron microscopy of mouse visual cortex. We also evaluate on grayscale electron microscopy (EM) imagery from the 
+
+MICrONS / minnie65 cerebral cortex volume. This domain provides a qualitatively different setting in which the relevant structure is morphological rather than fluid or thermodynamic. We consider two observables. The first is a high-frequency contour-feature map ,
+
+qcontour (I) = 
+
+q
+
+(wx∂xI)2 + ( wy ∂y I)2 + ε + λ|∆I|,
+
+which emphasises membranes, thin boundaries, and fine structural edges. The second is a low-frequency coarse-structure field ,
+
+qcoarse (I) = Gσ ∗ I, 
+
+which suppresses edge-level detail and retains larger-scale morphology and contrast structure. 
+
+C.2. Implementation and Training Details 
+
+To ensure rigorous comparison, we conduct extensive hyperparameter sweeps across architectures, rate constraints, and physics-aware objectives. 
+
+Architectures. We evaluate two distinct classes of learned image compression architectures: 1. Factorised Prior: A standard convolutional autoencoder where the latent distribution is modeled as fully factorised (independent) non-parametric densities. 2. Scale Hyperprior: A hierarchical model that utilises side information (a hyper-latent) to predict the parameters of the Gaussian distribution of the main latent code, capturing spatial dependencies more effectively (Ball´ e et al., 2018). 
+
+Optimisation. We compare models at fixed target bitrates rather than fixed Lagrange multipliers. We achieve this via dual ascent (Boyd et al., 2011), introducing a learnable parameter λR updated iteratively: 
+
+λ(t+1)  
+
+> R
+
+← max 
+
+
+
+0, λ (t) 
+
+> R
+
++ ηλ
+
+ R(ˆ z) − Rtarget 
+
+
+
+.
+
+Hyperparameter Sweeps. We perform a grid search over the following parameters using multiple random seeds: • Physics Weight ( β): Swept in the range β ∈ [0 , 1] to trace the Pareto frontier between signal fidelity (MSE) and physical observability. • Target Rates ( Rtarget ): Ranging from 0.01 to 4.0 bps with the different architecture and hyperparameter options. This validates most practical use cases (compression factors of up to ×1000 ). 
+
+Preprocessing and Hardware. To normalise computational capacity and input dimensions: • CFD: The native 512 × 512 grids are compressed, while reducing the temporal resolution to obtain less correlated samples. • Nyx: We use NYX volumes of shape 512 × 512 × 512 and extract 2D xy slices. Training/evaluation samples are 
+
+256 × 256 crops. Inputs are normalised with a log1p zscore transform. • MICrONS / minnie65: We use xy slices from the Minnie65 volume and extract 256 ×256 crops. Inputs are normalised with z-score normalisation. Training leveraged three single-GPU workstations equipped with NVIDIA RTX 3090 (24 GB VRAM) accelerators. 
+
+## D. Additional Empirical Validation Across Domains and Observables 
+
+To broaden the empirical scope beyond 2D fluid dynamics, we evaluate the alignment diagnostic on two additional scientific domains: cosmological simulations and electron microscopy imagery. These experiments serve two purposes. First, they test whether the diagnostic remains informative across observables with very different structure. Second, they assess whether the connection between alignment and tradeoff strength persists beyond the CFD setting emphasised in the main text. 19 Physics-Aligned Data Compression 0.0 0.2 0.4 0.6 0.8 
+
+> Physics Weight
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Align k(W,G)  CFD: Enstrophy (15% Tr.)
+> Nyx: Baryon Fraction (35% Tr.)
+> Nyx: Thermo. State (59% Tr.)
+> EM: Coarse Structs. (21% Tr.)
+> EM: Contour Feats. (39% Tr.)
+
+Figure 11. Alignment across additional domains and observables. Align 16 (W, G ) evaluated across the added dataset–observable pairs under the same training sweep as in the main experiments. Percentages in the legend indicate trace coverage for the chosen rank. 
+
+D.1. Alignment across domains and observables 
+
+We compute the alignment diagnostic Align k with fixed rank k = 16 using the rate-whitened metrics, and evaluate it over the same sweep of training settings used in the main experiments. Figure 11 shows that the diagnostic remains informative across all added dataset–observable pairs. As in the main text, alignment generally increases when the physics loss is more strongly weighted, but the attainable level of alignment remains highly observable-dependent. The figure shows that the diagnostic remains informative beyond CFD, but that the attainable level of alignment depends strongly on the observable: some targets become naturally compatible with signal fidelity under physics-aware training, whereas others remain weakly aligned even when the physics weight is increased. 
+
+D.2. Alignment and tradeoff magnitude 
+
+To illustrate the associated tradeoff behaviour, Figure 12 shows the relationship between alignment and relative tradeoff magnitude for the EM observables. Each point corresponds to an operating point, with the horizontal axis reporting 
+
+Align k(W, G ) and marker size indicating rate. The coarse-structure observable occupies a higher-alignment, lower-tension regime, whereas the contour-feature observable lies in a lower-alignment regime with a substantially sharper tradeoff. Across both observables, increased alignment is associated with reduced tension between signal fidelity and observable fidelity. 
+
+D.3. Summary across domains 
+
+Table 1 aggregates the main statistics across the additional domains and observables, including rate, normalised distortion trade-offs, and the alignment diagnostic. Negative values in the physics column indicate improved observable fidelity relative to the β = 0 baseline, while positive values in the MSE column indicate degraded signal fidelity. Taken together, these results support the broader claim that alignment remains predictive across scientific settings with substantially different structure, observables, and operating regimes. 20 Physics-Aligned Data Compression 0.1 0.2 0.3 0.4 0.5 0.6   
+
+> Align k(W,G)
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> Normalised tradeoff magnitude
+> Physical Observable
+> EM: Contour Feats.
+> EM: Coarse Structs.
+> [X](MSE)
+> [Q(X)] (Physics)
+> Rate (bps)
+> 0.04
+> 0.11
+> 0.29
+
+Figure 12. Alignment and tradeoff magnitude for EM observables. Each point is an operating point, with horizontal position given by 
+
+Align k (W, G ) and marker size indicating rate; circles report relative signal error and triangles report relative observable error. 
+
+Table 1. Cross-domain summary of the trade-off and alignment at multiple rates. 
+
+Physical Observable Rate (bps) ∆[ X]/|X0|
+
+(MSE) 
+
+∆[ Q(X)] /|Q(X)0|
+
+(Physics) Align 16 (W, G )
+
+CFD: Enstrophy 0.96 ± 0.02 0.158 ± 0.053 -0.337 ± 0.145 0.275 ± 0.079 0.42 ± 0.01 0.198 ± 0.053 -0.364 ± 0.072 0.488 ± 0.129 0.38 ± 0.04 0.146 ± 0.047 -0.317 ± 0.070 0.518 ± 0.096 0.28 ± 0.01 0.195 ± 0.053 -0.389 ± 0.081 0.545 ± 0.160 0.09 ± 0.00 0.200 ± 0.064 -0.403 ± 0.087 0.492 ± 0.173 EM: Coarse Structs. 0.64 ± 0.03 0.014 ± 0.024 -0.048 ± 0.031 0.625 ± 0.228 0.12 ± 0.02 -0.021 ± 0.023 -0.039 ± 0.030 0.624 ± 0.111 0.10 ± 0.00 -0.026 ± 0.035 -0.039 ± 0.050 0.530 ± 0.107 0.04 ± 0.01 -0.024 ± 0.030 -0.039 ± 0.029 0.790 ± 0.105 EM: Contour Feats. 0.03 ± 0.00 0.110 ± 0.085 -0.395 ± 0.218 0.138 ± 0.276 0.04 ± 0.00 0.187 ± 0.086 -0.385 ± 0.116 0.165 ± 0.325 0.49 ± 0.00 0.303 ± 0.145 -0.475 ± 0.175 0.032 ± 0.044 0.11 ± 0.02 0.445 ± 0.104 -0.623 ± 0.137 0.048 ± 0.092 Nyx: Baryon Fraction 1.05 ± 0.01 -0.528 ± 0.819 -0.250 ± 0.049 0.029 ± 0.023 0.15 ± 0.01 0.246 ± 0.406 -0.924 ± 0.248 0.456 ± 0.228 Nyx: Thermo. State 1.06 ± 0.02 -0.710 ± 0.750 0.126 ± 0.057 0.089 ± 0.060 0.15 ± 0.00 -0.600 ± 0.665 -0.069 ± 0.090 0.610 ± 0.163 
+
+21

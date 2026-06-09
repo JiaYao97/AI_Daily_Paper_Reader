@@ -1,0 +1,1281 @@
+Title: A first-optimize-then-reduce framework for optimal control with the shifted proper orthogonal decomposition
+
+URL Source: https://arxiv.org/pdf/2606.02064v1
+
+Published Time: Tue, 02 Jun 2026 02:32:05 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+# A first-optimize-then-reduce framework for optimal control with the shifted proper orthogonal decomposition 
+
+## Tobias Breiten ∗† 
+
+## , Shubhaditya Burela ∗† 
+
+## , Philipp Schulze ∗† 
+
+## June 2, 2026 
+
+Abstract 
+
+Overcoming the Kolmogorov barrier for constructing efficient reduced-order models (ROMs) for transport-dominated problems remains a challenge. This has impeded their use as computationally cheap surrogates for partial differential equations (PDEs) associated with optimal control problems. Since such problems require multiple computations of the full PDE, employing their reduced-order surrogates instead could speed up the overall optimal control problem. Motivated by this idea, in this paper we explore the use of a nonlinear model-order reduction technique, namely, the shifted proper orthogonal decomposition (sPOD) in an optimal control context. In doing so, we explore the framework of first-optimize-then-reduce (FOTR) where an optimality system for the full PDE problem is constructed first, followed by approximating the optimality system with reduced-order models. We consider this framework for a linear quadratic optimal control problem constrained by a 1D linear advection equation and compare the computational performance of the sPOD method against the use of the standard POD. 
+
+Keywords: optimal control, model order reduction, shifted proper orthogonal decomposition 
+
+AMS subject classifications: 35L02, 49M41, 49K20, 35Q35 
+
+# 1 Introduction 
+
+We consider the following optimal control problem with a standard quadratic tracking-type cost functional, 
+
+min   
+
+> u∈L2(0 ,T ;U)
+
+J (q, u ) := 12
+
+Z T
+
+> 0
+
+∥q(t) − qd(t)∥2 
+
+> H
+
+dt + μ
+
+2
+
+Z T
+
+> 0
+
+∥u(t)∥2 
+
+> U
+
+dt , (1) for H := L2(0 , l ), U := Rm, qd ∈ L2(0 , T ; H), and μ > 0 such that  
+
+> ddt
+
+q(t) = Aq(t) + Bu(t), t ∈ (0 , T ],q(0) = q0, (2) where A = −v ddx , A : D(A) ⊂ L2(0 , l ) → L2(0 , l ) for a constant velocity v ∈ R is a densely defined and closed linear operator that generates a strongly continuous (semi)group, with D(A) = H1per (0 , l ) := {f ∈ H1(0 , l )|f (0) = f (l)} see, e.g., [ 25 , Examples 2.6.12 & 2.7.12, Thm. 3.8.6, Cor. 2.1.8, Prop. 2.3.1]. Given the control operator B ∈ L (U, H ) with H := L2(0 , l ), U = Rm, which is taken directly from [ 7] where we study the first-reduce-then-optimize framework, the term Bu(t) := Pmk=1 bk uk (t) is the control term, uk (t) ∈ U being the control intensities and bk ∈ D (A) the control shape functions. 
+
+> ∗
+
+{tobias.breiten@,burela@tnt.,pschulze@math.}tu-berlin.de 
+
+> †
+
+Institute of Mathematics, Technische Universität Berlin, Germany 
+
+1
+
+> arXiv:2606.02064v1 [math.OC] 1 Jun 2026
+
+To solve the above mentioned optimal control problem, we follow the formal Lagrange method [ 24 ] and accordingly formulate the Lagrangian, 
+
+L(q, u, λ ) := J (q, u ) −
+
+Z T
+
+> 0
+
+λ(t), ddt q(t) − A q(t) − B u(t) H dt . 
+
+Subsequently, if ( ¯q, ¯u) is a local minimizer of J subject to (2) , then there exists λ (the adjoint) such that the triplet ( ¯q, ¯u, λ )
+
+satisfies the following first-order necessary optimality conditions 
+
+OC FOM := 
+
+ 
+
+> ddt
+
+q(t) = Aq(t) + Bu(t), t ∈ (0 , T ], (3a) 
+
+y(0) = y0, (3b) 
+
+− ddt λ(t) = A∗λ(t) + q(t) − qd(t), t ∈ [0 , T ), (3c) 
+
+λ(T ) = 0 , (3d) 
+
+μu (t) + B∗λ(t) = 0 , t ∈ [0 , T ], (3e) where (3a) , (3b) is referred to as the full-order model (FOM) state equation, (3c) , (3d) is the FOM adjoint equation, and (3e) is the optimality condition for the control. For the particular case of the linear advection equation, we have A∗ = −A = v ddx with 
+
+D(A∗) = H1per (0 , l ) see [ 25 , Section 2.8]. Additionally, theoretical results, such as the well-posedness of the state and the adjoint equation and the existence of an optimal control for an L2 distributed control, follow straightforwardly from [24]. Optimal control problems become computationally challenging to solve, especially when higher-dimensional (hyperbolic) problems are considered. Therefore, our aim is to approximate OC FOM with appropriate ROMs that can potentially speed up the overall computation without unduly compromising the accuracy of the problem. Popular ROMs for such applications are often built on conventional linear methods such as proper orthogonal decomposition (POD). Owing to easier construction and simplified theoretical analysis, the application of POD-based ROMs in optimal control problem has been studied extensively, see, e.g., [ 17 , 13 , 11 , 1 , 9]. Some of the popular methods that have gained significant theoretical and applicative traction are the trust region POD (TRPOD) [ 2] or the optimality system POD (OSPOD) [ 14 ]. For a more detailed description of the plethora of techniques, see [ 4]. However, for systems exhibiting a large Kolmogorov-n width such as the advection equation with initial values featuring sharp wave fronts, linear MOR methods do not provide low-dimensional and accurate ROMs. In such scenarios, nonlinear methods are used to circumvent this problem, see [ 10 ] for a detailed review of such methods. In this work, we specifically use the sPOD method [ 20 , 19 , 12 , 22 ]. In contrast to our previous work [ 7] on a first-reduce-then-optimize (FRTO) framework, here we take a different route and use the FOTR framework instead. 
+
+# 2 Theoretical background 
+
+In this section, we derive the reduced-order approximations for OC FOM considering both the POD-Galerkin (POD-G) and the sPOD-Galerkin (sPOD-G) methods. While the approximations with the POD-Galerkin method have already been well studied (see [ 16 ] and references therein), the reduced-order approximations of OC FOM with the sPOD-Galerkin method are non-trivial and to the best of our knowledge have not been studied yet, except in a different framework in [7]. 
+
+## 2.1 POD-Galerkin approximation of OC FOM 
+
+By solving the FOM state equation (3a) , (3b) , let us generate a snapshot set of the obtained trajectories q ∈ C([0 , T ]; D(A)) as 
+
+Q := span 
+
+n
+
+q(tj ) | tj ∈ [0 , T ] for 1 ≤ j ≤ nt
+
+o
+
+⊂ D (A) .
+
+The POD attempts to approximate the trajectories as linear combination of orthonormal spatial basis functions {ϕi}ℓi=1 (often called the POD basis or POD modes) and their respective time coefficients αi(t) = ⟨q(t), ϕ i⟩H (often called the reduced states) and results in 
+
+q(t) ≈
+
+> ℓ
+
+X
+
+> i=1
+
+αi(t)ϕi, (4) 
+
+2by solving the following optimization problem, 
+
+
+
+min 12
+
+Z T
+
+> 0
+
+q(t) −
+
+> ℓ
+
+X
+
+> i=1
+
+D
+
+q(t), ϕ i
+
+E
+
+> H
+
+ϕi
+
+> 2
+> H
+
+dt, (5a) s.t. {ϕi}ℓi=1 ⊂ D (A) and ⟨ϕi, ϕ j ⟩H = δij , i, j = 1 , . . . , ℓ . (5b) Once the POD basis is constructed, one can derive the time-dynamical POD-G ROM by using the POD ansatz (4) in (3a) , (3b) and subsequently using the Galerkin orthogonality condition to obtain, 
+
+D
+
+ϕj ,
+
+> ℓ
+
+X
+
+> i=1
+
+˙αi(t)ϕi
+
+E
+
+> H
+
+=
+
+D
+
+ϕj ,
+
+> ℓ
+
+X
+
+> i=1
+
+αi(t)Aϕi
+
+E
+
+> H
+
++
+
+D
+
+ϕj , Bu(t)
+
+E
+
+> H
+
+D
+
+ϕj ,
+
+> ℓ
+
+X
+
+> i=1
+
+α(0) ϕi
+
+E
+
+> H
+
+=
+
+D
+
+ϕj , q 0
+
+E
+
+> H
+
+which can be compactly written as 
+
+˙α(t) = Aℓα(t) + Bℓu(t)
+
+α(0) = α0
+
+(6) where α0 = [ ⟨ϕj , q 0⟩H ]ℓj=1 ∈ Rℓ and 
+
+Bℓ := 
+
+
+
+⟨ϕ1, Be1⟩H . . . ⟨ϕ1, Bem⟩H
+
+... . . . ...
+
+⟨ϕℓ, Be1⟩H . . . ⟨ϕℓ, Bem⟩H
+
+ ∈ Rℓ×m, Aℓ := 
+
+
+
+⟨ϕ1, Aϕ1⟩H . . . ⟨ϕ1, Aϕℓ⟩H
+
+... . . . ...
+
+⟨ϕℓ, Aϕ1⟩H . . . ⟨ϕℓ, Aϕℓ⟩H
+
+ ∈ Rℓ×ℓ .
+
+For the adjoint equation (3c), (3d), we follow a similar derivation although with the POD ansatz for the adjoint variable λ,
+
+λ(t) ≈
+
+> ℓa
+
+X
+
+> i=1
+
+λℓa 
+
+> i
+
+(t)ψi, (7) with orthonormal POD modes ψ1, . . . , ψ ℓa for the adjoint state, and obtain 
+
+− ˙λℓa (t) = Aℓa λℓa (t) + M α (t) − ˆqd(t),λℓa (T ) = 0 , (8) where 
+
+M := 
+
+
+
+⟨ψ1, ϕ 1⟩H . . . ⟨ψ1, ϕ ℓ⟩H
+
+... . . . ...
+
+⟨ψℓa , ϕ 1⟩H . . . ⟨ψℓa , ϕ ℓ⟩H
+
+ ∈ Rℓa×ℓ , Aℓa := 
+
+
+
+⟨ψ1, A∗ψ1⟩H . . . ⟨ψ1, A∗ψℓa ⟩H
+
+... . . . ...
+
+⟨ψℓa , A∗ψ1⟩H . . . ⟨ψℓa , A∗ψℓa ⟩H
+
+ ∈ Rℓa×ℓa
+
+with ˆqd(t) = [ ⟨ψj , q d(t)⟩H ]ℓa 
+
+> j=1
+
+∈ Rℓa . Lastly, the reduced-order approximation of the optimality condition for the control is given as 
+
+μu (t) + B⊤ 
+
+> ℓa
+
+λℓa (t) = 0 
+
+where 
+
+Bℓa := 
+
+
+
+⟨ψ1, Be1⟩H . . . ⟨ψ1, Bem⟩H
+
+... . . . ...
+
+⟨ψℓa , Be1⟩H . . . ⟨ψℓa , Bem⟩H
+
+ ∈ Rℓa×m .
+
+3Thus, collectively, the POD-G approximation of OC FOM is given as 
+
+OC POD −G := 
+
+
+
+˙α(t) = Aℓα(t) + Bℓu(t), (9a) 
+
+α(0) = α0, (9b) 
+
+− ˙λℓa (t) = Aℓa λℓa (t) + M α (t) − ˆqd(t), (9c) 
+
+λℓa (T ) = 0 , (9d) 
+
+μu (t) + B⊤ 
+
+> ℓa
+
+λℓa (t) = 0 . (9e) We also note that the cost functional for the POD-G approximation of OC FOM 
+
+JPOD −G (α, u ) = 12
+
+Z T
+
+> 0
+> ℓ
+
+X
+
+> i=1
+
+αi(t)ϕi − qd(t)
+
+> 2
+> H
+
+dt + μ
+
+2
+
+Z T
+
+> 0
+
+∥u(t)∥2 
+
+> U
+
+dt (10) is now used as an approximation of (1). 
+
+## 2.2 sPOD-Galerkin approximation of OC FOM 
+
+Given the trajectory q ∈ C([0 , T ]; D(A)) from the FOM state equation, the sPOD decomposes it with a nonlinear ansatz, 
+
+q(t) ≈
+
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(t)T (z(t)) ϕi , (11) where z(t) ∈ R is the single time-dependent shift, T : R → L (H) is the corresponding transformation operator, αi ∈ L2(0 , T ) are the reduced state variables and {ϕi}˜ℓi=1 ∈ D (A) are stationary modes. 
+
+Remark 2.1. The choice of the sPOD ansatz (11) used is motivated by the dynamics of the linear advection equation considered here with a single traveling wave. A more general version of the ansatz is discussed in [5, Eq. 1.4]. 
+
+To minimize the approximation error in (11), we solve the following minimization problem 
+
+
+
+min 12
+
+Z T
+
+> 0
+
+q(t) − T (z(t)) 
+
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(t)ϕi
+
+> 2
+> H
+
+dt, (12a) s.t. {ϕi}˜ℓi=1 ⊂ D (A) and ⟨ϕi, ϕ j ⟩H = δij , α i ∈ L2(0 , T ) (12b) with the assumption that the shift function z ∈ L2(0 , T ) is given. This minimization problem can also be viewed as a POD minimization of the shifted data T ∗(z(t)) q(t), t ∈ [0 , T ]. Also, keeping in mind the dynamics of the problem at hand, the transformation operators are taken to be periodic shift operators and are given as 
+
+T (z)ϕ(x) = 
+
+(
+
+ϕ(x − η) for η ≤ x ≤ l, ϕ(x − η + l) for 0 ≤ x < η 
+
+with η : = z mod l, see e.g. [ 22 , Def. 1.2.2]. Such a choice results in T being isometric and H1per (0 , l ) being a T (z)-invariant subspace for any z ∈ R.
+
+Remark 2.2. If ϕ is sufficiently regular, we have T ′(z)ϕ := ddz (T (z)ϕ) = −T (z)ϕ′ and T ′′ (z)ϕ = T (z)ϕ′′ . Taking into account the isometry of T , it holds that T ∗(z) = T (−z) = T −1(z).
+
+4Subsequently, the sPOD-G ROM for the FOM state equation is obtained by a Galerkin projection and is given as 
+
+ I˜ℓ N α (t)
+
+α(t)⊤N ⊤ α(t)⊤M2α(t)
+
+  ˙α(t)˙z(t)
+
+
+
+= v
+
+ N 0
+
+α(t)⊤M2 0
+
+  α(t)
+
+z(t)
+
+
+
++
+
+ B1(z(t)) 
+
+α(t)⊤B2(z(t)) 
+
+
+
+u(t) (13) which is a nonlinear equation where 
+
+N := −⟨ϕi, ϕ ′ 
+
+> j
+
+⟩H
+
+˜ℓi,j =1 , M2 := ⟨ϕ′
+
+> i
+
+, ϕ ′ 
+
+> j
+
+⟩H
+
+˜ℓi,j =1 ,B1(z(t)) := ⟨T (z(t)) ϕi, Bej ⟩H
+
+˜ℓ,m i,j =1 , B2(z(t)) := ⟨T ′(z(t)) ϕi, Bej ⟩H
+
+˜ℓ,m i,j =1 .
+
+For given z(0) , the initial value α(0) for the sPOD-G ROM state equation is chosen so that the approximation error in 
+
+q0 ≈
+
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(0) T (z(0)) ϕi
+
+is minimized. Performing a Galerkin projection of the above expression onto the shifted modes {T (z(0)) ϕj }˜ℓj=1 leads to 
+
+⟨T (z(0)) ϕj , q 0⟩H ≈
+
+D
+
+T (z(0)) ϕj ,
+
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(0) T (z(0)) ϕi
+
+E
+
+> H
+
+=
+
+D
+
+ϕj ,
+
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(0) ϕi
+
+E
+
+> H
+
+.
+
+We additionally assume z(0) = 0 , which results in T (z(0)) = In, therefore, it follows that α(0) ≈ [⟨ϕj , q 0⟩H ]˜ℓj=1 corresponds to the orthogonal projection of the initial value q0 onto the span of the dominant stationary modes {ϕj }˜ℓj=1 .For the reduced-order approximation of the adjoint equation of the FOM (3c) , (3d) , we follow similar steps as for the state equation and immediately formulate the sPOD ansatz for the adjoint λ ∈ C([0 , T ]; D(A∗)) as 
+
+λ(t) = 
+
+> ˜ℓa
+
+X
+
+> i=1
+
+λℓa 
+
+> i
+
+(t)T (zℓa (t)) ψi, z ℓa (t) ∈ R, λ ℓa 
+
+> i
+
+∈ L2(0 , T ), ψ i ∈ D(A∗), ⟨ψi, ψ j ⟩H = δij for i, j = 1 , . . . , ˜ℓa. (14) The adjoint is generally approximated by using a different shift zℓa than for the state. This is due to the difference in the propagation velocity of the adjoint from that of the FOM state in the presence of an arbitrary control term. Now, since the FOM adjoint equation is linear and A∗ is also the generator of a strongly continuous (semi-)group, we follow similar arguments as above and arrive at the following sPOD-G ROM for the adjoint 
+
+ I˜ℓa
+
+˜N λ ℓa
+
+(λℓa )⊤ ˜N ⊤ (λℓa )⊤ ˜M2λℓa
+
+  ˙λℓa
+
+˙zℓa
+
+
+
+= −v
+
+ ˜N 0(λℓa )⊤ ˜M2 0
+
+  λℓa
+
+zℓa
+
+
+
+−
+
+" ˜M (zℓa − z)α − ˜qd(t, z ℓa )(λℓa )⊤( ˜˜M (zℓa − z)α − ˜˜qd(t, z ℓa )) 
+
+#
+
+(15) with 
+
+˜N := −⟨ψi, ψ ′ 
+
+> j
+
+⟩H
+
+˜ℓa
+
+> i,j =1
+
+, ˜M2 := ⟨ψ′
+
+> i
+
+, ψ ′ 
+
+> j
+
+⟩H
+
+˜ℓa
+
+> i,j =1
+
+,
+
+˜M (η) := 
+
+
+
+⟨T (η)ψ1, ϕ 1⟩H . . . ⟨T (η)ψ1, ϕ ˜ℓ⟩H
+
+... . . . ...
+
+⟨T (η)ψ˜ℓa , ϕ 1⟩H . . . ⟨T (η)ψ˜ℓa , ϕ ˜ℓ⟩H
+
+ ∈ R˜ℓa×˜ℓ ,
+
+˜˜M (η) := 
+
+
+
+⟨T ′(η)ψ1, ϕ 1⟩H . . . ⟨T ′(η)ψ1, ϕ ˜ℓ⟩H
+
+... . . . ...
+
+⟨T ′(η)ψ˜ℓa , ϕ 1⟩H . . . ⟨T ′(η)ψ˜ℓa , ϕ ˜ℓ⟩H
+
+ ∈ R˜ℓa×˜ℓ ,
+
+and ˜qd(t, z ℓa ) = [ ⟨T (zℓa )ψj , q d(t)⟩H ]˜ℓa 
+
+> j=1
+
+∈ R˜ℓa , ˜˜qd(t, z ℓa ) = [ ⟨T ′(zℓa )ψj , q d(t)⟩H ]˜ℓa 
+
+> j=1
+
+∈ R˜ℓa . We note that for the derivation of the terms involving ˜M and ˜˜M , we exploited Remark 2.2 and the fact that T is a group homomorphism, see e.g. [ 22 , App. A], to 
+
+5obtain T (z)∗T (zℓa ) = T (zℓa − z). Since the sPOD-G adjoint is solved backward in time, the terminal conditions zℓa (T ) and 
+
+λℓa (T ) need to be prescribed and be compatible with the terminal condition for the full-order adjoint state, i.e., 
+
+> ˜ℓa
+
+X
+
+> i=1
+
+λℓa 
+
+> i
+
+(T )T (zℓa (T )) ψi = λ(T ) = 0 .
+
+Since T is pointwise isometric and the modes ψ1, . . . , ψ ˜ℓa are orthonormal, this equation is equivalent to λℓa 
+
+> 1
+
+(T ) = . . . = λℓa
+
+> ˜ℓa
+
+(T ) = 0 .We note that this terminal condition is satisfied for any shift value zℓa (T ), see also [5, Remark 5.8]. Lastly, the optimality condition on the control can be approximated as 
+
+μu (t) + ˜B(zℓa (t)) ⊤λℓa (t) = 0 (16) where 
+
+˜B(zℓa (t)) := 
+
+
+
+⟨T (zℓa (t)) ψ1, Be1⟩H . . . ⟨T (zℓa (t)) ψ1, Bem⟩H
+
+... . . . ...
+
+⟨T (zℓa (t)) ψ˜ℓa , Be1⟩H . . . ⟨T (zℓa (t)) ψ˜ℓa , Bem⟩H
+
+ ∈ R˜ℓa×m .
+
+Thus, collectively, the sPOD-G approximation of OC FOM is given as 
+
+OC sPOD −G := 
+
+ I˜ℓ N α (t)
+
+α(t)⊤N ⊤ α(t)⊤M2α(t)
+
+  ˙α(t)˙z(t)
+
+
+
+= v
+
+ N 0
+
+α(t)⊤M2 0
+
+  α(t)
+
+z(t)
+
+
+
++
+
+ B1(z(t)) 
+
+α(t)⊤B2(z(t)) 
+
+
+
+u(t), (17a) 
+
+α(0) = α0, z(0) = 0 , (17b) 
+
+ I˜ℓa
+
+˜N λ ℓa (t)
+
+λℓa (t)⊤ ˜N ⊤ λℓa (t)⊤ ˜M2λℓa (t)
+
+  ˙λℓa (t)˙zℓa (t)
+
+
+
+= −v
+
+ ˜N 0
+
+λℓa (t)⊤ ˜M2 0
+
+  λℓa (t)
+
+zℓa (t)
+
+
+
+−
+
+" ˜M (zℓa (t) − z(t)) α(t) − ˜qd(t, z ℓa (t)) 
+
+λℓa (t)⊤( ˜˜M (zℓa (t) − z(t)) α(t) − ˜˜qd(t, z ℓa (t))) 
+
+#, (17c) 
+
+λℓa (T ) = 0 and zℓa (T ) ∈ R (17d) 
+
+μu (t) + ˜B(zℓa (t)) ⊤λℓa (t) = 0 . (17e) We note that the sPOD-G approximation is parameterized by the terminal shift value zℓa (T ). Analogously to the POD-G case, the cost functional J from (1) is approximated as 
+
+JsPOD −G (α, z, u ) := 12
+
+Z T
+
+> 0
+> ˜ℓ
+
+X
+
+> i=1
+
+αi(t)T (z(t)) ϕi − qd(t)
+
+> 2
+> H
+
+dt + μ
+
+2
+
+Z T
+
+> 0
+
+∥u(t)∥2 
+
+> U
+
+dt . (18) 
+
+Remark 2.3. Reduced optimality conditions can also be formulated based on the first-reduce-then-optimize (FRTO) framework, see [ 7, Sec. 3]. For POD-G, considering linear systems with ϕ = ψ the FOTR and FRTO frameworks leads to the same optimality system. A detailed treatment of both frameworks in the POD-G context can be seen in [ 16 , 15 ]. However, for the sPOD-G method, 
+
+OC sPOD −G and the optimality conditions of FRTO from [7, Eq. 36(a)-(e)] do not appear to commute. 
+
+# 3 Algorithmic details 
+
+In this section, we explain the algorithmic aspects of using ROMs in the optimal control problem in an FOTR framework. Since POD-G based optimal control problems and corresponding algorithms to solve such problems have been widely studied, we refrain ourselves from specifically outlining the algorithm here. For some of such algorithms, see [ 1 , 18 ]. Firstly, the FOM state and the adjoint equations are solved using a first-order upwind scheme. Next, for the ROMs, we use an explicit Euler scheme for both the POD-G and sPOD-G reduced-state equations. For the ROM adjoint equations for both methods, we again use an explicit Euler scheme. 
+
+6Remark 3.1. POD-G results in a linear reduced-state and reduced-adjoint equation. However, sPOD-G results in a nonlinear reduced-state as well as a nonlinear reduced-adjoint equation. For our example problem, using an explicit first-order time integrator suffices for both these nonlinear equations. However, this might not always be the case and the sPOD-G based FOTR framework could end up needing higher-order time integrators for stability in more complex scenarios. 
+
+Algorithm 1 summarizes the required steps for using the sPOD-G method in our optimal control context considered here. Since the reduced-state equations (17a) , (17b) and the reduced-adjoint equations (17c) , (17d) in the above algorithm are nonlinear, 
+
+Algorithm 1 Optimal control with sPOD-G 
+
+Input: q0, qd, ˜ℓ, ˜ℓa, μ, ω0, niter , β, nsamples , nℓa 
+
+> samples
+> 1:
+
+Initialize: u = u0 
+
+> 2:
+
+for i = 1 , . . . , n iter do  
+
+> 3:
+
+if refine then  
+
+> 4:
+
+q = State (ui, q 0) ▷ Solve (3a) and (3b)  
+
+> 5:
+
+λ = Adjoint (q, q d) ▷ Solve (3c) and (3d)  
+
+> 6:
+
+{T (z)ϕk}˜ℓk=1 = Basis ([ q(t1) . . . q (tnt )] , ˜ℓ, n samples ) 
+
+> 7:
+
+{T (zℓa )ψk}˜ℓa 
+
+> k=1
+
+= Basis ([ λ(t1) . . . λ (tnt )] , ˜ℓa, n ℓa
+
+> samples
+
+) 
+
+> 8:
+
+end if  
+
+> 9:
+
+αi, z i = ReducedState ({T (z)ϕk}˜ℓk=1 , u i, q 0) ▷ Solve (17a) and (17b)  
+
+> 10:
+
+λℓa,i , z ℓa,i = ReducedAdjoint ({T (zℓa )ψk}˜ℓa
+
+> k=1
+
+, q d) ▷ Solve (17c) and (17d)   
+
+> 11: dL
+> dui
+
+= Gradient (λℓa,i , z ℓa,i , {T (zℓa )ψk}˜ℓa
+
+> k=1
+
+, u i) ▷ Solve (17e)  
+
+> 12:
+
+ωi = StepSize (ωi−1, dL 
+
+> dui
+
+, {T (z)ϕk}˜ℓk=1 , α i, u i) 
+
+> 13:
+
+ui+1 = ui − ωi   dL
+
+> dui
+
+ 
+
+> 14:
+
+if i == niter then  
+
+> 15:
+
+break  
+
+> 16:
+
+else if dL 
+
+> dui
+
+/ dL 
+
+> du1
+
+< β then  
+
+> 17:
+
+set u = ui+1 and return  
+
+> 18:
+
+end if  
+
+> 19:
+
+end for Output: u
+
+the corresponding nonlinear quantities must be assembled at every time step. However, repeatedly forming these terms is computationally expensive, particularly when they do not scale with the reduced-order dimension. To address this issue, we precompute most terms that are nonlinear and depend on the FOM dimension. In particular, we evaluate the state-shift-dependent terms B1(z(t)) , B2(z(t)) and the adjoint-shift-dependent term ˜B(zℓa (t)) at nsamples and nℓa 
+
+> samples
+
+shift samples for the state and adjoint, respectively. For terms containing both the state and adjoint shifts, ˜M (zℓa (t) − z(t)) , ˜˜M (zℓa (t) − z(t)) , we effectively do not sample anything for our implementation since zℓa − z = 0 (see Rem. 3.2). During time integration, we then use linear interpolation to recover the values of B1(z(t)) , B2(z(t)) and ˜B(zℓa (t)) . Consequently, the expensive construction of these terms is shifted to a preprocessing stage prior to the actual time integration. This strategy is analogous to the approach used in [ 6 ]. We note that we cannot use the same strategy for ˜qd and ˜˜qd since they depend in addition on the time-dependent target state qd.Thus, the evaluation of these two terms in the online phase still scales with the dimension of the (semi-discretized) FOM. During the refinement steps shown in algorithm 1, the sPOD ansatz is applied to the state and adjoint FOM snapshots to construct the shifted basis. During construction of the shifted basis, the shifts z and zℓa and their corresponding transformation operators also need to be constructed. Although these operators are sparse, we need to construct nt of these operators for both the state and the adjoint, making it computationally costly. To reduce this expense, we compute the shifts via a template fitting approach [ 21 ] and their corresponding transformation operators once from the uncontrolled profile and keep them fixed throughout 
+
+7the optimization. However, {ϕk } and {ψk } need to be updated and are obtained by performing an SVD on the shifted state and the shifted adjoint snapshot matrices, respectively. The basis refinement is performed at every fifth optimization step, as well as whenever the step-size selection criterion fails. For the step size selection, we use a combination of two-way backtracking [ 23 ] and the Barzilai-Borwein (BB) method [ 3 ]. During the initial steps where dL 
+
+> dui
+
+/ dL 
+
+> du1
+
+> 5 × 10 −3, the two-way backtracking is used to select the step size, whereas when the value falls below 5 × 10 −3, the BB method is used. 
+
+Remark 3.2. Within the sPOD-G ansatz of the adjoint equation, as outlined in (14) , it becomes evident that the adjoint equation requires its unique shift value. However, under certain idealized conditions, such as those considered in our experimental scenario, it is possible to use the same shift value to transform both the state and adjoint into the stationary frame. This assumption is built on the notion that the transport dynamics is predominantly influenced by the advection operator and that the control input does not significantly alter the overall propagation velocity of the advected pulse. Given this presumption, it is sufficient to perform the computation of transformation operators solely for the state equation, which can then be subsequently applied to the adjoint system as well. Alternatively, one could choose to independently calculate the shift for the adjoint system, but this would require an additional computation of the shift and the assembly of transformation operators, resulting in an increased computational overhead. Moreover, in that case it would be not clear how to actually choose the terminal shift for the adjoint equation. 
+
+Remark 3.3. We observe that for (17c) , at t = T the coefficient matrix of the left-hand side is given by 
+
+ I˜ℓa
+
+˜N λ ℓa (T )
+
+λℓa (T )⊤ ˜N ⊤ λℓa (T )⊤ ˜M2λℓa (T )
+
+
+
+=
+
+I˜ℓa 00 0
+
+
+
+,
+
+which is singular. To make the problem numerically solvable, we regularize the coefficient matrix by adding a small ϵ = 10 −14 to the last entry of the diagonal. 
+
+# 4 Numerical results 
+
+All numerical tests 1 were run using Python 3.12 on a Macbook Air M1(2020) with an 8-core CPU and 16 GB of RAM. We consider two different test cases as shown in Figure 1 where Q and Qd are snapshot matrices constructed by stacking the FOM state and the target state column-wise, respectively. To obtain the solution, a one-dimensional strip of length l = 100 is discretized into grid points n = 3201 in the spatial domain with ∆x = 0 .03124 with periodic boundary conditions. The PDE is solved with the following initial condition 
+
+q0(x) := exp −
+
+
+
+x − l
+
+12 
+
+2!
+
+(19) until the final time T = 136 .2642 . The time domain is discretized into nt = 2400 time steps with ∆t = 0 .0568 . The advection velocity is v = 0 .55 and the starting control u = 0 . The control shape functions in our tests are chosen as 
+
+b1(x) = 1 , b2k (x) = sin 
+
+ 2πkx l
+
+
+
+, b2k+1 (x) = −cos 
+
+ 2πkx l
+
+
+
+(20) for k = 1 , . . . , ξ , where ξ = 20 and m = 2 ξ + 1 = 41 . The first five are shown in Figure 2. 
+
+Remark 4.1. The choice of bk plays a decisive role in the overall convergence of the optimal control problem for sPOD-G. In our tests, bk from (20) are essentially the real vectors representing pairs of conjugate complex eigenfunctions of the operator 
+
+A = −v ddx . Considering such control shape functions provides an upper bound on the rank of the snapshot matrix in the stationary frame, see [7, Prop 2.2] 
+
+The optimization parameters used for the example problems are given in Table 1. Subsequently, the results for both example problems are shown in Figure 3. For the single tilt problem, cf. Figure 3a, the sPOD-G method needs close to 25 modes to reach the FOM cost functional, whereas POD-G requires close to 300 modes for the same. Regarding the double tilt problem, Figure 3b shows that sPOD-G needs close to 45 modes to reach the FOM cost, whereas POD-G needs 300 modes for the same. A point to note here is that for the mode-based study shown in Figure 3, the number of truncated modes for the state and the adjoint 
+
+8Q
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+
+Qd
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> time  t
+
+space x
+
+(a) Single tilt: Traveling wave with kink at t = 34 T .
+
+Q
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+
+Qd
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> time  t
+
+space x
+
+(b) Double tilt: Traveling wave with kinks at t = 14 T and 
+
+t = 34 T .
+
+Figure 1: Plots for the state and the target for the two example problems 20 40 60 80 100 space x
+
+−1.00 
+
+−0.75 
+
+−0.50 
+
+−0.25 0.00 0.25 0.50 0.75 1.00 
+
+> bk(x)
+
+Control shape functions 
+
+b1(x) = 1 
+
+b2(x) = sin (2πx l
+
+)
+
+b3(x) = −cos (2πx l
+
+)
+
+b4(x) = sin (4πx l
+
+)
+
+b5(x) = −cos (4πx l
+
+)
+
+Figure 2: Control shape functions 910 30 50 100 150 200 250 300 
+
+10 
+
+20 
+
+30 
+
+40 
+
+50 
+
+60 
+
+70 
+
+80 
+
+90 
+
+modes 
+
+> J
+> POD-G
+> sPOD-G
+> FOM
+
+(a) Single tilt problem 
+
+10 30 50 100 150 200 250 300 
+
+20 
+
+30 
+
+40 
+
+50 
+
+60 
+
+70 
+
+80 
+
+90 
+
+100 
+
+110 
+
+120 
+
+130 
+
+140 
+
+modes 
+
+> J
+> POD-G sPOD-G FOM
+
+(b) Double tilt problem 
+
+Figure 3: Plots for J vs. modes for both example problems 
+
+10 −7 10 −6 10 −5 10 −4 10 −3 10 −2
+
+8
+
+10 
+
+12 
+
+14   
+
+> (15, 36) (13, 31)
+> (11, 26)
+> (8, 20) (7, 14)
+> (5, 7)
+
+tol 
+
+> J
+> sPOD-G
+> FOM
+
+(a) Single tilt problem 
+
+10 −5 10 −4 10 −3 10 −2
+
+30 
+
+40 
+
+50 
+
+60 
+
+> (22, 58)
+> (20, 55)
+> (18, 44)
+> (17, 40)
+> (15, 31)
+> (14, 27)
+> (12, 15)
+> (10, 10)
+
+tol 
+
+> J
+> sPOD-G FOM
+
+(b) Double tilt problem 
+
+Figure 4: Plots for J vs. tol for both example problems with the respective state and adjoint truncated modes for each tolerance value. 10 μ β ω0 niter nsamples nℓa
+
+> samples
+
+Single tilt problem 10 −3 1 × 10 −5 1 20000 800 800 
+
+Double tilt problem 10 −3 1 × 10 −5 1 20000 800 800 
+
+Table 1: Constant parameters 
+
+equations is chosen to be equal for simplicity. However, we can also use a tolerance-based strategy that prescribes a tolerance which provides a dynamical selection strategy by choosing the number of modes via 
+
+d =
+
+> min( n,n t)
+
+X
+
+> i=1
+
+1
+
+ σi
+
+σ1
+
+> tol 
+
+
+
+(21) where {σi} are the singular values for the POD-G or sPOD-G method and the summation counts all values above a relative threshold. Since the comparison study for POD-G and sPOD-G has already been performed in Figure 3, for the tolerance-based study, we only look at the sPOD-G method and comment on some crucial observations. In Remark 4.1, we mention that using the control shape functions in a certain way results in an upper bound on the rank of the state snapshot matrix in the stationary frame. However, this is not guaranteed for the adjoint snapshot matrix in the shifted frame, since the adjoint is the result of the optimality system and cannot be tuned independently. Thus, it is absolutely possible that the shifted adjoint snapshot matrix is not necessarily a low-rank matrix. This can be seen from the tolerance-based plot, see Figure 4, where the number of truncated modes for the adjoint is almost always more than the truncated modes for the state for the same tolerance value. Thus, in principle, one can achieve convergence to the FOM cost functional with fewer modes for the state. Now, even though the sPOD-G method needs fewer modes than POD-G to reach the cost functional value of the FOM, at this stage, the computational time it takes is not always less than that of the POD-G or the FOM (see Tables 2 and 3). We 
+
+Table 2: Computational time ( s) for crucial steps (Single tilt problem) Computational Steps POD-G ( modes = 300 ) sPOD-G ( modes = 25 ) FOM 
+
+niter 5206 1701 1901 
+
+Basis construction 1199 .82 752 .29 0.00 
+
+ROM/FOM state solve 176 .26 124 .68 255 .69 
+
+Compute J 341 .13 166 .78 76 .77 
+
+ROM/FOM adjoint solve 497 .02 809 .92 369 .82 
+
+Compute gradient 5.60 154 .15 11 .24 
+
+Update control 395 .33 451 .74 721 .55 
+
+Total 3571 .51 2749 .00 1729 .27 
+
+note here that the FOM is the fastest, since it does not incur the overhead of constructing a reduced basis and also exploits highly optimized sparse-matrix libraries for the state and adjoint equation solution. Comparing the two ROMs, we see that the sPOD-G method generally takes more time, notably in the reduced-adjoint solve step. The sPOD-G reduced-adjoint equation is a nonlinear equation, and some of its terms also scale with the FOM dimension in the time integration step. This makes it computationally more expensive than the linear POD-G reduced-adjoint equation. Additionally, we note that, during the basis construction step, we need to assemble shift dependent terms for both the state and adjoint reduced-order equations, which also adds to the total computational time, and this step turns out to be more expensive than that for the POD-G. However, in our tests, since the POD-G takes more number of optimization steps in total, the cost for the basis construction step is balanced out  
+
+> 1source code can be found in https://doi.org/10.5281/zenodo.20402350
+
+11 Table 3: Computational time ( s) for crucial steps (Double tilt problem) Computational Steps POD-G ( modes = 300 ) sPOD-G ( modes = 45 ) FOM 
+
+niter 4755 1701 2735 
+
+Basis construction 1106 .90 1058 .97 0.00 
+
+ROM/FOM state solve 163 .86 168 .56 363 .90 
+
+Compute J 310 .19 363 .07 109 .69 
+
+ROM/FOM adjoint solve 449 .79 1629 .17 521 .54 
+
+Compute gradient 5.27 227 .50 14 .47 
+
+Update control 515 .03 972 .62 882 .80 
+
+Total 3412 .49 4681 .64 2304 .15 
+
+between the two methods. Apart from these, we observe that the sPOD-G reduced-state equation takes more time than the POD-G reduced-state equation in a per-optimization step measure, since the number of modes considered here ( 25 or 45 ) are not in principle low-enough to observe any significant speedup. 
+
+# 5 Conclusions 
+
+For a specific linear hyperbolic optimal control problem, we investigated an FOTR framework for the sPOD method which we compared with its POD analog. It turned out that already for such a relatively simple problem, using the sPOD-G method becomes nontrivial due to the resulting set of nonlinear state and adjoint equations. Nevertheless, our numerical results show potential of the approach since the nonlinear reduction approach needs an order of magnitude fewer modes than the POD-G method to capture the FOM dynamics and optimal costs. As a next step, one could study hyperreduction strategies like DEIM [ 8] for the sPOD-G reduced-adjoint equation to speed up its computation. Another possible direction of research could be to dynamically update the shifts in between optimization steps so that the profile could truly be low-rank at every optimization step. 
+
+# Acknowledgement 
+
+We gratefully acknowledge the support of the Deutsche Forschungsgemeinschaft (DFG) as part of the GRK2433 DAEDALUS (DFG Project number: 384950143). We also acknowledge the financial support from the SFB TRR154 (DFG project number: 239904186) under sub-project B03. 
+
+# References 
+
+[1] K. Afanasiev and M. Hinze. Adaptive control of a wake flow using proper orthogonal decomposition. Lect. Notes Pure and App. Mathematics , 216:317–332, Jan 2001. [2] E. Arian, M. Fahl, and E.W. Sachs. Trust-region Proper Orthogonal Decomposition for Flow Control. ICASE rep. , 2000. [3] J. Barzilai and J. M. Borwein. Two-Point Step Size Gradient Methods. IMA J. Numer. Anal. , 8(1):141–148, 1988. [4] P. Benner, E. Sachs, and S. Volkwein. Model Order Reduction for PDE Constrained Optimization , pages 303–326. Springer International Publishing, Cham, 2014. [5] F. Black, P. Schulze, and B. Unger. Projection-based model reduction with dynamically transformed modes. ESAIM Math. Model. Numer. Anal. , 54(6):2011–2043, 2020. 
+
+12 [6] F. Black, P. Schulze, and B. Unger. Efficient Wildland Fire Simulation via Nonlinear Model Order Reduction. MDPI Fluids ,6(8):280, 2021. [7] T. Breiten, S. Burela, and P. Schulze. Optimal control with the shifted proper orthogonal decomposition via a first-reduce-then-optimize framework. ArXiv preprint 2603.28442v1, 2026. [8] S. Chaturantabut and D.C. Sorensen. Nonlinear Model Reduction via Discrete Empirical Interpolation. SIAM J. Sci. Comput. , 32(5):2737–2764, January 2010. [9] C. Gräßle, M. Gubisch, S. Metzdorf, S. Rogg, and S. Volkwein. POD basis updates for nonlinear PDE control. at -Automatisierungstechnik , 65(5):298–307, May 2017. [10] J. S. Hesthaven, B. Peherstorfer, and B. Unger. Nonlinear model reduction for transport-dominated problems. ArXiv preprint 2602.01397v1, 2026. [11] M. Hinze and S. Volkwein. Proper Orthogonal Decomposition Surrogate Models for Nonlinear Dynamical Systems: Error Estimates and Suboptimal Control. In Dimension Reduction of Large-Scale Systems , volume 45, pages 261–306. Springer-Verlag, Berlin/Heidelberg, 2005. [12] P. Krah. Non-linear reduced order modeling for transport dominated fluid systems . PhD thesis, TU Berlin, Berlin, Germany, 2023. [13] K. Kunisch and S. Volkwein. Control of the Burgers Equation by a Reduced-Order Approach Using Proper Orthogonal Decomposition. J. Optim. Theory Appl. , 102(2):345–371, August 1999. [14] K. Kunisch and S. Volkwein. Proper orthogonal decomposition for optimality systems. ESAIM Math. Model. Numer. Anal. ,42(1):1–23, January 2008. [15] F. Negri, A. Manzoni, and G. Rozza. Reduced basis approximation of parametrized optimal flow control problems for the Stokes equations. Comput. Math. Appl. , 69(4):319–336, February 2015. [16] F. Negri, G. Rozza, A. Manzoni, and A. Quarteroni. Reduced Basis Method for Parametrized Elliptic Optimal Control Problems. SIAM J. Sci. Comput. , 35(5):A2316–A2340, January 2013. [17] S. S. Ravindran. A reduced-order approach for optimal control of fluids using proper orthogonal decomposition. Int. J. Numer. Meth. Fluids , 34(5):425–448, 2000. [18] S.S. Ravindran. Adaptive Reduced-Order Controllers for a Thermal Flow System Using Proper Orthogonal Decomposition. 
+
+SIAM J. Sci. Comput. , 23(6):1924–1942, January 2002. [19] J. Reiss. Optimization-Based Modal Decomposition for Systems with Multiple Transports. SIAM J. Sci. Comput. ,43(3):A2079–A2101, 2021. [20] J. Reiss, P. Schulze, J. Sesterhenn, and V. Mehrmann. The Shifted Proper Orthogonal Decomposition: A Mode Decomposition for Multiple Transport Phenomena. SIAM J. Sci. Comput. , 40(3):A1322–A1344, 2018. [21] C. W. Rowley and J. E. Marsden. Reconstruction equations and the Karhunen–Loève expansion for systems with symmetry. 
+
+Phys. D: Nonlinear Phenom. , 142(1-2):1–19, August 2000. [22] P. Schulze. Energy-Based Model Reduction of Transport-Dominated Phenomena . PhD thesis, TU Berlin, Berlin, Germany, 2023. [23] T.T. Truong and H.T. Nguyen. Backtracking Gradient Descent Method and Some Applications in Large Scale Optimisation. Part 2: Algorithms and Experiments. Appl. Math. Opt. , 84(3):2557–2586, December 2021. [24] F. Tröltzsch. Optimal Control of Partial Differential Equations . American Mathematical Society, Providence, Rhode Island, 2010. [25] M. Tucsnak and G. Weiss. Observation and Control for Operator Semigroups . Birkhäuser Basel, Basel, 2009. 
+
+13

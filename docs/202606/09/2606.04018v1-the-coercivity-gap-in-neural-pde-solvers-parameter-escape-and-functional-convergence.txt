@@ -1,0 +1,1398 @@
+Title: The Coercivity Gap in Neural PDE Solvers: Parameter Escape and Functional Convergence
+
+URL Source: https://arxiv.org/pdf/2606.04018v1
+
+Published Time: Thu, 04 Jun 2026 00:00:52 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# The Coercivity Gap in Neural PDE Solvers: Parameter Escape and Functional Convergence 
+
+Enrique Zuazua 1,2,3 1Friedrich–Alexander–Universität Erlangen–Nürnberg, Department of Mathematics, Chair for Dynamics, Control, Machine Learning and Numerics (Alexander von Humboldt Professorship), Cauerstr. 11, 91058 Erlangen, Germany 
+
+> 2
+
+Chair of Computational Mathematics, University of Deusto, 48007 Bilbao, Basque Country, Spain 
+
+> 3
+
+Universidad Autónoma de Madrid, Departamento de Matemáticas, Ciudad Universitaria de Cantoblanco, 28049 Madrid, Spain 
+
+> 1
+
+enrique.zuazua@fau.de 
+
+Abstract 
+
+We study neural approximation of elliptic PDE solutions from a variational perspective. The central point is the distinction between the geometry of neural parameters and the convergence of the corresponding physical states. Even when the original elliptic energy is coercive and strictly convex in the natural energy space, its restriction to a nonlinear neural ansatz may fail to be coercive in parameter space. This failure is caused by non-closedness of neural approximation manifolds and by condensation of neurons, which may generate limiting profiles outside the fixed ansatz class. Nevertheless, the associated state functions may remain bounded and converge strongly to the exact PDE solution. We prove this mechanism for Gaussian wave-packet approximations of a prototypical elliptic model in the whole space, derive convergence rates, and explain how the same state-level stability principle applies to residual minimization methods of PINN type, and HYCO-type hybrid methods. We also discuss relaxation and Tikhonov regularization. 
+
+Keywords. Neural PDE solvers; variational methods; coercivity; Gaussian approximation; finite element method; residual minimization; PINNs; relaxation; Tikhonov regularization. 
+
+# 1 Introduction 
+
+Neural-network-based methods for the numerical approximation of partial differential equations (PDEs) have attracted considerable attention in recent years. Physics-Informed Neural Net-works (PINNs) approximate PDE solutions through residual minimization involving governing equations, boundary conditions, and available data. Variational approaches such as the Deep Ritz method exploit the underlying energy functional whenever available, while more recent Deep Riesz formulations seek to align residual minimization with the natural functional frame-work of the PDE. These developments have generated a rapidly growing literature on approx-imation, convergence, generalization, optimization, and error analysis for neural PDE solvers [16, 7, 18, 5, 15, 3]. Neural solvers offer considerable flexibility and are particularly attractive in high-dimensional or mesh-free settings. At the same time, replacing classical linear approximation spaces by non-linear neural ansätze fundamentally changes the geometry of the approximation problem. The 1    
+
+> arXiv:2606.04018v1 [math.NA] 1 Jun 2026 Parameter space
+> non-coercive reduced functional parameters escape and diverge non-attainment of minima
+> Θ7→uΘ
+> Physical state space
+> coercive PDE energy physical states remain bounded convergence in the energy space
+> Figure 1: The coercivity gap. Parameter sequences may escape in the nonlinear ansatz, while the corre-sponding state functions remain controlled by the coercive PDE energy and may converge strongly in the natural energy space.
+
+resulting optimization problems are typically nonconvex and may fail to be coercive with respect to the neural parameters; see, for instance, [4, 12, 21]. The central theme of this article is the distinction between the behavior of neural parame-ters and that of the corresponding PDE states. Minimizing sequences in parameter space may diverge, become singular, or fail to converge because of the nonlinear geometry of the neural representation, while the associated physical states may nevertheless converge strongly to the true PDE solution in the natural energy space. We refer to this mismatch as a coercivity gap 
+
+between parameter space and physical-state space. To isolate and analyze this phenomenon, we consider a simple variational elliptic model with shallow Gaussian neural ansätze. The goal is not to advocate this specific architecture, but rather to expose, in a transparent setting, structural mechanisms that also arise in more general PDE models and neural architectures: loss of convexity, lack of coercivity in parameter space, neuron condensation, non-closedness of approximation manifolds, relaxation and convexification, and the distinction between parameter convergence and physical-state convergence. 
+
+Main results. The main contributions of the paper are the following. First, we show that fi-nite Gaussian neural manifolds may fail to be closed in the natural energy topology and that this non-closedness produces parameter escape and possible non-attainment of the reduced varia-tional problem. Second, we prove that, despite this lack of compactness at the parameter level, the physical states associated with minimizing sequences converge strongly to the solution of the elliptic problem. Third, under weighted regularity assumptions, we derive an explicit construc-tive convergence rate. Fourth, we show that the same state-level stability mechanism extends to residual minimization formulations. The residual-minimization viewpoint is guided by PDE stability theory. For the elliptic model considered below, the natural residual norm is H−1(Rd), reflecting the fact that −∆ + I is an isomorphism from H1(Rd) to H−1(Rd). Thus, residual functionals should be formulated in spaces consistent with the well-posedness framework of the underlying PDE, rather than through arbitrary pointwise or purely empirical norms. Although the analysis is carried out in a simple elliptic setting, the mechanisms identified here are structural in nature and are expected to extend far beyond the specific model under con-sideration, including variable-coefficient problems, nonlinear equations, bounded domains, and broader classes of neural architectures. Accordingly, the present framework should be viewed primarily as a mathematical test case that makes it possible to isolate and analyze, in a rigorous and transparent manner, phenomena such as the coercivity gap, parameter escape, and state-level convergence. The Gaussian ansatz is therefore not the main object of interest, but rather a convenient analytical vehicle through which these mechanisms can be revealed and understood. We expect analogous effects to arise in a wide range of neural PDE solvers and scientific machine learning methodologies. For further developments of the ideas and themes discussed in this paper, we refer the reader to [6]. 22 A Wiener Neural Ansatz for Elliptic Variational Problems 
+
+To make the preceding issues precise, we consider the classical elliptic model 
+
+−∆u + u = f in Rd, (1) with f ∈ H−1(Rd). This problem admits a unique solution u ∈ H1(Rd), characterized as the minimizer of 
+
+I = J(u) = min  
+
+> v∈H1(Rd)
+> {
+
+12
+
+> ∫
+> Rd
+> (
+
+|∇ v|2 + v2) dx −
+
+> ∫
+> Rd
+
+f v dx 
+
+> }
+
+. (2) The success of classical Galerkin finite element methods relies on the continuity, coercivity, and strict convexity of J. These properties ensure existence and uniqueness through the direct method of the calculus of variations and lead to stable numerical schemes with well-understood convergence and complexity estimates. Moreover, if f ∈ L2(Rd), then u ∈ H2(Rd), allowing arbitrarily accurate H1-approximations with quantifiable computational cost. Neural approximations replace the linear approximation space by a nonlinear parametrized family. To isolate the resulting phenomena in a simple yet representative setting, we consider a Gaussian ansatz inspired by Wiener’s Tauberian theorem. Indeed, a classical consequence of Wiener’s result is that finite linear combinations of Gaussian translates are dense in H1(Rd),thereby ensuring universal approximation in the natural energy space. At the same time, this ansatz involves only a limited number of nonlinear parameters, allowing for a transparent anal-ysis of the interplay between approximation, optimization, and variational structure. As we shall see, it provides a particularly convenient framework in which the coercivity gap, parameter es-cape, and state-level convergence can be exhibited and analyzed rigorously. As we shall see, although the original functional J is coercive in the physical space H1(Rd),its restriction to the neural manifold may fail to be coercive with respect to the parameters. This loss of coercivity is caused by neuron-condensation phenomena that generate singular limiting profiles involving derivatives of the activation function. Consequently, minimizing parameter sequences may diverge even though the corresponding state functions remain bounded and con-verge strongly in the natural energy topology. The remainder of the paper analyzes this phenomenon, establishes convergence and approx-imation results for the physical states, and extends the discussion to relaxed formulations, PINN-type residual minimization methods, and HYCO-type hybrid methods. To simplify the analysis, consider an NN representation inspired by Wiener’s ansatz, in the spirit of his work on Tauberian theorems [20]. We aim to approximate the solution of (1) by the Gaussian mixture ansatz (thereby ensuring the universal approximation property, discussed below): 
+
+v(x) = ∑ 
+
+> j∈[P]
+
+wj G(x − xj ), (3) where G is the normalized Gaussian kernel 
+
+G(x) = (4 π)−d/ 2e−| x|2/4, (4) whose Fourier transform is given by ̂
+
+G(ξ) = e−| ξ|2
+
+. (5) Given an integer P ≥ 1, this ansatz defines a finite-dimensional manifold MP ⊂ H1(Rd) of dimension P (d + 1) , consisting of mixtures of P Gaussian functions, which play the role of neurons. We denote by Θ the corresponding set of parameters, Θ = {(wj , x j )}j∈[P ].
+
+3We then fix the number of neurons P , that is, the width of the neural network, and restrict the minimization problem (2) to the finite-dimensional manifold MP of functions satisfying the ansatz (3). This yields a finite-dimensional minimization problem. More precisely, let us denote by JP (Θ) the functional J, restricted to MP , corresponding to the ansatz (3), with parameter values Θ ∈ RP (d+1) ,
+
+JP (Θ) =  
+
+> ∫
+> Rd
+> {
+
+12
+
+> ∣∣∣∣∣∣
+
+∇ ∑ 
+
+> j∈[P]
+
+wj G(x − xj )
+
+> ∣∣∣∣∣∣
+> 2
+
++ 
+
+> ∣∣∣∣∣∣∑
+> j∈[P]
+
+wj G(x − xj )
+
+> ∣∣∣∣∣∣
+> 2
+
+− f (x) ∑ 
+
+> j∈[P]
+
+wj G(x − xj )
+
+> }
+
+dx. 
+
+(6) The corresponding finite-dimensional minimization problem reads: find ˜ΘP ∈ RP (d+1) such that 
+
+JP ( ˜ΘP ) = IP := inf  
+
+> Θ∈RP(d+1)
+
+JP (Θ) . (7) Obviously, 
+
+IP ≥ I > −∞ , (8) given that I corresponds to the minimum of J in the whole space H1(Rd) and IP is the infimum of the values of the restriction of the same functional J to the manifold MP .A fundamental question arises immediately, which can be easily ignored or bypassed: Is the infimum IP achieved? Is there a minimizing parameter choice ˜ΘP ensuring that JP ( ˜ΘP ) = IP ,so that we might guarantee that the infimum above is a minimum? Clearly, since (8) holds, the most natural analytical approach, leaving computational issues aside for the moment, is to apply the direct method of the calculus of variations, now in the parameter space Θ ∈ RP (d+1) .As we shall see below, and this is rather striking, this procedure may fail, given the lack of coercivity of the functional JP with respect to the parameters. And this occurs, despite the finite-dimensional nature of the problem, and the fact that JP is nothing but a restriction of the coercive (in the H1(Rd)-sense) functional J to the manifold MP . As we shall see, this is due to the nonlinear nature of the ansatz (3). This induces the lack of closedness of MP in the topology of H1(Rd).Independently of the lack of coercivity, the finite-dimensional functional JP is intrinsically nonconvex because of its nonlinear dependence on the centers xj . Although it is convex in the weights wj when the centers are fixed, this property does not extend to the center variables, and therefore JP is not jointly convex in the full parameter vector Θ. This creates a challenge of a different nature. Even when the variational behavior of minimizing sequences can be understood theoretically, constructing them numerically remains highly nontrivial. The resulting optimiza-tion landscape may contain multiple local minima, saddle points, and poorly conditioned flat regions, so that standard gradient-based algorithms offer no guarantee of approaching globally minimizing configurations. Therefore, in contrast with the FEM setting, where linear approximation preserves convexity and coercivity, in the present context, we encounter two difficulties: 
+
+• the possible lack of coercivity, which we will confirm and analyze below; 
+
+• the lack of convergence guarantees of gradient-based methods. In practice, stochastic vari-ants of gradient descent are used to mitigate local minima and reduce computational cost, but they only provide probabilistic guarantees and do not ensure convergence to a global minimizer. 4These facts mark a fundamental structural difference with classical numerical methods, based on linear approximation and Galerkin methods, such as FEM. Despite these difficulties, the analysis developed in this article will explain the good approx-imation properties that these methods exhibit in practice. The key idea is that, rather than at-tempting to track the behavior of the parameters Θ generated by the training process, one should focus on the associated states. As we shall see, the behavior of these states can indeed be under-stood and explained using classical tools from PDE analysis. 
+
+# 3 Loss of coercivity in finite-dimensional Gaussian variational problems 
+
+We next analyze the loss of coercivity of JP in parameter space. The mechanism is neuron condensation: when centers coalesce, Gaussian mixtures may converge in H1(Rd) to profiles that no longer belong to the finite manifold MP , while the corresponding parameters diverge. Consider the two-Gaussian sequence 
+
+uk(x) = k
+
+2
+
+> (
+
+G
+
+> (
+
+x + e1
+
+k
+
+> )
+
+− G
+
+> (
+
+x − e1
+
+k
+
+> ))
+
+,
+
+where e1 = (1 , 0, . . . , 0) . Then 
+
+uk → ∂1G strongly in H1(Rd) as k → ∞ .
+
+The corresponding parameters are unbounded: the centers ±e1/k collapse, while the weights 
+
+±k/ 2 diverge. 
+
+Proposition 3.1 (Non-closedness and parameter escape) . For every P ≥ 2, the Gaussian manifold 
+
+MP is not closed in the strong topology of H1(Rd). More precisely, there exists a sequence uk ∈ M P
+
+such that uk → ∂1G strongly in H1(Rd), while the corresponding parameters satisfy ∥Θk∥ → ∞ .
+
+The strong convergence follows from the elementary finite-difference representation of ∂1G.On the other hand, ∂1G /∈ M P for finite P , since a finite linear combination of translated Gaussians has a Fourier transform of the form ̂
+
+G(ξ)
+
+> P∑
+> j=1
+
+wj e−ix j ·ξ,
+
+whereas ̂ ∂1G(ξ) = iξ 1̂ G(ξ). Thus one would need a finite exponential sum to coincide with the polynomial iξ 1, which is impossible. Hence ∂1G ∈ M PH1
+
+\ M P .This example displays the coercivity gap. A bound of the form JP (Θ) ≤ C controls the real-ization uΘ in H1(Rd), but it need not control the parameter vector Θ. Thus bounded sequences of state functions may converge to limits outside the finite ansatz class, while the corresponding parameters escape to infinity. The phenomenon is not merely formal. If the exact solution of (1) is u = ∂1G, which is obtained by taking f = ∂1(−∆G + G), then minimizing sequences for JP , with P ≥ 2, natu-rally develop the divergent parameter pattern described above. The associated states converge strongly to the exact solution, and in this case IP = I.Nor is the mechanism specific to Gaussian activations. More generally, when two neurons condense, difference quotients of activation profiles may generate effective derivative profiles that lie outside the original finite ansatz class. Similar mechanisms are expected in deeper archi-tectures whenever condensation in one layer produces a profile outside the fixed parametrized 5class, and this defect is propagated through subsequent layers. In what follows, however, we keep the Gaussian setting as a transparent model in which the mechanism can be analyzed explicitly. The obstruction is independent of nonconvexity: it persists after relaxation and convexifica-tion and is therefore intrinsic to the geometry of the neural parametrization. As a consequence, gradient-based training may exhibit parameter escape , with parameter sequences diverging while the associated physical states remain bounded and convergent. This reveals a fundamental dis-tinction between parameter space and state space: coercivity may fail in the former while remain-ing fully effective in the latter. In practice, one may therefore obtain accurate approximations of the physical solution even when the underlying parameters become unstable. The next section is devoted to the analysis of this state-level stabilization mechanism. 
+
+# 4 Convergence of Physical States Along Minimizing Parameter Sequences 
+
+Having identified the possible lack of coercivity in parameter space, let {Θk}k≥1 be a minimizing sequence for JP , namely 
+
+JP (Θ k) → IP .
+
+Although the parameters may diverge, the associated state functions remain controlled. Indeed, 
+
+J(uΘk ) = JP (Θ k)
+
+is bounded, and the coercivity of J in H1(Rd) implies that {uΘk } is bounded in the energy space. Hence, up to a subsequence, 
+
+uΘk ⇀ u P weakly in H1(Rd),
+
+for some uP ∈ H1(Rd).The following theorem establishes the main convergence result. 
+
+Theorem 4.1 (Physical-state convergence) . Let f ∈ H−1(Rd), and let u ∈ H1(Rd) be the unique solution of (1) . For each P ≥ 1, let uP be a weak limit in H1(Rd) of the physical states associated with a minimizing sequence of parameters for JP . Then 
+
+uP → u strongly in H1(Rd) as P → ∞ .
+
+Proof. By weak lower semicontinuity, 
+
+J(uP ) ≤ lim inf  
+
+> k→∞
+
+J(uΘk ) = IP . (9) Since I is the minimum of J over the whole energy space, we obtain 
+
+I ≤ J(uP ) ≤ IP . (10) The state uP need not belong to MP , because MP is not closed. It is better understood as a relaxed state selected by minimizing sequences of the finite ansatz. The convergence of these relaxed states as P → ∞ follows from the density of finite linear combinations of Gaussian translates in H1(Rd), a classical consequence of Wiener’s Tauberian theorem [20]. More precisely, for every v ∈ H1(Rd) and every ε > 0, there exist P ≥ 1 and 
+
+vP ∈ MP such that 
+
+∥v − vP ∥H1(Rd) < ε. 
+
+6Since the functional J is continuous on H1(Rd), it follows that 
+
+IP = inf 
+
+> w∈MP
+
+J(w) −→ inf 
+
+> w∈H1(Rd)
+
+J(w) = I. (11) Combining (10) and (11), any weak accumulation point of {uP }P ≥1 minimizes J over H1(Rd),hence coincides with the unique solution u of (1). Since the limit is unique, the whole sequence converges weakly. Moreover, J(uP ) → J(u), and the strict convexity of J gives strong conver-gence in H1(Rd).The next section is devoted to a rigorous analysis of (11), together with precise quantitative convergence estimates. 
+
+Remark 4.2. This result should be read as a state-level convergence theorem. It does not assert that training algorithms find global minimizing sequences. Rather, it shows that whenever such sequences, or sufficiently accurate near-minimizing sequences, are constructed, their physical re-alizations are stable and converge to the PDE solution even if the parameters themselves exhibit escape. 
+
+The same argument gives a rate once the approximation error of u by Gaussian wave packets is quantified. Since u solves (1), for every v ∈ H1(Rd),
+
+J(v) − J(u) = 12 ∥v − u∥2
+
+> H1(Rd)
+
+. (12) Thus, if vP ∈ M P satisfies 
+
+δP := ∥u − vP ∥H1(Rd) → 0,
+
+then 
+
+0 ≤ IP − I ≤ J(vP ) − J(u) = 12 δ2 
+
+> P
+
+,
+
+and consequently 
+
+∥uP − u∥H1(Rd) ≤ δP . (13) The next section provides a constructive estimate for δP , providing also a complete proof of (11). 
+
+# 5 Quantitative approximation rates 
+
+We now give a constructive, non-optimal rate for approximating the solution u by Gaussian wave packets. The goal is not to compete with the sharpest results in radial basis function approxi-mation theory [13, 1, 19], but rather to show how explicit rates follow from standard PDE and spectral arguments. 
+
+# Main result 
+
+The following theorem establishes the main quantitative approximation estimate. 
+
+Theorem 5.1 (Constructive logarithmic convergence rate) . Assume that 
+
+f ∈ L2(Rd; 1 + |x|2).
+
+Let u be the solution of (1) , and let uP be the sequence of relaxed states introduced in Theorem 4.1. Then 
+
+u ∈ H1(Rd; 1 + |x|2) ∩ H2(Rd),
+
+and there exists a constant C > 0, independent of P , such that 
+
+∥uP − u∥H1(Rd) ≤ C
+
+√log P ∥u∥H1(Rd;1+ |x|2)∩H2(Rd).
+
+7Remark 5.2. Several remarks are in order: 
+
+• The logarithmic convergence rate obtained above should be viewed as a constructive lower bound arising from the particular approximation strategy employed in this work. We do not claim that it is optimal. Determining the sharp approximation rates achievable by Gaussian neural ansätze in energy spaces remains an open problem. In particular, it is currently un-clear whether substantially faster rates can be obtained under additional regularity, decay, or structural assumptions on the target solution. We return to this issue in the discussion of future research directions. 
+
+• Although the logarithmic convergence rate is pessimistic, as far as we know, such a result is new. The literature on this topic is abundant, but often deals with the more general ansatz in which the variance of the Gaussian can also be tuned. Here the variance of the Gaussian is fixed, and only its centers and multiplicative weights can be chosen. Then, necessarily, the approximation mechanism cannot be very efficient, given that many Gaussians might be needed to approximate both solutions with a very wide or very narrow support. 
+
+• The proof proceeds in two steps. In the first one, we work in exponentially weighted Sobolev spaces. In that setting, we obtain polynomial approximation rates, subject to the curse of dimensionality. The convergence rate deteriorates to logarithmic in the second step when a cut-off argument is employed, to cope with the asymptotic behavior at infinity. 
+
+# Sketch of the proof 
+
+As mentioned above, we proceed in two main steps. The details of the proof in each step are presented in technical appendices at the end of the paper. 
+
+Exponentially weighted Sobolev spaces. The starting point is the weighted Sobolev frame-work associated with the operator (see [22]) 
+
+Lv = −∆v − y · ∇ v
+
+2 = − 1
+
+K(y) div (K(y)∇v(y)), K(y) = exp  
+
+> (
+
+|y|2
+
+4
+
+> )
+
+. (14) In the spaces L2(K) and Hm(K), this operator has a compact inverse and an orthonormal basis of eigenfunctions generated by derivatives of the first eigenfunction 
+
+φ1(y) = K−1(y) = exp 
+
+> (
+
+− |y|2
+
+4
+
+> )
+
+.
+
+The corresponding eigenvalues are 
+
+μℓ = d + ℓ − 12 , ℓ ≥ 1,
+
+and the eigenspaces are spanned by Dβ φ1, |β| = ℓ − 1 .Hence, if v ∈ H2(K) and vL denotes the projection onto the first L eigenspaces, then 
+
+∥v − vL∥H1(K) ≤ CL −1/2∥v∥H2(K).
+
+Equivalently, writing the truncation by total order of derivatives gives an error of order O(L−1)
+
+in terms of the maximal derivative order, with P ∼ Ld Gaussian wave packets required to ap-proximate the derivatives by finite differences of translates. This yields, on fixed weighted or compact scales, the classical algebraic behavior 
+
+error( P ) ≲ P −1/d ,
+
+8up to constants depending on the weighted norms of the target. This is a linear approximation procedure and still reflects the algebraic curse of dimensionality. 
+
+Remark 5.3. Related weighted moment techniques have also been used in inverse problems for the heat equation [8]. 
+
+Cut-off. To transfer the estimate to H1(Rd), we use localization. Let φR(x) = φ(x/R ), where 
+
+φ ∈ C∞ 
+
+> c
+
+(Rd), φ = 1 in B1, and φ = 0 outside B2. Set uR = uφ R. If u ∈ H1(Rd; 1 + |x|2), then the standard cutoff estimate gives 
+
+∥u − uR∥H1(Rd) ≤ CR ∥u∥H1(Rd;1+ |x|2). (15) Moreover, if u ∈ H2(Rd), then 
+
+∥uR∥H2(Rd) ≤ C∥u∥H2(Rd),
+
+whereas the weighted norm satisfies 
+
+∥uR∥H2(K) ≤ Ce cR 2
+
+∥u∥H2(Rd).
+
+Combining the weighted Gaussian approximation of uR with (15), one constructs a Gaussian wave packet wR,L with P ∼ Ld terms such that 
+
+∥u − wR,L ∥H1(Rd) ≤ CR ∥u∥H1(Rd;1+ |x|2) + Ce cR 2
+
+L ∥u∥H2(Rd). (16) Choosing R2 ∼ θ log L, with 0 < θ < 1/c , yields the conservative global estimate 
+
+inf  
+
+> wP∈M P
+
+∥u − wP ∥H1(Rd) ≤ C
+
+√log P ∥u∥H1(Rd;1+ |x|2)∩H2(Rd). (17) This logarithmic rate should be understood as a constructive global upper bound obtained through localization and weighted Sobolev estimates, not as an optimal nonlinear approximation rate. The loss comes from the exponential dependence of the weighted constants on the localization radius. Finally, the weighted assumption that H1(Rd; 1 + |x|2) is natural for the elliptic problem. If 
+
+f ∈ L2(Rd; 1+ |x|2), then elliptic regularity gives u ∈ H2(Rd), and multiplying (1) by (1+ |x|2)u
+
+gives ∫
+
+> Rd
+
+(1 + |x|2)( |u|2 + |∇ u|2) dx ≤ C
+
+∫
+
+> Rd
+
+(1 + |x|2)|f |2 dx. 
+
+Thus u ∈ H1(Rd; 1 + |x|2).
+
+# 6 Further comments on minimizing sequences 
+
+In the preceding section, we obtained explicit convergence rates for the sequence uP , aris-ing as accumulation points of minimizing sequences for J in MP , under the assumption that 
+
+f ∈ L2(Rd; 1 + |x|2). It is then natural to go one step further and analyze the behavior of the corresponding minimizing sequences uΘkP
+
+. The arguments developed above can also be used for this purpose. Indeed, for each fixed P , and for k sufficiently large, we have 
+
+J(uΘkP
+
+) ≤ IP + 1log P ,
+
+9since J(uΘkP
+
+) → IP as k → ∞ along minimizing sequences in MP . On the other hand, by the definition of the global minimum I, we have I ≤ J(uΘkP
+
+). Therefore, 
+
+I ≤ J(uΘkP
+
+) ≤ IP + 1log P .
+
+Combining this estimate with the previously established convergence rate for IP − I, we obtain ∣∣J(u) − J(uΘkP
+
+)∣∣ ≤ C
+
+log P .
+
+By the coercivity of the energy functional around its minimizer, this yields 
+
+∥u − uΘkP
+
+∥H1(Rd) ≤ C
+
+√log P .
+
+Thus, for each P , the state functions associated with sufficiently advanced elements of min-imizing sequences in MP converge strongly to the solution u in H1(Rd), with an explicit con-vergence rate in terms of P . The threshold on k, however, may depend on P .This provides a mathematical explanation for a phenomenon often observed in numerical implementations: even when the parameters ΘkP of minimizing sequences diverge, the corre-sponding physical states may still perform well and retain good approximation properties in the energy space H1(Rd).A natural open question is whether these estimates can be refined to quantify the role of the minimizing-sequence index k as a function of P . The result above only ensures convergence for 
+
+k sufficiently large, without providing an explicit rate for this dependence. This analysis applies not only to exact minimizing sequences of parameters, but also to near-minimizing sequences. Indeed, assume that, for each P , the parameters under consideration generate states whose asymptotic energy levels remain below IP + ε, for some fixed ε > 0. Then any weak accumulation point u∗ in H1(Rd), as P → ∞ , satisfies 
+
+I ≤ J(u∗) ≤ I + ε. 
+
+By the coercivity of J around its unique minimizer u, this implies 
+
+∥u∗ − u∥H1(Rd) ≤ C√ε. 
+
+Thus, even near-minimizing sequences remain close, at the level of state functions, to the exact solution. In computational practice, however, constructing such minimizing or near-minimizing se-quences is far from straightforward. Once the functional J is restricted to the P -Gaussian ansatz, it becomes a highly nonconvex function of the parameters. Consequently, standard optimization algorithms may converge only to local minima, saddle regions, or ill-conditioned near-critical configurations, and the present argument does not by itself justify convergence of the training dynamics to the absolute minimum. 
+
+# 7 Relaxation 
+
+In the previous sections, we analyzed the behavior of the physical states associated with min-imizing sequences in MP . However, as already mentioned in the introduction to this article, computational practice faces an additional difficulty: one must actually construct such minimiz-ing sequences. This is challenging because the functional, when restricted to MP , is non-convex, due to the nonlinear character of the ansatz. 10 A natural remedy for this lack of convexity, inspired by standard relaxation arguments, is to introduce a relaxed, convexified, continuous ansatz. As we shall see, however, this relaxation addresses the lack of convexity but does not, by itself, resolve the lack of coercivity. We therefore consider 
+
+vμ(x) = 
+
+> ∫
+> Rd
+
+G(x − y) dμ (y), (18) where μ is a signed bounded measure on Rd, that is, μ ∈ M (Rd), endowed with the total variation norm ∥ · ∥ TV . Equivalently, 
+
+vμ = G ∗ μ. (19) Restricting the minimization problem (2) to this ansatz, we define 
+
+Jr(μ) = J(vμ) = 12
+
+> ∫
+> Rd
+> (
+
+|∇ vμ|2 + v2 
+
+> μ
+> )
+
+dx −
+
+> ∫
+> Rd
+
+f v μ dx. (20) Here, the subscript r stands for “relaxation”. The corresponding minimization problem is 
+
+Ir := inf 
+
+> μ∈M (Rd)
+
+Jr(μ). (21) This is the convexified version of the discrete problem (7). Indeed, if the measure μ is atomic, namely 
+
+μ = ∑ 
+
+> j∈[P]
+
+wj δxj , (22) then the ansatz (18) reduces to the discrete Gaussian ansatz (3), and the relaxed functional Jr
+
+reduces to the discrete functional JP in (6). The following theorem establishes the main convergence result in the relaxed setting. 
+
+Theorem 7.1. Assume that f ∈ H−1(Rd), so that the solution u of (1) belongs to H1(Rd).Let (μj )j≥1 be a minimizing sequence for Ir, and let vμj = G∗μj be the corresponding sequence of state functions. Then 
+
+vμj → u strongly in H1(Rd)
+
+as j → ∞ .
+
+This theorem shows that the state-level convergence mechanism identified above for finite Gaussian mixtures persists in the relaxed, measure-valued formulation. The functional Jr is well defined on M = M(Rd). It is also continuous and convex, given that, by Young’s inequality and the fact that the Gaussian kernel G belongs to H1(Rd), the finiteness of ∥μ∥TV ensures that the associated state vμ belongs to H1(Rd).However, the statement of the theorem is not obvious because of the lack of coercivity of 
+
+Jr in M(Rd), which constitutes an impediment to applying the direct method of the calculus of variations in M(Rd).This lack of coercivity may also be reflected at the numerical level: gradient descent algo-rithms may produce divergent minimizing sequences of measures. This is precisely what happens in the example discussed above, where the actual PDE solution is u = ∂1G. It may be obtained as the limit of the continuous ansatz (19) with measures 
+
+μj = j
+
+2
+
+> (
+
+δe1/j − δ−e1/j 
+
+> )
+
+,
+
+so that, in the sense of distributions, μj ⇀ ∂ 1δ0. The sequence μj is unbounded in the space of finite measures. Nevertheless, the associated fields satisfy 
+
+vμj = G ∗ μj → G ∗ ∂1δ0 = ∂1G in H1(Rd).
+
+11 This exhibits the failure of coercivity of Jr on M, due to the regularizing effect of the convolution with G.This lack of coercivity can also be understood from the Fourier perspective. Taking the Fourier transform of the convolution relation (19) gives ̂
+
+vμ(ξ) = ̂ G(ξ)̂μ(ξ) = e−| ξ|2̂ μ(ξ), (23) and therefore ̂
+
+∇vμ(ξ) = iξ ̂ G(ξ)̂μ(ξ), |̂∇vμ(ξ)| = |ξ|e−| ξ|2
+
+|̂μ(ξ)|, (24) up to the normalization convention used for the Fourier transform. Hence a bound on vμ in 
+
+H1(Rd) only implies that 
+
+(1 + |ξ|) e−| ξ|2̂ μ(ξ) ∈ L2(Rd),
+
+with a corresponding uniform bound. This condition is far too weak to control μ as a finite measure. The Gaussian factor e−| ξ|2
+
+suppresses high frequencies so strongly that ̂ μ may grow rapidly while vμ and ∇vμ remain square-integrable. In particular, such an H1-bound on vμ does not yield any bound on ∥μ∥M, as illustrated by the previous example. In other words, although the relaxed ansatz provides a measure-valued representation and a convex minimization problem over bounded signed measures, the corresponding minimizing sequences may escape the space of finite measures in the limit. This reflects the fact that the convolution map μ 7 → vμ = G ∗ μ is strongly regularizing, so that the inverse relation is not coercive. This lack of coercivity makes it difficult to implement the direct method of the calculus of variations directly, since minimizing sequences of measures may fail to be bounded. It also cre-ates an obstruction to proving convergence of gradient descent methods at the level of the pa-rameters or measures. Nevertheless, the methods of the previous sections can be used to prove Theorem 7.1. 
+
+Proof of Theorem 7.1. The lack of compactness at the level of the representing measures does not necessarily propagate to the physical states: minimizing sequences of measures may be un-bounded, while the associated states remain well behaved and converge to the minimizer in the energy space. Indeed, first, we observe that 
+
+I ≤ Ir,
+
+because the infimum Ir is computed over functions of the form vμ = G ∗ μ, with μ ∈ M (Rd),which form a particular subclass of H1(Rd).Conversely, one has 
+
+Ir ≤ I. 
+
+Indeed, every function in H1(Rd), and in particular the solution u of (1), can be approximated in H1 can be approximated by finite linear combinations of Gaussian translates, equivalently by convolutions vμ = G ∗ μ with atomic measures μ. In particular, the arguments of the previous sections provide such approximations by finite Gaussian wave packets, corresponding to atomic measures μ. Therefore, 
+
+Ir = I. 
+
+We can now conclude, by the same arguments as before, that the state functions associated with minimizing sequences converge strongly to the solution. 12 This theorem shows that, despite the lack of coercivity in the space of measures, minimizing sequences still generate convergent sequences of physical states. From a computational view-point, the possible divergence of the representing measures remains an obstacle to the efficient implementation of the method, but it does not prevent convergence at the level of the associated states. Moreover, as discussed in the previous section, the arguments can be pushed to obtain ex-plicit estimates for minimizing or near-minimizing sequences. In the present relaxed setting, such sequences are easier to construct in principle, because of the convexity of the functional 
+
+Jr. Nevertheless, their practical computation may still be demanding, especially in high space dimensions d, where the representation of measures and the numerical resolution of the associ-ated convex problem can become prohibitively expensive. 
+
+# 8 Further structural issues and remedies 
+
+The previous sections identify the coercivity gap as a structural obstruction arising from the nonlinear geometry of Gaussian neural parametrizations. We now collect several complemen-tary remarks concerning possible remedies, variants of the ansatz, and the persistence of the phenomenon beyond the model setting considered above. 
+
+Alternative kernels and activation functions 
+
+The loss of coercivity in the relaxed Gaussian formulation is closely related to the strong smooth-ing effect of convolution by G, whose Fourier transform decays exponentially. This suggests asking whether other kernels could improve the parameter-space behavior. One possible modification is to replace G by a periodic Gaussian sum 
+
+Gp(x) = ∑
+
+> m∈Zd
+
+G(x − m).
+
+By the Poisson summation formula, ̂
+
+Gp(ξ) = ∑
+
+> m∈Zd
+
+e−| ξ−m|2
+
+,
+
+which is bounded above and below by positive constants. Therefore, the map μ 7 → Gp ∗ μ
+
+behaves as an isomorphism at the Sobolev level, and coercivity of the state variable may be transferred to the parameter variable. This restores a better-posed relaxed problem, but at a price: atomic approximations generate periodic Gaussian sums, effectively involving infinitely many translated Gaussians, and an additional truncation step is needed to recover a finite-width ansatz. Another possibility is to use Riesz-type kernels 
+
+Hα(x) = |x|−α, 0 < α < d, 
+
+whose Fourier transform satisfies ̂
+
+Hα(ξ) = Cd,α |ξ|α−d.
+
+For the special choice α = d − 1, the gradient of Hα ∗ μ is controlled through Riesz transforms of μ, so that the homogeneous H1-seminorm of the state is comparable to an L2-type norm of the parameter. However, the low-frequency behavior of the full H1-norm remains delicate. 13 Thus Riesz kernels reduce some of the Gaussian smoothing difficulties but introduce their own analytical complications. These observations reinforce the central message: the stability of a neural or kernel ansatz depends not only on approximation power, but also on how the parameter-to-state map interacts with the PDE energy space. In the remainder of the paper, we return to the Gaussian setting and discuss a more direct regularization mechanism. 
+
+Penalization 
+
+A direct way to restore compactness is to add a Tikhonov penalty in the representing measure. For δ > 0, consider 
+
+Jδr,T (μ) = J(G ∗ μ) + δ∥μ∥2TV . (25) This functional is coercive in M(Rd) and convex in the measure variable. It is also the natural convexified counterpart of the discrete penalization 
+
+JδP,T (Θ) = JP (Θ) + δ
+
+> 
+> P∑
+> j=1
+
+|wj |
+
+> 
+> 2
+
+. (26) The penalty prevents the signed cancellations responsible for unbounded total variation and therefore restores well-posedness at the relaxed measure level for every fixed δ > 0.This regularization, however, introduces an additional parameter that must be chosen or tuned. From the computational viewpoint, this increases the cost of the method, since the quality of the approximation may depend sensitively on the balance between the PDE energy and the penalization term. From the analytical viewpoint, the presence of δ also adds a further limiting process: one has to understand not only the approximation properties for fixed δ > 0, but also the behavior of minimizers as δ → 0. The techniques developed above apply to this vanishing-regularization regime as well, but the additional parameter makes the convergence analysis more delicate. It is also important to distinguish the relaxed and finite-dimensional problems. While the measure-valued functional Jδr,T is convex in μ, the finite-dimensional penalized functional JδP,T 
+
+is still nonconvex in the full parameter vector Θ, because of the nonlinear dependence on the centers xj . Thus, although the penalty improves compactness by controlling the weights, it does not by itself remove the optimization difficulties associated with the nonlinear parametrization. In particular, the construction of minimizing or near-minimizing parameter sequences remains a challenging computational problem. One may attempt to enforce convexity in the parameter space by taking δ very large. In that regime, however, the penalization dominates the PDE energy and drives the minimizers toward configurations with small total variation rather than toward accurate approximations of the PDE solution. This trade-off in the parameter space between convexity and coercivity on one hand, and approximation accuracy in the other, is one of the main limitations of penalization-based remedies. The limit δ → 0 formally recovers the original unregularized problem, but uniform bounds on the parameters may again be lost in that limit. Hence Tikhonov regularization provides a useful stabilization mechanism for fixed δ > 0, while the vanishing-regularization regime requires the state-level convergence analysis developed in the previous sections. 
+
+Persistence beyond the model setting 
+
+The analysis has been developed for a constant-coefficient elliptic problem and a shallow Gaus-sian ansatz, but the mechanism is structural. Similar compactness defects may arise whenever a 14 nonlinear parametrization admits collisions or degeneracies that generate limiting profiles out-side the fixed ansatz class. This includes variable-coefficient elliptic problems, nonlinear vari-ational equations, bounded domains, and residual formulations (which will be discussed in the next section). The precise form of the pathology depends on the activation and architecture. For smooth activations, condensation often produces derivative profiles through difference quotients. For deeper networks, analogous effects are expected whenever such degeneracies occur in one layer and are transported through the remaining layers. 
+
+# 9 Residual minimization, PINNs, and Convergence of Physical States 
+
+We now formulate the analogue of the preceding results for PINN-type residual minimization. The key point is that the residual norm must be chosen according to the well-posedness frame-work of the PDE. For (1), set 
+
+A = −∆ + I. 
+
+Then A : H1(Rd) → H−1(Rd) is an isomorphism. The natural residual functional is therefore 
+
+R(v) = ∥Av − f ∥2
+
+> H−1(Rd)
+
+. (27) The solution u is uniquely characterized by R(u) = 0 , and for every v ∈ H1(Rd),
+
+∥v − u∥H1(Rd) ≤ CR(v)1/2. (28) This stability estimate is the entire reason why the previous state-level convergence mechanism extends to residual minimization. The above estimate follows directly from the boundedness of the inverse operator 
+
+A−1 : H−1(Rd)) → H1(Rd)) .
+
+Indeed, since A(v − u) = Av − f ,
+
+∥v − u∥H1 ≤ C ∥Av − f ∥H−1 = C R(v)1/2.
+
+Restricting R to MP again produces a nonconvex and noncoercive problem in parameter space. Nevertheless, minimizing sequences of the residual generate stable state functions, be-cause a small residual in H−1 directly controls the state error through (28). 
+
+Theorem 9.1 (Residual minimization under Gaussian ansatz) . Let f ∈ H−1(Rd), and let u ∈
+
+H1(Rd) be the solution of (1) . For each P ≥ 1, let uP be a weak accumulation point of physical states associated with a minimizing sequence for R in MP . Then 
+
+uP → u strongly in H1(Rd) as P → ∞ .
+
+Moreover, the approximation rates of Section 5 apply to this residual formulation as well. 
+
+The theorem emphasizes a warning for PINN-type methods. Residual minimization should not be formulated independently of the PDE stability theory. A purely pointwise or empirical residual may be computationally useful, but it does not by itself provide the functional control needed for a convergence theorem of this type. For instance, if one measures the residual in 15 L2(Rd), the same strategy can be adapted, but then f needs to be in L2(Rd) and the natural solution space becomes H2(Rd), corresponding to strong rather than weak solutions. Discrete or collocation-based versions of the L2-residual can be analyzed by analogous meth-ods in the corresponding discrete L2 and Sobolev spaces, provided that the discrete norms remain compatible with the stability properties of the underlying PDE. These variants are consistent with recent convergence analyses of PINNs [17, 14, 4]. As before, the result concerns minimizing or near-minimizing sequences. It does not assert that standard training algorithms necessarily construct them, since the residual loss expressed in neural parameters may contain local minima, flat regions, and ill-conditioned directions. 
+
+# 10 HYCO methodss 
+
+We do not attempt to establish a complete convergence theorem for HYCO methods here. Rather, we aim to identify the main analytical ingredients and illustrate, through a concrete example, how the convergence analysis developed in this paper may be extended to the HYCO framework. The convergence analysis developed above can be extended to more sophisticated frame-works for data-driven PDE modeling, such as the HYCO (hybrid-cooperative learning) methods introduced in [9, 10]. HYCO combines several interacting components—typically a physics-based model and a synthetic, data-driven one—whose parameters are updated in an alternating and cooperative manner. As a consequence, the optimization problem becomes significantly more intricate, involving coupled objectives and interacting sources of approximation and modeling error. Despite this increased complexity, many of the analytical ideas developed in this paper re-main applicable. In particular, the variational and compactness arguments continue to provide useful information on the behavior of the corresponding state functions, even when coercivity fails at the level of the parameters. As in the neural approximation setting studied above, HYCO parametrizations may exhibit concentration phenomena, parameter instabilities, or escape to infinity, so that convergence of the parameters themselves cannot generally be expected. Nevertheless, for canonical linear PDE models, the techniques introduced in the previous sec-tions can be adapted to show that physical states generated by minimizing or near-minimizing HYCO sequences still converge toward the correct solution. As before, these results concern minimizing or approximately minimizing sequences. Whether practical training algorithms ac-tually produce such sequences remains a challenging open problem because of the nonconvex and hybrid nature of the optimization landscape. A detailed analysis of the convergence and optimization properties of HYCO methods is be-yond the scope of this paper and will be addressed elsewhere. Here we restrict ourselves to a prototypical HYCO setting whose purpose is to illustrate how the analytical framework devel-oped above extends to hybrid methods. Our goal is therefore not to establish a complete conver-gence theory, but rather to identify the key mechanisms and analytical ingredients underlying state-level convergence. Let us consider again the elliptic equation (1) together with the inverse problem of identifying a source term f ∈ H−1(Rd) from a dataset 
+
+(xi, u i)i∈[N ],
+
+under the requirement that the corresponding solution u satisfies 
+
+u(xi) = ui, i ∈ [N ]. (29) To illustrate the HYCO methodology in the simplest possible framework, we adopt the Gaus-sian neural ansatz (3) with P ≥ 1 throughout. The three unknown components of the model are 16 represented within the same approximation manifold. The source term is parameterized as 
+
+f (x) = 
+
+> P
+
+∑
+
+> j=1
+
+fj G(x − xf,j ), (30) while the physical and synthetic components are represented respectively by 
+
+uphy (x) = 
+
+> P
+
+∑
+
+> j=1
+
+uphy ,j G(x − xphy ,j ), (31) and 
+
+usyn (x) = 
+
+> P
+
+∑
+
+> j=1
+
+usyn ,j G(x − xsyn ,j ). (32) The corresponding parameter vector is 
+
+Θ = 
+
+(
+
+(fj , x f,j ), (uphy ,j , x phy ,j ), (usyn ,j , x syn ,j )
+
+)Pj=1 .
+
+One possible HYCO implementation consists of minimizing the coupled loss 
+
+L = Lphy + Lsyn + Lint ,
+
+where 
+
+Lphy = 12
+
+∥∥∥−∆uphy + uphy − f
+
+∥∥∥2 
+
+> H−1(Rd)
+
++ ν∥f ∥2
+
+> H−1(Rd)
+
+,
+
+with ν > 0, measures consistency with the governing PDE and regularizes the source term, 
+
+Lsyn = 12N
+
+> N
+
+∑
+
+> i=1
+
+∣∣usyn (xi) − ui
+
+∣∣2,
+
+is the empirical risk associated with the dataset, and 
+
+Lint = λ
+
+2 ∥uphy − usyn ∥2
+
+> H1(Rd)
+
+,
+
+with λ > 0, couples the physical and synthetic components. In practice, HYCO algorithms minimize L through alternating updates of the different com-ponents. Here, however, we focus on the variational problem of minimizing L simultaneously with respect to all variables. The same mechanisms identified in the previous sections may again lead to a loss of coerciv-ity in parameter space. Indeed, minimizing sequences of parameters may develop concentration phenomena and become unbounded. This behavior is largely invisible at the level of the cor-responding physical realizations. Owing to the coercivity of the functional with respect to the state variables, minimizing sequences generate bounded sequences in 
+
+H−1(Rd) × H1(Rd) × H1(Rd).
+
+The compactness arguments developed throughout this paper can then be adapted to prove the convergence of these state functions toward the unique global minimizer of L in the state space above. Thus, as in the purely variational setting considered earlier, convergence is recov-ered at the level of physical realizations even though convergence of the underlying parameters may fail. A detailed treatment of HYCO convergence and optimization based on these ideas will be presented in future work. 17 11 Open problems 
+
+The results above leave several directions open. 
+
+• Comparison principles and positivity preservation. Another important direction concerns the compatibility of neural ansätze with comparison and maximum-principle properties. For the elliptic problem considered in this paper, the continuous equation sat-isfies the positivity principle 
+
+f ≥ 0 =⇒ u ≥ 0.
+
+Classical discretizations may preserve this property under suitable structural conditions, for instance through discrete maximum principles. By contrast, an unrestricted Gaussian mixture 
+
+uP (x) = 
+
+> P∑
+> j=1
+
+wj G(x − xj )
+
+does not, in general, preserve positivity, since the coefficients wj may have arbitrary signs. Moreover, the usual variational argument based on replacing a competitor v by its positive part v+ is not available within the fixed Gaussian manifold: even if v ∈ M P , one generally has v+ /∈ M P . Thus, MP is not stable under truncations, in sharp contrast with the ambient energy space H1(Rd).
+
+One may enforce positivity by restricting to nonnegative weights or by using positivity-preserving parametrizations, but this changes both the approximation class and the associ-ated optimization problem. Understanding whether one can design neural approximation spaces that combine flexibility, approximation power, and compatibility with comparison principles remains an important open problem. This phenomenon provides another man-ifestation of the structural gap between classical variational discretizations and nonlinear neural ansätze. 
+
+• Sharp approximation rates. The logarithmic convergence estimate established here is constructive and conservative. Determining the optimal nonlinear approximation rates for Gaussian neural ansätze in the energy topology remains an important open problem. Such rates should reflect the interplay between the regularity, decay properties, and di-mension of the underlying solution. A particularly promising direction is to develop the present theory within the framework of Barron spaces and related function classes that ad-mit dimension-robust approximation properties (see [2]). This could lead to quantitative convergence estimates that substantially alleviate, or even overcome in suitable regimes, the curse of dimensionality for elliptic PDEs. 
+
+• Algorithms for minimizing sequences. The analysis explains the behavior of minimiz-ing and near-minimizing sequences, but it does not provide an algorithm for constructing them. Designing optimization strategies that retain state-level convergence while avoiding parameter escape is a central challenge. 
+
+• Random features and frozen centers. Freezing the nonlinear parameters turns the Gaussian ansatz into a linear Galerkin-type method. The frozen centers may be chosen randomly or through quantization/Voronoi-type procedures, such as Lloyd’s algorithm [11]. Comparing the stability and convergence of such random-feature methods with fully adaptive nonlinear training is an important bridge between FEM-type discretizations and neural approximation. 18 • Hybrid methods. The mathematical analysis of HYCO methods remains largely open. Beyond the convergence of minimizing sequences, one would like to understand the inter-play between physical and synthetic components, the effect of coupling and regularization parameters, the emergence of concentration phenomena in parameter space, and the extent to which practical alternating-training procedures approximate global minimizers. Devel-oping a rigorous theory for these questions would provide mathematical foundations for a broad class of hybrid approaches to scientific machine learning. 
+
+# Acknowledgments 
+
+The author thanks Antonio Álvarez-López (UAM-Madrid) and Daniel Fernández (FAU-Erlangen) for fruitful discussions. The author was funded by the Alexander von Humboldt-Professorship program, the ERC Advanced Grant CoDeFeL, the Grant PID2023-146872OB-I00-DyCMaMod of MICIU (Spain), the European Union’s Horizon Europe MSCA project ModConFlex (grant number 101073558), the COST Action CA24136 - InterCoML, the AFOSR 24IOE027 project, and the SURE-AI Centre grant 357482, Research Council of Norway. 
+
+# References 
+
+[1] Buhmann, M. D. Radial basis functions . Acta numerica 9: 1–38. 2000. [2] Chen, Z., Huang, L., Yang, M., and Zhou, S. Regularity of Second-Order Elliptic PDEs in Spectral Barron Spaces. arXiv preprint arXiv:2602.19381. 2026. [3] De Ryck, T., Jagtag, A. D., and Mishra, S., Error estimates for physics-informed neural net-works approximating the Navier–Stokes equations . IMA Journal of Numerical Analysis. 44 (1): 83 – 119. 2024. [4] Doumèche, N., Biau, G., and Boyer, C. On the convergence of PINNs . Bernoulli 31(3): 2127 – 2151. 2025. [5] E, W., and Yu, B. The Deep Ritz method: a deep learning-based numerical algorithm for solving variational problems . Communications in Mathematics and Statistics 6(1): 1–12. 2018. [6] Hernández, D. and Zuazua, E., The coercivity gap in neural PDE solvers: Parameter escape and functional convergence, to appear [7] Karniadakis, G. E., Kevrekidis, I. G., Lu, L., Perdikaris, P., Wang, S., and Yang, L. Physics-informed machine learning . Nature Reviews Physics 3(6): 422–440. 2021. [8] Liu, K., and Zuazua, E. Moments, time-inversion and source identification for the heat equa-tion . Inverse Problems 42(1): 015009. 2026. [9] Liverani, L., Steynberg, T., and Zuazua, E. HYCO: Hybrid-cooperative learning for data-driven PDE modeling . arXiv preprint arXiv:2509.14123. 2025. [10] Liverani, L., and Zuazua, E. HYCO: A Formalism for Hybrid-Cooperative PDE Modelling . arXiv preprint arXiv:2602.23859. 2026. [11] Lloyd, S.. Least squares quantization in PCM . IEEE Transactions on Information Theory 28(2): 129-137. 1982. 19 [12] Luo, T., and Yang, H. Two-Layer Neural Networks for Partial Differential Equations: Opti-mization and Generalization Theory . Handbook of Numerical Analysis, 25: 515–554, 2024, Elsevier. [13] Madych, W. R., and Nelson, S. A. Bounds on multivariate polynomials and exponential error estimates for multiquadric interpolation . Journal of Approximation Theory 70(1): 94–114. 1992. [14] Mishra, S., and Molinaro, R. Estimates on the Generalization Error of Physics-Informed Neural Networks for Approximating PDEs . IMA Journal of Numerical Analysis 43(1): 1–43. 2023. [15] Müller, J. and Zeinhofer, M. Achieving high accuracy with PINNs via energy natural gradient descent. International Conference on Machine Learning. PMLR, 2023. [16] Raissi, M., Perdikaris, P., and Karniadakis, G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial dif-ferential equations . Journal of Computational Physics 378: 686–707. 2019. [17] Shin, Y., Darbon, J., and Karniadakis, G. E. On the Convergence of Physics Informed Neu-ral Networks for Linear Second-Order Elliptic and Parabolic Type PDEs . Communications in Computational Physics 28(5): 2042–2074. 2020. [18] Wang, S., Sankaran, S., Wang, H., and Perdikaris, P. An expert’s guide to training physics-informed neural networks . arXiv:2308.08468, 2023. [19] Wendland, H.. Scattered data approximation . Cambridge University Press. 2004. [20] Wiener, N. Tauberian theorems . Annals of Mathematics 33(1): 1–100. 1932. [21] Zhao, W., and Luo, T. Convergence guarantees for gradient-based training of neural PDE solvers: From linear to nonlinear PDEs . arXiv preprint arXiv:2505.14002. 2025. [22] Zuazua, E. Asymptotic behavior of scalar convection-diffusion equations . arXiv preprint arXiv:2003.11834. 2020. 
+
+# Appendices: technical complements 
+
+The main body of the paper is organized around the coercivity gap, parameter escape, and convergence of physical states. The following appendices collect the quantitative and Fourier-analytic details underlying the approximation estimates and the discussion of alternative kernels. These developments are included because they are of independent interest and provide a more complete account of the Gaussian-mixture approximation mechanisms used in the paper. 
+
+# A Detailed quantitative approximation rates via self-similar vari-ables 
+
+As we have seen above, given f ∈ H−1(Rd), the unique solution u of (1) belongs to H1(Rd),and realizes the minimum of the functional J: J(u) = I.To get approximation rates of IP towards I, it suffices to analyze how fast the functions in MP approximate the solution u in H1(Rd). There is an extensive literature on this subject, particularly in the context of radial basis functions and nonlinear approximation theory. Our goal here is not to derive sharp bounds, but rather to show how explicit quantitative estimates can be 20 obtained using standard PDE techniques. For sharper approximation results based on Gaussian radial basis functions, we refer for instance to the classical works of Madych and Nelson [13] and to the monographs by Buhmann [1] and Wendland [19]. To the best of our knowledge, however, the specific weighted Sobolev framework developed below does not seem to have been treated in detail from this viewpoint. To get such estimates, we need, of course, to ensure further regularity and decay conditions on the solution u, which can be guaranteed by imposing further conditions on the applied force 
+
+f .Before we get into these technical details, let us describe how the approximation rates for u
+
+allow us to quantify the convergence results of the previous section. Let vP ∈ M P be a sequence such that 
+
+δP = || u − vP || H1(Rd) → 0, as P → ∞ . (33) Then, according to (12), we have 
+
+|J(u) − J(vP )| = δ2
+
+> P
+
+2 .
+
+Given that 
+
+J(u) = I ≤ IP ≤ J(vP ),
+
+we obtain the energy estimate IP − I ≤ δ2 
+
+> P
+
+/2.This shows that, in the arguments of the previous section εP can be taken to be of the order of εP ∼ δ2 
+
+> P
+
+, and allows us to conclude that 
+
+∥uP − u∥H1(Rd) ≤ Cδ P . (34) Thus, we can guarantee that the convergence rate in Theorem 4.1 is of the same order as δP , the one guaranteed by the theorem of universal approximation. Let us now discuss in more detail the approximation rate δP in (33). For this purpose, we shall rely on standard tools from the analysis of the large-time behavior of the heat equation in weighted Sobolev spaces [22], which have also been used in the context of inverse problems [8]. 
+
+A.1 Analysis in weighted Sobolev spaces 
+
+Consider the elliptic operator 
+
+Lv := −∆v − y · ∇ v
+
+2 (35) which arises when analyzing the large time asymptotics of the heat equation in the similarity variables [22]. This elliptic operator, despite involving a first-order drift term, can be written in the following divergence form 
+
+Lv = − 1
+
+K(y) div (K(y)∇v(y)), (36) with the weight 
+
+K(y) := exp  
+
+> (
+
+|y|2
+
+4
+
+> )
+
+. (37) Therefore, L is symmetric with respect to the scalar product 
+
+(v, w )K := 
+
+> ∫
+> Rd
+
+v(y)w(y)K(y) d y, 
+
+21 i.e., 
+
+(Lv, w )K = ( v, Lw)K .
+
+The following weighted Sobolev spaces arise naturally in the analysis of this operator: 
+
+L2(K) := 
+
+> {
+
+v ∈ L2(Rd) : 
+
+> ∫
+> Rd
+
+|v(y)|2K(y) d y < ∞
+
+> }
+
+,Hm(K) := { v ∈ Hm(Rd) : Dαv ∈ L2(K), ∀α ∈ Nd : |α| ≤ m }, m ∈ N.
+
+They are Hilbert spaces when endowed with the canonical norms 
+
+∥v∥2 
+
+> K
+
+:= 
+
+> ∫
+> Rd
+
+|v(y)|2K(y) d y; ∥v∥2 
+
+> m,K
+
+:= ∑
+
+> |α|≤ m
+
+∥Dαv∥2 
+
+> K
+
+, m = 1 , 2 . . . (38) The operator L in the weighted Sobolev spaces Hm(K), satisfies the following fundamental properties. We refer to [22] for the proofs. 
+
+Proposition A.1 (Properties of L in weighted Sobolev spaces) .
+
+(i) The inclusion H1(K) ⊂ L2(K) is compact. (ii) L : H1(K) → (H1(K)) ′ is an isomorphism. Here and in what follows (H1(K)) ′ stands for the dual of H1(K).(iii) L−1 : L2(K) → L2(K) is compact. (iv) The eigenvalues of L are positive real numbers 
+
+μℓ = d + ℓ − 12 , ℓ = 1 , 2, . . . (39) 
+
+The corresponding eigenspaces are 
+
+d(L − μℓ) = span {Dβ φ1 : |β| = ℓ − 1} (40) 
+
+with 
+
+φ1(y) = K−1(y) = exp 
+
+> (
+
+− |y|2
+
+4
+
+> )
+
+.
+
+(v) The eigenfunctions, when properly normalized, constitute an orthonormal basis of both L2(K)
+
+and H1(K).
+
+In this framework, we can easily quantify the Gaussian approximation rates. Given v ∈ H2(K), we expand it on the basis of eigenfunctions normalized in L2(K):
+
+v = ∑
+
+> ℓ≥1
+
+πℓv, 
+
+with πℓ the projections onto the corresponding eigenspaces. Thus, 
+
+v = ∑
+
+> 1≤ℓ≤L
+
+πℓv + RL,
+
+where RL is the remainder term 
+
+RL = ∑
+
+> ℓ≥L+1
+
+πℓv. 
+
+22 Then 
+
+∥v − vL∥2 
+
+> H1(K)
+
+= ∥RL∥2 
+
+> H1(K)
+
+= ∑
+
+> ℓ≥L+1
+
+∥πℓv∥2
+
+> H1(K)
+
+≤ 1
+
+μL+1 
+
+> ∑
+> ℓ≥L+1
+
+∥πℓv∥2 
+
+> H2(K)
+
+≤ 1
+
+μL+1 
+
+∥v∥2
+
+> H2(K)
+
+.
+
+Therefore, we obtain an approximation rate in H1(K) with decay of order O(1 /L ), involving the projections onto the eigenspaces up to index L.These eigenspaces are spanned by the Gaussian K−1 = (4 π)d/ 2G and by its derivatives up to order L. This is not yet the type of expansion we are ultimately aiming for, since it involves derivatives of the Gaussian rather than its translates. However, as in the condensation example discussed above, each such derivative can itself be approximated by a suitable Gaussian wave packet. For instance, first-order partial derivatives of G can be approximated by linear combinations of two translated Gaussians. Similarly, second-order derivatives can be approximated by Gaus-sian wave packets involving a finite number of translated Gaussians; the same principle applies to derivatives of arbitrary order. This allows us to approximate the truncated expansion ∑Lℓ=1 πℓv by a linear combination of translated Gaussians. Importantly, one does not need to approximate each term in the sum independently. Rather, the expansion can be reorganized by collecting all derivatives of the same order, so that at each order, one approximates a single linear combination of Gaussian derivatives. Consequently, the number of Gaussian translates required for such an approximation scales as 
+
+P ∼ Ld
+
+to achieve an error of order 
+
+O(1 /L ).
+
+Equivalently, in terms of the number P of Gaussian wave packets, the error behaves as 
+
+error( P ) ∼ P −1/d .
+
+This is a linear approximation procedure, and it therefore still suffers from the classical alge-braic curse of dimensionality. Our goal here, however, is to remain as close as possible to classical numerical approximation methods. Up to this point, the analysis has been carried out in weighted Sobolev spaces, and in particular in H1(K). The natural energy space for problem (1), however, is H1(Rd). Bridging this gap requires one additional approximation step, based on a localization argument, which is the purpose of the next subsection. 
+
+A.2 Analysis in H1(Rd)
+
+Our goal is to transfer the approximation rates in H1(K) from the previous section to the natural energy space H1(Rd). For this purpose, we assume that the right-hand side satisfies f ∈ L2(Rd),so that, by elliptic regularity, u ∈ H2(Rd). Let us now consider a standard cut-off argument. Let φ ∈ C∞ 
+
+> c
+
+(Rd) be such that 
+
+0 ≤ φ ≤ 1, φ ≡ 1 in B1, φ ≡ 0 in Rd \ B2.
+
+For R > 0, define 
+
+φR(x) := φ 
+
+> (
+
+xR
+
+> )
+
+.
+
+23 Then 
+
+φR ≡ 1 in BR, φR ≡ 0 in Rd \ B2R, |∇ φR| ≤ CR .
+
+We set 
+
+uR := uφ R.
+
+Then uR ∈ H1(Rd) is compactly supported in B2R, and 
+
+u − uR = (1 − φR)u. 
+
+Moreover, 
+
+∇(u − uR) = (1 − φR)∇u − u∇φR.
+
+Hence 
+
+∥u − uR∥H1(Rd) ≤ ∥ (1 − φR)u∥L2(Rd) + ∥(1 − φR)∇u∥L2(Rd) + ∥u∇φR∥L2(Rd).
+
+Since 1 − φR is supported outside BR, while ∇φR is supported in the annulus B2R \ BR, we obtain 
+
+∥u − uR∥H1(Rd) ≤ ∥ u∥L2(Rd\BR) + ∥∇ u∥L2(Rd\BR) + CR ∥u∥L2(B2R\BR).
+
+Assume now that u belongs to the weighted space H1(Rd; 1 + |x|2), that is, 
+
+∫
+
+> Rd
+
+(1 + |x|2)
+
+(
+
+|u(x)|2 + |∇ u(x)|2)
+
+dx < ∞.
+
+Then, since |x| ≥ R on Rd \ BR, we have 
+
+∥u∥2 
+
+> L2(Rd\BR)
+
++ ∥∇ u∥2 
+
+> L2(Rd\BR)
+
+≤ 1
+
+R2
+
+∫
+
+> Rd\BR
+
+|x|2 (
+
+|u|2 + |∇ u|2)
+
+dx. 
+
+Also, 1
+
+R2 ∥u∥2 
+
+> L2(B2R\BR)
+
+≤ 1
+
+R2 ∥u∥2 
+
+> L2(Rd)
+
+≤ 1
+
+R2 ∥u∥2
+
+> H1(Rd;1+ |x|2)
+
+.
+
+Consequently, 
+
+∥u − uR∥H1(Rd) ≤ CR ∥u∥H1(Rd;1+ |x|2). (41) Thus, by choosing R sufficiently large, the function u can be approximated in H1(Rd) by the compactly supported function uR = uφ R, with an explicit error of order O(R−1) under the above weighted H1-assumption. At this stage, everything is ready to combine the two approximation procedures above. In-deed, for each R > 0, the truncated function 
+
+uR = uφ R
+
+is compactly supported in B2R. Since u ∈ H2(Rd) and φR ∈ C∞ 
+
+> c
+
+(Rd), the standard product rules imply that uR ∈ H2(Rd), and supp( uR) ⊂ B2R. In particular, uR belongs to H2(K).Indeed, on the compact set B2R, the weight K(x) is bounded above and below by positive con-stants. Therefore, for every multi-index α with |α| ≤ 2,
+
+∫
+
+> Rd
+
+|DαuR(x)|2K(x) dx =
+
+∫
+
+> B2R
+
+|DαuR(x)|2K(x) dx ≤ CR∥DαuR∥2
+
+> L2(B2R)
+
+,
+
+24 and hence 
+
+∥uR∥H2(K) ≤ CR∥uR∥H2(Rd).
+
+Moreover, the constant CR depends exponentially on R, give that, for x ∈ B2R,
+
+1 ≤ K(x) ≤ exp( R2).
+
+Therefore, ∫
+
+> B2R
+
+|DαuR(x)|2K(x) dx ≤ eR2
+
+∥DαuR∥2
+
+> L2(B2R)
+
+,
+
+and consequently 
+
+∥uR∥H2(K) ≤ eR2/2∥uR∥H2(Rd).
+
+Thus, although compact support ensures that uR ∈ H2(K), the corresponding weighted norm may grow exponentially with the size of the support. Furthermore, the H2-norm of the truncated function uR is controlled by the H2-norm of u.Indeed, by the product rule, 
+
+DαuR = Dα(uφ R) = ∑
+
+> β≤α
+
+(αβ
+
+)
+
+Dβ u D α−β φR, |α| ≤ 2.
+
+Since 
+
+∥DαφR∥L∞(Rd) ≤ CR −| α|,
+
+we obtain 
+
+∥uR∥L2(Rd) ≤ ∥ u∥L2(Rd),
+
+∥∇ uR∥L2(Rd) ≤ C
+
+(
+
+∥∇ u∥L2(Rd) + R−1∥u∥L2(Rd)
+
+)
+
+,
+
+and 
+
+∥D2uR∥L2(Rd) ≤ C
+
+(
+
+∥D2u∥L2(Rd) + R−1∥∇ u∥L2(Rd) + R−2∥u∥L2(Rd)
+
+)
+
+.
+
+Consequently, 
+
+∥uR∥H2(Rd) ≤ C
+
+(
+
+∥u∥H2(Rd) + R−1∥u∥H1(Rd) + R−2∥u∥L2(Rd)
+
+)
+
+.
+
+In particular, for R ≥ 1,
+
+∥uR∥H2(Rd) ≤ C∥u∥H2(Rd), (42) where C > 0 depends only on the fixed cut-off function φ, but is independent of R and u.Thus uR satisfies precisely the assumptions required in the previous subsection on weighted Sobolev spaces. Consequently, the spectral expansion and truncation argument developed in the previous subsection can be applied to uR: for every integer L ≥ 1, one can construct a Gaussian wave-packet approximation wR,L satisfying an estimate of the form 
+
+∥uR − wR,L ∥H1(Rd) ≤ Ce cR 2
+
+L ∥u∥H2(Rd).
+
+Moreover, according to the previous subsection, the number P of Gaussian translates involved in wR,L satisfies P ∼ Ld.
+
+Combining this estimate with the cut-off argument above, we obtain 
+
+∥u − wR,L ∥H1(Rd) ≤ ∥ u − uR∥H1(Rd) + ∥uR − wR,L ∥H1(Rd).
+
+25 Hence 
+
+∥u − wR,L ∥H1(Rd) ≤ CR ∥u∥H1(Rd;1+ |x|2) + Ce cR 2
+
+L ∥u∥H2(Rd).
+
+This provides a quantitative double-approximation procedure in the natural energy space 
+
+H1(Rd). However, because of the exponential dependence of the constants on R, the localization radius R has to grow only logarithmically with L, for instance 
+
+R2 ∼ θ log L, 0 < θ < 1/c. 
+
+With this choice, 
+
+ecR 2
+
+L ∼ Lcθ −1,
+
+while the cut-off error behaves as 1
+
+R ∼ 1
+
+√log L .
+
+Thus the dominant contribution is the localization error, and one obtains 
+
+∥u − wR,L ∥H1(Rd) ≤ C
+
+√log L ,
+
+up to constants depending on weighted norms of u in H1(Rd; 1 + |x|2) ∩ H2(Rd).
+
+Since P ∼ Ld, this gives the conservative global estimate 
+
+∥u − wP ∥H1(Rd) ≤ C
+
+√log P || u|| H1(Rd;1+ |x|2)∩H2(Rd),
+
+where we denote by wP the achieved Gaussian wave packet wR,L with the above chosen values of the parameters R and L.This rate is much weaker than the algebraic rate obtained on fixed compact sets. The loss is due to the exponential growth of the weighted constants with localization radius R. It reflects the fact that the compactly supported approximation argument, when transferred to the whole space through cut-off functions, is quantitatively limited by the interaction between localization and the Gaussian weight. It remains to explain why the weighted assumption u ∈ H1(Rd; 1 + |x|2) ∩ H2(Rd) is not restrictive. In fact, this property follows naturally from weighted assumptions on the right-hand side term f .Indeed, assume that f ∈ L2(Rd; 1 + |x|2).
+
+Given that f ∈ L2(Rd), we know that u ∈ H2(Rd). On the other hand, multiplying the elliptic equation (1) by (1 + |x|2)u(x) and integrating by parts over Rd, one obtains weighted energy estimates of the form 
+
+∫
+
+> Rd
+
+(1 + |x|2)(|u|2 + |∇ u|2) dx ≤ C
+
+∫
+
+> Rd
+
+(1 + |x|2)|f |2 dx. 
+
+The proof is completely standard and relies on the identity 
+
+∫
+
+> Rd
+
+(−∆u) u(1 + |x|2) dx =
+
+∫
+
+> Rd
+
+(1 + |x|2)|∇ u|2 dx + 2 
+
+∫
+
+> Rd
+
+u x · ∇ u dx. 
+
+The last term is controlled by the Cauchy–Schwarz inequality. Indeed, since u ∈ H1(Rd) is already known a priori, in particular u ∈ L2(Rd), we have 
+
+∣∣∣∣2
+
+∫
+
+> Rd
+
+u x · ∇ u dx 
+
+∣∣∣∣ ≤ 2∥u∥L2(Rd) ∥| x|∇ u∥L2(Rd).
+
+26 This lower-order contribution is therefore controlled in terms of the unweighted L2-norm of u
+
+and the weighted gradient norm. Consequently, u ∈ H1(Rd; 1+ |x|2), given that f ∈ L2(Rd; 1+ |x|2).Therefore, the weighted assumptions required in the cut-off argument arise naturally from weighted assumptions on the source term. Summarizing, the following result has been proved: 
+
+Theorem A.2. Assume that f ∈ L2(Rd; 1+ |x|2), so that the solution u of (1) belongs to H1(Rd; 1+ 
+
+|x|2) ∩ H2(Rd).Let, for every P ≥ 1, uP be the weak limit in H1(Rd) of the state functions associated with a minimizing sequence in MP .Then, uP strongly converges in H1(Rd) to the unique solution u of (1) as P → ∞ with the conservative rate O(1 /√log P ) under the weighted assumptions stated above. 
+
+# B Additional details on alternative kernels and activation func-tions 
+
+Obviously, the ill-posedness of the minimization problem for Jr is due to the rapid exponential decay of the Fourier transform of the Gaussian G in our continuous ansatz (18). In light of these considerations, it is natural to replace the Gaussian G with an activation function whose Fourier transform is uniformly bounded above and below by positive constants. This can be achieved through a periodic sum of Gaussians 
+
+Gp(x) = ∑
+
+> m∈Zd
+
+G(x − m) (43) whose Fourier transform, by the Poisson Summation Formula, takes the form ̂
+
+Gp(ξ) = ∑
+
+> m∈Zd
+
+exp( −| ξ − m|2), (44) which is bounded above and below by positive constants: 
+
+0 < α ≤̂ Gp(ξ) ≤ β < ∞, ∀ξ ∈ Rd. (45) Adopting this new activation function Gp, the relaxed ansatz and minimization problems above become 
+
+vμ,p = Gp ∗ μ, (46) 
+
+Jr,p (μ) = J(vμ,p ) = 12
+
+> ∫
+> Rd
+
+[|∇ vμ,p |2 + v2
+
+> μ,p
+
+] dx −
+
+> ∫
+> Rd
+
+f v μ,p dx. (47) In this setting, the coercivity of Jr,p with respect to the state vμ,p in H1(Rd) also yields coercivity with respect to the parameter μ in H1(Rd), given that the map μ 7 → vμ,p defines an isomorphism at the H1-level. The corresponding relaxed minimization problem 
+
+min 
+
+> μ∈H1(Rd)
+
+Jr,p (μ)
+
+is well posed. In particular, it admits a minimizer μ∗ ∈ H1(Rd), and this minimizer can be approximated by standard gradient descent methods, with the usual convergence guarantees associated with coercive convex functionals. 27 Note, however, that even if the minimizer μ∗ were approximated by an atomic measure of the form in (22), given the periodic structure of the kernel Gp, this would lead to an ansatz involving infinitely many Gaussians, of infinite width: 
+
+v(x) ∼ ∑ 
+
+> m∈Zd
+> ∑
+> j∈[P]
+
+wj G(x − xj − m). (48) This series could be truncated to make it finite. But this would add one further approximation step. Another possibility, as pointed out by Antonio Álvarez-López, is to replace the Gaussian kernel G by a Riesz-type tempered distribution on Rd,
+
+Hα(x) = |x|−α, 0 < α < d. 
+
+For α = d − 2 and d ≥ 3, Hα coincides (up to a constant) with the Green function of the Lapla-cian. More generally, Hα is the kernel of the Riesz potential Id−α, and satisfies the borderline integrability property 
+
+Hα ∈ L dα ,∞(Rd) (weak Lebesgue space) ,
+
+so it is not an L1-kernel but it is a classical convolution kernel in the sense of fractional integra-tion (Hardy–Littlewood–Sobolev). The Fourier transform of Hα is well-defined distributionally and has the form ̂
+
+Hα(ξ) = Cd,α |ξ|α−d.
+
+Consequently, for vμ = Hα ∗ μ one has ̂
+
+vμ(ξ) = Cd,α |ξ|α−d̂ μ(ξ),̂ ∇vμ(ξ) = iξ ̂ vμ(ξ),
+
+and hence 
+
+|̂∇vμ(ξ)| ∼ | ξ| | ξ|α−d |̂μ(ξ)| = |ξ|α−d+1 |̂ μ(ξ)| = |̂μ(ξ)||ξ|d−1−α .
+
+Therefore, controlling the homogeneous H1-seminorm of vμ, i.e. ∥∇ vμ∥L2 , yields the quantitative constraint ̂ μ(ξ)
+
+|ξ|d−1−α ∈ L2(Rd),
+
+which can be interpreted as a negative-Sobolev regularity requirement on μ. The special choice 
+
+α = d − 1 is particularly transparent: then [Hd−1(ξ) ∼ | ξ|−1 and ̂
+
+∇vμ(ξ) = iξ C
+
+|ξ|̂ μ(ξ) = C i ξ
+
+|ξ|̂ μ(ξ),
+
+so ∇vμ is given by a vector of Riesz transforms applied to μ. In other words, α = d − 1 is the (unique) choice for which the gradient term ∥∇ vμ∥22 and ∥μ∥22 are comparable. A subtlety arises from the L2-part of the H1-norm of vμ. In Fourier variables, this term corresponds to the requirement ̂ μ(ξ)/|ξ| ∈ L2(Rd). Near low frequencies, ξ ∼ 0, this condi-tion is stronger than ̂ μ ∈ L2(Rd), equivalently μ ∈ L2(Rd), whereas at high frequencies it is weaker. Thus, although the choice of Hd−1 provides L2-stability at the level of the gradients, the additional contribution of the term ∥vμ∥L2 is not straightforward to characterize in physical space. With these remarks in mind, although adopting Hd−1 as an activation kernel remains an attractive possibility, it would lead to technical difficulties and estimates comparable to those encountered in the previous section for the Gaussian activation function. Our discussion makes clear the inherent challenge of turning these methods into genuinely competitive alternatives to standard FEM-inspired schemes. 28

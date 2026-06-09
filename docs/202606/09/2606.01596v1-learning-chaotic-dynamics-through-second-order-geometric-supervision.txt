@@ -1,0 +1,909 @@
+Title: Learning Chaotic Dynamics through Second-Order Geometric Supervision
+
+URL Source: https://arxiv.org/pdf/2606.01596v1
+
+Published Time: Tue, 02 Jun 2026 02:30:57 GMT
+
+Number of Pages: 37
+
+Markdown Content:
+# Learning Chaotic Dynamics through Second-Order Geometric Supervision 
+
+Shinhoo Kang a, ∗, Hai V. Nguyen b, Tan Bui-Thanh b
+
+> aDepartment of Computer Science and Software Engineering, Korea University, Sejong 30019, KR
+> bDepartment of Aerospace Engineering and Engineering Mechanics, The Oden Institute for Computational Engineering and Sciences, The University of Texas at Austin, Austin, TX, USA
+
+Abstract 
+
+Learning chaotic dynamical systems from data requires more than short-term predictive accuracy: the learned model must preserve the geometry of the at-tractor and its invariant statistics. Conventional trajectory (zero-order) and Jacobian (first-order) matching supervise the values and tangent structure of the vector field, but neither constrains how the field bends away from its lo-cal tangent plane. In these approaches, a learned model matches values and tangents at the supervised states, and yet it may curve differently from the truth dynamics. As a result it could be locally accurate while drifting globally toward spurious attractors and distort long-time statistics. We show that en-forcing second-order consistency mitigates these failures. However, forming the full Hessian tensors is computationally prohibitive in high dimensions. We propose model-constrained randomized Jacobian matching , in which the Jacobians of the true and learned vector fields are compared at randomly perturbed inputs. A Taylor expansion analysis shows that the expected ran-domized Jacobian loss decomposes into the nominal Jacobian mismatch plus a Hessian mismatch scaled by the noise variance, implicitly enforcing second-order consistency at O(d2) cost without explicitly forming the O(d3) Hessian tensor. The proposed method uses only Jacobian evaluations, thus is prac-tical in high-dimensional regime where explicit Hessian matching no longer      
+
+> ∗Corresponding author
+> Email addresses: shinkang@korea.ac.kr (Shinhoo Kang), hainguyen@utexas.edu
+> (Hai V. Nguyen), tanbui@oden.utexas.edu (Tan Bui-Thanh)
+> arXiv:2606.01596v1 [math.NA] 1 Jun 2026
+
+scales. Numerical experiments confirm that second-order methods are robust. For Lorenz 63, first-order methods produce catastrophic Lyapunov-exponent outliers under minimal temporal supervision, whereas second-order meth-ods eliminate them and recover the correct attractor structure. For coupled Lorenz 96, an out-of-distribution forcing ( F ) sweep separates the methods: all agree closely up to F = 16 , but beyond F = 18 only the second-order methods accurately preserve the invariant measure and Lyapunov spectrum. On both systems, randomized Jacobian matching performs comparably to explicit Hessian matching at much lower cost. 
+
+Keywords: Hessian matching, scientific machine learning, dynamical systems learning, chaotic systems, long-term stability 
+
+1. Introduction 
+
+Learning dynamical systems from time-series data has a long history in science and engineering [1, 2, 3, 4, 5]. Most existing methods train by min-imizing discrepancies between observed and predicted trajectories [4], or by enforcing governing equations through residual minimization as in Physics-Informed Neural Networks (PINN) [5, 6]. Although these methods often achieve accurate short-term prediction, they do not explicitly constrain the long-time qualitative behavior of the learned dynamics [7, 8]. In the con-text of dynamical systems, derivative-informed approaches, such as Jaco-bian matching [8, 9], combine trajectory supervision with constraints on the local tangent sensitivities of the learned dynamics. Related ideas ap-pear in gradient-enhanced PINN training [10] and in knowledge distillation via input-Jacobian matching [11, 12]. Park et al. [8] found that Jacobian matching can recover the Lorenz 63 attractor, its invariant measure, and the associated Lyapunov spectrum. Tian [9] also showed that enforcing Jacobian consistency during training improves the accuracy of the tangent linear and adjoint models of a neural-network-emulated Lorenz 96 system, making it suitable for data assimilation. Both trajectory matching and Jacobian matching share a structural lim-itation. Trajectory supervision fixes only the value of the learned vector field, while Jacobian supervision additionally pins down its local tangent plane. Neither, however, constrains how the vector field curves away from that plane, leaving its second-order structure unconstrained. In chaotic systems, the global geometry of the attractor depends on the 2curvature of the vector field. In the Lorenz 63 system, the second derivatives of the vector field are constant throughout phase space, implying that the system’s nonlinear curvature is spatially uniform. The folding structure of the attractor therefore emerges from accumulated nonlinearity along trajectories. Thus, a learned model may reproduce local first-order behavior while still deviating from the true higher-order geometry of the flow. Reproducing chaotic attractors faithfully requires enforcing second-order consistency in addition to conventional first-order matching. The most direct way to enforce curvature consistency is explicit Hes-sian matching, which penalizes discrepancies in second-order derivatives. In practice, however, this approach is often computationally prohibitive; explicit construction of the full Hessian tensor requires O(d3) memory and at least 
+
+O(d2) automatic-differentiation (AD) passes through the vector field for a 
+
+d-dimensional state space. We therefore seek a way to enforce second-order consistency without explicit Hessian construction. The model-constrained (MC) framework in [13, 14] motivates our ap-proach. By evaluating the training loss at randomly perturbed inputs, the MC approach promotes Jacobian consistency without requiring derivative computations: a Taylor expansion shows that the expected squared error between true and learned trajectories at perturbed inputs penalizes the Ja-cobian mismatch to leading order. We propose model-constrained randomized Jacobian matching, which matches Jacobians at perturbed inputs to obtain implicit second-order super-vision. Section 3 shows that minimizing this loss implicitly penalizes Hessian mismatch on average without constructing the Hessian tensor. This makes the approach practical in high-dimensional settings where explicit Hessian matching is infeasible. We test our framework on two chaotic systems: the Lorenz 63 system (low-dimensional chaos with a single positive Lyapunov exponent) and the coupled Lorenz 96 system. The coupled Lorenz 96 system produces high-dimensional chaos in a 396 -dimensional multiscale slow–fast state space with multiple positive Lyapunov exponents. We focus learning on the quadratic advection term of the 36 slow variables, using a structured architecture that encodes spatial locality and translation equivariance. The main contributions of this paper are summarized as follows: 
+
+• We identify a structural limitation of trajectory and Jacobian match-ing: neither constrains the curvature of the vector field. As a result, 3first-order methods can fail catastrophically—under minimal temporal supervision in Lorenz 63, and under out-of-distribution forcing in cou-pled Lorenz 96—while still reproducing the local first-order structure of the true dynamics. 
+
+• We propose model-constrained randomized Jacobian matching, an im-plicit second-order supervision framework that enforces curvature con-sistency at an O(d) AD passes and O(d2) memory cost without explicit construction of the Hessian tensor. 
+
+• A Taylor expansion analysis shows that, to leading order in the noise variance, the randomized Jacobian loss decomposes into a standard Jacobian matching term and an implicit Hessian matching term. 
+
+• For the Lorenz 63 system, we show that second-order supervision recov-ers the curvature of the learned vector field, the Lyapunov spectrum, and the invariant measure of the attractor, whereas first-order methods can fail catastrophically under minimal temporal supervision. 
+
+• For the coupled Lorenz 96 system, we show that second-order super-vision preserves the true invariant statistics and vector-field curvature in strongly chaotic regimes, whereas first-order methods can transi-tion into spurious high-amplitude regimes. These failures persist de-spite architectural inductive biases and are not detected by Lyapunov-spectrum agreement. The remainder of the paper is organized as follows. Section 2 introduces the two benchmark systems, Lorenz 63 and coupled Lorenz 96. Section 3 develops the randomized Jacobian matching framework and proves that, to leading order in the perturbation scale, the resulting loss penalizes the Hes-sian mismatch. Section 4 reports the numerical experiments and compares the five supervision methods on both systems. Section 5 concludes. 
+
+2. Model Problems 
+
+We evaluate our approach on two canonical chaotic dynamical systems that span low- and high-dimensional regimes: the Lorenz 63 system [15] and the coupled Lorenz 96 system [16]. 42.1. Lorenz 63 Model 
+
+The Lorenz 63 model is a simplified dynamical system originally intro-duced to model atmospheric convection. The system is governed by 
+
+dx dt = σ (y − x) , (1a) 
+
+dy dt = x (ρ − z) − y, (1b) 
+
+dz dt = xy − βz, (1c) where x, y, and z denote the state variables. Under the standard parameter set σ = 10 , ρ = 28 , and β = 8 /3, the Lorenz 63 system is chaotic and dissipative. Although the system is highly sensitive to initial conditions, making accurate long-term trajectory predic-tion impractical, its ergodicity ensures that time averages along a trajectory converge to statistical averages over the attractor [17]. Using this property, we evaluate the learned models with the invariant measure, the Wasserstein-1 distance [18, 19], and the Lyapunov spectrum ( λ1 > 0, λ2 = 0 , λ3 < 0). The Lyapunov spectrum characterizes the local stability structure: λ1 governs exponential sensitivity to initial conditions, while λ3 reflects dissipation and contraction toward the attractor. 
+
+2.2. Coupled Lorenz 96 Model 
+
+The two-scale coupled Lorenz 96 model represents multiscale atmospheric dynamics, with nonlinear advection, dissipation, scale coupling, and external forcing [16]. The model consists of two interacting physical scales: the slow variables Xk (k = 1 , 2, · · · , K ), representing large-scale atmospheric waves, and the fast variables Yj,k (j = 1 , 2, · · · , J ), modeling rapidly varying small-scale dynamics such as convection. The system contains Ndof = K(1 + J)
+
+degrees of freedom and is governed by the coupled equations: 
+
+dX k
+
+dt = −Xk−1 (Xk−2 − Xk+1 )
+
+| {z }
+
+> nonlinear advection
+
+−Xk + F − hY k, (2a) 
+
+1
+
+cdY j,k 
+
+dt = −JY j+1 ,k (Yj+2 ,k − Yj−1,k ) − Yj,k + hJ Xk, (2b) where −Xk−1 (Xk−2 − Xk+1 ) is the nonlinear advection, −Xk provides linear dissipation, F is the external forcing parameter, and −hY k couples the slow 5variables to the mean of the fast variables, Y k := 1
+
+> J
+
+PJj=1 Yj,k . The parameter 
+
+c controls the time-scale separation, J scales the amplitude of the fast vari-ables relative to the slow variables, and h determines the coupling strength between the two scales [20]. Following Lorenz [16], we adopt h = 1 , K = 36 ,and c = J = 10 , yielding Ndof = 396 . Under this configuration, the fast vari-ables evolve approximately ten times faster and with smaller characteristic amplitude than the slow variables. Lorenz 63 is a prototype of low-dimensional chaos with a single positive Lyapunov exponent. Coupled Lorenz 96, by contrast, has high-dimensional chaos with multiple positive Lyapunov exponents. This multiscale interaction structure resembles key features of geophysical turbulence. The system is therefore a more challenging benchmark for evaluating long-term statistical fidelity, attractor preservation, and out-of-distribution generalization. 
+
+3. Model-Constrained Randomized Jacobian Matching 
+
+The dynamical systems introduced in Section 2 can be written in the compact form 
+
+du
+
+dt = f (u), (3) where u ∈ Rd denotes the state vector and f : Rd → Rd is the corresponding vector field. For example, for the Lorenz 63 system in (1), u = ( x, y, z )T and 
+
+f (u) = ( σ(y − x), x (ρ − z) − y, xy − βz )T .
+
+3.1. Neural ODE 
+
+We use Neural Ordinary Differential Equations (NODEs) [4] to approxi-mate the continuous-time dynamics of (3). The true vector field f is replaced by a neural network bf (·; θ) : Rd → Rd, yielding 
+
+du
+
+dt = bf (u; θ). (4) Given an initial condition u0, the true system (3) and the NODE (4) are numerically integrated to generate the reference trajectory {uj }mj=1 and the predicted trajectory {buj }mj=1 , respectively. The network parameters θ are trained by minimizing the discrepancy over nb trajectory segments. For each segment i, the NODE generates m
+
+6predictions bu(i)1 , . . . , bu(i) 
+
+> m
+
+from the initial state u(i)0 . The standard trajectory-matching loss is 
+
+Ldata = 1
+
+nbm
+
+> nb
+
+X
+
+> i=1
+> m
+
+X
+
+> j=1
+
+bu(i) 
+
+> j
+
+− u(i)
+
+> j
+> 2
+
+. (5) This loss is natural when the governing equations are unknown and only trajectory observations are available. 
+
+3.2. Jacobian matching and Hessian matching 
+
+Throughout this paper, derivatives are taken with respect to the vector field f , which the NODE directly learns. We define the Jacobian matrices of the true and learned vector fields by 
+
+J(u) := ∂f
+
+∂u(u) ∈ Rd×d, bJ(u) := ∂ bf
+
+∂u(u; θ) ∈ Rd×d, (6) and the corresponding Hessian tensors by 
+
+Hijk (u) := ∂2fi
+
+∂u j ∂u k
+
+(u), bHijk (u) := ∂2 bfi
+
+∂u j ∂u k
+
+(u; θ). (7) Here, J, bJ ∈ Rd×d characterize the local linear sensitivity of the vector field, while H, bH ∈ Rd×d×d characterize its local curvature. The Jacobian-matching loss penalizes discrepancies between the true and learned Jacobians evaluated along observed trajectories: 
+
+Ljac = 1
+
+nb(m + 1) 
+
+> nb
+
+X
+
+> i=1
+> m
+
+X
+
+> j=0
+
+bJ(u(i) 
+
+> j
+
+) − J(u(i) 
+
+> j
+
+) 2F
+
+. (8) Analogously, explicit Hessian matching penalizes discrepancies between the true and learned Hessian tensors: 
+
+Lhes = 1
+
+nb(m + 1) 
+
+> nb
+
+X
+
+> i=1
+> m
+
+X
+
+> j=0
+
+bH(u(i) 
+
+> j
+
+) − H (u(i) 
+
+> j
+
+) 2F
+
+, (9) where ∥ bH − H∥ 2F := P
+
+> i,j,k
+
+  bHijk − H ijk 
+
+2. Although Lhes provides direct second-order supervision, explicit construction of the full Hessian tensor re-quires O(d3) memory and O(d2) AD passes. Moreover, when the true dynam-ics are available only through a black-box simulator, the analytic Hessian H
+
+may be inaccessible. We therefore develop an implicit second-order approach that avoids forming the Hessian tensor. 73.3. Model-Constrained approach: Implicit Derivative Supervision 
+
+A NODE defines a dynamical system, not merely a sequence predictor. If the learned vector field deviates from the true dynamics, even small pertur-bations in initial conditions can amplify over time, leading to large prediction errors and qualitative failures of the long-term dynamics. To improve robust-ness, we adopt the MC framework, in which losses are evaluated at randomly perturbed states. This framework induces implicit derivative supervision: trajectory matching at perturbed states penalizes first-order (Jacobian) mis-match, and Jacobian matching at perturbed states penalizes second-order (Hessian) mismatch. 
+
+3.3.1. Randomized Trajectory Matching 
+
+We perturb each initial condition by Gaussian noise: 
+
+v(i)0 = u(i)0 + ε(i), ε(i) ∼ N  0, σ 2Id
+
+ , (10) where ε(i) is a Gaussian perturbation with zero mean and standard deviation (noise level) σ > 0. Integrating both the true and learned dynamics from 
+
+v(i)0 produces ground-truth and predicted trajectories v(i) 
+
+> j
+> mj=1
+
+and bv(i)
+
+> j
+> mj=1
+
+.The model-constraint loss is then 
+
+Lmc = 1
+
+nbm
+
+> nb
+
+X
+
+> i=1
+> m
+
+X
+
+> j=1
+
+bv(i) 
+
+> j
+
+− v(i)
+
+> j
+> 2
+
+. (11) Consider a single perturbed state u + ε and let v1 = Φ( u + ε) and 
+
+bv1 = bΦ( u + ε) where Φ and bΦ denote the true and learned one-step flow maps, respectively. Expanding the one-step flow maps Φ and ˆΦ in Taylor series about u gives 
+
+v1,i = Φ i(u) + 
+
+∂Φi
+
+∂u
+
+
+
+ε + 12εT ∂2Φi
+
+∂u2 ε + O(∥ε∥3), (12) 
+
+ˆv1,i = ˆΦi(u) + ∂ ˆΦi
+
+∂u
+
+!
+
+ε + 12εT ∂2 ˆΦi
+
+∂u2 ε + O(∥ε∥3), (13) for i = 1 , · · · , d . Following [13], a Taylor expansion shows that, for small σ
+
+8(small random perturbation ε accordingly), 
+
+Eε
+
+∥bv1 − v1∥2 = bΦ( u) − Φ( u) 2
+
+| {z }
+
+> Trajectory mismatch
+
++σ2 ∂ bΦ
+
+∂u (u) − ∂Φ
+
+∂u (u)
+
+> 2F
+
+| {z }
+
+> Jacobian mismatch of the flow maps
+
++ σ2
+
+> d
+
+X
+
+> i=1
+
+bΦi(u) − Φi(u)
+
+
+
+tr ∂2 ˆΦi
+
+∂u2 − ∂2Φi
+
+∂u2
+
+!
+
++ O(σ4).
+
+The third term arises from second-order cross terms in the Taylor expansion and becomes negligible as training drives the trajectory mismatch to zero. Thus Lmc implicitly penalizes the Jacobian mismatch of the flow maps in addition to the trajectory mismatch, without computing flow-map Jacobians. Expanding u(t + ∆ t) = Φ( u(t)) in powers of ∆t using ˙u = f (u) and 
+
+¨u = J(u)f (u) gives 
+
+Φ( u) = u + ∆ tf (u) + (∆ t)2
+
+2 J(u)f (u) + O(∆ t3),
+
+ˆΦ( u) = u + ∆ tbf (u) + (∆ t)2
+
+2 bJ(u)bf (u) + O(∆ t3).
+
+Subtracting yields the flow-map discrepancy: 
+
+bΦ( u) − Φ( u) = ∆ t
+
+bf (u) − f (u)
+
+
+
++ (∆ t)2
+
+2
+
+bJ(u)bf (u) − J(u)f (u)
+
+
+
++ O(∆ t3).
+
+Taking derivatives with respect to u, we obtain 
+
+∂ bΦ
+
+∂u (u) − ∂Φ
+
+∂u (u) = ∆ t
+
+bJ(u) − J(u)
+
+
+
++ O(∆ t2).
+
+Therefore, for small ∆t, the flow-map Jacobian mismatch coincides with the vector-field Jacobian mismatch up to the factor ∆t. Hence Lmc implicitly penalizes ∥bJ(u) − J(u)∥2 
+
+> F
+
+without Jacobian evaluations during training. 
+
+3.3.2. Randomized Jacobian Matching 
+
+We propose to match Jacobians at perturbed states: 
+
+Lmcjac = 1
+
+nb(m + 1) 
+
+> nb
+
+X
+
+> i=1
+> m
+
+X
+
+> j=0
+
+bJ(v(i) 
+
+> j
+
+) − J(v(i) 
+
+> j
+
+) 2F
+
+. (14) This loss implicitly penalizes the full Hessian tensor mismatch. 93.4. Model-Constrained Jacobian Matching: Implicit Hessian Matching 
+
+The following theorem formalizes the implicit Hessian penalty induced by 
+
+Lmcjac .
+
+Theorem 1 (Implicit Hessian Matching) . Let f , bf : Rd → Rd be sufficiently smooth vector fields, with Jacobians J, bJ and Hessian tensors H, bH defined in (6) –(7) . Define the third-derivative tensors 
+
+Tiℓjk (u) := ∂3fi
+
+∂u ℓ ∂u j ∂u k
+
+(u), bTiℓjk (u) := ∂3 ˆfi
+
+∂u ℓ ∂u j ∂u k
+
+(u; θ),
+
+and let ∆J(u) := bJ(u) − J(u), ∆H(u) := bH(u) − H (u), and ∆T (u) := 
+
+bT (u) − T (u). For ε ∼ N (0 , σ 2Id), the randomized Jacobian mismatch sat-isfies 
+
+Eε
+
+∥∆J(u + ε)∥2F
+
+ = ∥∆J(u)∥2F
+
+| {z }
+
+> Jacobian mismatch
+
++
+
+σ2 ∥∆H(u)∥2F
+
+| {z }
+
+> implicit Hessian mismatch
+
++ σ2 X
+
+> i,ℓ
+
+∆Jiℓ (u) tr (∆ Tiℓ (u)) + Rσ,
+
+where Rσ collects higher-order terms in the perturbation scale. Proof. Expand each component of f in a Taylor series around u:
+
+fi(u + ε) = fi(u) + X
+
+> j
+
+Jij (u) εj + 12
+
+X
+
+> j,k
+
+Hijk (u) εj εk + O(∥ε∥3).
+
+Differentiating component i with respect to uℓ, the first- and second-order terms produce Hiℓj and Tiℓjk , respectively; symmetry of mixed partials gives 
+
+Hiℓj = Hijℓ and full symmetry of Tiℓjk in ( ℓ, j, k ). This yields 
+
+Jiℓ (u + ε) = Jiℓ (u) + X
+
+> j
+
+Hiℓj (u) εj + 12
+
+X
+
+> j,k
+
+Tiℓjk (u)εj εk + O(∥ε∥3).
+
+Similarly, we obtain 
+
+ˆJiℓ (u + ε) = ˆJiℓ (u) + X
+
+> j
+
+bHiℓj (u) εj + 12
+
+X
+
+> j,k
+
+bTiℓjk (u)εj εk + O(∥ε∥3).
+
+10 Subtracting the two expansions gives 
+
+∆Jiℓ (u + ε) = ∆ Jiℓ (u) + X
+
+> j
+
+∆Hiℓj (u) εj + 12
+
+X
+
+> j,k
+
+∆Tiℓjk (u)εj εk + O(∥ε∥3).
+
+Squaring and summing over i, ℓ result in 
+
+∥∆J(u + ε)∥2F = ∥∆J(u)∥2F + 2 X
+
+> i,ℓ,j
+
+∆Jiℓ (u) ∆ Hiℓj (u) εj
+
++ X
+
+> i,ℓ,j,k
+
+∆Hiℓj (u) ∆ Hiℓk (u) εj εk + X
+
+> i,ℓ,j,k
+
+∆Jiℓ (u)∆ Tiℓjk (u) εj εk + O(∥ε∥3).
+
+Taking expectation with respect to the zero-mean Gaussian perturbation, using E[ε] = 0 and E[εε T ] = σ2I, the linear term vanishes and the quadratic term becomes σ2 ∥∆H(u)∥2F. The cross term P 
+
+> i,ℓ,j,k
+
+∆Jiℓ (u)∆ Tiℓjk (u) εj εk
+
+becomes σ2 P 
+
+> i,ℓ
+
+∆Jiℓ (u) tr (∆ Tiℓ ) , where tr (∆ Tiℓ ) := P 
+
+> j
+
+∆Tiℓjj denotes the partial trace of the third-derivative tensor over the last two indices. All remaining higher-order contributions are collected in the remainder Rσ. This completes the proof. 
+
+Remark 1. In Theorem 1, the second term is non-negative and directly pe-nalizes the Hessian mismatch. The third term is sign-indefinite, but it is bi-linear in the Jacobian mismatch ∆J and the third-derivative mismatch ∆T .It can be shown, under reasonable assumptions (see [13, Theorem 1]), that the second term in fact dominates the third term, and thus the sum is positive. Hence, when σ is sufficiently small and the Jacobian mismatch is controlled, minimizing the randomized Jacobian loss, on average, promotes Hessian con-sistency. In particular, Theorem 1 induces implicit second-order supervision without constructing the Hessian tensor H. Each sampled perturbation re-quires only Jacobian evaluations at perturbed states, costing O(d) AD passes and O(d2) memory, rather than the O(d2) AD passes and O(d3) memory required for the explicit Hessian tensor. The framework is therefore practical for high-dimensional systems where Hessian computation is infeasible. 3.5. Total Loss 
+
+The NODE is trained by minimizing the composite loss 
+
+L = Ldata + αmc Lmc + αmcjac Lmcjac + αjac Ljac + αhes Lhes ,
+
+11 where αmc , αmcjac , αjac , and αhes are non-negative weights controlling the rel-ative strength of each supervision term. Table 1 summarizes the five training strategies considered in this work. For the MC-based variants, the pertur-bation scale σ controls the strength of the implicit derivative regularization and is tuned separately for each benchmark problem. Numerical experiments with the five methods are presented in Section 4.   
+
+> Table 1: Training strategies with increasing derivative supervision. All methods include the data loss Ldata with unit weight. Non-zero entries indicate which derivative supervision terms are included.
+
+Method αmc αmcjac αjac αhes Derivative supervision 
+
+mc > 0 0 0 0 Implicit 1st-order 
+
+mcjac > 0 > 0 0 0 Explicit 1st & Implicit 2nd-order 
+
+naive 0 0 0 0 None 
+
+jac 0 0 > 0 0 Explicit 1st-order 
+
+hes 0 0 > 0 > 0 Explicit 1st & Explicit 2nd-order 
+
+4. Numerical Experiments 
+
+We evaluate the five methods of Table 1 on the Lorenz 63 system and the coupled Lorenz 96 system. These methods span a hierarchy of derivative supervision. The naive method performs only zero-order trajectory match-ing. The mc method introduces implicit first-order information through the model-constrained approach. The jac method adds explicit Jacobian super-vision, while hes further incorporates explicit Hessian supervision. Finally, 
+
+mcjac combines Jacobian matching with the model-constrained approach, which by Theorem 1 induces implicit second-order supervision. The methods naturally form two paired comparisons that isolate the role of second-order supervision. The first, mc versus mcjac , tests the same effect in the noise-perturbed setting, where randomized Jacobian matching provides implicit second-order supervision. The second, jac versus hes , examines the effect of adding explicit second-order supervision. The naive method serves as a baseline, illustrating the limitations of trajectory-only supervision for chaotic systems. 12 4.1. Lorenz 63 Model 
+
+The training data were generated by integrating the true Lorenz 63 sys-tem over t ∈ [0 , 500] with time step ∆t = 0 .01 . The system was initialized from 32 initial conditions sampled uniformly from a unit cube centered at 
+
+(x, y, z ) = ( −15 , −15 , 5) . Among these trajectories, 16 were used for training and the remaining 16 for validation. An initial transient of 1,000 time steps was discarded so that all trajectories lie on the attractor. To approximate the vector field bf of the Lorenz 63 system in (4), we employed a fully con-nected neural network R3 → R3 with three hidden layers, each containing 
+
+512 neurons, and tanh activations to ensure smooth derivatives. The neural network was optimized using the Adam optimizer with a constant learning rate of 10 −3 for 10 4 epochs, batch size nb = 512 , and rollout length m = 1 .A single-step segment provides the least amount of temporal information and therefore forces the model to rely almost entirely on the local geometric supervision provided by the Jacobian and Hessian terms. Under ergodicity, a sufficiently large collection of decorrelated single-step pairs (u0, u1) samples the attractor according to its invariant measure [17]. The associated Jaco-bians (J0, J1) and Hessians (H0, H1), being state-dependent quantities, then characterize the local tangent and curvature structure over statistically repre-sentative regions of the attractor. Thus, in the ergodic limit, local matching can constrain global dynamical invariants. The m = 1 regime therefore tests whether local geometric constraints alone can reproduce invariant measures and Lyapunov exponents.              
+
+> (a) Full trajectory (true) (b) Truncated trajectory (true) (c) naive
+> Figure 1: Phase space trajectories of the Lorenz 63 system under the minimal temporal setting ( m= 1 ). (a) Full true trajectory ( t∈[0 ,320] ), (b) truncated true trajectory (t∈[20 ,320] ), and (c) learned trajectory of naive model.
+
+Figure 1 contrasts the true butterfly attractor with the diverging naive 
+
+model. Without derivative supervision, the learned dynamics escape to 13 |x| , |y| ∼ 10 3 and fail to remain on the attractor. Figure 2 shows that adding any form of derivative supervision— mc , mcjac , jac , or hes —recovers a bounded butterfly attractor. The differences among these methods are examined below.              
+
+> (a) mc (b) mcjac (c) jac (d) hes
+> Figure 2: Phase space trajectories of the learned models of (a) mc , (b) mcjac , (c) jac , and (d) hes under the minimal temporal setting ( m= 1 ).
+
+For the error metrics in Tables 2, 4, and 5, we use a reference Lya-punov spectrum computed directly from the simulated Lorenz 63 trajec-tories, averaged over the same 1,000 initial conditions used for evaluation: 
+
+(λref 1 , λ ref 2 , λ ref 3 ) ≈ (0 .9041 , −0.0023 , −14 .5685) .This numerically estimated reference is close to the widely cited litera-ture values ( 0.9056 , 0, −14 .5723 ) reported in [21], with the small discrepancy attributed to finite-time and finite-ensemble averaging. We generated 1,000 initial conditions sampled uniformly in a unit cube around (x, y, z ) = ( −15 , −15 , 5) . Each trajectory was integrated for 32 ,000 
+
+time steps using the learned NODEs, with the first 2,000 steps discarded as transient. The Lyapunov exponents were computed over the remaining 
+
+30 ,000 steps using the standard QR-based Benettin algorithm [22]. The Wasserstein-1 distance between empirical invariant measures was computed from the same long-time trajectories. The Wasserstein-1 distance quantifies how faithfully the learned dynamics reproduce the global geometry of the strange attractor. Table 2 summarizes the results at m = 1 . Because naive fails to recon-struct the attractor, it yields W 1 = 379 .16 and an order-unity error in the leading Lyapunov exponent. Although nearby trajectories separate exponen-tially with Lyapunov exponent λref 1 = 0 .9041 , the short single-step interval (∆t = 0 .01 ) implies only a minute expected separation over one training step, namely eλref 1 ∆t ≈ 1.009 —too small a deviation to meaningfully constrain the learned vector field. Trajectory-only supervision at m = 1 therefore cannot 14 Table 2: Statistical comparison between the ground-truth and learned Lorenz 63 systems under the minimal temporal setting ( m = 1 ). W 1 denotes the Wasserstein-1 distance. Here, ˆλj denotes the j-th Lyapunov exponent estimated from the learned NODE, while      
+
+> λref
+> jdenotes the corresponding reference exponent computed from the simulated Lorenz 63 trajectories using the same evaluation interval t∈[20 ,320] .
+
+Method W 1 |ˆλ1 − λref 1 | |ˆλ2 − λref 2 | |ˆλ3 − λref 3 |
+
+mc 1.0534 4.5242E-02 5.9054E-03 5.5523E-03 
+
+mcjac 0.9268 9.6428E-04 7.3800E-04 8.6746E-03 
+
+naive 379.1587 9.1102E-01 8.5433E-01 1.1887E+01 
+
+jac 1.1977 9.0963E-03 1.7947E-02 1.5970E-01 
+
+hes 1.0003 2.7298E-03 2.7080E-05 1.6469E-02 constrain the chaotic instability of the learned dynamics. In contrast, all derivative-informed methods produce bounded attractors and yield comparable Wasserstein distances ( W 1 ∈ [0 .93 , 1.20] ). The paired comparisons show improved invariant-measure accuracy under second-order supervision. In the Jacobian-based pair, explicit Hessian matching improves upon Jacobian matching, reducing W 1 from 1.1977 (jac ) to 1.0003 (hes ). Similarly, in the MC pair, randomized Jacobian matching improves upon randomized trajectory matching, reducing W 1 from 1.0534 (mc ) to 0.9268 
+
+(mcjac ). In both pairs, the additional supervision yields a more accurate joint (x, y, z ) invariant measure. For the Lyapunov spectrum, the second-order methods are most accurate on the leading exponents, improving on both the first-order ( mc , jac ) and trajectory-only ( naive ) approaches: mcjac 
+
+attains the smallest error in λ1 and hes in λ2. The strong dissipative λ3 is the exception: the leading methods cluster tightly, with mc attaining the smallest error, mcjac within the same order of magnitude, and both second-order methods more than an order of magnitude more accurate than jac .The marginal distributions show the same paired improvement. Figure 3 compares the empirical x-marginal of each learned model against the true Lorenz 63 distribution. In the MC pair, adding implicit second-order su-pervision significantly improves agreement with the reference distribution, reducing the Wasserstein distance of the x-marginal from 1.10 (mc ) to 0.37 
+
+(mcjac ). The mc histogram exhibits a distributional bias that is mitigated by 
+
+mcjac . In the Jacobian-based pair, the improvement is smaller but remains consistent, with the Wasserstein distance decreasing from 0.23 (jac ) to 0.14 
+
+15 (hes ).        
+
+> (a) mc (b) mcjac (c) jac (d) hes
+
+Figure 3: Empirical marginal distribution of the x-component for each learned model compared to the true Lorenz 63 distribution ( m = 1 ). The Wasserstein-1 distance ( W 1)between the learned and true distributions is shown in each panel. 
+
+Figure 4 and Figure 5 illustrate the effect of second-order supervision on long-time dynamical stability. For each learned model, we estimate the lead-ing Lyapunov exponent by integrating 1,000 initial conditions over T = 300 
+
+time units, yielding an ensemble of ˆλ1 estimates . Most trajectories from all derivative-informed methods yield leading Lyapunov exponents concen-trated around the reference value, λref 1 = 0 .9041 . However, the two methods lacking second-order supervision ( mc and jac ) produce rare but catastrophic outliers. The mc method yields two trajectories with ˆλ1 ≈ 26 and 29 .1, while 
+
+jac produces one trajectory with ˆλ1 ≈ − 16 .7. In contrast, the second-order methods mcjac and hes exhibit no such failures, with all estimated exponents remaining concentrated near the reference value (Figure 4b).      
+
+> (a) Box plot of λ1(all scales). (b) Box plot of λ1(zoomed in).
+
+Figure 4: Robustness of largest Lyapunov exponent ( λ1) estimation under a minimal rollout length ( m = 1 ) for the Lorenz 63 system. (a) Full scale view shows significant outliers in mc and jac methods. (b) Zoomed-in view highlights that both mcjac and 
+
+hes achieve more accurate and consistent estimates, closely matching the reference value (λref 1 = 0 .9041 , indicated by the red dashed line). 
+
+16 (a) jac , λ1 = −16 .7 (b) mc , λ1 = 29 .1 (c) mc , λ1 = 26 .0    
+
+> Figure 5: Phase space trajectories of the learned Lorenz 63 model, colored by time evolu-tion (from purple to yellow). (a) The jac method captures the global attractor structure but collapses toward a spurious fixed point near the lobe-transition region. (b)–(c) The
+> mc method initially follows the attractor but later exhibits orbit drift, failing to preserve long-term chaotic invariance.
+
+If the learned dynamics were tightly close to the true system, all 1,000 
+
+initial conditions would remain on the same chaotic attractor after transients. The observed outliers therefore indicate that the learned vector fields of mc 
+
+and jac deviate from the true Lorenz 63 dynamics. Figure 5 shows that the outlier trajectories originate near the lobe-transition region around the origin—the saddle through which trajectories are routed into one lobe or the other and where the field changes direction rapidly. Because this region is dynamically sensitive, errors in the learned field can be amplified into divergent routing and incorrect long-time behavior. The outliers occur in 
+
+mc and jac , the two methods trained without second-order supervision. The second-order methods mcjac and hes produce no catastrophic outliers among the 1,000 tested initial conditions (Figure 4).    
+
+> Table 3: Statistics of the Hessian Frobenius norm ∥bH∥ Falong trajectories for each training method.
+
+Method mean std min max 
+
+mc 6.76 3.97 1.56 44.93 
+
+mcjac 2.06 0.17 1.58 6.33 
+
+naive 46.81 67.69 7.48E-04 231.7 
+
+jac 3.43 2.35 1.51 38.37 
+
+hes 2.01 0.08 1.54 4.84 The learned models also differ in the second-order structure of their vec-tor fields. Since the Lorenz 63 system is bilinear, the Hessian norm remains 17 (a) mc (b) mcjac    
+
+> (c) jac (d) hes
+
+Figure 6: Hessian Frobenius norm ∥ bH∥ F of each learned model evaluated along Lorenz 63 trajectories at m = 1 : (a) mc , (b) mcjac , (c) jac , (d) hes . The colormap ranges from 
+
+1 (black) to 20 (yellow); values above 20 are clipped. The true Lorenz 63 vector field is bilinear, so its Hessian is spatially constant ( ∥H∥ F = 2 , nearly black) at every point of phase space. Mean (std) across the trajectory is 6.76 (3 .97) , 2.06 (0 .17) , 3.43 (2 .35) ,
+
+2.01 (0 .08) , respectively (Table 3). 
+
+constant throughout phase space, with ∥H∥ F = 2 . Figure 6 visualizes ∥ bH∥ F
+
+along trajectories of the learned models under the m = 1 setting, with sum-mary statistics reported in Table 3. Second-order supervision yields Hessian norms that are close to the true constant: hes (mean 2.01 , std 0.08 ) and 
+
+mcjac (mean 2.06 , std 0.17 ). Both remain within 3% of the true value and exhibit only weak spatial variation. The first-order methods deviate far more: 18 mc (mean 6.76 , std 3.97 ) and jac (mean 3.43 , std 2.35 ) reach peaks exceeding the true norm by more than an order of magnitude. The trajectory-only base-line naive exhibits even larger deviations (mean 46 .8, std 67 .7), consistent with its complete failure to reproduce the attractor.    
+
+> Table 4: Statistical comparison as in Table 2, except for the m= 2 setting.
+
+Method W 1 |ˆλ1 − λref 1 | |ˆλ2 − λref 2 | |ˆλ3 − λref 3 |
+
+mc 0.9217 1.0901E-02 1.1439E-02 1.5818E-01 
+
+mcjac 0.9916 4.6015E-03 3.0487E-04 1.4677E-02 
+
+naive 907.5652 9.2158E-01 5.6943E-02 1.3337E+01 
+
+jac 0.9933 2.0638E-03 7.2673E-04 6.1131E-03 
+
+hes 1.0393 4.6415E-03 2.7578E-05 1.9238E-02 The mcjac method achieves Hessian accuracy comparable to explicit Hes-sian supervision ( hes ) despite never evaluating Hessians directly, consistent with Theorem 1. In the m = 1 setting, mcjac and hes are free of the catas-trophic Lyapunov outliers that affect mc and jac across the 1,000 tested initial conditions. Accurate second-order structure helps suppress these rare catastrophic failures, though the evidence is correlational. Table 4 and Fig-ure 7 show the corresponding results for m = 2 . Increasing the rollout length from m = 1 to m = 2 provides denser supervision along each training trajec-tory, since the trajectory, Jacobian, and Hessian losses are evaluated at three states ( u0, u1, u2) rather than two ( u0, u1). Under this denser supervision, the catastrophic outliers observed at m = 1 disappear entirely. Consequently, the W 1 values of mc (0.92 ) and jac (0.99 ) become competitive with those of their second-order counterparts. Even so, second-order supervision still yields tighter ˆλ1 distributions. In the zoomed-in view (Figure 7b), mcjac 
+
+and hes have lower variance than mc and jac . At m = 2 they sit slightly above the reference while jac is essentially centered on it, consistent with 
+
+jac ’s smaller mean λ1 error in Table 4. Table 5 summarizes the Lyapunov spectrum errors reported in Tables 2 and 4 using the mean squared error (MSE), 
+
+err = 13
+
+> 3
+
+X
+
+> j=1
+
+ˆλj − λref 
+
+> j
+
+2
+
+,
+
+19 (a) Box plot of λ1 (all scales). (b) Box plot of λ1 (zoomed in). 
+
+Figure 7: Impact of increasing rollout length ( m = 2 ) on λ1 estimation for the Lorenz 63 system. (a) Full scale view demonstrates a reduction in outliers compared to m = 1 , with most methods (except naive ) converging near the true value. (b) Zoomed-in view reveals that mcjac and hes are accurate and exhibit lower variance. 
+
+together with the corresponding training wall-clock times. The second-order methods mcjac and hes achieve small errors across both rollout regimes (2.56 × 10 −5 to 1.31 × 10 −4). The mcjac method attains the lowest error at 
+
+m = 1 (2.56 × 10 −5), whereas the jac method becomes the most accurate method at m = 2 once the catastrophic outliers disappear. Nevertheless, in the minimal temporal regime ( m = 1 ), mcjac remains more than two orders of magnitude more accurate than jac . Moreover, mcjac achieves this accuracy at a computational cost comparable to that of hes : 61 .2 s versus 
+
+64 .6 s at m = 1 , and 96 .8 s versus 90 .8 s at m = 2 .
+
+Table 5: Mean squared error of the Lyapunov exponents ( 13
+
+P3
+
+> j=1
+
+(ˆλj − λref  
+
+> j
+
+)2), where ˆλj is the average across 1000 initial conditions and λref  
+
+> j
+
+is the corresponding average from the reference Lorenz 63 simulation. Wall-clock times are reported in seconds. 
+
+m mc mcjac jac hes 
+
+error wc error wc error wc error wc 
+
+1 7.04E-04 41.0 2.56E-05 61.2 8.64E-03 51.8 9.29E-05 64.6 
+
+2 8.42E-03 77.4 7.90E-05 96.8 1.40E-05 63.4 1.31E-04 90.8 
+
+4.2. Lorenz 96 Model 
+
+The Lorenz 63 results show a clear hierarchy of derivative supervision, with randomized Jacobian matching ( mcjac ) matching the performance of explicit Hessian supervision ( hes ). We next consider the coupled Lorenz 96 20 system in (2), a 396 -dimensional multiscale slow–fast system with K = 36 
+
+slow variables and J = 10 fast variables per slow site. At the nominal forcing F = 10 and under larger out-of-distribution forcing values, the system exhibits high-dimensional chaotic dynamics with multiple positive Lyapunov exponents. In this experiment, we adopt a universal differential equation framework [23] in which only a subset of the dynamics is learned. We preserve the known physical structure of the slow equation (2a) and replace only its quadratic nonlinear advection term with a neural network. We consider 
+
+dX k
+
+dt = ˆfk (X; θ) − Xk + F − hY k, (15) where ˆfk(X; θ) parameterizes the quadratic nonlinear advection operator among the slow variables. The linear damping term −Xk, the constant forc-ing F , and the coupling to the true fast variable Y k are kept exact. Thus, the learning task is not to identify the full vector field, but to recover a structured nonlinear component within a strongly chaotic multiscale system. The Hessian of the true quadratic interaction −Xk−1(Xk−2 − Xk+1 ) is sparse, local, and state-independent, with nonzero entries of {− 1, +1 }. The interaction itself is translation-equivariant under cyclic shifts of the slow in-dex k. Exploiting both properties, we take ˆfk to be a shared local multilayer perceptron (MLP), applied identically at every slow site. This locality re-stricts the second-derivative coupling to a sparse banded stencil, reducing the number of structurally nonzero Hessian entries from O(K2) to O((2 W +1) 2).In this study, we choose W = 2 , so that ˆfk = ˆfk (Xk−2, X k−1, X k, X k+1 , X k+2 ; θ),where the local mapping is implemented by an MLP with layer widths 
+
+[5 , 64 , 64 , 1] and tanh activations. This architecture directly embeds the lo-cality and symmetry structure of Lorenz 96 into the neural parameterization, making second-order supervision computationally tractable. A single trajectory is generated from a random initial condition—slow variables perturbed around F , fast variables initialized near zero—by inte-grating for 200 warmup steps ( t = 1 ) to drive the system onto the attractor. We verified that both the slow- and fast-variable energies reach statistically stationary levels within this interval. The resulting trajectory is used as training data. A second trajectory generated from an independently sampled initial condition with the same warmup procedure is used for validation, and all evaluation metrics are computed on this independent validation trajec-tory. Training uses the TSIT5 integrator [24] with timestep ∆t = 0 .005 over 
+
+t ∈ [0 , 500] , batch size nb = 128 , rollout length m = 2 , and 10 ,000 epochs. 21 Unlike the Lorenz 63 experiments, the coupled Lorenz 96 setting required double-precision arithmetic to maintain stable long-horizon integration. Unlike the Lorenz 63 experiments, here the learning problem combines partial learning of a structured nonlinear component with a strongly translation-equivariant architecture. These inductive biases reduce the effective complex-ity of the approximation problem, so within the training regime the perfor-mance gap between supervision methods is small. At the same time, all models are trained at F = 10 and evaluated up to the more chaotic out-of-distribution regime F = 20 . We first compare all five methods at two representative forcing values, F = 10 and F = 20 , including short- and long-time trajectories, Lyapunov spectra, curvature statistics, invariant measures, and Jacobian recovery. We then examine how the methods progressively separate as the forcing parameter is swept between these two regimes. We begin with the space–time evolution of the slow variables. Figure 8 shows short-window Hovmöller diagrams at F = 10 , while Figures 9 and 10 show the corresponding short- and long-window results at F = 20 . At 
+
+F = 10 , the system is already spatiotemporally chaotic with leading Lya-punov exponent λ1 ≈ 6 (Figure 11a), yet all five learned models remain visually similar on the short window. The second-order methods ( mcjac 
+
+and hes ) nevertheless exhibit slightly smaller short-time residuals during the early interval t ≤ 2. At F = 20 , the true system enters a regime of fully developed spatiotemporal chaos with λ1 ≈ 17 .5 (Figure 11b). On the short window (Figure 9), all methods still appear reasonable, although the naive 
+
+model develops stronger localized high-amplitude regions. The long-window rollout (Figure 10), however, reveals a much clearer separation between the methods. The second-order methods, mcjac and hes , remain in close agree-ment with the true dynamics throughout the rollout. The naive model stays bounded but exhibits intermittent high-amplitude bursts. In contrast, mc 
+
+transitions near t ≈ 70 into a spurious high-amplitude attractor-like regime, while jac undergoes a similar transition near t ≈ 80 , briefly recovering over 
+
+t ≈ 350 –430 before transitioning again. The two methods that develop sus-tained spurious regimes, mc and jac , are those that lack second-order su-pervision. This pattern parallels the catastrophic outlier failures observed for the first-order methods in the Lorenz 63 experiments, suggesting that accurate second-order structure becomes increasingly important in strongly chaotic out-of-distribution regimes. The Lyapunov spectrum shows a similar contrast. At F = 10 , all methods agree closely with the true spectrum (Figure 11a). At F = 20 , the methods 22 Figure 8: Hovmöller diagrams of the slow variables Xk for t ∈ [0 , 10] at F = 10 . Pre-dicted trajectories from each learned model (left) and differences from the true trajectory (right) are shown. All five methods reproduce the characteristic wave-like spatiotemporal structures of the system with comparable short-term accuracy. The second-order super-vised methods ( mcjac and hes ) also exhibit slightly smaller short-time residuals during the early-time interval ( t ≤ 2). 
+
+23 Figure 9: Hovmöller diagrams of the slow variables Xk for t ∈ [0 , 10] at F = 20 . All methods retain similar spatiotemporal structures. However, the naive model exhibits stronger localized high-amplitude regions. 
+
+24 Figure 10: Long-horizon Hovmöller diagrams of the slow variables Xk for t ∈ [0 , 500] at 
+
+F = 20 . mcjac and hes show very good agreement with the true dynamics over the entire rollout. The naive model remains bounded but shows intermittent localized high-amplitude bursts. The mc model transitions near t ≈ 70 into a spurious high-amplitude attractor-like regime for most of the rollout. The jac model similarly enters a spurious regime near t ≈ 80 , briefly recovers over t ≈ 350 –430 , and later transitions back. 
+
+25 (a) F = 10   
+
+> (b) F= 20
+
+Figure 11: Top-20 Lyapunov spectra of the learned models. (a) At F = 10 , all methods remain in good agreement with the true spectrum. (b) At F = 20 , clear separation emerges. jac , mcjac and hes remain closer to the true spectrum across the leading modes, while mc moderately overestimates and naive strongly overestimates the positive Lyapunov exponents. 
+
+26 separate clearly. jac , mcjac , and hes remain closer to the true spectrum across the leading modes, whereas mc moderately overestimates and naive 
+
+strongly overestimates the positive Lyapunov exponents (Figure 11b). These spectral errors do not align with the long-time trajectory behavior in Fig-ure 10. Despite strongly overestimating the spectrum, naive remains on a bounded attractor, whereas jac reproduces the leading spectrum relatively accurately yet still intermittently transitions into a spurious high-amplitude regime. Lyapunov-spectrum accuracy is therefore not a sufficient diagnostic for long-time fidelity. The Lyapunov spectrum characterizes the tangent-space dynamics of the learned vector field but is insensitive to how the field bends away from the tangent plane. To probe this higher-order structure directly, we consider the curvature length scale 
+
+Lcurv (X) = ∥bJ(X)∥F
+
+∥ bH(X)∥F
+
+evaluated along the trajectories of the learned models. A large Lcurv indi-cates weak local curvature relative to the Jacobian magnitude; a small value reflects strong curvature. After discarding the first 10 ,000 steps ( t = 50 )as transients, we uniformly sample 200 states from the remaining trajectory and compute the corresponding values of Lcurv , thereby approximating statis-tics over the invariant measure. Figure 12a shows that all methods produce nearly identical distributions centered near Lcurv ≈ 0.263 at F = 10 , indicat-ing similar local nonlinear structure within the training regime. At F = 20 
+
+(Figure 12b), however, the methods separate sharply. mcjac and hes are centered near the true peak at Lcurv ≈ 0.369 , with medians 0.367 and 0.369 ,compared to the true median 0.369 . The naive model is unimodal but shifts to approximately 0.415 , while mc and jac become bimodal, developing a sec-ondary lobe spanning roughly 0.7–1.4 that raises their medians to 0.928 and 
+
+0.821 . The bimodal distributions show that mc and jac spend much of the trajectory in regions of distorted local nonlinear geometry, with the upper lobe rather than the true-valued mode dominating their mass. These are the two methods that lack second-order supervision. We hypothesize that the naive distribution arises from the smooth im-plicit bias of the architecture, producing a curvature distribution that shifts away from the truth while shaping unimodal. The bimodality of mc and jac 
+
+has a different origin: both methods supervise the first-order structure of the learned dynamics, but this constraint provides no regularization on the 27 curvature, allowing the learned vector field to develop spurious secondary curvature modes. The upward shifts in Lcurv confirm that naive , mc , and 
+
+jac distort the balance between curvature and Jacobian magnitude relative to the true dynamics, similar to the large Hessian deviations observed for the first-order methods in the Lorenz 63 experiments. We next turn from the geometric structure of the learned vector field to the statistical occupation of the attractor. The one-dimensional marginal density of X captures where trajectories spend most of their time on the attractor. At F = 10 , all methods agree closely with the true density in Figure 13a. At F = 20 , mcjac and hes remain close to the true density, whereas mc and jac produce broadened distributions with heavy tails ex-tending to values near ±100 . The naive method reproduces the marginal distributions reasonably well at the representative sites despite overestimat-ing the Lyapunov spectrum (Figure 11b). This does not mean that the model is faithfully learned. As the curvature analysis above demonstrates, 
+
+naive distorts the underlying second-order structure of the dynamics, even though its marginal density remains close to the truth. Marginal densities are occupation statistics and thus provide only partial information about the underlying transport dynamics. Since naive is trained only on state val-ues, it may reproduce these distributions while failing to recover the local derivative structure that governs perturbation growth. Marginal densities therefore measure time-averaged occupation, which does not constrain the local geometry of the vector field. The next diagnostic examines the learned Jacobian. At F = 10 (Fig-ure 14a), all methods recover the qualitative structure of the true Jacobian, but the mean Frobenius errors differ significantly, ranging from 0.03 for hes 
+
+and 0.095 for mcjac to 0.33 for jac , 0.83 for mc , and 1.91 for naive . The same ordering is observed for F = 20 (Figure 14b), where the larger absolute errors reflect the increased Jacobian norm at higher forcing. In both regimes, the smallest Jacobian errors are achieved not by jac , which explicitly super-vises the Jacobian, but by the second-order methods hes and mcjac . The histograms sharpen this distinction: hes is strongly concentrated near zero error, mcjac retains a dominant low-error peak with a weaker secondary lobe, whereas mc , jac , and naive produce much broader distributions centered far-ther from zero. Thus, the methods incorporating second-order information yield larger fractions of trajectory states with near-exact Jacobian recovery than the first-order methods. The curvature analysis above explains this pattern. First-order supervi-28 (a) F = 10   
+
+> (b) F= 20
+
+Figure 12: Distributions of the curvature length scale Lcurv on the trajectory. (a) At 
+
+F = 10 , all methods produce nearly identical single-peaked distributions centered near 
+
+Lcurv ≈ 0.263 . (b) At F = 20 , mcjac and hes remain centered near the true peak at 
+
+Lcurv ≈ 0.369 , while naive remains single-peaked but shifted to approximately 0.415 . In contrast, mc and jac become bimodal, with a small peak near the true value and a broader secondary lobe spanning approximately 0.7–1.4, indicating predominantly transitions into regions with distorted local nonlinear geometry. 
+
+29 (a) F = 10   
+
+> (b) F= 20
+
+Figure 13: Marginal densities of X at four representative sites ( X0, X9, X18 , and X27 ). (a) At F = 10 , all methods overlap closely with the true density (black). (b) At F = 20 , mcjac 
+
+and hes remain in close agreement with the true density, mc and jac produce broadened marginals with heavy tails, and naive remains comparatively close to the true density at these representative sites. 
+
+30 (a) F = 10   
+
+> (b) F= 20
+
+Figure 14: Jacobian recovery at (a) F = 10 and (b) F = 20 . Scatter plots of the learned versus true Jacobian spectral radius (top) and histograms of the Frobenius-norm Jacobian error (bottom) are shown. At F = 10 , all methods are broadly aligned with the diagonal, but the Frobenius means differ by nearly two orders of magnitude ( 0.03 for hes to 1.91 
+
+for naive ). At F = 20 , hes and mcjac remain closest to the diagonal, while mc , jac ,and especially naive show increasingly distorted Jacobian spectra. In the Frobenius-error distributions, hes is most concentrated near zero, mcjac retains a strong low-error peak with a broader secondary component, mc and jac shift to broad intermediate-error distributions, and naive has the largest errors overall. 
+
+31 Figure 15: Site-averaged Wasserstein-1 distance between learned and true marginal dis-tributions of Xk as a function of forcing F . The inset shows the mild regime F ∈ [10 , 16] .For F ≤ 16 all five methods produce W 1 ≲ 0.4 and remain essentially indistinguishable. Between F = 16 and F = 18 , mc and jac undergo an abrupt increase of one to two orders of magnitude, naive degrades moderately, and mcjac and hes remain close to the true marginals across the entire sweep. 
+
+sion constrains the learned vector field at the supervised states but leaves its spatial variation between those states underconstrained. By constrain-ing the curvature, second-order supervision indirectly regularizes how the Jacobian varies across phase space, yielding a smoother and globally more faithful first-order structure. Another factor is that the local MLP archi-tecture already encodes the translation equivariance and local interaction structure of the quadratic transport term, reducing the remaining ambiguity that supervision must resolve. As a result, in the moderately chaotic regime (F = 10 ), even the lower-order methods reproduce many macroscopic sta-tistical properties despite noticeable differences in local derivative accuracy. The distinction between supervision strategies becomes clearer in the more chaotic out-of-distribution regime at F = 20 .The analysis presented so far compares the five methods at two repre-sentative forcing values, F = 10 and F = 20 . To characterize the tran-32 sition between these regimes, we now sweep F continuously from 10 to 20 
+
+with all other settings fixed and track two complementary metrics: the site-averaged Wasserstein-1 distance W 1 between the learned and true marginals (Figure 15), and the mean squared error of the top-20 Lyapunov exponents (Table 6). Both diagnostics show consistent behavior. For F ≤ 16 , all five methods are close to the reference: W 1 ≲ 0.4, and Lyapunov MSEs of order 
+
+10 −1 with no clear ordering. Between F = 16 and F = 18 , the methods begin to separate sharply. In W 1, mc and jac undergo abrupt increases of one to two orders of magnitude, while naive degrades more moderately. The Lyapunov MSE shows the same transition: naive deteriorates to 10 .0 and 
+
+jac to 2.7 at F = 18 , while mcjac and hes remain more accurate. At F = 20 , jac , mcjac , and hes achieve comparable spectral errors near 
+
+2×10 −1, whereas mc and naive remain one to two orders of magnitude worse. In contrast, only mcjac and hes are closely aligned with the true marginals throughout the entire sweep. This pattern extends the Lyapunov-marginal discrepancy observed earlier: jac can match the Lyapunov spectrum while distorting the invariant measure. Only second-order supervision prevents this failure mode across the entire forcing sweep. We also observe that mcjac 
+
+achieves Hessian-level accuracy at first-order cost (Table 6).         
+
+> Table 6: MSE of the top-20 Lyapunov exponents and training wall-clock time for each method across forcing F. The errors are evaluated at F∈ { 10 ,16 ,18 ,20 }, while wall-clock times are reported in seconds.
+
+method F = 10 F = 16 F = 18 F = 20 wc (s) 
+
+mc 2.051E-02 3.950E-01 4.733E-01 1.935E+00 147.6 
+
+mcjac 3.634E-02 4.843E-01 1.751E-01 2.192E-01 157.6 
+
+naive 3.485E-02 1.899E-01 1.001E+01 2.294E+01 30.3 
+
+jac 2.247E-02 1.023E-01 2.748E+00 2.807E-01 146.9 
+
+hes 5.528E-02 2.593E-01 7.213E-01 2.217E-01 268.3 
+
+5. Conclusion 
+
+This work investigated the role of derivative supervision in learning chaotic dynamical systems. On both Lorenz 63 and coupled Lorenz 96, we showed that trajectory and Jacobian matching do not constrain the higher-order geometry of the learned vector field. Such models may reproduce short-time trajectories and local tangent behavior while still developing spurious 33 attractors, distorted invariant measures and Lyapunov spectrum, or losing long-time stability. We therefore proposed randomized Jacobian matching, which extends model-constrained training to implicit second-order supervision by matching Jacobians at perturbed states. We proved that the resulting loss contains a leading-order Hessian mismatch penalty without computing Hessian ten-sors. This makes second-order supervision feasible in high dimension. The methods incorporating second-order information—explicitly through Hessian matching or implicitly through randomized Jacobian matching—preserved invariant statistics, Lyapunov spectrum, curvature distributions, and long-term stability. In the high-dimensional Lorenz 96 experiments, randomized Jacobian matching achieved Hessian-level accuracy at first-order cost. Faithful learning of chaotic dynamics requires constraining both the tan-gent dynamics of the flow and its higher-order geometric structure. Two limitations remain. The first is that the coupled Lorenz 96 experiments considered a structured universal differential equation setting in which only the quadratic advection term was learned; extending the approach to fully learned high-dimensional systems, and ultimately to spatiotemporally chaotic partial differential equations, remains future work. The second is that ran-domized Jacobian matching is sensitive to the perturbation scale and loss-weighting parameters, and a systematic study of this dependence would clar-ify the optimal regime for randomized Jacobian matching. 
+
+Acknowledgements 
+
+This work was supported by Korea University Grants (No. K2411041, K2414071, K2425851, K2514791). 
+
+Appendix A. Hyperparameter Settings 
+
+To ensure the reproducibility of the reported results, we provide the de-tailed hyperparameter configurations for naive , mc , mcjac , jac , and hes . Ta-bles A.7 and A.8 summarize the specific configurations used in the Lorenz 63 and the coupled Lorenz 96 examples. 
+
+References 
+
+[1] J. P. Crutchfield, B. McNamara, Equations of motion from a data series, Complex Systems 1 (1987) 417–452. 34 Table A.7: Hyperparameters for the Lorenz 63 experiments ( m = 1 , 2). 
+
+Method αmc αmcjac αjac αhes σ learning rate 
+
+mc 100 – – – 1.0 1 × 10 −3
+
+mcjac 100 100 – – 0.5 1 × 10 −3
+
+naive – – – – – 1 × 10 −3
+
+jac – – 1.0 – – 1 × 10 −3
+
+hes – – 1.0 0.1 – 1 × 10 −3 
+
+> Table A.8: Hyperparameters for the coupled Lorenz 96 experiments ( m= 2 ).
+
+Method αmc αmcjac αjac αhes σ learning rate 
+
+mc 100 – – – 0.9 5 × 10 −3
+
+mcjac 0.01 1 – – 0.9 5 × 10 −3
+
+naive – – – – – 1 × 10 −2
+
+jac – – 0.01 – – 1 × 10 −3
+
+hes – – 0.01 1 – 5 × 10 −3
+
+[2] H. Kantz, T. Schreiber, Nonlinear time series analysis, Cambridge Uni-versity Press, 2003. [3] S. L. Brunton, J. L. Proctor, J. N. Kutz, Discovering governing equa-tions from data by sparse identification of nonlinear dynamical systems, Proceedings of the National Academy of Sciences 113 (2016) 3932–3937. [4] R. T. Chen, Y. Rubanova, J. Bettencourt, D. K. Duvenaud, Neural ordi-nary differential equations, Advances in Neural Information Processing Systems 31 (2018). [5] G. E. Karniadakis, I. G. Kevrekidis, L. Lu, P. Perdikaris, S. Wang, L. Yang, Physics-informed machine learning, Nature Reviews Physics 3 (2021) 422–440. [6] M. Raissi, P. Perdikaris, G. E. Karniadakis, Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations, Journal of Computational Physics 378 (2019) 686–707. 35 [7] P. R. Vlachas, W. Byeon, Z. Y. Wan, T. P. Sapsis, P. Koumoutsakos, Data-driven forecasting of high-dimensional chaotic systems with long short-term memory networks, Proceedings of the Royal Society A: Math-ematical, Physical and Engineering Sciences 474 (2018). [8] J. Park, N. Yang, N. Chandramoorthy, When are dynamical systems learned from time series data statistically accurate?, Advances in Neural Information Processing Systems 37 (2024) 43975–44008. [9] X. Tian, Jacobian-Enforced neural networks (JENN) for improved data assimilation consistency in dynamical models, arXiv preprint arXiv:2412.01013 (2024). [10] M. Mohammadian, K. Baker, F. Fioretto, Gradient-enhanced physics-informed neural networks for power systems operational support, Elec-tric Power Systems Research 223 (2023) 109551. [11] S. Zagoruyko, N. Komodakis, Paying more attention to attention: Im-proving the performance of convolutional neural networks via attention transfer, arXiv preprint arXiv:1612.03928 (2016). [12] S. Srinivas, F. Fleuret, Knowledge transfer with Jacobian matching, in: International Conference on Machine Learning, PMLR, 2018, pp. 4723–4731. [13] H. Van Nguyen, J.-U. Chen, T. Bui-Thanh, A model-constrained dis-continuous Galerkin network (DGNet) for compressible Euler equations with out-of-distribution generalization, Computer Methods in Applied Mechanics and Engineering 440 (2025) 117912. [14] H. V. Nguyen, T. Bui-Thanh, A model-constrained tangent slope learn-ing approach for dynamical systems, International Journal of Compu-tational Fluid Dynamics 36 (2022) 655–685. [15] E. N. Lorenz, Deterministic nonperiodic flow, Journal of Atmospheric Science 20 (1963) 130–141. [16] E. N. Lorenz, Predictability: A problem partly solved, in: Proc. Seminar on Predictability, volume 1, Reading, 1996, pp. 1–18. 36 [17] J.-P. Eckmann, D. Ruelle, Ergodic theory of chaos and strange attrac-tors, Reviews of Modern Physics 57 (1985) 617. [18] L. Rüschendorf, The Wasserstein distance and approximation theorems, Probability Theory and Related Fields 70 (1985) 117–129. [19] C. Villani, et al., Optimal transport: old and new, volume 338, Springer, 2009. [20] M. Carlu, F. Ginelli, V. Lucarini, A. Politi, Lyapunov analysis of mul-tiscale dynamics: the slow bundle of the two-scale Lorenz 96 model, Nonlinear Processes in Geophysics 26 (2019) 73–89. [21] J. C. Sprott, Chaos and time-series analysis, Oxford University Press, 2003. [22] G. Benettin, L. Galgani, A. Giorgilli, J.-M. Strelcyn, Lyapunov char-acteristic exponents for smooth dynamical systems and for Hamiltonian systems; a method for computing all of them. Part 1: Theory, Meccanica 15 (1980) 9–20. [23] C. Rackauckas, Y. Ma, J. Martensen, C. Warner, K. Zubov, R. Supekar, D. Skinner, A. Ramadhan, A. Edelman, Universal differential equations for scientific machine learning, arXiv preprint arXiv:2001.04385 (2020). [24] C. Tsitouras, Runge–Kutta pairs of order 5 (4) satisfying only the first column simplifying assumption, Computers & Mathematics with Appli-cations 62 (2011) 770–775. 37
