@@ -1,0 +1,909 @@
+Title: Unified Geometry-Guided ML-FTLE for Tracking Transient Chaos from Scalar Time Series
+
+URL Source: https://arxiv.org/pdf/2606.07385v1
+
+Published Time: Mon, 08 Jun 2026 01:02:56 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Unified Geometry-Guided ML-FTLE for Tracking Transient Chaos from Scalar Time Series 
+
+S. V. Manivelan, 1 Andrei Velichko, 2 and I. Manimehan 1
+
+> 1) Department of Physics, M. R. Government Arts College (Affiliated to Bharathidasan University, Tiruchirappalli), Mannargudi, 614 001, Tamilnadu, India.
+> 2) Institute of Physics and Technology, Petrozavodsk State University, Petrozavodsk, 185910, Russia.
+> (*Corresponding Author: velichkogf@gmail.com) (Dated: 8 June 2026)
+
+Detecting transient chaos from scalar observations without governing equations represents a fundamental challenge in nonlinear dynamics. We propose a geometry-guided machine learning framework that unifies predictive trajectory divergence with macroscopic attractor morphology to track abrupt regime shifts. The methodology extracts a local instability scale via out-of-sample k-nearest neighbor forecast errors to establish the ML-FTLE estimator, subsequently mapping this temporal divergence onto a structural closeness matrix derived from a minimal dictionary of Poincaré occupancy grids. By employing partial least squares regression, we extract a latent geometric component calibrated di-rectly to the empirical finite-time Lyapunov spectrum, yielding the Poincaré-based geometric-guided FTLE. Validation against analytical QR-FTLE baselines confirms that fusing topological state spaces with predictive divergence system-atically improves continuous transition tracking. The Structural Similarity Index optimally resolves gradual damping, while Hausdorff Distance exhibits extreme resilience during abrupt phase-space collapses. Furthermore, macroscopic spatial discretization acts as a robust topological regularizer against additive Gaussian noise, preserving deterministic signatures even at moderate signal thresholds. This equation-free framework provides a highly accurate, noise-resilient diagnostic for monitoring structural transitions in complex non-stationary systems. 
+
+Complex systems in nature, from shifting climate pat-terns to fluctuating financial markets, often undergo sud-den regime shifts in behavior. A central challenge lies in detecting these transitions from empirical observations when only a single scalar measurement is accessible and the governing equations remain unknown. In this work, we demonstrate that transient chaos can be tracked from a single scalar signal by unifying two coordinated repre-sentations. The first leverages predictive divergence quan-tified by forecast error growth. The second utilizes attrac-tor geometry captured by the deformation of delay coor-dinate occupancy maps. Fusing these perspectives pro-duces an interpretable and robust Lyapunov scale indica-tor. The predictive machine learning estimator supplies the localized instability scale, while basis attractor geom-etry identifies the precise structural reorganization driv-ing the regime collapse. Furthermore, rigorous validation against additive noise demonstrates that this macroscopic geometric representation preserves deterministic signa-tures and maintains high diagnostic accuracy even under substantial observational noise.  
+
+> I. INTRODUCTION
+
+Quantifying instability from observational data is a central task in nonlinear dynamics, as many real systems exhibit tran-sient chaotic regimes prior to settling into asymptotic periodic, quiescent, or fixed-point behaviour 1. In experimental and field applications, the governing equations of a system are often un-available, and the only accessible data may be a single univari-ate time series. Under these constraints, finite-time Lyapunov exponents (FTLEs) serve as highly effective diagnostic quan-tities. Unlike global asymptotic Lyapunov exponents, FTLEs quantify the localized exponential stretching or contraction of trajectories over a finite observation window, providing a rigorous mathematical framework for tracking predictability loss, transient instability, and abrupt regime changes 2,3 .When the governing equations of dynamical systems and their Jacobian are known, Lyapunov exponents and FTLEs can be computed from the tangent dynamics using standard orthonormalization procedures 4. However, this procedure be-comes significantly more challenging in observational set-tings, where neither the full state vector nor the flow map is directly accessible. To address this, the approach relies on reconstructing a topologically equivalent phase space from a single scalar observable using delay coordinate embedding, grounded in Takens’ theorem 5 and standard techniques in nonlinear time series analysis 6. Building upon this founda-tion, empirical algorithms estimate the maximal Lyapunov exponent by evaluating the local divergence of adjacent state vectors within the reconstructed phase space. The methodolo-gies introduced by Wolf et al. 7, Rosenstein et al. 8, and Kantz 9
+
+remain the standard references for this class of approaches. While these classical estimators are foundational, their for-mulation is optimized for stationary or ergodic conditions and does not naturally yield a time resolved, window-by-window instability trajectory. Transient chaos presents a distinctly dif-ferent challenge as the objective is not merely to determine whether the system is chaotic on average but to continuously track the temporal evolution of local instability and how the underlying attractor reorganizes during the transition. Fur-thermore, finite data length, measurement noise 10 , imperfect embedding 6, and heterogeneous sampling density can all limit the reliability of Lyapunov estimates from scalar data, as em-
+
+> arXiv:2606.07385v1 [nlin.CD] 5 Jun 2026
+
+2phasized in earlier work on the fundamental and practical lim-its of time series based exponent estimation 11 . Thus, a useful detector of transient chaos should combine a quantitative in-stability metric with an interpretable mapping of the topolog-ical deformations within phase space. Recent machine learning approaches provide a route to data-driven stability analysis, including reservoir comput-ing 12 , neural predictors 13,14 , and deep learning models 15 have been used to reproduce chaotic attractors, derive Lyapunov spectra, and approximate stability metrics directly from ob-served time series. Nevertheless, a purely predictive Lya-punov proxy does not fully solve the transient regime prob-lem. Forecast error growth provides a useful numerical insta-bility scale, but during an abrupt attractor collapse, it may ex-hibit temporal lag and fails to explain which geometric change caused the loss of chaotic behavior. To obtain this missing structural information, a natural ap-proach is to analyze the geometry of the reconstructed tra-jectory. Recurrence plots 16 and their quantification statis-tics 17 provide a well-established toolkit for this purpose, link-ing topological features of the delay space representation 18 to regime type, parameter drift 19 , stationarity loss 20 , and abrupt transitions. These results support a key premise that delay space geometry is not merely a visualization layer but a di-rect physical representation of dynamical structure. However, existing geometry-based diagnostics quantify either pairwise recurrences within a single window or statistics derived from individual reconstructed sets and they do not naturally yield a compact, time-resolved coordinate system that maps each window relative to a basis of representative attractor geome-tries 21,22 . This gap motivates the base attractor representa-tion introduced here. Rather than comparing only neighbor-ing windows, we construct a closeness matrix whose rows are time windows and whose columns are similarity scores to a small set of representative geometric regimes, turning evolv-ing attractor morphology into a multivariate trajectory. Cru-cially, while highly sensitive to structural loss, geometric rep-resentations in isolation do not provide a calibrated Lyapunov scale quantity. We therefore propose a geometry-guided ML-FTLE frame-work that fuses these two coordinated representations, namely predictive divergence and attractor geometry. The first com-ponent estimates a local Lyapunov scale signal, denoted ˆλML ,from the slope of the log-transformed geometric mean abso-lute error (GMAE) of out-of-sample k-nearest neighbor fore-casts across sliding windows. This explicitly extends the forecast divergence principle of Velichko et al. 23 , establish-ing forecast error growth as a robust proxy for trajectory di-vergence in one-dimensional chaotic time series to a finite-time, window-resolved setting. The second component con-verts each window into a Poincaré like occupancy grid and compares it to a compact set of basis attractors, forming a low-dimensional geometric coordinate system for the evolv-ing regime. To map this structural representation onto a quantitative in-stability scale, Partial Least Squares Regression (PLSR) 24 is used as a supervised latent variable bridge 25 , extracting the single latent geometric component that maximally co-varies with ˆλML . Rather than treating forecast divergence and at-tractor morphology as separate detectors, we demonstrate that they encode complementary aspects of the same transition. ML-FTLE supplies the quantitative instability scale, basis at-tractor geometry identifies the structural phase space reorgani-zation responsible for regime collapse, and their PLSR fusion yields an interpretable, noise-resilient Lyapunov scale indica-tor from a single scalar observable.  
+
+> II. METHODOLOGY
+
+A finite-time Lyapunov exponent (FTLEs) quantifies the average rate of exponential stretching or contraction of a tra-jectory over a finite-time interval. For a k-dimensional dynam-ical system, let Φ(t j+1,t j) represent the tangent evolution over one sampling interval ∆t. In the QR/Benettin analytical base-line calculation, the m-th orthonormal tangent direction ˆ e(m)
+
+> j
+
+is advanced by the tangent dynamics and then re-normalized. The stretching factor is defined as r(m) 
+
+> j
+
+= ∥Φ(t j+1,t j) ˆe(m) 
+
+> j
+
+∥2,
+
+where m = 1, 2, . . . , k. The corresponding finite-time Lya-punov exponent n steps starting at t0 is ˆλ (m) 
+
+> QR
+
+(t0, n) = 1
+
+n∆t
+
+> n−1
+
+# ∑
+
+> j=0
+
+ln r(m) 
+
+> j
+
+. (1) This normalization by the physical integration time n∆t is im-portant when the sampling interval is not unity. Computing Eq. (1) requires explicit access to the system equations and their tangent dynamics, which is unavailable for experimental or field acquired scalar time series. The formulation intro-duced below circumvents this requirement entirely.  
+
+> A. KNN Forecast Divergence via GMAE (ML-FTLE)
+
+We introduce the ML-FTLE framework as a data-driven and model-free method to estimate the local finite-time Lya-punov exponent directly from a univariate time series. This framework quantifies local chaotic divergence by tracking the temporal growth rate of out-of-sample forecast errors via a machine learning (ML) algorithm based on k-nearest-neighbor ( k-NN) regression. The ML-FTLE block serves as a finite-time, window resolved extension of the machine learn-ing largest Lyapunov exponent estimator, wherein forecast er-ror growth quantified via the geometric mean absolute error (GMAE) acts as a direct proxy for trajectory divergence in chaotic time series. Given a univariate time series {xi}Ni=1 sampled at interval 
+
+∆t, each analysis window is first standardized. This pre-scaling ensures that all subsequent calculations are dimen-sionless and invariant to local amplitude drift. We utilize a ro-bust, median-based scaling ˜ xi = ( xi − ˆμ1/2)/ ˆσrob , where ˆ μ1/2
+
+represents the sample median. To ensure numerical stability, the scale factor ˆσrob adopts a two-stage rule. It equals the interquartile range ( Q0.75 − Q0.25 ) if this value meets or ex-ceeds the precision threshold ε = 10 −12 . Conversely, if the interquartile range collapses below this threshold, the scale 3factor falls back to sx + ε, where sx is the sample standard deviation and Qp denotes the p-th empirical quantile. The in-terquartile range (IQR) serves as the primary scale estimator due to its robustness against extrema. The standard deviation acts as a fallback only when the temporal window is so nearly constant that the IQR collapses below the numerical floor ε.In both cases, this floor prevents division by zero without bi-asing the scaled values. For a prediction horizon h ∈ [1, H],each sample within the scaled window is first embedded into an m-dimensional delay-coordinate vector using embedding dimension m and lag τ:
+
+zi =   ˜xi, ˜xi+τ , . . . , ˜xi+( m−1)τ
+
+ ∈ Rm,
+
+yielding Nvecs = W − (m − 1)τ − h input target pairs 
+
+zi 7 −→ yi,h = ˜xi+( m−1)τ+h, i = 1, . . . , Nvecs .
+
+By utilizing this delay-coordinate formulation, the algo-rithm establishes a localized, short-history temporal context for the forecast. Consequently, the k-NN neighbor searches are evaluated across multidimensional historical windows that capture the underlying dynamical flow, rather than re-lying strictly on isolated, instantaneous scalar observations. For each horizon, the estimator thereby learns a local map, 
+
+zi 7 → ˜xi+( m−1)τ+h and measures how the resulting forecast error grows with h. To prevent look-ahead leakage, a chrono-logical train-test split is applied, preserving the first (1 − rtest )
+
+fraction of pairs for training and the remainder for evalua-tion. Future values are predicted using an inverse-distance weighted k-NN regressor ˆyh(z) = 
+
+# ∑
+
+> j∈Nk(z)
+
+w j y j,h
+
+# ∑
+
+> j∈Nk(z)
+
+w j
+
+where Nk(z) denotes the local k-point neighborhood of the reference state z within the reconstructed phase space Rm. The weight w j = ( ∥z − z j∥ + ε)−1 scales inversely with the Eu-clidean separation to prioritize structurally proximate states, with ε = 10 −12 acting as a regularizer to preclude numerical singularities in the limit of exact spatial recurrence. In a chaotic regime, microscopic perturbations in the recon-structed state map to exponentially diverging trajectories. To retain the full dynamical spectrum of this separation, the max-imal forecast errors remain strictly untruncated. Rather, the out-of-sample absolute errors are aggregated using the Geo-metric Mean Absolute Error (GMAE): GMAE (h) = exp 
+
+ 1
+
+ntest ∑ 
+
+> i∈I(h)
+> test
+
+ln max  |yi,h − ˆyh(zi)|, ε
+
+where I (h) 
+
+> test
+
+is the test index set for horizon h.This metric mathematically parallels the temporal aver-aging formalism of classical Lyapunov analysis by Eq. (1), wherein exponential phase space separation is quantified via mean logarithmic growth. For locally hyperbolic dynam-ics, the empirical trajectory divergence undergoes exponential over finite prediction horizons, GMAE (h) ≈ A e ˆλML h ∆t . The corresponding logarithmic projection yields a linear temporal scaling relation: ln [GMAE (h)] ≈ ˆλML (h∆t) + ln A.
+
+The estimated Lyapunov scale coefficient ( ˆλML ) is extracted as the ordinary least squares (OLS) slope of ln [GMAE (h)] 
+
+regressed on h∆t over the valid horizon set L , defined as the subset of horizons h ∈ { 1, . . . , H} for which GMAE (h) ∈
+
+(0, ∞), thereby selectively retaining only those prediction horizons exhibiting finite, positive divergence (i.e., where the out-of-sample error strictly surpasses the numerical precision floor ε). If |L | < 3, the window is flagged as degenerate, the estimator returns ˆλML = 0 rather than propagating a numeri-cally unreliable slope. For all non-degenerate windows, the Lyapunov proxy is computed as ˆλML =
+
+# ∑
+
+> h∈L
+
+ h∆t − h∆t  ln [GMAE (h)] − ln [GMAE (h)] 
+
+# ∑
+
+> h∈L
+
+ h∆t − h∆t2 ,
+
+(2) where h∆t and ln [GMAE (h)] represent the arithmetic means over L , and the coefficient of determination ( R2) of this linear fit is retained as a dynamic reliability metric, assessing the robustness of the local exponential divergence approximation (see Fig. 1).  
+
+> B. Poincaré-based Geometric-Guided FTLE Estimator
+
+We propose a complementary class of FTLE proxies de-rived exclusively from the structural evolution of lagged Poincaré return maps, evaluated over sliding temporal win-dows of the scalar observable. This geometric framework operates across three distinct phases, namely geometric sec-tion construction, inter-window structural dissimilarity quan-tification, and a supervised topological projection calibrated directly against the predictive ˆλML reference by Eq. (2). For a temporal window of W samples centered at time tc,the lagged Poincaré return map is constructed from the phase-space coordinates (xi, xi+ℓ), where ℓ denotes the embedding lag. These coordinates are mapped onto a Boolean occu-pancy grid, G ∈ { 0, 1}B×B, by linearly partitioning the spatial extrema [vmin , vmax ] into B uniform bins, utilizing a clipping function to capture boundary intersections. This per-window normalization ensures that the reconstructed trajectory spans the entire B × B spatial domain independent of the ampli-tude, making inter-window structural comparisons invariant to amplitude drift. To mitigate discretization artifacts at low spatial resolutions, consecutive state vectors are interpolated via the Bresenham line algorithm 26 , yielding a topologically continuous binary representation. Finally, the empirical oc-cupancy distribution is formalized as the positive normalized histogram h = g/∥g∥1, where g = vec (G) + ε.To systematically track the structural deformation of the at-tractor over time, four complementary dissimilarity measures 4are evaluated between any arbitrary pair of temporal occu-pancy grids ( Gp, Gq), are defined as follows: 
+
+DJSD (p, q) =  12 DKL (hp∥mpq ) + 12 DKL (hq∥mpq )1/2 ,
+
+DSSIM (p, q) = 12 [1 − SSIM (Gp, Gq)] ,
+
+DHDF (p, q) = max {dH (Ap, Aq), dH (Aq, Ap)},
+
+DIOU (p, q) = 1 − |Ap ∩ Aq||Ap ∪ Aq| ,
+
+where hp and hq denote the normalized spatial probability distributions of the respective grids and mpq = 12 (hp + hq)
+
+is the pointwise mean probability distribution of the Jensen Shannon Divergence (JSD). Furthermore dH (Ap, Aq) = 
+
+max a∈Ap min b∈Aq ∥a − b∥2 defines the directed Hausdorff dis-tance (HDF) between occupied coordinate sets where Ap and 
+
+Aq represent the active cell index sets of Gp and Gq respec-tively. Lastly, SSIM and IOU designate the Structural Sim-ilarity Index and Intersection over Union 27 . Together, these metrics capture the distributional, structural, geometric, and overlap-based dimensions of phase-space deformation, which collectively serve as morphological indicators for shifts in the underlying Lyapunov spectrum. To mitigate the computational redundancy of evaluating the entire temporal sequence, we construct a compact basis of 
+
+Nrep characteristic structural anchors spanning the Nw tem-poral windows using a greedy max-min diversity algorithm. Initialized at the median geometric state of the trajectory, the algorithm iteratively extracts each new representative r∗ by maximizing its minimum dissimilarity to the existing basis set 
+
+S :
+
+r∗ = arg max  
+
+> i/∈S
+
+min  
+
+> s∈S
+
+D(m)(i, s),
+
+this selection is subject to a minimum temporal separation constraint of |i − s| ≥ ⌈ Nw δmin ⌉ for all s ∈ S . For each met-ric m, the normalized structural proximity between a temporal window i and a basis state r ∈ S is defined as 
+
+D(m) 
+
+> max
+
+= max 
+
+> 1≤p<q≤Nw
+
+D(m)(p, q),
+
+c(m) 
+
+> i,r
+
+= max 0, 1 − D(m)(i, r)
+
+D(m) 
+
+> max
+
++ ε
+
+!
+
+. (3) This formulation projects the empirical dissimilarity to a [0, 1]
+
+interval relative to the maximum geometric separation for the respective metric. The evolving system state is thus embed-ded within a closeness matrix C(m) ∈ RNw×Nrep , mapping each temporal window onto the Nrep basis attractor. The columns of 
+
+C(m) are non-orthogonal, as distinct basis states may exhibit structurally collinear responses to the same geometric defor-mation of the reconstructed attractor. To map this topological representation, we utilize a one-component PLSR model to extract a supervised latent component from C(m) that maxi-mally covaries with the ML-FTLE ( ˆλML ) sequence, yielding a robust geometry to instability calibration while bypassing the ill-conditioned direct regression on structurally redundant predictors 24,28 .In this framework, X ∈ RNw×Nrep represent the standard-ized closeness matrix aligned in time and y ∈ RNw as the mean-centered ML-FTLE sequence. A one-component PLSR model isolates the optimal projection weight vector 
+
+w = X⊤y/∥X⊤y∥2. The sequence is projected onto this vec-tor to extract the latent geometric component t = Xw , which is calibrated back to the Lyapunov scale via the ordinary least squares regression coefficient q = ( t⊤y)/(t⊤t), yielding the geometric-guided FTLE proxy ˆλgeo = tq. While the equation-free ML-FTLE acts as the calibration target for PLSR, the analytical QR-FTLE ( λQR ) reference by Eq. (1) is reserved strictly for independent out-of-sample validation within the synthetic benchmarks. 
+
+Algorithm 1 ML-FTLE & Poincaré-based geometric-guided FTLE 
+
+Phase 1: ML-FTLE Estimation  
+
+> 1:
+
+for each temporal window w ⊂ { xi} with center tc do  
+
+> 2:
+
+˜w ← ROBUST SCALE (w) 
+
+> 3:
+
+Compute GMAE (h) via out-of-sample k-NN for h ∈
+
+[1, Hmax ] 
+
+> 4:
+
+L ← { h | GMAE (h) > 0} 
+
+> 5:
+
+ˆλc ← OLS slope of ln [GMAE (h)] vs (h∆t) ∀h ∈ L 
+
+> 6:
+
+Append tc → TML , ˆλc → ˆλML (refer Eq. (2))  
+
+> 7:
+
+end for Phase 2: Geometric Extraction & Basis Selection  
+
+> 8:
+
+for each temporal window w ⊂ { xi} with center tc do  
+
+> 9:
+
+Gw, hw ← POINCARÉ GRID (w, lag = ℓ, bins = B) 
+
+> 10:
+
+Append Gw → G 
+
+> 11:
+
+end for  
+
+> 12:
+
+Initialize the representative set S ← {⌊| G |/2⌋}  
+
+> 13:
+
+while |S | < Nrep do  
+
+> 14:
+
+r∗ ← arg max i /∈S min s∈S D(m)(i, s)
+
+subject to |i − s| ≥ ⌈ Nw δmin ⌉ ∀s ∈ S 
+
+> 15:
+
+S ← S ∪ { r∗} 
+
+> 16:
+
+end while  
+
+> 17:
+
+D(m) 
+
+> max
+
+← max p<q D(m)(p, q) 
+
+> 18:
+
+for each window i ∈ [1, Nw] and representative r ∈ S do  
+
+> 19:
+
+c(m) 
+
+> i,r
+
+← max 
+
+
+
+0, 1 − D(m)(i,r)
+
+> D(m)
+> max +ε
+
+
+
+(refer Eq. (3))  
+
+> 20:
+
+end for Phase 3: Geometry-Guided Projection (PLSR)  
+
+> 21:
+
+C(m) 
+
+> ∥
+
+← INTERPOLATE (C(m), onto TML ) 
+
+> 22:
+
+X ← STANDARDIZE (C(m) 
+
+> ∥
+
+) 
+
+> 23:
+
+y ← MEAN CENTER ( ˆλML ) 
+
+> 24:
+
+w ← X⊤y 
+
+> ∥X⊤y∥2
+> 25:
+
+t ← Xw ▷ Extract latent geometric component  
+
+> 26:
+
+q ← t⊤yt⊤t ▷ Compute OLS  
+
+> 27:
+
+ˆλgeo ← tq ▷ Compute geometric-guided FTLE  
+
+> 28:
+
+return ˆλML , t, ˆλgeo 50.5 
+
+> 0.0
+> 0.5
+> Amplitude
+
+(a) Win 1 Win 2 Win 3 
+
+> 1.4
+> 1.2
+> 1.0
+> 0.8
+> 0.6
+> 0.4
+> 0.2
+> log GMAE
+
+(b)           
+
+> Window 1
+> log GMAE
+> ML = + 0.023
+> Horizon ( h)
+> Window 2
+> log GMAE
+> ML = + 0.023
+> Window 3
+> log GMAE
+> ML =0.002
+> 01000 2000 3000 4000 5000 6000
+
+Time 
+
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> R2
+
+(c) Rolling mean R2 = 0.7 R2 = 0.4)       
+
+> 01000 2000 3000 4000 5000 6000
+
+Time 
+
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> ML  QR
+
+(d) 
+
+FIG. 1. Mechanics of the ML-FTLE estimator. (a) The scalar observable with three representative sliding windows highlighted. (b) The log-transformed geometric mean absolute error versus prediction horizon for the corresponding windows. Windows 1 and 2, which reside in the chaotic regime, exhibit robust linear growth indicative of exponential divergence, while Window 3, located in the stable regime, lacks deterministic growth. (c) Temporal evolution of the linear fit R2 confirming that the exponential divergence model is highly valid ( R2 > 0.7) strictly during the chaotic transient. (d) A temporal comparison of the data-driven ML-FTLE ( ˆλML ) indicated by the red line and the analytical ground truth QR-FTLE ( λQR ) baseline represented by the blue line. This demonstrates the ability of the proxy to accurately capture the macroscopic regime shift entirely from scalar data. 
+
+C. Data Generation and System Dynamics 
+
+To rigorously evaluate the performance of the proposed es-timators, we generated synthetic time-series datasets ( Dk) and their corresponding analytical ground-truth FTLE ( λQR ) us-ing a nonlinear memcapacitive oscillator 29 . This system was explicitly selected for its complex dynamical repertoire, en-abling the precise isolation of severe geometric phase space transitions. To comprehensively test the algorithms, three dis-tinct transient chaos scenarios were simulated to capture vary-ing rates of structural decay, such as a gradual damping from chaos to a fixed point ( D1), an abrupt chaotic collapse to a fixed point ( D2), and a transition from chaos to a periodic state ( D3). Because these transient phenomena feature vary-ing rates of structural decay, making them an ideal bench-mark system to validate how accurately the ML-FTLE and Geometry-guided FTLE frameworks map macroscopic geo-metric collapses onto the Lyapunov scale. 
+
+III. RESULTS A. Evaluation of the Predictive ML-FTLE Framework 
+
+To systematically validate the efficacy of the proposed model-free algorithm, the ML-FTLE ( ˆλML ) was evaluated against the exact analytical QR-FTLE ( λQR ) ground truth across a highly non-stationary dynamical transition. The se-lected synthetic dataset ( D1) exhibits a prolonged regime of transient chaos that gradually damps into a stable steady state, presenting a rigorous test of the estimator’s capacity to track geometric phase-space collapses strictly from a scalar observ-able. The macroscopic dynamics and the internal mechanics of the ML-FTLE estimator are detailed in Fig. 1, where Fig. 1(a) illustrates the raw scalar time series. To evaluate local di-vergence characteristics, out-of-sample forecast errors were computed across sliding temporal windows. As predicted by the theoretical framework and demonstrated in Fig. 1(b), the logarithmic Geometric Mean Absolute Error (log-GMAE) ex-hibits strict linear growth against the prediction horizon during the chaotic regime (Windows 1 and 2). This linear expansion confirms the presence of deterministic exponential trajectory divergence, thereby validating the local hyperbolic assump-tion. Conversely, within the stable regime (Window 3), trajec-tory separation ceases, and the out-of-sample forecast errors become dominated by stochastic noise rather than determin-istic stretching, driving a complete breakdown of the linear growth model. The statistical robustness of this exponential divergence model is tracked continuously in Fig. 1(c) via the coefficient of determination ( R2) of the ordinary least squares fit. During the transient chaotic phase, the R2 values remain consistently high ( R2 > 0.75), statistically validating the local Lyapunov proxy extraction. At the precise moment the strange attractor collapses, the R2 metric abruptly drops to near zero, confirm-ing that the algorithm inherently registers the transition to a non-chaotic state. Finally, Fig. 1(d) provides a direct temporal comparison between the purely data-driven ML-FTLE ( ˆλML )62      
+
+> 1
+> 0
+> 1
+> 2
+> Amplitude ( x) (a)
+> 01000 2000 3000 4000 5000 6000
+> Time
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> ML-FTLE (  ML ) (b)
+
+FIG. 2. (a) The scalar observable undergoing an abrupt topological collapse from transient chaos into a stationary state near t ≈ 3800. 
+
+(b) Temporal evolution of the predictive ML-FTLE ˆλML . The esti-mator distinguishes the macroscopic regime shift directly from the scalar data, maintaining a positive Lyapunov exponent during the chaotic transient before dropping sharply as the system stabilizes. 
+
+represented by the red line and the equation-driven analytical reference ( λQR ) indicated by the blue line. Despite operating entirely on the scalar observable with-out prior knowledge of the governing differential equations, the ML-FTLE ( ˆλML ) successfully captures the macroscopic regime shift, it maintains a strictly positive divergence rate throughout the chaotic transient and accurately mirrors the an-alytical reference’s convergence to a non-positive value as the system settles into a steady state. This strong alignment be-tween ˆλML and λQR provides robust empirical validation that GMAE-based forecast divergence slope estimation provides a reliable, equation-free surrogate for the maximum finite-time Lyapunov exponent. To further demonstrate the generalizability of the ML-FTLE ( ˆλML ) estimator across distinct classes of dynamical regime shifts, the algorithm (1) was evaluated on datasets 
+
+D2 and D3. Figure 2 details an abrupt dynamical collapse in D2, a class of sudden topological transitions that typically degrade the tracking accuracy of standard windowed, data-driven predictive algorithms due to inherent temporal lags. Figure 2(a) illustrates the signal (scalar observable) variance suddenly collapsing at t ≈ 3800, signifying the destruction of the chaotic attractor. Despite this abrupt discontinuity, the ˆλML depicted in Fig. 2(b) tracks the structural regime transi-tion with high precision. The estimated instability scale drops sharply, crossing the predefined critical threshold ( λthresh =
+
+0.005) into the stable regime in direct correspondence with the sudden collapse of the chaotic attractor. Figure 3 illustrates the estimator’s performance on dataset 
+
+D3. The raw scalar observable displayed in Fig. 3(a) tran-sitions from transient chaos into a stable high-frequency peri-odic state near t ≈ 4700. As shown in Fig. 3(b), the ML-FTLE (ˆλML ) reliably identifies the chaotic regime by maintaining a strongly positive divergence rate. Upon the macroscopic regime shift, the proxy exhibits a sharp decline, crossing the stability threshold. This confirms the estimator’s capacity to accurately classify the system’s convergence into a non-1        
+
+> 0
+> 1
+> Amplitude ( x) (a)
+> 01000 2000 3000 4000 5000 6000 7000 8000
+> Time
+> 0.00
+> 0.01
+> 0.02
+> ML-FTLE (  ML ) (b)
+
+FIG. 3. (a) The scalar observable transitioning from transient chaotic oscillations into an asymptotic periodic regime. (b) Temporal evolu-tion of the predictive ML-FTLE proxy ˆλML derived directly from the scalar data. The estimator accurately isolates the macroscopic tran-sition, dropping sharply to cross the stability threshold as the chaotic attractor dissipates into the periodic orbit. 
+
+chaotic periodic orbit, where the slight temporal lag is a stan-dard predictable consequence of the sliding window forecast construction, which is rectified upon integrating the model into the Geometry-guided FTLE framework (Sec. III B). Col-lectively, the results from D1, D2, and D3 confirm that the entirely data-driven ML-FTLE framework can reliably map complex, highly non-stationary scalar transitions to the quan-titative Lyapunov scale. It successfully distinguishes transient chaos from both stable equilibria and periodic orbits, func-tioning entirely without prior knowledge of the governing dif-ferential equations. 
+
+B. Performance of the Geometric-Guided FTLE Estimator 
+
+To illustrate the internal mechanics and efficacy of the geometric-guided FTLE framework, we apply the complete analytical pipeline to a non-stationary trajectory exhibiting a distinct dynamical transition. Detailed in Fig. 4, the results utilizing the Structural Similarity Index (SSIM) as the gov-erning topological metric demonstrate how macroscopic ge-ometric shifts are automatically extracted and translated into a continuous Lyapunov proxy. For this specific dataset ( D1), the raw scalar observable was shown in Fig. 4(a), undergoes a clear macroscopic topological transition near the sample index 1800, shifting from a chaotic oscillatory state into a damped steady state regime. Rather than relying on localized nearest-neighbor tracking, the framework captures this exact dynam-ical collapse purely through spatial morphology. Subject to a minimum temporal separation constraint ( δmin ), the greedy max-min selection algorithm populates the basis set S by extracting Nrep = 6 maximally dissimilar representative win-dows (highlighted by colored vertical bands), where Nrep acts as a user-defined hyperparameter. Figure 4(b) illustrates the underlying 2D Poincaré occu-pancy grids corresponding to these temporal reference states, the maximally dissimilar windows naturally partition the tra-7jectory into its two fundamental dynamical regimes. Repre-sentatives S1 and S2 originate from the chaotic transient and exhibit broadly distributed, complex phase-space topologies. Conversely, Representatives S3 to S6 are sampled from the asymptotically stable regime, which is characterized by mini-mal, highly localized structures indicative of non-chaotic dy-namics. This intuitive alignment emerges organically from applying the geometric dissimilarity criterion to a trajectory governed by a single regime shift, rather than being explicitly prescribed by the algorithm. Figure 4(c) tracks the continuous temporal evolution of the normalized geometric closeness scores ci,r by Eq. (3) relative to each of the six basis attractors, which collectively span the similarity matrix C. The structural transition is clearly delin-eated by these evolving trajectories, proximity to S1 charac-terizes the chaotic phase, whereas S2 acts as a transient struc-tural bridge precisely at the critical transition point. Immedi-ately following the topological collapse, proximity to the lo-calized morphologies ( S3 to S6) sharply increases and main-tains prevalence throughout the stable regime. By applying Partial Least Squares Regression, this high-dimensional, purely geometric evolution is projected onto a single latent component calibrated directly to the reference Lyapunov scale ˆλML . The temporal evolution of this latent variable is depicted in Fig. 5(a). The resulting Geometry-guided FTLE ( ˆλ (SSIM ) 
+
+> geo
+
+) indicated by the green line in Fig. 5(b) smoothly tracks the onset of the dynamical transition and accurately converges during the stable regime. Crucially, it closely mirrors the analytical QR-FTLE ( ˆλQR ) shown as the blue line, achieving a strong Spearman rank correlation of ρ = 0.94. This represents a marked improvement over the predictive ML-FTLE ( ˆλML ) represented by the red line, which yields ρ = 0.81 (as further detailed in Sec. III C). This confirms that low resolution binary occupancy grids retain sufficient deterministic structure to track the FTLEs instan-taneously, thereby resolving the temporal detection lag ob-served in the ML-FTLE model. 
+
+C. Quantitative Performance 
+
+To rigorously evaluate the fidelity of each method, we uti-lize the comparative analysis of the two most diagnostically informative metrics, namely the Spearman rank correlation coefficient ( ρ) and Matthews Correlation Coefficient (MCC). The Spearman ρ quantifies the monotonic agreement between each method and the QR-FTLE ( ˆλQR ) ground truth across the full dynamic range, while the MCC provides a balanced classification score for the binary chaotic/non-chaotic regime distinction, accounting for class imbalance in the threshold-crossing labels. Both metrics are bounded in [−1, 1], with unity indicating perfect correspondence and zero indicating chance-level agreement. Figures 6 and 7 present per-dataset bar charts evaluating two distinct method families namely the predictive ML-FTLE ( ˆλML ) and the calibrated Geometry-guided FTLE ( ˆλ (m) 
+
+> geo
+
+) across four dissimilarity metrics, m ∈{JSD , SSIM , HDF , IOU }. All estimators are evaluated di-0.5                
+
+> 0.0
+> 0.5
+> Amplitude  x(t) (a)
+> x(t + ) s1s2
+> x(t)
+> s3s4s5(b)
+> s6
+> 01000 2000 3000 4000 5000 6000
+> Index
+> 0.0
+> 0.5
+> 1.0
+> ci, r
+> (c)
+> ci, 1 ci, 2 ci, 3 ci, 4 ci, 5 ci, 6
+
+FIG. 4. Visualization of the geometry guided ML-FTLE decomposi-tion process. (a) The raw scalar observable plotted in blue. Colored vertical bands indicate the temporal representatives ( S ) extracted by the selection algorithm. (b) The 2D Poincaré occupancy grids map-ping ( x(t) - x(t + τ)) corresponding to the selected temporal anchors. These binary grids constitute the structural basis set S capturing the macroscopic attractor geometry. (c) The continuous temporal evo-lution of the normalized closeness scores ci,r relative to each basis attractor computed utilizing the SSIM measure. 1
+
+> 0
+> 1
+> Latent Variable
+
+(a)        
+
+> 01000 2000 3000 4000 5000 6000
+> Time
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+
+(b) 
+
+> ML
+> QR
+> (SSIM) geo
+
+FIG. 5. Evaluation of the SSIM derived Geometry-guided FTLE estimator. (a) The latent variable isolates the structural transition from a chaotic regime shaded in grey to a stable state shaded in green. Dashed lines mark the temporal reference states S . (b) The Geometry-guided FTLE ˆλ (SSIM ) 
+
+> geo
+
+indicated by the green line over-comes the temporal lag of the predictive ML-FTLE ˆλML shown in red. Validated against the analytical QR-FTLE ( λQR ) ground truth plotted in blue the geometric estimator precisely resolves the abrupt phase space collapse without delay. 
+
+rectly against the analytical λQR ground truth. To rigorously quantify the continuous temporal alignment between the data-driven proxies and the exact analytical refer-ence, the Spearman rank correlation is defined for each dataset 8ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo                
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Spearman  0.81
+> 0.91 0.94
+> 0.84
+> 0.94
+> 1
+> ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo
+> 0.68 0.68 0.73 0.71 0.72
+> 2
+> ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo
+> 0.69 0.71 0.73
+> 0.80
+> 0.72
+> 3
+
+FIG. 6. Spearman rank correlation ( ρ) evaluating continuous tracking of the analytical QR-FTLE ( λQR ) ground truth. The predictive ML-FTLE ( λML ) and four geometry-guided estimators ( ˆλ (m) 
+
+> geo
+
+), namely m ∈ { JSD , SSIM , HDF , IOU }. These ˆλ (m) 
+
+> geo
+
+consistently outperform the baseline during severe dynamical shifts. ˆλ (SSIM ) 
+
+> geo
+
+and ˆλ (IOU ) 
+
+> geo
+
+optimally resolves gradual damping in the dataset D1 and D2 while ˆλ (HDF )
+
+> geo
+
+demonstrating extreme resilience during abrupt topological transitions in dataset D3.
+
+Dk as: 
+
+ρ(m) 
+
+> k
+
+= 1 −
+
+6
+
+> n
+
+# ∑
+
+> t=1
+
+d2
+
+> t
+
+n (n2 − 1) , (4) where dt = rank (λQR (t)) − rank 
+
+ˆλ (m)(t)
+
+
+
+is the rank differ-ential at temporal window t, ˆλ (m) denotes the proxies for ˆλML 
+
+and ˆλgeo , and n represents the total number of samples in the aligned time series. It is fundamental to underscore that the topological Poincaré-based geometric-guided FTLE ˆλ (m) 
+
+> geo
+
+is calibrated strictly against the empirical ML-FTLE ( ˆλML ) dur-ing the PLSR training phase. The analytical QR-FTLE ( λQR )remains completely isolated from the fitting procedure and is utilized solely as an independent, out-of-sample ground truth for evaluating ρ(m) 
+
+> k
+
+. While Eq. (4) presents the conventional formulation for notational simplicity, the computational im-plementation calculates the Pearson correlation of the rank transformed sequences to robustly account for tied ranks. The continuous tracking performance, quantified by the Spearman rank correlation ( ρ) depicted in Fig. 6, reveals the distinct advantage of the geometric projection (ˆλ (m) 
+
+> geo
+
+). The predictive ML-FTLE ( ˆλML ) struggles to smoothly track the monotonic evolution of the underlying Lyapunov spectrum, particularly during the drastic geometric shifts of D2 (ρ =
+
+0.68) and D3 (ρ = 0.69). By contrast, projecting the dynam-ics through the low-dimensional structural basis set system-atically improves temporal tracking. Crucially, the optimal dissimilarity metric depends strictly on the physical nature of the transient phase. For D1, which represents a gradual damp-ing transition, the geometry-guided SSIM ( ˆλ (SSIM ) 
+
+> geo
+
+) and IOU (ˆλ (IOU ) 
+
+> geo
+
+) emerge as the optimal proxies ( ρ = 0.94). These metrics are highly sensitive to smooth, continuous variations in spatial probability density as the attractor slowly contracts. In the case of an abrupt transition ( D2), ˆλ (SSIM ) 
+
+> geo
+
+maintains a slight analytical edge ( ρ = 0.73). However, during the se-vere topological transition of D3, from a chaotic into a peri-odic state, geometry-guided HDF ( ˆλ (HDF ) 
+
+> geo
+
+) proves to be the most robust method ( ρ = 0.80). Because ˆλ (HDF ) 
+
+> geo
+
+evaluates the maximum metric mismatch between bounded subsets, it is exceptionally responsive to the sudden dissipation of phase space regions, effectively neutralizing the temporal lag that typically undermines standard forecast error approaches. The MCC is computed as: MCC (m) 
+
+> k
+
+= T P · T N − FP · FN 
+
+p(T P + FP )( T P + FN )( T N + FP )( T N + FN ) ,
+
+(5) where k denotes the specific dataset and m denotes the spe-cific method, while the binary labels are assigned by the sta-bility threshold ( λthresh ), where a window is labeled chaotic if ˆλ (t) > λthresh and non-chaotic otherwise. Complementing the continuous tracking analysis, the bi-nary classification results are evaluated via the MCC (m) 
+
+> k
+
+by Eq. (5) are depicted in Fig. 7, demonstrate that all evalu-ated estimators are highly proficient at identifying the macro-scopic collapse of the chaotic attractor. Across all three transient datasets, every estimator achieves an MCC ≥ 0.91. In the gradual damping scenario ( D1), the predictive ML-FTLE baseline ( ˆλML ) establishes a marginal performance edge, with geometry-guided SSIM ( ˆλ (SSIM ) 
+
+> geo
+
+) serving as the most accurate topological counterpart (MCC (SSIM ) 
+
+> D1
+
+= 0.95). Crucially, during the abrupt chaotic transitions characterizing 
+
+D2 and D3, the predictive baseline and all four geometric-guided FTLE exhibit quantitative consensus, achieving iden-tical MCC scores of 0 .96 and 0 .91 respectively. Ultimately, these high scores confirm that both the temporal predic-tion and spatial morphological frameworks cross the stability threshold ( λthresh ) synchronously with the underlying dynam-ical transition. 9ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo                        
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> MCC
+> 0.96 0.93 0.95 0.94 0.91
+> 1
+> ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo
+> 0.96 0.96 0.96 0.96 0.96
+> 2
+> ML (JSD) geo (SSIM) geo (HDF) geo (IOU) geo
+> 0.91 0.91 0.91 0.91 0.91
+> 3
+> FIG. 7. The Matthews Correlation Coefficient (MCC) evaluating the binary classification of the chaotic to stable and periodic regime shift. All methods exhibit exceptional threshold crossing accuracy with MCC >0.90 demonstrating robust performance convergence during the abrupt dynamical transition.
+> D. Noise Robustness of FTLE Estimators
+
+To evaluate the estimators robustness against stochastic per-turbations, the synthetic observables D1, D2, and D3 were subjected to additive white Gaussian noise (AWGN). The noise variance was scaled to simulate varying degrees of experimental measurement uncertainty, spanning signal-to-noise ratios (SNRs) from the purely deterministic limit ( ∞
+
+dB) to a heavily stochastic regime (0 dB). To suppress finite-sample statistical fluctuations and isolate the structural re-sponse of the estimators, all fidelity metrics were ensemble-averaged over 30 independent noise realizations per SNR level. The continuous tracking accuracy quantified by the Spear-man rank correlation (ρ) exhibits a predictable dataset-dependent decay as stochastic entropy increases, reflecting the progressive degradation of local phase space predictabil-ity. As illustrated in Fig. 8 the tracking performance in the gradually damped system D1 degrades from ρ ≈ 0.813 at the deterministic limit to 0 .548 at 0 dB for the ML- FTLE ( ˆλML ). Notably the Geometry-guided FTLE ˆλ (SSIM ) 
+
+> geo
+
+maintains a su-perior correlation manifold of ρ ≈ 0.952 under low noise con-ditions, such as 60 dB before separating at lower signal-to-noise ratios. The abrupt topological collapse in the dataset 
+
+D2 proves structurally resilient, where the ML-FTLE decays from ρ = 0.624 to 0 .597 while the geometry-guided proxy ˆλ (IOU ) 
+
+> geo
+
+exhibits a high Spearman correlation of ρ = 0.740 and consistently outperforms the baseline across low to moderate signal-to-noise ratios such as 10 dB. In contrast, the dataset 
+
+D3 exhibits extreme sensitivity in the low SNR limit, where the ML-FTLE collapses from ρ = 0.699 to 0 .116 at 0 dB, indicating that severe noise completely suppresses the deter-ministic divergence signature associated with its transition to a periodic orbit. Meanwhile the Geometry-guided FTLE ˆλ (HDF )
+
+> geo
+
+preserves a highly robust tracking performance, shifting only from ρ = 0.801 to 0 .714 at 10 dB demonstrating significantly better consistency than the ML-FTLE baseline. The binary classification of the chaotic to periodic and sta-ble regime shift evaluated under this additive noise via the Matthews Correlation Coefficient (MCC) further delineates the structural breakdown illustrated in Fig. 9. In the ab-sence of additive noise, classification is exceptionally accurate across all dynamical scenarios, yielding MCC values of 0.968 for dataset D1, 1.000 for dataset D2, and 0.906 for dataset 
+
+D3. The predictive ˆλML is strongly supported by the four geometric-guided estimators, which demonstrate highly ro-bust threshold crossing accuracy. Specifically, the ( ˆλ (SSIM ) 
+
+> geo
+
+)and ( ˆλ (IOU ) 
+
+> geo
+
+) geometric proxies perform exceptionally well, maintaining nearly identical classification performance to the baseline in the dataset D1 and D3 down to moderate noise lev-els of 20 dB where scores remain at or above 0.813 across all datasets. In dataset D2, while the predictive estimator main-tains a higher absolute score, the geometric proxies exhibit a highly resilient and stable classification plateau across the in-termediate noise spectrum. However, as stochastic perturba-tions intensify beyond this critical threshold, the macroscopic boundaries of the chaotic attractor become increasingly indis-tinguishable. At 5 dB, the MCC drops precipitously across all evaluated methods down to 0.318 for dataset D1, 0.517 for dataset D2, and 0.049 for D3, ultimately collapsing strictly to 0.00 at 0 dB. This visualizes a critical deduction, while macroscopic spa-tial discretization acts as an effective topological regularizer that preserves deterministic signatures under moderate cor-ruption, extreme stochastic variance eventually completely obscures the underlying chaotic invariant measure, while di-rect k-NN forecasting relies on microscopic scalar neighbor-hood queries, which are rapidly dispersed by stochastic dif-fusion. The spatial binning inherent to the Poincaré repre-sentation acts as a macroscopic geometric spatial regularizer. This topological coarse-graining allows the Geometry-guided FTLE to retain deterministic structural information deeper into the noise floor. However, below the critical SNR thresh-old, the additive noise amplitude exceeds the scale of the deterministic attractor, rendering both local trajectory diver-gence and global phase-space morphology theoretically unre-coverable as expected due to the high stochastic rather than deterministic nature. 10 100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+> Spearman
+> 1
+> ML
+> (SSIM) geo
+> (JSD) geo
+> (HDF) geo
+> (IOU) geo
+
+100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+> 2
+
+100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+> 3
+
+FIG. 8. Spearman rank correlation ( ρ) under additive white Gaussian noise (AWGN) for datasets D1, D2, and D3. The geometry-guided proxies generally preserve monotonic agreement with the Lyapunov spectrum better than the predictive ML-FTLE baseline in the moderate noise regime. 100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+> MCC
+> 1
+> ML
+> (SSIM) geo
+> (JSD) geo
+> (HDF) geo
+> (IOU) geo
+
+100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+> 2
+
+100 80 60 40 20 10 5 0
+
+SNR (dB) 
+
+> 3
+
+FIG. 9. Matthews Correlation Coefficient (MCC) under additive white Gaussian noise for datasets D1, D2, and D3. Macroscopic classification remains robust down to moderate signal-to-noise ratios but collapses sharply as stochastic variance dominates the deterministic attractor topology. Results are ensemble averaged over 30 independent trials per noise level. 
+
+IV. DISCUSSION AND CONCLUSION 
+
+In this study we introduced a unified Poincaré-based geometry-guided ML-FTLE framework to address the fun-damental challenge of tracking transient chaos and abrupt regime transitions solely from a univariate time series. Op-erating without prior knowledge of the governing differential equations, our approach successfully fuses predictive trajec-tory divergence and macroscopic attractor geometry. The ML-FTLE estimator extracts a local instability scale by evaluat-ing the OLS slope of the log-transformed GMAE from out-of-sample k-NN forecasts. Concurrently, the framework cap-tures the structural evolution of the reconstructed phase space by mapping delay coordinate occupancy grids onto a com-pact dictionary of basis attractors. By employing PLSR as a supervised latent variable bridge, we projected this high-dimensional morphological data into a calibrated Lyapunov scale. Validation against analytical QR-FTLE baselines across di-verse transient chaos scenarios confirms the high precision of this dual framework. The purely data-driven ML-FTLE reliably captures macroscopic regime shifts, distinguishing transient chaos from stable equilibria and periodic orbits. Furthermore, quantitative analysis reveals that the geometry-guided projections systematically improve continuous tempo-ral tracking over the predictive model. Specifically, the SSIM (ˆλ (SSIM ) 
+
+> geo
+
+) emerges as the optimal method for smooth gradual transitions, while the HDF ( ˆλ (HDF ) 
+
+> geo
+
+) proves highly resilient during severe topological collapses. All evaluated estima-tors demonstrated exceptional binary classification accuracy, achieving MCC scores ≥ 0.91 synchronously with the under-lying dynamical transitions. The framework also demonstrates notable robustness against stochastic perturbations. Under additive white Gaus-sian noise, the spatial binning inherent to the Poincaré rep-resentation functions as a macroscopic geometric spatial reg-ularizer, enabling the topological proxies to retain determin-istic structural patterns deeper into the noise floor than mi-croscopic scalar neighborhood queries. While classification performance systematically collapses at extreme noise limits such as 0 dB, where stochastic variance fully suppresses the chaotic invariant measure, the framework remains highly ef-fective down to moderate signal-to-noise ratios of 20 dB. Ultimately this work establishes that reconstructed phase space topology serves as a direct physical representation of dynamical structure rather than a mere visualization tool. The fusion of forecast error divergence and basis attractor mor-phology yields an interpretable and robust indicator of regime collapse, providing a purely empirical diagnostic tool for ana-lyzing complex systems where only partial and noisy scalar 11 measurements are accessible. This adaptability allows the methodology to extend into empirical domains such as cli-mate physics and financial market analysis, where detecting abrupt structural shifts is essential. While demonstrating exceptional reliability across syn-thetic benchmarks, the framework contains distinct limita-tions. Spatial binning and nearest neighbor searches intro-duce computational scaling challenges for systems with ex-ceptionally high intrinsic dimensions, and the accuracy of the geometric proxies fundamentally depends on the quality of the initial time delay embedding. Future work will focus on processing multivariate time series natively and integrating advanced manifold learning architectures to replace uniform occupancy grids with continuous topological representations. Furthermore, implementing adaptive windowing algorithms will refine the temporal resolution for rapid dynamical col-lapses, ensuring the framework remains robust for real-time experimental applications. 
+
+ACKNOWLEDGMENTS 
+
+The work of S.V.M. was catalyzed and financially sup-ported by the Tamil Nadu State Council for Science and Tech-nology (TNSCST), Department of Higher Education, Gov-ernment of Tamil Nadu, India. I. M. was supported by the TNSCST - Science and Technology Project, Department of Higher Education, Government of Tamil Nadu, India. A.V. was supported by the Russian Science Foundation (Grant No. 22-11-00055-P, accessed on 10 June 2025). 
+
+DATA AVAILABILITY STATEMENT 
+
+The data and code that support the findings of this study are openly available on GitHub 30 and persistently archived on Zenodo 31 .
+
+REFERENCES 
+
+> 1
+
+Y.-C. Lai and T. Tél, Transient chaos: complex dynamics on finite time scales , Vol. 173 (Springer Science & Business Media, 2011). 
+
+> 2
+
+H. Babaee, M. Farazmand, G. Haller, and T. P. Sapsis, “Reduced-order de-scription of transient instabilities and computation of finite-time lyapunov exponents,” Chaos 27 , 063103 (2017). 
+
+> 3
+
+U. Parlitz, “Estimating lyapunov exponents from time series,” in Chaos De-tection and Predictability , Lecture Notes in Physics, Vol. 915 (Springer, Berlin, Heidelberg, 2016) pp. 1–34. 
+
+> 4
+
+V. I. Oseledec, “A multiplicative ergodic theorem, lyapunov characteristic numbers for dynamical systems,” Transactions of the Moscow Mathemati-cal Society 19 , 197–231 (1968). 
+
+> 5
+
+F. Takens, “Detecting strange attractors in turbulence,” in Dynamical Sys-tems and Turbulence, Warwick 1980 , Lecture Notes in Mathematics, Vol. 898, edited by D. Rand and L.-S. Young (Springer, Berlin, Heidelberg, 1981) pp. 366–381. 
+
+> 6
+
+E. Bradley and H. Kantz, “Nonlinear time-series analysis revisited,” Chaos 
+
+25 , 097610 (2015). 
+
+> 7
+
+A. Wolf, J. B. Swift, H. L. Swinney, and J. A. Vastano, “Determining lya-punov exponents from a time series,” Physica D: Nonlinear Phenomena 16 ,285–317 (1985). 
+
+> 8
+
+M. T. Rosenstein, J. J. Collins, and C. J. De Luca, “A practical method for calculating largest lyapunov exponents from small data sets,” Physica D: Nonlinear Phenomena 65 , 117–134 (1993). 
+
+> 9
+
+H. Kantz, “A robust method to estimate the maximal lyapunov exponent of a time series,” Physics Letters A 185 , 77–87 (1994). 
+
+> 10
+
+C. Yang and C. Q. Wu, “A robust method on estimation of lyapunov expo-nents from a noisy time series,” Nonlinear Dynamics 64 , 279–292 (2011). 
+
+> 11
+
+J.-P. Eckmann and D. Ruelle, “Fundamental limitations for estimating di-mensions and lyapunov exponents in dynamical systems,” Physica D: Non-linear Phenomena 56 , 185–187 (1992). 
+
+> 12
+
+J. Pathak, Z. Lu, B. R. Hunt, M. Girvan, and E. Ott, “Using machine learn-ing to replicate chaotic attractors and calculate lyapunov exponents from data,” Chaos 27 , 121102 (2017). 
+
+> 13
+
+G. Margazoglou and L. Magri, “Stability analysis of chaotic systems from data,” Nonlinear Dynamics 111 , 8799–8819 (2023). 
+
+> 14
+
+G. Margazoglou and L. Magri, “Data-driven stability analysis of a chaotic time-delayed system,” in Computational Science – ICCS 2023 , Lecture Notes in Computer Science, Vol. 14074 (Springer, 2023) pp. 406–413. 
+
+> 15
+
+C. Mayora-Cebollero, A. Mayora-Cebollero, Á. Lozano, and R. Barrio, “Full lyapunov exponents spectrum with deep learning from single-variable time series,” Physica D: Nonlinear Phenomena 467 , 134510 (2024). 
+
+> 16
+
+J.-P. Eckmann, S. O. Kamphorst, and D. Ruelle, “Recurrence plots of dy-namical systems,” Europhysics Letters 4, 973–977 (1987). 
+
+> 17
+
+N. Marwan, M. C. Romano, M. Thiel, and J. Kurths, “Recurrence plots for the analysis of complex systems,” Physics Reports 438 , 237–329 (2007). 
+
+> 18
+
+J. S. Iwanski and E. Bradley, “Recurrence plots of experimental data: To embed or not to embed?” Chaos 8, 861–871 (1998). 
+
+> 19
+
+M. C. Casdagli, “Recurrence plots revisited,” Physica D: Nonlinear Phe-nomena 108 , 12–44 (1997). 
+
+> 20
+
+R. Manuca and R. Savit, “Stationarity and nonstationarity in time series analysis,” Physica D: Nonlinear Phenomena 99 , 134–161 (1996). 
+
+> 21
+
+H. Kantz, “Quantifying the closeness of fractal measures,” Physical Review E 49 , 5091–5097 (1994). 
+
+> 22
+
+E. Bradley and R. Mantilla, “Recurrence plots and unstable periodic orbits,” Chaos 12 , 596–600 (2002). 
+
+> 23
+
+A. Velichko, M. Belyaev, and P. Boriskov, “A novel approach for estimating largest lyapunov exponents in one-dimensional chaotic time series using machine learning,” Chaos 35 , 101101 (2025). 
+
+> 24
+
+H. Abdi, “Partial least squares regression and projection on latent struc-ture regression (pls regression),” Wiley Interdisciplinary Reviews: Compu-tational Statistics 2 (2010), 10.1002/wics.51. 
+
+> 25
+
+Q. Zhu, “Latent variable regression for supervised modeling and monitor-ing,” IEEE/CAA Journal of Automatica Sinica 7, 800–811 (2020). 
+
+> 26
+
+J. E. Bresenham, “Algorithm for computer control of a digital plotter,” IBM Systems Journal 4, 25–30 (1965). 
+
+> 27
+
+Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, “Image quality assessment: From error visibility to structural similarity,” IEEE Transac-tions on Image Processing 13 , 600–612 (2004). 
+
+> 28
+
+S. J. Qin, Y. Dong, Q. Zhu, J. Wang, and Q. Liu, “Bridging systems theory and data science: A unifying review of dynamic latent variable analytics and process monitoring,” Annual Reviews in Control 50 , 29–48 (2020). 
+
+> 29
+
+F.-P. Wang and F.-Q. Wang, “Multistability and coexisting transient chaos in a simple memcapacitive system,” Chinese Physics B 29 , 058502 (2020). 
+
+> 30
+
+S. V. Manivelan, A. Velichko, and I. Manimehan, “Uni-fied geometry-guided ml-ftle for tracking transient chaos from scalar data,” https://github.com/Manivelan-sv/ Unified-Geometry-Guided-ML-FTLE-for-Tracking-Transient-Chaos-from-S 
+
+(2026). 
+
+> 31
+
+S. V. Manivelan, A. Velichko, and I. Manimehan, “Unified-geometry-guided-ml-ftle-for-tracking-transient-chaos-from-scalar-data,” (2026).

@@ -1,0 +1,779 @@
+Title: DiffSlack: Learning under Nonlinear Inequality Constraints via Learnable Slack Variables
+
+URL Source: https://arxiv.org/pdf/2606.05247v1
+
+Published Time: Fri, 05 Jun 2026 00:06:22 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# DIFF SLACK : L EARNING UNDER NONLINEAR INEQUALITY 
+
+# CONSTRAINTS VIA LEARNABLE SLACK VARIABLES 
+
+Ziqian Wang Chenxi Fang Zhen Zhang ∗
+
+June 5, 2026 
+
+## ABSTRACT 
+
+Enforcing nonlinear inequality constraints in neural networks remains challenging, especially when the output is subject to many coupled constraints. Existing hard constraint methods often impose structural restrictions on the constraint set or introduce substantial computational overhead for large-scale nonlinear problems. Here, we propose DiffSlack, a differentiable projection layer for nonlin-ear inequality-constrained neural prediction. DiffSlack reformulates inequalities as equalities with learnable slack variables, which are predicted as part of the augmented network output and pro-vide a data-driven warm start for damped Gauss-Newton projection. The projection layer maps raw predictions onto the augmented feasible manifold while preserving end-to-end differentiability. A two-stage curriculum further stabilizes training and improves constraint satisfaction. We evaluate DiffSlack on vehicle path planning with 200 nonlinear inequality constraints from collision avoid-ance, curvature limits, and waypoint spacing. Compared with existing learning-based baselines, DiffSlack achieves a higher planning success rate and stronger geometric constraint satisfaction un-der a comparable inference budget. Ablation studies further show that the hard projection layer reduces sensitivity to supervision quality. Closed-loop tracking in CARLA and real-world vehicle experiments confirms the executability of the generated trajectories. These results demonstrate that DiffSlack provides a practical and scalable approach to embedding hard inequality constraints into neural networks for engineering applications. 
+
+## 1 Introduction 
+
+Embedding domain knowledge into neural networks has become an important direction for improving the reliability and physical consistency of learned models [21, 13, 50]. Feasibility constraints are a central form of such knowledge. They encode physical laws, safety limits, and operational requirements that model outputs must satisfy during deploy-ment. However, standard neural networks are primarily trained to minimize prediction losses and do not guarantee constraint satisfaction at inference time. As a result, even accurate predictors may produce infeasible or unsafe outputs when deployed in safety-critical systems. This gap between predictive accuracy and feasibility has motivated growing interest in constrained neural prediction [11, 41, 28]. Existing approaches can be broadly grouped into three categories, as illustrated in Fig. 1. The first incorporates con-straints as soft penalty terms in the training objective [34, 19, 36]. This strategy is simple and widely applicable, but constraint satisfaction depends on penalty weights and training data coverage. Consequently, violations can still occur at inference time, especially under distribution shift or competing task objectives. The second category applies post-hoc safety filters, such as control barrier functions and predictive safety shields [49, 39, 43, 2]. These methods can enforce safety during deployment, but the correction is usually applied outside the prediction model. This weakens end-to-end supervision and can create a mismatch between the network output and the corrected action. The third category embeds differentiable constraint enforcement layers into neural networks [25, 31, 29, 16, 3]. These meth-ods allow the learning objective to account for the corrected output and can provide stronger feasibility guarantees. 
+
+> ∗
+
+Corresponding author: Z. Zhang (e-mail: zzhang@tsinghua.edu.cn). Ziqian Wang and Zhen Zhang are with the State Key Laboratory of Tribology in Advanced Equipment, Tsinghua University, Beijing 100084, China and are with the Beijing Key Labo-ratory of Transformative High-end Manufacturing Equipment and Technology, Department of Mechanical Engineering, Tsinghua University, Beijing 100084, China. Chenxi Fang is with the Automotive Electronics Business Unit at Hirain Inc., China. 
+
+> arXiv:2606.05247v1 [cs.LG] 3 Jun 2026
+
+A PREPRINT - J UNE 5, 2026 However, enforcing general nonlinear inequality constraints remains challenging, particularly when the number of constraints is large and the projection must be computed efficiently. Feasible Region Safe Output Infeasible Region Unsafe Output    
+
+> Gradient Backpropagation
+> Neural Network Input (Ltask +λLcons )
+> Loss Output (a) Soft Constraints (b) Post-hoc Filter
+
+Ltask    
+
+> Neural Network Input External Filter (e.g., CBF) Raw Output Corrected Output Gradient Blocked (c) Hard Constraint Neural Network
+> Neural Network Input Raw Output Differentiable Constraint Layer Corrected Output
+
+Ltask 
+
+> Constraint-Aware Gradient
+
+Figure 1: Comparison of three approaches to constraint handling in neural networks. (a) Soft constraints incorporate constraints as penalty terms in the loss function but provide no feasibility guarantee at inference time. (b) Post-hoc filters enforce constraints after prediction, which can create a mismatch between raw network outputs and corrected actions. (c) Hard constraint neural networks embed a differentiable constraint layer that enforces feasibility while preserving end-to-end gradient flow. To address these challenges, we propose DiffSlack, a differentiable hard constraint projection framework for high-dimensional nonlinear inequality constraints. The key idea is to reformulate inequalities as equalities with learnable slack variables. Unlike conventional auxiliary variables that are introduced only inside a solver, the slack variables in DiffSlack are predicted together with the task output. They therefore provide an amortized initialization of inactive constraint margins before projection. A damped Gauss-Newton projection layer then maps the augmented output onto the equality manifold defined by the slack reformulation. This layer is differentiable and can be inserted into the network for end-to-end training. To stabilize optimization, we further use a two-stage curriculum learning [5]. The first stage trains the predictor with soft constraint losses and slack calibration, while the second stage activates the hard projection layer. This design allows the projection module to enforce feasibility while also providing task-aware correction signals during training. We evaluate DiffSlack on constrained vehicle path planning, where the output trajectory must satisfy 200 coupled nonlinear inequality constraints from collision avoidance, curvature limits, and waypoint spacing. Our experiments compare DiffSlack with classical planners, soft-constrained learning, DC3 [16], and ENFORCE [29]. The results show that DiffSlack achieves a stronger trade-off among planning success, geometric constraint satisfaction, and computation time than existing learning-based methods. We further validate the generated trajectories in CARLA [17] and on a physical vehicle. The main contributions of this work are as follows: 1. DiffSlack provides a scalable differentiable projection framework for neural prediction under nonlinear in-equality constraints, with learnable slack variables serving as a data-driven initialization for iterative projec-tion. Theoretical analysis characterizes the local convergence behavior and numerical conditioning. 2. A two-stage curriculum strategy is proposed to stabilize end-to-end training with the hard projection layer, enabling the network to approach the feasible manifold before projection is activated. 3. Experiments on large-scale constrained path planning with 200 nonlinear inequality constraints demonstrate that DiffSlack achieves higher success rates and better geometric constraint satisfaction than representative learning-based baselines. CARLA simulation and real-world vehicle tracking further validate the executabil-ity of the generated trajectories. 
+
+## 2 Related Work 
+
+Soft constraint methods incorporate physical and operational requirements as penalty terms in the training objective, including penalty-based regularization [12, 47, 36] and Lagrangian duality methods [19, 34]. These approaches are 2A PREPRINT - J UNE 5, 2026 simple and broadly applicable, but they do not guarantee constraint satisfaction at inference time. Their effectiveness depends on penalty weights, optimization quality, and the coverage of the training data. Post-hoc safety filters, such as control barrier functions [49, 2] and predictive safety shields [43, 42], enforce constraints after prediction. They can provide strong deployment-time safety, but the correction is usually applied outside the prediction model. This may create a mismatch between the raw network output and the corrected action, especially when large corrections are frequently required. A more integrated strategy is to embed constraint satisfaction directly into the network architecture through differentiable enforcement layers [26]. Such methods allow the training objective to account for the corrected output and can provide stronger feasibility guarantees. We review them below according to the class of constraints they address. 
+
+Linear constraints A line of work exploits the algebraic structure of linear or affine constraints to design efficient enforcement layers with closed-form or iterative solutions. HCP [10] guarantees that network predictions satisfy finite-difference discretizations of governing PDEs via closed-form projection, but it is limited to linear equality constraints. LOOP-LC [30] maps neural outputs from an ℓ∞-norm unit ball to the feasible set through a gauge map, achiev-ing iteration-free feasibility for hard linear equality and inequality constraints, but relying on linear structure and an available interior point. LinSATNet [45] proposes a Sinkhorn-based iterative scheme for positive linear constraints on input-independent outputs. GLinSAT [48] extends this framework to general linear constraints, with feasibility guarantees that tighten as the number of iterations increases. KKT-hPINN [9] embeds input-dependent linear equality constraints into physics-informed networks via KKT conditions and achieves strict feasibility through a closed-form projection, but it is confined to equality constraints. HardNet [33] handles input-dependent affine equality and in-equality constraints through a parallel projection layer with a closed-form forward pass, and establishes universal approximation guarantees under the constrained architecture. 
+
+Convex constraints Beyond methods that exploit linear or affine structure, another line of work formulates more general convex feasibility or optimization problems as differentiable layers. OptNet [3] embeds a quadratic program into the network and computes gradients via implicit differentiation through the KKT conditions. CvxpyLayers [1] generalizes this idea to convex programs expressible in CVXPY, enabling broader constraint coverage at the cost of solving an optimization problem during the forward pass. To reduce this overhead, RAYEN [40] guarantees feasibility by scaling the step length along a ray from a known interior point. It supports linear, convex quadratic, second-order cone, and linear matrix inequality constraints with low computational cost. PiNet [23] appends an orthogonal projec-tion layer computed by Douglas-Rachford splitting, with gradients obtained through the implicit function theorem. It supports general convex constraints, including input-dependent ones. 
+
+General nonlinear constraints Extending hard constraint enforcement to general nonlinear constraints is more challenging. DC3 [16] addresses nonlinear equality and inequality constraints by combining equality completion with gradient-based correction. However, its convergence can be sensitive to step size selection and may require many itera-tions for tight feasibility. BarrierNet [46] embeds differentiable control barrier functions into quadratic program layers for end-to-end safe learning, targeting systems whose safety constraints are defined through control-affine dynamics. ENFORCE [29] applies adaptive-depth Gauss-Newton projection with closed-form updates at each step and handles inequality constraints through a Fischer-Burmeister reformulation in an augmented multiplier space. KKT-HardNet [25] constructs the full KKT system of the projection problem and solves it with Newton or Gauss-Newton iterations, optionally after log-exponential transformations of nonlinear algebraic terms. Although this formulation can enforce nonlinear equality and inequality constraints to high precision, each inequality introduces additional slack variables, dual multipliers, and complementarity equations, leading to a large primal-dual nonlinear system. This overhead can become prohibitive for large-scale inequality-constrained prediction problems. Homeomorphic Projection [32] learns a minimum-distortion mapping between the constraint set and a unit ball via an invertible neural network, then recov-ers feasibility through bisection along the mapped radius. This provides feasibility guarantees for ball-homeomorphic constraint sets, but the optimality bound depends on the distortion of the learned mapping. Bisection Projection [31] relaxes the topological requirement by training an auxiliary network to predict interior points of the feasible set, fol-lowed by bisection from these points to recover feasibility for general compact sets. Both methods introduce additional networks, which increase training complexity and may introduce approximation error. These limitations motivate a direct and scalable projection mechanism for nonlinear inequality-constrained neural prediction. 
+
+## 3 Methodology 
+
+Let fθ : X → RNO be a neural network that maps an input x ∈ X to a raw prediction ˆp = fθ (x). The prediction is required to satisfy NC input-dependent nonlinear inequality constraints 
+
+g(x, p) ≤ 0, g : X × RNO → RNC . (1) 3A PREPRINT - J UNE 5, 2026 Infeasible region Feasible region Feasible region adjust adjust Reach of manifold    
+
+> g(x,p)≥0
+> Projection
+
+y0
+
+y1
+
+y··· 
+
+yk      
+
+> 1Slack Reformulation (Equality manifold) 2Stage I: Soft Training (Reach of Manifold) 3Stage II: Hard Projection (Iterative Projection) 4Feasible region Feasible Output
+> g(x,p)≤0
+> 5Equality manifold
+
+s
+
+p ⇒ g(x, p) ≤ 0
+
+> Input
+
+x 
+
+> Neural Network Augmented Output Raw Output Slack Variables
+
+sp   
+
+> Inequality constraints
+> g(x,p)≤0
+> Slack Reformulation
+
+h(x, y) = g + s  s    
+
+> g(x,p) = 0
+> h(x,y) = 0
+> Inequality Constraints Iterative Projection Layer (Gauss-Newton)
+
+y0
+
+yk+1 = yk − W−1J
+
+> h
+
+(JhW−1J
+
+> h
+
+)−1 h
+
+y1 yk
+
+> Feasible Output
+
+y∗ = [ p∗, s∗]
+
+> Gradient Backpropagation All operations differentiable
+
+...               
+
+> g(x,p)≤0
+> Infeasible region
+> g(x,p)≥0
+> Feasible region Inequality boundary
+> g(x,p) = 0Equality manifold Reach of manifold Raw output Feasible output
+> =0
+
+h(x, y) = g + s  s 
+
+> =0
+
+h(x, y) = g + s  s 
+
+> =0
+
+Figure 2: Overall framework and geometric intuition of DiffSlack. The network predicts both the task output ˆp and slack variables ˆs. Inequality constraints are reformulated as an equality manifold M through h(y) = 0. Stage I learns slack variables that approximate the inactive-side constraint margin and moves raw predictions toward the reach tube of M. Stage II activates the differentiable Gauss-Newton projection layer, producing feasible outputs while preserving end-to-end gradient flow. The ideal correction is the nearest feasible point to the raw prediction: 
+
+p∗ = argmin 
+
+> p
+
+12 ∥p − ˆp∥22 s.t. g(x, p) ≤ 0. (2) During projection, x is fixed. We therefore write g(p) for brevity, while all input-dependent quantities are treated as constants with respect to p.
+
+Assumption 1 (Feasibility) . For every x ∈ X , the feasible set {p ∈ RNO | g(x, p) ≤ 0} is non-empty. 
+
+DiffSlack embeds the correction in Eq. (2) as a differentiable projection layer. The main idea is to convert inequalities into an augmented equality manifold with learnable slack variables, and then project raw predictions onto this manifold through a Gauss-Newton layer. Figure 2 illustrates the overall framework. 
+
+3.1 Slack Variable Reformulation 
+
+Inequality constraints define a feasible region rather than a smooth equality manifold. To obtain a differentiable projection target, we introduce slack variables s ∈ RNC and define the augmented state 
+
+y = p⊤ s⊤⊤ ∈ RNO +NC . (3) Each inequality is reformulated as 
+
+h(y) = g(p) + s ⊙ s = 0, (4) where ⊙ denotes the Hadamard product. Since s⊙s is elementwise nonnegative, feasibility on the augmented manifold implies feasibility of the original inequalities. 
+
+Theorem 1 (Inequality satisfaction) . For any y = [ p⊤, s⊤]⊤, if h(y) = 0, then g(p) ≤ 0.Proof. From Eq. (4), h(y) = 0 gives g(p) = −s ⊙ s. Since s ⊙ s ≥ 0 elementwise, the result follows. 4A PREPRINT - J UNE 5, 2026 The augmented Jacobian is 
+
+Jh(y) = 
+
+h
+
+Jg(p) diag(2 s)
+
+i
+
+, (5) where Jg(p) ∈ RNC ×NO . The diagonal slack block provides an independent correction direction for each inequality constraint in the augmented space. This structure improves the local conditioning of the linearized projection system whenever the corresponding slack variables are nonzero, while near-degenerate cases are stabilized by the damped solve in Section 3.3. 
+
+3.2 Learned Slack as Margin Prediction 
+
+The slack variables in DiffSlack are not passive solver variables. They are predicted by the network and serve as a data-driven estimate of the inactive-side constraint margin. For a raw prediction ˆp, define 
+
+q(ˆ p) := [ −g(ˆ p)] +, [v]+ = (max {vi, 0})NC
+
+> i=1
+
+. (6) Here, [g(ˆ p)] + denotes active constraint violation, while q(ˆ p) denotes the margin of constraints that are already satis-fied. Let ˆq = ˆ s ⊙ ˆs. The equality residual can then be decomposed as 
+
+h(ˆ y) = g(ˆ p) + ˆ q = [ g(ˆ p)] + +  ˆq − q(ˆ p). (7) This decomposition separates the residual into active constraint violation and slack estimation error. With zero slack initialization, the equality residual also contains the inactive-margin term −q(ˆ p), even for constraints that are already satisfied. In contrast, when the predicted squared slack ˆq approximates q(ˆ p), this inactive-margin component is absorbed before projection. To quantify this effect, suppose the learned squared slack ˆqL approximates q(ˆ p) with mean-square error ε2
+
+> L
+
+, and the estimation error is conditionally zero-mean given ˆp:
+
+E ∥ˆqL − q(ˆ p)∥22
+
+ = ε2
+
+> L
+
+. (8) Taking the squared norm of Eq. (7) and using the zero-mean assumption to remove the cross term gives 
+
+E ∥h(ˆ yL)∥22
+
+ = E ∥[g(ˆ p)] +∥22
+
+ + ε2
+
+> L
+
+. (9) For zero slack initialization ˆq0 = 0, the residual becomes h(ˆ y0) = g(ˆ p). Since [g]+ and [−g]+ have disjoint elementwise support, 
+
+E ∥h(ˆ y0)∥22
+
+ = E ∥[g(ˆ p)] +∥22
+
+ + E ∥[−g(ˆ p)] +∥22
+
+ . (10) Therefore, learned slack reduces the expected equality residual whenever its estimation error is smaller than the inactive-margin energy. Let M = {y ∈ RNO +NC | h(y) = 0} be the augmented feasible manifold. We consider a regular local tube around M, where h is twice continuously differentiable, Jh is Lipschitz continuous, and its smallest singular value is uniformly bounded below by a constant σ− > 0:
+
+σmin (Jh(y)) ≥ σ−. (11) Under this standard local regularity condition, the residual controls the Euclidean distance to the manifold: 
+
+dist(ˆ y, M) ≤ 2σ−1 
+
+> −
+
+∥h(ˆ y)∥2. (12) This follows from a first-order Taylor expansion of h around the nearest point on M, where the second-order remainder is dominated in a sufficiently small neighborhood. Combining Eq. (9) and Eq. (12) gives 
+
+E dist(ˆ yL, M)2 ≤ 4σ−2
+
+> −
+
+ E ∥[g(ˆ p)] +∥22
+
+ + ε2
+
+> L
+
+ . (13) Hence, learned slack variables provide a principled mechanism for reducing the expected local distance to the aug-mented feasible manifold by estimating inactive margins before projection. 
+
+3.3 Differentiable Gauss-Newton Projection Layer 
+
+Given a raw augmented prediction ˆy = [ˆ p⊤, ˆs⊤]⊤, DiffSlack projects it onto M by solving 
+
+y∗ = argmin 
+
+> y
+
+12 ∥y − ˆy∥2 
+
+> W
+
+s.t. h(y) = 0, (14) where 
+
+∥v∥2 
+
+> W
+
+= v⊤Wv , W = diag( wo1NO , w s1NC ), wo > w s > 0. (15) The larger task-output weight discourages unnecessary changes to the original prediction coordinates, while the smaller slack weight allows residual mismatch to be absorbed by the auxiliary slack variables whenever possible. 5A PREPRINT - J UNE 5, 2026 
+
+Reach tube. The projection layer is local. Let reach( M) denote the largest radius such that every point within that distance from M has a unique nearest point on M [18]. For any ρ < reach( M), define the reach tube 
+
+Tρ = {y | dist( y, M) < ρ }. (16) Inside this tube, the nearest-point projection is geometrically well-defined. Under the local regularity condition in Eq. (11), a sufficiently small sub-tube also forms a local convergence basin for the Gauss-Newton projection. There-fore, Stage I is designed to move raw outputs toward this reach tube before the hard projection layer is activated. Since 
+
+P(ˆ y ∈ T ρ) ≥ 1 − E[dist W(ˆ y, M)2]/ρ 2, (17) reducing the expected distance to the manifold increases this distribution-free lower bound on the probability of enter-ing the reach tube. 
+
+Gauss-Newton update. Solving Eq. (14) exactly would require second-order constraint derivatives. We instead linearize h around the current iterate yk and solve a weighted minimum-norm correction problem: 
+
+yk+1 = argmin 
+
+> y
+
+12 ∥y − yk∥2 
+
+> W
+
+s.t. h(yk) + Jh(yk)( y − yk) = 0. (18) The closed-form update is 
+
+yk+1 = yk − W−1J⊤ 
+
+> h
+
+(yk)  Jh(yk)W−1J⊤ 
+
+> h
+
+(yk)−1 h(yk). (19) The Gram matrix is solved by Cholesky decomposition with diagonal damping δI, where δ = 10 −4 in our experiments. Iteration stops when ∥h(yk)∥∞ < ϵ or the number of iterations reaches Imax .
+
+Local convergence and conditioning. Around a feasible point y∗ ∈ M satisfying the regularity condition, the update in Eq. (19) satisfies 
+
+∥e(k+1) ∥W ≤ ∥ MW∥W∥e(k)∥W + O(∥e(k)∥2
+
+> W
+
+), (20) where e(k) = yk − y∗ and 
+
+MW = I − W−1J⊤
+
+> h
+
+ JhW−1J⊤
+
+> h
+
+−1 Jh (21) is the W-weighted tangent projector. Since MW is a W-orthogonal tangent projector, the linearized update suppresses the normal component of the local error to first order. The slack block also stabilizes the linear solve. From Eq. (5), the Gram matrix is 
+
+JhW−1J⊤ 
+
+> h
+
+= w−1 
+
+> o
+
+JgJ⊤ 
+
+> g
+
++ 4 w−1 
+
+> s
+
+diag( s2). (22) Thus nonzero slack components lift the spectral floor: 
+
+λmin 
+
+ JhW−1J⊤
+
+> h
+
+ ≥ w−1 
+
+> o
+
+λmin 
+
+ JgJ⊤
+
+> g
+
+ + 4 w−1 
+
+> s
+
+min  
+
+> i
+
+s2 
+
+> i
+
+. (23) This reduces residual amplification in the linear solve, especially when Jg is nearly rank-deficient. 
+
+3.4 Gradient Flow and Implicit Constraint Supervision 
+
+The projection layer is differentiable. Instead of backpropagating through all solver iterations, we differentiate the KKT conditions of Eq. (14) at the projected point, following implicit differentiation for optimization layers [22, 7, 6]. Locally, this gives the first-order sensitivity 
+
+∂y∗/∂ ˆy = MW. (24) Therefore, gradients passed to the network are projected onto the tangent space of M at y∗ under the W-weighted geometry. Since MW is a projector with spectral radius no larger than one, the projection step does not locally amplify gradients. More importantly, gradient components normal to the constraint manifold are suppressed, while tangent components are preserved. The network is therefore trained through directions that are locally compatible with the constraint geometry. We refer to this effect as implicit constraint supervision: even when the external task supervision is coarse, the projection layer filters the output gradient toward feasible directions. 
+
+3.5 Two-Stage Curriculum Training 
+
+Directly activating the hard projection layer from random initialization is unstable, because Gauss-Newton projection is local and assumes that raw augmented outputs are close to the reach tube of M. DiffSlack therefore uses a two-stage curriculum learning [5]. 6A PREPRINT - J UNE 5, 2026 
+
+Stage I: slack-calibrated soft training. In Stage I, the projection layer is disabled. The network is trained with 
+
+LStage1 = Ltask + λsoft Lsoft + λslack Lslack . (25) The soft constraint loss penalizes active inequality violations: 
+
+Lsoft = N −1 
+
+> C
+
+∥[g(ˆ p)] +∥1 . (26) The slack loss fits the squared slack variables to the inactive-side margin of the current prediction: 
+
+Lslack = N −1 
+
+> C
+
+∥g(sg(ˆ p)) + ˆ s ⊙ ˆs∥1 , (27) where sg( ·) denotes the stop-gradient operator. The stop-gradient prevents Lslack from altering the task prediction and ensures that this term only calibrates the slack variables. By Eq. (7), Lsoft reduces the active-violation term, while 
+
+Lslack reduces the slack estimation error. Together, they reduce the distance from raw augmented outputs to M and increase the probability that samples lie inside the local reach tube. 
+
+Stage II: end-to-end hard projection training. In Stage II, the projection layer is activated. The network produces 
+
+ˆy, the projection layer returns y∗ = P(ˆ y), and the task loss is computed on the projected output. The slack loss is removed because feasibility is now enforced by the projection layer. The objective becomes 
+
+LStage2 = Ltask (y∗) + λproj Lproj + λsoft Lsoft . (28) The projection loss is 
+
+Lproj = ∥ˆy − y∗∥22. (29) It encourages raw predictions to remain close to the feasible manifold, which stabilizes the subsequent projection. The soft constraint loss is retained as an auxiliary regularizer that discourages large raw violations before projection. Overall, Stage I calibrates slack variables to estimate inactive-side margins and moves raw outputs toward the reach tube. Stage II then imposes hard feasibility through differentiable projection and propagates constraint-aware gradients back to the network. 
+
+## 4 EXPERIMENTS 
+
+4.1 Problem Formulation 
+
+We consider the problem of generating a kinematically feasible and collision-free path for a vehicle navigating through obstacle-dense unstructured environments [24]. The path is represented as a sequence of T = 40 discrete waypoints 
+
+P = ( p1, . . . , pT ) ∈ RT ×2, where each pt = ( xt, y t) denotes a 2D position in the workspace. The vehicle starts from a fixed initial position p0 = (0 , 0) . The planning objective is to minimize the total path length while satisfying a set of hard constraints: 
+
+min  
+
+> P
+> T−1
+
+X
+
+> t=0
+
+∥pt+1 − pt∥2 s.t. Ccol (P) ≤ 0, Ckin (P) ≤ 0, Cspc (P) ≤ 0. (30) The three constraint categories are defined as follows. 
+
+Collision Avoidance Constraint The vehicle body is approximated by three overlapping circles centered at positions 
+
+{qt,r }3 
+
+> r=1
+
+derived from each waypoint pt. Each obstacle is modeled as a convex polygon described by Mj half-plane inequalities lj,m (p) ≥ 0. To obtain a differentiable signed distance for each obstacle, we apply the Log-Sum-Exp (LSE) approximation [8]: 
+
+cj (p) ≈ − α−1 log 
+
+
+
+> Mj
+
+X
+
+> m=1
+
+exp( −α l j,m (p)) 
+
+ , (31) where cj (p) < 0 indicates that p lies inside obstacle j, and α = 10 controls the approximation tightness. The collision constraint then requires that every circle r at waypoint t lies outside all obstacles simultaneously, which is enforced by a second LSE aggregation over the Nobs obstacles: 
+
+Ct,r  
+
+> col
+
+(pt) = α−1 log 
+
+
+
+> Nobs
+
+X
+
+> j=1
+
+exp( α c j (qt,r )) 
+
+ ≤ 0, (32) yielding 3T collision constraints in total. At evaluation time, collision detection is performed using exact rectangle-obstacle intersection checks to ensure accurate assessment of the success rate. 7A PREPRINT - J UNE 5, 2026 High Low Potential Bilinear Interpolation     
+
+> Vinterp
+> ‖pt−u∗
+> t‖22
+> Local Attraction
+> u∗
+> t
+> (a) (b)
+
+Figure 3: Experimental environment and G-APF supervision construction. (a) Static path-planning scenario with randomly generated convex polygonal obstacles and a sampled target area. (b) Global-guided artificial potential field, where high values are assigned near obstacles and low values near the target. For each waypoint, bilinear interpolation provides the potential value, and the local attraction target is selected from the lowest-potential point in the local neighborhood. 
+
+Curvature Constraint The vehicle is modeled by the kinematic bicycle model [35], which imposes a minimum turning radius Rmin determined by the maximum steering angle. The curvature constraint requires that the local curvature κt at each waypoint does not exceed the maximum allowable value κmax = 1 /R min :
+
+Ct
+
+> kin
+
+(P) = κt − κmax ≤ 0, ∀t ∈ { 1, . . . , T }, (33) yielding T curvature constraints in total. 
+
+Waypoint Spacing Constraint To ensure geometric regularity and suppress interpolation errors during path track-ing, the Euclidean distance between consecutive waypoints is constrained not to exceed a threshold of dmax = 1 .0 m :
+
+Ct
+
+> spc
+
+(P) = ∥pt+1 − pt∥2 − dmax ≤ 0, ∀t ∈ { 0, . . . , T − 1}. (34) Altogether, the three constraint categories produce 200 inequality constraints for T = 40 waypoints. 
+
+4.2 Environment Setup Environment and Data The experimental environment is spatially partitioned into an obstacle generation zone (x ∈ [4 , 28] m , y ∈ [−10 , 10] m ) and a goal sampling zone ( x ∈ [30 , 34] m , y ∈ [−8, 8] m ). Each scenario contains 
+
+Nobs = 8 randomly generated quadrilateral obstacles with side lengths sampled from l ∼ U (1 , 4) m , as illustrated in Fig. 3 (a). A safety margin is enforced around each obstacle during generation to ensure the existence of at least one feasible path in every scenario. A total of 200,000 scenarios are generated and partitioned into training, validation, and testing sets at a ratio of 6:3:1. 
+
+Supervision Signal Rather than relying on kinematically feasible expert demonstrations, which require expensive online solvers such as NMPC, we construct a Global-guided Artificial Potential Field (G-APF) [27] as a cost-effective training signal. A global reference path P∗ is first computed via Dijkstra’s algorithm [14], and a dense potential field 
+
+V (u) is propagated from P∗ into the free space using multi-source wavefront expansion, with high penalties imposed within obstacle regions to create repulsive gradients at obstacle boundaries. The resulting field forms a convex valley along P∗, providing dense gradient guidance across the workspace. The supervision loss combines a potential energy term that aligns each waypoint with the global energy valley, and a local attraction term that prevents stagnation in obstacle-dense regions where the potential gradient may become nearly orthogonal to the desired direction of progress: 
+
+Lpot = T −1
+
+> T
+
+X
+
+> t=1
+
+
+
+Vinterp (pt) + β min   
+
+> u∈N (nt)
+
+∥pt − u∥22
+
+
+
+. (35) Compared to expert demonstrations, the G-APF provides only global topological guidance rather than precise way-point supervision, making it a coarser but significantly cheaper training signal. The constructed potential field is illustrated in Fig. 3 (b). 8A PREPRINT - J UNE 5, 2026 
+
+Baselines We compare the proposed framework against six representative baselines spanning classical and learning-based planning paradigms, with implementation details provided in Appendix A. (1) Hybrid A* [15] is a search-based planner that employs Reeds-Shepp curves to ensure kinematic feasibility. (2) Informed RRT* [20] is a sampling-based planner with obstacle inflation of 1.2 m. (3) NMPC [37] is an optimization-based planner implemented via the CasADi framework [4] and the IPOPT solver [44], sharing the same kinematic model and obstacle representation as our method. (4) IL (Pure) is an imitation learning baseline trained directly on NMPC expert demonstrations without any constraint handling. (5) IL + Soft extends IL (Pure) by incorporating soft-constraint penalties during training. (6) DC3 [16] handles nonlinear equality and inequality constraints by applying gradient-based correction to reduce constraint violation. (7) ENFORCE [29] is a differentiable projection-based method using adaptive-depth Gauss-Newton iterations. For inequality constraints, ENFORCE adopts a Fischer-Burmeister reformulation in an augmented multiplier space. For a fair comparison, DC3, ENFORCE, and DiffSlack are implemented with the same policy network, input representation, and G-APF supervision signal. In all three methods, the gradients of the constraint functions are computed by automatic differentiation. 
+
+Metrics We evaluate performance using two sets of metrics. 
+
+Static Planning Metrics include: (1) Computation Time (CT), the average inference latency per scenario; (2) Average Path Length (APL), the mean total path length computed over collision-free paths only; (3) Average Goal Distance (AGD), the mean Euclidean distance from the final waypoint to the goal, computed over collision-free paths only; (4) Success Rate (SR), the percentage of trials in which the planner produces a valid collision-free path; (5) Kinematic Compliance ( Skin ), the mean ratio of maximum allowable curvature to local curvature: 
+
+Skin = T −1
+
+> T
+
+X
+
+> t=1
+
+min ( κmax /κ t, 1) ; (36) and (6) Spacing Compliance ( Sspc ), the degree to which consecutive waypoint spacings satisfy the upper bound dmax :
+
+Sspc = 1 − d−1 
+
+> max
+> T−1
+
+X
+
+> t=0
+
+max ( ∥pt+1 − pt∥2 − dmax , 0) . (37) Metrics (4), (5), and (6) respectively quantify the satisfaction of the three physical constraints embedded in the projec-tion layer: collision avoidance, kinematic feasibility, and waypoint spacing. 
+
+Dynamic Tracking Metrics assess physical feasibility through tracking experiments in CARLA [17] and real car scenarios. They include: (1) RMSE Cross-Track Error (CTE); (2) Average Heading Error (AHE); and (3) Steering Smoothness ( Jsmooth ): 
+
+Jsmooth = T −1 
+
+> T−1
+
+X
+
+> t=0
+
+|δt+1 − δt|, (38) where δt denotes the steering angle at time step t.Table 1: Network Configurations and Hyperparameters Parameter Value Hidden Dimensions [128, 256, 512, 512] Activation Function ReLU Stage 1 training 300 epochs, lr = 10 −4, Batch Size 512 Stage 2 training 100 epochs, lr = 3 × 10 −5, Batch Size 256 Tolerance ( ϵ) 10 −3
+
+Max Iterations ( Imax ) 50 Path Weight ( wp) 5.0 Slack Weight ( ws) 1.0 
+
+4.3 Implementation Details 
+
+The specific configurations for the policy network, training curriculum, and inference solver are summarized in Table 1. The policy network takes a 66-dimensional vector as input, comprising the target coordinates and the vertices of the obstacles. All learning-based methods are trained for a total of 400 epochs on an Intel i9-14900KF CPU paired with an NVIDIA RTX 2080 Ti GPU. For inference, learning-based methods are evaluated on the NVIDIA RTX 2080 Ti GPU, while non-learning methods run on the Intel i9-14900KF CPU to reflect their respective deployment conditions. 9A PREPRINT - J UNE 5, 2026 
+
+4.4 Comparative Analysis of Planning Performance (a) Hybrid A* (b) Informed RRT* (c) NMPC (e) IL+Soft (d) IL (pure) (g) ENFORCE (f) DC3 (h) DiffSlack (Ours) Raw Projected Start Goal Path points Vehicle Obstacles 
+
+Figure 4: Qualitative comparison on a representative planning scenario. The upper panels show final trajectories produced by representative classical planners and learning-based baselines. The lower panels compare projection-based neural methods, where each column shows the raw prediction before projection and the projected trajectory after correction. DiffSlack yields a smoother projected trajectory in the obstacle-dense region, consistent with its higher planning success and geometric constraint satisfaction. Table 2: Comparative Analysis of Path Planning Performance. ↑ (↓) indicates that higher (lower) values are better. 
+
+Bold values indicate the best results in each category. Category Method CT (s) ↓ APL (m) ↓ AGD (m) ↓ SR (%) ↑ Skin (%) ↑ Sspc (%) ↑
+
+Non-learning Hybrid A* 12.3392 35.57 0.0 98.80 100.0 100.0 Informed RRT* 9.4949 34.59 0.0 86.26 96.50 100.0 NMPC 1.5308 34.47 0.0 82.35 100.0 100.0 Learning-based IL (Pure) 0.0002 33.16 0.7029 36.32 99.59 99.23 IL+Soft 0.0002 34.04 1.1161 72.66 98.60 99.85 DC3( t = 50 ) 0.1012 33.85 0.6927 82.84 97.06 92.61 DC3( t = 100 ) 0.2025 33.80 0.7718 86.44 97.15 94.57 ENFORCE( t = 50 ) 0.1101 33.31 0.9698 84.05 97.28 99.29 DiffSlack (Ours) 0.0983 33.59 0.3474 93.80 99.48 99.89 
+
+Table 2 and Fig. 4 report the quantitative and qualitative planning results on 20,000 test scenarios. Non-learning plan-ners achieve strong constraint satisfaction because feasibility is explicitly considered during search or optimization. However, their computation time is much higher than that of learning-based methods. In contrast, pure imitation learn-ing is extremely fast but has a low success rate and large goal deviation, showing that feed-forward prediction alone is insufficient for reliable constrained planning in this setting. Adding a soft constraint penalty improves feasibility, but the success rate remains clearly lower than that of hard-constrained neural methods. Among projection-based learning methods, DC3 improves feasibility through iterative gradient correction, but its spacing satisfaction remains relatively low, especially under the smaller correction budget. Increasing its correction 10 A PREPRINT - J UNE 5, 2026 budget from t = 50 to t = 100 improves the success rate and spacing satisfaction, but almost doubles the computation time. ENFORCE provides a strong Gauss-Newton projection baseline and achieves computation time comparable to DiffSlack. Nevertheless, it still has lower success rate, lower curvature satisfaction, and lower spacing satisfaction than DiffSlack. These results suggest that DiffSlack achieves more reliable geometric correction under a comparable computation budget, which is consistent with the intended role of the learned slack representation. Figure 4 further illustrates this behavior. The upper panels compare representative final trajectories, while the lower panels show raw and projected outputs of DC3, ENFORCE, and DiffSlack in the same scenario. DC3 starts from a different raw prediction and shows a sharper projected correction near the goal-side region. In contrast, ENFORCE and DiffSlack start from more comparable raw predictions, but their projected trajectories differ noticeably near the obstacle-dense region. ENFORCE exhibits a sharper local correction, whereas DiffSlack produces a smoother pro-jected trajectory with more stable obstacle-avoidance behavior. This qualitative result is consistent with the higher planning success and geometric constraint satisfaction reported in Table 2. 
+
+4.5 Dynamic Validation and Path Tracking 
+
+Figure 5: Dynamic validation environments. (a) CARLA simulation. (b) Real-world experiment with physical obsta-cles. Table 3: Comparative Analysis of Path Tracking Performance. ↑ (↓) indicates that higher (lower) values are better. 
+
+Bold values indicate the best results for each metric. Method RMSE CTE (m) ↓ Max CTE (m) ↓ AHE (°) ↓ Jsmooth ↓
+
+IL+Soft 0.1073 0.2668 9.681 0.0534 DC3( t = 100 ) 0.1137 0.4850 9.237 0.0550 ENFORCE( t = 50 ) 0.1136 0.2766 10.15 0.0554 DiffSlack (Ours) 0.0802 0.1685 8.718 0.0519 
+
+To evaluate whether the planned paths can be reliably executed in practice, we conduct closed-loop tracking experi-ments in both CARLA simulation and a real-world outdoor environment, as shown in Fig. 5. The CARLA experiment is used for comparative evaluation across learning-based planners. For each learning-based method, we forward 2,000 collision-free planned paths to the same tracking controller. Implementation details of the CARLA PD controller are provided in Appendix B. Table 3 reports the CARLA tracking results. DiffSlack achieves the best performance across all four metrics, showing that its planning advantage translates into better closed-loop executability under the same tracking controller. Although DC3 and ENFORCE improve planning feasibility over IL+Soft in Table 2, their tracking performance is slightly worse. This trend is consistent with their lower curvature or spacing satisfaction in the static evaluation. Their projection cor-rections can recover obstacle avoidance but may introduce sharper local geometric changes, which makes the resulting paths harder to track. In contrast, DiffSlack preserves feasibility while producing smoother and more uniformly spaced trajectories, leading to the best tracking accuracy and control smoothness. To further assess deployment feasibility, we validate DiffSlack-planned paths on a physical SUV in an outdoor test site with physical obstacles. We execute eight planned paths under real vehicle dynamics. Fig. 6 presents detailed error analysis for three representative runs. The lateral errors remain small and are distributed around zero, while the longitudinal errors stay within a narrow range along the path. Across all eight real-world runs, the mean lateral 11 A PREPRINT - J UNE 5, 2026 
+
+Figure 6: Tracking error analysis for three representative real-world runs. Each row shows the lateral error spatial distribution along the driven path (left), lateral and longitudinal error profiles over path progress (middle), and the corresponding error histograms (right). 50.00  
+
+> 55.00
+> 60.00
+> 65.00
+> 70.00
+> 75.00
+> 80.00
+> 85.00
+> 90.00
+> 95.00
+> 100.00
+> Success Rate (%)  97.13 93.80
+> 72.66
+> 53.20
+> =3.33
+> =19.46
+
+Collision Avoidance     
+
+> 80.00
+> 82.00
+> 84.00
+> 86.00
+> 88.00
+> 90.00
+> 92.00
+> 94.00
+> 96.00
+> 98.00
+> 100.00
+> Kinematic Compliance Rate (%)
+> 99.71 99.48 98.60 97.72
+> =0.23 =0.88
+
+Kinematic Compliance     
+
+> 99.00
+> 99.10
+> 99.20
+> 99.30
+> 99.40
+> 99.50
+> 99.60
+> 99.70
+> 99.80
+> 99.90
+> Spacing Satisfaction Rate (%)
+> 99.94 99.89 99.85 99.87
+> =0.05 =-0.02
+
+Spacing Satisfaction 
+
+Hard + Expert signal Hard + Coarse signal Soft + Expert signal Soft + Coarse signal 
+
+Figure 7: Ablation study on supervision signal quality under a 2 × 2 design varying constraint enforcement (Hard vs. Soft) and supervision signal (Expert vs. Coarse). Each group of bars reports the gap ∆ between expert and coarse conditions. Hard constraints compress the supervision quality gap by approximately 83% on the success rate metric, while kinematic compliance and spacing satisfaction remain largely insensitive to both factors. tracking error is 0.046 m and the mean maximum lateral error is 0.152 m, demonstrating that DiffSlack-planned paths remain executable beyond simulation. 
+
+4.6 Sensitivity Analysis and Ablation Study 4.6.1 Supervision Signal Quality 
+
+To examine whether hard projection reduces the dependence on supervision quality, we conduct a 2 × 2 ablation study by varying the constraint enforcement mechanism (Hard vs. Soft) and the supervision signal quality (Expert demon-12 A PREPRINT - J UNE 5, 2026 strations from NMPC vs. Coarse G-APF guidance). Here, Hard + Coarse corresponds to the proposed DiffSlack, and Soft + Expert corresponds to IL+Soft in Table 2. The results are shown in Fig. 7. The success-rate results show two clear trends. First, hard projection improves collision avoidance under both expert and coarse supervision, indicating that structural constraint enforcement provides a more reliable feasibility mech-anism than penalty-based regularization alone. Second, hard projection substantially reduces the performance gap caused by supervision quality. As shown by the annotated gaps in Fig. 7, hard projection reduces the expert-coarse supervision gap in SR by approximately 83% compared with soft constraints. This result suggests that the projection layer acts as an implicit corrective mechanism when the external supervision signal is coarse. The kinematic compliance and spacing satisfaction metrics vary much less across the four settings. These two con-straints are already close to saturation for both hard and soft methods, leaving limited room for further improvement. In contrast, collision avoidance involves many obstacle-dependent nonlinear inequalities and is more sensitive to the quality of the learned trajectory. The larger gap reduction on SR therefore indicates that the benefit of hard projection is most pronounced when the constraint set is difficult and supervision is imperfect. 
+
+4.6.2 Necessity of Two-Stage Curriculum Training 
+
+Table 4: Ablation study on two-stage curriculum training. SR, APL, and AGD are reported for DiffSlack and DC3 with and without Stage 1 pretraining. APL and AGD are computed over collision-free paths only. Method Training SR (%) ↑ APL (m) ↓ AGD (m) ↓
+
+DiffSlack w/o Stage 1 89.73 36.78 2.6384 w/ Stage 1 93.80 33.59 0.3474 DC3( t = 50 ) w/o Stage 1 75.41 34.84 0.6794 w/ Stage 1 82.84 33.85 0.6927 0 50 100 150 200 250 300 350 400           
+
+> Training Step
+> 120
+> 140
+> 160
+> 180
+> 200
+> 220
+> Task Loss  pot
+> (a) Task Loss Curve
+> S1 (Mean ± std) noS1 (Mean ± std)
+> 050 100 150 200 250 300 350 400
+> Training Step
+> 0.10
+> 0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> Constraint Value  g
+> (b) Constraint Value Curve
+> S1 (Mean ± std) noS1 (Mean ± std)
+
+Figure 8: Training dynamics with and without Stage 1 (S1) of the curriculum training strategy, averaged over three random seeds with shaded regions indicating standard deviation. (a) Task loss Lpot over training steps. (b) Mean constraint value g over training steps. The vertical dashed line at step 300 marks the transition from Stage 1 to Stage 2 for the S1 variant. Table 4 and Figure 8 present the results of removing Stage 1 pretraining from both DiffSlack and DC3( t = 50 ). In both cases, Stage 1 pretraining consistently improves performance, confirming that soft constraint warm-up is beneficial regardless of the underlying projection mechanism. The two methods show different degradation patterns when Stage 1 is removed. DiffSlack uses a damped Gauss-Newton projection, which can recover feasibility efficiently but is sensitive to initialization. Without Stage 1, the projected feasible points may correspond to poor task solutions, leading to a moderate drop in SR but a substantial deterioration in APL and AGD. This is consistent with the persistently higher task loss of the no-Stage-1 variant in Fig. 8 (a). DC3 uses gradient-based correction, which changes trajectories more gradually but converges more slowly. Without Stage 1, the global path structure is less severely affected, but the fixed correction budget is more likely to be exhausted before feasibility is recovered, causing a larger drop in SR with smaller changes in APL and AGD. Thus, Stage 1 mainly improves task-relevant projection initialization for DiffSlack and finite-step feasibility recovery for DC3. 13 A PREPRINT - J UNE 5, 2026 
+
+4.6.3 Impact of Imax 10 20 30 40 50 60 70 80 90 100            
+
+> Imax
+> 0.905
+> 0.910
+> 0.915
+> 0.920
+> 0.925
+> 0.930
+> 0.935
+> 0.940
+> 0.945
+> SR
+> (a) SR and Actual Iterations vs. Imax
+> SR
+> Mean Actual Iterations
+> 10 20 30 40 50 60 70 80 90 100
+> Number of Iterations I
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> 0.45
+> Average Inference Time (s)
+> (b) Inference Time vs. Iteration Count
+> Inference time
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Mean Actual Iterations
+
+Figure 9: Ablation study on the maximum iteration count Imax . (a) SR and mean actual iteration count as a function of Imax . The vertical dashed line marks the selected value Imax = 50 . (b) Average inference time as a function of fixed iteration count I, showing a linear relationship. Figure 9 examines how the maximum iteration count Imax affects planning performance and computational cost. As shown in Figure 9(a), SR increases rapidly as Imax grows from 10 to 50, then plateaus with diminishing returns beyond this point. Meanwhile, the mean actual iteration count remains substantially below Imax across all settings, indicating that the early stopping criterion is triggered in most cases before the iteration budget is exhausted. Together, these two observations suggest that Imax = 50 strikes a favorable balance between performance and efficiency, and is therefore adopted as the default setting. Figure 9(b) shows that average inference time increases linearly with the number of iterations, which is consistent with the fixed per-step computational cost of the Gauss-Newton update. This confirms that Imax serves as a direct and predictable control over inference latency. Raw Output Final Output (a) Case 1 (b) Case 2 
+
+Figure 10: Representative failure cases of DiffSlack. Each column shows the raw output (top) and the final output after Gauss-Newton projection (bottom). (a) Case 1: Large collision correction displaces local waypoints, introducing curvature and spacing violations (red) that cannot be resolved within the iteration budget. (b) Case 2: The raw output selects a route through a dense obstacle cluster. No feasible path exists within this homotopy class and the projection terminates with collision constraints still violated. 
+
+4.7 Failure Case Analysis 
+
+Although DiffSlack achieves a high success rate overall, failure cases still occur under challenging scenarios. Both failure cases in Figure 10 stem from network generalization error, though the causes differ. 14 A PREPRINT - J UNE 5, 2026 In Case 1, the raw output follows a correct global route but partially penetrates an obstacle locally. Eliminating the collision violation requires a large lateral displacement of the affected waypoints, which inevitably perturbs the local heading angles and inter-waypoint distances of the surrounding path. This geometric coupling introduces curvature and spacing violations as a byproduct that the remaining iterations cannot fully resolve, leaving the solver at a partially feasible point at Imax .In Case 2, the raw output selects a route passing through a dense obstacle cluster where no feasible path exists. Since the chosen homotopy class contains no feasible solution, local minimum-norm corrections cannot alter the global path topology, and the projection terminates with the collision constraint still violated. Case 1 is in principle recoverable, since a sufficiently accurate initialization would allow the projection to converge along the correct global route. Case 2 is not recoverable by any local projection method, as no feasible path exists within the homotopy class selected by the network. Addressing Case 1 therefore calls for tighter initialization via stronger Stage 1 training. Addressing Case 2 requires improving the network’s global routing decisions, for instance through augmented training coverage of obstacle-dense configurations. 
+
+## 5 CONCLUSION 
+
+This paper presents DiffSlack, a differentiable projection layer for enforcing general nonlinear inequality constraints in neural networks. By reformulating inequality constraints as equality constraints via learnable slack variables, the network warm-starts the Gauss-Newton projection solver and reduces the correction burden at inference time. Atwo-stage curriculum training strategy ensures stable optimization and promotes stricter constraint satisfaction. Ex-periments on a vehicle path planning task with 200 inequality constraints demonstrate that DiffSlack achieves a higher success rate than existing learning-based methods under a comparable computational budget. Furthermore, the hard constraint projection layer acts as an implicit supervision mechanism, significantly reducing sensitivity to supervision signal quality. Several directions remain for future work. First, relaxing the initialization requirement of the projection solver to handle cases where the raw output lies outside the convergence basin remains an open problem. Second, the proposed framework is general and can potentially be applied to other engineering domains such as robot motion planning and power system optimization. 
+
+## A Implementation details of baseline methods 
+
+A.1 Hybrid A* 
+
+The Hybrid A* algorithm is implemented based on the PythonRobotics library[38]. The Hybrid A* planner searches for kinematically feasible trajectories in the discretized configuration space (x, y, θ ),using motion primitives generated from a discrete steering set. To improve efficiency, Reeds-Shepp analytic expansion is attempted near the goal region or at a fixed iteration frequency. The search cost f (n) = g(n) + h(n) combines accumulated motion cost with a heuristic obtained from a 2D dynamic-programming distance map. The motion cost penalizes path length, reverse motion, gear changes, steering effort, and steering-rate variation, while polygonal obstacles are inflated for safety and checked for collision along the generated primitives. The hyperparameters are listed in Table A.1. Table A.1: Hyperparameters for the Hybrid A* Planner 
+
+Parameter Value Parameter Value 
+
+XY Grid Resolution 0.5 m Switch Back Cost 100.0 Yaw Grid Resolution 15.0 ◦ Backward Cost 5.0 Motion Resolution 0.1 m Steer Change Cost 5.0 Steering Discrete Count 5 Steer Cost 1.0 Analytic Expansion Dist 5.0 m Heuristic Cost Weight 5.0 Analytic Expansion Freq 10 15 A PREPRINT - J UNE 5, 2026 
+
+A.2 Informed RRT* 
+
+The Informed RRT* algorithm is also implemented based on the PythonRobotics library[38]. The specific hyperpa-rameters used in our implementation are detailed in Table A.2. Table A.2: Hyperparameters for Informed RRT* Planner 
+
+Parameter Value Parameter Value 
+
+Expansion Step Size 0.5 m Obstacle Inflation 1.2 m Goal Sampling Rate 10% Rewiring Constant ( γ) 50.0 Max Iterations 1000 Path Interp. Res. 1.0 m 
+
+A.3 NMPC 
+
+The NMPC problem is implemented using the CasADi framework and solved via the IPOPT interior-point solver. The optimization horizon is discretized into T = 40 steps with a sampling time of ∆t = 0 .5 s . The objective function J
+
+is formulated to minimize the deviation from the target state while penalizing control efforts and enforcing trajectory smoothness: 
+
+J = wg ∥pT − pref ∥2 + 
+
+> T−1
+
+X
+
+> k=0
+
+ wu(v2 
+
+> k
+
++ δ2
+
+> k
+
+) + ws((∆ vk)2 + (∆ δk)2) (A.1) where pT is the terminal position, uk = [ vk, δ k]T are the control inputs (velocity and steering angle), and ∆uk repre-sents the rate of change in controls. The optimization is subject to the kinematic bicycle model constraints, actuator limits, and the differentiable collision avoidance constraints described in the main text. To improve convergence, the solver is warm-started with a linear interpolation between the start and goal configurations. Table A.3: Hyperparameters for NMPC Planner 
+
+Parameter Value Parameter Value 
+
+Prediction Horizon ( T ) 40 Goal Weight ( wg ) 50.0 Time Step ( dt ) 0.5 s Smoothness Weight ( ws) 100.0 Max Velocity 2.0 m/s Input Weight ( wu) 1.0 Safety Margin 0.25 m Max Acceleration 2.0 m/s 2
+
+## B Implementation details of CARLA simulation 
+
+Table B.1: Parameters for CARLA Simulation and Control 
+
+Parameter Value Parameter Value 
+
+Time Step ( ∆t) 0.02 s Lateral KP 3.0 Max Speed 7.2 km/h Lateral KD 1.0 Min Speed 3.6 km/h Long. KP 0.8 Max Lat. Accel. 2.0 m/s 2 Long. KD 0.0 The experiments are conducted in the CARLA simulator using a flat asphalt environment. The simulation operates in synchronous mode with a fixed time step of ∆t = 0 .02 s to ensure deterministic physics updates. The ego vehicle is based on the vehicle.tesla.model3 blueprint, with the front-wheel maximum steering angle customized to 40 ◦.Trajectory tracking is executed by a coupled feedforward-feedback controller. Longitudinal control utilizes a PD reg-ulator to track a dynamic reference speed vcmd derived from the local path curvature κ. This target speed is computed as 
+
+vcmd = clip 
+
+q 
+
+alat ,max /(|κ| + ϵ), v min , v max 
+
+
+
+. (B.1) For lateral control, the steering command integrates a PD feedback term with a geometric feedforward term δf f =arctan( L · κ), calculated using the kinematic bicycle model where L is the wheelbase. 16 A PREPRINT - J UNE 5, 2026 
+
+## Declaration of Generative AI and AI-assisted technologies in the writing process 
+
+During the preparation of this work the authors used Claude in order to refine the language and grammar of the manuscript. After using this tool, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication. 
+
+## Acknowledgments 
+
+This work was supported in part by National Natural Science Foundation of China under Grant 52275564, U24A20109, and by Beijing Natural Science Foundation under Grant QY24251. The authors would like to thank Chengyun Ju, Donggang Sang, and Bingtao Zhang for their valuable discussions and technical support during the course of this work and would also like to thank Jing Ma for the support during the vehicle experiment phase of this work. 
+
+## References 
+
+[1] Agrawal, A., Amos, B., Barratt, S., Boyd, S., Diamond, S., Kolter, J.Z., 2019. Differentiable convex optimization layers, in: Wallach, H., Larochelle, H., Beygelzimer, A., d'Alch´ e-Buc, F., Fox, E., Garnett, R. (Eds.), Advances in Neural Information Processing Systems, Curran Associates, Inc. [2] Ames, A.D., Xu, X., Grizzle, J.W., Tabuada, P., 2017. Control barrier function based quadratic programs for safety critical systems. IEEE Transactions on Automatic Control 62, 3861–3876. doi:10.1109/TAC.2016.2638961. [3] Amos, B., Kolter, J.Z., 2017. OptNet: Differentiable optimization as a layer in neural networks, in: Proceedings of the International Conference on Machine Learning, pp. 136–145. [4] Andersson, J.A.E., Gillis, J., Horn, G., Rawlings, J.B., Diehl, M., 2019. CasADi: A software frame-work for nonlinear optimization and optimal control. Mathematical Programming Computation 11, 1–36. doi:10.1007/s12532-018-0139-4. [5] Bengio, Y., Louradour, J., Collobert, R., Weston, J., 2009. Curriculum learning, in: Proceedings of the Interna-tional Conference on Machine Learning, pp. 41–48. [6] Bertrand, Q., Klopfenstein, Q., Massias, M., Blondel, M., Vaiter, S., Gramfort, A., Salmon, J., 2022. Implicit differentiation for fast hyperparameter selection in non-smooth convex learning. Journal of Machine Learning Research 23, 1–43. [7] Blondel, M., Berthet, Q., Cuturi, M., Frostig, R., Hoyer, S., Llinares-Lopez, F., Pedregosa, F., Vert, J.P., 2022. Efficient and modular implicit differentiation, in: Koyejo, S., Mohamed, S., Agarwal, A., Belgrave, D., Cho, K., Oh, A. (Eds.), Advances in Neural Information Processing Systems, Curran Associates, Inc.. pp. 5230–5242. [8] Boyd, S.P., Vandenberghe, L., 2004. Convex Optimization. Cambridge Univ. Press. [9] Chen, H., Flores, G.E.C., Li, C., 2024. Physics-informed neural networks with hard linear equality constraints. Computers & Chemical Engineering 189, 108764. doi:10.1016/j.compchemeng.2024.108764. [10] Chen, Y., Huang, D., Zhang, D., Zeng, J., Wang, N., Zhang, H., Yan, J., 2021. Theory-guided hard constraint projection (HCP): A knowledge-based data-driven scientific machine learning method. Journal of Computational Physics 445, 110624. doi:https://doi.org/10.1016/j.jcp.2021.110624. [11] Cristian, R., Harsha, P., Perakis, G., Quanz, B.L., Spantidakis, I., 2023. End-to-end learning for optimization via constraint-enforcing approximators. Proceedings of the AAAI Conference on Artificial Intelligence 37, 7253– 7260. doi:10.1609/aaai.v37i6.25884. [12] Csuzdi, D., B´ ecsi, T., T¨ or˝ o, O., 2026. Physics-informed neural particle flow for the bayesian update step. Knowledge-Based Systems 346, 116209. doi:https://doi.org/10.1016/j.knosys.2026.116209. [13] Cui, Z., Gao, T., Talamadupula, K., Ji, Q., 2025. Knowledge-augmented deep learning and its ap-plications: A survey. IEEE Transactions on Neural Networks and Learning Systems 36, 2133–2153. doi:10.1109/TNNLS.2023.3338619. [14] Dijkstra, E.W., 1959. A note on two problems in connexion with graphs. Numerische Mathematik 1, 269–271. doi:10.1007/BF01386390. 17 A PREPRINT - J UNE 5, 2026 [15] Dolgov, D., Thrun, S., Montemerlo, M., Diebel, J., 2010. Path planning for autonomous vehicles in unknown semi-structured environments. International Journal of Robotics Research 29, 485–501. doi:10.1177/0278364909359210. [16] Donti, P., Rolnick, D., Kolter, J.Z., 2021. DC3: A learning method for optimization with hard constraints, in: Proceedings of the International Conference on Learning Representations. [17] Dosovitskiy, A., Ros, G., Codevilla, F., Lopez, A., Koltun, V., 2017. CARLA: An open urban driving simulator, in: Proceedings of the Conference on Robot Learning, pp. 1–16. [18] Federer, H., 1959. Curvature measures. Transactions of the American Mathematical Society 93, 418–491. [19] Fioretto, F., Van Hentenryck, P., Mak, T.W., Tran, C., Baldo, F., Lombardi, M., 2020. Lagrangian duality for constrained deep learning, in: Joint European conference on machine learning and knowledge discovery in databases, Springer. pp. 118–135. [20] Gammell, J.D., Srinivasa, S.S., Barfoot, T.D., 2014. Informed RRT*: Optimal sampling-based path planning focused via direct sampling of an admissible ellipsoidal heuristic, in: Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems, pp. 2997–3004. [21] Gao, Y., Wang, X., Gao, X., 2026. Acda: Anatomically constrained distribution alignment for robust medical image segmentation. Knowledge-Based Systems 341, 115749. doi:10.1016/j.knosys.2026.115749. [22] Gould, S., Fernando, B., Cherian, A., Anderson, P., Santa Cruz, R., Guo, E., 2016. On differentiating parame-terized argmin and argmax problems with application to bi-level optimization. arXiv preprint arXiv:1607.05447 doi:10.48550/arXiv.1607.05447. [23] Grontas, P.D., Terpin, A., Balta, E.C., D’Andrea, R., Lygeros, J., 2026. Pinet: Optimizing hard-constrained neural networks with orthogonal projection layers, in: Proceedings of the International Conference on Learning Representations. [24] Guo, Y., Guo, Z., Wang, Y., Yao, D., Li, B., Li, L., 2024. A survey of trajectory planning methods for au-tonomous driving—part i: Unstructured scenarios. IEEE Transactions on Intelligent Vehicles 9, 5407–5434. doi:10.1109/TIV.2023.3337318. [25] Iftakher, A., Golder, R., Roy, B.N., Faruque Hasan, M., 2026. Physics-informed neural networks with hard nonlinear equality and inequality constraints. Computers & Chemical Engineering 204, 109418. doi:10.1016/j.compchemeng.2025.109418. [26] Jin, L., Li, S., Hu, B., Liu, M., 2019. A survey on projection neural networks and their applications. Applied Soft Computing 76, 533–544. doi:https://doi.org/10.1016/j.asoc.2019.01.002. [27] Khatib, O., 1985. Real-time obstacle avoidance for manipulators and mobile robots, in: Proceedings. 1985 IEEE International Conference on Robotics and Automation, pp. 500–505. doi:10.1109/ROBOT.1985.1087247. [28] Kim, M., Kim, H., 2022. Projection-aware deep neural network for dc optimal power flow without constraint violations, in: 2022 IEEE International Conference on Communications, Control, and Computing Technologies for Smart Grids (SmartGridComm), pp. 116–121. doi:10.1109/SmartGridComm52983.2022.9961047. [29] Lastrucci, G., Schweidtmann, A.M., 2025. ENFORCE: Nonlinear constrained learning with adaptive-depth neural projection. arXiv preprint arXiv:2502.06774 doi:10.48550/arXiv.2502.06774. [30] Li, M., Kolouri, S., Mohammadi, J., 2023. Learning to solve optimization problems with hard linear constraints. IEEE Access PP, 1–1. doi:10.1109/ACCESS.2023.3285199. [31] Liang, E., Chen, M., 2025. Efficient bisection projection to ensure neural-network solution feasibility for op-timization over general set, in: Proceedings of the International Conference on Machine Learning, PMLR. pp. 37071–37099. [32] Liang, E., Chen, M., Low, S.H., 2024. Homeomorphic projection to ensure neural-network solu-tion feasibility for constrained optimization. Journal of Machine Learning Research 25, 1–55. URL: 
+
+http://jmlr.org/papers/v25/23-1577.html .[33] Min, Y., Azizan, N., 2024. HardNet: Hard-constrained neural networks with universal approximation guarantees. arXiv preprint arXiv:2410.10807 . [34] Park, S., Van Hentenryck, P., 2023. Self-supervised primal-dual learning for constrained optimization. Proceed-ings of the AAAI Conference on Artificial Intelligence 37, 4052–4060. doi:10.1609/aaai.v37i4.25520. [35] Polack, P., Altch´ e, F., d’Andr´ ea Novel, B., de La Fortelle, A., 2017. The kinematic bicycle model: A consis-tent model for planning feasible trajectories for autonomous vehicles?, in: Proceedings of the IEEE Intelligent Vehicles Symposium, Los Angeles, CA, USA. pp. 812–818. 18 A PREPRINT - J UNE 5, 2026 [36] Raissi, M., Perdikaris, P., Karniadakis, G., 2019. Physics-informed neural networks: A deep learning frame-work for solving forward and inverse problems involving nonlinear partial differential equations. Journal of Computational Physics 378, 686–707. doi:10.1016/j.jcp.2018.10.045. [37] Rawlings, J., Mayne, D., Diehl, M., 2017. Model Predictive Control: Theory, Computation, and Design. Nob Hill Publishing. [38] Sakai, A., Ingram, D., Dinius, J., Chawla, K., Raffin, A., Paques, A., 2018. PythonRobotics: a Python code collection of robotics algorithms. arXiv preprint arXiv:1808.10703 doi:10.48550/arXiv.1808.10703. [39] Silvestri, M., De Filippo, A., Lombardi, M., Milano, M., 2024. Unify: A unified policy designing framework for solving integrated constrained optimization and machine learning problems. Knowledge-Based Systems 303, 112383. doi:10.1016/j.knosys.2024.112383. [40] Tordesillas, J., Klemm, V., How, J.P., Hutter, M., 2026. RAYEN: Imposition of hard convex constraints on neural networks. arXiv preprint arXiv:2307.08336 doi:10.48550/arXiv.2307.08336. [41] Van Baelen, Q., Karsmakers, P., 2023. Constraint guided gradient descent: Training with inequal-ity constraints with applications in regression and semantic segmentation. Neurocomputing 556, 126636. doi:https://doi.org/10.1016/j.neucom.2023.126636. [42] Wabersich, K.P., Zeilinger, M.N., 2021. A predictive safety filter for learning-based control of constrained nonlinear dynamical systems. Automatica 129, 109597. doi:https://doi.org/10.1016/j.automatica.2021.109597. [43] Wabersich, K.P., Zeilinger, M.N., 2023. Predictive control barrier functions: Enhanced safety mechanisms for learning-based control. IEEE Transactions on Automatic Control 68, 2638–2651. doi:10.1109/TAC.2022.3175628. [44] W¨ achter, A., Biegler, L.T., 2006. On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming. Mathematical Programming 106, 25–57. doi:10.1007/s10107-004-0559-y. [45] Wang, R., Zhang, Y., Guo, Z., Chen, T., Yang, X., Yan, J., 2023. LinSATNet: The positive linear satisfiability neural networks, in: Proceedings of the International Conference on Machine Learning, PMLR. pp. 36605– 36625. [46] Xiao, W., Wang, T.H., Hasani, R., Chahine, M., Amini, A., Li, X., Rus, D., 2023. Barriernet: Differentiable control barrier functions for learning of safe robot control. IEEE Transactions on Robotics 39, 2289–2307. doi:10.1109/TRO.2023.3249564. [47] Yu, Y., Atamturktur, S., 2023. Knowledge-informed generative adversarial network for functional calibration of computer models. Knowledge-Based Systems 263, 110294. doi:https://doi.org/10.1016/j.knosys.2023.110294. [48] Zeng, H., Yang, C., Zhou, Y., Yang, C., Guo, Q., 2024. Glinsat: The general linear satisfiability neural network layer by accelerated gradient descent, in: Globerson, A., Mackey, L., Belgrave, D., Fan, A., Paquet, U., Tomczak, J., Zhang, C. (Eds.), Advances in Neural Information Processing Systems, Curran Associates, Inc.. pp. 122584– 122615. doi:10.52202/079017-3896. [49] Zhang, C., Dai, L., Zhang, H., Wang, Z., 2025. Control barrier function-guided deep reinforcement learning for decision-making of autonomous vehicle at on-ramp merging. IEEE Transactions on Intelligent Transportation Systems 26, 8919–8932. doi:10.1109/TITS.2025.3540862. [50] Zhang, W., Liu, F., Nguyen, C.M., Ou Yang, Z.L., Ramasamy, S., Foo, C.S., 2024. Training neural net-works with classification rules for incorporating domain knowledge. Knowledge-Based Systems 294, 111716. doi:10.1016/j.knosys.2024.111716. 19

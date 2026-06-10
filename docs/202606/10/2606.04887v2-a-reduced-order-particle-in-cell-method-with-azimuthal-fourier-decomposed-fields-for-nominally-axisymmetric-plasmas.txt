@@ -1,0 +1,1563 @@
+Title: A Reduced-Order Particle-in-Cell Method with Azimuthal Fourier-Decomposed Fields for Nominally Axisymmetric Plasmas
+
+URL Source: https://arxiv.org/pdf/2606.04887v2
+
+Published Time: Tue, 09 Jun 2026 02:45:24 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# A Reduced-Order Particle-in-Cell Method with Azimuthal Fourier-Decomposed Fields for Nominally Axisymmetric Plasmas 
+
+Shaun Andrews 1, a) 
+
+Independent Research Consultant 
+
+(Dated: 9 June 2026) 
+
+A reduced-order Particle-in-Cell method is introduced for kinetic simulation of otherwise axisymmetric cylin-drical plasmas that exhibit azimuthal instabilities. The method spatially decomposes all field quantities into a small number of (mesh-less) azimuthal Fourier modes m = 0 , ..., N m, Nm ≪ Nθ , reducing the costly three-dimensional field solve O(Nz Nr Nθ ) to a family of decoupled independent two-dimensional problems 
+
+O(( Nm + 1) Nz Nr ) on the meridional plane — one per mode — while particles continue to move in full three-dimensional space. Fields are reconstructed at particle positions by coherent superposition of these modal contributions, preserving complete azimuthal variation at a fraction of the cost of a conventional three-dimensional simulation. The method is validated against the diocotron instability of a hollow elec-tron annulus across three geometrically distinct configurations, recovering linear growth rates and eigenmode structures within 7% of closed-form analytic predictions, and reproducing the non-linear vortex dynamics characteristic of the instability saturation. A further benchmark against the community-standard Landmark Penning discharge problem recovers the rotating-spoke frequency, radial plasma profiles, and modal energy hierarchy in quantitative agreement with long-time reference simulations, at approximately 640 CPU-hours — a factor of 46 speed-up compared to the median benchmark cost. The approach addresses the important gap between computationally prohibitive full three-dimensional kinetic simulation and the physically limited reduced-dimensionality models on which predictive modelling of anomalous transport in magnetised plasma devices currently relies. 
+
+I. INTRODUCTION 
+
+The kinetic simulation of non-equilibrium plasmas represents a central challenge in computational plasma physics. In a wide class of physically and technologically important plasma systems — spanning magnetic con-finement fusion, space and astrophysical plasmas, low-temperature processing discharges, and plasma propul-sion devices — the behaviour is governed by the detailed structure of the particle distribution function in full six-dimensional phase space. Kinetic effects including in-stabilities, anomalous transport, and wave-particle reso-nances are beyond the reach of fluid or hybrid descrip-tions. Resolving these phenomena self-consistently from first principles, without the closure assumptions and empiri-cal transport coefficients that fluid models require, de-mands a computational approach that retains the ki-netic character of the plasma in its entirety. Particle-in-Cell (PIC) is the definitive method for fully kinetic plasma simulation 1, representing the distribution func-tion as an ensemble of macroparticles advanced under self-consistent electromagnetic fields obtained by solving Poisson’s equation (electrostatic) or the full Maxwell sys-tem (electromagnetic) on a spatial grid 2.One or two-dimensional PIC treatments are often qualitatively inadequate for a wide class of phenom-ena whose dynamics are intrinsically three-dimensional. In magnetised plasma devices of engineering relevance 
+
+> a) sa15339@my.bristol.ac.uk
+
+— Hall-effect thrusters 3,4 , magnetic nozzles 5,6 , Penning discharges 7 — the dominant unresolved physics are often azimuthal in character. Instabilities such as the electron cyclotron drift instability (ECDI), two-stream instability, rotating spoke, and drift wave all require simultaneous resolution of all three spatial dimensions; their non-linear saturation, cross-dimensional coupling, and contribution to anomalous cross-field transport cannot be captured in any lower-dimensional analogue 8.In many applications, the primary motivation for cap-turing plasma instabilities is indeed the influence on macroscopic plasma distributions and global device per-formance via that resultant anomalous transport. De-spite decades of theoretical and experimental investiga-tion, prediction of anomalous transport coefficients from plasma parameters remains elusive, forcing many con-temporary PIC or hybrid codes to rely on phenomenolog-ical or empirically tuned expressions 9–11 . More recently, models derived from first-principle instability theory 12,13 
+
+and data-driven methods 14,15 have also been introduced. However, full three-dimensional kinetic simulation re-mains the fundamental prerequisite for true predictive modelling. The computational demands are, however, severe. The spatial grid must resolve the Debye length λD throughout the domain and the time-step must resolve the electron plasma period ω−1 
+
+> pe
+
+. Consequently, for a d-dimensional system of characteristic size L, the computational cost scales approximately as (L/λ D )dωpe T , becoming partic-ularly prohibitive in three dimensions. For example, a Hall-effect thruster at ne ∼ 10 17 m−3, a cubic centime-tre domain requires O(10 9) cells and O(10 13 ) particle-field operations per microsecond of physical time. Three-
+
+> arXiv:2606.04887v2 [physics.plasm-ph] 8 Jun 2026
+
+2dimensional PIC simulations of thruster segments have been reported consuming in excess of 10 6 CPU-hours per run, confined to sub-centimetre domains and sub-microsecond durations 16,17 . Magnetic nozzles have also been recently modelled in three-dimensions 18–20 , with higher operating densities and longer ion transit time-scales further extending the computational burden. In both cases, heavy artificial scaling of plasma or geomet-ric parameters is utilised to enable the simulations to be feasible. It is this fundamental tension between three-dimensional kinetic fidelity and finite computational re-sources that motivates the development of reduced-cost algorithms that preserve the essential physics at tractable expense. Several strategies have been proposed to reduce this cost. Sparse-grid methods 21,22 replace the standard PIC mesh with a combination of coarser sub-grids, reducing cell count from O(N d) to O(N log N d−1) and demon-strating speed-ups of around 6.5× in Hall-thruster ECDI simulations 23 ; however, they introduce reconstruction er-rors at steep gradients and it remains unclear whether they correctly capture cross-dimensional instability cou-pling. Implicit PIC formulations 24,25 relax the Debye-length and time-step constraints by treating the field-particle coupling iteratively, permitting larger time-steps and coarser grids; energy-conserving variants further suppress numerical heating 26 . The cost is that implicit schemes introduce artificial damping and dispersion for the short-wavelength modes central to kinetic instabilities such as the ECDI and two-stream modes, risking suppression or under-prediction of growth rates and non-linear satura-tion relative to a well-resolved explicit simulation. Global spectral solvers 27 , notably the analytical time-domain based extension of Lehe et al. 28 , reduce the three-dimensional field problem into two-dimensional spectral solves and eliminate the numerical dispersion that afflicts finite-difference schemes. Their reliance on global trans-forms, however, makes parallelisation non-trivial and re-stricts practical applicability to periodic or otherwise highly regular domains, rendering them poorly suited to the open boundaries, embedded conductors, and localised boundary conditions typical of plasma device geometries. As such, these solvers have remained limited to the field of laser-plasma interaction. Recently, a more radical separability ansatz has been proposed 29 , reproduced from a technique originally de-veloped for magnetron spoke modelling 30 . The three-dimensional potential is decomposed as a sum of in-dependent one-dimensional contributions, ϕ(x, y, z ) =
+
+χ(x) + η(y) + ζ(z), reducing the three-dimensional Pois-son solve to a triplet of coupled one-dimensional problems sharing a common macroparticle ensemble. The compu-tational cost is thus reduced to O(dN ). The method has been reported to recover bulk discharge behaviour and macroscopic mode structures in Hall-thruster, Penning and diocotron configurations 31,32 , but the separability ansatz has no rigorous basis in the governing equations: the Poisson equation does not admit separable solutions in the presence of a spatially inhomogeneous charge den-sity, there is no small parameter whose limit recovers the exact solution, and the accuracy depends on the region-decomposition coarseness in a problem-dependent man-ner that provides no a priori convergence guarantee. In-stabilities with oblique wavevectors or correlated cross-dimensional structure may therefore be distorted in both growth rate and non-linear saturation. Finally, machine-learning approaches — including neural-network surrogate field solvers 33,34 , data-driven preconditioners 35 , and reduced-order models 36 — have attracted growing interest but face fundamental con-straints in this setting: generating training data for high-resolution three-dimensional PIC problems is itself ex-tremely expensive, purely data-driven surrogates offer no guarantees of conservation or long-term stability, and the risk of out-of-distribution failure is acute in plasma ap-plications where small parameter variations can produce qualitatively different dynamics. These limitations col-lectively motivate a method that exploits exact mathe-matical structure of the governing equations rather than approximating or learning it. The present work introduces a reduced-order cylindri-cal electrostatic-magnetostatic PIC algorithm designed for the general simulation of plasmas that exhibit nom-inal axisymmetry but with azimuthal instability. The method decomposes the electrostatic potential into m =0, ..., N m azimuthal Fourier modes, reducing the three-dimensional field solve to Nm + 1 independent two-dimensional Poisson equations in the (r, z ) plane. These are solved using a finite-volume discretisation and a geo-metric multigrid algorithm with a mode-adapted precon-ditioner. Particles are advanced in full three-dimensional coordinates with fields reconstructed from the modal con-tributions. The method enables direct simulation of in-stability phenomena and self-consistent computation of transport coefficients — addressing an important capa-bility gap in predictive device modelling. The formulation is intended for nominally axisymmet-ric plasma systems whose non-axisymmetric dynamics can be represented by a small number of azimuthal har-monics. The approach does not eliminate the need for fully three-dimensional kinetic simulation in arbitrary geometries, but instead targets the important class of (mostly magnetised) plasma devices whose dominant de-partures from axisymmetry are low-order azimuthal in-stabilities. Under these conditions, the modal represen-tation provides a substantial reduction in computational cost while retaining fully three-dimensional particle dy-namics. While the approach shares the underlying phi-losophy of some other reduced-order PIC methods that represent fields spectrally in an ignorable coordinate, the distinguishing feature here is the formulation for cylin-drical plasmas through direct decomposition of Poisson’s equation into independent azimuthal harmonics rather than global or temporal transforms. This permits effi-cient treatment of low-order azimuthal instabilities while 3retaining compatibility and versatility with conventional explicit PIC workflows. The remainder of this article is organised as fol-lows. Section 2 derives the azimuthal mode decomposi-tion, the modal Poisson equations, particle deposition-interpolation and field reconstruction. Section 3 de-scribes the numerical implementation, including the finite-volume stencil, multigrid solver, preconditioning strategy, and stability requirements. Section 4 then presents validation against the diocotron instability and a benchmark Penning Discharge case. Section 5 contains the conclusions.   
+
+> II. THEORETICAL FORMULATION A. Governing Equations and Physical Assumptions
+
+A nominally axisymmetric cylindrical plasma is consid-ered with coordinate system (r, θ, z ), where r ∈ [0 , r max ]
+
+is the radial distance from the symmetry axis, θ ∈ [0 , 2π)
+
+is the azimuthal angle and z ∈ [0 , L z ] is the axial coordi-nate. The physical domain is then the cylindrical volume 
+
+Ω = {(r, θ, z ) : 0 ≤ r ≤ rmax , θ ∈ [0 , 2π), 0 ≤ z ≤ Lz }.Multiple particle species s ∈ S are considered, each characterised by charge qs, mass ms, and a distribution function fs(x, v, t ) defined on the six-dimensional parti-cle phase space (x, v) parametrised by (r, θ, z, v r , v θ , v z ).The evolution of each fs is therefore governed by the Vlasov equation 
+
+∂f s
+
+∂t + v · ∇ xfs + qs
+
+ms
+
+(E + v × B) · ∇ vfs = 0 , (1) coupled self-consistently to the fields through the charge density ρ = ∑ 
+
+> s
+
+qs
+
+∫ fs dv and current density j =∑ 
+
+> s
+
+qs
+
+∫ vfs dv.The present implementation is electrostatic: the elec-tric field derives from a scalar potential, E = −∇ ϕ, with 
+
+ϕ satisfying Poisson’s equation ∇2ϕ = −ρ/ε 0. This is ap-propriate when ωp ≪ c/L , a condition met throughout the mesothermal, sub-relativistic regimes of interest in plasma propulsion and related low-temperature plasma devices. The magnetic field B is taken to be magneto-static: a prescribed, time-independent external field with 
+
+∇ · B = 0 , with self-generated fields neglected on the grounds that the plasma beta is small.  
+
+> B. Azimuthal Fourier Decomposition
+
+The fundamental structural ansatz of the formulation exploits the approximate rotational symmetry of the do-main about the z-axis, so that departures of any suffi-ciently regular field from exact axisymmetry are repre-sentable by weighted complex Fourier modes in the az-imuth. The three-dimensional domain Ω is fibred over the two-dimensional meridional plane D = (0 , r max ] × [0 , L z ]
+
+by the azimuthal circle θ ∈ [0 , 2π), and the natural func-tion space for the field equations, L2(Ω; r dr dθ dz ), ad-mits the orthogonal decomposition 
+
+L2(Ω; r dr dθ dz ) = ⊕
+
+> m∈Z
+
+Hm,
+
+Hm = {u(r, θ, z ) = ˆ um(r, z )e−imθ ∣∣ ˆum ∈ L2(D; r dr dz )} .
+
+(2) The three-dimensional field problem over Ω therefore becomes equivalent to the superposition of a family of two-dimensional (r, z ) problems over D, one per modal subspace Hm. The mode m = 0 corresponds to the nom-inal (mean) axisymmetric component, while m̸ = 0 rep-resents asymmetric or fluctuating components. Consistent with the decomposition of Eq. (2), the rele-vant field quantities are represented as truncated complex Fourier series in θ:
+
+ϕ(r, θ, z, t ) = ∑
+
+> m∈Z
+
+ˆϕm(r, z, t ) e−imθ , (3) 
+
+ρ(r, θ, z, t ) = ∑
+
+> m∈Z
+
+ˆρm(r, z, t ) e−imθ , (4) where the complex modal amplitudes ˆϕm, ˆρm ∈
+
+L2(D; r dr dz ) are recovered by the L2([0 , 2π)) projection 
+
+ˆϕm(r, z, t ) = 12π
+
+∫ 2π
+
+> 0
+
+ϕ(r, θ, z, t ) eimθ dθ, (5) 
+
+ˆρm(r, z, t ) = 12π
+
+∫ 2π
+
+> 0
+
+ρ(r, θ, z, t ) eimθ dθ. (6) Since ϕ and ρ are real-valued, the conjugate symmetry 
+
+ˆu−m = ˆ u∗ 
+
+> m
+
+holds for all m, so only modes m ≥ 0 need be retained explicitly, halving the storage and computa-tional cost of the representation. In numerical practice, truncating the infinite series at 
+
+|m| ≤ Nm, for some finite Nm ≥ 0, then retains Nm + 1 
+
+independent copies of D with the truncation error con-trolled by the rate of spectral decay of | ˆϕm| with |m|. For physical systems with smooth azimuthal structure — as is typical of near-cylindrical plasma devices — this de-cay is rapid and a small number of modes should suffice. It is worth emphasising at this point that the trunca-tion to mode Nm is a property of the field representa-tion only: macroparticles are advanced in the full three-dimensional domain with fully self-consistent azimuthal positions θk ∈ [0 , 2π), and their contribution to each mode is evaluated exactly via the projection in Eq. (4). Before proceeding to the field equations, it is noted that the cylindrical field components Er , Eθ , Ez carry the same azimuthal mode structure as ϕ itself. Substituting Eq. (3) into E = −∇ ϕ and using ∂θ e−imθ = −im e −imθ 
+
+gives the modal field amplitudes 
+
+ˆEr,m = −∂r ˆϕm, ˆEθ,m = im r ˆϕm, ˆEz,m = −∂z ˆϕm.
+
+(7) 4Macroparticles 
+
+> in 3D space
+> 2D Modal Grids
+
+# ... 
+
+FIG. 1. Schematic of the DECOMPIC algorithm. All field quantities are decomposed into Nm + 1 complex azimuthal Fourier modes; each modal amplitude satisfies an independent two-dimensional elliptic equation on the meridional plane D; and macroparticles are advanced in full three-dimensional cylindrical coordinates with fields reconstructed by coherent superposition of the modal contributions. 
+
+The azimuthal component acquires the factor im/r —the Fourier-space representation of the azimuthal gradi-ent operator r−1∂θ — which is exact at every mode order and incurs no additional discretisation error. 
+
+C. Modal Decomposition of the Poisson Equation 
+
+The Poisson equation ∇2ϕ = −ρ/ε 0, expressed in cylindrical coordinates, takes the form 
+
+1
+
+r∂∂r 
+
+(
+
+r ∂ϕ ∂r 
+
+)
+
++ 1
+
+r2
+
+∂2ϕ∂θ 2 + ∂2ϕ∂z 2 = − ρε0
+
+. (8) Substituting the representations Eqs. (3) and (4) into Eq. (8) gives 
+
+∑
+
+> m∈Z
+
+[
+
+1
+
+r∂∂r 
+
+(
+
+r ∂ ˆϕm
+
+∂r 
+
+)
+
+e−imθ + 1
+
+r2
+
+∂2
+
+∂θ 2
+
+( ˆϕme−imθ )
+
+(9) 
+
++ ∂2 ˆϕm
+
+∂z 2 e−imθ 
+
+]
+
+= − 1
+
+ε0
+
+∑
+
+> m∈Z
+
+ˆρm e−imθ .
+
+The azimuthal second derivative acting on the m-th term yields ∂2 
+
+> θ
+
+( ˆϕme−imθ ) = −m2 ˆϕme−imθ , since ˆϕm is independent of θ by construction. Eq. (10) therefore be-comes 
+
+∑
+
+> m∈Z
+
+[
+
+1
+
+r∂∂r 
+
+(
+
+r ∂ ˆϕm
+
+∂r 
+
+)
+
+− m2
+
+r2 ˆϕm + ∂2 ˆϕm
+
+∂z 2
+
+]
+
+e−imθ (10) 
+
+= − 1
+
+ε0
+
+∑
+
+> m∈Z
+
+ˆρm e−imθ .
+
+To isolate the equation for a single mode, both sides are multiplied by eim ′θ for a fixed projection index 
+
+m′̸ = m and integrated over θ ∈ [0 , 2π) to project onto the m′-th mode. Using the orthogonality relation 
+
+> 12π
+
+∫ 2π 
+
+> 0
+
+ei(m′−m)θ dθ = δm′m, all cross terms vanish iden-tically. This eliminates every term in the sum except 
+
+m = m′, after which the prime is dropped, yielding inde-pendent two-dimensional elliptic equations for each az-imuthal mode m:
+
+1
+
+r∂∂r 
+
+(
+
+r ∂ ˆϕm
+
+∂r 
+
+)
+
+− m2
+
+r2 ˆϕm + ∂2 ˆϕm
+
+∂z 2 = − ˆρm
+
+ε0
+
+, (11) which may be written compactly as Lm ˆϕm = −ˆρm/ε 0,where 
+
+Lm ≡ B m + ∂2 
+
+> z
+
+= 1
+
+r∂∂r 
+
+(
+
+r ∂∂r 
+
+)
+
+− m2
+
+r2
+
+︸ ︷︷ ︸ 
+
+> Bessel operator Bm
+
++ ∂2
+
+∂z 2 , (12) This is the central result of the theoretical formula-tion. The three-dimensional Poisson problem over Ω is 5reduced exactly to a family of Nm + 1 independent two-dimensional elliptic problems on the meridional plane D,one per subspace Hm, each driven by a single complex modal source ˆρm. The decoupling is an exact conse-quence of the Fourier orthogonality and imposes no re-striction on the structure of ˆρm; it holds for any ρ ad-mitting the representation of Eq. (4), regardless of mode amplitudes. The scheme reduces to a standard axisym-metric ( r, z ) PIC code in the limit Nm = 0 .The operator Lm in Eq. (12) has a transparent struc-ture: its radial part Bm ≡ r−1∂r (r∂ r ) − m2/r 2 is the Bessel operator of order m, which differs from the ax-isymmetric ( m = 0 ) cylindrical Laplacian by the centrifu-gal shift −m2/r 2, and is augmented in the z-direction by the standard second derivative ∂2 
+
+> z
+
+. Each discrete m2/r 2
+
+term contributes a non-negative diagonal increment to every cell of the corresponding assembled operator ma-trix Lm, that grows with m, which has two important consequences relative to the m = 0 case. First, the Weyl monotonicity bound applied to the dis-crete splitting Lm = L0 − diag( m2/r 2) gives 
+
+κ(Lm) ≤ |λmax (L0)| + m2/∆r2min 
+
+|λmin (L0)| + m2/r 2max 
+
+> m→∞
+
+−−−−−→ r2max 
+
+∆r2min 
+
+,
+
+(13) where λ represents an eigenvalue. The matrix condi-tion number κ therefore decreases monotonically with m
+
+and saturates at a value independent of the axial domain length. The conditioning analysis suggests progressively improved conditioning for higher mode numbers. Secondly, the behaviour of ˆϕm near the axis is deter-mined by the indicial analysis of Eq. (11) as r → 0, which gives ˆϕm ∼ r|m|, enforcing the axis conditions 
+
+∂r ˆϕ0
+
+∣∣∣r=0 
+
+= 0 ( m = 0) , ˆϕm
+
+∣∣r=0 = 0 ( m ≥ 1) . (14) These express the physical requirement that a mode of azimuthal order m ≥ 1 must carry zero amplitude on the axis — a non-zero value would imply an infinite az-imuthal gradient — and is the discrete counterpart of the regularity condition required by the Bessel functions. Up to this point, it is noted the decomposition is ex-act. The only approximation introduced by the present method is truncation of the Fourier expansion at a fi-nite maximum mode number Nm. Particle trajectories remain fully three-dimensional and all retained modes contribute self-consistently to the reconstructed electric field experienced by each particle.  
+
+> D. Charge Density Decomposition and Particle Deposition
+
+For macroparticles with weight Wk and thus macro-charge Qk = Wkqs, the modal charge density at merid-ional grid node (rp, z q ) is obtained by projecting the par-ticle ensemble onto mode m via Eq. (5): 
+
+ˆρm(rp, z q , t ) = 1
+
+Vp,q 
+
+∑
+
+> s
+
+∑ 
+
+> k∈N (p,q )
+
+Qk S(rp−rk, z q −zk) eimθ k ,
+
+(15) where Vp,q is the volume of the cylindrical annular cell at node (p, q ), and N (p, q ) denotes the set of macroparticles within the compact support of S centred on (rp, z q ). Each such macroparticle contributes simultaneously to all re-tained modes through the complex phase factor eimθ k ,the only quantity in Eq. (15) that encodes the parti-cle’s azimuthal position. The shape function weights 
+
+S(rp−rk, z q −zk) are computed once per particle and reused across all modes, so the marginal cost per ad-ditional mode is a single complex multiply. The phase factor is evaluated without computing θk
+
+explicitly. Writing the Cartesian particle position as xk +
+
+iy k = rkeiθ k ,
+
+eimθ k =
+
+( xk + iy k
+
+rk
+
+)m
+
+, (16) which avoids the branch-cut ambiguity of arctan( yk/x k)
+
+near the axis and recovers unity for m = 0, giving the standard axisymmetric deposition. The sequence 
+
+{eimθ k }Nm 
+
+> m=0
+
+is generated by the angle-addition recurrence 
+
+ei(m+1) θk = eimθ k · eiθ k , (17) requiring one complex multiply per mode with no further transcendental function evaluations.  
+
+> E. Field Reconstruction and Particle Interpolation
+
+Given the modal potentials { ˆϕm}Nm 
+
+> m=0
+
+obtained by solv-ing Eq. (11), the three-dimensional electric field on Ω at any point (rp, θ, z q ) is reconstructed from Eq. (7) as 
+
+E(rp, θ, z q , t ) = ˆE0(rp, z q )+2 Re 
+
+[ Nm∑
+
+> m=1
+
+ˆEm(rp, z q ) e−imθ 
+
+]
+
+,
+
+(18) where the factor of 2 and the real-part operation account for the conjugate symmetry of the negative modes. The electric field at macroparticle k is instead obtained by first interpolating each modal amplitude from the sur-rounding grid nodes to (rk, z k) using the same shape function as the deposition step, then applying the az-imuthal phase. Using the same S as in Eq. (15) ensures the interpolation and deposition operators are adjoints, 6a condition required for strict momentum conservation 1:
+
+E(xk) = ∑
+
+> (p,q )∈G (k)
+
+S(rp−rk, z q −zk) ˆE0(rp, z q )+ 2 Re 
+
+[ Nm∑
+
+> m=1
+
+( ∑
+
+> (p,q )∈G (k)
+
+S(rp−rk, z q −zk)
+
+× ˆEm(rp, z q )
+
+)
+
+e−imθ k
+
+]
+
+,
+
+(19) where G(k) denotes the stencil of grid nodes in the merid-ional plane within the support of S surrounding particle 
+
+k. The phase e−imθ k is accumulated using the same re-currence Eq. (17) as the deposition step, adding no fur-ther transcendental function evaluations. The cylindrical field components are converted to Cartesian form via Ex = Er cos θk − Eθ sin θk, Ey =
+
+Er sin θk + Eθ cos θk, Ez = Ez , and the particle trajec-tories are then integrated using the standard Boris algo-rithm. The scheme is fully self-consistent: modal sources {ˆρm}
+
+are deposited from the three-dimensional particle ensem-ble, the Nm + 1 independent systems of Eq. (11) are solved, and the reconstructed fields from Eq. (19) drive the particle advance. Global charge conservation fol-lows from the linearity of the deposition: ∑ 
+
+> k
+
+Qkeimθ k
+
+for m̸ = 0 contributes nothing to the volume-integrated charge by orthogonality, while m = 0 recovers the exact total charge exactly.   
+
+> III. NUMERICAL IMPLEMENTATION A. Code Architecture and Parallelisation Strategy
+
+The method is implemented in a parallelised Java code-base, hereafter referred to as DECOMPIC. Two levels of concurrency arise naturally from the mathematical struc-ture of Section II. At the outermost level, the Nm + 1 
+
+modal Poisson solves are entirely independent: mode m
+
+takes only ˆρm as input and produces ˆϕm as output, with no data dependencies between subspaces Hm at the field-solve stage. These solves are therefore dispatched as in-dependent tasks across a thread pool. Load-balancing is maintained by assigning modal pairs to threads symmet-rically around the midpoint of the mode index range, exploiting the property that convergence cost should favourably decrease with m per the conditioning bound established in Eq. (13). For Nm + 1 modes distributed across NT threads, the optimal assignment groups mode 
+
+m with mode Nm −m on the same thread, so that thread 
+
+t ∈ { 0, . . . , N T −1} is assigned the mode pair {t, N m −t}.More generally, with NT ≤ ⌊ (Nm + 2) /2⌋, thread t is as-signed the interleaved mode set 
+
+Mt = {t + kN T : k ∈ Z≥0, t + kN T ≤ Nm}
+
+(20) 
+
+∪{ Nm − t − kN T : k ∈ Z≥0, N m − t − kN T ≥ 0},
+
+distributing the most expensive low-m solves evenly with the cheapest high-m solves. The expected wall-clock time per thread is then approximately equalised across the pool because the improved conditioning of high modes compensates for the full cost of the low modes they are grouped with. At the inner level, the parti-cle advance, charge deposition, and field interpolation kernels are parallelised over the macroparticle ensemble using parallel stream abstraction.  
+
+> B. Stability and Numerical Constraints
+
+The resolution and stability requirements on the spa-tial grid, time-step, and particle loading all follow from the structure of the decomposition and are derived here together. It is first noted that the m ≥ 1 modal solves are driven by the perturbation component of the density. The nor-malised amplitude ˜ϵs,m = |ˆns,m |/ˆns, 0, where ˆns, 0(r, z ) is the local azimuthal mean density, satisfies ˜ϵs,m ∈ [0 , 1] 
+
+rigorously: the triangle inequality applied to the Fourier projection (5) with |eimθ | = 1 gives |ˆns,m | ≤ ˆns, 0 for all 
+
+m. The bound is approached but not exceeded even in strongly non-uniform configurations.  
+
+> 1. Time-step constraints
+
+The standard PIC stability requirements on electron plasma frequency, Courant condition, and gyro-frequency give the operational time-step 
+
+∆t ≤ min 
+
+(
+
+0.1
+
+ω(0) 
+
+> pe
+
+, ∆rue + 3 vth,e 
+
+, ∆zue + 3 vth,e 
+
+, 0.35 Ωce 
+
+)
+
+,
+
+(21) where vth,e = √kB Te/m e is the electron thermal speed, and Ωce = eB/m e is the electron cyclotron frequency. Since the effective plasma frequency for mode m ≥ 1 is 
+
+ω(m) 
+
+> pe
+
+= √˜ϵe,m ω(0)  
+
+> pe
+
+≤ ω(0)  
+
+> pe
+
+, the m = 0 bound is always the most restrictive and Eq. (21) governs all modes. An additional azimuthal Courant condition arises from the finite bandwidth of the mode representation. The highest retained mode Nm can represent azimuthal struc-ture only down to a wavelength 2πr/N m at radius r;a particle traversing more than one half-wavelength per step aliases energy into unresolved modes. This defines an effective azimuthal cell size 
+
+∆θeff (r) = πr Nm
+
+, (22) 7Modal Poisson Solves 
+
+> Solve Poisson
+> for mode 0
+> Solve Poisson
+> for mode 1
+> Solve Poisson
+> for mode 2
+> Solve Poisson
+> for mode M
+> Thread Pool
+> Interpolation of fields to macroparticle positions
+> Integration of macroparticle trajectories
+> Charge density decomposition and particle deposition
+> Parallel
+> Stream
+> DECOMPIC
+
+FIG. 2. Structure of a single DECOMPIC time-step. Charge deposition projects the three-dimensional particle ensemble onto the Nm + 1 independent meridional grids; the modal Poisson solves run concurrently across a thread pool; the reconstructed three-dimensional fields drive the Boris particle advance. 
+
+and the associated Courant streaming constraint 
+
+∆t ≤ π r Nm vθ, max 
+
+, (23) This is generally less restrictive than Eq. (21) at typical device radii, but should be checked when large azimuthal drift velocities are present. The full operational time-step is thus the minimum of Eqs. (21) and Eq. (23). The reduced effective plasma frequency of the m ≥ 1
+
+solves also permits potential modal subcycling: the par-ticle ensemble and m = 0 solve advance at ∆t while the 
+
+m ≥ 1 solves are updated only once every Nt ≤ 1/√˜ϵs,m 
+
+particle steps. Averaging the Nt accumulated depositions before each modal solve reduces the statistical noise in the source by √Nt, with direct benefit to the signal-to-noise ratio discussed in Section III B 3. 
+
+2. Spatial constraints and radial mesh requirements 
+
+The Debye constraint ∆r, ∆z ≲ λD for the m = 0 
+
+background automatically satisfies grid-heating stability for all higher modes, since the effective Debye length 
+
+λD,m = λD /√˜ϵe,m ≥ λD is always larger. Two fur-ther resolution requirements are specific to the Fourier decomposition however and bear directly on the design of the mesh. The virtual cell of Eq. (22) imposes a radial consistency condition: for the meridional grid not to be coarser than the azimuthal structure to resolve at the same radius, one requires 
+
+∆rp
+
+rp
+
+≲ πNm
+
+. (24) This is a fractional constraint on the cell size, demanding geometric spacing throughout the domain and therefore violated near the axis by any uniform mesh with fixed 
+
+∆r.A more demanding requirement arises from the struc-ture of Lm. The modal eigenfunctions near the axis behave as ˆϕm ∼ r|m|, so the radial gradient scales as 
+
+∂r ˆϕm ∼ | m|r|m|− 1. For a finite-volume stencil to repre-sent this profile to second-order accuracy, the truncation error in the centred-difference approximation to ∂r ˆϕm
+
+scales as ∆r2 ∂rrr ˆϕm ∼ ∆r2 |m|(|m| − 1)( |m| − 2) r|m|− 3.Requiring this to be small relative to the gradient itself gives ∆r2/r 2 ≲ 1/(|m|2) and the fractional constraint 
+
+∆rp
+
+rp
+
+≲ 1
+
+Nm
+
+. (25) This is stricter than Eq. (24) by a factor of π, but ap-plies only near the axis. For m ≥ 1 the Dirichlet condi-tion ˆϕm|r=0 = 0 is imposed exactly via a boundary row substitution, thus the accuracy argument is not required to hold at p = 0 itself. The binding constraint is at the first interior cell p = 1 and is again violated by a uni-form mesh. By contrast, condition Eq. (24) applies to the full mesh and sets a weaker but globally uniform re-quirement. Together they motivate a radial mesh that clusters cells near the axis, with the required degree of clustering scaling directly with Nm.8
+
+3. Signal-to-noise ratio and particle-per-cell requirements 
+
+Because all modal subspaces Hm share the same macroparticle ensemble, the noise in the modal charge deposition has a single origin: the finite-sample represen-tation of the continuous distribution function. For a cell containing Nppc macroparticles with azimuthal positions 
+
+{θk} drawn from the physical distribution, the deposited amplitude of mode m is estimated by the sample mean 
+
+Am = N −1ppc 
+
+∑ 
+
+> k
+
+eimθ k . The plasma density perturbation at mode m has normalised amplitude ˜ϵs,m = |ˆnm|/ˆn0 ∈
+
+[0 , 1] , which is the signal: ⟨eimθ ⟩g = ˜ ϵs,m eiφ m . Since 
+
+|eimθ | = 1 identically, the variance of a single sample is 
+
+σ2 
+
+> X
+
+= 1 − ˜ϵ2
+
+> s,m
+
+, giving the per-mode signal-to-noise ratio 
+
+SNR m = ˜ ϵs,m 
+
+√
+
+Nppc 
+
+1 − ˜ϵ2
+
+> s,m
+
+, (26) which for ˜ϵs,m ≪ 1 reduces to ˜ϵs,m 
+
+√Nppc , consis-tent with Lifschitz et al. 27 . The requirement SNR m ≥
+
+SNR min gives 
+
+Nppc ≥ SNR 2min (1 − ˜ϵ2
+
+> s,m
+
+)˜ϵ2
+
+> s,m
+
+. (27) For a growing instability, this requirement need only be satisfied at the amplitude of physical interest rather than at the seeded perturbation level: an exponentially growing mode with initial amplitude α ≪ 1 and growth rate γ rises above the noise floor 1/√Nppc within a few growth times regardless of Nppc , becoming self-resolving before it reaches saturation. Eq. (27) is therefore binding primarily for steady-state or weakly driven modes that must be resolved at a fixed amplitude. At saturation, where ˜ϵs,m ∼ O (0 .01 –1) , the requirement is modest: for 
+
+˜ϵs,m = 0 .3 and SNR min = 3 one needs Nppc ≥ 91 . This particle cost is not specific to the DECOMPIC method: any simulation resolving the same fractional perturbation faces an identical shot-noise constraint. For applications requiring accurate reconstruction of the full azimuthal density profile, the relevant quantity is the noise in the reconstructed field ρ(rp, θ, z q ). The noise contributions from different modes are uncorre-lated to leading order in ˜ϵs,m — the cross-covariance 
+
+Cov( δ ˆρm, δ ˆρ∗ 
+
+> m′
+
+) is O(˜ ϵ2
+
+> s,m
+
+/N ppc ) for m̸ = m′ — so each of the 1+2 Nm independent real Fourier components con-tributes an independent noise term to the reconstruction. The mean-squared noise averaged over θ is therefore 
+
+⟨| δρ |2⟩θ ≈ 1 + 2 Nm
+
+Nppc 
+
+, (28) and the reconstruction SNR is 
+
+SNR rec ≈
+
+( Nppc 
+
+1 + 2 Nm
+
+)1/2
+
+. (29) Maintaining a fixed reconstruction noise level as modes are added requires Nppc ∝ 1 + 2 Nm, which is the Nyquist criterion for the reconstruction: 2Nm independent az-imuthal samples are the minimum needed to distinguish 
+
+Nm harmonics, consistent with the empirical finding of Lehe et al. 28 . For Nm = 4 and SNR rec = 10 this requires only Nppc ≈ 900 , a standard loading for explicit PIC. The more demanding per-mode requirement (27) governs when ˜ϵs,m < 1/√1 + 2 Nm; otherwise (29) is binding. With modal subcycling at factor Nt ≤ 1/√˜ϵs,m , tem-poral averaging of the deposition reduces the per-mode noise by √Nt, softening Eq. (27) to 
+
+Nppc ≳ SNR 2min 
+
+˜ϵ3/2
+
+> s,m
+
+, (30) where the approximation uses the maximum permissible 
+
+Nt = ⌊1/√˜ϵs,m ⌋.
+
+C. Finite-Volume Discretisation on a Stretched Radial Mesh 
+
+The radial grid is defined by the hyperbolic-tangent mapping 
+
+rp = rmax 
+
+tanh [β(ξp − ξc)] − tanh( −βξ c)tanh [β(1 − ξc)] − tanh( −βξ c) , ξp = pNr
+
+,
+
+(31) where β > 0 controls the degree of axis clustering and 
+
+ξc ∈ (0 , 1) locates the target clustering region. The stretching parameter is chosen so that adjacent cell-size ratios do not exceed 1.2–1.5, maintaining second-order accuracy of the stencil and ensuring the eigenfunc-tion (25) and virtual-cell (24) conditions are met. Cell face positions (located at the grid points rp+1 /2), centres, and widths are 
+
+rp±1/2 = rp
+
+∣∣p→p±1, rp = 12 (rp−1/2 + rp+1 /2),
+
+∆rp = rp+1 /2 − rp−1/2, (32) with inter-cell-centre distances dp±1/2 = rp±1 − rp un-equal in general on the stretched grid. The axial direction uses a uniform mesh with spacing ∆z = Lz /N z .The modal Poisson equation (11) is discretised by a cell-centred finite-volume method. Integrating over the control volume Vp,q = [ rp−1/2, r p+1 /2] × [zq−1/2, z q+1 /2]
+
+with the cylindrical Jacobian weight r, evaluating the radial flux exactly with face-centred derivatives ap-proximated by second-order centred differences using the inter-cell-centre distances dp±1/2, and applying cell-centre quadrature to the axial and centrifugal volume integrals, yields the five-point stencil 
+
+α(m) 
+
+> p+1
+
+ˆϕm,p +1 ,q + α(m) 
+
+> p−1
+
+ˆϕm,p −1,q + βq
+
+( ˆϕm,p,q +1 + ˆϕm,p,q −1
+
+)
+
+− A(m) 
+
+> p,q
+
+ˆϕm,p,q = − rp ˆρm,p,q 
+
+ε0
+
+, (33) 9with coefficients 
+
+α(m) 
+
+> p±1
+
+= rp±1/2
+
+∆rp dp±1/2
+
+, βq = rp
+
+∆z2 , (34) 
+
+A(m) 
+
+> p,q
+
+= α(m) 
+
+> p+1
+
++ α(m) 
+
+> p−1
+
++ 2 βq + m2
+
+rp
+
+︸︷︷︸ 
+
+> Bessel shift
+
+. (35) The mode dependence is entirely confined to the diag-onal through the centrifugal contribution m2/r p in (35) — the discrete counterpart of the Bessel-operator shift 
+
+m2/r 2 in Lm — which grows with m and diverges near the axis, progressively stiffening the diagonal for higher modes. The assembled system is 
+
+Lm ˆϕm = ˆ sm, ˆsm ≡ − 1
+
+ε0
+
+R ˆρm, (36) where Lm ∈ RNr Nz ×Nr Nz assembles the stencil (33) and 
+
+R = diag( rp∆rp∆z) is the diagonal cell-volume matrix. Although the off-diagonal coefficients α(m) 
+
+> p±1
+
+are asym-metric on the stretched grid, Lm is symmetric with re-spect to the r-weighted discrete inner product ⟨u, v ⟩r =∑ 
+
+> p,q
+
+up,q vp,q rp∆rp∆z, the discrete counterpart of the in-ner product for which Lm is self-adjoint.  
+
+> D. Mode-Dependent Preconditioning and Multigrid Solver
+
+The linear system (36) is solved by a geometric multi-grid algorithm with Gauss–Seidel smoothing. The mode-dependent improvement in conditioning established in Section II C is entirely confined to the diagonal of Lm
+
+through A(m) 
+
+> p,q
+
+; a diagonal Jacobi preconditioner is there-fore both the natural and sufficient choice: 
+
+D(m),−1 
+
+> A
+
+Lm ˆϕm = D(m),−1 
+
+> A
+
+ˆsm, D(m) 
+
+> A
+
+= diag( A(m) 
+
+> p,q
+
+).
+
+(37) The preconditioned diagonal is unity by construction; off-diagonal entries are scaled by 1/A (m) 
+
+> p,q
+
+, decreasing with 
+
+m2/r p. No factorisation is required: the A(m) 
+
+> p,q
+
+are com-puted once from the assembled stencil at initialisation and stored as a vector per mode. The preconditioned Gauss–Seidel sweep within each V-cycle is 
+
+ˆϕ(k+1)  
+
+> m
+
+= ˆϕ(k) 
+
+> m
+
++ ω D(m),−1 
+
+> A
+
+r(k) 
+
+> m
+
+,
+
+r(k) 
+
+> m
+
+= ˆ sm − Lm ˆϕ(k) 
+
+> m
+
+, (38) where ω ∈ (1 , 2) is a relaxation parameter. For m ≥ 1,
+
+ˆϕm is complex but Lm is real, so the sweep is applied independently to the real and imaginary parts at no additional cost. Coarse-grid operators are constructed by direct re-discretisation of Eq. (11) on the coarsened mesh, preserving m2/r p throughout the hierarchy so the Jacobi preconditioner is trivially reapplied at each level. The solver cost per mode is O(Nr Nz ). Since the modal equations are independent, the computational cost scales linearly with the number of retained modes. The total serial complexity of the field solve is therefore 
+
+O(( Nm + 1) Nr Nz ), while ideal parallel execution per-mits all modal solves to proceed concurrently, reducing the wall-clock cost toward O(Nr Nz ). 
+
+> IV. BENCHMARKING
+
+The validation strategy adopted here focuses on ver-ification of the modal decomposition and reconstruc-tion procedures rather than exhaustive demonstration of fully three-dimensional physics. First, the diocotron in-stability provides a case for which linear growth rates and eigenmode structures are known analytically, then the Landmark Penning discharge constitutes a widely used benchmark exhibiting strongly non-axisymmetric behaviour. Although neither problem exercises substan-tial axial variation, together they provide stringent tests of the modal field representation that forms the basis of the present method. The extension of the method to fully three-dimensional plasma cases, with significant ax-ial dynamics, shall follow this work.  
+
+> A. Diocotron Instability
+
+The diocotron instability is a purely electrostatic, shear-driven instability of magnetised non-neutral or par-tially neutralised electron columns and represents one of the most thoroughly characterised azimuthal instabilities in plasma physics 37,38 . It is the plasma analogue of the Kelvin–Helmholtz instability in neutral fluids: free en-ergy stored in the radial gradient of the azimuthal E × B
+
+drift velocity drives growing perturbations of the elec-tron density column. In the strongly magnetised limit, where the electron Larmor radius is small compared with the gradient scale length, electron fluid elements undergo purely azimuthal E×B drift and the instability manifests as a growing azimuthal ripple on the column boundary. The instability is ideally suited as a primary valida-tion benchmark for the DECOMPIC method for sev-eral complementary reasons. First, it is intrinsically az-imuthal: the linear eigenmode has no axial variation, so the quasi-3D field decomposition captures the com-plete linear physics without any truncation error from mode limitation. Second, closed-form analytic predic-tions for both the growth rate and oscillation frequency exist for hollow cylindrical equilibria, providing unam-biguous quantitative targets against which the simula-tion can be judged. Third, the nonlinear phase vortex roll-up, discrete vortex formation, and eventual merger is well documented and provides qualitative benchmarks beyond the linear regime. Finally, the test involves only electrons advancing in a prescribed static magnetic field with a self-consistent electrostatic field, making it a clean isolated test of the Fourier charge deposition, modal Poisson solver, field reconstruction, and cylindrical Boris 10 
+
+> FIG. 3. Setup of the Diocotron validation case.
+
+pusher, free from the additional complexity of ion dy-namics. The equilibrium is a uniform hollow electron annulus of inner radius R1, outer radius R0, axial width w, and uni-form number density ne within the annulus, surrounded by vacuum out to a conducting wall at Rw. A stationary neutralising ion background of density ni = ne is con-fined to the same annular region to ensure global quasi-neutrality. A uniform axial magnetic field B = B0 ˆz is prescribed. The geometry is illustrated schematically in Figure 3. The characteristic frequency scale is the diocotron fre-quency 
+
+ωD = ω2
+
+> pe
+
+2Ω ce 
+
+= nee
+
+2ε0B0
+
+, (39) which sets the rate of rigid-rotor E × B precession of the electron column and is used to normalise time throughout this section, tD ≡ ωD t.Linear theory for azimuthal mode m gives a complex eigenfrequency ωm = ωr,m + iγ m with an imaginary part that yields the growth rate 37 ,
+
+γm
+
+ωD
+
+=
+
+[
+
+1 −
+
+( R1
+
+R0
+
+)2m] [ ( R0
+
+Rw
+
+)2m
+
+−
+
+( R1
+
+R0
+
+)2m]
+
+− 14
+
+[( R0
+
+Rw
+
+)2m
+
+−
+
+( R1
+
+R0
+
+)2m (
+
+1 + 
+
+( R0
+
+Rw
+
+)2m)] 2
+
+
+
+> 12
+
+.
+
+(40) Here the diocotron frequency ωD defined in Eq. (39) has absorbed the density and field dependence, so Eq. (40) depends only on the three geometric ratios 
+
+R1/R 0, R0/R w, and the mode number m. In the limit 
+
+Rw → ∞ the wall term (R0/R w)2m → 0 and both ex-pressions simplify; bringing the wall closer stabilises the instability by reducing the effective shear available to the mode. The growth rate is maximised at an intermedi-ate wall proximity, and the most unstable mode shifts to higher m as the annulus becomes thinner ( R1/R 0 → 1). Eq. 40 can also be used to identify the most unstable dominant mode m ∗— that with the highest growth rate — for any given geometry. Three geometrically distinct configurations are stud-ied, spanning different combinations of annular thickness and wall proximity, to assess the code across a range of mode numbers and growth rates. Their normalised pa-rameters are collected in Table I. In all cases the physical density and magnetic field enter only through ωD and the time normalisation; the dynamics are governed entirely by the geometric ratios. The initially injected electron population is Maxwellian at 1 eV with density ne = 1 × 10 12 
+
+m−3. The applied magnetic field is Bz = 25 G. The stretched radial mesh consists of 256 cells and strictly adheres to the constraints listed in Section III. The axial domain length Lz is limited to λD and resolved by 10 cells, with the annulus width w = 0 .2λD ; this limits the effects of axial dispersion that would distort the desired pure assessment of the azimuthal instability. The limiting time-step is 0.1ω−1 
+
+> pe
+
+, with the simulations run to tω pe = 100 which corresponds to approximately 
+
+tω D = 64 . Nominally, the average number of particles per cell Nppc = 200 (which leads to Nppc > 600 in the regions occupied by plasma) and the mode number is truncated at Nm = 3 m∗ + 1 to ensure higher harmonics of the dominant mode are retained. The reconstructed radial-azimuthal electron densities for all three cases are presented together in Figure 4. This reconstruction is achieved via Eq. 4 using a resolution of 256 azimuthal points. The presented snapshots trace the full lifecycle of the instability from destabilisation, vortex roll-up, discrete vortex formation, and eventual merger. The unperturbed annulus develops an m∗-periodic cor-rugation at the outer boundary during the linear phase, with three, two, and five lobes for Cases A, B, and 11 (a)                                              
+
+> tD= 0.0
+> (b)
+> tD= 12.0
+> (c)
+> tD= 24.0
+> (d)
+> tD= 37.6
+> (e)
+> tD= 49.6
+> (f)
+> tD= 63.3
+> (g)
+> tD= 0.0
+> (h)
+> tD= 11.8
+> (i)
+> tD= 24.7
+> (j)
+> tD= 37.6
+> (k)
+> tD= 50.6
+> (l)
+> tD= 63.5
+> (m)
+> tD= 0.0
+> (n)
+> tD= 11.5
+> (o)
+> tD= 23.0
+> (p)
+> tD= 37.4
+> (q)
+> tD= 49.0
+> (r)
+> tD= 63.4
+> 10 110 0
+> ne/n0
+> Case A:
+> R1/R0= 0.6
+> Rw=
+> Case B:
+> R1/R0= 0.6
+> Rw= 1.1 R0
+> Case C:
+> R1/R0= 0.8
+> Rw=
+
+FIG. 4. Time evolution of the normalised electron density distribution for Cases A, B and C. The initial annulus is shown in red. The outer wall is shown in white in Case B. TABLE I. Normalised input parameters for the three dio-cotron test cases. The most unstable mode m∗ and the analyt-ically predicted normalised growth rate γm∗ /ω D from Eq. (40) are given for each case. Nm is the the number of azimuthal Fourier modes retained. 
+
+Case R1/R 0 Rw /R 0 m∗ γm∗ /ω D Nm
+
+A 0.6 ∞ 3 0.212 10 B 0.6 1.1 2 0.111 7C 0.8 ∞ 5 0.312 16 
+
+C respectively. Non-linear steepening causes the lobes to roll up into discrete electron vortices that orbit the column axis, qualitatively reproducing well-documented diocotron behaviour. The last two snapshots of Case A then illustrate the expected merger of the vortices. In Case B, bringing the conducting wall to Rw = 1 .1R0
+
+suppresses radial excursions and the fragmentation is less complete, consistent also with the reduced growth rate. In Case C, the thinner annulus decreases the gradient length scale leading to faster onset and growth of the in-stability. In the final snapshot of Case C, the commence-ment of vortex merger can be seen in the asymmetry of the 5 orbiting discrete vortices. The evolution of the dominant-mode field energy 
+
+Em∗ (t) = ( ε0/2) ∫ | ˆEm∗ |2 dV is given in Figures 5 (a)-(c). In each case a sustained interval of clean exponential growth is observed, during which Em∗ ∝ e2γm∗ t, consis-tent with linear amplification of the electric field ampli-tude. The theoretical growth curves from Eq. (40) are then overlaid. To quantify the agreement, the simulation growth rate is extracted from each simulation by fitting 
+
+ln Em∗ (t) over the linear phase via least-squares regres-sion, yielding a slope of 2γ. The relative errors in growth rate were found to be 3.4%, 1.1%, and 7.1% for cases (a), (b), and (c) respectively, confirming excellent quantita-tive agreement throughout the linear phase. Consistent with the vortex merging behaviour observed in Figure 4, the m∗ = 3 mode in Case A can be seen to experience a post-saturation sustained damped oscillation, during which the energy rapidly decays. Panels (d)-(f) show the radial distribution of the nor-malised eigenpotential coefficients ˆϕm∗ (r) at times cor-responding to the snapshots of Figure 4. Through-out the initial time, the real and imaginary parts of the dominant-mode retain a nearly time-invariant pro-file — growing in amplitude but not in structure — with the imaginary part spatially shifted by circa quarter-wavelength in the azimuthal direction relative to the real part, as required for a mode rotating at the precession frequency ωr,m ∗ . This phase relationship confirms that the mode is a unidirectional rotating wave rather than a standing oscillation, consistent with the complex expo-nential structure expected of the diocotron eigenfunction. The potential peaks at the annulus boundaries where the 
+
+E × B shear is largest, confirming the correct localisa-tion of the eigenpotential behaviour. Broadening of the profiles and the emergence of fine radial structure mark the onset of non-linearity, most evident in Case C ow-ing to its higher growth rate. While the eigenpotential structure encodes considerable diagnostic insight into the diocotron instability, a systematic analysis is beyond the 12 0 20 40 60        
+
+> tD
+> 10 6
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> m * / 0
+
+(a)                  
+
+> Case A:
+> R1/R0= 0.6
+> Rw=
+> DECOMPIC m* = 3
+> Theory /D= 0.212
+> 020 40 60
+> tD
+> 10 6
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> m * / 0
+
+(b)                   
+
+> Case B:
+> R1/R0= 0.6
+> Rw= 1.1 R0
+> DECOMPIC m* = 2
+> Theory /D= 0.111
+> 020 40 60
+> tD
+> 10 6
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> m * / 0
+
+(c)             
+
+> Case C:
+> R1/R0= 0.8
+> Rw=
+> DECOMPIC m* = 5
+> Theory /D= 0.312
+> 0.0 0.5 1.0 1.5
+> r/R0
+> 1.0
+> 0.5
+> 0.0
+> 0.5
+> m * (r) [normalised]
+
+(d) Mode m * = 3 profiles Case A                        
+
+> tD= 0.0
+> tD= 12.0
+> tD= 24.0
+> tD= 37.6
+> tD= 49.6
+> tD= 63.3
+> Re[ m*]
+> Im[ m*]
+> R1
+> R0
+> 0.0 0.5 1.0 1.5
+> r/R0
+> 0.5
+> 0.0
+> 0.5
+> 1.0
+> m * (r) [normalised]
+
+(e) Mode m * = 2 profiles Case B                        
+
+> tD= 0.0
+> tD= 11.8
+> tD= 24.7
+> tD= 37.6
+> tD= 50.6
+> tD= 63.5
+> Re[ m*]
+> Im[ m*]
+> R1
+> R0
+> Rw
+> 0.0 0.5 1.0 1.5
+> r/R0
+> 0.25
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> m * (r) [normalised]
+
+(f) Mode m * = 5 profiles Case C                   
+
+> tD= 0.0
+> tD= 11.5
+> tD= 23.0
+> tD= 37.4
+> tD= 49.0
+> tD= 63.4
+> Re[ m*]
+> Im[ m*]
+> R1
+> R0
+
+FIG. 5. (a)-(c): Time evolution of the normalised dominant-mode field energy for Cases A, B and C, shown with the theoretical growth; grey vertical lines correspond to the time snapshots given in Figure 4. (d)-(f): Radial profiles of the dominant-mode Fourier coefficients at the corresponding times. 
+
+scope of this validation study and is reserved for future investigation. Having established that DECOMPIC reproduces the correct diocotron physics, next is to examine the depen-dence of the extracted growth rate on the two principal numerical parameters: The truncated mode number Nm
+
+and the macroparticle count Nppc . All tests use Case A (R1/R 0 = 0 .6, Rw → ∞ , m∗ = 3 , γth /ω D = 0 .212 ) and are summarised in Figure 6. The key result of the Nm
+
+sweep in panel (c) is that the theoretical linear growth rate is recovered within 5% at all Nm. The rate peaks at 
+
+Nm = 3 with γ/ω D =0.223, where the dominant mode is resolved but it is possible no higher harmonics are avail-able to drain energy from it, resulting in a slightly el-evated apparent growth rate. The shifted onset times and differing peak energies visible in the energy histo-ries of panel (a) are expected, since fewer retained modes means fewer non-linear coupling channels available to re-ceive energy from m∗ = 3 , naturally altering the sat-uration and pre-linear phases without affecting the un-derlying linear physics of the growth phase. The Nppc 
+
+convergence of panel (d) shows a different character: the extracted growth rate exhibits a systematic downward bias at low Npcc , following the typically expected N −1
+
+> ppc
+
+scaling as shown, which arises because shot noise pro-vides a large spurious noise seed above or comparable to the physical signal of the growing mode, illustrated also in panel (d) via the descending initial spectral energy, that acts to drives the mode toward non-linear satura-tion before a clean linear phase is established, may ar-tificially cause mode-coupling that removes energy from 
+
+m∗ = 3 , whilst also fundamentally inhibiting the signal due to reduced SNR. As Nppc increases the noise floor recedes, the linear phase lengthens, and the extracted rate converges to the theoretical value from below; <5% error is achieved at Nppc > 200 and convergence is seen within the linear phase of the mode energy histories in panel (b). Together, the near-independence in Nm and 13 0 20 40 60 
+
+t D    
+
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> m * / 0
+
+(a)        
+
+> Mmax = 3
+> Mmax = 6
+> Mmax = 8
+> Mmax = 12
+> 020 40 60
+
+t D     
+
+> 10 6
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> m * / 0
+
+(b)            
+
+> Nppc = 20
+> Nppc = 40
+> Nppc = 80
+> Nppc = 200
+> Nppc = 390
+> Nppc = 780
+> 246810 12
+
+Mmax 
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> / D
+
+(c)      
+
+> Theory /D= 0.212
+> DECOMPIC
+> 10 110 210 3
+
+Nppc 
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> / D
+
+(d)          
+
+> Theory /D= 0.212
+> C/Np
+> DECOMPIC
+> 0
+> 2
+> 4
+> 6
+> 8
+> ( m * / 0)| t D = 0
+> 1e 5
+> (m*/ )| tD= 0
+
+FIG. 6. Time-evolution of the normalised m∗ = 3 mode energy for Case A with variation in: (a) the truncated maximum mode number Mmax ; (b) the macroparticle count per cell Nppc . (c) and (d) provide corresponding recovered growth rate with increasing Mmax and Nppc respectively against the theoretical (displayed with a ±5% errorbar). The evolution of the initial mode energy noise floor is also shown in (d). 
+
+convergence in Nppc demonstrate that the DECOMPIC implementation is free from systematic numerical arte-facts: the dominant error source is statistical shot noise, which is well understood within any PIC method, scales predictably with Nppc , and vanishes in the limit of large particle count. 
+
+B. Penning Discharge Benchmark 
+
+Recently, a new benchmark for two-dimensional partially-magnetised E × B plasmas has been introduced by the Landmark project 39 . This benchmark considers a collisionless helium-4 Penning discharge and was sim-ulated by seventeen PIC codes in a collaborative com-munity effort. The emergence of large scale coherent structures in the form of rotating plasma spokes, endows this configuration with an enormous range of time scales, making it particularly challenging to reproduce. It is gen-erally understood that a collisionless Simon-Hoh instabil-ity (CSHI) occurs due to steep gradients at the plasma edge and saturates into the rotating spoke 40 . The con-figuration is a close derivative of the previous Diocotron case; the Penning discharge considers a quasi-neutral ion-electron plasma column instead of a non-neutral electron annulus. The simulation domain of the Penning discharge case is therefore the same as that of the Diocotron case il-lustrated in Figure 3, except Ri = 0 . The wall radius 
+
+Rw = 25 mm and is grounded with potential ϕw = 0 V; all particles reaching the wall are absorbed. It is critical to note that the Landmark case relaxed the curved ge-ometry of the Penning discharge experiment to a Carte-sian 50 mm square, but that the implementation in DE-COMPIC is cylindrical-axisymmetric. The total simu-lation time is 500 μs at a time-step of 40 ps. A uni-form, constant magnetic field B = 100 G is externally applied in the axial direction. A virtual measurement probe is placed within the simulation domain at the half-radius r = 12 .5 mm, θ = 0 . The domain is initially empty. A cylindrical particle injection source with the radius Ro = 5 mm then injects helium ions and elec-trons at fixed current density throughout the simulation time. The injected electrons and ions are sampled from 14 20 0 20                                           
+
+> x[mm]
+> 20
+> 10
+> 0
+> 10
+> 20
+> y [cm]
+> (a) t′= 0.00 μs
+> 20 020
+> x[mm]
+> t′= 7.75 μs
+> 20 020
+> x[mm]
+> t′= 15.50 μs
+> 20 020
+> x[mm]
+> t′= 23.25 μs
+> 20 020
+> x[mm]
+> 20
+> 10
+> 0
+> 10
+> 20
+> y [mm]
+> (b)
+> 20 020
+> x[mm]
+> 20 020
+> x[mm]
+> 20 020
+> x[mm]
+> 02468
+> ni× 10 15 [m 3]
+> 4.0 3.5 3.0 2.5 2.0 1.5 1.0 0.5 0.0
+> [V]
+
+FIG. 7. Contour plots of (a) ion density ni and (b) plasma potential ϕ at four different phases of spoke rotation during the quasi-steady state. Times t′ are given relative to the spoke in the 90 ◦ position. 
+
+Maxwellian distribution functions at temperatures of 15 eV and 0.025 eV respectively. Full details on the physical and numerical conditions of the benchmark problem can be found in the Landmark reference 39 .The benchmark employs a 256 ×256 uniform mesh, yielding NxNy = 65536 coupled unknowns in the Pois-son solve at every time-step. DECOMPIC inherently re-places this with Nm + 1 independent one-dimensional ra-dial solves of length Nr , where Nr corresponds to only the half-domain from axis to wall due to the transition from Cartesian to axisymmetric (for the purposes of this benchmark, the axial extent is limited to a single cell 
+
+Nz = 1 ). For the present configuration with Nr = 128 
+
+and Nm = 12 , this gives 1536 total unknowns against 65536 — a reduction of 43 ×. Since the number of macro-particles required to achieve a given statistical resolution also scales with the number of cells through the particles-per-cell constraint, the particle population is reduced by a similar factor. At the benchmark macro-particle weight of W = 10 5 this corresponds to a reduction from approx-imately 10 6 to O(10 5) macro-particles. These reductions represent a commensurate saving in total wall-clock time, therefore bringing the full Penning discharge simulation from a multi-hundred-core high-performance computing allocation to a run completable on a single multi-core workstation. Figure 7 shows four snapshots of the reconstructed ion number density ni separated by approximately one quar-ter of the spoke rotation period, sampled after the dis-charge has reached quasi-steady state ( t > 200 μs), refer-enced from the left-most snapshot as t′ = 0 , using 256 az-imuthal reconstruction points and mapped to equivalent Cartesian coordinates for clarity. The spoke manifests as a single elongated high-density arm rotating counter-clockwise—in the direction of the electron E × B drift— while the plasma outside the spoke arm and the central injection region is nearly evacuated. This structure is qualitatively identical to that shown in Figure 4 of the benchmark paper 39 , where the same vacuum character of the inter-spoke region is highlighted as a defining fea-ture of the discharge and a primary source of diagnostic difficulty. The four quarter-period snapshots illustrate that the spoke rotation is not rigid: the arm narrows and broad-ens as it sweeps, and transient density filaments are shed from its trailing edge, consistent with the persistent fine-scale structures noted in the benchmark and attributed to ion-acoustic or electron-cyclotron-drift instabilities ex-cited along the spoke arm 39 . Panel (b) shows the corre-sponding plasma potential ϕ reconstructed from Eq. 5. A rotating potential well of around -2 to -4 V leads the density spoke by approximately π/ 2 in phase, providing 15 0 100 200 300 400 500                        
+
+> Frequency [kHz]
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> Amplitude [a.u.]
+> f1= 43.05 kHz
+> f2= 86.10 kHz
+> f3= 129.15 kHz
+> f4= 172.20 kHz
+> f5= 215.25 kHz
+> (a)
+> 10 110 010 110 2
+> Time [ s]
+> 10 12
+> 10 11
+> 10 10
+> 10 9
+> 10 8
+> 10 7
+> m/ 0
+> Initialisation Growth Saturation Rotating Spoke
+> (b)
+> m= 1
+> m= 2
+> m= 3
+> m= 4
+
+FIG. 8. (a) Frequency spectrum of the virtual probe ion density signal; (b) Temporal evolution of the first four mode energies (m = 14), illustrating the progression from initialisation through linear growth and non-linear saturation into a steady rotating spoke regime. 
+
+the azimuthal electric field that ultimately pulls the ions in the rotation. Thirteen complete rotations were captured within a 300 μs averaging window from 200 − 500 μs , matching that observed in the 500 μs PPPL reference run of ref-erence 39 . The mean spoke rotation frequency extracted by peak-finding via the virtual probe was found to be 
+
+fspoke ≈ 43 .05 kHz, within the benchmark-determined uncertainty bounds of 41 .1–46 .1 kHz centred on the long-time reference value of 43.2 kHz (measured over 163 rota-tions by the PPPL code over 4 ms) 39 . Cycle-to-cycle vari-ation across the 13 observed rotations spanned a range of approximately 42 .45 –44 .82 kHz, comparable to the benchmark spread (41.1–46.1 kHz over sequential groups of 13 rotations), confirming that the chaotic variability of the spoke period is reproduced. The temporal Fourier transform of the probe signal is given in Figure 8 (a) and shows the dominant peak at fspoke and clearly resolved harmonics at 2fspoke to 5fspoke , with spectral power de-caying by roughly one order of magnitude per harmonic. The rapid decay of harmonics is consistent with a nearly sinusoidal character of the probe trace modulated by the rotating coherent structure; the finite harmonic content reflects the non-rigid, non-uniform shape of the spoke arm. The dominant dipolar structure of the spoke, via the 
+
+m = 1 mode, is captured by Figure 8 (b), which shows the time evolution of the electrostatic field energy carried by modes m = 1 − 4 as a proportion of the mean-field energy of m = 0 . Modes m > 4 are omitted for clar-ity, since they exist at amplitudes similar to the noise floor. The m = 1 energy exhibits a prolonged exponen-tial growth phase beginning around t ≈ 20 μs, once suffi-cient plasma density has accumulated to render the CSHI unstable. Non-linear saturation is reached at t ≈ 150 –
+
+200 μs, after which E1 oscillates quasi-periodically at the spoke rotation frequency, reflecting the cyclic intensifica-tion and partial dispersal of the arm. The m = 2 mode follows with a slight delay and a shallower growth slope, playing the dual role of an independently unstable mode (with a CSHI growth rate approximately twice that of 
+
+m = 1 ) and of the first non-linear harmonic generated by quadratic self-interaction of m = 1 . At saturation, E2
+
+lies approximately one to two orders of magnitude below 
+
+E1 and oscillates at twice the spoke frequency, confirm-ing the harmonic character. Modes m = 3 –m = 4 follow the same pattern at progressively later onset times and lower saturated amplitudes. A slow modulation of all mode energies at timescales longer than the spoke period is visible in the quasi-steady-state portion of the histories. This low-frequency envelope is consistent with the intrin-sically chaotic, multiscale character of the discharge. Figure 9 compares the time-averaged azimuthally-averaged profiles of ion density ni(r), plasma potential 
+
+ϕ(r), and electron temperature Te(r) against the uncer-tainty band from the PPPL long-time simulation 39 , de-fined as the minimum and maximum of a rolling 300 μsaverage over 7000 windows. The ion density profile of (a) peaks near the axis and decays monotonically to near-zero at the wall, broadly consistent with the benchmark band. A modest overpre-diction of both the on-axis and wall density is present, which may be attributable primarily to the cylindrical domain introducing geometric compression towards the axis that is absent in the Cartesian benchmark. The cor-ners of the benchmark square further provide additional surface area for particle loss at oblique angles while si-multaneously enclosing a larger plasma volume, which may act to produce a somewhat lower density than the inscribed cylinder at equivalent injection rates. The elevated plasma density also implies a reduction in the local Debye length. Consequently, the wall sheath thickness is reduced. This behaviour is evident in the steeper potential gradient observed near the wall in (b). Otherwise, however, the potential lies well within the benchmark region with about 0.1 V discrepancy on-axis. The more negative plasma potential in the bulk is also consistent with the higher plasma density; to maintain 16 0.00 0.01 0.02 
+
+## r [m]  
+
+> 0
+> 2
+> 4
+> 6
+> ni [m  3]
+> 1e15
+
+## (a)   
+
+> Benchmark
+> (Powis et al. 2025)
+> DECOMPIC
+> 0.00 0.01 0.02
+
+## r [m] 
+
+> 2.5
+> 2.0
+> 1.5
+> 1.0
+> 0.5
+> 0.0
+> [V]
+
+## (b)   
+
+> 0.00 0.01 0.02
+
+## r [m] 
+
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> Te [eV]
+
+## (c)         
+
+> FIG. 9. Time-averaged radial profiles of (a) ion density ni, (b) plasma potential ϕ, and (c) electron temperature Tefrom DECOMPIC, compared against the Landmark benchmark 39 .The uncertainty band spans the minimum and maximum of a rolling 300 μs average over 7000 windows. DECOMPIC profiles are averaged over the interval 200 - 500 μs of the simulation.
+
+the ambipolar balance between electron and ion losses, the plasma develops a deeper potential well, increasing electron confinement and reducing radial electron trans-port to the wall. Finally, panel (c) gives the electron temperature. Temperature measurements are particularly susceptible to systematic errors in regions of low particle occu-pancy, as documented at length in the benchmark pa-per 39 . The azimuthal averaging inherent to the quasi-3D decomposition—whereby the m = 0 component accumu-lates contributions from all azimuthal positions simulta-neously at every time step—provides enhanced statistical coverage relative to a Cartesian single-snapshot sample, tending to reduce the noise floor and improve agreement with the long-time benchmark reference. The lower tem-perature by about 1 eV observed near the wall is a direct consequence of the stronger sheath structure; energetic electrons preferentially lost to the wall and lower-energy electrons are present in the near-wall population. Within the bulk however, the temperature falls acceptably within the benchmark range. Taken together, the benchmark profiles are reproduced with good agreement within the given range, while the quantitative differences are attributable to geometry-dependent transport and the resulting changes in sheath structure that most likely arise due to a cylindrical in-stead of Cartesian formulation. A central motivation for the quasi-3D Fourier decom-position is the reduced-order of the field solve. Where the benchmark requires solving a two-dimensional Poisson problem, the DECOMPIC implementation here reduces that to 13 one-dimensional problems. Table II lists the approximate wall-clock runtimes and equivalent CPU-hours reported in the benchmark reference 39 for the full 500 μs runs of 16 codes, alongside the DECOMPIC tim-ing. The benchmark codes consumed between approxi-mately 3500 and ≳ 250000 CPU-hours for the complete run. The fastest codes were GPU-accelerated implemen-tations (LTP-PIC on 4× GPUs, PICASO-G on 1× GPU, and RUBPIC on 1× GPU) and the most CPU-intensive being large multi-core CPU deployments (PANTERA on 768 cores, EDIPIC-2D on 256 cores). DECOMPIC, run-ning as a yet unoptimised Java implementation on 16 ×
+
+CPU cores, completes the equivalent 500 μs simulation in approximately 40 hours, corresponding to ≈ 640 CPU-hours. This is 46 times less than the median CPU-code cost of approximately 30000 CPU-hours among the benchmark participants, and comparable to or better than the fastest GPU codes in raw wall clock time 39 ). It is important to contextualise this saving. The cost reduction arises from the dimensional reduction of the field solve; the particle advance cost per step scales with the total number of macroparticles and, for a given particles-per-cell loading, the total number of cells. The DECOMPIC approach supports a substantially lower ab-solute particle count at equivalent Nppc loading. The combined field-solve and particle savings therefore place the total DECOMPIC cost per step at roughly one to two orders of magnitude below that of the equivalent 2D Cartesian simulation on a per-core basis dependant upon the relative cost of Poisson solve versus particle operations. The savings scale generically with the de-gree to which the discharge retains azimuthal organisa-tion and the number of modes Nm required. Since DE-COMPIC is currently an unoptimised implementation, the introduction of even modest additional parallelism strategies (for example, domain decomposition beyond the modal load-balancing currently implemented) would extend the performance advantage further on modern multi-core hardware. These results demonstrate that the quasi-3D Fourier decomposition provides a practi-cally competitive and physically accurate alternative to conventional 2D or 3D PIC approaches for simulating azimuthally organised plasma devices, without recourse 17 
+
+TABLE II. Approximate wall-clock runtimes and CPU-hour equivalents for the 500 μs Landmark Penning discharge benchmark. Benchmark data from Table 2 of Powis et al. 39 .                                                                                                                                
+
+> Code/Institute Language Poisson Solver Parallelism Hardware Wall clock time (h) CPU-hours (h) LTP-PIC (PPPL) C/C++ Hypre Particle MPI + OpenMP + OpenACC 4×GPU + 4 ×CPU cores 82 –EP-PIC2D (Laplace) Fortran PARDISO Particle MPI + OpenMP 72 ×CPU cores 71 5112 LePIC2D (Laplace) Fortran in-house multigrid Particle MPI + OpenMP 28 ×CPU cores 128 3584 RUBPIC C/C++ NAG geometric multigrid Hybrid CUDA 1×GPU + 1 ×CPU core 80 –MZ/X-PIC (Wigner) C/C++ in-house spectral Particle CUDA 1×GPU + 1 ×CPU core 240 –DCU Cin-house multigrid Domain OpenMP 32 ×CPU cores 240 7680 RHEI (ONERA) Fortran in-house multigrid Hybrid OpenMP + MPI 48 ×CPU cores 284 18432 PICASO (UC3M) Fortran PARDISO Particle OpenMP 40 ×CPU cores 181 7240 PICASO-G (UC3M) Python in-house spectral Particle CUDA 1×GPU 10 –EDIPIC-2D (USask) Fortran PETSc + Hypre Hybrid MPI 256 ×CPU cores 1008 258048 LPPic Fortran Hypre Domain MPI 128 ×CPU cores 1320 168960 XPIC2D (Stanford) C/C++ Hypre Particle MPI 32 ×CPU cores 888 28416 PANTERA (VKI) Fortran PETSc Hybrid MPI 768 ×CPU cores 72 55296 AVIP-PIC (CERFACS) Fortran PETSc Domain MPI 192 ×CPU cores 185 35520 PICCOLO (CNR-ENEA) Fortran PETSc + Hypre Hybrid MPI + OpenMP 42 ×CPU cores 720 30240 Aleph (Sandia) C/C++ Trilinos Hybrid MPI 640 ×CPU cores 336 215040
+> DECOMPIC Java in-house multigrid Hybrid Java Fork/Join 16 ×CPU cores 40 640
+
+to GPU acceleration or large-scale distributed-memory parallelism. 
+
+V. CONCLUSIONS 
+
+A quasi-three-dimensional Particle-in-Cell algorithm, DECOMPIC, has been developed and validated for ki-netic simulation of azimuthal instabilities and cross-field transport in nominally axisymmetric magnetised plas-mas. The method rests on a single structural obser-vation: Fourier orthogonality in the azimuthal direc-tion decouples the three-dimensional Poisson equation exactly into a family of independent two-dimensional elliptic problems on the meridional plane, one per re-tained azimuthal mode. No approximation beyond spec-tral truncation is introduced; the full three-dimensional phase space of the macroparticle ensemble is preserved throughout. The resulting modal solves are better con-ditioned than the axisymmetric base problem by virtue of the mode-dependent centrifugal diagonal increment, which also makes Jacobi preconditioning both natural and sufficient. These properties distinguish the method from competing reduced-cost approaches —separability-ansatz, sparse-grid, and machine-learning schemes — which generally introduce uncontrolled or empirically ad-justed approximations into the field solve, whose impact depends on the application. Validation against the diocotron instability of a hol-low electron annulus demonstrated systematic quantita-tive agreement with analytic linear theory across three geometrically distinct configurations. Growth rates ex-tracted by least-squares regression over the exponential phase agree with the closed-form prediction to within 7%, and the non-linear vortex dynamics roll-up, discrete vor-tex formation, and merger are qualitatively reproduced in a manner consistent with well-documented behaviour of this instability. Convergence studies established that the dominant numerical error is statistical shot noise, fol-lowing the expected √Nppc scaling and becoming negli-gible at Nppc > 200 particles per cell. The extracted growth rate is robust to the retained mode number Nm
+
+across the full range tested, confirming that the linear physics is captured correctly once the dominant mode is resolved. The Landmark Penning discharge benchmark demon-strated the practical computational advantage of the ap-proach. DECOMPIC reproduces the rotating-spoke fre-quency (43.05 kHz against the reference value of 43.2 kHz), the modal energy hierarchy, and the time-averaged radial profiles of ion density, plasma potential, and elec-tron temperature in quantitative agreement with the long-time reference simulation, at a cost of approximately 640 CPU-hours on a standard multi-core desktop a factor of 46 below the median benchmark participant and com-petitive with GPU-accelerated codes, without recourse to distributed-memory parallelism or hardware acceler-ators. Residual discrepancies in the density and sheath profiles are attributable to the cylindrical rather than Cartesian geometry of the present formulation and rep-resent a physically consistent difference rather than a nu-merical artefact. The method has demonstrated that low-order spec-tral representations of ignorable coordinates can re-cover essential non-axisymmetric kinetic plasma dynam-ics at a computational cost intermediate between con-ventional reduced-dimensionality models and full three-dimensional PIC simulation. However, several limitations of the current implemen-tation warrant acknowledgement. The formulation is cur-rently electrostatic: self-generated magnetic fields are ne-glected on the basis of low plasma beta, and the method as presented is not appropriate for regimes in which mag-netic instabilities are dynamically significant. The mode truncation at Nm introduces spectral aliasing for instabil-ities with fine azimuthal structure; in practice the rapid spectral decay of the modal energy spectrum for smooth cylindrical plasmas ensures a modest Nm suffices, but this must be verified for each new configuration. Indeed, the efficiency of the approach depends upon rapid conver-18 gence of the azimuthal spectrum. Problems characterised by strongly broadband non-axisymmetric structure may require a larger number of retained modes, reducing the computational advantage. The current Java implemen-tation, while already competitive, has also not been sub-jected to the low-level optimisation that would further extend the performance margin. Looking ahead, the most significant extension is the self-consistent computation of quasilinear transport co-efficients from the resolved modal fields. The turbulent flux and anomalous diffusivity follow directly from the cross-correlation of the modal density and electric-field amplitudes and can be accumulated at negligible addi-tional cost during the field reconstruction step, remov-ing the need for the empirical closure assumptions that presently limit predictive fidelity in plasma propulsion and other plasma device modelling. Extension to elec-tromagnetic operation via a modal decomposition of the vector potential, and to non-periodic axial boundaries representative of open plasma devices, are further nat-ural directions. Together, these developments would es-tablish DECOMPIC as a complete reduced-cost kinetic framework capable of closing the gap between computa-tionally intractable full-3D simulation and the physically limited reduced-dimensionality models on which plasma propulsion engineering currently relies. 
+
+DATA AVAILABILITY STATEMENT 
+
+The data that supports the findings of this study are available from the corresponding author upon reasonable request. 
+
+REFERENCES 
+
+> 1
+
+C. K. Birdsall and A. B. Langdon, Plasma Physics via Computer Simulation (Taylor & Francis, New York, 1991). 
+
+> 2
+
+F. Taccogna, F. Cichocki, D. Eremin, G. Fubiani, and L. Gar-rigues, “Plasma propulsion modeling with particle-based algo-rithms,” J. Appl. Phys. 134 (2023). 
+
+> 3
+
+I. Mikellides, A. Ortega, and V. Chaplin, “Theory of the anoma-lous momentum exchange from wave-particle interactions in hall-effect ion accelerators and comparisons with measurements,” Physics of Fluids 36 (2024). 
+
+> 4
+
+I. Mikellides and A. Ortega, “Growth of the lower hybrid drift instability in the plume of a magnetically shielded hall thruster,” Journal of Applied Physics 129 (2021). 
+
+> 5
+
+S. Andrews, S. D. Fede, and M. Magarotto, “Fully kinetic model of plasma expansion in a magnetic nozzle,” Plasma Sources Sci-ence and Technology 31 , 035022 (2022). 
+
+> 6
+
+S. T. Hepner and B. Jorns, “The role of low frequency drift waves in driving non-classical transport in magnetic nozzles,” in AIAA Propulsion and Energy 2020 Forum (2020). 
+
+> 7
+
+A. T. Powis, J. A. Carlsson, I. D. Kaganovich, Y. Raitses, and A. Smolyakov, “Scaling of spoke rotation frequency within a Pen-ning discharge,” Physics of Plasmas 25 , 063505 (2018). 
+
+> 8
+
+I. D. Kaganovich, A. Smolyakov, Y. Raitses, E. Ahedo, I. G. Mikellides, B. Jorns, F. Taccogna, R. Gueroult, S. Tsikata, A. Bourdon, J.-P. Boeuf, M. Keidar, A. T. Powis, M. Merino, M. Cappelli, K. Hara, J. A. Carlsson, N. J. Fisch, P. Chabert, I. Schweigert, T. Lafleur, K. Matyash, A. V. Khrabrov, R. W. Boswell, and A. Fruchtman, “Physics of e × b discharges rele-vant to plasma propulsion and similar technologies,” Physics of Plasmas 27 , 120601 (2020). 
+
+> 9
+
+S. Andrews, R. Andriulli, N. Souhair, M. Magarotto, and F. Ponti, “Axial–radial plasma transport and performance of a plasma thruster magnetic nozzle under bohm’s anomalous diffu-sion scaling,” Plasma Sources Science and Technology 34 , 065013 (2025). 
+
+> 10
+
+Á. Sánchez-Villar, F. Boni, V. Désangles, J. Jarrige, D. Packan, E. Ahedo, and M. Merino, “Comparison of a hybrid model and experimental measurements for a dielectric-coated coaxial ECR thruster,” Plasma Sources Science and Technology 32 , 014002 (2023). 
+
+> 11
+
+R. Andriulli, S. Andrews, N. Souhair, M. Magarotto, and F. Ponti, “Fully kinetic study of facility pressure effects on rf-source magnetic nozzles,” Acta Astronautica 215 , 362– 372 (2024). 
+
+> 12
+
+T. Lafleur, S. D. Baalrud, and P. Chabert, “Theory for the anomalous electron transport in Hall effect thrusters. II. Kinetic model,” Physics of Plasmas 23 , 053503 (2016). 
+
+> 13
+
+S. Andrews, R. Andriulli, N. Souhair, M. Magarotto, , and F. Ponti, “A self-consistent drift-dissipative instability model of anomalous transport in the magnetic nozzle,” in 38th In-ternational Electric Propulsion Conference , Vol. IEPC-2024-810 (Toulouse, France, 2024). 
+
+> 14
+
+T. Marks and B. Jorns, “Evaluation of algebraic models of anomalous transport in a multi-fluid hall thruster code,” Journal of Applied Physics 134 , 153301 (2023). 
+
+> 15
+
+B. Jorns, “Predictive, data-driven model for the anomalous elec-tron collision frequency in a hall effect thruster,” Plasma Sources Science and Technology 27 , 104007 (2018). 
+
+> 16
+
+W. Villafana, B. Cuenot, and O. Vermorel, “3d particle-in-cell study of the electron drift instability in a hall thruster using unstructured grids,” Physics of Plasmas 30 (2023). 
+
+> 17
+
+F. Taccogna and P. Minelli, “Three-dimensional particle-in-cell model of hall thruster: The discharge channel,” Physics of Plas-mas 25 (2018). 
+
+> 18
+
+S. Di Fede, M. Magarotto, S. Andrews, and D. Pavarin, “Simulation of the plume of a magnetically enhanced plasma thruster with spis,” Journal of Plasma Physics 87 (2021), 10.1017S0022377821001057. 
+
+> 19
+
+D. Vatansever and D. Levin, “Development of a fully kinetic 3d code for collisional magnetized plasmas,” Journal of Electric Propulsion 4 (2025). 
+
+> 20
+
+M. Magarotto, S. Di Fede, N. Souhair, S. Andrews, and F. Ponti, “Numerical suite for cathodeless plasma thrusters,” Acta Astro-nautica 197 , 126– 138 (2022). 
+
+> 21
+
+L. F. Ricketson and A. J. Cerfon, “Sparse grid techniques for particle-in-cell schemes,” Plasma Physics and Controlled Fusion 
+
+59 , 024002 (2017). 
+
+> 22
+
+L. Garrigues, B. Tezenas du Montcel, G. Fubiani, F. D. Bertomeu, F. Deluzet, and J. Narski, “Application of sparse grid combination techniques to low temperature plasmas Particle-In-Cell simulations. I. Capacitively coupled radio frequency dis-charges,” Journal of Applied Physics 129 , 153303 (2021). 
+
+> 23
+
+L. Garrigues, B. Tezenas du Montcel, G. Fubiani, and B. Reman, “Application of sparse grid combination techniques to low tem-perature plasmas Particle-In-Cell simulations. II. Electron drift instability in a Hall thruster,” Journal of Applied Physics 129 ,153304 (2021). 
+
+> 24
+
+A. B. Langdon, B. I. Cohen, and A. Friedman, “Direct implicit large time-step particle simulation of plasmas,” Journal of Com-putational Physics 51 , 107–138 (1983). 
+
+> 25
+
+J. U. Brackbill and D. W. Forslund, “An implicit method for electromagnetic plasma simulation in two dimensions,” Journal of Computational Physics 46 , 271–308 (1982). 
+
+> 26
+
+G. Chen, L. Chacón, and D. C. Barnes, “An energy- and charge-conserving, implicit, electrostatic particle-in-cell algorithm,” Journal of Computational Physics 230 , 7018–7036 (2011). 19 
+
+> 27
+
+A. F. Lifschitz, X. Davoine, E. Lefebvre, J. Faure, C. Rechatin, and V. Malka, “Particle-in-Cell modelling of laser–plasma inter-action using Fourier decomposition,” Journal of Computational Physics 228 , 1803–1814 (2009). 
+
+> 28
+
+R. Lehe, M. Kirchen, I. A. Andriyash, B. B. Godfrey, and J.-L. Vay, “A spectral, quasi-cylindrical and dispersion-free Particle-In-Cell algorithm,” Computer Physics Communications 203 , 66– 82 (2016). 
+
+> 29
+
+M. Reza, F. Faraji, and A. Knoll, “Resolving multi-dimensional plasma phenomena in Hall thrusters using the reduced-order particle-in-cell scheme,” Journal of Electric Propulsion 1, 19 (2022). 
+
+> 30
+
+A. Revel, T. Minea, and S. Tsikata, “Pseudo-3d pic modeling of drift-induced spatial inhomogeneities in planar magnetron plas-mas,” Physics of Plasmas 23 , 100701 (2016). 
+
+> 31
+
+M. Reza, F. Faraji, and A. Knoll, “Latest verifications of the reduced-order particle-in-cell scheme: Penning discharge and axial-radial hall thruster case,” in AIAA SciTech Forum and Ex-position , AIAA 2024-2712 (2024). 
+
+> 32
+
+M. Reza, F. Faraji, and A. Knoll, “Latest progress on the reduced-order particle-in-cell scheme: Ii. quasi-3d implementa-tion and verification,” Plasma Physics and Controlled Fusion 67 ,085006 (2025). 
+
+> 33
+
+S. Markidis, “The old and the new: Can physics-informed deep-learning replace traditional linear solvers?” Frontiers in Big Data 
+
+4 (2021). 
+
+> 34
+
+X. Aguilar and S. Markidis, “Machine learning for plasma simula-tion and modeling on hpc systems,” in 2021 IEEE International Conference on Cluster Computing (CLUSTER) (2021) pp. 692– 697. 
+
+> 35
+
+Z. Li, N. B. Kovachki, K. Azizzadenesheli, B. Liu, K. Bhat-tacharya, A. Stuart, and A. Anandkumar, “Neural operator pre-conditioners for accelerating scientific computation,” Journal of Computational Physics 476 , 111861 (2023). 
+
+> 36
+
+F. Faraji and M. Reza, “Machine learning applications to com-putational plasma physics and reduced-order plasma modeling: a perspective,” Journal of Physics D: Applied Physics 58 , 102002 (2025). 
+
+> 37
+
+R. C. Davidson, Physics of Nonneutral Plasmas (Addison-Wesley, Redwood City, CA, 1990). 
+
+> 38
+
+R. H. Levy, “The diocotron instability in a cylindrical geome-try,” Tech. Rep. AFOSR Report No. 202; AVCO-Everett Re-search Laboratory Report No. 202 (Air Force Office of Scientific Research, Air Force Systems Command, 1964). 
+
+> 39
+
+A. T. Powis et al. , “Benchmark for two-dimensional large scale coherent structures in partially magnetized E ×B plasmas — Community collaboration & lessons learned,” Plasma Sources Science and Technology 35 , 025002 (2026). 
+
+> 40
+
+T. Charoy, T. Lafleur, A. Tavant, P. Chabert, and A. Bourdon, “A comparison between kinetic theory and particle-in-cell simula-tions of anomalous electron transport in e ×b plasma discharges,” Physics of Plasmas 27 , 063510 (2020).

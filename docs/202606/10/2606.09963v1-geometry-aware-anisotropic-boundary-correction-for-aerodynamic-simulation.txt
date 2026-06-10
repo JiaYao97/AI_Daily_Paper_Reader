@@ -1,0 +1,1054 @@
+Title: Geometry-Aware Anisotropic Boundary Correction for Aerodynamic Simulation
+
+URL Source: https://arxiv.org/pdf/2606.09963v1
+
+Published Time: Wed, 10 Jun 2026 00:07:40 GMT
+
+Number of Pages: 40
+
+Markdown Content:
+# Geometry-Aware Anisotropic Boundary Correction for Aerodynamic Simulation 
+
+Xin Zhang 1, Yipeng Huang 1, Shu Jiang 2, Zhenzhong Wang 1*, Min Jiang 1*
+
+> 1
+
+School of Informatics, Xiamen University, Xiamen, China 
+
+> 2
+
+Institute of Artificial Intelligence, Xiamen University, Xiamen, China 
+
+## Abstract 
+
+Aerodynamic simulation is a key component of engineering shape design, where core quantities such as the surface pressure coefficient strongly depend on flow dynamics near solid boundaries. Neural operators provide an efficient alternative to expensive Computational Fluid Dynamics (CFD) solvers. However, conventional methods treat the boundary region isotropically, failing to account for the distinct physical behaviors along the boundaries. In reality, the aerodynamic process exhibits anisotropy: along the tangential direction, flow propagates along the wall; along the normal direction, physical quantities are constrained by the wall. To explicitly model the distinct physical behaviors, we propose GeoABC, a geometry-conditioned anisotropic boundary correction framework. GeoABC leverages the boundary geometries to introduce direction-aware boundary correction into the intermediate representations of neural operators, transforming boundary geometry from static input features into a structural prior that modulates physical prediction. On 2D airfoil and 3D car tasks, GeoABC consistently adapts to multiple neural operator backbones, reducing near-boundary relative L2 error by ∼38% on average, narrowing the structural near-wall gap shared by mainstream neural operators, and advancing neural operators toward high-fidelity aerodynamic simulation. 
+
+## 1 Introduction 
+
+Steady-state aerodynamic simulation plays a central role in engineering design. The design of cars, wings, and other geometries all relies on Computational Fluid Dynamics (CFD) to evaluate key physical quantities such as pressure fields, velocity fields, and moments [ 1, 2 , 3]. Classical CFD solvers can provide high-fidelity solutions. However, due to high computational cost, CFD struggles to be integrated into large-scale design optimization, rapid shape screening, and interactive engineering iteration [4, 5, 6]. In recent years, a wide range of deep learning methods have been developed as efficient alternatives to traditional numerical solvers for PDE-governed physical simulation [ 7, 8, 9 ]. Among these, neural operators learn infinite-dimensional function space mappings from geometry, boundary conditions, or system parameters to the physical solution fields [ 10 , 11 , 12 ]. Once trained, they can predict pressure fields, velocity fields, and other solution fields through a single forward pass, thereby greatly accelerating steady-state aerodynamic simulation [13, 14, 15]. Despite their significant progress in global flow-field prediction, aerodynamic surrogates still face a unique and critical challenge: physical fields in the near-wall region, namely the narrow boundary neighborhood adjacent to solid aerodynamic surfaces, are difficult to predict accurately. On one hand, near-wall regions involve complex mechanisms such as wall constraints, pressure gradients, and local flow separation. These mechanisms lead to strong spatial heterogeneity and local high-frequency variations [ 16 ]. Compared with relatively smooth flow structures in the far field, near-wall  
+
+> *Corresponding authors: Zhenzhong Wang and Min Jiang, zhenzhongwang@xmu.edu.cn, minjiang@xmu.edu.cn. Preprint.
+> arXiv:2606.09963v1 [physics.flu-dyn] 8 Jun 2026 Airfoil with near-wall band
+> Our method
+> Existing method
+> Local boundary frame
+> Boundary loss weighting
+> Explicit boundary features
+> Explicit boundary branch/
+> Cross-attention
+> Geometry
+> cache
+> Anisotropic
+> correction
+> tangential
+> Latent
+> features
+> Encoder
+> Decoder
+> Mid-layer
+> normal( 𝑛𝑛 )
+> tangent( 𝑡𝑡 )
+> tangent( 𝑡𝑡 )
+> normal( 𝑛𝑛 )
+> near-wall band
+> Boundary problem
+> 2-3 ×larger
+> Locate the boundary
+> normal
+> cross
+
+Figure 1: GeoABC addresses the near-wall accuracy gap left by existing boundary-aware remedies by using boundary geometry as a structural prior for direction-aware correction. velocity and pressure often change rapidly along the wall-normal direction, while exhibiting different propagation behaviors along the tangential direction. This makes it difficult for neural operators to maintain near-wall accuracy comparable to their global-field accuracy [ 17 ]. On the other hand, near-wall errors do not only affect local pressure or velocity values. They also directly enter the evaluation of aerodynamic performance. Taking an airfoil or a vehicle surface as an example, the wall pressure distribution can be normalized into the surface pressure coefficient, Cp. The shape of the Cp
+
+curve is closely related to key flow phenomena such as suction peaks, pressure recovery, and potential separation. The same wall pressure distribution also determines surface pressure loads, which further affect the estimation of lift, drag, and moments [ 18 , 19 , 20 ]. Therefore, even though the near-wall region occupies only a small portion of the computational domain, local errors in this region may propagate into biased aerodynamic performance metrics, reducing the reliability of surrogate models in engineering design [9, 21]. To alleviate this problem, existing methods typically enhance boundary awareness by weighting boundary losses, explicitly concatenating geometry descriptors such as Signed Distance Function or curvature, or introducing additional boundary branches. These geometric cues are derived from the geometries already available in CFD tasks, such as airfoil profiles, car surfaces, or solid boundary meshes. However, most of these methods still treat the boundary as a special location that should receive more attention, rather than a physical region with an inherent directional structure [ 22 , 23 , 24 ]. In contrast, classical CFD often uses body-fitted meshes or wall-normal stretched meshes near-wall regions, increasing resolution along the wall-normal direction to resolve wall constraints, pressure gradients, and near-wall variations [ 4 , 25 ]. This indicates that physical variations near aerodynamic boundaries are not isotropic but naturally depend on the local tangential-normal coordinate structure. Therefore, simply using geometry descriptors as input features can only inform the model which points are near the boundary, but fail to capture how physical quantities propagate tangentially along the boundary, change rapidly along the wall normal, and how these two directional behaviors interact. As illustrated in Fig. 1, such boundary representations are not well aligned with the geometry-physics anisotropic coupling required for accurate boundary prediction in aerodynamics. To bridge this gap, we propose GeoABC, a geometry-conditioned anisotropic boundary correction framework. Instead of using geometric descriptors merely as static input features, GeoABC leverages the geometries already available in CFD tasks to shift near-wall prediction from isotropic proximity modeling to anisotropic geometry-physics coupling. Specifically, GeoABC explicitly constructs local tangential-normal structures from these geometries, allowing the model to distinguish boundary-aligned propagation from wall-normal gradient variations. Meanwhile, it performs direction-aware boundary correction in the intermediate representation space of neural operators. This allows geometry to improve the physical predictions of different backbones in a plug-and-play manner, rather than being used only as static features concatenated at the input stage. Thus, the contributions of this paper are summarized as follows: • we systematically diagnose near-wall errors in steady-state aerodynamic surrogates. We show that these errors cannot be simply attributed to data quality, training strategy, or model capacity, but are closely related to the isotropic representation of boundary physics in existing neural operators. 2• we propose GeoABC, a geometry-conditioned, frame-aware, and plug-and-play anisotropic boundary correction framework that transforms the directional boundary prior implicit in classical CFD into a representation correction mechanism for neural operators. • We validate the method on 2D airfoil and 3D car tasks, showing that GeoABC consistently reduces near-wall prediction errors across multiple mainstream backbones and improves engineering metrics that depend directly on the boundary. 
+
+## 2 Related Work 
+
+Neural operators have become an important paradigm for aerodynamic simulation, with the core goal of learning the solution operator underlying PDE-governed systems, i.e., the mapping from input functions, geometric conditions, or physical parameters to solution fields [ 26 , 27 , 28 , 29 ]. Early representative methods such as DeepONet [ 10 ] and FNO [ 11 ] model function-space mappings through branch–trunk decomposition and spectral integral operators, respectively. However, these early formulations are limited in geometry-dependent aerodynamic prediction, as they are not naturally suited to irregular geometries, varying computational domains, or non-uniform samples induced by complex shapes. Later Transformer-based operators, such as GNOT [ 23 ], Transolver [ 30 ], and DPOT [ 31 ], further improve the modeling capacity of neural operators for complex physical fields, irregular samples, and large-scale geometries. Nevertheless, these advances mainly improve global field prediction on complex geometries, while substantial near-wall errors still remain. To further enhance the awareness of complex geometries and local boundary structures, recent works explicitly incorporate geometry, boundary, or interface information [ 32 , 33 , 34 ]. Geo-FNO [ 22 ]and GINO [ 24 ] improve the adaptability to irregular geometries through geometric mappings or geometry encodings. GeoPT [ 35 ] and From Cheap Geometry to Expensive Physics [ 36 ] leverage low-cost geometric pre-training to reduce the dependence on expensive physics labels. BENO [ 37 ]and IANO [ 38 ] further show that boundary or interface information can provide useful structural cues for neural PDE modeling. Overall, these methods demonstrate the importance of geometric information, but they mainly use geometry as a computational-domain representation, input condition, pre-training supervision, or boundary cue, without treating geometric solid boundaries as structural priors that organize near-wall physical variations [ 39 , 40 ]. In this work, we instead use geometry as a structural prior to organize anisotropic near-wall responses, advancing neural operators toward boundary-accurate aerodynamic simulation. 
+
+## 3 Methodology 
+
+3.1 Problem Setup 
+
+We study steady-state aerodynamic operator learning on geometry-dependent domains. For a geome-try G ∈ G , let ΩG ⊂ Rd denote the fluid domain and ∂ΩG its solid boundary. Given a query point 
+
+x ∈ ΩG and optional operating conditions s, a neural operator predicts the physical state 
+
+Fθ : ( x, G, s) 7 → u(x), (1) where u(x) denotes the target field, such as velocity and pressure. When the operating conditions are fixed, we omit s and write Fθ : ( x, G ) 7 → u(x).We define the near-wall band as 
+
+Ωδ (G) = { x ∈ ΩG : dist( x, ∂ ΩG) < δ }. (2) Instead of using a hard near-wall mask, GeoABC uses a continuous geometry-confidence gate to modulate the strength of boundary correction. The correction is weakened far from the boundary or where local geometric descriptors are unreliable, and is strengthened in reliable near-wall regions. 
+
+3.2 Overview 
+
+GeoABC is a geometry-conditioned boundary correction module inserted into an intermediate layer of a backbone neural operator. As shown in Fig. 2, GeoABC takes two inputs for each query point: the backbone latent representation and the local geometric descriptor from an offline geometry cache. 3Encoder     
+
+> Decoder
+> Mid-Layer
+> Geometry Cache
+> GeoABC
+> Latent
+> Feature
+> Geometry
+> Cache
+> Input
+> Lifting &Injection
+> Geometry-modulated Gates
+> 𝛼𝛼 𝑡𝑡 𝛼𝛼 𝑚𝑚 𝛼𝛼 𝑛𝑛
+> Output
+> Projection High-Dimension
+> Tangential
+> Normal
+> two-Dimension
+> Anisotropic Correction
+> Normal Tangential Cross
+> Tangential
+> (𝑟𝑟 𝑡𝑡 )
+> Tangential Branch Tangential
+> (𝑎𝑎 𝑡𝑡 )
+> Context
+> ℎ(𝑥𝑥 )
+> ···
+> Neural Network 1
+> Normal
+> (𝑟𝑟 𝑛𝑛 )
+> Normal Branch Normal
+> (𝑎𝑎 𝑛𝑛 )
+> Context
+> ℎ(𝑥𝑥 )
+> ···
+> Cross
+> (𝑟𝑟 𝑚𝑚 )
+> Cross Branch
+> Context
+> ℎ(𝑥𝑥 )
+> ···
+> Normal
+> (𝑎𝑎 𝑛𝑛 )
+> Tangential
+> (𝑎𝑎 𝑡𝑡 )
+> Auxiliary Context
+> Anchor Space Coordinate
+> Correction Signal
+> Neural Network 2
+> Neural Network 3
+
+Figure 2: Overview of GeoABC. GeoABC inserts a geometry-conditioned anisotropic correction module into the intermediate layer of a backbone neural operator. It uses the geometry cache to con-struct a tangent-normal coordinate frame and projects the backbone latent feature into this local frame. The module then generates correction signals, modulates them with local geometric conditions, and writes them back to the backbone intermediate representation for near-wall aerodynamic prediction. The geometry cache provides the local tangent–normal frame, curvature, near-wall window, and spatial confidence, while the latent representation provides the physical context to be corrected. Concretely, the boundary correction proceeds as follows. First, GeoABC projects the intermediate representation into a low-dimensional anchor space, which serves as a physical interface for directional decomposition, such as velocity direction. Second, the anchor is decomposed in the local tangent– normal frame induced by the solid boundary. Third, GeoABC generates tangential, normal, and tangent–normal coupled boundary corrections with geometry-conditioned direction gates. Finally, the correction is lifted back to the backbone latent space and written into the intermediate representation under a geometry-confidence gate. The corrected representation is then propagated through the backbone and decoder to produce the final physical prediction. 
+
+3.3 Geometry-Conditioned Anisotropic Boundary Correction Local geometric descriptor and spatial confidence. Given a geometry G and a query point x,GeoABC first constructs a local geometric descriptor for each query point: 
+
+gG(x) =  ϕ(x), ˆt(x), ˆn(x), κ (x), w (x), c (x). (3) Here, ϕ(x) denotes the signed distance from the query point to the solid boundary, ˆt(x) and ˆn(x) are the local unit tangent and normal vectors, respectively. The term κ(x) denotes the local curvature. The weight w(x) ∈ [0 , 1] is a smooth narrow-band window that reflects the proximity of x to the boundary region. The term c(x) ∈ [0 , 1] measures the reliability of the local geometric descriptor. To make the correction mainly act on reliable near-wall regions, GeoABC defines a spatial confidence: 
+
+ωG(x) = w(x) · c(x). (4) Here, w(x) smoothly controls the spatial strength of the boundary correction according to the distance from x to the boundary, while c(x) measures the reliability of the local geometric description. Therefore, when the query point is close to the solid boundary and its geometric descriptor is reliable, 
+
+ωG(x) takes a relatively large value, and GeoABC injects a stronger direction-aware correction into the intermediate representation at this location. As the query point moves away from the boundary, w(x) gradually decreases, so ωG(x) smoothly approaches 0. This reduces the influence of GeoABC on the far-field or bulk-region representations. In practice, all geometric descriptors can be precomputed offline and stored as a geometry cache. 
+
+Anchor projection and local-frame decomposition. After obtaining the local geometric frame, GeoABC needs to convert the intermediate representation of the backbone into a space where 4directional decomposition can be performed. Let zℓ(x) ∈ Rdz denote the backbone’s intermediate representation at layer ℓ and query point x. Although zℓ(x) already contains physical context extracted by the backbone from the global input, its channels do not have explicit geometric directions. Therefore, we cannot directly identify tangential or normal components from these latent channels. To address this issue, GeoABC first maps the high-dimensional intermediate representation to a two-dimensional anchor space with physical directional meaning through a pointwise linear down-projection W↓:
+
+a(x) = W↓zℓ(x) ∈ R2. (5) In addition, GeoABC uses an anchor alignment loss Lanchor (Eq. 47) to constrain a(x) and align it with physical directional quantities. For example, in the (u, v, p ) setting, a(x) can be aligned with the velocity vector (u, v ). In the pressure-only setting, a(x) can be aligned with the pressure-gradient direction ∇p. In this way, the anchor space is no longer an arbitrary latent space, but rather a low-dimensional space with a clear physical directional meaning. GeoABC then uses the local tangent and normal vectors from the geometry cache to construct a solid-boundary frame, providing a structural prior for the anchor representation: 
+
+BG(x) = ˆt(x), ˆn(x) ∈ R2×2. (6) The two columns of BG(x) correspond to the local tangential and normal directions, respectively. Projecting the anchor a(x) onto this local frame gives 
+
+aB (x) = BG(x)⊤a(x) = 
+
+at(x)
+
+an(x)
+
+
+
+∈ R2, (7) where at(x) and an(x) denote the tangential and wall-normal coordinates of the anchor. It is worth noting that they are not a tangential-normal decomposition of the final physical field. Instead, they serve as local-coordinate inputs for the subsequent direction-aware correction. 
+
+Direction-aware correction branches and geometric modulation. After obtaining the local coordinates (at(x), a n(x)) , GeoABC generates direction-aware correction signals in the boundary-aligned (t, n ) frame. Specifically, we first extract an auxiliary context from the same intermediate representation zℓ(x):
+
+h(x) = Whzℓ(x). (8) Here, h(x) preserves the local and global physical information already encoded by the backbone. GeoABC then uses three pointwise MLP branches to generate correction signals along the tangential, normal, and cross directions: 
+
+rt(x) = ft
+
+ at(x), h(x), (9) 
+
+rn(x) = fn
+
+ an(x), h(x), (10) 
+
+rm(x) = fm
+
+ at(x), a n(x), h(x). (11) The tangential branch ft generates a scalar correction signal along the boundary, the normal branch 
+
+fn generates a scalar correction signal normal to the wall, and the cross branch fm models the coupled correction between the tangential and normal directions. Since the local geometric conditions vary across boundary locations, the importance of different directional corrections should also change from point to point. Therefore, GeoABC further uses a lightweight geometric modulator to predict three gating coefficients from the local geometric descriptor gG(x):  αt(x), α n(x), α m(x) = σ  Γψ
+
+ gG(x) . (12) Here, Γψ is the geometric modulator, and σ(·) denotes the sigmoid function. The three gating coefficients control the strengths of the tangential, normal, and cross corrections, respectively. In other words, the correction at the same near-wall point is not fixed. Instead, GeoABC adaptively adjusts the contribution of each directional correction according to the local geometric condition. Since the cross branch produces a coupled correction signal, GeoABC further maps it to a two-dimensional correction in the local frame space: 
+
+qm(x) = Wmrm(x) ∈ R2. (13) where Wm is a learnable linear lifting map. It converts the output of the cross branch into a two-dimensional correction vector in the local (t, n ) frame. As a result, the cross correction can be composed with the tangential and normal corrections in the same local coordinate system. 5Directional correction synthesis and mid-layer write-back. After obtaining the three direction-aware correction signals, GeoABC first composes the overall boundary correction in the local tangent-normal frame: 
+
+cB (x) = 
+
+ αt(x)rt(x)
+
+αn(x)rn(x)
+
+
+
++ αm(x)qm(x) ∈ R2. (14) The first term represents the geometrically gated tangential and normal corrections. The second term represents the coupled correction between the tangential and normal directions. Since cB (x)
+
+is defined in the local tangent-normal coordinate system, GeoABC then maps it back to the global two-dimensional anchor space using the local frame BG(x):
+
+camb (x) = BG(x)cB (x) ∈ R2. (15) The vector camb (x) can be viewed as a two-dimensional boundary correction with global directional information. However, it must be lifted back to the latent dimension of the backbone before being written into the original intermediate representation. GeoABC performs this step through an up-projection W↑ and updates the intermediate representation in a residual form: 
+
+˜zℓ(x) = zℓ(x) + ωG(x) ( W↑camb (x) + Wah(x)) . (16) Here, Wah(x) introduces an auxiliary correction that is consistent with the intermediate context of the backbone. This update completes the anisotropic boundary correction at layer ℓ. The corrected representation ˜zℓ(x) is then passed to the remaining operator blocks and decoder to produce the final physical prediction. The 3D extension is provided in Appendix F.5 and additional theoretical analysis is provided in Appendix A. 
+
+Training Objective The overall objective consists of a global prediction loss, a boundary-weighted loss, and an anchor alignment loss: 
+
+L = Lglobal + λbLboundary + λaLanchor . (17) Detailed formulations of the three loss terms are provided in Appendix F.2. 
+
+## 4 Experiments 
+
+4.1 Experimental Setup Datasets. We evaluate GeoABC on two steady-state aerodynamic benchmarks. The 2D NACA airfoil dataset [ 22 ] contains 1000 training samples and 200 test samples, where the task is to predict 
+
+(u, v, p ) around airfoil geometries. The 3D Shape-Net Car dataset [ 41 ] contains 789 training cars and 100 test cars, where the task is to predict (u, v, w, p ) around car geometries. Additional dataset details are provided in Appendix B. 
+
+Baselines. We evaluate GeoABC as a plug-in correction module on five representative neural oper-ator backbones spanning four operator families: spectral (Geo-FNO [ 22 ]), convolutional (CNO [ 42 ]), graph/kernel (GINO [ 24 ]), and transformer-based (GNOT [ 23 ], Transolver [ 30 ]). This coverage allows us to test whether GeoABC can be inserted into different architectures without changing their operator-learning formulation. Per-backbone configurations and detailed descriptions of each baseline are provided in Appendix F. 
+
+Metrics. We separately report global-field accuracy and near-wall accuracy. For the 2D NACA benchmark, we use global relative L2 and near-wall relative L2 as primary metrics, with component-wise near-wall errors for u, v, p and boundary pressure metrics ( Cp MAE, wall-pressure MAE) as secondary metrics. For the 3D Shape-Net Car benchmark, we report volumetric field errors, wetted-surface metrics including surface velocity relative L2 and surface pressure MAE, and the drag coefficient error CD . Detailed metric definitions are provided in Appendix G. 
+
+4.2 Main Results 2D prediction. Before evaluating GeoABC, we first examine whether standard boundary-aware remedies can close the near-wall gap. As shown in Fig. 1, our diagnostic experiments show that 6Table 1: Cross-backbone performance on the 2D NACA airfoil benchmark. Method Global rel-L2 ↓ Near-wall rel-L2 ↓ u near rel-L2 ↓ v near rel-L2 ↓ p near rel-L2 ↓ Cp MAE ↓                                                    
+
+> Geo-FNO 0.0608 ±.003 0.1320 ±.006 0.1266 ±.006 0.2803 ±.024 0.1343 ±.006 0.2085 ±.009 +GeoABC 0.0297 ±.001 0.0369 ±.001 0.0360 ±.001 0.0716 ±.003 0.0370 ±.002 0.0426 ±.004
+> CNO 0.0194 ±.004 0.0398 ±.009 0.0392 ±.010 0.0975 ±.013 0.0379 ±.009 0.0553 ±.014 +GeoABC 0.0171 ±.003 0.0242 ±.004 0.0237 ±.004 0.0569 ±.003 0.0236 ±.004 0.0270 ±.003
+> GNOT 0.0333 ±.009 0.0715 ±.020 0.0684 ±.019 0.1794 ±.043 0.0712 ±.020 0.1013 ±.026 +GeoABC 0.0240 ±.001 0.0396 ±.003 0.0388 ±.002 0.1074 ±.008 0.0376 ±.004 0.0433 ±.001
+> Transolver 0.0359 ±.003 0.0409 ±.004 0.0181 ±.002 0.0868 ±.007 0.0177 ±.002 0.0143 ±.001 +GeoABC 0.0317 ±.002 0.0355 ±.002 0.0166 ±.001 0.0737 ±.005 0.0162 ±.001 0.0118 ±.001
+
+Figure 3: Velocity-magnitude prediction and error maps on the 2D NACA benchmark. The numbers in the error maps denote near-wall relative ℓ2 error. these methods do not effectively reduce near-wall error and can even degrade prediction on stronger backbones. This indicates that the near-wall gap cannot be resolved by simply enhancing boundary awareness or adding boundary-specific capacity. Detailed settings and results are provided in Appendix C.1. Table 1 shows that GeoABC delivers substantial and consistent gains across all four 2D backbones. Across spectral, convolutional, and attention-based operators, GeoABC reduces near-wall rel-L2
+
+by 13 .1% –72 .0% and lowers Cp MAE by 17 .4% –79 .6% . The improvement appears not only on Geo-FNO, but also on CNO, GNOT, and the strongest 2D backbone, Transolver, suggesting that the near-wall gap is not merely a symptom of insufficient backbone capacity. Figure 3 further visualizes the speed-error fields. The original backbones show pronounced wall-normal error bands near the airfoil surface, indicating a directional near-wall error pattern. GeoABC consistently suppresses these bands across backbones, with especially clear reductions on Geo-FNO and GNOT. This supports that GeoABC corrects anisotropic near-wall errors rather than merely improving the field uniformly. The per-metric pattern is consistent with this visual evidence. On every backbone, the relative reductions in near-wall rel-L2 and Cp MAE are larger than the reduction in global rel-L2. Therefore, GeoABC mainly improves boundary-sensitive quantities, especially Cp, whose accuracy directly depends on pressure prediction along the airfoil surface, reflecting the effective constraint imposed by 
+
+ωG(x). Overall, the consistent gains across different operator families support GeoABC as a plug-in anisotropic boundary correction module rather than a backbone-specific modification. 
+
+3D prediction. We further evaluate whether GeoABC can extend to complex 3D car geometries. As shown in Table 2, GeoABC consistently improves boundary-related metrics across all 3D backbones. Surface velocity rel-L2 decreases on every backbone, with reductions ranging from 11 .2% to 52 .1% ,and surface pressure MAE is also reduced across all backbones. These improvements are concen-trated on wetted-surface quantities, which are the most relevant quantities for boundary-accurate aerodynamic prediction. 7Table 2: Cross-backbone performance on the 3D Car benchmark.                                                                          
+
+> Method Volume vrel-L2↓Volume prel-L2↓Surface vrel-L2↓Surface pMAE ↓CDerror ↓ρD↑
+> Geo-FNO 0.0365 ±.000 0.1103 ±.000 0.0447 ±.000 3.177 ±.008 0.0223 ±.001 0.9649 ±.001 +GeoABC 0.0355 ±.000 0.1030 ±.000 0.0397 ±.000 2.922 ±.007 0.0233 ±.001 0.9712 ±.001
+> GINO 0.0355 ±.001 0.1153 ±.004 0.0435 ±.001 3.288 ±.080 0.0862 ±.002 0.8093 ±.006 +GeoABC 0.0326 ±.000 0.1030 ±.000 0.0360 ±.000 2.912 ±.001 0.0794 ±.003 0.8249 ±.005
+> GNOT 0.0424 ±.000 0.0887 ±.001 0.0655 ±.000 2.314 ±.024 0.0149 ±.001 0.9888 ±.001 +GeoABC 0.0276 ±.000 0.0862 ±.002 0.0322 ±.001 2.230 ±.034 0.0138 ±.001 0.9890 ±.002
+> Transolver 0.0433 ±.001 0.0854 ±.000 0.0656 ±.001 2.299 ±.010 0.0152 ±.003 0.9859 ±.001 +GeoABC 0.0273 ±.001 0.0823 ±.000 0.0314 ±.000 2.078 ±.012 0.0143 ±.001 0.9892 ±.002
+
+Figure 4: 3D visualization of the surrounding velocity field around the car, showing airflow stream-lines and the vehicle surface. Figure 4 further visualizes the 3D velocity field. Compared with the original backbones, GeoABC produces surrounding streamlines that are closer to the ground truth and reduces the visualization error across multiple backbones. Additional visualizations are provided in Appendix E. The improvement further transfers to downstream aerodynamic metrics. GeoABC reduces the drag-coefficient error CD on GINO, GNOT, and Transolver, while preserving or improving the Spearman correlation ρD between predicted and ground-truth CD across all backbones. Since CD
+
+and ρD measure whether the surrogate can support drag-based aerodynamic evaluation and design ranking, these results indicate that improving boundary-region prediction leads to more reliable engineering-level predictions. Overall, the 3D results show that GeoABC does not rely on the 2D airfoil geometry, but remains effective as a plug-in boundary correction module for complex 3D aerodynamic geometries. 
+
+4.3 Ablation Study 
+
+Our ablation study, summarized in Fig. 5, evaluates the contribution of each design component in GeoABC. We compare the full model with four ablated variants. no-inject removes the mid-layer boundary injection module while keeping the same training losses, testing whether the gain comes merely from boundary-related supervision. no-frame keeps the boundary-correction module but removes the local tangent–normal frame, testing whether the gain comes from the structural prior of solid boundaries rather than boundary-local correction capacity alone. normal-only keeps the local frame but uses only the wall-normal branch, removing the tangential and cross-direction branches. 
+
+zero-geometry keeps the boundary-correction structure but removes the geometry-conditioned spatial gate, testing whether the model needs geometry to localize where the correction should be activated. As shown in Fig. 5, the full GeoABC consistently outperforms the ablated variants. The weak performance of no-inject shows that boundary-related losses alone are not sufficient to explain the improvement. The degradation of no-frame shows that boundary correction must be organized by 8Global      
+
+> rel-L2
+> Near
+> rel-L2
+> UV Near
+> rel-L2
+> Body Pres
+> MAE
+> Geo-FNO
+> Global
+> rel-L2
+> Near
+> rel-L2
+> UV Near
+> rel-L2
+> Body Pres
+> MAE
+> CNO
+> Surf. Vel
+> rel-L2
+> Vol. Vel
+> rel-L2
+> Pressure
+> rel-L2
+> Surf. Pres
+> MAE
+> GINO Car
+> baseline no-inject no-frame normal-only zero-geom ours
+
+Figure 5: Component isolation of GeoABC, comparing the full GeoABC with four ablated variants on representative 2D airfoil and 3D car experiments. the local directions induced by solid boundaries, rather than applied in an unstructured latent space. 
+
+normal-only recovers part of the gain, confirming the importance of wall-normal responses near solid boundaries; however, the full model remains stronger overall, suggesting that tangential and cross-directional corrections also contribute to modeling anisotropic near-wall physics. The zero-geometry variant further shows that geometry-conditioned spatial gating is needed to localize where the correction should be activated. Together, these ablations show that GeoABC’s gains come not from extra boundary-local capacity alone, but from the joint use of mid-layer correction, solid-boundary directional structure, anisotropic branches, and geometry-conditioned spatial gating. Detailed numerical results and additional ablation analyses are provided in Appendix D.1. 
+
+4.4 Additional Experiments 
+
+Beyond the main results and ablations, we provide additional experiments in the appendix. Ap-pendix C.2 shows that the improvement of GeoABC is a general boundary-band effect rather than an accidental gain from a specific local region; it also shows that the near-wall improvement partly propagates to the surrounding flow field, further supporting mid-layer correction. Appendix C.3 further evaluates GeoABC on a new Pipe NS task, showing that the method does not rely on curved geometries and can also transfer to straight no-slip walls. Appendix D.2 shows that middle-layer insertion is the most effective choice, where the backbone has already formed sufficient physical context while the corrected representation can still interact with other regions through the remaining operator layers. Appendix D.3 shows that the improvement of GeoABC is stable across boundary-loss weights and boundary-band definitions, indicating that the near-wall gain is not caused by a finely tuned loss weight or a particular narrow-band choice. 
+
+## 5 Conclusion 
+
+This paper presents GeoABC, which explicitly leverages solid boundary geometry as a structural prior to mitigate the prediction errors caused by isotropic near-wall modeling in aerodynamic neural operators. GeoABC consists of two main mechanisms: local tangent-normal decomposition, which characterizes the difference between tangential propagation along the wall and strong wall-normal variations, and geometry-gated boundary correction, which performs direction-aware modulation within trusted boundary regions in the intermediate representation space. Experiments show that GeoABC can be integrated into various neural operator backbones as a plug-in module, consistently reducing near-wall errors and improving boundary-related metrics on both 2D airfoil and 3D car tasks. This work demonstrates that injecting the anisotropic structure of classical boundary physics into neural operators can improve their reliability in high-fidelity aerodynamic simulation and engineering-level aerodynamic metric prediction. 9References 
+
+[1] John D. Anderson. Computational Fluid Dynamics: The Basics with Applications . McGraw-Hill, New York, 1995. [2] Antony Jameson. Aerodynamic design via control theory. Journal of Scientific Computing ,3(3):233–260, 1988. [3] Jiri Blazek. Computational Fluid Dynamics: Principles and Applications . Butterworth-Heinemann, 3rd edition, 2015. [4] Joel H. Ferziger and Milovan Peri´ c. Computational Methods for Fluid Dynamics . Springer, 3rd edition, 2002. [5] Joaquim RRA Martins. Aerodynamic design optimization: Challenges and perspectives. Com-puters & Fluids , 239:105391, 2022. [6] Bradford E Green, John L Whitesides, Richard L Campbell, and Raymond E Mineck. Method for the constrained design of natural laminar flow airfoils. Journal of aircraft , 34(6):706–712, 1997. [7] George Em Karniadakis, Ioannis G. Kevrekidis, Lu Lu, Paris Perdikaris, Sifan Wang, and Liu Yang. Physics-informed machine learning. Nature Reviews Physics , 3(6):422–440, 2021. [8] Maziar Raissi, Paris Perdikaris, and George Em Karniadakis. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. Journal of Computational Physics , 378:686–707, 2019. [9] Steven L Brunton, Bernd R Noack, and Petros Koumoutsakos. Machine learning for fluid mechanics. Annual review of fluid mechanics , 52(1):477–508, 2020. [10] Lu Lu, Pengzhan Jin, Guofei Pang, Zhongqiang Zhang, and George Em Karniadakis. Learning nonlinear operators via deeponet based on the universal approximation theorem of operators. 
+
+Nat. Mach. Intell. , 3(3):218–229, 2021. [11] Zongyi Li, Nikola Borislavov Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhat-tacharya, Andrew M. Stuart, and Anima Anandkumar. Fourier neural operator for parametric partial differential equations. In 9th International Conference on Learning Representations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021 . OpenReview.net, 2021. [12] Nikola Kovachki, Zongyi Li, Burigede Liu, Kamyar Azizzadenesheli, Kaushik Bhattacharya, Andrew M. Stuart, and Anima Anandkumar. Neural operator: Learning maps between function spaces with applications to PDEs. Journal of Machine Learning Research , 24(89):1–97, 2023. [13] Giovanni Catalani, Siddhant Agarwal, Xavier Bertrand, Frederic Tost, Michael Bauerheim, and Joseph Morlier. Neural fields for rapid aircraft aerodynamics simulations. Scientific Reports ,14(1):25496, 2024. [14] Lixiang Jiang, Xinlong Feng, and Quanyong Xu. Prediction of compressor blade cascade flow field based on fourier neural operator. Aerospace Science and Technology , 163:110208, 2025. [15] Giovanni Catalani, Jean Fesquet, Xavier Bertrand, Frédéric Tost, Michael Bauerheim, and Joseph Morlier. Towards scalable surrogate models based on neural fields for large scale aerodynamic simulations. Computers & Fluids , page 106929, 2025. [16] Álvaro Tanarro, Ricardo Vinuesa, and Philipp Schlatter. Effect of adverse pressure gradients on turbulent wing boundary layers. Journal of Fluid Mechanics , 883:A8, 2020. [17] Ricardo Vinuesa, Seyed M Hosseini, Ardeshir Hanifi, Dan S Henningson, and Philipp Schlatter. Pressure-gradient turbulent boundary layers developing around a wing section. Flow, turbulence and combustion , 99(3):613–641, 2017. [18] Philippe R Spalart. Strategies for turbulence modelling and simulations. International journal of heat and fluid flow , 21(3):252–263, 2000. 10 [19] Camli Badrya, Bharath Govindarajan, Albert Medina, Seung Joon Yang, and Inderjit Chopra. Unsteady aerodynamic characteristics of pitching flat plates at low reynolds numbers. Journal of Aircraft , 58(4):917–934, 2021. [20] Brent W Pomeroy and Michael S Selig. Design of airfoils to mitigate wake bursting. In 55th AIAA Aerospace Sciences Meeting , page 1210, 2017. [21] Ricardo Vinuesa and Steven L Brunton. Enhancing computational fluid dynamics with machine learning. Nature Computational Science , 2(6):358–366, 2022. [22] Zongyi Li, Daniel Zhengyu Huang, Burigede Liu, and Anima Anandkumar. Fourier neural operator with learned deformations for pdes on general geometries. J. Mach. Learn. Res. ,24:388:1–388:26, 2023. [23] Zhongkai Hao, Zhengyi Wang, Hang Su, Chengyang Ying, Yinpeng Dong, Songming Liu, Ze Cheng, Jian Song, and Jun Zhu. GNOT: A general neural operator transformer for operator learning. In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett, editors, International Conference on Machine Learning, ICML 2023, 23-29 July 2023, Honolulu, Hawaii, USA , Proceedings of Machine Learning Research, pages 12556–12569. PMLR, 2023. [24] Zongyi Li, Nikola B. Kovachki, Christopher B. Choy, Boyi Li, Jean Kossaifi, Shourya Prakash Otta, Mohammad Amin Nabian, Maximilian Stadler, Christian Hundt, Kamyar Azizzadenesheli, and Animashree Anandkumar. Geometry-informed neural operator for large-scale 3d pdes. In Alice Oh, Tristan Naumann, Amir Globerson, Kate Saenko, Moritz Hardt, and Sergey Levine, editors, Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 -16, 2023 , 2023. [25] Joe F. Thompson, Z. U. A. Warsi, and C. Wayne Mastin. Numerical Grid Generation: Founda-tions and Applications . North-Holland, New York, 1985. [26] Nikola Kovachki, Zongyi Li, Burigede Liu, Kamyar Azizzadenesheli, Kaushik Bhattacharya, Andrew Stuart, and Anima Anandkumar. Neural operator: Learning maps between function spaces with applications to pdes. Journal of Machine Learning Research , 24(89):1–97, 2023. [27] Waleed Diab and Mohammed Al Kobaisi. Temporal neural operator for modeling time-dependent physical phenomena. Scientific Reports , 15(1):32791, 2025. [28] Edoardo Calvello, Nikola B Kovachki, Matthew E Levine, and Andrew M Stuart. Continuum attention for neural operators. Journal of Machine Learning Research , 26(300):1–52, 2025. [29] Kenghong Lin, Huiwei Lin, Baoquan Zhang, Yangjinxi Ge, Dong Liu, Xutao Li, Yunming Ye, and Chuyao Luo. Fano: Fourier advection neural operator for weather prediction. IEEE Transactions on Geoscience and Remote Sensing , 2026. [30] Haixu Wu, Huakun Luo, Haowen Wang, Jianmin Wang, and Mingsheng Long. Transolver: A fast transformer solver for pdes on general geometries. In Ruslan Salakhutdinov, Zico Kolter, Katherine A. Heller, Adrian Weller, Nuria Oliver, Jonathan Scarlett, and Felix Berkenkamp, editors, Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024 , Proceedings of Machine Learning Research, pages 53681–53705. PMLR / OpenReview.net, 2024. [31] Zhongkai Hao, Chang Su, Songming Liu, Julius Berner, Chengyang Ying, Hang Su, Anima Anandkumar, Jian Song, and Jun Zhu. Dpot: auto-regressive denoising operator transformer for large-scale pde pre-training. In Proceedings of the 41st International Conference on Machine Learning , ICML’24. JMLR.org, 2024. [32] Benedikt Alkin, Andreas Fürst, Simon Schmid, Lukas Gruber, Markus Holzleitner, and Johannes Brandstetter. Universal physics transformers: A framework for efficiently scaling neural operators. Advances in Neural Information Processing Systems , 37:25152–25194, 2024. 11 [33] Ashiqur Rahman, Robert J George, Mogab Elleithy, Daniel Leibovici, Zongyi Li, Boris Bonev, Colin White, Julius Berner, Raymond A Yeh, Jean Kossaifi, et al. Pretraining codomain attention neural operators for solving multiphysics pdes. Advances in Neural Information Processing Systems , 37:104035–104064, 2024. [34] Maximilian Herde, Bogdan Raoni´ c, Tobias Rohner, Roger Käppeli, Roberto Molinaro, Em-manuel De Bezenac, and Siddhartha Mishra. Poseidon: Efficient foundation models for pdes. 
+
+Advances in Neural Information Processing Systems , 37:72525–72624, 2024. [35] Haixu Wu, Minghao Guo, Zongyi Li, Zhiyang Dou, Mingsheng Long, Kaiming He, and Wojciech Matusik. Geopt: Scaling physics simulation via lifted geometric pre-training, 2026. [36] Zhizhou Zhang, Youjia Wu, Kaixuan Zhang, and Yanjia Wang. From cheap geometry to expensive physics: A physics-agnostic pretraining framework for neural operators. In The Fourteenth International Conference on Learning Representations , 2026. [37] Haixin Wang, Jiaxin Li, Anubhav Dwivedi, Kentaro Hara, and Tailin Wu. BENO: boundary-embedded neural operators for elliptic pdes. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024 . OpenReview.net, 2024. [38] Zhenzhong Wang, Xin Zhang, Jun Liao, and Min Jiang. Cross-field interface-aware neural operators for multiphase flow simulation. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 40, pages 26769–26777, 2026. [39] Benedikt Alkin, Maurits Bleeker, Richard Kurle, Tobias Kronlachner, Reinhard Sonnleit-ner, Matthias Dorfer, and Johannes Brandstetter. Ab-upt: Scaling neural cfd surrogates for high-fidelity automotive aerodynamics simulations via anchored-branched universal physics transformers. arXiv preprint arXiv:2502.09692 , 2025. [40] Chenyu Zeng, Yanshu Zhang, Jiayi Zhou, Yuhan Wang, Zilin Wang, Yuhao Liu, Lei Wu, and Daniel Zhengyu Huang. Point cloud neural operator for parametric pdes on complex and variable geometries. Computer Methods in Applied Mechanics and Engineering , 443:118022, 2025. [41] Nobuyuki Umetani and Bernd Bickel. Learning three-dimensional flow for interactive aerody-namic design. ACM Transactions on Graphics (TOG) , 37(4):1–10, 2018. [42] Bogdan Raonic, Roberto Molinaro, Tim De Ryck, Tobias Rohner, Francesca Bartolucci, Rima Alaifari, Siddhartha Mishra, and Emmanuel de Bézenac. Convolutional neural operators for robust and accurate learning of pdes. In Alice Oh, Tristan Naumann, Amir Globerson, Kate Saenko, Moritz Hardt, and Sergey Levine, editors, Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 - 16, 2023 , 2023. 12 A Theoretical Properties of GeoABC 
+
+This appendix formalizes GeoABC as a geometry-gated near-wall boundary correction and records three structural properties of the resulting representation. The goal is not to claim that a particular injection layer, branch design, or training strategy is universally optimal, nor to provide a stability guarantee for the underlying operator-learning problem. Instead, we record (i) a write-back locality property by construction, (ii) a Lipschitz-type spatial regularity bound on the corrected representation under standard regularity assumptions, and (iii) an identity-reachability property which ensures that GeoABC does not reduce the approximation capacity of the original backbone. We view these properties as sanity checks that clarify what GeoABC does and does not change at the representation level; the empirical claims of the paper are supported by the experiments in Sec. 4, not by these properties. 
+
+A.1 Anisotropy Motivation 
+
+Near a solid boundary ∂ΩG, aerodynamic fields typically vary differently along the tangential and normal directions, and the appropriate notion of anisotropy depends on the flow regime. 
+
+Viscous regime. For viscous flows, classical Prandtl boundary-layer scaling gives 
+
+δ ∼ L Re −1/2, (18) where L is the characteristic length, Re is the Reynolds number, and δ is the boundary-layer thickness. If the tangential velocity has the boundary-layer form ut(s, n ) = U (s/L, n/δ ), the chain rule gives 
+
+|∂nut| ∼ 1/δ, |∂sut| ∼ 1/L, (19) so the scale ratio between normal and tangential variations is 
+
+|∂nut||∂sut| ∼ L/δ ∼ Re 1/2 ≫ 1. (20) This applies to the 3D RANS car benchmark used in our experiments. 
+
+Inviscid regime. For the 2D transonic Euler benchmark, the no-penetration slip wall does not produce a Prandtl boundary layer, and the tangential wall velocity is generally nonzero. The relevant near-wall anisotropy is instead driven by wall-tangential pressure gradients, suction-peak structures, and possible shock-induced normal jumps. In both cases, near-wall fields exhibit different magnitudes of variation along the wall-tangent and wall-normal directions, which motivates organizing the boundary correction in a local tangent-normal frame 
+
+BG(x) = [ˆ t(x), ˆn(x)] (21) rather than in the ambient coordinate frame. We do not claim a quantitative scale law that applies uniformly across both regimes; the role of the local frame is structural, not asymptotic. 
+
+A.2 Notation 
+
+We follow the notation in Sec. 3.3. For a geometry G, let ΩG denote the fluid domain and ∂ΩG its solid boundary. The near-wall band is 
+
+Ωδ (G) = {x ∈ ΩG : dist( x, ∂ ΩG) < δ }. (22) GeoABC precomputes the local geometric descriptor 
+
+gG(x) =  ϕ(x), ˆt(x), ˆn(x), κ (x), w (x), c (x), (23) where ϕ is the signed distance to ∂ΩG, ˆt, ˆn are local unit tangent and normal vectors satisfying 
+
+ˆt ⊥ ˆn and ∥ˆt∥ = ∥ˆn∥ = 1 wherever they are defined, κ is the local curvature, w(x) ∈ [0 , 1] is the near-wall window, and c(x) ∈ [0 , 1] is the confidence score of the geometric descriptor. The geometry-confidence gate is 
+
+ωG(x) = w(x) c(x). (24) The scalar c(x) should not be confused with cB (x), which denotes the local-frame correction introduced below. 13 Geometric singularities. The frame ˆt, ˆn is defined via the nearest-point projection onto ∂ΩG,which is single-valued and smooth away from the medial axis of ΩG and away from non-smooth points of ∂ΩG (e.g., the trailing edge of an airfoil). Throughout this appendix, regularity statements are made on compact subsets K ⊂ ΩG that exclude a neighborhood of these singular sets. In practice, the confidence score c(x) is designed to vanish smoothly near such regions, which is consistent with this restriction. Let zℓ(x) ∈ Rdz be the backbone’s intermediate representation at layer ℓ. GeoABC projects this representation into a low-dimensional anchor space, 
+
+a(x) = W↓ zℓ(x) ∈ R2, (25) and extracts an auxiliary context vector 
+
+h(x) = Wh zℓ(x). (26) In the 2D setting the local tangent-normal frame is BG(x) = [ˆ t(x), ˆn(x)] ∈ R2×2, and the anchor representation is projected into this local frame as 
+
+aB (x) = BG(x)⊤a(x) = 
+
+at(x)
+
+an(x)
+
+
+
+∈ R2. (27) Because ˆt ⊥ ˆn and both are unit length, BG is orthogonal, so B⊤ 
+
+> G
+
+= B−1 
+
+> G
+
+. GeoABC computes three scalar branch outputs 
+
+rt(x) = ft
+
+ at(x), h(x), (28) 
+
+rn(x) = fn
+
+ an(x), h(x), (29) 
+
+rm(x) = fm
+
+ at(x), a n(x), h(x), (30) where the subscript m denotes the cross tangent-normal branch. Geometry-conditioned gates are 
+
+ αt(x), α n(x), α m(x) = σ Γψ
+
+ gG(x) . (31) The cross branch is lifted to a 2D correction in the local frame, qm(x) = Wmrm(x), and the local-frame correction is 
+
+cB (x) = 
+
+ αt(x) rt(x)
+
+αn(x) rn(x)
+
+
+
++ αm(x) qm(x). (32) Mapping back to the ambient anchor space gives camb (x) = BG(x) cB (x), and the latent residual produced by GeoABC is 
+
+∆zℓ(x) = W↑ camb (x) + Wa h(x). (33) Finally, GeoABC writes the residual back to the intermediate representation as 
+
+˜zℓ(x) = zℓ(x) + ωG(x) ∆ zℓ(x). (34) The directional residual ∆zℓ determines what is corrected, and the geometry-confidence gate ωG
+
+determines where the correction is applied and how strongly. 
+
+A.3 Boundary-Band Local Write-Back 
+
+The first property is a direct consequence of the write-back rule (34) and is included only to make explicit how ωG controls the spatial support of the correction at the injection layer. The statement is given in two forms, depending on whether the window w(x) is implemented as a compactly supported (hard) window or as a smooth (soft) window that decays away from the boundary. 
+
+Proposition 1 (Write-back locality at the injection layer) . The following hold pointwise for the write-back rule (34) .(i) Pointwise identity. If ωG(x) = 0 , then ˜zℓ(x) = zℓ(x).(ii) Pointwise magnitude bound. Since w(x), c (x) ∈ [0 , 1] ,
+
+∥˜zℓ(x) − zℓ(x)∥ ≤ ∥ ∆zℓ(x)∥ for all x ∈ ΩG. (35) 14 (iii) Hard window. If the window has compact support inside the near-wall band, i.e. 
+
+supp( ωG) ⊆ Ωδ (G), then ˜zℓ(x) = zℓ(x) for every x ∈ ΩG \ Ωδ (G).(iv) Soft window. More generally, suppose ωG is bounded outside the near-wall band by 
+
+ωG(x) ≤ ε for all x ∈ ΩG \ Ωδ (G), and that ∥∆zℓ(x)∥ ≤ D∆ on a set K ⊂ ΩG. Then for every x ∈ K ∩  ΩG \ Ωδ (G),
+
+∥˜zℓ(x) − zℓ(x)∥ ≤ ε D ∆. (36) 
+
+Proof. By (34) , ˜zℓ(x) − zℓ(x) = ωG(x) ∆ zℓ(x). Statement (i) is immediate. For (ii), w, c ∈
+
+[0 , 1] gives 0 ≤ ωG ≤ 1, and absolute homogeneity of the norm yields ∥ωG(x)∆ zℓ(x)∥ =
+
+ωG(x)∥∆zℓ(x)∥ ≤ ∥ ∆zℓ(x)∥. Statement (iii) is the contrapositive of (i) under the support as-sumption. For (iv), ωG(x) ≤ ε and the same homogeneity argument give the bound εD ∆.We emphasize that Proposition 1 is an identity-by-construction property of the write-back rule, not a non-trivial localization result for the final prediction; it states that GeoABC does not directly modify the intermediate representation at points where ωG vanishes (or is small), and that for soft windows the residual write-back outside the near-wall band is controlled by the gate’s far-band magnitude ε.The behavior of the final output at bulk points is discussed separately in Sec. A.6. 
+
+A.4 Spatial Regularity of the Corrected Representation 
+
+The next property records that, under standard regularity assumptions on a compact set K avoiding the geometric singularities discussed above, GeoABC’s write-back preserves the Lipschitz behavior of the intermediate representation, with a quantitative bound. We state the result as a regularity bound on ˜zℓ as a function of the spatial query x, and not as a stability guarantee for the operator ˜Fθ,ψ with respect to perturbations of its functional inputs. 
+
+Setting. All regularity statements in this subsection are made for a fixed geometry G, a fixed operating condition s, a fixed discretization or query set, and fixed model parameters (θ, ψ ). We suppress these dependencies and view the hidden representation zℓ, the residual ∆zℓ, and the gate 
+
+ωG as functions of the spatial query x ∈ ΩG only. The Lipschitz constants below should therefore be read as spatial-regularity constants of these functions, not as stability constants of the underlying operator with respect to its inputs. 
+
+Theorem 1 (Lipschitz bound on the corrected representation) . Let K ⊂ ΩG be compact and disjoint from a neighborhood of the medial axis of ΩG and from non-smooth points of ∂ΩG. Assume there exist constants Lzℓ , L ω , L ∆z, D ∆ ≥ 0 such that 
+
+∥zℓ(x) − zℓ(y)∥ ≤ Lzℓ ∥x − y∥, (37) 
+
+|ωG(x) − ωG(y)| ≤ Lω ∥x − y∥, (38) 
+
+∥∆zℓ(x) − ∆zℓ(y)∥ ≤ L∆z∥x − y∥, (39) 
+
+∥∆zℓ(x)∥ ≤ D∆, (40) 
+
+for all x, y ∈ K. Then ˜zℓ is Lipschitz on K with 
+
+Lip K (˜ zℓ) ≤ Lzℓ + Lω D∆ + L∆z. (41) 
+
+If, in addition, the post-injection map (the remaining backbone layers and decoder after layer ℓ)restricted to the relevant range is Lpost -Lipschitz, then on K the predicted field ˜Fθ,ψ = Pθ ◦ ˜zℓ
+
+satisfies 
+
+Lip K ( ˜Fθ,ψ ) ≤ Lpost (Lzℓ + Lω D∆ + L∆z) . (42) 
+
+Proof. Define δzℓ(x) = ωG(x) ∆ zℓ(x). For x, y ∈ K, adding and subtracting ωG(y) ∆ zℓ(x) and applying the triangle inequality gives 
+
+∥δzℓ(x) − δzℓ(y)∥ ≤ | ωG(x) − ωG(y)| ∥ ∆zℓ(x)∥
+
++ |ωG(y)| ∥ ∆zℓ(x) − ∆zℓ(y)∥. (43) Using |ωG(y)| ≤ 1 and the four assumed bounds yields ∥δzℓ(x)−δzℓ(y)∥ ≤ (Lω D∆+L∆z)∥x−y∥.Combining with the Lipschitz bound for zℓ via ˜zℓ = zℓ + δzℓ gives (41) . The bound (42) follows from the composition rule for Lipschitz maps. 15 Scope and caveats. Theorem 1 is a regularity bound on the predicted field as a function of the spatial coordinate x, and should not be read as a stability statement for the operator with respect to its functional inputs. Two limitations are worth making explicit. First, the assumptions on ˆt, ˆn (and hence on ∆zℓ through BG) generally fail near the medial axis and near non-smooth points of ∂ΩG;the compact set K is chosen to exclude a neighborhood of these singular sets, which is consistent with the smooth roll-off of c(x) used in practice. Second, Lpost collects the Lipschitz behavior of the remaining operator layers, including spectral and attention layers; tight quantitative control of Lpost 
+
+is well known to be difficult for transformer-based backbones and is not pursued here. Theorem 1 therefore plays the role of a structural sanity check rather than a quantitative robustness certificate. 
+
+A.5 Identity Reachability 
+
+The third property records that GeoABC contains the original backbone as a special case at the parameter level. This implies that the function class realized by the GeoABC-augmented model is at least as expressive as that of the original backbone. 
+
+Proposition 2 (Identity reachability) . Let F denote the function class realized by the original backbone neural operator and let eF denote the function class realized after inserting GeoABC. Then F ⊆ eF. Consequently, any approximation property of F on a function class of interest (e.g., density in a target space, or a universal approximation property in the operator-learning sense of the backbone’s analysis) is inherited by eF.Proof. Choose W↑ = 0 and Wa = 0. Then ∆zℓ ≡ 0 pointwise, and (34) gives ˜zℓ = zℓ. The remaining backbone layers and decoder are untouched, so the GeoABC-augmented model coincides with the original backbone at this parameter setting. Hence F ⊆ eF, and any approximation property of F transfers to eF.Proposition 2 is an identity-reachability statement by construction; it records that GeoABC does not reduce the expressive power of the backbone, but it does not by itself imply that GeoABC strictly extends it. The empirical improvements reported in Sec. 4 indicate that, for the backbones and benchmarks considered, the additional capacity introduced by GeoABC is in fact used by training to reduce near-wall error. 
+
+A.6 Remark on Bulk Regions 
+
+Proposition 1 states that GeoABC does not directly modify the intermediate representation at points where ωG vanishes (or is small) at the injection layer. It does not state that the final prediction is unchanged at bulk points. Many neural operators use nonlocal post-injection layers, such as Fourier, spectral, or attention layers, which can propagate near-wall corrections to other locations. The precise statement is therefore: GeoABC preserves local identity at points where ωG vanishes, and near-identity (with write-back magnitude bounded by ε D ∆) at points where ωG ≤ ε, at the injection layer ; the perturbation of the final prediction at bulk points is controlled by the Lipschitz bound in Theorem 1 and by the nonlocal structure of the post-injection map. This is consistent with the spatial-attribution analysis in Appendix C.2, where part of the gain is concentrated in the near-wall band and part propagates into the surrounding region through subsequent operator layers. 
+
+## B Dataset Details 
+
+In this section, we provide additional details on the benchmark datasets used in our experiments, including their sources, prediction targets, train/test splits, and preprocessing procedures. As illus-trated in Figure 6, the benchmarks cover two representative aerodynamic design scenarios. The 3D ShapeNetCar task models external flow around vehicle geometries, where the predicted pressure and velocity fields are used to evaluate drag-related aerodynamic performance. The 2D airfoil task models flow around airfoil geometries, where accurate near-wall prediction is important for estimating surface pressure and lift-related quantities. 16 B.1 2D airfoil benchmark. Governing PDE. The 2D benchmark considers steady-state inviscid compressible flow around airfoil cross-sections in the transonic regime. The underlying numerical solver computes steady solutions of the compressible Euler equations, 
+
+∇·  ρv = 0 , ∇·  ρv ⊗ v + pI = 0, ∇·  (E + p)v = 0 ,
+
+where ρ denotes the density, v = ( u, v ) is the two-dimensional velocity vector, p is the pressure, and 
+
+E is the total energy density. For an ideal gas, the system is closed by 
+
+E = pγ − 1 + 12 ρ∥v∥22,
+
+where γ is the ratio of specific heats. Equivalently, if E = e + 12 ∥v∥22 denotes the specific total energy, the energy equation can be written as ∇·  (ρE + p)v = 0 . The far-field boundary prescribes the freestream Mach number and angle of attack, while the airfoil surface satisfies an inviscid no-penetration slip-wall condition. 
+
+Source and generation. The dataset follows the airfoil benchmark released by [ 22 ]. Each sample corresponds to a deformed NACA-0012 airfoil geometry. The baseline airfoil is embedded into a design-parameter space and deformed by perturbing control nodes on the upper and lower surfaces, yielding a family of airfoil cross-sections with different geometric profiles. For each geometry, a body-fitted structured Euler solver is used to compute the corresponding steady transonic flow field. Since viscosity is neglected, this benchmark focuses on the inviscid aerodynamic response induced by geometry-dependent compressibility effects, including strong near-wall pressure variation and possible shock structures in the transonic regime. 
+
+Mesh and channels. Each sample is stored in a structured cylindrical view of resolution 221 × 51 ,corresponding to 11 ,271 grid nodes per sample. The two coordinate arrays provide the physical mesh locations (x, y ), and the raw flow array contains five channels, 
+
+[ρ, u, v, p, Mach] .
+
+The original Geo-FNO airfoil setting uses the physical coordinates as input and predicts the Mach number field. In our main 2D setting, we use the same airfoil geometries and mesh representation but predict the three-channel target (u, v, p ), so that both velocity and pressure errors are evaluated. Per-node inputs consist of the physical coordinates (x, y ) ∈ R2, augmented with the offline geometry descriptors 
+
+G(x) =  ϕ, window , conf , t, n, κ ,
+
+where ϕ denotes the signed-distance value, window is the boundary-localization weight, conf is the confidence score of the local boundary association, t and n are the local tangent and normal directions, and κ is the curvature descriptor. For boundary-specific evaluation, we distinguish the physical airfoil wall from the artificial wake cut induced by the structured grid representation. In our implementation, the airfoil body surface is identified as the 121 -point arc on the inner j=0 row, corresponding to the Python slice [50:171] ,(a) Shape-Net Car 
+
+> Lift
+> Force
+> Wind
+> (b) Airfoil
+
+Figure 6: Car and airfoil design tasks. 17 i.e., column indices 50 , . . . , 170 . The remaining nodes on the same inner row belong to the wake-cut portion of the grid and are therefore excluded from wall-based metrics and boundary-surface evaluations. 
+
+Split. We use the standard upstream split with 1000 training samples and 200 test samples. 
+
+Visualization. Figure 7 visualizes representative airfoil geometries from the 2D benchmark. The samples exhibit substantial geometric diversity in both thickness and camber, ranging from thin and nearly symmetric profiles to thicker and more strongly cambered shapes. Here, t denotes the normalized maximum thickness of each airfoil profile, and c denotes the normalized maximum camber. These geometric variations change the local curvature, leading-edge shape, trailing-edge behavior, and the spatial distribution of wall-normal and tangential directions along the airfoil surface. As a result, the corresponding flow fields are not only geometry-dependent at the global level, but also highly sensitive to local near-wall structures. This makes the benchmark suitable for evaluating whether a neural operator can adapt to different airfoil geometries and whether the proposed geometry-conditioned correction can improve predictions in regions where aerodynamic quantities are strongly affected by boundary shape. t=0.167, c=0.005 t=0.076, c=0.011 t=0.174, c=0.016 t=0.093, c=0.052 t=0.114, c=0.013                 
+
+> t=0.161, c=0.049 t=0.123, c=0.039 t=0.111, c=0.006 t=0.134, c=0.044 t=0.147, c=0.022
+> t=0.100, c=0.065 t=0.117, c=0.051 t=0.097, c=0.037 t=0.123, c=0.028 t=0.128, c=0.034
+> t=0.171, c=0.041 t=0.110, c=0.009 t=0.093, c=0.028 t=0.137, c=0.019 t=0.116, c=0.035
+> t=0.120, c=0.044 t=0.129, c=0.041 t=0.154, c=0.016 t=0.123, c=0.015 t=0.075, c=0.026
+
+NACA airfoil geometry diversity 
+
+Figure 7: Visualization of 2D airfoil benchmark. Here, t denotes the normalized maximum thickness, and c denotes the normalized maximum camber of each airfoil profile. 
+
+B.2 ShapeNetCar 3D benchmark Governing PDE. The 3D benchmark targets steady external aerodynamic flow around generic vehicle bodies. Following the ShapeNetCar setting used in Transolver, the underlying simulations correspond to incompressible Reynolds-averaged Navier–Stokes (RANS) flow around cars under a fixed driving condition of approximately 72 km/h. In conservative form, the incompressible mean-flow equations can be written as 
+
+∇· u = 0 , ρ(u·∇ )u = −∇ p + ∇· τ eff ,
+
+18 where u = ( u, v, w ) is the mean velocity field, p is the pressure, ρ is the fluid density, and τ eff 
+
+denotes the effective viscous stress including the modeled turbulent contribution. This notation avoids committing to a specific turbulence closure, which is not exposed as part of the learning benchmark. The far-field/inlet condition is fixed across the dataset, while a no-slip wall condition is imposed on the wetted vehicle surface. The main engineering quantity of interest is the drag coefficient CD ,which is computed from the predicted aerodynamic fields, with the surface pressure contribution evaluated on the vehicle surface. 
+
+Source and generation. We follow the ShapeNetCar benchmark setting used by [ 30 ]. The orig-inal car geometries come from the ShapeNet “car” category and the CFD data are based on the ShapeNetCar dataset introduced by [ 41 ]. The benchmark contains 889 vehicle geometries simulated under the same driving-speed condition. Following the preprocessing protocol adopted in Transolver and related 3D geometry-conditioned surrogate models, each case is represented as an unstructured geometry with both surrounding-flow samples and wetted-surface samples. The task is to predict the surrounding velocity field together with the surface pressure field from the vehicle geometry. 
+
+Mesh and channels. Each sample is represented on an unstructured hybrid point set with 32 ,186 
+
+mesh points. The point set combines volume points in the surrounding flow region and surface points on the wetted vehicle body. For each point, the base geometric input consists of the 3D position, signed distance to the vehicle surface, and an associated normal direction, 
+
+xin = ( x, y, z, ϕ, n x, n y , n z ) ∈ R7.
+
+Here, ϕ denotes the signed-distance value and (nx, n y , n z ) denotes the local unit normal direction associated with the nearest or corresponding surface geometry. In our model, these base geometric inputs are further augmented with the offline geometry-cache descriptors used throughout this work, 
+
+G(x) =  ϕ, window , conf , t1, t2, n, κ ,
+
+where window is the boundary-localization weight, conf is the confidence score of the local boundary association, t1 and t2 are local tangential directions, n is the outward normal direction, and κ is the local curvature descriptor. A binary surface mask is used internally to separate volume and surface nodes for loss computation and evaluation, but it is not counted as part of the standard geometric input channel. The prediction target contains the three velocity components on the surrounding flow points and pressure on the wetted-surface points. Following the benchmark convention, velocity errors are evaluated on the volume point set, while pressure-based metrics and drag-related evaluations are computed on the surface point set. When computing surface-pressure metrics or the pressure contribution to CD , we restrict the evaluation to the wetted vehicle surface and exclude non-surface volume samples. 
+
+Split. We use 789 training cars and 100 test cars. 
+
+Visualization. Figure 8 visualizes representative vehicle geometries from the ShapeNetCar 3D benchmark. Compared with the 2D airfoil benchmark, this task contains substantially more complex three-dimensional geometry variations, including different body lengths, roof profiles, front and rear shapes, hood slopes, and local surface curvature patterns. Each vehicle geometry is represented by an unstructured surface/volume point set, and the visualization highlights the diversity of wetted vehicle surfaces on which pressure-based quantities and drag-related metrics are evaluated. Here, CD
+
+denotes the drag coefficient of each car under the prescribed flow condition. The variation of CD
+
+across geometries indicates that changes in vehicle shape lead to different aerodynamic responses, especially through the pressure distribution and surface-normal force contribution on the car body. These geometry-dependent aerodynamic differences make the benchmark suitable for evaluating whether a surrogate model can handle complex 3D solid boundaries and whether GeoABC can improve boundary-sensitive predictions on wetted surfaces. 19 CD=0.362 CD=0.288 CD=0.369 CD=0.254 CD=0.277                 
+
+> CD=0.403 CD=0.304 CD=0.368 CD=0.351 CD=0.252
+> CD=0.303 CD=0.308 CD=0.335 CD=0.285 CD=0.353
+> CD=0.299 CD=0.325 CD=0.254 CD=0.335 CD=0.298
+> CD=0.316 CD=0.333 CD=0.316 CD=0.400 CD=0.335
+
+ShapeNetCar geometry diversity Figure 8: Visualization of 3D car benchmark. Here, CD denotes the drag coefficient of each car geometry under the prescribed flow condition. 
+
+## C Additional Experiments 
+
+C.1 Additional Diagnostics on Boundary-Aware Remedies 
+
+Table 3: Comparison of standard boundary-aware remedies on the airfoil pressure-only validation set. Backbone Global rel-L2 ↓ Near rel-L2 ↓ Cp MAE ↓ wall-p MAE ↓
+
+Geo-FNO 0.0717 0.1780 0.3055 0.1369 + boundary loss reweighting 0.0721 0.1772 0.2922 0.1309 + scalar descriptor concatenation 0.0719 0.1777 0.3052 0.1367 
+
+GNOT 0.0271 0.0712 0.1106 0.0496 + cross-attention branch 0.0438 0.1058 0.1512 0.0678 
+
+Purpose. Before introducing GeoABC, we conduct a diagnostic study to test whether the near-wall accuracy gap can be closed by standard boundary-aware remedies. The goal of this study is not to exhaust all possible boundary-enhanced architectures, but to isolate a common design assumption in existing remedies: the boundary is treated primarily as a proximity-defined region that should receive more input cues, larger training weights, or additional model capacity. Such designs can improve the model’s awareness of where the boundary is located, but they do not explicitly encode the local tangential–normal structure that organizes near-wall physical variation. 
+
+Diagnostic setting. We perform the diagnostic experiments on the NACA airfoil benchmark. To make the boundary effect easier to interpret, we use the pressure-only prediction setting, where the output is the pressure field and the boundary-sensitive metrics can be directly evaluated through the pressure distribution on the airfoil surface. We report global relative L2, near-wall relative L2, surface 20 pressure-coefficient error Cp MAE, and wall-pressure MAE. The near-wall metric is computed inside the same narrow band around the solid boundary used throughout the paper. All compared variants use the same data split, backbone configuration, optimizer setting, and training schedule as their corresponding baseline, so that the comparison focuses on how boundary information is incorporated. 
+
+Boundary-aware variants. We compare three representative boundary-aware remedies. First, boundary loss reweighting keeps the backbone architecture unchanged and increases the loss weight of samples inside the near-wall band. This variant tests whether the near-wall gap can be reduced simply by assigning higher training priority to boundary-region errors. Second, scalar descriptor concatenation augments the model input with scalar geometric descriptors, including the signed distance to the boundary, the near-wall window value, and local curvature. This variant tests whether explicitly exposing boundary proximity and local shape information to the model is sufficient. Third, cross-attention boundary branch introduces an additional boundary-specific branch that processes the same scalar descriptors and fuses the resulting boundary features back into the backbone representation through cross-attention. This variant gives the model extra boundary-specific capacity, but the injected boundary information remains isotropic: it indicates which points are close to the wall, but does not define a local tangent–normal frame or direction-aware correction paths. These three variants cover the common ways of improving boundary awareness: reweighting boundary errors, concatenating boundary descriptors, and adding boundary-specific capacity. However, none of them explicitly models the directional structure of near-wall physics. They therefore test whether boundary localization alone is sufficient, before introducing the anisotropic design of GeoABC. 
+
+Results. The results are summarized in Table 3. On Geo-FNO, boundary loss reweighting and scalar descriptor concatenation barely change near-wall relative L2. The baseline near-wall error is 0.1780 , while reweighting gives 0.1772 and descriptor concatenation gives 0.1777 . Although reweighting slightly improves Cp MAE and wall-pressure MAE, the near-wall field error remains essentially unchanged. This suggests that simply emphasizing near-wall samples during training or exposing scalar boundary descriptors at the input level is insufficient to resolve the structural near-wall gap. On the stronger GNOT backbone, the dedicated cross-attention boundary branch even degrades performance. Near-wall relative L2 increases from 0.0712 to 0.1058 , while global relative L2, Cp
+
+MAE, and wall-pressure MAE all become worse. This result is particularly important because the variant adds boundary-specific capacity rather than removing capacity. Therefore, the failure cannot be explained by insufficient model size or lack of boundary information alone. Instead, adding an isotropic boundary branch may interfere with the backbone representation when the added boundary signal is not aligned with the directional structure of near-wall physics. 
+
+Interpretation. These diagnostics show that boundary awareness alone is not enough. The tested remedies can inform the model where the boundary is, increase the loss weight near the wall, or allocate additional capacity to boundary-region tokens. However, they still treat the boundary as an isotropic high-error region. They do not distinguish between tangential propagation along the wall and wall-normal variation across the boundary layer, nor do they model the coupling between these two directions. As a result, they cannot consistently close the near-wall accuracy gap. This observation motivates the design of GeoABC. Rather than using boundary geometry only as scalar input features or training weights, GeoABC uses the solid boundary as a structural prior. It constructs a local tangent–normal frame from geometry, decomposes boundary correction into tangential, normal, and cross-directional components, and writes the resulting correction into the intermediate representation of the backbone. Thus, GeoABC addresses not only boundary localization, but also the anisotropic organization of near-wall physical responses. 
+
+C.2 Spatial and Regional Attribution of GeoABC Gains Attribution protocol. We analyze where the improvement of GeoABC comes from by decomposing the gain along surface position, wall distance, and near-wall versus non-near-wall regions. For the 2D NACA airfoil benchmark, the near-wall band occupies only 5.42% of grid points, while the 21 non-near-wall region occupies the remaining 94 .58% . For the 3D car benchmark, the wetted-surface near-wall region occupies 11 .10% of points, while the non-near-wall region occupies 88 .90% . We therefore report two complementary quantities: “regional gain”, which measures the percentage error reduction within each region, and “gain contribution”, which measures the fraction of the total error reduction contributed by each region. This distinction is important because a small near-wall band can have a large regional gain, while the much larger non-near-wall region can still contribute substantially to the total global error reduction. The spatial attribution further tests whether the gain is a broad boundary-band effect rather than a leading-edge or high-curvature locality effect. Together, these analyses examine whether GeoABC improves the targeted boundary region and whether its mid-layer correction propagates part of the benefit to the broader flow field. 
+
+Spatial attribution on 2D airfoil. As shown in Figure 9, GeoABC substantially reduces pressure error along the airfoil surface. The baseline exhibits large pointwise pressure-error peaks near chord locations with strong surface-pressure variation, whereas GeoABC keeps the error consistently low. The distance-to-wall analysis further shows that the gain is concentrated near the wall and decays toward the far field. At the farthest grid layer, the reduction becomes slightly negative, suggesting that GeoABC mainly improves the targeted boundary-relevant region rather than uniformly reducing error everywhere. Finally, the curvature-quartile analysis shows that the reduction remains strong across low- and high-curvature boundary segments. Thus, the improvement is not merely a leading-edge or high-curvature locality effect, but a broader boundary-band effect. 0.0 0.2 0.4 0.6 0.8 1.0              
+
+> Chord position (LE TE)
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> 0.04
+> 0.05
+> Pointwise  |err p| (test mean)
+> (a) Pressure error along airfoil surface
+> Baseline
+> GeoABC
+> 020 40
+> Grid layer j(wall far field)
+> 0
+> 20
+> 40
+> 60
+> 80
+> Error reduction (%)
+> (b) Decay vs distance to wall
+> Q1
+> (low )
+> Q2 Q3 Q4
+> (high )
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Reduction (%)
+> 94.8 94.4 91.6 92.1
+> (c) Curvature quartiles
+
+Figure 9: Spatial attribution of GeoABC gains on Geo-FNO. We analyze the multi-field (u, v, p )
+
+NACA airfoil setting. (a) Test-mean pointwise pressure error along the airfoil surface; the shaded region denotes the per-position reduction over the baseline. (b) Error reduction as a function of grid layer distance from the wall to the far field. (c) Error reduction across boundary-curvature quartiles. GeoABC mainly improves the near-wall band, and the gain is broadly consistent across curvature regimes. 
+
+Regional decomposition across backbones. We next quantify how much of the global improve-ment is accumulated in the near-wall and non-near-wall regions. For each region, we report two quantities. “Gain contribution” measures the fraction of the total error reduction contributed by that region, while “regional gain” measures the percentage error reduction within that region. Therefore, 22 Table 4: Regional gain decomposition on 2D NACA (u, v, p ). Gain contribution reports the fraction of total global MSE reduction from each region, while regional gain reports the percentage MSE reduction within that region.                      
+
+> Backbone Gain contribution Regional gain Near Non-near Near Non-near Geo-FNO 31 .1% 68 .9% 92 .5% 71 .9%
+> CNO 62 .3% 37 .7% 60 .9% 11 .1%
+> GNOT 33 .8% 66 .2% 71 .0% 46 .7%
+> Transolver 28 .3% 71 .7% 24 .5% 20 .8%
+
+the gain contribution reflects where the global improvement is accumulated, whereas the regional gain reflects how strongly GeoABC improves each region individually. As shown in Table 4, GeoABC produces strong near-wall regional gains across all 2D backbones. Although the near-wall band occupies only 5.42% of grid points, it contributes a substantial fraction of the total global MSE reduction. For Geo-FNO, CNO, and GNOT, the near-wall regional gains reach 92 .5% , 60 .9% , and 71 .0% , respectively. At the same time, a non-trivial fraction of the total gain also comes from non-near-wall points, especially for Geo-FNO, GNOT, and Transolver. This suggests that the mid-layer boundary correction does not remain an isolated local adjustment; after being written into the representation, it can propagate through the remaining backbone and improve the broader flow field. A similar pattern appears on the 3D car benchmark. As shown in Table 5, GeoABC consistently improves the wetted-surface near-wall region across all 3D backbones. The near-wall regional gain is especially large on GNOT and Transolver, reaching 75 .8% and 77 .1% , respectively. For Geo-FNO3D, the near-wall region contributes 65 .0% of the total velocity-error reduction despite occupying only 
+
+11 .10% of points, indicating that the improvement is strongly concentrated on the wetted surface. For GINO, GNOT, and Transolver, the non-near-wall region also contributes a large fraction of the total gain, showing that boundary-local correction can further benefit the surrounding velocity field after interacting with the remaining operator layers. Table 5: Regional gain decomposition on 3D TransolverCar. The decomposition uses squared rel-L2 quantities corresponding to the volume-velocity and surface-velocity metrics in Table 2.                      
+
+> Backbone Gain contribution Regional gain Near Non-near Near Non-near Geo-FNO3D 65 .0% 35 .0% 21 .1% 2.3%
+> GINO 33 .5% 66 .5% 31 .5% 12 .5%
+> GNOT 34 .8% 65 .2% 75 .8% 51 .1%
+> Transolver 32 .6% 67 .4% 77 .1% 54 .5%
+
+Takeaway. These analyses show that GeoABC primarily improves the targeted near-wall region, but its effect is not restricted to the boundary band. Because GeoABC is inserted into an intermediate representation, the corrected near-wall features can continue to interact with the remaining operator layers. As a result, the method reduces boundary-sensitive errors while also propagating part of the improvement to non-near-wall regions. This supports our design choice of applying geometry-conditioned boundary correction in the latent space rather than as a purely output-level local post-processing step. 
+
+C.3 Additional Results on Pipe NS Dataset. The Pipe NS dataset [ 22 ] contains 2D incompressible Navier–Stokes flows in a straight channel with no-slip conditions on the top and bottom walls. Each sample is defined on a uniform Cartesian grid of 129 × 129 nodes, and the target field contains the two velocity components and pressure, (u, v, p ). We use the same 1000 /200 /200 train/validation/test split as the main 2D experiments. 23 Table 6: GeoABC on Pipe NS. Percentage change is reported relative to the corresponding backbone baseline.                    
+
+> Backbone Method Global rel-L2Near-wall rel-L2Wall-pMAE Geo-FNO Baseline 0.328 0.839 0.230 GeoABC 0.318 ( −3.0%) 0.474 ( −43.5%) 0.079 ( −65.8%) CNO Baseline 0.319 0.765 0.224 GeoABC 0.303 ( −5.0%) 0.606 ( −20.8%) 0.191 ( −14.9%)
+
+Pipe NS provides a complementary setting to the NACA airfoil benchmark. Unlike the airfoil C-grid, whose near-wall region follows a curved solid boundary, the pipe domain contains two straight no-slip walls at y = 0 and y = 1 . Accordingly, the geometry cache is constructed with a dual-wall boundary band: for each grid node, the boundary proximity is computed with respect to the closer of the two channel walls, and the near-wall band covers nodes within a fixed ϕ-percentile of either wall. This setting allows us to test whether GeoABC transfers beyond curved airfoil geometries to canonical wall-bounded flows. 
+
+Experimental setup. We apply GeoABC to two representative 2D backbones, Geo-FNO and CNO. For a controlled comparison, we use the same injection locations, loss weights (λb = 2 .0, λ a = 0 .1) ,and 50-epoch training protocol as in the main NACA experiments. Each configuration is trained once, and we report point estimates. Table 6 summarizes the results. 
+
+Analysis. GeoABC consistently improves boundary-sensitive metrics on Pipe NS. On Geo-FNO, the near-wall rel-L2 decreases from 0.839 to 0.474 , corresponding to a 43 .5% reduction, while wall-pressure MAE decreases from 0.230 to 0.079 , corresponding to a 65 .8% reduction. On CNO, GeoABC also reduces near-wall rel-L2 by 20 .8% and wall-pressure MAE by 14 .9% . These improve-ments show that the proposed correction is not limited to curved airfoil boundaries: it also transfers to straight no-slip walls, where the relevant physical structure is still organized by tangential and wall-normal directions. The global rel-L2 improvements are more moderate, with reductions of 3.0% on Geo-FNO and 5.0% 
+
+on CNO. This behavior is consistent with the design of GeoABC. The correction is activated only inside the dual-wall boundary band, so its primary effect is expected to appear in near-wall velocity and pressure errors rather than uniformly across the entire channel interior. Therefore, the results provide additional cross-dataset evidence that geometry-conditioned anisotropic boundary correction improves wall-bounded prediction while preserving the global-field behavior of the original backbone. 
+
+## D Additional Ablation Study 
+
+Table 7: Component-isolation ablation on Geo-FNO. We report global relative L2, near-wall relative L2, near-wall velocity relative L2, and body-pressure MAE on the multi-field (u, v, p ) airfoil task. Results are reported as mean ± standard deviation.                                 
+
+> Configuration Global ↓Near ↓UV Near ↓Body Pres ↓
+> Geo-FNO 0.0608 ±0.0028 0.1320 ±0.0061 0.1307 ±0.0064 0.0934 ±0.0040
+> no-inject 0.0618 ±0.0035 0.1285 ±0.0067 0.1274 ±0.0068 0.0904 ±0.0058
+> no-frame 0.0495 ±0.0012 0.0794 ±0.0055 0.0779 ±0.0052 0.0444 ±0.0027
+> normal-only 0.0294 ±0.0015 0.0361 ±0.0009 0.0361 ±0.0010 0.0191 ±0.0001
+> zero-geometry 0.0511 ±0.0028 0.0845 ±0.0051 0.0828 ±0.0049 0.0495 ±0.0040
+> GeoABC 0.0297 ±0.0006 0.0369 ±0.0012 0.0369 ±0.0007 0.0191 ±0.0017
+
+D.1 Component isolation details. 
+
+Tables 7 to 9 provide detailed component-isolation ablations of GeoABC across representative 2D and 3D backbones. Unlike the compact ablation discussion in the main text, these tables report 24 Table 8: Component-isolation ablation on CNO. We report global relative L2, near-wall relative 
+
+L2, near-wall velocity relative L2, and body-pressure MAE on the multi-field (u, v, p ) airfoil task. Results are reported as mean ± standard deviation.                                 
+
+> Configuration Global ↓Near ↓UV Near ↓Body Pres ↓
+> CNO 0.0194 ±0.0044 0.0398 ±0.0094 0.0409 ±0.0095 0.0248 ±0.0061
+> no-inject 0.0315 ±0.0001 0.0485 ±0.0049 0.0486 ±0.0050 0.0242 ±0.0001
+> no-frame 0.0295 ±0.0134 0.0483 ±0.0274 0.0484 ±0.0267 0.0262 ±0.0154
+> normal-only 0.0190 ±0.0017 0.0285 ±0.0023 0.0289 ±0.0019 0.0145 ±0.0026
+> zero-geometry 0.0270 ±0.0044 0.0437 ±0.0094 0.0441 ±0.0095 0.0204 ±0.0061
+> GeoABC 0.0171 ±0.0027 0.0242 ±0.0036 0.0246 ±0.0035 0.0121 ±0.0014
+
+Table 9: Component-isolation ablation on GINO Car. We report surface-velocity relative L2,volume-velocity relative L2, pressure relative L2, and surface-pressure MAE on the 3D car benchmark. Results are reported as mean ± standard deviation.                                 
+
+> Configuration Surf. Vel ↓Vol. Vel ↓Pressure ↓Surf. Pres ↓
+> GINO 0.0432 ±0.0015 0.0353 ±0.0008 0.1139 ±0.0043 3.2546 ±0.0993
+> no-inject 0.0391 ±0.0002 0.0348 ±0.0001 0.1107 ±0.0020 3.1726 ±0.0558
+> no-frame 0.0380 ±0.0008 0.0340 ±0.0004 0.1114 ±0.0020 3.1523 ±0.0526
+> normal-only 0.0382 ±0.0004 0.0341 ±0.0002 0.1111 ±0.0025 3.1370 ±0.0287
+> zero-geometry 0.4693 ±0.0168 0.3838 ±0.0091 1.2387 ±0.0462 35 .3888 ±1.0797
+> GeoABC 0.0378 ±0.0006 0.0340 ±0.0003 0.1102 ±0.0021 3.1057 ±0.0438
+
+multiple metrics for each backbone, allowing us to inspect whether each component affects only the near-wall metric or also changes global-field and surface-pressure behavior. The no-inject variant removes the mid-layer correction write-back while keeping the same loss design. It tests whether the improvement can be attributed to the boundary-related training losses alone, without modifying the backbone representation. The no-frame variant keeps the correction module but removes the local tangent–normal frame. Thus, the model still has additional correction capacity, but the correction is no longer organized by the boundary-aligned tangential and wall-normal directions. The normal-only variant keeps the local frame but only retains the wall-normal branch. It removes the tangential branch and the tangential–normal coupling branch, testing whether wall-normal correction alone is sufficient. The zero-geometry variant keeps the full correction architecture but zeros out the local geometric inputs used by the geometry modulator. Therefore, the module still has comparable correction capacity, but it can no longer condition the correction on local boundary proximity, curvature, and orientation. This variant isolates the role of geometry-conditioned modulation from the role of additional parameters. 
+
+Boundary losses alone are not sufficient. The no-inject variant shows that the three-loss objective alone cannot explain the improvement of GeoABC. On Geo-FNO, no-inject only changes near-wall relative L2 from 0.1320 to 0.1285 , a small reduction of 2.7% . The corresponding UV near-wall error changes from 0.1307 to 0.1274 , and body-pressure MAE changes from 0.0934 to 
+
+0.0904 . These changes are minor compared with full GeoABC, which reduces the same metrics to 
+
+0.0369 , 0.0369 , and 0.0191 , respectively. The same conclusion is clearer on CNO. With no-inject , the global error increases from 0.0194 to 
+
+0.0315 , and near-wall error increases from 0.0398 to 0.0485 . Thus, merely adding boundary-related losses can even hurt the backbone if no representation-level correction is available. On GINO Car, 
+
+no-inject gives a moderate improvement in surface velocity from 0.0432 to 0.0391 , but the gains in volume velocity, pressure, and surface-pressure MAE remain small. Overall, no-inject confirms 25 that the main improvement of GeoABC does not come from loss reweighting or auxiliary supervision alone. 
+
+The tangent–normal frame organizes boundary correction. The no-frame variant shows what happens when the model has a correction module but lacks the boundary-aligned coordinate system. On Geo-FNO, no-frame reduces near-wall error from 0.1320 to 0.0794 , which is a sizable improve-ment over the baseline. However, full GeoABC further reduces it to 0.0369 , corresponding to an additional 53 .5% reduction relative to no-frame . The same pattern appears in UV near-wall error, where no-frame reaches 0.0779 , while full GeoABC reaches 0.0369 . This indicates that a generic correction module can help, but a boundary-aligned frame is needed to fully organize the correction. On CNO, removing the frame is harmful. The near-wall error increases from the baseline value 0.0398 
+
+to 0.0483 , and the standard deviation is also large. This suggests that an unstructured correction can interact unstably with a convolutional operator backbone. On GINO Car, no-frame performs close to full GeoABC on surface velocity and volume velocity, but remains slightly worse on pressure and surface-pressure MAE. Taken together, the frame is not merely an implementation detail: it provides a structural coordinate system that makes the correction more reliable across different operator families. 
+
+The wall-normal branch captures the dominant near-wall effect. The normal-only variant is consistently strong. On Geo-FNO, it reduces global error from 0.0608 to 0.0294 , near-wall error from 0.1320 to 0.0361 , UV near-wall error from 0.1307 to 0.0361 , and body-pressure MAE from 
+
+0.0934 to 0.0191 . These correspond to reductions of approximately 51 .6% , 72 .7% , 72 .4% , and 
+
+79 .6% , respectively. This confirms that the wall-normal direction is a dominant source of near-wall error in the airfoil task. On CNO, normal-only also improves all boundary-sensitive metrics. Near-wall error decreases from 0.0398 to 0.0285 , UV near-wall error decreases from 0.0409 to 0.0289 , and body-pressure MAE decreases from 0.0248 to 0.0145 . However, full GeoABC further improves these values to 
+
+0.0242 , 0.0246 , and 0.0121 . Thus, while wall-normal correction explains a large part of the gain, the tangential and cross-directional branches still provide additional benefit, especially on CNO. On GINO Car, normal-only is also competitive, reducing surface velocity from 0.0432 to 0.0382 
+
+and surface-pressure MAE from 3.2546 to 3.1370 . Full GeoABC further improves these metrics to 0.0378 and 3.1057 . The improvement over normal-only is smaller in 3D than in 2D, but it is consistent across all four GINO metrics. Therefore, wall-normal correction is the strongest single component, while the full anisotropic design provides the most robust overall profile across backbones and metrics. 
+
+Geometry-conditioned modulation is essential. The zero-geometry variant directly tests whether the gains come from extra correction capacity alone. On Geo-FNO, zero-geometry 
+
+improves over the baseline, reducing near-wall error from 0.1320 to 0.0845 and body-pressure MAE from 0.0934 to 0.0495 . However, it remains far worse than full GeoABC, which reaches 0.0369 
+
+near-wall error and 0.0191 body-pressure MAE. Relative to zero-geometry , full GeoABC further reduces near-wall error by about 56 .3% and body-pressure MAE by about 61 .4% . This shows that additional correction capacity alone is not sufficient; the correction must be conditioned on local geometric information. On CNO, zero-geometry is also weaker than full GeoABC. It increases global error from 0.0194 
+
+to 0.0270 and near-wall error from 0.0398 to 0.0437 . Although body-pressure MAE decreases from 0.0248 to 0.0204 , full GeoABC is still much better, reaching 0.0121 . Thus, without geometry-conditioned modulation, the correction does not consistently improve the field-level errors. The effect is most pronounced on GINO Car. When local geometric inputs are removed, all metrics collapse: surface velocity increases from 0.0432 to 0.4693 , volume velocity from 0.0353 to 0.3838 ,pressure from 0.1139 to 1.2387 , and surface-pressure MAE from 3.2546 to 35 .3888 . These errors are roughly one order of magnitude larger than the baseline. This sharp degradation indicates that, in the 3D surface setting, an active correction module without reliable geometric conditioning can severely distort the learned representation. Therefore, local geometry is not a minor auxiliary feature; it determines where the correction should act, how strongly it should be applied, and how it should be oriented. 26 Table 10: Ablation on the injection position. Relative reductions are computed against the baseline without injection.                                            
+
+> Injection position Global rel-L2↓Near-wall rel-L2↓CpMAE ↓Body Pres. MAE ↓
+> Baseline w/o injection 0.07170 0.17800 0.30549 0.13686 After conv1 (early) 0.06504 (-9.3%) 0.11450 (-35.7%) 0.15940 (-47.8%) 0.07139 (-47.8%)
+> After conv2 (middle) 0.03605 (-49.7%) 0.05615 (-68.5%) 0.06182 (-79.8%) 0.02769 (-79.8%)
+> After conv3 (late) 0.06944 (-3.2%) 0.14790 (-16.9%) 0.23760 (-22.2%) 0.10645 (-22.2%)
+
+Cross-metric interpretation. Across the three tables, GeoABC improves not only the selected near-wall metric but also multiple boundary-sensitive quantities. On Geo-FNO, full GeoABC reduces global error from 0.0608 to 0.0297 , near-wall error from 0.1320 to 0.0369 , UV near-wall error from 
+
+0.1307 to 0.0369 , and body-pressure MAE from 0.0934 to 0.0191 . The largest reductions appear in near-wall and body-pressure metrics, which are consistent with the design goal of GeoABC. On CNO, full GeoABC reduces global error from 0.0194 to 0.0171 , near-wall error from 0.0398 to 
+
+0.0242 , UV near-wall error from 0.0409 to 0.0246 , and body-pressure MAE from 0.0248 to 0.0121 .The global improvement is moderate, while the boundary-sensitive improvements are much larger. This pattern supports the claim that GeoABC mainly targets near-wall errors rather than simply improving the whole field uniformly. On GINO Car, full GeoABC reduces surface velocity from 0.0432 to 0.0378 , volume velocity from 
+
+0.0353 to 0.0340 , pressure from 0.1139 to 0.1102 , and surface-pressure MAE from 3.2546 to 3.1057 .The gains are smaller than in the 2D airfoil setting, but they are consistent across surface, volume, pressure, and surface-pressure metrics. This indicates that the same anisotropic correction principle remains beneficial in 3D, even though the stronger geometric and physical complexity makes the margin more moderate. 
+
+Overall conclusion. These ablations support four conclusions. First, boundary-related losses alone are insufficient, as shown by the weak and inconsistent behavior of no-inject . Second, the correction module must be organized by the local tangent–normal frame; otherwise, the added correction capacity can be suboptimal or unstable. Third, the wall-normal branch captures the dominant near-wall effect, but the full tangential–normal–cross design gives the best cross-backbone behavior overall. Fourth, geometry-conditioned modulation is essential: removing local geometric inputs substantially weakens the method and can cause severe failure in 3D. Together, these results show that GeoABC’s gains come from the combination of mid-layer correction, local boundary-frame organization, direction-aware branches, and geometry-conditioned modulation, rather than from extra parameters, boundary-aware losses, or boundary localization alone. 
+
+D.2 Ablation on Injection Position 
+
+We conduct an injection-position ablation to examine where the GeoABC correction module should be inserted into the Geo-FNO backbone. The sweep is performed under the pressure-only NACA airfoil body-only setting. All variants are trained for 50 epochs, and we report the validation-best checkpoint from a single seed. The baseline is the same Geo-FNO backbone without the GeoABC correction module. For each injected variant, the relative reduction in parentheses is computed against this no-injection baseline. As shown in Table 10, inserting GeoABC after conv2 achieves the best performance across all metrics. It reduces global rel-L2 from 0.07170 to 0.03605 , near-wall rel-L2 from 0.17800 to 0.05615 , Cp
+
+MAE from 0.30549 to 0.06182 , and body-pressure MAE from 0.13686 to 0.02769 . This confirms that the proposed correction is most effective when applied to an intermediate representation. Early insertion after conv1 already improves the boundary-sensitive metrics, but it is clearly weaker than the middle-layer insertion. This suggests that very early features have not yet accumulated sufficient global physical context, so the geometry-conditioned correction is applied before the backbone has formed a sufficiently informative flow representation. By contrast, late insertion after 
+
+conv3 also underperforms because the correction is introduced too close to the output head. At this stage, there are too few subsequent operator layers for the corrected boundary representation to 27 Table 11: Boundary-loss weight ablation and band-definition sensitivity. The λb sweep shows a smooth global/near-wall tradeoff, while the ϕ-top-k% evaluation shows that GeoABC’s near-wall advantage persists across multiple boundary-band definitions.                                             
+
+> (a) λbsweep with λa=0 .1fixed Method global rel-L2near rel-L2CpMAE body pMAE Baseline 0.07170 0.17800 0.30549 0.13686 GeoABC, λb=1 0.03420 0.06049 0.07143 0.03200 GeoABC, λb=2 0.03605 0.05615 0.06182 0.02769 GeoABC, λb=4 0.03627 0.05235 0.06068 0.02718 (b) Near rel-L2under alternative boundary-band definitions Method ϕ-top 3% ϕ-top 5.4% ϕ-top 10% ϕ-top 20% Baseline 0.19105 0.18333 0.16785 0.14460 GeoABC 0.05060 0.05722 0.06855 0.06667
+
+interact with the global field and propagate through the decoder. Therefore, the injection-position ablation supports our mid-layer design: GeoABC should operate after the backbone has built useful physical context, but before the representation becomes too close to final decoding. 
+
+D.3 Boundary-Loss Weight Ablation and Band-Definition Sensitivity 
+
+We include an additional controlled study in Table 11 to examine whether GeoABC depends on a finely tuned boundary-loss weight or on a particular definition of the near-wall band. The experiment uses the Geo-FNO backbone on the NACA airfoil benchmark with body-only boundary geometry, trains the pressure field for 50 epochs, and reports the validation-best checkpoint. In the top block, we fix λa=0 .1 and sweep λb ∈ { 1, 2, 4}. The results show a smooth tradeoff rather than hyperparameter brittleness: λb=1 gives the lowest global rel-L2, whereas larger λb increasingly favors boundary-local quantities. Moving from λb=1 to λb=4 improves near rel-L2 from 0.06049 to 0.05235 , Cp MAE from 0.07143 to 0.06068 , and body pressure MAE from 0.03200 to 0.02718 , while the global rel-L2
+
+changes only mildly from 0.03420 to 0.03627 . All three settings remain far better than the baseline, whose near rel-L2 is 0.17800 , indicating that the boundary correction is not tied to a narrow choice of λb.The bottom block further checks whether the reported near-wall improvement is an artefact of the cached boundary window. We re-evaluate near rel-L2 on ϕ-top-k% bands, where smaller k selects points closer to the airfoil surface. GeoABC consistently outperforms the baseline for all tested bands. The absolute gap is largest in the tightest 3% band ( 0.19105 → 0.05060 ), and remains substantial as the band widens to 20% (0.14460 → 0.06667 ). This pattern suggests that the gain is strongest exactly where boundary errors are expected to concentrate, while still extending beyond the thinnest wall-adjacent region. Therefore, the near-wall improvement is not caused by one particular narrow-band definition; it reflects a stable boundary-local correction effect. 
+
+## E Additional Visualizations 
+
+28 Figure 10: Qualitative prediction comparison on the 2D NACA airfoil benchmark. We visualize the ground truth fields and predictions from four backbones, with each baseline paired with its GeoABC-enhanced variant. Rows show pressure p and velocity components u, v . GeoABC improves the near-wall and wake structures across Geo-FNO, GNOT, CNO, and Transolver, reducing the blurred or displaced patterns visible in the corresponding baselines. 29 Figure 11: Absolute error maps on the 2D NACA airfoil benchmark. Each panel shows the pointwise absolute error between prediction and ground truth for pressure p and velocity components u, v . The overlaid numbers report near-wall relative ℓ2 error in the cropped airfoil region. Across the four backbones, GeoABC consistently reduces concentrated near-wall and wake errors compared with the corresponding baselines. 30 Figure 12: Qualitative prediction comparison on the 2D NACA airfoil benchmark. We visualize the ground truth fields and predictions from four backbones, with each baseline paired with its GeoABC-enhanced variant. Rows show pressure p and velocity components u, v . GeoABC improves the near-wall and wake structures across Geo-FNO, GNOT, CNO, and Transolver, reducing the blurred or displaced patterns visible in the corresponding baselines. 31 Figure 13: Absolute error maps on the 2D NACA airfoil benchmark. Each panel shows the pointwise absolute error between prediction and ground truth for pressure p and velocity components u, v . The overlaid numbers report near-wall relative ℓ2 error in the cropped airfoil region. Across the four backbones, GeoABC consistently reduces concentrated near-wall and wake errors compared with the corresponding baselines. 
+
+Figure 14: Visualization of surrounding velocity prediction errors on the Shape-Net Car benchmark. Each panel shows the signed error of the predicted velocity magnitude in the 3D flow domain around the car, computed as ∥ˆu∥2 − ∥ u∥2 and visualized on translucent slices of the surrounding volume. The car surface is rendered in light gray with mesh edges for geometric reference. The top row shows the baseline models, while the bottom row shows the corresponding variants enhanced with our method. All panels share the same color scale, where red and blue indicate over- and under-predicted velocity magnitude, respectively. 32 Figure 15: Surface pressure error visualization on the ShapeNetCar benchmark. We visualize the pressure prediction error on the same test car for Geo-FNO, GINO, GNOT, and Transolver, comparing each baseline with its GeoABC-enhanced counterpart under a shared color scale. GeoABC consistently suppresses large spatial error patterns on the vehicle surface, especially around high-curvature and front-body regions, showing that the proposed anisotropic boundary correction improves pressure prediction near solid boundaries across different neural operator backbones. 
+
+Figure 16: Surface pressure error visualization on the ShapeNetCar benchmark. We visualize the pressure prediction error on the same test car for Geo-FNO, GINO, GNOT, and Transolver, comparing each baseline with its GeoABC-enhanced counterpart under a shared color scale. GeoABC consistently suppresses large spatial error patterns on the vehicle surface, especially around high-curvature and front-body regions, showing that the proposed anisotropic boundary correction improves pressure prediction near solid boundaries across different neural operator backbones. 33 F Training and Implementation Details 
+
+F.1 Baselines and Common Training Protocol Baselines. We evaluate GeoABC as a plug-in correction module on representative neural opera-tor backbones covering spectral, convolutional, graph/kernel-based, and attention-based operator families. • Geo-FNO. Geo-FNO [ 22 ] extends Fourier neural operators to irregular geometries by mapping the physical domain to a latent regular grid and applying Fourier layers in the transformed space. We use Geo-FNO as the primary spectral operator baseline on the 2D NACA airfoil benchmark. For the 3D ShapeNetCar benchmark, we use the corresponding Geo-FNO3D variant with 3D Fourier modes and a latent volumetric grid. • CNO. CNO [ 42 ] is a convolutional neural operator that learns resolution-consistent map-pings between function spaces through encoder–decoder convolutional blocks. It provides a grid-based non-spectral baseline on the 2D NACA benchmark. This allows us to test whether GeoABC remains effective beyond Fourier-based operator architectures. • GNOT. GNOT [ 23 ] is a transformer-based neural operator designed for irregular meshes and multiple input functions. It uses attention-based message passing over query points and latent representations, making it a representative attention-based baseline for both 2D airfoil and 3D car prediction. We include GNOT to evaluate whether GeoABC can improve boundary-sensitive prediction in models that already have global interaction capacity. • GINO. GINO [ 24 ] combines local graph/kernel message passing with global Fourier opera-tor layers for large-scale 3D PDE prediction on complex geometries. We use GINO on the 3D ShapeNetCar benchmark as a hybrid graph–Fourier baseline, where both surrounding velocity and surface pressure are predicted. • Transolver. Transolver [ 30 ] learns physics-aware latent tokens from discretized geometry and applies attention over these learned physical states. We evaluate Transolver on both the 2D NACA and 3D ShapeNetCar benchmarks. This baseline is particularly important because it is already designed for general geometries and large-scale aerodynamic simulation; improvements on top of Transolver therefore test whether GeoABC contributes beyond a strong geometry-adaptive transformer backbone. 
+
+Datasets and evaluation setting. For the 2D benchmark, we use the body-only NACA airfoil dataset of [ 22 ], with the standard split of 1000 training, 200 validation, and 200 test samples. The evaluated 2D backbones are Geo-FNO, CNO, GNOT, and Transolver. For the 3D benchmark, we use the ShapeNetCar external-aerodynamics dataset [ 41 ], where the model predicts the surrounding velocity components (u, v, w ) and pressure p around car geometries. The evaluated 3D backbones are Geo-FNO3D, GINO, GNOT, and Transolver. For each backbone, the baseline and its GeoABC-augmented counterpart use the same dataset split, preprocessing procedure, output head, optimizer family, and training horizon. 
+
+Common training protocol. All baseline and GeoABC models are trained for 50 epochs unless otherwise stated. For 2D NACA, checkpoints are selected by validation near-wall rel-L2. For 3D ShapeNetCar, we follow the benchmark validation protocol and select the validation-best checkpoint according to the corresponding surface-sensitive metric. The exact backbone-specific architecture, optimizer, schedule, batch size, and GeoABC boundary-correction scale are summarized in Table 12. 
+
+Standalone training. GeoABC is trained jointly with the backbone from random initialization. We do not warm-start from a pretrained baseline, copy baseline weights into the GeoABC run, or share optimizer state between baseline and GeoABC training. The implementation explicitly disables baseline-to-GeoABC initialization copying. This strict standalone protocol ensures that each baseline–GeoABC comparison measures the effect of the inserted anisotropic correction module rather than a paired-initialization artifact. 
+
+Loss weights and anchor supervision. The training loss follows the form defined in Section F.2. For 2D NACA, we use λb = 2 .0 and λa = 0 .1, with the anchor supervised by the ground-truth velocity vector (u, v ). For 3D ShapeNetCar, we use λb = 0 .5 and λa = 0 .02 , matching the scale 34 of the velocity and surface-pressure losses; the anchor space is supervised by the local 3D velocity. Seed counts for each result block are reported in the corresponding table captions, and results with two or fewer seeds are treated as breadth evidence rather than strong multi-seed claims. 
+
+F.2 Training Objective Details 
+
+GeoABC is trained jointly with the backbone from scratch, without frozen modules or a two-stage protocol. The overall objective consists of a global prediction loss, a boundary-weighted loss, and an anchor alignment loss: 
+
+L = Lglobal + λbLboundary + λaLanchor . (44) Specifically, 
+
+Lglobal = 1
+
+|ΩG|
+
+X
+
+> x∈ΩG
+
+∥ˆuG(x) − uG(x)∥22 , (45) 
+
+Lboundary = 1
+
+ZG
+
+X
+
+> x∈ΩG
+
+ωG(x) ∥ˆuG(x) − uG(x)∥22 , (46) 
+
+Lanchor = 1
+
+ZG
+
+X
+
+> x∈ΩG
+
+ωG(x) a(x) − Π uG(x) 22 , (47) 
+
+ZG = X
+
+> x∈ΩG
+
+ωG(x). (48) Here, Lglobal preserves the overall field accuracy, while Lboundary emphasizes reliable near-wall re-gions through the spatial confidence ωG(x). The anchor loss Lanchor aligns the anchor representation 
+
+a(x) with a physical directional target Π( uG(x)) , such as the velocity vector in the (u, v, p ) setting or the pressure-gradient direction in the pressure-only setting. 
+
+F.3 Backbone Configurations 
+
+Table 12 summarizes the backbone configurations used in the main cross-backbone experiments. For each backbone, we report the architecture, optimizer, learning-rate schedule, batch size, and the boundary-correction scale s used by GeoABC. All other components of the data pipeline, training protocol, and output head are kept identical to the corresponding baseline. 
+
+F.4 Plug-In Interface 
+
+GeoABC is used as a mid-layer wrapper around an existing neural operator backbone. The backbone is not redesigned: we only expose one spatially indexed hidden state, apply a geometry-conditioned anisotropic boundary correction with the same layout, and pass the corrected hidden state back to the remaining backbone layers. Thus, the plug-in contract has three objects: a backbone prefix F≤ℓ∗ 
+
+> θ
+
+,a backbone suffix F>ℓ ∗ 
+
+> θ
+
+, and the GeoABC injector Iϕ. The only backbone-specific metadata are the injection layer ℓ∗, the latent channel dimension Cℓ∗ , the latent layout, and the geometry-cache alignment rule. All other components—the offline geometry cache, the tangent–normal frame, the three gated correction branches, and the three-term loss—are shared. 
+
+What “plug-in” means. GeoABC does not require a new solver head, a frozen pretrained backbone, or a two-stage adapter fit. For each backbone, we keep the original input pipeline, output head, optimizer, and training schedule. The implementation change is a forward-pass interception: run the original model until ℓ∗, apply the GeoABC boundary correction inside the trusted boundary band, then resume the original model. Because Bℓ∗ has exactly the same layout as the intercepted latent, the suffix of the backbone is unaware that a correction module has been inserted. When w(x)c(x) = 0 ,the boundary correction is inactive and the wrapper locally reduces to the original backbone. 
+
+F.5 Backbone-Specific Adaptation 
+
+Adapting GeoABC to different backbones only changes how the common plug-in interface is realized. The GeoABC injector itself is shared across all experiments. For each backbone, we intercept an intermediate representation that still preserves spatial correspondence with grid cells, mesh nodes, 35 Table 12: Backbone configurations for the main experiments. “BC” denotes the boundary-correction scale s used by GeoABC. Backbone Architecture Optimizer and schedule Batch BC 
+
+2D NACA airfoil 
+
+Geo-FNO width 32 , modes (24 , 12) , 4
+
+spectral layers AdamW (5 × 10 −4 / 10 −4), StepLR ( γ=0 .5, step 25 )
+
+8 0.10 
+
+CNO 4 encoder / 4 decoder stages, 4
+
+ResNet blocks, channel multi-plier 16 
+
+AdamW ( 10 −3 / 10 −4), StepLR (γ=0 .5, step 25 )
+
+8 0.10 
+
+GNOT nembd =24 , 24 -head cross-attention, 4 blocks AdamW ( 10 −3 / 10 −4), StepLR (γ=0 .5, step 25 )
+
+8 0.10 
+
+Transolver nhid =128 , L=8 , nh=8 , slice 
+
+64 
+
+AdamW ( 10 −3 / 10 −5), OneCy-cleLR 
+
+4 0.05 
+
+3D ShapeNetCar 
+
+Geo-FNO width 48 , modes (8 , 6, 8) , grid 
+
+(24 , 12 , 24) , 4 spectral layers AdamW (5 × 10 −4 / 10 −4), CosineLR 
+
+1 0.10 
+
+GINO width 48 , modes (8 , 6, 8) , grid 
+
+(24 , 12 , 24) , 4 operator layers AdamW (5 × 10 −4 / 10 −4), CosineLR 
+
+1 0.10 
+
+GNOT width 128 , 4 heads, 4 attention blocks, radius r=0 .2
+
+AdamW ( 5×10 −4 / 10 −4), back-bone default 
+
+1 0.05 
+
+Transolver nhid =256 , L=8 , nh=8 , slice 
+
+32 
+
+AdamW ( 10 −3 / 10 −4), OneCy-cleLR 
+
+4 0.05 
+
+Algorithm 1 GeoABC plug-in training for an arbitrary backbone Fθ
+
+Require: Backbone Fθ ; injection layer ℓ∗; geometry cache G; boundary-correction scale s; loss weights λb, λ a. 
+
+> 1:
+
+Build G = {ϕ, w, c, ˆt, ˆn, κ } once from the training geometry and store it with the same node/grid indexing as the data.  
+
+> 2:
+
+Split the backbone forward pass into a prefix F≤ℓ∗ 
+
+> θ
+
+and suffix F>ℓ ∗ 
+
+> θ
+
+; instantiate Iϕ with latent dimension Cℓ∗ . 
+
+> 3:
+
+Initialize the baseline and GeoABC runs independently; train θ and ϕ jointly from scratch.  
+
+> 4:
+
+for each mini-batch (x, G, y ∗) do  
+
+> 5:
+
+zℓ∗ ← F ≤ℓ∗ 
+
+> θ
+
+(x) {capture a spatially indexed mid-layer latent}  
+
+> 6:
+
+¯G ← ALIGN GEOMETRY (G, z ℓ∗ ) {resample on grids; direct node lookup on point clouds}  
+
+> 7:
+
+(Bℓ∗ , ˆa) ← I ϕ(zℓ∗ , ¯G) {tangent, normal, and cross-frame boundary correction}  
+
+> 8:
+
+˜zℓ∗ ← APPLY BOUNDARY CORRECTION (zℓ∗ , s Bℓ∗ ) 
+
+> 9:
+
+ˆy ← F >ℓ ∗ 
+
+> θ
+
+(˜ zℓ∗ ) 
+
+> 10:
+
+L ← L global (ˆ y, y ∗) + λbLboundary (ˆ y, y ∗; ¯G) + λaLanchor (ˆ a, a ∗; ¯G) 
+
+> 11:
+
+Update (θ, ϕ ) with the backbone’s original optimizer and schedule.  
+
+> 12:
+
+end for 
+
+or query points, convert it into a pointwise latent format when necessary, apply the same geometry-conditioned boundary correction, and then return the corrected representation to the original backbone layout. • Geo-FNO. Geo-FNO exposes channel-first latent tensors from its spectral operator stack. We intercept the intermediate feature after conv2 and before the following spectral block. The latent tensor is temporarily permuted into a pointwise representation so that each spatial location has one feature vector. The geometry cache is aligned to the current latent resolution by interpolation. Scalar geometric quantities, including the signed distance, narrow-band window, confidence score, and curvature, are interpolated directly. Vector quantities, including tangent and normal directions, are interpolated and then re-normalized before being passed to GeoABC. After the pointwise correction is applied, the corrected latent is reshaped back to the original channel-first tensor layout and forwarded through the 36 remaining Geo-FNO layers. This adaptation keeps the Fourier backbone unchanged and only inserts GeoABC as a mid-layer boundary correction module. • CNO. CNO uses an encoder–decoder convolutional structure with intermediate feature maps at multiple resolutions. We insert GeoABC after the first encoder downsampling ResNet stage, where the representation has already aggregated local physical context while still retaining a clear spatial correspondence to the computational grid. Since the intercepted CNO feature map has a lower resolution than the original geometry cache, all scalar geometric descriptors are downsampled to the encoder resolution. The tangent and normal fields are also downsampled, followed by normalization to preserve a valid local boundary frame. The corrected feature map is then restored to the original CNO tensor layout and passed to the remaining encoder–decoder stages. In this way, GeoABC corrects the boundary-related latent representation before it is further propagated through the multiscale convolutional operator. • GNOT. GNOT maintains point-indexed latent representations at its attention blocks. We insert GeoABC after the first cross-attention block, where each mesh node or query point already has a corresponding latent vector. Because the latent representation and the geometry cache share the same node order, no spatial interpolation is required. GeoABC directly looks up the local geometric descriptor for each node, applies the tangent–normal boundary correction in the pointwise latent space, and returns the corrected tokens to the remaining attention blocks. This adaptation tests whether explicit anisotropic boundary correction can still improve a backbone that already uses global attention-based interactions. • GINO. GINO combines local graph/kernel message passing with global Fourier-style operator layers. We insert GeoABC at a midpoint operator layer, where the representation has accumulated both local geometric interactions and global operator context. When the intercepted latent is stored as a grid-like tensor, we use the same wrapper as in Geo-FNO: the tensor is converted to a pointwise format, the geometry cache is aligned to the latent resolution, and the corrected feature is reshaped back afterward. When the latent is already associated with sampled query points, GeoABC is attached by direct pointwise geometry lookup. The corrected representation is then passed to the remaining GINO operator layers and the original output head. This preserves the original GINO computation while adding a localized anisotropic correction near solid boundaries. • Transolver. Transolver represents the physical domain through latent features associated with query points and learned physical states. We insert GeoABC after transformer block 
+
+ℓ = 3 of the L = 8 stack. At this stage, the representation has already interacted through the physics-aware attention mechanism, but it still provides one feature vector for each query point after the block output. GeoABC is applied by direct geometry lookup at the corresponding query positions. The corrected latent vectors are then fed into the remaining transformer blocks and the original output head. This adaptation is important because Transolver is already a strong geometry-adaptive transformer backbone; improvements after inserting GeoABC therefore indicate that the proposed correction provides boundary-specific structure beyond generic geometry-aware attention. • Three-dimensional extension. For volumetric or surface-based backbones, the same adaptation principle is used. The only change is that the anchor projection maps the intercepted latent to a three-dimensional anchor space rather than a two-dimensional one. The local boundary frame is constructed from the surface normal and two tangent directions spanning the tangent plane. Grid-based tensors use trilinear alignment of the geometry cache, while point-cloud or token-based tensors use direct geometry lookup by node or query-point identity. The rest of the GeoABC injector, including geometric gating, direction-aware branches, correction lifting, and latent write-back, remains unchanged. 
+
+Layer selection. Across all backbones, GeoABC is inserted at an intermediate layer rather than at the input or output stage. An input-level insertion would reduce the method to ordinary boundary-feature augmentation before sufficient physical context is formed. An output-level insertion would behave like a late post-correction with limited opportunity to interact with subsequent operator layers. Therefore, the chosen layers balance two requirements: the representation should already encode global physical context, while still preserving a clear spatial correspondence to grid cells, mesh nodes, or query points. For each backbone, the selected insertion location is fixed across all seeds and variants. 37 Table 13: Parameter overhead of the GeoABC injector. GeoABC introduces only a small number of additional parameters relative to the original backbone.             
+
+> Backbone Baseline params GeoABC params Added params Relative increase Geo-FNO 2,368 ,291 2,397 ,179 28 ,888 1.22%
+> CNO 2,007 ,211 2,034 ,723 27 ,512 1.37%
+
+F.6 Injector Internals 
+
+The GeoABC injector is implemented as a lightweight pointwise correction module shared across all backbones. Its input is the intercepted mid-layer latent representation together with the offline geometry cache. Backbone wrappers only convert the latent layout when necessary; the internal injector architecture remains the same. The injector consists of four components. First, an anchor projection maps the backbone latent into a low-dimensional physical anchor space. The anchor dimension is two for 2d tasks and three for 3d tasks, matching the dimensionality of the local velocity used for anchor supervision. Second, an auxiliary projection extracts a compact context vector from the same latent representation. This context is shared by all correction branches and provides local physical information from the backbone feature. Third, a geometry modulator takes scalar geometric descriptors from the offline cache, including signed distance, boundary window, confidence, and curvature, and produces directional gates for the correction branches. Finally, three pointwise branches generate tangent, normal, and tangent–normal coupling corrections in the local boundary frame. The correction is activated only inside the trusted near-wall band. In practice, the boundary window and confidence score jointly control the spatial support of the correction, while the boundary-correction scale controls its overall magnitude. Therefore, points far from the solid boundary keep the original backbone representation unchanged, and points inside the near-wall band receive geometry-conditioned anisotropic correction. For 2d airfoil experiments, the local frame is defined by the tangent and normal directions of the closest boundary point. For 3d car experiments, the frame is defined by the surface normal and two tangent directions spanning the local tangent plane. Apart from this change in frame dimension, the same injector design is used across 2d and 3d settings. Overall, the injector adds less than 2% parameters for the representative backbones reported in Table 13. This confirms that the improvement of GeoABC does not come from substantially increasing model capacity, but from introducing geometry-conditioned anisotropic correction into the intermediate representation. 
+
+F.7 Seed Protocol and Reporting 
+
+All experiments follow a strict standalone protocol: each baseline and each GeoABC run is trained from an independent random initialization, with no shared optimizer state and no warm-start from a pretrained backbone. For the experiments where variance is reported, we use three random seeds, 
+
+{0, 1, 2}, and report the results as mean ± standard deviation. 
+
+F.8 Code Availability and Computing Resources 
+
+The anonymized source code is available at https://anonymous.4open.science/r/GeoABC_ code/ . The repository provides the implementation of GeoABC and instructions for reproducing the main experimental results. All experiments were conducted on a workstation equipped with four NVIDIA GeForce RTX 2080 Ti GPUs. The reported training runs were executed on this local GPU machine using the training configurations described in Appendix F.3. 38 G Metric Computation 
+
+All metrics are evaluated on the held-out test set with the validation-best checkpoint. Let ˆy denote the model prediction and y∗ the ground truth over N mesh points. 
+
+Global and near-wall rel-L2.
+
+rel -L2 = 1
+
+Ntest 
+
+> Ntest
+
+X
+
+> i=1
+
+∥ˆy(i) − y∗(i)∥2
+
+∥y∗(i)∥2
+
+.
+
+For multi-channel outputs, the per-channel ratio is averaged. Global rel-L2 uses all N mesh points; 
+
+near-wall rel-L2 uses only the points with window( x) > 0, corresponding to the top ∼5.4% ϕ-percentile band around the body surface. 
+
+Cp MAE and wall-pressure MAE. The surface pressure coefficient is Cp = ( p − p∞)/( 12 ρ∞u2
+
+> ∞
+
+).Both metrics are computed on the 121 -point body arc: 
+
+Cp-MAE = 1
+
+|∂Ω|
+
+X
+
+> j∈∂Ω
+
+| ˆC(j) 
+
+> p
+
+− C∗(j) 
+
+> p
+
+|, p-MAE = 1
+
+|∂Ω|
+
+X
+
+> j∈∂Ω
+
+|ˆp(j) − p∗(j)|.
+
+3D surface-velocity rel-L2. We keep the benchmark-style name “surface-velocity” for consistency with the 3D result tables, but the metric is evaluated on near-surface velocity points rather than directly on the surface mesh. In TransolverCar, velocity labels are defined on off-surface CFD volume points, while pressure labels are defined on wetted-surface points. Let V denote the non-surface velocity points and let di be the denormalized SDF value of point i. We use the SDF-defined near-surface mask 
+
+Msurf -vel =
+
+n
+
+i ∈ V : exp 
+
+h
+
+− (di/0.2) 2i
+
+> 0.1
+
+o
+
+.
+
+The reported 3D surface-velocity rel-L2 is then 
+
+ P 
+
+> i∈M surf
+
+-vel ∥ˆui − ui∥22
+
+1/2
+
+ P 
+
+> i∈M surf
+
+-vel ∥ui∥22
+
+1/2 .
+
+Thus, throughout the paper, “surface-velocity” refers to this surface-proximal velocity-band metric, whereas surface-pressure metrics are computed directly on wetted-surface points. 
+
+## H Limitations 
+
+This work focuses on near-wall prediction in steady-state aerodynamic surrogate modeling. GeoABC shows consistent improvements on both 2D airfoil and 3D car geometries, demonstrating the effec-tiveness of using local tangential–normal structures for boundary correction. At the same time, our current experiments are centered on steady external-flow settings. An important future direction is to extend this idea to unsteady flows, broader operating-condition ranges, and multiphysics coupled systems. In addition, GeoABC constructs local geometric descriptors from an offline geometry cache, including the tangent–normal frame, curvature, near-wall window, and confidence score. This design allows the method to explicitly leverage boundary geometry that is naturally available in CFD tasks. Future work may further investigate more automated and robust geometry preprocessing pipelines, making the framework easier to apply to larger-scale and more complex industrial geometries. Finally, this paper introduces geometric structural priors from a data-driven neural operator perspective to improve boundary-sensitive prediction. Future work can further explore the combination of GeoABC with explicit physical constraints, such as PDE residuals, boundary-condition regularization, or conservation-preserving structures. Such integration may further improve the reliability of neural aerodynamic surrogates under different operating conditions, geometry distributions, and high-fidelity engineering simulation settings. 39 I Broader Impacts 
+
+This work studies a geometry-conditioned anisotropic boundary correction module for neural op-erator surrogates in steady-state aerodynamic simulation. Our primary motivation is scientific and engineering: improving the near-wall accuracy of learned CFD surrogates so that they can more reliably support shape design, rapid screening, and engineering iteration. We discuss below both potential positive societal impacts and possible negative considerations of this line of research. 
+
+Potential positive impacts. Classical CFD solvers, although accurate, are computationally ex-pensive and often become a bottleneck in design optimization, parameter sweeps, and interactive engineering iteration. Neural operator surrogates can reduce this cost by orders of magnitude, and improving their boundary region accuracy is critical for engineering metrics such as the surface pressure coefficient Cp and the drag coefficient CD . By making such surrogates more reliable on quantities that directly affect lift, drag, and aerodynamic loading, GeoABC can contribute to (i) faster and more energy-efficient aerodynamic design cycles for vehicles, aircraft, and other engineering shapes; (ii) reduced computational and energy footprint of large-scale design exploration that would otherwise rely on extensive high-fidelity CFD runs; and (iii) easier access to aerodynamic analysis for research groups and small engineering teams that lack high-end CFD infrastructure. In the long term, more accurate surrogate models can also support broader sustainability goals, for example, by enabling more thorough exploration of low-drag vehicle shapes or more efficient wing geometries. 
+
+Potential negative impacts and risks. The methodology proposed in this paper is foundational research on neural PDE surrogates and does not generate content, identify individuals, or make deci-sions about people. We do not foresee a direct path to malicious applications such as disinformation, surveillance, or biased decision-making. Nevertheless, two indirect risks deserve mention. First, like any surrogate model, GeoABC may produce predictions that are accurate on the training distribution but less reliable on out-of-distribution geometries or operating conditions. If such surrogates are deployed in safety-critical engineering pipelines without adequate validation against high-fidelity solvers or experiments, prediction errors could propagate into design decisions. Second, the same acceleration that benefits civilian aerodynamic design could in principle be used in dual-use engineer-ing contexts. We note, however, that the techniques studied here are general-purpose CFD surrogate improvements and do not provide capabilities specific to any particular sensitive application. 
+
+Mitigation and responsible use. We encourage practitioners who build on this work to (i) treat neural operator surrogates as accelerators rather than replacements for high-fidelity CFD, especially for safety- or certification-critical decisions; (ii) systematically report out-of-distribution behavior and near-wall reliability when deploying such models in engineering pipelines; and (iii) combine data-driven surrogates with physics-based checks, such as PDE residual evaluation or conservation diagnostics, to flag potentially unreliable predictions. The methodology, datasets, and evaluation protocols used in this paper are all standard and publicly available, which allows independent verification of the reported results. Overall, we believe that the broader impact of this work is primarily positive: it advances the reliability of neural CFD surrogates in a principled, geometry-aware manner, while the residual risks are common to the field of learned PDE solvers and can be mitigated through careful validation and responsible deployment. 40
