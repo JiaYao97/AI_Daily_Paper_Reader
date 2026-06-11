@@ -1,0 +1,378 @@
+Title: Prospective Dynamic 3D MRI Reconstruction via Latent-Space Motion Tracking from Single Measurement
+
+URL Source: https://arxiv.org/pdf/2606.04249v1
+
+Published Time: Thu, 04 Jun 2026 00:16:54 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+# Prospective Dynamic 3D MRI Reconstruction via Latent-Space Motion Tracking from Single Measurement 
+
+## Lixuan Chen Zhongnan Liu Jesse Hamilton James M. Balter Jeong Joon Park † Liyue Shen †
+
+## University of Michigan 
+
+## Abstract 
+
+Prospective reconstruction is crucial in many clinical ap-plications such as MRI-guided radiotherapy, which de-mands accurate image reconstruction and fast motion es-timation from currently acquired measurements. How-ever, prospective reconstruction remains challenging due to ultra-sparse sampling and stringent latency requirements. In this work, we propose PDMR, a Prospective Dynamic 3D MRI Reconstruction framework with latent-space mo-tion tracking. Our core idea is to learn an efficient and generalizable latent manifold of motion fields offline, en-abling rapid online adaptation for prospective reconstruc-tion. Specifically, we parameterize the deformation vector fields (DVFs) on a low-dimensional manifold, effectively re-ducing the search space for fast online adaptation, and em-ploy a tri-plane representation to achieve geometry-aware and memory-efficient encoding of 3D motion. Experiments on both XCAT digital phantoms and in-house abdominal MRI datasets demonstrate that PDMR achieves high-fidelity and temporally consistent reconstruction across multiple prospective scenarios (Immediate and After-2min), outper-forming state-of-the-art retrospective and online methods. Our results suggest a promising pathway toward ultra-fast, motion-aware prospective MRI reconstruction in clinical practice. 
+
+## 1. Introduction 
+
+In radiotherapy or interventional procedures, real-time vi-sualization of 3D patient anatomy and accurate motion es-timation are essential for enhancing treatment precision, as they directly guide therapeutic decisions [19]. Motivated by this need, our goal is to reconstruct images directly from in-stantaneously sampled ultra-sparse measurements acquired within the current latency window, known as prospective reconstruction .In recent years, MR-guided treatment, where magnetic resonance imaging (MRI) is used to guide radiotherapy pro-
+
+> †Co-corresponding senior authors who supervise this work together.
+
+# …      
+
+> Retrospective
+> Reconstruction
+> Prospective
+> Reconstruction
+> During
+> Acquisition
+> After
+> Acquisition
+> Time -continuous Measurement Single Measurement
+> •Can aggregate many frames
+> •No Runtime Constraint
+> •Ultra -sparse Measurement
+> •Instant Runtime Requirement
+> Current Algorithms Challenges
+
+# ?
+
+Figure 1. Retrospective methods face challenges in prospective reconstruction. 
+
+cedure of cancer patients to mitigate the motion effects such as respiration, has increasingly been recognized as an advanced clinical option [14]. Although MRI offers un-paralleled soft-tissue contrast and non-invasive advantages, its inherently long acquisition time fundamentally limits the number of measurements that can be acquired within the allowed latency window for motion tracking. The re-sulting ultra-sparse sample makes prospective reconstruc-tion problem highly ill-posed. Consequently, most previ-ous works [5, 10, 30] focus on retrospective reconstruc-tion , where dynamic images are reconstructed from time-continuous measurements after acquisition by aggregating all time frames together for a joint dynamic reconstruction, leveraging the spatio-temporal redundancy. However, existing retrospective approaches cannot sat-isfy the demands of ultra-fast, low-latency prospective re-construction, due to the significant challenges of ultra-sparse measurement and instant runtime requirement in the setting of prospective reconstruction, as shown in Fig. 1. On the other hand, the retrospective reconstruction has learned informative spatial-temporal representations offline for the specific patient, which naturally offers an important prior for prospective reconstruction of the same patient. There-fore, a key question arises: how can we leverage the rich priors learned from retrospective reconstruction to enable low-latency prospective reconstruction from ultra-sparse 
+
+> arXiv:2606.04249v1 [cs.CV] 2 Jun 2026
+
+measurement (i.e., a single-shot k-space measurement)? 
+
+This overarching question can be further divided into two sub-problems: (a) How can we learn a good retrospective prior? (b) How can we rapidly adapt this prior for low-latency prospective reconstruction? 
+
+How to learn a good retrospective prior? Although retrospective reconstruction can exploit the full spatio-temporal redundancy across all time frames, learning a powerful prior from undersampled dynamic measurements still remains a very challenging problem. One promis-ing direction is motion-compensated (MoCo) representa-tion [18, 20, 21, 28], which explicitly decompose the dy-namic sequence into a time-dependent deformation vector field (DVF) and a static template image. This decompo-sition allows the entire image sequence to share the same spatial structure and effectively exploit the spatio-temporal redundancy in the acquired measurements, leading to im-proved reconstruction quality. Clinically, patients often un-dergo multiple scans across treatment fractions. The MoCo decomposition naturally allows the template image to be obtained from a pre-scan or a previous fraction, provid-ing high-quality patient-specific structural information as a prior, further alleviating the ill-posedness. 
+
+How can we rapidly adapt this prior for low-latency prospective reconstruction? With the MoCo decompo-sition, prospective reconstruction reduces to learning a patient-specific motion representation that can be quickly adapted to a new motion status at each new time point. Re-cent methods attempt to address this. MR-MOTUS [13] and DREME-MR [25] model deformation vector fields (DVFs) as a linear combination of spatial and temporal bases, enabling compact motion representations from un-dersampled measurements. During prospective reconstruc-tion, they reuse retrospectively learned spatial bases and up-date only the temporal coefficients, allowing efficient on-line adaptation. However, because linear bases cannot cap-ture the complex, nonlinear anatomical motion seen in prac-tice, their representational limits reduce accuracy and ro-bustness under ultra-sparse sampling. Prior-INR [16] takes a different strategy by defining a discrete prior space span-ning representative respiratory states. Online reconstruction searches this space to find the prior that best matches the in-coming measurement. While effective under simplified mo-tion patterns, this handcrafted and discrete manifold does not generalize well and fails to reflect the continuous nature of physiological motion, limiting its clinical applicability. In this work, we propose PDMR , which is, to the best of our knowledge, the first Prospective Dynamic 
+
+MRI Reconstruction framework that leverages a non-linear manifold-based deformation representation. To enable effective adaptation from a single measurement during prospective reconstruction, we first retrospectively learn a compact and temporally generalizable latent space that can capture the underlying dynamics of deformation fields. Specifically, we incorporate a geometry-aware mapping network based on the tri-plane representations [4] to learn a nonlinear mapping from the latent manifold to full 3D DVFs. The tri-plane representation provides a high-resolution and structurally coherent feature embedding, al-lowing the model to preserve both global anatomy and fine local deformation details. This results in a strong retrospec-tive prior that makes fast and stable DVF adaptation feasible during prospective reconstruction. Benefiting from the compact manifold and the general-izable mapping network, PDMR can efficiently and accu-rately estimate the current DVF from instantaneous mea-surements ( i.e ., a single spoke). During prospective recon-struction, PDMR only needs to optimize a low-dimensional latent vector on the learned manifold, requiring just a few iterations to recover the current motion state and produce high-quality images. Experiments on both XCAT digi-tal phantoms [24] and in-house abdominal MRI datasets demonstrate that PDMR achieves high-fidelity reconstruc-tion and accurate motion tracking across multiple prospec-tive scenarios, confirming the effectiveness and generaliz-ability of manifold-based DVF modeling. To summarize, our key contributions are as follows: • We introduce PDMR, the first framework that leverages a retrospectively learned, patient-specific motion mani-fold that can rapidly adapt to the latency window, en-abling high-quality prospective reconstruction from in-stantaneous measurements. • We propose a new geometry-aware manifold mapping network tailored to estimate a fine-grained time-varying deformation field from ultra-sparse measurements. • We evaluate PDMR extensively, showing superior recon-struction quality and robustness to diverse motions across multiple prospective MR scenarios. 
+
+## 2. Related Work 
+
+2.1. Manifold Learning in Medical Imaging 
+
+Manifold learning has been widely used to capture the low-dimensional structure underlying high-dimensional medi-cal images. Classical nonlinear methods such as LLE [23], Laplacian Eigenmaps [2], and diffusion maps [7] have been applied to analyze anatomical shape variability and defor-mation field [13, 25]. With deep learning, generative mod-els, including VAEs [15] and latent-variable motion mod-els for cardiac and respiratory dynamics [1], learn smooth latent spaces that capture physiological states [3]. These representations have enabled tasks such sparse-view recon-struction, or motion modeling from limited observations. More recently, implicit neural representations (INRs) have emerged as continuous neural manifolds for encoding anatomy and motion [16, 17, 22, 26, 27]. INR-based mod-els [8] have been used for volumetric MRI reconstruction and deformation modeling, but most operate retrospectively or depend on fixed priors that cannot rapidly adapt to new measurements. Overall, while manifold learning effectively represents complex motion in low-dimensional spaces, existing ap-proaches are not designed for prospective, ultra-sparse, or online MRI settings, motivating the proposed method. 
+
+2.2. Prospective MRI Reconstruction 
+
+Prospective MRI reconstruction is essential for real-time visualization during interventional and image-guided pro-cedures. By providing clinicians with immediate imag-ing feedback, for example in MRI-guided radiotherapy, prospective methods can improve targeting accuracy, en-hance tumor treatment efficacy, and reduce radiation expo-sure to surrounding healthy tissues. Several recent works [13, 16, 25] have explored patient-specific modeling to address this challenge. Liu et al. [16] proposed a prior-augmented INR that learns a continuous volumetric representation from only two fully sampled 3D MRIs, enabling sparse 2D cine slices to be lifted into full 3D volumes. Although effective under stable breathing condi-tions, the method heavily depends on the two static priors, making it sensitive to changes in respiratory patterns. Fur-thermore, the smoothness bias inherent to the INR formu-lation limits its ability to represent nonlinear or discontin-uous physiological motion, leading to unreliable extrapola-tion when the motion deviates from the training distribution. Huttinga et al. [13] reconstruct respiratory motion di-rectly from undersampled 3D k-space by enforcing a low-rank linear motion model. This enables sub-200 ms infer-ence; however, the method assumes that all non-rigid 3D deformations can be expressed as a linear combination of a few fixed spatial bases. Such a linear assumption lim-its robustness in the presence of nonlinear organ motion or sliding interfaces, where the true deformation cannot be ac-curately represented by a low-rank linear subspace. Despite these advances, prospective MRI reconstruction remains largely underexplored. Existing approaches either rely on restrictive priors, impose strong assumptions on mo-tion linearity, or fail to maintain accuracy when motion de-viates from the training distribution. Achieving ultra-fast and anatomically reliable volumetric reconstruction there-fore remains a critical unmet need in the field. 
+
+## 3. Preliminaries 
+
+3.1. Forward Model of Dynamic MRI 
+
+The forward acquisition of dynamic MRI is formulated as: 
+
+yt = P tT xt + nt, (1) where xt ∈ Cm is the image at timestamp t, T is the Fourier operator, P t is the time-varying sampling pattern, and yt ∈ Cn is the acquired k-space (frequency domain of the image) measurements [11]. To achieve high temporal resolution, the acquisition is typically highly undersampled in the spatial domain ( i.e. , n ≪ m). The goal of retrospec-tive reconstruction is to recover a high-quality dynamic se-quence {xt}Tt=0 from these undersampled measurements. 
+
+3.2. Motion-Compensated (MoCo) Reconstruction 
+
+MoCo-based methods decompose each dynamic image xt
+
+into a time-varying deformation field ut and a static tem-plate image m, formulated as: 
+
+xt = W(m, ut), (2) where W(·) denotes the image warping operator. The DVF specifies, for each voxel in xt, the displacement vector 
+
+(∆ x, ∆y, ∆z)t that maps it to the corresponding location in the template image space. By leveraging this decomposi-tion, MoCo-based methods transform dynamic reconstruc-tion into estimating the deformation fields with a shared template image. The use of a shared template enables these methods to effectively exploit spatial–temporal corre-lations [9], allowing high-quality reconstruction even from highly undersampled k-space data. 
+
+3.3. Motion-Tracking Guidance Prospective Recon-struction 
+
+For prospective reconstruction, the MoCo decomposition is particularly attractive: the template image can be pre-reconstructed using pre-scan data, providing a patient-specific structural prior. Consequently, the prospective re-construction problem can be reformulated as estimating the current deformation field from the instantaneous k-space measurement, rather than reconstructing a full 3D image from scratch. The optimization process can be expressed as: 
+
+u∗ 
+
+> t′
+
+= arg min 
+
+> ut′
+
+∥yt′ − W (m, ut′ )∥22 (3) where t′ denotes the new timepoint and yt′ denotes the in-stantaneous k-space measurement. 
+
+## 4. Proposed Method 
+
+Our goal is to reconstruct high-quality images in a prospec-tive MR acquisition from instantaneous measurements that reflect the object’s current motion state. To achieve this, we propose PDMR , which introduces a manifold representa-tion (§ 4.1) to enable fast online motion adaptation. PDMR retrospectively learns a generalizable motion manifold with an effective mapping function from pre-scan dynamic data (§ 4.2). Leveraging the learned manifold and mapping func-tion, PDMR requires optimizing only a low-dimensional Continuous Data Acquisition 
+
+> Mapping Network
+> Latent
+> Vector
+> DVF
+> A) Offline Manifold Learning
+> B) Online Prospective Reconstruction
+
+… … 
+
+> time
+> A) Offline Manifold
+> Learning
+> B) Online Prospective
+> Reconstruction
+> Template
+> Image
+> MR Image Estimate
+> DVF
+> L2
+> time
+> 🔥
+> Optimization Eq. (9)
+> Acquisition from
+> time 0 to time T
+> Single acquisition
+> at new time point
+> Learned
+> Manifold
+> new time
+> Template
+> Image
+> DVF
+> L2
+> MR Image Estimate
+> Coordinates
+> Optimization Eq. (10)
+
+Figure 2. Overview of proposed PDMR. A. PDMR performs offline manifold learning, where the patient-specific motion manifold and DVF mapping network f ψ,θ are learned from time-continuous sparse measurements {y}Tt=0 in a retrospective manner. B. During online prospective reconstruction, given a single instantaneous measurement yt′ , PDMR rapidly adapts by optimizing only the latent vector while keeping the learned mapping network fixed. Meanwhile, PDMR employs a geometry-aware tri-plane mapping network, enabling the latent vector to be mapped to fine-detailed DVFs efficiently and supporting fast adaptation. 
+
+latent code to estimate a high-quality deformation field, en-abling fast adaptation to new motion states (§ 4.3). 
+
+4.1. Manifold-based DVF Representation 
+
+Deformation vector fields (DVFs) reflect object movements driven by various physiological signals. To model these complex non-linear mappings, we propose a manifold-based DVF representation that formulates DVF as a func-tion of a low-dimensional latent vector: 
+
+f : z ∈ Rr 7 → u ∈ Rm×3, (4) where z encodes the underlying motion state and u is the corresponding deformation field. To capture fine-grained deformation patterns and ensure efficient computation, we approximate the function f using a geometry-aware map-ping network. 
+
+Geometry-Aware Mapping Network. Directly mapping the latent code to a full 3D DVF would introduce substan-tial computational and unstable optimization. Therefore, we adopt a geometry-aware mapping network f ψ,θ composed of a tri-plane-based generator Gψ and decoder Mθ to ap-proximate the function f for accurate DVF estimation, in-spired by [4]. Specifically, the tri-plane-based generator Gψ first maps the latent vector z into three orthogonal feature planes 
+
+{F xy , F xz , F yz }. Given a spatial coordinate p = ( x, y, z ),its corresponding features are retrieved from the three planes via projection. Then, the geometry-aware feature at 
+
+p is obtained by concatenating these three planar features, formulated as: 
+
+F (p) = F xy (x, y ) ⊕ F xz (x, z ) ⊕ F yz (y, z ), (5) where ⊕ denotes feature concatenation. Next, the decoder 
+
+Mθ takes the fused feature as input and predicts the corre-sponding displacement vector at that position, ( i.e. , ∆p =
+
+Mθ (F (p)) ). Finally, by querying all spatial coordinates in the imaging space Ω, we obtain the estimated DVF u as: 
+
+u = f ψ,θ (z, p) p∈Ω . (6) 
+
+4.2. Offline Manifold Learning 
+
+Figure 2 (A) shows the overall offline training process. To learn a compact manifold that can represent diverse motions and enable fast adaptation during prospective reconstruc-tion, we jointly optimize latent manifold and network using pre-collected time-continuous measurements Y = {yt}Tt=0 
+
+and a template image m, e.g . from the pre-treatment scan-ning for the specific patient in standard radiotherapy proce-dure. Specifically, for each timestep t, we first sample the la-tent vector zt from a Gaussian distribution, assumed prior distribution. The mapping network then takes the latent vec-tor and imaging spatial coordinates as input to estimate the time-varying DVFs ˆut (Eq. 6). Given the estimated DVFs, the template image m is warped to generate the dynamic image: 
+
+ˆxt = W(ˆ ut, m), (7) where W(·) denotes warping operation. Intergating the for-ward model of dynamic MRI (Eq. 1), we can get the k-space estimates as: 
+
+ˆY = {At ˆxt}Tt=0 , with At ≜ P tT , (8) Finally, under an auto-decoder formulation [22], both the la-tent codes and the mapping network are optimized by min-imizing the measurement consistency loss together with a DVF regularization term: 
+
+Z∗, ψ ∗, θ ∗ = arg min 
+
+> Z,ψ,θ
+
+∥ ˆY − Y ∥22 + λR(U ),
+
+where Z = {zt}Tt=0 , U = {ut}Tt=0 ,
+
+(9) where R(·) denotes the DVF regularization term that en-forces temporal smoothness, and λ is the weighting hyper-parameter. 
+
+4.3. Online Prospective Reconstruction 
+
+After completing the offline manifold learning stage, we obtain a compact manifold and a well-trained mapping network to capture patient-specific motion representations through retrospective training. Given a random sample from this manifold, the mapping network is able to generate fine-grained spatio-temporal deformation patterns. Therefore, in the online prospective reconstruction, we freeze the param-eters (ψ∗, θ ∗) of the mapping network and optimize only the latent vector z corresponding to the current time frame. Specifically, given an instantaneous measurement yt′ ,the latent vector zt′ is optimized within the learned man-ifold by minimizing the discrepancy between the estimated and acquired k-space data. The optimization process can be formulated as: 
+
+zt′ = arg min 
+
+> z
+
+∥At′ xt′ − yt′ ∥22 ,
+
+with xt′ = W  m, f ψ∗,θ ∗ (z) .
+
+(10) Once the optimal latent vector ˆzt′ is obtained, the corre-sponding DVF ˆut′ = fψ,θ (ˆ zt) is used to warp the template image m to generate the current frame: 
+
+ˆxt′ = W(m, ˆut′ ). (11) This procedure enables ultra-fast motion tracking and prospective reconstruction. Since only a low-dimensional latent vector needs to be optimized per time frame, the in-ference process is highly efficient and can rapidly adapt to unseen motion states while preserving the physical plausi-bility encoded in the learned manifold. 
+
+## 5. Experiments & Results 
+
+5.1. Datasets and Preprocessing 
+
+XCAT Phantom Data. We used digital XCAT phan-toms [24] with simulated respiratory motion in the abdomi-nal region, where the parameter maps were assigned based on previous literature [6] and the dynamic 3D data were simulated using a spoiled gradient echo sequence config-ured with the same acquisition parameters as our in-house protocol, serving as ground-truth reference data. Each res-piratory cycle lasted 3.97 seconds, and the dynamic se-quence was simulated with a temporal resolution of 170 ms per frame. 
+
+In-house Data. In-house data were acquired from six subjects under an institutional review board (IRB)–approved protocol. A 10-min DCE-MRI scan was performed using a work-inprogress golden-angle stack-of-stars radial trajectory, yielding 3500 spokes ( 170 ms per spoke acquisition). Using the hierarchical motion modeling framework [31], we extracted respiratory motion signals by analyzing the liver’s center-of-mass trajectory, and used these signals to bin the data and reconstruct 21 respiratory-resolved 3D volumes. Each volume was deformably registered to the end-exhale reference to obtain DVFs for all 21 respiratory states. Per-spoke DVFs were computed via linear interpolation between the bounding respiratory states based on its continuous respiratory position. By applying these DVFs to the reference volume, we generated high–temporal-resolution dynamic 3D MRI datasets, which serve as ground truth. 
+
+Simulated Acquisition Process. For both the XCAT phantom and the six in-house dynamic 3D MRI datasets, we employed a golden-angle stack-of-stars sampling pattern, acquiring only one stack of spokes per time frame. Each spoke consisted of 448 readout samples with kz = 96 par-titions. Spokes 0–150 were used for offline manifold learn-ing, while prospective reconstruction was evaluated using spokes 150–300 and 1000–1150. Since each spoke corre-sponds to approximately 170 ms, the latter interval reflects data acquired roughly 2 minutes after the initial acquisition. 
+
+5.2. Baselines & Metrics 
+
+Baselines. We compare PDMR with six representative dynamic MRI reconstruction approaches: 1) Analytical algorithms: NUFFT [12] performs non-Cartesian reconstruction using the non-uniform FFT; 
+
+GRASP [10] applies compressed-sensing constraints under golden-angle sampling to jointly reconstruct the dynamic sequence retrospectively; 2) Retrospective methods: TDDIP [30] extends Deep Image Prior [29] to dynamic imaging by fitting a CNN gen-erator to the full temporal measurements; SPINER [5] uses an implicit neural representation to model the dynamic vol-ume as a continuous function of space and time; 3) Prospective methods: Prior-INR [16] employs a hand-crafted discrete motion manifold; MR-MOTUS [13] updates motion in a linear subspace using sequential k-space measurements. 
+
+Evaluation Metrics. For the reconstructed dynamic MRI, we employ peak signal-to-noise ratio (PSNR) and structural similarity index (SSIM) as quantitative evaluation metrics. PSNR         
+
+> 5x
+> Error
+> 00.1
+> 5x
+> Error
+> 00.1
+> 5x
+> Error
+> 00.1
+> In -house
+> (Immediate)
+> 38.51
+> End-Inhale
+> End-Exhale
+> PSNR
+> 1x
+> Error
+> 01
+> 1x
+> Error
+> 01
+> 1x
+> Error
+> 01
+> GT
+> XCAT
+> (After 2 min)
+> PDMR (Ours) MR -MOTUS
+> 38.51
+> Prior -INR SPINER GRASP
+> End-Inhale
+> End-Exhale
+> PSNR
+> PSNR 24.22 15.27 20.10 8.47 25.52
+> 46.57 26.11 37.22 11.64 50.79
+
+Figure 3. Qualitative comparisons of prospective reconstruction results on the in-house dataset (top row) and the XCAT dataset (bottom row). We display the reconstructed images, the over-time profile lines in the z–t plane, and the corresponding error maps. The selected 
+
+z-axis location is marked by an orange dashed line, and zoom-in boxes highlight regions of interest at the end-inhale and end-exhale motion states for improved visualization of motion capture. Red arrows indicate noticeable small-motion capture failures in the baselines. 0  
+
+> 2
+> 0
+> 2
+> In -house XCAT
+> DVF Template with DVF Dynamic Recon.
+
+Figure 4. Visualization of the estimated DVFs during prospec-tive reconstruction on the in-house dataset (coronal view) and the XCAT dataset (sagittal view). 
+
+5.3. Implementation Details 
+
+In PDMR, the latent code dimension is set to r = 12 , and each tri-plane contains 32 feature channels. The mapping network is composed of a tri-plane encoder followed by a lightweight MLP decoder (See implementation details in the supplementary). Offline training is performed using the Adam optimizer, with learning rates of 1 × 10 −2 for the mapping network and 5 × 10 −3 for the latent vectors, and is run for 50 iterations. All models were implemented in PyTorch and trained on an NVIDIA A100 GPU. Detailed inference time analysis is provided in the supplementary material. 
+
+5.4. Prospective Reconstruction 
+
+Experimental Settings. To evaluate the effectiveness of PDMR for prospective reconstruction, we conduct exper-iments on both XCAT phantoms and in-house abdominal MRI data under two prospective settings: 1) Immediate :the prospective acquisition starts immediately after the ret-rospective scan. 2) After 2 min : where a two-minute inter-val separates the retrospective and prospective acquisitions. In all experiments, the analytical algorithms are directly evaluated under the prospective reconstruction setting. Both the prospective methods and the retrospective baselines are first trained on the retrospective data, and then adapted to the newly acquired measurements during the prospective stage. We compare the dynamic MR reconstruction per-formance of all baselines in the prospective scenario. Addi-tional implementation details, parameter settings, and eval-uation protocols are provided in the supplement. 
+
+Comparisons of Reconstructed MR images. Figure 3 shows the quantitative results. The analytical method GRASP results in highly blurred images, losing all anatom-ical details, highlighting the failure of traditional methods with ultra-sparse measurements in the latency window. For retrospective methods, SPINER [5] fails to generalize to un-seen time points. It tends to extrapolate past motion trends and eventually produces nearly static outputs when evalu-ated at new timestamps, indicating its limited ability for prospective reconstruction. For the prospective methods, Prior-INR [16], which relies on a hand-crafted and discrete Category Method XCAT Phantom In-house Data Immediate After 2 min Immediate After 2 min 
+
+Analytical NUFFT [12] 7.80/0.252 7.79/0.252 10.89 ±0.53 /0.364 ±0.022 10.90 ±0.52 /0.365 ±0.021 
+
+GRASP [10] 8.47/0.158 8.47/0.158 10.89 ±0.60 /0.120 ±0.017 11.05 ±0.88 /0.126 ±0.027 
+
+Retrospective Recon. 
+
+TDDIP [30] 17.73/0.498 18.05/0.552 25.38 ±1.84 /0.661 ±0.044 25.70 ±2.81 /0.687 ±0.068 
+
+SPINER [5] 20.25/0.873 20.10/0.869 35.43 ±1.89 /0.942 ±0.018 36.36 ±3.40 /0.946 ±0.022 
+
+Prospective Recon. 
+
+Prior-INR [16] 15.05/0.444 15.27/0.473 26.72 ±2.46 /0.810 ±0.087 27.00 ±2.76 /0.811 ±0.087 
+
+MR-MOTUS [13] 24.39/0.931 24.22/0.929 41.04 ±3.41 /0.981 ±0.007 41.11 ±3.50 /0.976 ±0.011 
+
+PDMR (Ours) 26.28 /0.958 25.52 /0.950 46.32 ±4.06 /0.994 ±0.003 43.39 ±4.58 /0.978 ±0.023  
+
+> Table 1. Quantitative results (PSNR (dB)/SSIM) of compared methods on the XCAT phantom and in-house datasets under immediate and 2-minute delayed prospective reconstruction settings. The best results are highlighted in bold .
+
+manifold, also exhibits noticeable limitations. As shown in the z −t profile, the learned motion trajectories are discon-tinuous and fail to reflect the smooth and continuous nature of physiological motion, leading to inaccurate deformation estimation during prospective reconstruction. MR-MOTUS shows better motion tracking, but still exhibits noticeable errors, which are particularly evident in the z − t profile error comparison. Additionally, due to its linear represen-tation limitations, MR-MOTUS struggles to capture small motions, as highlighted with red arrows in the figure. In contrast, PDMR achieves near-perfect alignment with the ground truth, accurately capturing both large-scale motion and fine local dynamics, demonstrating its superior ability to model complex deformation patterns with high fidelity. Table 1 presents the quantitative results. PDMR outper-forms all baselines in both settings across XCAT Phantom and in-house data, showing a significant improvement over the SOTA MR-MOTUS ( e.g. , ∼ 2dB gain on in-house data). These results demonstrate that PDMR consistently provides more accurate and reliable reconstructions, highlighting its superior performance in prospective reconstructions across diverse acquisition conditions. 
+
+5.5. Evaluation of PDMR’s Effectiveness 
+
+We evaluated PDMR’s performance in both offline learning from retrospective data and prospective adaptation of DVFs. 
+
+Evaluation of Offline Learning. Table 2 shows the per-formance of PDMR on retrospective data compared with baselines. It outperforms advanced retrospective methods, demonstrating its ability to effectively learn motion dynam-ics and capture detailed deformation fields from undersam-pled data. 
+
+Evaluation of DVFs. Figure 4 shows the estimated DVFs alongside the dynamic reconstruction results in the prospec-tive setting. The quiver plots (second column) visualize 
+
+Method XCAT In-house 
+
+TDDIP [30] 17.21/0.372 25.93 ±2.07 /0.582 ±0.058 
+
+SPINER [5] 21.26/0.888 38.14 ±4.40 /0.954 ±0.031 
+
+MR-MOTUS [13] 25.72/0.948 43.50 ±4.81 /0.986 ±0.010 
+
+PDMR (Ours) 26.63 /0.959 47.60 ±3.44 /0.995 ±0.002   
+
+> Table 2. Quantitative results (PSNR (dB)/SSIM) of compared methods on the XCAT phantom and in-house datasets during ret-rospective learning. The best results are highlighted in bold .
+
+the direction and magnitude of the predicted DVFs, which closely follow the expected organ motion patterns, demon-strating that our method accurately captures respiratory dy-namics. Notably, for regions that remain stationary (such as the spine in the XCAT phantom) our method preserves the absence of motion, demonstrating that the learned deforma-tion manifold does not introduce spurious displacements in anatomically static structures. Additional visual results are provided in the supplementary material. 
+
+## 6. Discussion 
+
+In this section, we analyze the interpretability and repre-sentativeness of the learned latent vector in PDMR (§ 6.1). Meanwhile, we analyze the PDMR’s ability to generalize to unseen motion in prospective reconstruction (§ 6.2). 
+
+6.1. Analysis of Latent Vector 
+
+To demonstrate the interpretability of the latent vector, we perform PCA on the latent vectors z learned offline and adapted during prospective reconstruction. We extract the first principal component (PC) and compare it with the ref-erence respiratory motion signal, which represents the supe-rior–inferior displacement of the liver, shown in Figure 6. Despite small perturbations, the first PC of the latent code exhibits a clear correlation with the motion signal which indicates that the latent code learned by PDMR captures End-Ex hale                  
+
+> Latent
+> End-Inhale
+> Latent
+> t= 0.4 t= 0.3 t= 0.5 t= 0.6 t= 0.0 t= 1.0 t= 0.2 t= 0.1 t= 0.7 t= 0.8 t= 0.9
+
+Figure 5. Visualization of reconstructed MR images and corresponding DVFs obtained from interpolating between two latent vectors, where z0 and z1 denote the learned vectors at the inhale and exhale motion states. The dashed line highlights the respiratory-induced displacement for clearer visualization. …  
+
+> #Spoke
+> PC  Score  Movement (mm)  Profile Line
+> Retrospective
+> Manifold Learning
+> Prospective Recon.
+> (Immediate )
+> Prospective Recon.
+> (After 2 min )
+> Motion signal
+> Dominant Component
+
+Figure 6. Visualization comparing the representative profile line (z–t plane), the reference diaphragm motion, and the first principal component (PC) of the latent vector z in both retrospective and prospective reconstructions. 
+
+motion-related variations effectively. To demonstrate that the learned manifold is continuous and physiologically reasonable, as well as to assess the gen-eralization capability of the mapping network, we interpo-late between latent vectors corresponding to the inhale and exhale respiratory states and decode them using the trained network. Specifically, we denote the latent vector at the end-inhale state as z0 and at the end-exhale state as z1. In-termediate latent vectors are generated through linear inter-polation at uniform steps of 0.1 ( t = 0 .1, . . . , 0.9), with the reconstructed images shown in Figure 5 (top row). The highlighted horizontal lines visualize the inferred respira-tory displacement, which varies smoothly with the inter-polated latent vectors. The corresponding template images and DVFs are displayed in the bottom row of Figure 5, and the consistent linear progression in the DVFs further indi-cates that the latent space encodes a continuous, structured representation of respiratory motion. Additional analysis is provided in the supplementary material. 
+
+Offset 0 mm 1 mm 2 mm 3 mm 
+
+PSNR (dB) 52.53 44.65 40.63 38.80 
+
+SSIM 0.998 0.991 0.978 0.964 
+
+Table 3. Qualitative results of PDMR with unseen motion patterns with different additional motion offsets. 
+
+6.2. Robustness on Unseen Motion State 
+
+To explore the performance of PDMR under unseen motion patterns, we introduce additional respiratory displacements (0–3 mm in the vertical direction) during prospective recon-struction and the quantitative result is shown in Table 3. The reconstruction quality gradually decreases as the displace-ment increases; however, even with a 3 mm offset, which is well outside the range observed during offline training, PDMR still achieves 38.80 dB PSNR, demonstrating strong robustness to unseen motion. 
+
+## 7. Conclusion 
+
+In this work, we introduced PDMR, a manifold-based framework for prospective dynamic 3D MRI reconstruction from single measurements. PDMR retrospectively learns a compact and temporally generalizable motion manifold with a geometry-aware tri-plane mapping network, enabling high-fidelity deformation modeling. During online recon-struction, it efficiently adapts to new motion states by op-timizing only a low-dimensional latent code, achieving ac-curate DVF estimation within a few iterations. Experiments on XCAT phantoms and in-house datasets show that PDMR outperforms SOTA methods, providing higher reconstruc-tion fidelity, smoother motion trajectories, and stronger ro-bustness to unseen motion. These results demonstrate the potential of manifold-based deformation modeling for real-time, motion-aware MRI guidance. Acknowledgment. This work was partially supported by NIH R01EB032825 and Siemens Healthineers NIH/NHLBI R01HL163030. LS acknowledges funding support by Na-tional Science Foundation via grant IIS-2435746, Defense Advanced Research Projects Agency under contract No. HR00112520042. We thank Xuanyu Tian for insightful dis-cussions and valuable assistance in the preparation of this manuscript. 
+
+## References 
+
+[1] Marcel Beetz, Jorge Corral Acero, Abhirup Banerjee, Ingo Eitel, Ernesto Zacur, Torben Lange, Thomas Stiermaier, Ruben Evertz, S¨ oren J Backhaus, Holger Thiele, et al. Inter-pretable cardiac anatomy modeling using variational mesh autoencoders. Frontiers in Cardiovascular Medicine , 9: 983868, 2022. 2 [2] Mikhail Belkin and Partha Niyogi. Laplacian eigenmaps for dimensionality reduction and data representation. Neural computation , 15(6):1373–1396, 2003. 2 [3] Tom Brosch, Roger Tam, and Alzheimer’s Disease Neu-roimaging Initiative. Manifold learning of brain mris by deep learning. In International Conference on Medical Im-age Computing and Computer-Assisted Intervention , pages 633–640. Springer, 2013. 2 [4] Eric R Chan, Connor Z Lin, Matthew A Chan, Koki Nagano, Boxiao Pan, Shalini De Mello, Orazio Gallo, Leonidas J Guibas, Jonathan Tremblay, Sameh Khamis, et al. Efficient geometry-aware 3d generative adversarial networks. In Pro-ceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 16123–16133, 2022. 2, 4 [5] Lixuan Chen, James M Balter, Liyue Shen, and Jeong Joon Park. Single-spoke motion-compensated dynamic 3d mri reconstruction via neural representation. In International Conference on Medical Image Computing and Computer-Assisted Intervention , pages 513–522. Springer, 2025. 1, 5, 6, 7 [6] Yong Chen, Yun Jiang, Shivani Pahwa, Dan Ma, Lan Lu, Michael D Twieg, Katherine L Wright, Nicole Seiberlich, Mark A Griswold, and Vikas Gulani. Mr fingerprinting for rapid quantitative abdominal imaging. Radiology , 279(1): 278–286, 2016. 5 [7] Ronald R Coifman and St´ ephane Lafon. Diffusion maps. 
+
+Applied and Computational Harmonic Analysis , 21(1):5–30, 2006. 2 [8] Jie Feng, Ruimin Feng, Qing Wu, Xin Shen, Lixuan Chen, Xin Li, Li Feng, Jingjia Chen, Zhiyong Zhang, Chunlei Liu, et al. Spatiotemporal implicit neural representation for unsu-pervised dynamic mri reconstruction. IEEE Transactions on Medical Imaging , 40(5):2143–2156, 2025. 3 [9] Li Feng, Thomas Benkert, Kai Tobias Block, Daniel K Sod-ickson, Ricardo Otazo, and Hersh Chandarana. Compressed sensing for body mri. Journal of Magnetic Resonance Imag-ing , 45(4):966–987, 2017. 3 [10] Li Feng, Qiuting Wen, Chenchan Huang, Angela Tong, Fang Liu, and Hersh Chandarana. Grasp-pro: improving grasp dce-mri through self-calibrating subspace-modeling and contrast phase automation. Magnetic Resonance in Medicine , 83(1):94–108, 2020. 1, 5, 7 [11] Jeffrey A Fessler. Model-based image reconstruction for mri. 
+
+IEEE Signal Processing Magazine , 27(4):81–89, 2010. 3 [12] Jeffrey A Fessler and Bradley P Sutton. Nonuniform fast fourier transforms using min-max interpolation. IEEE Trans-actions on Signal Processing , 51(2):560–574, 2003. 5, 7 [13] Niek RF Huttinga, Tom Bruijnen, Cornelis AT Van Den Berg, and Alessandro Sbrizzi. Real-time non-rigid 3d respiratory motion estimation for mr-guided radiotherapy us-ing mr-motus. IEEE Transactions on Medical Imaging , 41 (2):332–346, 2021. 2, 3, 5, 7 [14] Paul J Keall, Caterina Brighi, Carri Glide-Hurst, Gary Liney, Paul ZY Liu, Suzanne Lydiard, Chiara Paganelli, Trang Pham, Shanshan Shan, Alison C Tree, et al. Integrated mri-guided radiotherapy—opportunities and challenges. Nature Reviews Clinical Oncology , 19(7):458–470, 2022. 1 [15] Diederik P Kingma and Max Welling. Auto-encoding varia-tional bayes. In International Conference on Learning Rep-resentations , 2014. 2 [16] Lianli Liu, Liyue Shen, Adam Johansson, James M Balter, Yue Cao, Lucas Vitzthum, and Lei Xing. Volumetric mri with sparse sampling for mr-guided 3d motion tracking via sparse prior-augmented implicit neural representation learn-ing. Medical Physics , 51(4):2526–2537, 2024. 2, 3, 5, 6, 7[17] Ben Mildenhall, Pratul P Srinivasan, Matthew Tancik, Jonathan T Barron, Ravi Ramamoorthi, and Ren Ng. Nerf: Representing scenes as neural radiance fields for view syn-thesis. Communications of the ACM , 65(1):99–106, 2021. 3[18] Manuel A. Morales, David Izquierdo-Garcia, Iman Aganj, Jayashree Kalpathy-Cramer, Bruce R. Rosen, and Ciprian Catana. Implementation and validation of a three-dimensional cardiac motion estimation network. Radiology: Artificial Intelligence , 1(4):e180080, 2019. 2 [19] Krishna S Nayak, Yongwan Lim, Adrienne E Campbell-Washburn, and Jennifer Steeden. Real-time magnetic res-onance imaging. Journal of Magnetic Resonance Imaging ,55(1):81–99, 2022. 1 [20] Jiazhen Pan, Daniel Rueckert, Thomas K¨ ustner, and Ker-stin Hammernik. Learning-based and unrolled motion-compensated reconstruction for cardiac mr cine imaging. In 
+
+International Conference on Medical Image Computing and Computer-Assisted Intervention , pages 686–696. Springer, 2022. 2 [21] Jiazhen Pan, Wenqi Huang, Daniel Rueckert, Thomas K¨ ustner, and Kerstin Hammernik. Motion-compensated mr cine reconstruction with reconstruction-driven motion esti-mation. IEEE Transactions on Medical Imaging , 43(7): 2420–2433, 2024. 2 [22] Jeong Joon Park, Peter Florence, Julian Straub, Richard Newcombe, and Steven Lovegrove. Deepsdf: Learning con-tinuous signed distance functions for shape representation. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 165–174, 2019. 3, 4 [23] Sam T Roweis and Lawrence K Saul. Nonlinear dimension-ality reduction by locally linear embedding. Science , 290 (5500):2323–2326, 2000. 2 [24] W Paul Segars, G Sturgeon, S Mendonca, Jason Grimes, and Benjamin MW Tsui. 4d xcat phantom for multimodality imaging research. Medical Physics , 37(9):4902–4915, 2010. 2, 5 [25] Hua-Chieh Shao, Xiaoxue Qian, Guoping Xu, Can Wu, Ri-cardo Otazo, Jie Deng, and You Zhang. A dynamic recon-struction and motion estimation framework for cardiores-piratory motion-resolved real-time volumetric mr imaging (dreme-mr). Physics in Medicine and Biology , 70(17): 175013, 2025. 2, 3 [26] Liyue Shen, John Pauly, and Lei Xing. Nerp: implicit neu-ral representation learning with prior embedding for sparsely sampled image reconstruction. IEEE Transactions on Neural Networks and Learning Systems , 35(1):770–782, 2022. 3 [27] Vincent Sitzmann, Julien Martel, Alexander Bergman, David Lindell, and Gordon Wetzstein. Implicit neural representa-tions with periodic activation functions. Advances in Neural Information Processing Systems , 33:7462–7473, 2020. 3 [28] Xuanyu Tian, Lixuan Chen, Qing Wu, Xiao Wang, Jie Feng, Yuyao Zhang, and Hongjiang Wei. Unsupervised motion-compensated decomposition for cardiac mri reconstruction via neural representation. In Proceedings of the AAAI Con-ference on Artificial Intelligence , pages 9529–9537, 2026. 2 [29] Dmitry Ulyanov, Andrea Vedaldi, and Victor Lempitsky. Deep image prior. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 9446– 9454, 2018. 5 [30] Jaejun Yoo, Kyong Hwan Jin, Harshit Gupta, Jerome Yerly, Matthias Stuber, and Michael Unser. Time-dependent deep image prior for dynamic mri. IEEE Transactions on Medical Imaging , 40(12):3337–3348, 2021. 1, 5, 7 [31] Yuhang Zhang, Rojano Kashani, Yue Cao, Theodore S Lawrence, Adam Johansson, and James M Balter. A hi-erarchical model of abdominal configuration changes ex-tracted from golden angle radial magnetic resonance imag-ing. Physics in Medicine and Biology , 66(4):045018, 2021. 5

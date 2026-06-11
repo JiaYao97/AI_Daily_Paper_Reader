@@ -1,0 +1,2712 @@
+Title: Mamba-Assisted Non-Markovian Closure for Reduced-Order Modeling
+
+URL Source: https://arxiv.org/pdf/2606.05371v1
+
+Published Time: Fri, 05 Jun 2026 00:18:02 GMT
+
+Number of Pages: 59
+
+Markdown Content:
+# Mamba-Assisted Non-Markovian Closure for Reduced-Order Modeling ∗Zhi-Feng Wei †1 , Saad Qadeer ‡1 , and Panos Stinis §1,2,3 
+
+> 1
+
+Advanced Computing, Mathematics, and Data Division, Pacific Northwest National Laboratory, Richland, WA 99354, USA 
+
+> 2
+
+Department of Applied Mathematics, University of Washington, Seattle, WA 98195, USA 
+
+> 3
+
+Division of Applied Mathematics, Brown University, Providence, RI 02912, USA 
+
+Abstract 
+
+Reduced-order modeling of high-dimensional dynamical systems is often hindered by the non-Markovian closure term that represents the effect of unresolved variables on the resolved dynamics. Inspired by the Mori–Zwanzig formalism, in which the closure takes the form of a memory functional of the resolved trajectory, we recast closure modeling as a sequence modeling problem and propose the Mamba-Assisted Closure (MAC) framework: a Mamba-based sequence model, trained to predict the closure from the resolved trajectory, is coupled with the reduced-order governing equations through a numerical integrator to advance the resolved variables in time. A key feature of the framework is its exploitation of the dual representation of state-space models — the model is trained in a sequence-to-sequence fashion via the convolutional form, and deployed for step-by-step autoregressive rollout via the recurrent form, yielding both efficient long-trajectory training and constant per-step inference cost. On the viscous Burgers’ equation and the chaotic two-scale Lorenz ’96 system, the MAC model substantially outperforms the Markovian reduced-order model, the GRU-based sequence model, and the Wilks method in predictive accuracy and long-time rollout stability. 
+
+Keywords: reduced-order modeling, non-Markovian closure, Mori–Zwanzig formalism, selective state-space models (Mamba), sequence-to-sequence learning 
+
+> ∗
+
+Current version: June 5, 2026. Typeset with g and XƎL ATEX. 
+
+> †
+
+Email: zfwei@pnnl.gov. 
+
+> ‡
+
+Email: saad.qadeer@pnnl.gov. 
+
+> §
+
+Email: panagiotis.stinis@pnnl.gov. 
+
+> arXiv:2606.05371v1 [cs.LG] 3 Jun 2026
+
+# Contents 
+
+1 Introduction 12 Technical Approach 3
+
+2.1 Reduced-Order Modeling and Memory Effects . . . . . . . . . . . . . . . . . . . . . . 32.2 Mamba for Non-Markovian Closure Modeling . . . . . . . . . . . . . . . . . . . . . . 52.3 Training and Inference Framework . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+
+3 Numerical Results 9
+
+3.1 Viscous Burgers’ Equation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 93.2 Two-Scale Lorenz ’96 System . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 
+
+4 Conclusion 29 Code and Data Availability 30 Acknowledgement 30 A Additional Closure-Term Results 31 
+
+A.1 Burgers’ Equation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31 A.2 Lorenz ’96 System . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36 
+
+B Implementation Details 38 
+
+B.1 Data Generation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38 B.2 Neural Network Architectures . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40 B.3 Model and Training Hyperparameters . . . . . . . . . . . . . . . . . . . . . . . . . . 41 B.4 Data Normalization . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44 B.5 Noise Injection . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44 B.6 Training Loss Choices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45 B.7 Warm-up in Inference . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 48 B.8 RK4 Time Stepping with Zero-Order Holding . . . . . . . . . . . . . . . . . . . . . . 50 
+
+C Symbols & Notation 52 References 53 1 Introduction 
+
+Many physical systems of scientific and engineering interest, such as turbulent flows, climate dynamics, computational biology, and materials science, are governed by high-dimensional nonlinear dynamics that span a wide range of spatial and temporal scales [Ahmed et al. 2021; Christensen and Zanna 2022; Frezat et al. 2023; Saunders and Voth 2013; van der Giessen et al. 2020]. Direct numerical simulation of such systems at full resolution remains prohibitively expensive, motivating the development of reduced-order models (ROMs) that evolve only a subset of resolved variables at reduced cost [Sanderse et al. 2025]. However, the evolution of the resolved variables is in general not closed: the effects of the unresolved scales feed back onto the resolved dynamics through a closure term, whose accurate modeling is a central challenge in reduced-order modeling [Demaeyer and Vannitsem 2017; Durbin 2018; Williams 2005]. The Mori–Zwanzig (MZ) formalism provides a principled characterization of this closure term [Chorin et al. 2000; Mori 1965; Zwanzig 1973]. By projecting the full dynamics onto the resolved subspace, it shows that the closure is not determined by the instantaneous resolved state alone, but is instead a functional of its entire temporal history — a defining feature of non-Markovian dynamics [Parish and Duraisamy 2017]. Physically, information transferred from the resolved to the unresolved scales is not instantaneously lost, but is partially retained and fed back into the resolved dynamics at later times. The full Mori– Zwanzig decomposition expresses the closure as a sum of a memory term, which captures this history dependence, and an orthogonal fluctuation term arising from dynamics intrinsic to the unresolved subspace. Of these two contributions, the memory term is determined entirely by the history of the resolved variables and is thus the natural target for model-ing within the reduced-order framework. In the linear regime, the memory term reduces to a convolution between the resolved trajectory and a memory kernel. While conceptu-ally transparent, the Mori–Zwanzig representation is rarely computationally tractable in practice: explicitly estimating the memory kernel and evaluating the associated convolu-tion integral at every step is computationally prohibitive for high-dimensional systems and long-time rollouts [Zhu et al. 2018]. This motivates a data-driven alternative: learning the closure’s non-Markovian dependence on the resolved history directly from trajectory data, thereby recasting closure modeling as a sequence modeling problem [Gupta and Lermusiaux 2021; Ma et al. 2019]. Within this sequence-modeling perspective, existing data-driven approaches differ primar-ily in how — and whether — they represent the closure’s dependence on the temporal history. One line of work couples a neural network with a numerical solver and trains the coupled system by unrolling it over multiple steps, so that the network is optimized against its own rollout trajectory [Kochkov et al. 2021; Um et al. 2020]. Here, temporal consist-ency is promoted through the training procedure rather than through an explicit memory of past resolved states. To capture non-Markovian memory effects explicitly, a second line of work incorporates the temporal history of the resolved variables into the closure. The Page 1 of 57 simplest such approach uses a fixed-length window of past resolved states as input [Bhouri and Gentine 2023], which turns the reduced dynamics into a delay system but requires the memory depth to be prescribed a priori. A more flexible alternative employs recurrent neural networks such as LSTMs, which encode the history in an evolving hidden state and have been used to represent closure and memory terms in reduced-order models [Maulik et al. 2020; Wang et al. 2020]. Most recently, an LSTM-based memory model has been coupled with a differentiable physics solver to learn non-Markovian closures for coarse-grained fluid transport [Xue et al. 2025]. Recurrent architectures, however, are known to struggle with long-range temporal dependencies owing to vanishing gradients [Bengio et al. 1994; Pascanu et al. 2013], which limits the effective memory they can reliably capture. Across these approaches, capturing non-Markovian memory — while inferring the relevant memory depth from data rather than prescribing it, and retaining both efficient training over long trajectories and low-cost inference — remains an open challenge. State-space models offer a natural architectural candidate for addressing this challenge. The output of a structured SSM is equivalent to a discrete convolution of its input with a learnable kernel, establishing a direct structural correspondence with the Mori–Zwanzig memory integral [Gu, Goel et al. 2021; Gu, Johnson et al. 2021]. Mamba extends structured SSMs with input-dependent state-space matrices, whose selective mechanism allows the model to dynamically determine what temporal information to retain or discard based on the current input [Gu and Dao 2023]. A further advantage lies in the dual representation of state-space models: SSMs admit both a convolutional form that enables parallel computation over long sequences, and a recurrent form that advances step by step at constant per-step cost — in contrast to Transformer-based architectures, whose computational cost scales quadratically with sequence length [Vaswani et al. 2017]. SSMs have already shown strong performance in scientific machine learning settings — including PDE operator learning [Hu, Cao et al. 2025] and dynamical systems modeling [Hu, Daryakenari et al. 2026] — providing additional motivation for their application to the closure modeling problem. In this work, we propose the Mamba-Assisted Closure (MAC) framework, which recasts non-Markovian closure modeling as a sequence modeling problem. Motivated by the struc-tural correspondence between SSM convolutions and the Mori–Zwanzig memory integral, we model the history-dependent closure with a Mamba-based sequence model, trained to predict the closure from the resolved trajectory and coupled with the reduced-order govern-ing equations through a numerical integrator to advance the resolved variables in time. The selective mechanism of Mamba allows the effective memory depth to be inferred from the re-solved trajectory itself, without prescribing a fixed history window. The framework exploits the dual representation of state-space models: the closure model is trained in a sequence-to-sequence fashion via the convolutional form, enabling parallel computation over long training trajectories with linear-time scaling, and deployed step by step via the recurrent form at constant per-step inference cost during autoregressive rollout. We validate the MAC framework on two benchmark systems with complementary characteristics — the viscous Page 2 of 57 Burgers’ equation in Fourier space and the chaotic two-scale Lorenz ’96 system — where it substantially outperforms the Markovian reduced-order model, the GRU-based sequence model, and the Wilks method in predictive accuracy and long-time rollout stability. The remainder of this paper is organized as follows. Section 2 presents the reduced-order modeling formulation, the associated memory effects, and the MAC framework. Section 3 reports numerical experiments on the viscous Burgers’ equation and the two-scale Lorenz ’96 system. Section 4 concludes the paper and discusses directions for future work. Additional closure-term results are reported in Appendix A, implementation details in Appendix B, and a summary of notation in the final appendix. 
+
+# 2 Technical Approach 
+
+In this section, we describe the technical framework used for closure modeling in reduced-order models. We first introduce the reduced-order modeling formulation and the associated memory effects arising from unresolved variables. We also discuss why the Mamba-based architecture is well suited for closure modeling with memory effects. We then present the training and inference framework in which sequence models are used to model the closure term and are coupled with the reduced-order governing equations to advance the resolved variables in time and predict their temporal evolution. 
+
+2.1 Reduced-Order Modeling and Memory Effects 
+
+Many high-dimensional dynamical systems admit effective low-dimensional descriptions, with their essential dynamics evolving on lower-dimensional subspaces despite the large number of degrees of freedom in the full system. This observation motivates the construction of reduced-order models (ROMs) that evolve only a subset of the full state variables while aiming to faithfully reproduce the dynamics of interest [Sanderse et al. 2025]. To formalize this idea, consider a general dynamical system dφ
+
+dt = R(φ), (1) where φ denotes the vector of full state variables. In reduced-order modeling, we decompose 
+
+φ into resolved and unresolved components, 
+
+φ = ( ̂ φ, ˜φ),
+
+where ̂ φ collects the variables retained in the ROM and ˜φ collects the degrees of freedom excluded from the reduced-order representation. A naive truncation that retains only the interactions among resolved variables yields the approximate dynamics d̂ φ/ dt ≈̂ R(̂ φ).However, this approximation is generally inadequate: the unresolved variables continue to influence the resolved dynamics through their coupling in the original system, and neglecting Page 3 of 57 this influence introduces systematic errors. The exact reduced-order dynamics therefore takes the form d̂ φ
+
+dt =̂ R(̂ φ) + C, (2) where ̂ R(̂ φ) represents the retained interactions among the resolved variables and C —the closure term — represents the net effect of the unresolved variables on the resolved dynamics. A central question is how to characterize the closure term C. The Mori–Zwanzig formal-ism provides a principled answer by making the role of memory explicit [Chorin et al. 2000; Mori 1965; Zwanzig 1973]. In the full system Eq. (1), the resolved and unresolved variables continuously exchange information: information transferred from ̂ φ to ˜φ is generally not instantaneously lost, but is partially retained by the unresolved variables and subsequently fed back into the resolved dynamics over time. Although ˜φ is not explicitly evolved in the reduced-order model, its influence is therefore implicitly carried forward through memory effects. Consequently, the closure term generally depends not only on the instantaneous state of the resolved variables, but also on their temporal history — a defining feature of non-Markovian dynamics. Formally, the Mori–Zwanzig formalism expresses the closure as a functional of the history of the resolved variables, 
+
+C(t) = F(̂ φ(s) : 0 ⩽ s ⩽ t),
+
+which, in the linear case, reduces to the convolution form 
+
+C(t) = 
+
+∫ t
+
+> 0
+
+K(t − s)̂ φ(s) ds, 
+
+with K a memory kernel quantifying the influence of past resolved states on the present closure. We note that the full Mori–Zwanzig decomposition also includes an orthogonal error term arising from dynamics intrinsic to the unresolved subspace; in this work, we focus on the memory contribution, which captures the component of the closure that is determined by the history of the resolved variables and is therefore amenable to data-driven modeling. While conceptually transparent, these representations are rarely tractable in practice: explicitly estimating the memory kernel and evaluating the resulting convolution integral at every time step is computationally prohibitive for long-time rollouts and high-dimensional systems. These difficulties motivate a data-driven alternative. Rather than estimating the memory kernel explicitly, one may directly learn the non-Markovian dependence of the closure term on the history of the resolved variables from trajectory data, thereby recasting closure mod-eling as a sequence modeling problem. This perspective motivates the sequence-modeling framework developed in the next subsection. Page 4 of 57 2.2 Mamba for Non-Markovian Closure Modeling 
+
+As discussed in Section 2.1, the closure term generally depends on the temporal history of the resolved variables due to non-Markovian memory effects. The central modeling question is therefore how to approximate this history-dependent closure in a way that is both expressive and computationally tractable. In this subsection, we review several candidate approaches and explain why a Mamba-based architecture is particularly well suited to this task. The simplest baseline is to neglect the closure term entirely and evolve only the resolved dynamics. This Markovian approximation ignores the memory effects induced by the unre-solved variables and therefore cannot capture the delayed feedback that drives much of the reduced-order error. A more expressive alternative is to use recurrent neural networks, such as gated recurrent units (GRUs), which encode temporal information in evolving hidden states and can in principle represent non-Markovian dependencies [Cho et al. 2014]. In practice, however, recurrent architectures are known to struggle with long-range temporal dependencies due to vanishing-gradient and limited-capacity issues in their hidden-state propagation, which can limit their ability to capture extended memory effects in closure modeling [Bengio et al. 1994; Pascanu et al. 2013]. State-space models (SSMs) offer an alternative sequence-modeling framework that is particularly well aligned with the closure modeling problem, since they describe sequences through an underlying latent dynamical system — much like the resolved variables them-selves evolve under a (history-dependent) dynamical system [Gu, Johnson et al. 2021]. A continuous SSM takes the form dh(t)
+
+dt = Ah (t) + Bx (t), y(t) = Ch (t).
+
+After temporal discretization, this becomes 
+
+ht = Ah t−1 + Bx t, yt = Ch t,
+
+where xt denotes the input at discrete time step t, ht is the hidden state, yt is the correspond-ing output, and A, B, C are the discretized state-space matrices. This recurrent structure naturally enables temporal information from earlier inputs and states to influence future predictions over long time horizons, making SSMs well suited for reduced-order models with long memory effects. In structured state-space models such as S4, the matrices A, B, C are fixed across all time steps [Gu, Goel et al. 2021]. Under this assumption, the recurrence may be written out explicitly. Starting from h0 = Bx 0, successive hidden states satisfy 
+
+h1 = ABx 0 + Bx 1, h2 = A2Bx 0 + ABx 1 + Bx 2, . . . , 
+
+with corresponding outputs 
+
+y0 = CBx 0, y1 = CABx 0 + CBx 1, y2 = CA 2Bx 0 + CABx 1 + CBx 2, . . . 
+
+Page 5 of 57 More generally, 
+
+yk = CA kBx 0 + CA k−1Bx 1 + · · · + CABx k−1 + CBx k.
+
+Equivalently, the SSM admits the convolutional representation 
+
+y = K ∗ x, 
+
+with input sequence x = ( x0, x 1, . . . , x L), output sequence y = ( y0, y 1, . . . , y L), and convolu-tion kernel 
+
+K = (CB, CAB, . . . , CA LB).
+
+This convolutional representation closely mirrors the memory-integral structure that arises in the Mori–Zwanzig formalism, in which the closure term depends on the temporal history of the resolved variables through a convolution-like memory operator. The analogy is dir-ect: the SSM kernel K plays the role of the memory kernel, while the input sequence x
+
+corresponds to the history of the resolved variables. This structural parallel provides a prin-cipled motivation for using SSM-based sequence models for reduced-order closure modeling, beyond their empirical success on long-sequence tasks. However, in conventional SSMs such as S4, the matrices A, B, C remain fixed after train-ing and are shared across all input sequences. Consequently, the same state-space dynamics — and hence the same convolution kernel — are applied regardless of the current input, limiting the model’s ability to adaptively retain or discard temporal information according to the evolving sequence. To overcome this rigidity, we employ the Mamba architecture for reduced-order closure modeling in this work [Gu and Dao 2023]. Mamba preserves the SSM framework while introducing input-dependent selective state transitions, allowing the model to dynamically retain, propagate, or discard temporal information according to the current input. Beyond the selective mechanism, Mamba offers two further properties well suited to closure modeling. First, it does not prescribe a fixed memory window: the relevant memory depth is instead inferred from the input itself, which is desirable when the effective memory length of the closure is not known a priori. Second, Mamba scales linearly in sequence length, enabling efficient processing of the long temporal trajectories that arise in closure modeling problems with extended memory effects. Motivated by these properties, we employ Mamba-based sequence models to learn the non-Markovian closure term from the temporal history of the resolved variables. 
+
+2.3 Training and Inference Framework 
+
+Having motivated the use of Mamba-based sequence models for closure modeling, we now describe how such models are trained and subsequently coupled with the reduced-order system during inference to evolve the resolved variables. The framework presented below is applied consistently to all sequence model architectures considered in this work, Page 6 of 57 including both Mamba-based and GRU-based sequence models; their detailed architectures are deferred to Appendix B.2. Recall from Section 2.1 that the reduced-order system takes the form d̂ φ
+
+dt =̂ R(̂ φ) + C, (3) where ̂ φ denotes the resolved variables, ̂ R represents the retained interactions among them and is typically known from the full dynamical system Eq. (1), and C denotes the unknown closure term associated with the unresolved variables. The role of the sequence model is to learn C as a function of the history of ̂ φ, so that the resulting closed system can be advanced in time to predict the evolution of the resolved variables. During training, the sequence model is supervised using resolved trajectories together with the corresponding closure trajectories extracted from the training data. Specifically, given a resolved trajectory 
+
+{̂ φ0,̂ φ1, . . . , ̂ φT },
+
+the sequence model produces the associated trajectory of closure terms 
+
+{C 0, C1, . . . , CT }.
+
+Training is carried out under teacher forcing: the ground-truth resolved trajectory is sup-plied as the input sequence at every step, so that the model learns the mapping from resolved histories to closure terms in a stable, non-autoregressive fashion. During inference, in contrast, the resolved and closure trajectories are advanced autore-gressively in tandem with the reduced-order dynamics. Starting from an initial resolved state ̂ φ0, the sequence model first predicts the corresponding closure term C0. The reduced-order system Eq. (3) is then advanced by one numerical integrator step that takes both ̂
+
+φ0 and C0 as inputs, yielding the next resolved state ̂ φ1. This updated state is fed back into the sequence model to predict C1, which together with ̂ φ1 drives the next integrator step to produce ̂ φ2, and so on. The procedure is illustrated in Figure 1. Iterating in this manner rolls out the full resolved trajectory, with both the predicted resolved states and the predicted closure terms recorded for subsequent evaluation. In our implementation, the numerical integrator is a fourth-order Runge–Kutta scheme with a zero-order holding treatment of the predicted closure; details are provided in Appendix B.8. A practical advantage of this autoregressive procedure is that, at each step, only the current resolved state ̂ φt needs to be supplied to the sequence model: the temporal his-tory of the resolved variables is implicitly carried in the hidden state. Recurrent sequence models such as Mamba and GRU therefore enable efficient autoregressive rollout without reprocessing the entire trajectory at every step. In contrast, Transformer-based architec-tures must apply attention over an ever-growing input sequence during rollout, incurring substantially higher computational cost for long trajectories [Vaswani et al. 2017]. Page 7 of 57 ̂φ0̂ φ1̂ φ2 · · · 
+
+C0 C1 C2 · · ·               
+
+> RK4 RK4 RK4
+> Sequence model
+> Figure 1: Schematic illustration of the autoregressive rollout procedure for reduced-order model evolution with predicted closure terms. At each step, the sequence model predicts the closure term
+> Ctfrom the current resolved state ̂φt(red arrows). The resolved state is then advanced by one integrator step (RK4) that takes both ̂φtand Ctas inputs to produce ̂φt+1 (gray arrows). See Appendix B.8 for details of the time-stepping procedure.
+
+Notably, this training–inference design aligns naturally with the two equivalent repres-entations of state-space models discussed in Section 2.2. During training, the sequence model is applied in a sequence-to-sequence fashion: an entire resolved trajectory is mapped to the corresponding closure trajectory in parallel, exploiting the convolutional representa-tion of the SSM for efficient computation over long sequences. During inference, by contrast, the model is advanced step by step in tandem with the reduced-order dynamics, naturally leveraging the recurrent representation of the SSM, which provides constant per-step cost and avoids reprocessing the temporal history. This duality — parallel sequence-to-sequence training via the convolutional form, and sequential step-by-step inference via the recur-rent form — is a defining feature of SSM-based architectures and is well matched to the requirements of reduced-order closure modeling. A small but practically important consequence of this training –inference duality is that, at the very beginning of an autoregressive rollout, the recurrent hidden state of the SSM has not yet accumulated any temporal context, whereas during training every output is produced with access to its full preceding sequence. To reduce this initial-state mismatch, we apply a short cache warm-up at the start of each inference rollout: the initial resolved state ̂ φ0 is repeatedly passed through the Mamba-based sequence model for a small number of padding steps to populate the internal SSM cache, after which the autoregressive rollout described above begins from ̂ φ0 . The closure predictions produced during these padding steps are discarded and do not advance the reduced-order dynamics. Implementation details are provided in Appendix B.7 We refer to the resulting framework — in which a Mamba-based sequence model is coupled with the reduced-order dynamics to perform autoregressive closure prediction and trajectory evolution — as the Mamba-Assisted Closure (MAC) framework, and use MAC model interchangeably to denote the resulting closed reduced-order system. The MAC framework serves as the basis for all numerical experiments in the remainder of this paper. Page 8 of 57 3 Numerical Results 
+
+In this section, we report our experimental results on Burgers’ equation and the Lorenz ’96 system. These two systems represent complementary settings for closure modeling: deterministic PDE dynamics and chaotic multiscale systems. For Burgers’ equation, we compare the performance of the MAC model with that of the corresponding Markovian reduced-order model without closure correction. For the Lorenz ’96 system, we compare the performance of the MAC model with those of the GRU-based sequence model and the classical Wilks method [Cho et al. 2014; Wilks 2005]. Throughout this section, we focus primarily on the resolved variables; additional results and plots for the closure terms are reported in Appendix A. Implementation details are provided in Appendix B. 
+
+3.1 Viscous Burgers’ Equation 
+
+Consider the viscous Burgers’ equation with periodic boundary conditions 
+
+ut = ∂x
+
+(
+
+−12u2
+
+)
+
++ νu xx , u(0 , x ) = u0(x), x ∈ [0 , 2π).
+
+Throughout our experiments, the viscosity coefficient is set to ν = 0 .1. Expanding the solution u(t, x ) in terms of Fourier modes 
+
+u(t, x ) = ∑
+
+> k∈Z
+
+θk(t)eikx , u(0 , x ) = u0(x),
+
+we can rewrite the viscous Burgers’ equation as a system of ODEs 
+
+θ′
+
+> k
+
+(t) = −ik 
+
+2
+
+∑
+
+> p,q ∈Z
+> p+q=k
+
+θp(t)θq(t) − νk 2θk(t) =: Rk
+
+(θ(t)), for k ∈ Z. (4) Here 
+
+θk(0) = (̂ u0
+
+) 
+
+> k
+
+= 12π
+
+∫ 2π
+
+> 0
+
+e−ikx u0(x) dx, 
+
+and the reality of u implies θ−k(t) = θk(t) for k ∈ Z, so that the negatively indexed Fourier modes are completely determined by the positively indexed ones. Since θ′
+
+> 0
+
+(t) = 0 , the zero Fourier mode remains constant in time. Therefore, without loss of generality, we restrict attention to problems with a vanishing zero Fourier mode, i.e., θ0(0) = 0 , so that θ0(t) = 0 
+
+for all nonnegative t. To construct a reduced-order system, we retain the first M positively indexed Fourier modes as resolved modes and treat the remaining positively indexed modes as unresolved. The corresponding negatively indexed modes are determined by the reality constraint. For notational convenience, we also represent the complex Fourier modes in real coordinates and write 
+
+θk(t) = ϕk(t) + iψ k(t), for k ∈ Z.
+
+Page 9 of 57 In our experiments, we retain M = 3 positively indexed complex Fourier modes as resolved variables, corresponding to 6 real variables. The evolution of the resolved modes alone is not closed, since the unresolved Fourier modes continue to influence the low-frequency dynamics through nonlinear interactions. Following our discussion in Section 2, this unresolved contribution is represented by a closure term. For each resolved mode k = 1 , 2, . . . , M , we define 
+
+Mk(t) = Rk
+
+(θ(t)) − Rk
+
+(˜θ(t)),
+
+where ˜θ(t) denotes the truncated Fourier state obtained by retaining only the resolved positively indexed modes and enforcing the corresponding reality constraint. The first term 
+
+Rk(θ(t)) represents the exact evolution of the resolved mode computed from the full Fourier state, while the second term Rk(˜θ(t)) corresponds to the reduced dynamics obtained after truncation in the reduced-order model. We further decompose the closure term into real and imaginary parts, 
+
+Mk(t) = mϕk (t) + im ψk (t).
+
+In our numerical experiments, the sequence models are trained to learn 
+
+{mϕk , m ψk }Mk=1 
+
+from the trajectory of the real representation 
+
+{ϕk, ψ k}Mk=1 
+
+of the resolved Fourier modes. During inference, as described in Section 2.3, the trained se-quence model is coupled with the reduced-order dynamics through an autoregressive rollout procedure to evolve the resolved modes from the initial condition. In data preparation, the initial conditions are sampled in the resolved Fourier modes by drawing both ϕk(0) and ψk(0) uniformly from the interval (−e−k, e−k) for k = 1 , 2, . . . , M ,and setting the remaining modes to zero. This produces random low-frequency initial conditions with exponentially decaying amplitudes. To prepare training data, Burgers’ equation is first solved on the time interval [0 , 1] using a pseudospectral method and a fourth-order Runge–Kutta integrator with time step ∆t = 10 −4. In training the MAC model, the neural network directly predicts the closure term, and the training loss is computed by comparing the predicted closure term with the reference value. We now present the experimental results obtained with the MAC model and compare them against those of the corresponding Markovian reduced-order model without closure correction. We first examine the prediction accuracy within the training time interval [0 , 1] , corres-ponding to a temporal interpolation regime. Figure 2 compares the predicted trajectories of the resolved Fourier modes against the true solutions for one representative test initial condition. From Figure 2, we observe that the MAC model matches the true solution more Page 10 of 57 0.0 0.2 0.4 0.6 0.8 1.0                                  
+
+> 0.196
+> 0.200
+> 0.204
+> 1| MAC: 0.0012%, Markov: 0.0556%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.090
+> 0.075
+> 0.060
+> 0.045
+> 0.030
+> 2| MAC: 0.0634%, Markov: 1.8185%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.02
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 3| MAC: 0.2407%, Markov: 8.0725%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.255
+> 0.240
+> 0.225
+> 0.210
+> 0.195
+> 1| MAC: 0.0016%, Markov: 0.0183%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.090
+> 0.105
+> 0.120
+> 0.135
+> 2| MAC: 0.0177%, Markov: 0.7011%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.016
+> 0.008
+> 0.000
+> 0.008
+> 0.016
+> 3| MAC: 0.4540%, Markov: 44.6615%
+> True MAC Markov
+
+Figure 2: Comparison of resolved-mode predictions from the MAC model and the Markovian reduced-order model on one representative test initial condition over the temporal interpolation regime [0 , 1] . For each resolved Fourier mode, the relative L2 error over the time interval [0 , 1] is also reported. 
+
+closely than the Markovian model, especially for higher-frequency modes. The mean relat-ive L2 error for each Fourier mode across all initial conditions in the test dataset, reported in Table 1, further confirms this observation. Both the mean relative L2 error and the corresponding standard deviation are roughly one order of magnitude smaller for the MAC model than for the Markovian model, indicating substantially improved prediction accuracy. We then examine the prediction accuracy over the longer time interval [0 , 2] . Recall that the training dataset was generated only on the time interval [0 , 1] ; therefore, this test corresponds to a temporal extrapolation regime. Figure 3 compares the predicted trajector-ies of the resolved Fourier modes against the true solutions on the same representative test initial condition as in Figure 2. From Figure 3, we observe that the MAC model continues to match the true solution closely even on the temporal extrapolation interval [1 , 2] , while that of the Markovian reduced-order model rapidly deteriorates and deviates significantly from the true dynamics. The mean relative L2 error for each Fourier mode across all initial conditions in the test dataset, reported in Table 2, further confirms this observation. Com-pared with the temporal interpolation regime, both models exhibit increased prediction error on the extrapolation interval [1 , 2] , reflecting the accumulation of rollout error outside the training horizon. Nevertheless, the MAC model maintains stable long-time prediction accuracy across all resolved modes, whereas the Markovian reduced-order model suffers substantial error growth during extrapolation. The performance gap becomes increasingly pronounced for higher-frequency resolved modes. In particular, for the third resolved Four-Page 11 of 57 Table 1: Relative L2 error statistics for each resolved Fourier mode over the temporal interpolation regime [0 , 1] . The mean and standard deviation are computed across all initial conditions in the test dataset and over multiple random seeds for both the MAC model and the Markovian reduced-order model. 
+
+Mode MAC Markov Mean (%) Std (%) Mean (%) Std (%) 
+
+ϕ1 0.0141 0.0268 0.1113 0.1663 
+
+ϕ2 0.1184 0.1162 1.3557 0.8234 
+
+ϕ3 0.9878 0.9700 12.1529 8.1459 
+
+ψ1 0.0167 0.0327 0.1451 0.2384 
+
+ψ2 0.1155 0.1191 1.3002 1.3278 
+
+ψ3 1.1803 1.3793 13.2198 11.6266 0.0 0.4 0.8 1.2 1.6 2.0 
+
+> 0.17
+> 0.18
+> 0.19
+> 0.20
+> 1
+
+Extrap | MAC: 0.0066%, Markov: 0.1811% 
+
+Full | MAC: 0.0045%, Markov: 0.1274%      
+
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> 0.090
+> 0.075
+> 0.060
+> 0.045
+> 0.030
+> 2
+
+Extrap | MAC: 0.2885%, Markov: 6.0705% 
+
+Full | MAC: 0.2308%, Markov: 4.9153%      
+
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> 0.025
+> 0.000
+> 0.025
+> 0.050
+> 0.075
+> 3
+
+Extrap | MAC: 0.8448%, Markov: 32.2747% 
+
+Full | MAC: 0.7287%, Markov: 27.7417%      
+
+> 0.0 0.4 0.8 1.2 1.6 2.0
+
+Time (t) 
+
+> 0.24
+> 0.21
+> 0.18
+> 0.15
+> 1
+
+Extrap | MAC: 0.0032%, Markov: 0.2891% 
+
+Full | MAC: 0.0023%, Markov: 0.1728%      
+
+> 0.0 0.4 0.8 1.2 1.6 2.0
+
+Time (t) 
+
+> 0.050
+> 0.075
+> 0.100
+> 0.125
+> 2
+
+Extrap | MAC: 0.2155%, Markov: 2.5476% 
+
+Full | MAC: 0.0998%, Markov: 1.3216%      
+
+> 0.0 0.4 0.8 1.2 1.6 2.0
+
+Time (t) 
+
+> 0.016
+> 0.008
+> 0.000
+> 0.008
+> 0.016
+> 3
+
+Extrap | MAC: 2.0887%, Markov: 104.8174% 
+
+Full | MAC: 1.2778%, Markov: 71.2822% 
+
+True MAC Markov 
+
+Figure 3: Comparison of resolved-mode predictions from the MAC model and the Markovian reduced-order model on the same representative test initial condition over the temporal extrapolation regime [0 , 2] . For each resolved Fourier mode, the relative L2 errors over the intervals [0 , 1] , [1 , 2] ,and [0 , 2] are also reported. 
+
+Page 12 of 57 ier mode, the mean relative L2 error of the Markovian model reaches approximately 20 %to 40 %, while the corresponding error produced by the MAC model remains around 1%. This observation suggests that unresolved nonlinear interactions become increasingly im-portant for higher-frequency resolved dynamics, and that the memory-aware MAC model is significantly more effective at capturing these long-time non-Markovian memory effects.                                                                           
+
+> Table 2: Relative L2error statistics for each resolved Fourier mode over the temporal extrapolation regime. Results are reported on both the full rollout interval [0 ,2] and the pure extrapolation interval
+> [1 ,2] . The mean and standard deviation are computed across all initial conditions in the test dataset and over multiple random seeds for both the MAC model and the Markovian reduced-order model.
+> Mode [0 ,2] MAC [0 ,2] Markovian [1 ,2] MAC [1 ,2] Markovian Mean (%) Std (%) Mean (%) Std (%) Mean (%) Std (%) Mean (%) Std (%)
+> ϕ10.0328 0.0537 0.2590 0.4670 0.0448 0.0715 0.3463 0.6212
+> ϕ20.2236 0.2400 2.4248 1.7619 0.4224 0.5012 4.0607 3.1145
+> ϕ31.4935 1.1007 24.9455 16.1813 2.2770 1.8420 38.1344 24.8903
+> ψ10.0319 0.0431 0.4131 0.6710 0.0466 0.0681 0.6897 1.1034
+> ψ20.2789 0.4957 3.7221 4.6915 0.9372 1.5314 10.8559 13.2701
+> ψ31.5187 1.3143 21.5987 14.2675 2.0695 1.9060 31.6570 21.9842
+
+We further compare the evolution of the absolute L2 error in physical space over the entire extrapolation interval [0 , 2] . At each time instant, the L2 error on the physical-space interval x ∈ [0 , 2π) is computed between the reconstructed physical-space field obtained from the resolved Fourier modes and the corresponding true resolved field extracted from the full-order simulation. As shown in Figure 4, the error produced by the MAC model remains consistently small throughout the rollout, whereas the error produced by the Markovian reduced-order model grows rapidly over time. This further demonstrates the effectiveness of the MAC model in capturing memory effects in reduced-order dynamics. Recall that both the training and test datasets discussed above are generated from ran-dom low-frequency Fourier initial conditions, where the resolved coefficients ϕk(0) and ψk(0) 
+
+are independently sampled from the interval (−e−k, e−k) for k = 1 , 2, . . . , M . Although the temporal extrapolation results above already demonstrate strong long-time stability of the MAC closure model, the corresponding initial conditions still lie within the same distribu-tional setting as the training data. To further investigate out-of-distribution generalization, we further consider several structured analytic initial conditions that lie outside the training distribution: 
+
+u0(x) = sin x, u0(x) = esin x, u0(x) = cos (2 sin x).
+
+These three initial conditions lie substantially outside the training support in both amp-litude and Fourier structure. In particular, the dominant low-frequency Fourier coefficients exceed the corresponding training bounds by factors ranging from approximately 2 to 5,as summarized in Table 3. Moreover, the function cos (2 sin x) exhibits a highly structured Page 13 of 57 0.0 0.4 0.8 1.2 1.6 2.0 
+
+> Time (t)
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 0.08
+> L2 Error
+> MAC
+> Markov
+
+Figure 4: Evolution of the physical-space L2 error over the temporal extrapolation interval [0 , 2] 
+
+for the same representative test initial condition, comparing the MAC model and the Markovian reduced-order model. 
+
+even-mode Fourier pattern that is entirely absent from the training data, providing a strong structural distribution shift in addition to the substantial amplitude extrapolation. 
+
+Table 3: Comparison between the dominant Fourier coefficients of the out-of-distribution test initial conditions and the corresponding coefficient bounds of the training initial condition distribution. 
+
+Initial condition Dominant Fourier coefficient Training bound Ratio to training bound sin x sin (x) coefficient: 1.000 0.368 2.72 ×
+
+esin x sin (x) coefficient: 1.130 0.368 3.07 ×
+
+esin x cos (2 x) coefficient: −0.272 0.135 2.01 ×
+
+cos (2 sin x) cos (2 x) coefficient: 0.706 0.135 5.21 ×
+
+For these out-of-distribution initial conditions, we perform long-time rollout on the time interval t ∈ [0 , 20] , whereas the training dataset was generated only on the time interval [0 , 1] .We compare the MAC model against both the Markovian reduced-order model and the linear and cubic memory models proposed in [Qadeer et al. 2025]. At each time instant, the absolute physical-space L2 error is computed between the reconstructed resolved physical-space field and the corresponding true resolved field extracted from the full-order simulation. The resulting error evolutions for the three out-of-distribution initial conditions are shown in Figures 5 to 7. As shown in Figures 5 to 7, the MAC model maintains stable long-time prediction ac-curacy across all three out-of-distribution initial conditions. For the first two test cases, the prediction accuracy of the MAC model is comparable to that of linear memory model in [Qadeer et al. 2025], even though these initial conditions lie significantly outside the support of the training initial condition distribution. For the third and most challenging Page 14 of 57 0 4 8 12 16 20 
+
+> Time (t)
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> L2 Error
+> MAC
+> Markov
+> Linear
+> Cubic
+
+Figure 5: Evolution of the physical-space L2 error for the out-of-distribution initial condition 
+
+u0(x) = sin x over the long-time rollout interval [0 , 20] , comparing the MAC model, the Markovian reduced-order model, and the linear and cubic memory models in [Qadeer et al. 2025]. 0 4 8 12 16 20 
+
+> Time (t)
+> 0.00
+> 0.08
+> 0.16
+> 0.24
+> 0.32
+> L2 Error
+> MAC
+> Markov
+> Linear
+> Cubic
+
+Figure 6: Evolution of the physical-space L2 error for the out-of-distribution initial condition 
+
+u0(x) = esin x over the long-time rollout interval [0 , 20] , comparing the MAC model, the Markovian reduced-order model, and the linear and cubic memory models in [Qadeer et al. 2025]. 
+
+Page 15 of 57 0 4 8 12 16 20 
+
+> Time (t)
+> 0.000
+> 0.025
+> 0.050
+> 0.075
+> 0.100
+> L2 Error
+> MAC
+> Markov
+> Linear
+> Cubic
+
+Figure 7: Evolution of the physical-space L2 error for the out-of-distribution initial condition 
+
+u0(x) = cos (2 sin x) over the long-time rollout interval [0 , 20] , comparing the MAC model, the Markovian reduced-order model, and the linear and cubic memory models in [Qadeer et al. 2025]. 
+
+structured initial condition, the MAC model still substantially outperforms the Markovian reduced-order model and remains comparable to the two explicit memory-based approaches in [Qadeer et al. 2025]. We note that both the linear and cubic memory models of in [Qadeer et al. 2025] require the evaluation of convolution integrals to estimate the memory during rol-lout. In contrast, the MAC model learns the effective non-Markovian dynamics directly from data and performs inference through a lightweight autoregressive sequence model. These comparisons suggest that the proposed MAC model achieves strong long-time predictive accuracy while maintaining favorable computational efficiency for long rollout horizons. We further investigate the physical consistency of the learned reduced-order dynamics through the evolution of the resolved energy. For the resolved Fourier modes, we define the resolved energy by 
+
+Eres (t) = 
+
+> M
+
+∑
+
+> k=1
+
+∣∣θk(t)∣∣2 =
+
+> M
+
+∑
+
+> k=1
+
+(∣ ∣ϕk(t)∣∣2 + ∣∣ψk(t)∣∣2).
+
+Figure 8 compares the evolution of the resolved energy for the same representative ex-trapolation test case considered above. As expected for the viscous Burgers’ equation, the resolved energy decays over time due to viscous dissipation and nonlinear energy transfer to the unresolved modes. We observe that the MAC model accurately reproduces the evol-ution of the resolved energy throughout the extrapolation interval, whereas the Markovian reduced-order model exhibits noticeable deviation from the true energy trajectory. This in-dicates that the MAC model not only improves trajectory-level prediction accuracy, but also better captures the physically consistent long-time energy behavior induced by unresolved nonlinear interactions and memory effects. Page 16 of 57 0.0 0.4 0.8 1.2 1.6 2.0 
+
+> Time (t)
+> 0.060
+> 0.075
+> 0.090
+> 0.105
+> 0.120
+> Resolved Energy  Eres (t)
+> True
+> MAC
+> Markov
+
+Figure 8: Evolution of the resolved energy over the temporal extrapolation interval [0 , 2] for the same representative test initial condition, comparing the MAC model and the Markovian reduced-order model. 
+
+Finally, we investigate the computational scalability of the proposed MAC model in both training and inference. We note that the autoregressive rollouts reported in the previous experiments are performed in parallel over the entire test batch, which contains 50 initial conditions for the in-distribution test set and 3 initial conditions for the out-of-distribution test cases. In the timing experiments below, the batch size is fixed throughout. During training, we measure the average wall-clock time per training iteration for dif-ferent input sequence lengths fed into the model. The results are reported in Table 4. As shown in Table 4, the training cost per iteration grows approximately linearly with the input sequence length. 
+
+Table 4: Training cost of the MAC model for different input sequence lengths. The batch size is fixed at 96 throughout the timing experiments. 
+
+Training Interval [0 , 0.5] [0 , 1.0] [0 , 1.5] [0 , 2.0] [0 , 2.5] 
+
+Sequence Length 5001 10001 15001 20001 25001 Training Time / Iteration (s) 0.198 0.440 0.677 0.909 1.153 During autoregressive inference, we measure the computational cost of advancing one rollout step for the entire batch. The results for different rollout horizons are reported in Table 5. As shown in Table 5, the inference cost per autoregressive rollout step remains essentially constant even for long rollout horizons, consistent with the autoregressive infer-ence framework described in Section 2.3, where temporal information is propagated through the hidden state without repeatedly processing the entire temporal history. This behavior is particularly advantageous for long-time reduced-order simulation, where the dynamics must be advanced sequentially over many time steps. Page 17 of 57 Table 5: Inference cost per autoregressive rollout step for different rollout horizons. The batch size is fixed at 50 throughout the timing experiments. 
+
+Rollout Interval [0 , 0.5] [0 , 1.0] [0 , 1.5] [0 , 2.0] [0 , 2.5] 
+
+Rollout Length 5000 10000 15000 20000 25000 Inference Time / Step (s) 0.00534 0.00534 0.00527 0.00538 0.00520 Compared with transformer-based sequence models, whose training cost typically grows rapidly with sequence length, the approximately linear scaling observed in Table 4 high-lights the favorable scalability of the Mamba-based architecture for long training trajector-ies [Vaswani et al. 2017]. Similarly, during inference, the MAC model maintains essentially constant per-step rollout cost through a lightweight state-space update, in contrast to ex-plicit memory-based approaches that require repeated evaluation of memory integrals over the trajectory history. Moreover, compared with traditional recurrent architectures such as GRU/LSTM, which are known to become increasingly difficult to train on long sequences due to gradient propagation issues, the Mamba architecture remains effective for the very long training trajectories arising from the viscous Burgers’ equation. 
+
+3.2 Two-Scale Lorenz ’96 System 
+
+The two-scale Lorenz ’96 system is a standard benchmark for studying multiscale chaotic dynamics and reduced-order closure modeling [Bhouri and Gentine 2023; Lorenz 1996]. Originally introduced as a simplified atmospheric model, it has since become a canonical test problem in weather prediction, data assimilation, and multiscale modeling. The system consists of a set of slow variables Xk(t) coupled with a larger collection of fast variables Yj (t):dXk
+
+dt = −Xk−1(Xk−2 − Xk+1 ) − Xk + F − hc b
+
+> kJ
+
+∑
+
+> j=J(k−1)+1
+
+Yj , k = 1 , 2, . . . , N, 
+
+and dYj
+
+dt = −cbY j+1 (Yj+2 − Yj−1) − cY j + hc b X⌊(j−1)/ J⌋+1 , j = 1 , 2, . . . , JN. 
+
+Here the variables {Xk}Nk=1 represent the slow-varying large-scale dynamics, while {Yj }JN j=1 
+
+represent the fast-varying small-scale variables. The interaction between the fast and slow variables enters the slow dynamics through the coupling term 
+
+Uk(t) := −hc b
+
+> kJ
+
+∑
+
+> j=J(k−1)+1
+
+Yj , k = 1 , 2, . . . , N. 
+
+In our experiments, we set N = 8 , J = 32 , F = 10 , h = 1 , c = 10 , and b = 10 , corresponding to a chaotic multiscale regime commonly used in the Lorenz ’96 literature [Fatkullin and Page 18 of 57 Vanden-Eijnden 2004]. To verify numerically that the system is chaotic under our specific configuration, we estimated the maximum Lyapunov exponent via the Benettin renormal-ization method [Benettin et al. 1980] applied to the full state vector (X, Y ) ∈ RN (1+ J). The running estimate converged over t = 250 to 
+
+λmax ≈ 6.426 > 0,
+
+confirming sensitive dependence on initial conditions and providing numerical evidence that the system operates in a chaotic regime. In the reduced-order setting, the slow variables {Xk}Nk=1 are treated as resolved variables, while the fast variables {Yj }JN j=1 are regarded as unresolved degrees of freedom. The resolved dynamics may therefore be written as dXk
+
+dt = −Xk−1(Xk−2 − Xk+1 ) − Xk + F + Uk, k = 1 , 2, . . . , N. 
+
+The closure modeling problem then consists of learning an effective approximation of the coupling term {Uk}Nk=1 from the temporal history of the resolved variables. In our experiments, the MAC model is compared against the GRU-based sequence model and the statistical method proposed by Wilks, which models the coupling term using poly-nomial regression together with autoregressive stochastic noise [Cho et al. 2014; Wilks 2005]. In training data preparation, the full two-scale Lorenz ’96 system is first simulated using the fine time step ∆tfine = 0 .005 . The resulting trajectories are then downsampled by a factor of two in time, yielding coarse observations with time step ∆t = 0 .01 . A single long coarse trajectory of length 14001 over the time interval [0 , 140] is generated after an initial warmup stage that removes transient effects. The first 10001 coarse time steps over the time interval [0 , 100] are used to construct the training dataset. More specifically, sliding windows of length 64 with stride 1 are extracted from the long trajectory and used as training sequences for the sequence models considered in this study. To investigate temporal interpolation and extrapolation performance separately, we additionally construct two deterministic test segments from the same long simulation tra-jectory. The first 2001 coarse time steps over the interval [0 , 20] are used for temporal interpolation evaluation, corresponding to prediction within the time range covered by the training data. A separate segment consisting of coarse time steps 12000 –14000 over the in-terval [120 , 140] is used for temporal extrapolation evaluation, corresponding to prediction beyond the training time range. Unlike the Burgers’ experiments, where the sequence models are trained directly against the closure term, the sequence model for the Lorenz ’96 system is trained using a multi-step resolved-variable rollout loss. More specifically, the sequence model first predicts the closure term from the temporal history of the resolved variables. The predicted closure is then coupled with the reduced slow dynamics, which are subsequently advanced in time using fourth-order Runge–Kutta method (see Appendix B.8). The training loss is computed Page 19 of 57 by comparing the resulting multi-step rollout of the resolved variables against the corres-ponding true resolved trajectory. In our experiments, we use a five-step rollout loss. See Appendix B.6 for details. We first examine the temporal interpolation performance of the MAC model and the baseline methods. Recall that the training trajectories are generated over the time interval 
+
+[0 , 100] . The following experiments evaluate autoregressive prediction accuracy over the time interval [0 , 20] , which lies entirely within the training time range. Unless otherwise stated, the trajectory-level visualizations shown below correspond to a single representative random seed. Figure 9 compares the predicted trajectories of the resolved slow variables against the true resolved trajectories extracted from the full Lorenz ’96 simulation on the time interval 
+
+[0 , 20] . As shown in Figure 9, the MAC model accurately reproduces the oscillatory and chaotic behavior of the resolved slow variables throughout the rollout time interval. In contrast, both the GRU-based model and the Wilks method gradually deviate from the true dynamics over time. In long-time autoregressive rollout, phase errors may gradually accumulate due to the chaotic nature of the dynamics. Nevertheless, the MAC model continues to deliver substantially improved trajectory accuracy and maintains the correct large-scale oscillatory behavior over long time horizons. 0 5 10 15 20                                        
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> X1| MAC: 5.19%, GRU: 60.91%, Wilks: 43.07%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X2| MAC: 5.86%, GRU: 70.70%, Wilks: 39.23%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> X3| MAC: 5.82%, GRU: 60.85%, Wilks: 41.09%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X4| MAC: 5.60%, GRU: 64.65%, Wilks: 40.81%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X5| MAC: 5.46%, GRU: 70.28%, Wilks: 42.86%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X6| MAC: 6.02%, GRU: 73.51%, Wilks: 42.91%
+> 0510 15 20
+> Time (t)
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X7| MAC: 5.52%, GRU: 63.87%, Wilks: 40.04%
+> 0510 15 20
+> Time (t)
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X8| MAC: 5.22%, GRU: 61.48%, Wilks: 40.14%
+> True MAC GRU Wilks
+
+Figure 9: Comparison of resolved slow-variable predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal interpolation regime [0 , 20] . For each resolved slow variable, the relative L2 error is also reported. 
+
+To quantify the prediction accuracy, we examine the evolution of the running cumulative relative L2 error. For a rollout trajectory, the cumulative relative L2 error at time ti is defined by (∑ ij=0 ‖X(tj ) − ˜X(tj )‖22
+
+∑T −1
+
+j=0 ‖X(tj )‖22
+
+)1/2 
+
+,
+
+Page 20 of 57 where T = 2001 is the full sequence length, and X and ˜X denote the true and predicted vectors of resolved variables, respectively. As shown in Figure 10, the cumulative relative L2 error produced by the MAC model grows substantially more slowly than those of the GRU-based model and the Wilks method. This indicates that the MAC model maintains stable prediction accuracy during long-time autoregressive rollout. 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+> Time (t)
+> 0.00
+> 0.15
+> 0.30
+> 0.45
+> 0.60
+> Cumulative  L2 Error
+> MAC
+> GRU
+> Wilks
+
+Figure 10: Evolution of the running cumulative relative L2 error over the temporal interpolation regime [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 
+
+We next examine the running cumulative correlation coefficient between the predicted and true resolved trajectories. The running cumulative correlation coefficient at time ti is defined by Corr (ti) = 
+
+∑ij=0 
+
+〈X(tj ), ˜X(tj )〉(∑ij=0 ‖X(tj )‖22
+
+)1/2 (∑ij=0 ‖ ˜X(tj )‖22
+
+)1/2 .
+
+From Figure 11, we observe that the MAC model maintains consistently higher correl-ation with the true dynamics throughout the rollout interval. In contrast, the GRU-based model and the Wilks method exhibit more rapid degradation of correlation over the rollout interval. Finally, beyond pointwise trajectory accuracy, we examine whether the generated traject-ories preserve the correct temporal statistical structure of the underlying chaotic dynamics. To this end, we compare the temporal autocorrelation function (ACF) of the predicted closure trajectories. Note that although the sequence models for the Lorenz ’96 system are trained using multi-step rollout loss on the resolved variables, the predicted closure terms are still recorded during autoregressive inference rollout (see Appendix A.2). For a given Page 21 of 57 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+> Time (t)
+> 0.80
+> 0.84
+> 0.88
+> 0.92
+> 0.96
+> 1.00
+> Correlation Coefficient
+> MAC
+> GRU
+> Wilks
+
+Figure 11: Evolution of the running cumulative correlation coefficient between the predicted and true resolved variables over the temporal interpolation regime [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 
+
+time lag τ , we define the uncentered temporal autocorrelation function by ACF (τ ) = 
+
+∑T −τt=0 
+
+∑Nk=1 Uk(t)Uk(t + τ )
+
+∑Tt=0 
+
+∑Nk=1 Uk(t)2 ,
+
+where T = 2001 is the full sequence length. 0 2 4 6 8 10 
+
+> Lag
+> 0.965
+> 0.970
+> 0.975
+> 0.980
+> 0.985
+> 0.990
+> 0.995
+> 1.000
+> Autocorrelation
+> True
+> MAC
+> GRU
+> Wilks
+
+Figure 12: Temporal autocorrelation function of the generated closure trajectories over the tem-poral interpolation regime [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, the Wilks method, and the true dynamics. 
+
+As shown in Figure 12, the autocorrelation structures of the closure terms generated by all three models are qualitatively similar, indicating that all of them are able to repro-duce, at least to some extent, the temporal statistical structure of the closure dynamics Page 22 of 57 from the history of the resolved variables. Meanwhile, the true dynamics exhibit slightly faster decorrelation due to the strongly chaotic nature of the underlying Lorenz ’96 system. However, despite these similar autocorrelation behaviors, the MAC model achieves substan-tially better trajectory prediction accuracy and long-time rollout stability, as demonstrated in Figures 9 to 11. This improvement is likely attributable to the selective mechanism in the Mamba architecture, which enables the model to adaptively retain or discard temporal information according to the evolving input dynamics during autoregressive rollout. We next examine the temporal extrapolation performance of the MAC model and the baseline methods. In this experiment, the models are evaluated on a trajectory segment over the physical time interval [120 , 140] , which lies entirely outside the training time inter-val [0 , 100] . For convenience, the rollout time within this extrapolation window is shifted and displayed as the interval [0 , 20] in the following figures. Figures 13 to 15 compare the extrapolation rollout performance of the three methods through, respectively, trajectory visualization, the running cumulative relative L2 error, and the running cumulative correl-ation coefficient. As shown in Figures 13 to 15, the MAC model continues to accurately capture the chaotic oscillatory behavior of the resolved variables even outside the temporal regime used for training. The cumulative relative L2 error of the MAC model grows sub-stantially more slowly than those of the GRU-based model and the Wilks method, while its correlation coefficient remains consistently higher throughout the extrapolation rollout interval. In contrast, the GRU-based model rapidly loses phase accuracy and exhibits sub-stantial amplitude distortion during long-time rollout, while the Wilks method, though more stable than the GRU-based model, also remains consistently less accurate than the MAC model. 0 5 10 15 20                                        
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X1| MAC: 5.88%, GRU: 76.61%, Wilks: 19.30%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X2| MAC: 5.99%, GRU: 80.35%, Wilks: 19.47%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> X3| MAC: 6.30%, GRU: 79.02%, Wilks: 20.92%
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X4| MAC: 5.89%, GRU: 85.59%, Wilks: 21.40%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X5| MAC: 6.08%, GRU: 75.66%, Wilks: 22.32%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X6| MAC: 6.30%, GRU: 68.38%, Wilks: 21.77%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X7| MAC: 5.68%, GRU: 85.23%, Wilks: 20.54%
+> 0510 15 20
+> Time (t)
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> X8| MAC: 6.18%, GRU: 81.01%, Wilks: 22.27%
+> True MAC GRU Wilks
+
+Figure 13: Comparison of resolved slow-variable predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal extrapolation regime [120 , 140] (displayed as [0 , 20] ). For each resolved slow variable, the relative L2 error is also reported. 
+
+Page 23 of 57 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+> Time (t)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Cumulative  L2 Error
+> MAC
+> GRU
+> Wilks
+
+Figure 14: Evolution of the running cumulative relative L2 error over the temporal extrapolation regime [120 , 140] (displayed as [0 , 20] ) for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+> Time (t)
+> 0.66
+> 0.72
+> 0.78
+> 0.84
+> 0.90
+> 0.96
+> 1.00
+> Correlation Coefficient
+> MAC
+> GRU
+> Wilks
+
+Figure 15: Evolution of the running cumulative correlation coefficient between the predicted and true resolved variables over the temporal extrapolation regime [120 , 140] (displayed as [0 , 20] ) for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 
+
+Page 24 of 57 0 2 4 6 8 10 
+
+> Lag
+> 0.965
+> 0.970
+> 0.975
+> 0.980
+> 0.985
+> 0.990
+> 0.995
+> 1.000
+> Autocorrelation
+> True
+> MAC
+> GRU
+> Wilks
+
+Figure 16: Temporal autocorrelation function of the generated closure trajectories over the tem-poral extrapolation regime [120 , 140] (displayed as [0 , 20] ) for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, the Wilks method, and the true dynamics. 
+
+Finally, Figure 16 compares the temporal autocorrelation structures of the generated closure trajectories during temporal extrapolation rollout. Similar to the temporal interpol-ation experiment, all three models reproduce qualitatively similar autocorrelation behavior, whereas the true dynamics exhibit slightly faster decorrelation due to the strongly chaotic nature of the Lorenz ’96 system. Despite these similar statistical behaviors, the MAC model again demonstrates substantially superior trajectory prediction accuracy and rollout stability, as shown in Figures 13 to 15. To evaluate generalization to unseen initial conditions, we generate 100 independent test trajectories using random initial conditions different from those used in the training trajectory. Each test trajectory contains 2001 coarse time steps over the time interval [0 , 20] 
+
+and is evolved independently using the same numerical solver and parameter settings. We first present one representative unseen-initial-condition trajectory to illustrate the qualitative rollout behavior of the different methods. As shown in Figure 17, the MAC model continues to accurately reproduce the chaotic oscillatory behavior of the resolved variables even for initial conditions that are not observed during training. In contrast, the GRU-based model again exhibits substantial phase drift and amplitude distortion during autoregressive rollout, while the Wilks method, though more stable than the GRU-based model, also remains consistently less accurate than the MAC model. As shown in Figures 18 and 19, the MAC model maintains substantially smaller cumu-lative relative L2 error growth and consistently higher correlation with the true dynamics compared with both the GRU-based model and the Wilks method. These results indic-ate that the MAC closure model generalizes robustly to unseen initial conditions during long-time autoregressive rollout. Finally, Figure 20 compares the temporal autocorrelation structures of the generated Page 25 of 57 0 5 10 15 20 
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X1 | MAC: 9.99%, GRU: 65.07%, Wilks: 75.43%     
+
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X2 | MAC: 9.54%, GRU: 68.18%, Wilks: 79.55%     
+
+> 0510 15 20
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X3 | MAC: 9.33%, GRU: 75.56%, Wilks: 80.97%     
+
+> 0510 15 20
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X4 | MAC: 9.35%, GRU: 71.02%, Wilks: 77.00%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X5 | MAC: 9.33%, GRU: 67.22%, Wilks: 75.88%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X6 | MAC: 9.35%, GRU: 68.24%, Wilks: 79.00%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 2
+> 0
+> 2
+> 4
+> 6
+
+X7 | MAC: 9.53%, GRU: 69.79%, Wilks: 79.34%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X8 | MAC: 9.23%, GRU: 72.80%, Wilks: 75.30% 
+
+True MAC GRU Wilks Figure 17: Comparison of resolved slow-variable predictions from the MAC model, the GRU-based model, and the Wilks method for one representative unseen initial condition over the time interval 
+
+[0 , 20] . For each resolved slow variable, the relative L2 error is also reported. 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+Time (t) 
+
+0.00 
+
+0.15 
+
+0.30 
+
+0.45 
+
+> Cumulative  L2 Error
+
+MAC 
+
+GRU 
+
+Wilks 
+
+Figure 18: Evolution of the running cumulative relative L2 error averaged over 100 unseen-initial-condition test trajectories over the time interval [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 
+
+Page 26 of 57 0.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+> Time (t)
+> 0.875
+> 0.900
+> 0.925
+> 0.950
+> 0.975
+> 1.000
+> Correlation Coefficient
+> MAC
+> GRU
+> Wilks
+
+Figure 19: Evolution of the running cumulative correlation coefficient between the predicted and true resolved variables, averaged over 100 unseen-initial-condition test trajectories over the time interval [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, and the Wilks method. 0 2 4 6 8 10 
+
+> Lag
+> 0.965
+> 0.970
+> 0.975
+> 0.980
+> 0.985
+> 0.990
+> 0.995
+> 1.000
+> Autocorrelation
+> True
+> MAC
+> GRU
+> Wilks
+
+Figure 20: Temporal autocorrelation function of the generated closure trajectories, averaged over 
+
+100 unseen-initial-condition test trajectories over the time interval [0 , 20] for the Lorenz ’96 system, comparing the MAC model, the GRU-based model, the Wilks method, and the true dynamics. 
+
+Page 27 of 57 closure trajectories, averaged over the 100 unseen-initial-condition test trajectories. Similar to the temporal interpolation and extrapolation experiments, all three models reproduce qualitatively similar autocorrelation behavior, whereas the MAC model again demonstrates substantially superior trajectory prediction accuracy and rollout stability, as shown in Fig-ures 17 to 19. As in the temporal interpolation experiment, this is likely attributable to the selective mechanism in the Mamba architecture, which adaptively retains the most relevant temporal information during autoregressive rollout. To reduce potential bias associated with the choice of random seeds, we additionally per-form experiments using multiple random seeds. The final cumulative relative L2 error, final correlation coefficient, and temporal autocorrelation function at lag τ = 10 are summarized in Table 6. Overall, these results demonstrate that the MAC model provides substantially improved long-time predictive accuracy and robustness for the resolved dynamics compared with both the GRU-based model and the Wilks method.                 
+
+> Table 6: Final statistical diagnostics for the temporal interpolation, temporal extrapolation, and unseen-initial-condition experiments in the Lorenz ’96 system. The first column reports the running cumulative relative L2error at the final time t=T, the second column reports the running cumu-lative correlation coefficient at the final time t=T, and the third column reports the value of the temporal autocorrelation function ACF (τ)at lag τ= 10 (corresponding to a physical time lag of
+> 0.1). For the ACF column, the value of the true dynamics is also reported as a reference. All values are averaged over multiple random seeds. Note that ACF closeness to the true value alone does not necessarily reflect trajectory prediction accuracy; see the discussion in Section 3.2.
+
+Experiment Final Running Cumulative Relative 
+
+L2 Error Final Correlation Coefficient ACF at τ = 10 
+
+Temporal Interpolation MAC: 0.0719 
+
+GRU: 0.5851 
+
+Wilks: 0.3885 
+
+MAC: 0.9973 
+
+GRU: 0.8387 
+
+Wilks: 0.9166 
+
+True: 0.9650 
+
+MAC: 0.9731 
+
+GRU: 0.9767 
+
+Wilks: 0.9717 
+
+Temporal Extrapolation MAC: 0.0508 
+
+GRU: 0.5860 
+
+Wilks: 0.4066 
+
+MAC: 0.9987 
+
+GRU: 0.8252 
+
+Wilks: 0.9098 
+
+True: 0.9653 
+
+MAC: 0.9732 
+
+GRU: 0.9763 
+
+Wilks: 0.9720 
+
+Unseen Initial Conditions MAC: 0.1016 
+
+GRU: 0.5382 
+
+Wilks: 0.4689 
+
+MAC: 0.9941 
+
+GRU: 0.8561 
+
+Wilks: 0.8776 
+
+True: 0.9660 
+
+MAC: 0.9735 
+
+GRU: 0.9771 
+
+Wilks: 0.9718 
+
+Page 28 of 57 4 Conclusion 
+
+In this work, we proposed the Mamba-Assisted Closure (MAC) framework, which re-casts non-Markovian closure modeling for reduced-order dynamical systems as a sequence modeling problem. Inspired by the Mori–Zwanzig formalism, in which the closure term takes the form of a memory functional of the resolved trajectory, we model this functional with a Mamba-based sequence model and learn it directly from data. The use of Mamba is central to the framework: its input-dependent selective mechanism allows the relevant memory depth to be inferred from the resolved trajectory itself, without prescribing a fixed history window or explicitly estimating a memory kernel, while its linear-time scaling makes long training and rollout horizons computationally tractable. The dual representation of state-space models—a parallel convolutional form during training and a recurrent form during inference—further aligns naturally with the requirements of reduced-order closure modeling. We validated the MAC framework on two benchmark systems with complementary char-acteristics. For the viscous Burgers’ equation in Fourier space, the MAC model reduces the relative L2 error of the resolved Fourier modes by approximately one order of magnitude compared with the Markovian reduced-order model in both the temporal interpolation and extrapolation regimes, preserves the physically expected dissipative decay of the resolved energy, and remains stable under structured out-of-distribution initial conditions over long rollout horizons. For the chaotic two-scale Lorenz ’96 system, the MAC model substan-tially outperforms both a GRU-based sequence model and the classical Wilks method across temporal interpolation, temporal extrapolation, and unseen-initial-condition experiments, achieving correlation coefficients with the true dynamics that remain consistently above 
+
+0.99 across all test scenarios. In addition, our scalability experiments confirm the archi-tectural advantages of Mamba in this setting: training cost grows approximately linearly with sequence length, while per-step inference cost remains essentially constant regardless of rollout horizon. Taken together, these results indicate that treating closure modeling as a sequence mod-eling problem and exploiting the structural correspondence between Mori–Zwanzig memory functionals and state-space models leads to substantial improvements in long-time predict-ive accuracy, physical consistency, and computational efficiency. The MAC framework is general and can in principle be applied to other reduced-order modeling settings where non-Markovian memory effects play an important role. Several directions naturally extend the present work, including integration with stochastic closure modeling to capture inherently random unresolved dynamics, and a more systematic study of how the Mamba selective mechanism encodes effective memory depth in different physical regimes. Page 29 of 57 Code and Data Availability 
+
+To support reproducibility and facilitate future research, the code and all accompanying data will be made publicly available upon publication acceptance. 
+
+# Acknowledgments 
+
+The work of Zhi-Feng Wei was supported by the U.S. Department of Energy (DOE) Office of Advanced Scientific Computing Research (ASCR) through the ASCR Distinguished Computational Mathematics Postdoctoral Fellowship (Project Nos. 71268 and 83358). The work of Saad Qadeer was supported by the U.S. Department of Energy, Office of Science, Scientific Discovery through Advanced Computing (SciDAC) program, via a partnership in Earth System Model Development between the ASCR and Biological and Environmental Research (BER) programs, as part of the project titled “Physical, Accurate, and Efficient atmosphere and surface coupling across SCALes” (PAESCAL; proposal No. 0000267817). The work of Panos Stinis was partially supported by ASCR under the “Resolution-invariant deep learning for accelerated propagation of epistemic and aleatory uncertainty in multi-scale energy storage systems, and beyond” project (Project No. 81824). The computational work was performed using the Pacific Northwest National Laboratory (PNNL) Research Computing facilities. PNNL is a multi-program national laboratory operated for the U.S. Department of Energy by Battelle Memorial Institute under Contract No. DE-AC05-76RL01830. Page 30 of 57 A Additional Closure-Term Results 
+
+The main text focuses on the resolved-variable predictions. Here we provide additional results for the learned closure terms, including predictions for representative initial con-ditions and related summary statistics. These results complement the resolved-variable comparisons reported in the main text. 
+
+A.1 Burgers’ Equation 
+
+For Burgers’ equation, the main text reports autoregressive rollout results for the re-solved Fourier modes in Section 3.1. Here we show the corresponding closure-term predic-tions for the same representative test initial condition as in Figure 2. These plots directly compare the predicted closure terms produced by the MAC model with the true closure data. 0.0 0.2 0.4 0.6 0.8 1.0                                 
+
+> 0.00075
+> 0.00050
+> 0.00025
+> 0.00000
+> m1| MAC: 5.0218%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.000
+> 0.002
+> 0.004
+> 0.006
+> 0.008
+> m2| MAC: 3.9319%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.024
+> 0.016
+> 0.008
+> 0.000
+> m3| MAC: 2.3244%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.0000
+> 0.0005
+> 0.0010
+> 0.0015
+> 0.0020
+> m1| MAC: 1.5781%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.0045
+> 0.0030
+> 0.0015
+> 0.0000
+> m2| MAC: 0.7377%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.000
+> 0.004
+> 0.008
+> 0.012
+> 0.016
+> m3| MAC: 2.0841%
+> True MAC
+
+Figure A1: Comparison between the closure-term predictions from the MAC model and the true closure terms on the same representative test initial condition as in Figure 2 over the temporal interpolation regime [0 , 1] . For each closure term, the relative L2 error over the time interval [0 , 1] 
+
+is also reported. 
+
+To complement the closure-term predictions for the representative test initial condition, we also report summary statistics for the Burgers closure prediction errors. Table A1 lists the mean relative L2 errors of the MAC-predicted closure terms on the interpolation interval 
+
+[0 , 1] , the extrapolation interval [1 , 2] , and the full interval [0 , 2] . These values are computed over 50 test cases and averaged over multiple random seeds. Although the closure-term errors are larger than the resolved-variable errors reported in the main text, the predicted closure trajectories still capture the main trends of the true closure data. In fact, the relative L2 errors of the predicted closure terms can appear large because the closure terms Page 31 of 57 0.0 0.4 0.8 1.2 1.6 2.0                                 
+
+> 0.0012
+> 0.0008
+> 0.0004
+> 0.0000
+> m1
+> Extrap | MAC: 3.4144%
+> Full | MAC: 3.5136%
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> 0.0000
+> 0.0025
+> 0.0050
+> 0.0075
+> m2
+> Extrap | MAC: 5.2406%
+> Full | MAC: 5.0546%
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> 0.03
+> 0.02
+> 0.01
+> 0.00
+> m3
+> Extrap | MAC: 2.4979%
+> Full | MAC: 2.4706%
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> Time (t)
+> 0.0000
+> 0.0006
+> 0.0012
+> 0.0018
+> 0.0024
+> m1
+> Extrap | MAC: 3.4922%
+> Full | MAC: 3.2650%
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> Time (t)
+> 0.0045
+> 0.0030
+> 0.0015
+> 0.0000
+> m2
+> Extrap | MAC: 1.5260%
+> Full | MAC: 1.2571%
+> 0.0 0.4 0.8 1.2 1.6 2.0
+> Time (t)
+> 0.000
+> 0.004
+> 0.008
+> 0.012
+> 0.016
+> m3
+> Extrap | MAC: 4.7469%
+> Full | MAC: 3.0148%
+> True MAC
+
+Figure A2: Comparison between the closure-term predictions from the MAC model and the true closure terms on the same representative test initial condition as in Figure 2 over the temporal extrapolation regime [0 , 2] . For each closure term, the relative L2 errors over the intervals [0 , 1] ,
+
+[1 , 2] , and [0 , 2] are also reported. 
+
+themselves have small magnitudes, so that even a small absolute discrepancy may lead to a relatively large relative error. The closure prediction errors remain comparable between the interpolation and extrapolation intervals, suggesting that the learned closure does not substantially degrade over the longer rollout. 
+
+Table A1: Mean relative L2 errors of the Burgers closure terms predicted by the MAC model over the interpolation interval [0 , 1] , the extrapolation interval [1 , 2] , and the full interval [0 , 2] . The values are averaged over 50 test cases and multiple random seeds. 
+
+Closure Interpolation [0 , 1] Extrapolation [1 , 2] Full [0 , 2] 
+
+mϕ
+
+1 27 .54 % 34 .78 % 28 .71 %
+
+mϕ
+
+2 36 .67 % 36 .77 % 34 .43 %
+
+mϕ
+
+3 22 .03 % 34 .23 % 25 .59 %
+
+mψ
+
+1 28 .91 % 25 .36 % 19 .66 %
+
+mψ
+
+2 18 .25 % 17 .81 % 14 .55 %
+
+mψ
+
+3 38 .27 % 38 .19 % 37 .25 %We further include a comparison on an additional representative test initial condition for which the closure relative errors are comparatively large. For this test case, we show both the resolved-variable rollout and the corresponding closure-term prediction. This provides a more complete view of the relation between closure-term accuracy and resolved-variable prediction accuracy: the resolved-variable prediction remains accurate even when Page 32 of 57 the relative L2 error of the closure prediction appears large. 0.0 0.2 0.4 0.6 0.8 1.0  
+
+> 0.0650
+> 0.0645
+> 0.0640
+> 0.0635
+> 0.0630
+> 1
+
+| MAC: 0.0113%, Markov: 0.0364%       
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.066
+> 0.060
+> 0.054
+> 0.048
+> 2
+
+| MAC: 0.0381%, Markov: 0.3656%       
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.000
+> 0.006
+> 0.012
+> 0.018
+> 3
+
+| MAC: 0.6720%, Markov: 4.0828%      
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+
+Time (t)  
+
+> 0.0084
+> 0.0090
+> 0.0096
+> 0.0102
+> 1
+
+| MAC: 0.0233%, Markov: 0.6574%      
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+
+Time (t)   
+
+> 0.07
+> 0.08
+> 0.09
+> 0.10
+> 0.11 2
+
+| MAC: 0.0942%, Markov: 0.7227%      
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+
+Time (t)  
+
+> 0.032
+> 0.028
+> 0.024
+> 0.020
+> 3
+
+| MAC: 0.0230%, Markov: 0.6495% 
+
+True MAC Markov 
+
+Figure A3: Comparison of resolved-mode predictions from the MAC model and the Markovian reduced-order model on an additional representative test initial condition over the temporal inter-polation regime [0 , 1] . For each resolved Fourier mode, the relative L2 error over the time interval 
+
+[0 , 1] is also reported. 
+
+Page 33 of 57 0.0 0.2 0.4 0.6 0.8 1.0 
+
+0.00012 
+
+0.00009 
+
+0.00006 
+
+0.00003 
+
+0.00000 
+
+m1 | MAC: 6.5330% 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+0.00000 
+
+0.00015 
+
+0.00030 
+
+0.00045 
+
+0.00060 
+
+m2 | MAC: 13.6306% 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+0.0012 
+
+0.0009 
+
+0.0006 
+
+0.0003 
+
+0.0000 
+
+m3 | MAC: 18.6537% 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Time (t) 
+
+0.00000 
+
+0.00005 
+
+0.00010 
+
+0.00015 
+
+m1 | MAC: 5.1002% 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Time (t) 
+
+0.0016 
+
+0.0012 
+
+0.0008 
+
+0.0004 
+
+0.0000 
+
+m2 | MAC: 12.9229% 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Time (t) 
+
+0.00000 
+
+0.00015 
+
+0.00030 
+
+0.00045 
+
+m3 | MAC: 5.1849% 
+
+True MAC Figure A4: Comparison between the closure-term predictions from the MAC model and the true closure terms on the same representative test initial condition as in Figure A3 over the temporal interpolation regime [0 , 1] . For each closure term, the relative L2 error over the time interval [0 , 1] 
+
+is also reported. 0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.0645 
+
+0.0630 
+
+0.0615 
+
+0.0600 
+
+> 1
+
+Extrap | MAC: 0.0384%, Markov: 0.0582% 
+
+Full | MAC: 0.0277%, Markov: 0.0480% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.07 
+
+0.06 
+
+0.05 
+
+0.04 
+
+0.03 
+
+> 2
+
+Extrap | MAC: 0.1639%, Markov: 1.2076% 
+
+Full | MAC: 0.0942%, Markov: 0.7214% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.008 
+
+0.000 
+
+0.008 
+
+0.016 
+
+> 3
+
+Extrap | MAC: 1.7707%, Markov: 5.2297% 
+
+Full | MAC: 1.2328%, Markov: 4.5739% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.0060 
+
+0.0075 
+
+0.0090 
+
+0.0105 
+
+> 1
+
+Extrap | MAC: 0.1495%, Markov: 1.6080% 
+
+Full | MAC: 0.0889%, Markov: 1.0772% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.045 
+
+0.060 
+
+0.075 
+
+0.090 
+
+0.105 
+
+> 2
+
+Extrap | MAC: 0.2651%, Markov: 2.3715% 
+
+Full | MAC: 0.1616%, Markov: 1.3978% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.030 
+
+0.024 
+
+0.018 
+
+0.012 
+
+> 3
+
+Extrap | MAC: 0.2198%, Markov: 0.8369% 
+
+Full | MAC: 0.1104%, Markov: 0.6998% 
+
+True MAC Markov 
+
+Figure A5: Comparison of resolved-mode predictions from the MAC model and the Markovian reduced-order model on the same representative test initial condition as in Figure A3 over the temporal extrapolation regime [0 , 2] . For each resolved Fourier mode, the relative L2 errors over the intervals [0 , 1] , [1 , 2] , and [0 , 2] are also reported. 
+
+Page 34 of 57 0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.00012 
+
+0.00009 
+
+0.00006 
+
+0.00003 
+
+0.00000 
+
+m1
+
+Extrap | MAC: 8.8606% 
+
+Full | MAC: 7.4714% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.00000 
+
+0.00015 
+
+0.00030 
+
+0.00045 
+
+0.00060 
+
+m2
+
+Extrap | MAC: 15.9418% 
+
+Full | MAC: 14.3987% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+0.0012 
+
+0.0008 
+
+0.0004 
+
+0.0000 
+
+m3
+
+Extrap | MAC: 68.9428% 
+
+Full | MAC: 26.4339% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.00000 
+
+0.00005 
+
+0.00010 
+
+0.00015 
+
+m1
+
+Extrap | MAC: 22.7211% 
+
+Full | MAC: 7.9895% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.0016 
+
+0.0012 
+
+0.0008 
+
+0.0004 
+
+0.0000 
+
+m2
+
+Extrap | MAC: 7.0714% 
+
+Full | MAC: 11.7924% 
+
+0.0 0.4 0.8 1.2 1.6 2.0 
+
+Time (t) 
+
+0.0002 
+
+0.0000 
+
+0.0002 
+
+0.0004 
+
+m3
+
+Extrap | MAC: 32.3127% 
+
+Full | MAC: 14.4064% 
+
+True MAC Figure A6: Comparison between the closure-term predictions from the MAC model and the true closure terms on the same representative test initial condition as in Figure A3 over the temporal extrapolation regime [0 , 2] . For each resolved Fourier mode, the relative L2 errors over the intervals 
+
+[0 , 1] , [1 , 2] , and [0 , 2] are also reported. 
+
+Page 35 of 57 A.2 Lorenz ’96 System 
+
+For the Lorenz ’96 system, the main text reports resolved-variable rollout results for temporal interpolation, temporal extrapolation, and unseen initial conditions in Section 3.2. Here we show the corresponding closure-term predictions, comparing the true closure terms with the predictions from the MAC model, the GRU-based model, and the Wilks method. 0 5 10 15 20 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U1 | MAC: 14.89%, GRU: 49.35%, Wilks: 37.79%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U2 | MAC: 13.58%, GRU: 47.85%, Wilks: 38.55%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U3 | MAC: 12.38%, GRU: 49.01%, Wilks: 38.82%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U4 | MAC: 12.47%, GRU: 46.64%, Wilks: 36.39%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U5 | MAC: 13.78%, GRU: 49.41%, Wilks: 40.02%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U6 | MAC: 12.56%, GRU: 48.21%, Wilks: 39.65%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U7 | MAC: 13.46%, GRU: 47.45%, Wilks: 42.19%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U8 | MAC: 11.90%, GRU: 48.88%, Wilks: 32.36% 
+
+True MAC GRU Wilks 
+
+Figure A7: Comparison of closure-term predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal interpolation regime [0 , 20] for the Lorenz ’96 system. For each closure term, the relative L2 error is also reported. 0 5 10 15 20 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U1 | MAC: 11.35%, GRU: 57.65%, Wilks: 26.34%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U2 | MAC: 13.59%, GRU: 60.61%, Wilks: 27.79%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U3 | MAC: 13.12%, GRU: 61.15%, Wilks: 29.35%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U4 | MAC: 12.58%, GRU: 56.97%, Wilks: 28.69%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U5 | MAC: 12.16%, GRU: 59.91%, Wilks: 31.49%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U6 | MAC: 12.95%, GRU: 56.46%, Wilks: 24.29%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U7 | MAC: 12.72%, GRU: 59.05%, Wilks: 26.15%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U8 | MAC: 11.70%, GRU: 56.72%, Wilks: 26.75% 
+
+True MAC GRU Wilks 
+
+Figure A8: Comparison of closure-term predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal extrapolation regime [120 , 140] (displayed as [0 , 20] ) for the Lorenz ’96 system. For each closure term, the relative L2 error is also reported. 
+
+Page 36 of 57 0 5 10 15 20 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U1 | MAC: 13.59%, GRU: 52.84%, Wilks: 65.03% 
+
+0 5 10 15 20 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U2 | MAC: 15.95%, GRU: 52.64%, Wilks: 68.62% 
+
+0 5 10 15 20 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U3 | MAC: 14.29%, GRU: 54.92%, Wilks: 70.94% 
+
+0 5 10 15 20 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U4 | MAC: 14.10%, GRU: 52.49%, Wilks: 69.29% 
+
+0 5 10 15 20 
+
+Time (t) 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U5 | MAC: 13.69%, GRU: 53.13%, Wilks: 65.79% 
+
+0 5 10 15 20 
+
+Time (t) 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U6 | MAC: 13.96%, GRU: 54.75%, Wilks: 70.23% 
+
+0 5 10 15 20 
+
+Time (t) 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+U7 | MAC: 14.18%, GRU: 52.32%, Wilks: 72.20% 
+
+0 5 10 15 20 
+
+Time (t) 
+
+8
+
+6
+
+4
+
+2
+
+0
+
+2
+
+4
+
+U8 | MAC: 13.44%, GRU: 55.34%, Wilks: 66.90% 
+
+True MAC GRU Wilks Figure A9: Comparison of closure-term predictions from the MAC model, the GRU-based model, and the Wilks method for the same representative unseen initial condition as in Figure 17 over the time interval [0 , 20] . For each closure term, the relative L2 error is also reported. 
+
+Page 37 of 57 B Implementation Details 
+
+This appendix provides additional implementation details for the numerical experiments reported in Section 3. While the main text focuses on the modeling framework and empirical findings, this appendix collects the practical choices needed to reproduce the experiments, including data generation, neural network architectures, model training hyperparameters, data normalization, noise injection schedules, and training loss design. Unless otherwise stated, the same preprocessing, training protocol, and evaluation pro-cedure are used across all sequence models considered in the comparison. In particular, the MAC model and the GRU-based sequence model are trained under comparable settings, with the number of trainable parameters controlled to be of the same order whenever pos-sible. This setup ensures a fair comparison by avoiding differences in model capacity or optimization budget. 
+
+B.1 Data Generation 
+
+B.1.1 Viscous Burgers’ equation 
+
+For the viscous Burgers’ equation, the data generation follows the Fourier-space reduced-order construction described in Section 3.1. The trajectories of the full-order system are generated by solving the Fourier ODE system for the coefficients {θk(t)}k∈Z using a pseudo-spectral method. The spatial interval [0 , 2π) is discretized using Nx = 2 10 equispaced grid points, and the full Fourier system is advanced using a fourth-order Runge–Kutta method with time step ∆t = 10 −4. The viscosity coefficient used in our experiments is ν = 0 .1.For trajectories generated from random initial conditions, the resolved Fourier modes are initialized as described in the main text: both ϕk(0) and ψk(0) are sampled uniformly from (−e−k, e−k) for k = 1 , 2, . . . , M , while all other positive modes are set to zero. The corresponding negatively indexed modes are determined by the reality constraint on u, and the zero Fourier mode is taken to vanish. For these random initial conditions, the full Fourier system is solved on the time interval [0 , 5] , and the resulting resolved trajectories are saved together with the corresponding closure data for the subsequent experiments. In total, we generate 500 trajectories from random initial conditions, of which 400 are used for training, 50 for validation, and 50 for testing. For the out-of-distribution tests, we use three prescribed initial conditions: 
+
+u0(x) = sin x, u0(x) = esin x, u0(x) = cos (2 sin x).
+
+For all three out-of-distribution initial conditions, only the first three positively indexed Fourier modes and their corresponding negatively indexed modes are retained, with the zero Fourier mode taken to vanish as described in the main text. Specifically, to test the rollout performance over a long-time interval for these out-of-distribution initial conditions, we solve the full Fourier system on the longer time interval [0 , 20] and save the resulting Page 38 of 57 trajectories of the resolved modes together with the corresponding closure trajectories for the subsequent experiments. 
+
+B.1.2 Two-scale Lorenz ’96 system 
+
+For the two-scale Lorenz ’96 system studied in Section 3.2, the full slow–fast dynamics are simulated directly using a fourth-order Runge–Kutta method. The slow variables {Xk}Nk=1 
+
+are treated as resolved variables, while the fast variables {Yj }JN j=1 are regarded as unresolved degrees of freedom. The parameters used in the experiments are 
+
+N = 8 , J = 32 , F = 10 , h = 1 , c = 10 , b = 10 .
+
+The interaction between the fast and slow variables enters the slow dynamics through the coupling term 
+
+Uk(t) := −hc b
+
+> kJ
+
+∑
+
+> j=J(k−1)+1
+
+Yj (t), k = 1 , 2, . . . , N. 
+
+The full two-scale Lorenz ’96 system is first simulated using the fine time step 
+
+∆tfine = 0 .005 .
+
+The recorded fine trajectory is then downsampled by a factor of 2, giving the coarse time step 
+
+∆t = 0 .01 .
+
+A single long coarse trajectory of length 14001 over the time interval [0 , 140] is generated. This long trajectory is initialized randomly, with the initial slow variables sampled around 
+
+F /10 and the fast variables initialized with small random values. Before recording data, the system is advanced for 5000 fine time steps as a warm-up period. After this warm-up, the first 10001 coarse time steps over the time interval [0 , 100] are used to construct the training dataset. More specifically, sliding windows of length 64 with stride 1 are extracted from the training segment and used as training sequences for the sequence models considered in this study. The segment over [100 , 120] is used for validation during training, while the segment over [120 , 140] is reserved for temporal extrapolation tests. In addition to the single long trajectory, 100 independent test trajectories are generated from unseen random initial conditions. Similarly, for each unseen initial condition, the trajectory is initialized randomly, with the initial slow variables sampled around F /10 and the fast variables initialized with small random values. Each test trajectory contains 2001 
+
+coarse time points over the time interval [0 , 20] . The saved Lorenz ’96 datasets contain the resolved slow variables X and the corresponding coupling terms U , which are used in the subsequent autoregressive rollout experiments. Page 39 of 57 B.2 Neural Network Architectures 
+
+In the Mamba-Assisted Closure (MAC) model, the Mamba-based sequence model pre-dicts closure terms from the resolved variables. These predicted closure terms are then incorporated into the reduced-order dynamics, which are advanced in time to generate autoregressive resolved trajectories. When the MAC model is applied to Burgers’ equation and the Lorenz ’96 system, the reduced-order dynamics differ between the two benchmark problems, but the same general neural-network architecture is used for the Mamba-based sequence model. For the two benchmark problems, we use different input/output dimensions and differ-ent choices of depth and width for the Mamba-based sequence model, which are reported in Appendix B.3. For Burgers’ equation, the Mamba-based sequence model input con-sists of the resolved Fourier modes and has dimension 2M , corresponding to the real and imaginary parts of the resolved modes, where M = 3 in our study. For the Lorenz ’96 system, the Mamba-based sequence model input consists of the resolved slow variables and has dimension N = 8 . In both cases, the Mamba-based sequence model maps an input sequence of resolved variables to an output sequence of the same dimension, representing the corresponding closure term. In this architecture, the Mamba-based sequence model first applies a linear input projec-tion from the input dimension to a hidden dimension dmodel , followed by a SiLU activation. The resulting hidden sequence is then passed through a stack of residual Mamba blocks. Each residual Mamba block consists of a normalization layer, a Mamba layer, and a resid-ual connection: 
+
+h 7 → h + Mamba (Norm (h)).
+
+Here, the Mamba layer is the module implemented using the Python package mamba-ssm ,available from PyPI. After the stacked residual Mamba blocks, a final normalization layer is applied, followed by a two-layer output projection: 
+
+h 7 → W2 σ(W1h),
+
+where σ denotes the SiLU activation. The output dimension is chosen to match the input dimension. For comparison, the GRU-based sequence model uses the same input and output pro-jection structure. The main difference is that the residual Mamba blocks are replaced by residual GRU blocks. Each residual GRU block consists of a normalization layer, a GRU layer, and a residual connection: 
+
+h 7 → h + GRU (Norm (h)).
+
+Here, the GRU layer is the standard module available in PyTorch. Thus, the GRU-based sequence model preserves the same overall sequence-to-sequence structure as the Mamba-based sequence model. Page 40 of 57 In both architectures, the normalization layer is applied inside each residual block be-fore the Mamba or GRU layer, and another normalization layer is applied before the final output projection. The specific choices of depth, model hidden dimension, Mamba state dimension, convolution width, and GRU width are given in Appendix B.3. These choices are selected so that the Mamba-based sequence model and the GRU-based sequence model have comparable numbers of trainable parameters whenever possible. 
+
+B.3 Model and Training Hyperparameters 
+
+B.3.1 Burgers’ Equation 
+
+For the Burgers experiments, the Mamba-based sequence model takes the resolved Four-ier modes as input. Since M = 3 complex resolved positively indexed Fourier modes are retained, the input and output dimensions are both 2M = 6 , corresponding to the real and imaginary parts of the resolved modes. The model hyperparameters used in the full training runs are summarized in Table B1. The main training hyperparameters are sum-marized in Table B2. The noise injection schedule and loss design are described separately in Appendix B.5 and Appendix B.6.  
+
+> Table B1: Model hyperparameters for the Burgers experiments.
+
+Hyperparameter Value Input and output dimensions 2M = 6 
+
+Number of residual Mamba blocks 6
+
+Hidden dimension dmodel 160 
+
+Mamba expansion factor 2
+
+Mamba convolution width 4
+
+Mamba state dimension 64 
+
+Linear bias in Mamba layer no Convolution bias in Mamba layer yes Normalization type LayerNorm Activation function SiLU Number of trainable parameters 1,372 ,166 
+
+Page 41 of 57 Table B2: Training hyperparameters for the Burgers experiments. 
+
+Hyperparameter Value Number of training steps 30 ,000 
+
+Batch size 96 
+
+Optimizer AdamW Weight decay 3 × 10 −4
+
+Learning-rate scheduler OneCycleLR Maximum learning rate 2.5 × 10 −3
+
+Warm-up fraction in scheduler 0.12 
+
+Initial learning-rate divisor 50 
+
+Final learning-rate divisor 800 
+
+Annealing strategy Cosine Page 42 of 57 B.3.2 Lorenz ’96 System 
+
+For the Lorenz ’96 experiments, the sequence model takes the resolved slow variables as input. Since N = 8 slow variables are treated as resolved variables, the input and output dimensions are both N = 8 . The model hyperparameters used in the full training runs are summarized in Table B3. The width of the GRU-based sequence model is chosen to make its number of trainable parameters comparable to that of the Mamba-based sequence model.  
+
+> Table B3: Model hyperparameters for the Lorenz ’96 experiments.
+
+Hyperparameter Mamba-based model GRU-based model Input dimension din N = 8 N = 8 
+
+Output dimension N = 8 N = 8 
+
+Number of residual blocks 5 5
+
+Hidden dimension dmodel 64 88 
+
+Mamba expansion factor 2 –Mamba convolution width 4 –Mamba state dimension 48 –GRU layers per residual block – 1
+
+Linear bias in Mamba layer no –Convolution bias in Mamba layer yes –Normalization type LayerNorm LayerNorm Activation function SiLU SiLU Number of trainable parameters 230 ,644 245 ,352 
+
+The main training hyperparameters are summarized in Table B4. The noise injection schedule and loss design are described separately in Appendix B.5 and Appendix B.6.  
+
+> Table B4: Training hyperparameters for the Lorenz ’96 experiments.
+
+Hyperparameter Value Number of training steps 1,000 
+
+Batch size 512 
+
+Optimizer AdamW Weight decay 1 × 10 −2
+
+Learning-rate scheduler OneCycleLR Maximum learning rate 1 × 10 −3
+
+Warm-up fraction in scheduler 0.1
+
+Initial learning-rate divisor 25 
+
+Final learning-rate divisor 500 
+
+Annealing strategy Cosine Page 43 of 57 B.4 Data Normalization 
+
+Different normalization strategies are used for the Burgers and Lorenz ’96 experiments, following the scale and structure of the corresponding data. In all cases, the normalization statistics are computed only from the training data and then reused for validation, testing, and autoregressive rollout experiments. For Burgers’ equation, we normalize the resolved Fourier modes {ϕk, ψ k}Mk=1 and the closure data {mϕk , m ψk }Mk=1 separately using component-wise max-absolute scaling. More specifically, for each resolved mode k = 1 , . . . , M , the scaling factors are computed over all samples and all time points in the training dataset as 
+
+sϕ,k = max 
+
+> training data
+
+|ϕk(t)|, sψ,k = max 
+
+> training data
+
+|ψk(t)|,
+
+and 
+
+s(m) 
+
+> ϕ,k
+
+= max 
+
+> training data
+
+|mϕk (t)|, s(m) 
+
+> ψ,k
+
+= max 
+
+> training data
+
+|mψk (t)|.
+
+The normalized quantities used by the sequence model at time t are then 
+
+{ϕk(t)
+
+sϕ,k 
+
+, ψk(t)
+
+sψ,k 
+
+}Mk=1 
+
+,
+
+and {mϕk (t)
+
+s(m)
+
+> ϕ,k
+
+, mψk (t)
+
+s(m)
+
+> ψ,k
+
+}Mk=1 
+
+.
+
+For the Lorenz ’96 system, we normalize the resolved slow variables {Xk}Nk=1 and the closure terms {Uk}Nk=1 component-wise. For each k = 1 , . . . , N , the means μX,k and μU,k , as well as the standard deviations σX,k and σU,k , are computed over all samples and all time points in the training dataset. The normalized quantities used by the sequence model at time t are then {Xk(t) − μX,k 
+
+σX,k 
+
+}Nk=1 
+
+,
+
+and {Uk(t) − μU,k 
+
+σU,k 
+
+}Nk=1 
+
+.
+
+B.5 Noise Injection 
+
+During training, we inject small additive noise into the normalized input sequences to improve the robustness of the trained sequence model during autoregressive rollout. The same noise-injection schedule is used for both the Burgers and Lorenz ’96 experiments. Let ξ denote the normalized resolved input sequence used by the sequence model. When noise injection is active, the model input is replaced by 
+
+ξnoisy = ξ + ε, ε ∼ N (0 , σ 2
+
+> noise
+
+I),
+
+Page 44 of 57 where the noise is sampled independently with the same shape as ξ. In the experiments, we use 
+
+σnoise = 5 × 10 −4.
+
+The noise level is scheduled over the training process in three phases. Let S be the total number of training steps. For the first 10 % of training steps, no noise is injected. For the middle phase, from 0.1S to 0.8S, the above Gaussian noise is added to the normalized input sequence. For the final 20 % of training steps, the noise is turned off again. Thus the schedule is 
+
+σnoise (s) = 
+
+
+
+0, s ⩽ 0.1S, 
+
+5 × 10 −4, 0.1S < s ⩽ 0.8S, 
+
+0, 0.8S < s ⩽ S. 
+
+This schedule is used to separate the early fitting stage, the robustness-enhancing stage, and the final refinement stage. The noise is applied only to the model input during training; the training targets are not modified. 
+
+B.6 Training Loss Choices 
+
+When training the Mamba-based sequence model within the MAC framework, we use different loss functions for Burgers’ equation and the Lorenz ’96 system. For Burgers’ equation, the training loss is the mean squared error between the true closure terms and the closure terms predicted by the Mamba-based sequence model. For the Lorenz ’96 system, we instead use a multi-step loss on the resolved variables. We now detail the loss-function design for these two benchmark problems. 
+
+B.6.1 Burgers’ Equation 
+
+When training the Mamba-based sequence model for Burgers’ equation, the input se-quence consists of the normalized resolved Fourier modes. The sequence model outputs the (normalized) predicted closure terms at the corresponding time points. These predicted closure terms are compared with the true (normalized) closure terms using a mean squared error loss, which is used as the training objective. This direct closure loss is sufficient to obtain accurate predictions for both the resolved Fourier modes and the closure terms, as shown in Section 3.1 and appendix A.1. In our exploration, we also tested an alternative loss design for Burgers’ equation. In this alternative approach, the closure term predicted by the Mamba-based sequence model is inserted into the resolved dynamics, and the reduced-order system is advanced by one time step. The predicted resolved Fourier modes at the next time step are then compared with the true resolved modes using a mean squared error loss. This single-step resolved-mode loss is therefore applied to train the Mamba-based sequence model through the MAC framework. However, this alternative loss design gives worse prediction accuracy in our experiments. Page 45 of 57 The results for the predicted resolved modes and closure terms with this alternative loss design, on the same representative case shown in the main text, are presented in Figures B1 and B2. We can see that, under this alternative loss design, the prediction accuracy on the resolved Fourier modes becomes much worse, and the prediction accuracy on the closure terms also deteriorates. 0.0 0.2 0.4 0.6 0.8 1.0                                  
+
+> 0.196
+> 0.200
+> 0.204
+> 1| MAC: 0.1560%, Markov: 0.0556%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.090
+> 0.075
+> 0.060
+> 0.045
+> 0.030
+> 2| MAC: 2.8671%, Markov: 1.8185%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.02
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 3| MAC: 1.9100%, Markov: 8.0725%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.255
+> 0.240
+> 0.225
+> 0.210
+> 0.195
+> 1| MAC: 0.0843%, Markov: 0.0183%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.090
+> 0.105
+> 0.120
+> 0.135
+> 2| MAC: 0.6949%, Markov: 0.7011%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.016
+> 0.008
+> 0.000
+> 0.008
+> 0.016
+> 3| MAC: 14.2418%, Markov: 44.6615%
+> True MAC Markov
+
+Figure B1: Comparison of resolved-mode predictions from the MAC model and the Markovian reduced-order model on the same representative test initial condition as in Figure 2 over the temporal interpolation regime [0 , 1] . For each resolved Fourier mode, the relative L2 error over the time interval 
+
+[0 , 1] is also reported. Here the MAC model is trained using the alternative single-step resolved-mode loss. 
+
+One possible reason is that the single-step resolved-mode loss provides only a weak and indirect training signal for the closure term. For Burgers’ equation, the time step is very small, ∆t = 10 −4, so the contribution of the closure term to a one-step resolved-mode update is also small. As a result, different closure predictions may lead to similar one-step resolved-mode errors, and the single-step resolved-mode loss alone may not strongly constrain the closure term. Another possible reason is the potential non-uniqueness of the single-step resolved-mode loss objective for Burgers’ equation. Since the closure term enters the resolved dynamics through nonlinear spectral interactions and only a subset of Fourier modes is retained, multiple closure configurations may produce similar resolved trajectories. Consequently, the single-step resolved-mode loss may not uniquely identify the true closure term, and the model may instead converge to an inaccurate closure solution that fails to capture the true non-Markovian contributions. Both of these factors are consistent with our empirical observation that training with the single-step resolved-mode loss yields substantially degraded prediction accuracy, as shown Page 46 of 57 0.0 0.2 0.4 0.6 0.8 1.0                                 
+
+> 0.0008
+> 0.0004
+> 0.0000
+> 0.0004
+> 0.0008
+> m1| MAC: 228.8442%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.0025
+> 0.0000
+> 0.0025
+> 0.0050
+> 0.0075
+> m2| MAC: 159.6669%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> 0.02
+> 0.01
+> 0.00
+> 0.01
+> m3| MAC: 34.2271%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.0000
+> 0.0005
+> 0.0010
+> 0.0015
+> 0.0020
+> m1| MAC: 41.0025%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.0045
+> 0.0030
+> 0.0015
+> 0.0000
+> m2| MAC: 42.7773%
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Time (t)
+> 0.000
+> 0.004
+> 0.008
+> 0.012
+> m3| MAC: 55.3307%
+> True MAC
+
+Figure B2: Comparison between the closure-term predictions from the MAC model and the true closure terms on the same representative test initial condition as in Figure B1 over the temporal interpolation regime [0 , 1] . For each closure term, the relative L2 error over the time interval [0 , 1] is also reported. Here the MAC model is trained using the alternative single-step resolved-mode loss. 
+
+in Figures B1 and B2. In contrast, the direct closure loss provides a stronger supervised signal for learning the closure term than the alternative single-step resolved-mode loss. 
+
+B.6.2 Lorenz ’96 System 
+
+For the Lorenz ’96 system, we use a five-step resolved-variable rollout loss to train the Mamba-based sequence model. Unlike the Burgers case, the loss is not computed directly on the predicted closure terms. Instead, the predicted closure terms are inserted into the resolved dynamics, and the resulting MAC framework is advanced autoregressively for multiple time steps. The loss is then computed on the predicted resolved variables. More specifically, each training input is a normalized resolved sequence of length 64 ,
+
+X0, X 1, . . . , X 63 .
+
+Since the rollout loss uses five steps, the first 64 − 5 = 59 states, 
+
+X0, X 1, . . . , X 58 ,
+
+are used as starting states for the rollout. Starting from these states, the MAC framework is advanced for five steps. At each step, the Mamba-based sequence model predicts the closure terms, these predicted closure terms are inserted into the resolved Lorenz ’96 dynamics, and the resolved dynamics are advanced by one time step. Page 47 of 57 The loss is computed only on the advanced resolved variables. The one-step predictions are compared with 
+
+X1, X 2, . . . , X 59 ,
+
+the two-step predictions are compared with 
+
+X2, X 3, . . . , X 60 ,
+
+and this continues up to the five-step predictions, which are compared with 
+
+X5, X 6, . . . , X 63 .
+
+The resulting training objective is the mean squared error over these five sets of predicted resolved variables. This loss design is motivated by the chaotic nature of the Lorenz ’96 system, in which small errors in the closure term can be rapidly amplified through the resolved dynamics, leading to trajectory divergence during autoregressive rollout. A direct closure loss penalizes only the pointwise error in the predicted closure terms, without accounting for how these errors propagate and accumulate in the subsequent resolved-variable evolution. By con-trast, the multi-step resolved-variable rollout loss trains the Mamba-based sequence model through the MAC framework so that the predicted closure terms are optimized according to their effect on the resolved-variable trajectory. This makes the training objective more closely aligned with the autoregressive rollout task and helps suppress error accumulation in the chaotic regime. To compare this choice with a direct closure loss, we also trained the Mamba-based sequence model by minimizing the mean squared error between the predicted closure terms and the true closure terms. The resulting temporal interpolation results are shown in Figures B3 and B4. In this setting, training with the direct closure loss leads to substantially worse predictions for both the resolved variables and the closure terms than training with the multi-step resolved-variable rollout loss. This comparison supports the use of the multi-step resolved-variable rollout loss for the Lorenz ’96 system. 
+
+B.7 Warm-up in Inference 
+
+During autoregressive inference with the MAC model, we use a short cache warm-up procedure before starting the rollout. This procedure is used to initialize the internal inference cache of the Mamba layer and to reduce the mismatch between sequence-based training and step-by-step autoregressive inference. In our implementation, the normalized initial resolved state is repeatedly passed through the Mamba-based sequence model for 
+
+npad = 8 
+
+Page 48 of 57 0 5 10 15 20 
+
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+
+X1 | MAC: 38.58%, GRU: 91.52%, Wilks: 36.67%     
+
+> 0510 15 20
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X2 | MAC: 36.86%, GRU: 73.39%, Wilks: 37.57%     
+
+> 0510 15 20
+> 5.0
+> 2.5
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+
+X3 | MAC: 41.58%, GRU: 87.37%, Wilks: 37.25%     
+
+> 0510 15 20
+> 6
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X4 | MAC: 41.84%, GRU: 89.62%, Wilks: 37.00%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X5 | MAC: 40.22%, GRU: 76.13%, Wilks: 38.26%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X6 | MAC: 42.22%, GRU: 95.95%, Wilks: 38.78%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X7 | MAC: 35.86%, GRU: 84.36%, Wilks: 37.22%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 4
+> 2
+> 0
+> 2
+> 4
+> 6
+> 8
+
+X8 | MAC: 41.69%, GRU: 75.01%, Wilks: 36.21% 
+
+True MAC GRU Wilks Figure B3: Comparison of resolved slow-variable predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal interpolation regime [0 , 20] for the Lorenz ’96 system. For each resolved slow variable, the relative L2 error is also reported. Here the MAC model and the GRU-based model are trained using the alternative direct closure loss. 0 5 10 15 20 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U1 | MAC: 42.87%, GRU: 55.71%, Wilks: 35.93%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U2 | MAC: 38.16%, GRU: 53.86%, Wilks: 31.77%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U3 | MAC: 36.85%, GRU: 57.27%, Wilks: 41.84%     
+
+> 0510 15 20
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U4 | MAC: 38.17%, GRU: 47.37%, Wilks: 36.69%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U5 | MAC: 38.59%, GRU: 57.47%, Wilks: 42.85%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U6 | MAC: 38.63%, GRU: 52.66%, Wilks: 39.04%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U7 | MAC: 39.70%, GRU: 51.90%, Wilks: 37.80%     
+
+> 0510 15 20
+
+Time (t) 
+
+> 8
+> 6
+> 4
+> 2
+> 0
+> 2
+
+U8 | MAC: 36.60%, GRU: 50.17%, Wilks: 37.60% 
+
+True MAC GRU Wilks 
+
+Figure B4: Comparison of closure-term predictions from the MAC model, the GRU-based model, and the Wilks method over the temporal interpolation regime [0 , 20] for the Lorenz ’96 system. For each closure term, the relative L2 error is also reported. Here the MAC model and the GRU-based model are trained using the alternative direct closure loss. 
+
+Page 49 of 57 padding steps. These padding steps only advance the internal Mamba inference state; the predicted closure terms from this stage are not used to update the reduced-order variables. After this warm-up, the autoregressive rollout starts from the same initial resolved state. This cache warm-up is used only for the Mamba-based sequence model. The GRU-based sequence model starts the rollout directly from the initial resolved state. 
+
+B.8 RK4 Time Stepping with Zero-Order Holding 
+
+We briefly describe the time-stepping procedure used in the autoregressive rollout ex-periments. Consider an abstract reduced-order system with a learned closure term, dy
+
+dt = f (y) + ̂ g(y),
+
+where f denotes the known reduced-order dynamics and ̂ g denotes the closure predicted by the sequence model. A standard fourth-order Runge–Kutta discretization of this full learned right-hand side would evaluate both f and ̂ g at each intermediate stage: 
+
+k1 = f (yn) + ̂ g(yn),k2 = f (yn + ∆t 
+
+> 2
+
+k1
+
+) +̂ g(yn + ∆t 
+
+> 2
+
+k1
+
+),k3 = f (yn + ∆t 
+
+> 2
+
+k2
+
+) +̂ g(yn + ∆t 
+
+> 2
+
+k2
+
+),k4 = f (yn + ∆ tk 3) + ̂ g(yn + ∆ tk 3),
+
+followed by 
+
+yn+1 = yn + ∆t
+
+6
+
+(k1 + 2 k2 + 2 k3 + k4
+
+).
+
+This would require evaluating the learned closure at the RK4 half-step stage states, and also at the final stage state. In our implementation, we instead use a zero-order holding treatment for the learned closure. At the beginning of each time step, the sequence model predicts the closure once, ̂
+
+gn =̂ g(yn),
+
+and this predicted closure is held fixed throughout the RK4 stages: 
+
+k1 = f (yn) + ̂ gn,k2 = f (yn + ∆t 
+
+> 2
+
+k1
+
+) +̂ gn,k3 = f (yn + ∆t 
+
+> 2
+
+k2
+
+) +̂ gn,k4 = f (yn + ∆ tk 3) + ̂ gn.
+
+The update to yn+1 is then computed using the same RK4 weighted average formula. Page 50 of 57 This zero-order holding approximation is used for three practical reasons. First, the sequence model is trained and used primarily on resolved input sequences sampled at dis-crete time points, so evaluating it at intermediate RK4 stage states would introduce an additional design choice. Second, in both benchmark problems, the rollout time step is small: ∆t = 10 −4 for Burgers’ equation and ∆t = 0 .01 for the Lorenz ’96 system. Together with the smooth temporal behavior of the closure terms along the resolved trajectories, as illustrated by the closure-variable plots in Appendix A, this makes the zero-order holding treatment a reasonable practical approximation over a single time step. Third, evaluating the sequence model once per time step reduces the computational cost in both training and inference. A full stage-wise RK4 treatment would require additional sequence-model evaluations at the intermediate RK4 stages. With this treatment, the known reduced-order part f is still evaluated at the RK4 stage states, while the learned closure is used as a piecewise constant term over each time step. In our experiments, this simplified RK4 procedure is used for all predictive results reported in Section 3 and leads to stable autoregressive rollouts. Page 51 of 57 C Symbols & Notation 
+
+Table C1 summarizes the main symbols and notation used in this work.  
+
+> Table C1: Summary of the main symbols and notation used in this work.
+
+Notation Description 
+
+ROM Reduced-order model MAC Mamba-Assisted Closure framework GRU Gated recurrent unit RK4 Fourth-order Runge–Kutta method 
+
+t Time variable 
+
+∆t Time step used in numerical experiments 
+
+u(t, x ) Solution of Burgers’ equation in physical space 
+
+x Spatial coordinate for Burgers’ equation on [0 , 2π)
+
+ν Viscosity coefficient in Burgers’ equation 
+
+M Number of positively indexed resolved Fourier modes in the Burgers experiments 
+
+θk(t) k-th Fourier mode of the Burgers solution 
+
+ϕk(t), ψ k(t) Real and imaginary parts of the Fourier mode θk(t)
+
+Mk(t) Closure term for the k-th resolved Fourier mode in Burgers’ equation 
+
+mϕk (t), m ψk (t) Real and imaginary parts of the Burgers closure term 
+
+Xk(t) k-th slow variable in the two-scale Lorenz ’96 system 
+
+Yj (t) j-th fast variable in the two-scale Lorenz ’96 system 
+
+Uk(t) Closure term associated with the k-th slow variable in the Lorenz ’96 system 
+
+N Number of slow variables in the Lorenz ’96 system 
+
+J Number of fast variables coupled to each slow variable Page 52 of 57 References 
+
+Ahmed, Shady E., Suraj Pawar, Omer San, Adil Rasheed, Traian Iliescu and Bernd R. Noack 2021 “On closures for reduced order models —a spectrum of first-principle to machine-learned avenues”, Physics of Fluids , vol. 33, issue 9, article 091301, 
+
+doi : 10.1063/5.0061577 .Benettin, Giancarlo, Luigi Galgani, Antonio Giorgilli and Jean-Marie Strelcyn 1980 “Lyapunov characteristic exponents for smooth dynamical systems and for hamiltonian systems; a method for computing all of them. part 1: theory”, 
+
+Meccanica , vol. 15, issue 1, pp. 9–20, 
+
+doi : 10.1007/BF02128236 .Bengio, Yoshua, Patrice Simard and Paolo Frasconi 1994 “Learning long-term dependencies with gradient descent is difficult”, IEEE Transactions on Neural Networks , vol. 5, issue 2, pp. 157–166, 
+
+doi : 10.1109/72.279181 .Bhouri, Mohamed Aziz and Pierre Gentine 2023 “Memory-based parameterization with differentiable solver: application to Lorenz ’96”, Chaos: An Interdisciplinary Journal of Nonlinear Science , vol. 33, issue 7, article 073116, 
+
+doi : 10.1063/5.0131929 .Cho, Kyunghyun, Bart van Merriënboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bou-gares, Holger Schwenk and Yoshua Bengio 2014 “Learning phrase representations using RNN encoder –decoder for statistical machine translation”, in Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing (EMNLP) , Association for Compu-tational Linguistics, pp. 1724–1734, 
+
+doi : 10.3115/v1/D14-1179 .Chorin, Alexandre J., Ole H. Hald and Raz Kupferman 2000 “Optimal prediction and the Mori –Zwanzig representation of irreversible pro-cesses”, Proceedings of the National Academy of Sciences , vol. 97, issue 7, pp. 2968–2973, 
+
+doi : 10.1073/pnas.97.7.2968 .Christensen, Hannah and Laure Zanna 2022 “Parametrization in weather and climate models”, in, Oxford research encyc-lopedia of climate science , ed. by Hans von Storch, Oxford University Press, 
+
+doi : 10.1093/acrefore/9780190228620.013.826 .Page 53 of 57 Demaeyer, Jonathan and Stéphane Vannitsem 2017 “Stochastic parameterization of subgrid-scale processes: a review of recent physically based approaches”, in, Advances in nonlinear geosciences , ed. by Anastasios A. Tsonis, Springer International Publishing, Cham, pp. 55–85, 
+
+doi : 10.1007/978-3-319-58895-7_3 .Durbin, Paul A. 2018 “Some recent developments in turbulence closure modeling”, Annual Review of Fluid Mechanics , vol. 50, issue 1, pp. 77–103, 
+
+doi : 10.1146/annurev-fluid-122316-045020 .Fatkullin, Ibrahim and Eric Vanden-Eijnden 2004 “A computational strategy for multiscale systems with applications to Lorenz 96 model”, Journal of Computational Physics , vol. 200, issue 2, pp. 605–638, 
+
+doi : 10.1016/j.jcp.2004.04.013 .Frezat, Hugo, Ronan Fablet, Guillaume Balarac and Julien Le Sommer 2023 Gradient-free online learning of subgrid-scale dynamics with neural emulators, 
+
+arxiv : 2310.19385. Gu, Albert and Tri Dao 2023 Mamba: linear-time sequence modeling with selective state spaces, 
+
+arxiv : 2312.00752. Gu, Albert, Karan Goel and Christopher Ré 2021 Efficiently modeling long sequences with structured state spaces, 
+
+arxiv : 2111.00396. Gu, Albert, Isys Johnson, Karan Goel, Khaled Saab, Tri Dao, Atri Rudra and Christopher Ré 2021 “Combining recurrent, convolutional, and continuous-time models with linear state-space layers”, in Proceedings of the 35th International Conference on Neural Information Processing Systems , Curran Associates Inc., pp. 572–585, 
+
+url : https://dl.acm.org/doi/10.5555/3540261.3540305 .Gupta, Abhinav and Pierre F. J. Lermusiaux 2021 “Neural closure models for dynamical systems”, Proceedings of the Royal Soci-ety A: Mathematical, Physical and Engineering Sciences , vol. 477, issue 2252, article 20201004, 
+
+doi : 10.1098/rspa.2020.1004 .Page 54 of 57 Hu, Zheyuan, Qianying Cao, Kenji Kawaguchi and George Em Karniadakis 2025 “Deepomamba: state-space model for spatio-temporal PDE neural operator learning”, Journal of Computational Physics , vol. 540, article 114272, 
+
+doi : https://doi.org/10.1016/j.jcp.2025.114272 .Hu, Zheyuan, Nazanin Ahmadi Daryakenari, Qianli Shen, Kenji Kawaguchi and George Em Karniadakis 2026 “State-space models are accurate and efficient neural operators for dynamical systems”, Neural Networks , vol. 197, article 108496, 
+
+doi : https://doi.org/10.1016/j.neunet.2025.108496 .Kochkov, Dmitrii, Jamie A. Smith, Ayya Alieva, Qing Wang, Michael P. Brenner and Stephan Hoyer 2021 “Machine learning –accelerated computational fluid dynamics”, Proceedings of the National Academy of Sciences , vol. 118, issue 21, article e2101784118, 
+
+doi : 10.1073/pnas.2101784118 .Lorenz, Edward N 1996 “Predictability: a problem partly solved”, in Proc. Seminar on Predictability ,Reading, pp. 1–18, 
+
+url : https : / / www . ecmwf . int / en / elibrary / 75462 - predictability -problem-partly-solved .Ma, Chao, Jianchun Wang null and Weinan E 2019 “Model reduction with memory and the machine learning of dynamical sys-tems”, Communications in Computational Physics , vol. 25, issue 4, pp. 947– 962, 
+
+doi : 10.4208/cicp.OA-2018-0269 .Maulik, Romit, Arvind Mohan, Bethany Lusch, Sandeep Madireddy, Prasanna Balaprakash and Daniel Livescu 2020 “Time-series learning of latent-space dynamics for reduced-order model clos-ure”, Physica D: Nonlinear Phenomena , vol. 405, article 132368, 
+
+doi : https://doi.org/10.1016/j.physd.2020.132368 .Mori, Hazime 1965 “Transport, collective motion, and Brownian motion”, Progress of Theoretical Physics , vol. 33, issue 3, pp. 423–455, 
+
+doi : 10.1143/ptp.33.423 .Parish, Eric J. and Karthik Duraisamy 2017 “Non-markovian closure models for large eddy simulations using the Mori-Zwanzig formalism”, Physical Review Fluids , vol. 2, issue 1, article 014604, 
+
+doi : 10.1103/PhysRevFluids.2.014604 .Page 55 of 57 Pascanu, Razvan, Tomas Mikolov and Yoshua Bengio 2013 “On the difficulty of training recurrent neural networks”, in Proceedings of the 30th International Conference on Machine Learning , JMLR.org, pp. III-1310–III-1318, 
+
+url : https://dl.acm.org/doi/10.5555/3042817.3043083 .Qadeer, Saad, Panos Stinis and Hui Wan 2025 Stabilizing PDE–ML coupled systems, 
+
+arxiv : 2506.19274. Sanderse, Benjamin, Panos Stinis, Romit Maulik and Shady E. Ahmed 2025 “Scientific machine learning for closure models in multiscale problems: a re-view”, Foundations of Data Science , vol. 7, issue 1, pp. 298–337, 
+
+doi : 10.3934/fods.2024043 .Saunders, Marissa G. and Gregory A. Voth 2013 “Coarse-graining methods for computational biology”, Annual Review Bio-physics , vol. 42, pp. 73–93, 
+
+doi : 10.1146/annurev-biophys-083012-130348 .Um, Kiwon, Robert Brand, Yun Fei, Philipp Holl and Nils Thuerey 2020 “Solver-in-the-loop: learning from differentiable physics to interact with it-erative PDE-solvers”, in Proceedings of the 34th International Conference on Neural Information Processing Systems , Curran Associates Inc., pp. 6111– 6122, 
+
+url : https://dl.acm.org/doi/10.5555/3495724.3496237 .van der Giessen, Erik, Peter A. Schultz, Nicolas Bertin, Vasily V. Bulatov, Wei Cai, Gábor Csányi, Stephen M. Foiles, M. G. D. Geers, Carlos González, Markus Hütter, Woo Kyun Kim, Dennis M. Kochmann, Javier Llorca, Ann E. Mattsson, Jörg Rottler, Alexander Shluger, Ryan B. Sills, Ingo Steinbach, Alejandro Strachan and Ellad B. Tadmor 2020 “Roadmap on multiscale materials modeling”, Modelling and Simulation in Materials Science and Engineering , vol. 28, issue 4, article 043001, 
+
+doi : 10.1088/1361-651X/ab7150 .Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser and Illia Polosukhin 2017 “Attention is all you need”, in Proceedings of the 31st International Confer-ence on Neural Information Processing Systems , NIPS’17, Curran Associates, Inc., pp. 6000–6010, 
+
+url : https://dl.acm.org/doi/10.5555/3295222.3295349 .Page 56 of 57 Wang, Qian, Nicolò Ripamonti and Jan S. Hesthaven 2020 “Recurrent neural network closure of parametric pod-Galerkin reduced-order models based on the Mori-Zwanzig formalism”, Journal of Computational Physics , vol. 410, article 109402, 
+
+doi : https://doi.org/10.1016/j.jcp.2020.109402 .Wilks, Daniel S. 2005 “Effects of stochastic parametrizations in the Lorenz ’96 system”, Quarterly Journal of the Royal Meteorological Society , vol. 131, issue 606, pp. 389–407, 
+
+doi : 10.1256/qj.04.03 .Williams, Paul D 2005 “Modelling climate change: the role of unresolved processes”, Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences , vol. 363, issue 1837, pp. 2931–2946, 
+
+doi : 10.1098/rsta.2005.1676 .Xue, Tingkai, Chin Chun Ooi, Zhengwei Ge, Fong Yew Leong, Hongying Li and Chang Wei Kang 2025 Differentiable physics-neural models enable learning of non-Markovian clos-ures for accelerated coarse-grained physics simulations, 
+
+arxiv : 2511.21369. Zhu, Yuanran, Jason M. Dominy and Daniele Venturi 2018 “On the estimation of the Mori-Zwanzig memory integral”, Journal of Math-ematical Physics , vol. 59, issue 10, article 103501, 
+
+doi : 10.1063/1.5003467 .Zwanzig, Robert 1973 “Nonlinear generalized Langevin equations”, Journal of Statistical Physics ,vol. 9, issue 3, pp. 215–220, 
+
+doi : 10.1007/bf01008729 .Page 57 of 57

@@ -1,0 +1,3050 @@
+Title: Sparse Recovery via ℓ_1^2-ηℓ_2^2 Minimization
+
+URL Source: https://arxiv.org/pdf/2606.05674v1
+
+Published Time: Fri, 05 Jun 2026 00:35:26 GMT
+
+Number of Pages: 37
+
+Markdown Content:
+# Sparse Recovery via ℓ21 − ηℓ 22 Minimization ⋆
+
+Lang Yu a, Nanjing Huang a, ∗
+
+> aSchool of Mathematics, Sichuan University, 610064, Chengdu, P.R. China
+
+Abstract 
+
+The weighted difference of squared norms (WDSN) penalty ℓ21 −ηℓ 22 with 0 ≤ η ≤ 1 has attracted considerable attention due to its strong sparsity-promoting ability and favorable reconstruction performance in compressed sensing and inverse problems. However, exact recovery guarantees and restricted isometry property (RIP) analysis for WDSN minimization have not yet been established. In this paper, we address this gap. First, we establish sufficient conditions for the exact recovery of k-sparse signals based on the null space property (NSP). Then, under the 
+
+δ2k-RIP condition, we derive stable recovery guarantees for both k-sparse signals and general signals, and characterize upper bounds on the reconstruction error. Furthermore, we propose a WDSN-based regularized model to handle both noiseless and noisy observations in a unified framework. To design an efficient algorithm, we derive an explicit formula for the proximal operator of the WDSN functional. Based on this proximal solver, we develop a suitable variable-splitting scheme within the alternating direction method of multipliers (ADMM) and establish its global convergence under some mild conditions. Finally, numerical experiments show that the proposed method outperforms the iterative half variation method in both noiseless and noisy sparse recovery tasks. 
+
+Keywords: compressed sensing, sparse signal recovery, ℓ21 − ηℓ 22 nonconvex minimization, restricted isometry property, proximal operator, nonconvex ADMM 
+
+1. Introduction 
+
+Compressed sensing and sparse inverse problems are concerned with the recovery of sparse or compressible signals from highly undersampled linear measurements. A standard observation model is 
+
+b = Ax + e,
+
+where A ∈ Rm×n with m ≪ n, x ∈ Rn is the unknown signal, and e denotes measurement noise. The ideal recovery model seeks the sparsest feasible solution through ℓ0-minimization. This formulation, however, is combinatorial and generally NP-hard [1]. A classical alternative is to replace the ℓ0 measure by the convex ℓ1 norm, leading to basis pursuit and its noise-aware variants. The success of ℓ1-minimization has been justified by the null space property (NSP), the restricted isometry property (RIP), and related recovery conditions [2, 3, 4, 5, 6]. In particular, RIP-based analysis provides a standard framework for deriving exact recovery conditions, stability estimates, and explicit reconstruction error bounds.     
+
+> ⋆This work was funded by the National Natural Science Foundation of China (12171339, 12471296).
+> ∗Corresponding author
+> Email addresses: langyu9602@gmail.com (Lang Yu), nanjinghuang@hotmail.com (Nanjing Huang)
+> arXiv:2606.05674v1 [math.OC] 4 Jun 2026
+
+Although ℓ1-minimization is computationally tractable and theoretically well understood, the ℓ1 norm is still a convex surrogate of the ℓ0 measure and may introduce bias in sparse esti-mation. This limitation has motivated a broad class of nonconvex sparsity-promoting models, including ℓp minimization with 0 < p < 1, the difference-of-norms penalty ℓ1 − ℓ2, ratio-type penalties such as ℓ1/ℓ 2, and more general ℓp − αℓ q or ℓp/ℓ q formulations [7, 8, 9, 10, 11, 12, 13]. These nonconvex models are designed to promote sparsity more strongly than the ℓ1 norm and have shown advantages in sparse recovery, especially for coherent sensing systems. At the same time, their nonconvexity and nonseparability make the analysis of exact recovery, stability, and algorithmic convergence considerably more delicate. Among nonconvex nonseparable penalties, the ℓ1 − ℓ2 model has attracted particular atten-tion. Yin et al. [10] studied ℓ1 − ℓ2 minimization for compressed sensing and demonstrated its effectiveness in sparse recovery. Lou and Yan [14] derived an explicit proximal operator for the 
+
+ℓ1 − ℓ2 metric and incorporated it into forward–backward splitting and the alternating direction method of multipliers (ADMM), leading to efficient numerical algorithms. More recently, Ge, Chen, and Ng [15] developed refined RIP analysis for ℓ1 − ℓ2 minimization and established improved exact and stable recovery guarantees. These studies show that NSP/RIP analysis is essential for understanding the recovery capability of nonconvex sparse penalties and for explaining their advantages over classical convex relaxation. Despite these developments, the ℓ1 −ηℓ 2 penalty still has an important analytical limitation. The term ∥x∥2 is not differentiable at the origin, and iterative schemes involving ℓ1 − ηℓ 2
+
+may produce singular expressions of the form x/∥x∥2. This difficulty complicates convergence analysis and often requires additional assumptions to avoid zero or near-zero iterates [16, 17]. A natural way to remove this singularity while retaining a difference-of-norms structure is to replace the ℓ2 term by its squared counterpart. To this end, Li and Ding [18] introduced the weighted difference-of-squared-norms (WDSN) sparsity functional 
+
+Rη(x) := ∥x∥21 − η∥x∥22, 0 ≤ η ≤ 1
+
+and established existence, stability, sparsity of regularized solutions for linear ill-posed prob-lems. They further extended their results to nonlinear ill-posed inverse problems in [17]. It is worth mentioning that Rη remains nonsmooth because of the squared ℓ1 term, the use of ∥x∥22 avoids the singularity associated with ∥x∥2 at the origin. Moreover, as η increases, the negative squared ℓ2 term enhances the nonconvex sparsity-promoting effect. Another useful feature is the two-homogeneity of Rη, which matches the homogeneity of the quadratic data-fidelity term. This suggests that, in a regularized least-squares model, the relative balance between data fidelity and WDSN regularization is naturally preserved under amplitude rescaling of the measurements. Thus, WDSN provides a useful compromise between sparse promotion and analytical tractability. It should be noticed that the work of [17, 18] are mainly developed within Tikhonov-type regularization frameworks. However, to our best knowledge, the compressed sensing question of whether WDSN minimization admits exact recovery guarantees and RIP-based stable recovery bounds has not yet been systematically studied. Motivated by this gap, this paper studies two constrained sparse recovery models induced by the WDSN functional. Specifically, we consider the following WDSN minimization 
+
+
+
+Pη : min  
+
+> x∈Rn
+
+Rη(x) s.t. Ax = b,
+
+Pεη : min  
+
+> x∈Rn
+
+Rη(x) s.t. ∥Ax − b∥2 ≤ ε, 
+
+(1a) (1b) 2where the equality-constrained model Pη corresponds to noiseless measurements to be used for exact recovery analysis, and the inequality-constrained model Pεη corresponds to noise measure-ments to be used for stable recovery analysis. This paper addresses the theoretical and computational issues for Pη and Pεη . It is worth noting that we are faced with several challenges in this study. On the theoretical side, the WDSN functional is nonconvex and nonseparable, and the negative quadratic term −η∥x∥22
+
+destroys the standard cone structure used in classical ℓ1 recovery analysis, which leads to the fact that the usual NSP and RIP techniques cannot be applied directly. Thus, one has to establish new estimates for the recovery error that incorporate the η-dependent term and still yield explicit δ2k-based recovery bounds. On the computational side, the squared ℓ1 term couples all coordinates and WDSN is nonconvex in general, which results in the complexity of computation. Therefore, it is necessary to design an efficient solver. The main contributions of this paper are fourfold. First, we provide an NSP-type suffi-cient condition for exact recovery via the equality-constrained WDSN (EC-WDSN) model Pη,thereby giving a theoretical characterization of its sparse recovery capability. Second, we de-velop a δ2k-RIP-based stable recovery theory for the noise-constrained WDSN (NC-WDSN) model Pεη , covering both k-sparse and general signals and yielding explicit reconstruction er-ror estimates. Third, we formulate a WDSN regularization model and derive the closed-form proximal operator of the WDSN functional, which provides the basis for efficient numerical implementation. Fourth, we propose a variable-splitting ADMM algorithm tailored to WDSN minimization and prove its global convergence under some mild assumptions. The remainder of this paper is organized as follows. Section 2 establishes an exact recovery guarantee through a NSP adapted to the WDSN functional. Sections 3 and 4 develop RIP-based stable recovery results for sparse and general signals, respectively. Section 5 derives the closed-form proximal mapping of Rη. Sections 6 and 7 present the ADMM algorithm and its convergence analysis. Section 8 reports the numerical experiments, and Section 9 concludes the paper. 
+
+2. Exact Recovery via Null Space Property 
+
+In this section, we establish an exact recovery guarantee for the EC-WDSN minimization problem Pη. Unlike the RIP-based analysis, the proof in this section is based directly on the geometry of the null space of the sensing matrix A. The null space property (NSP) is more intrinsic than the restricted isometry property (RIP) in the sense that it characterizes exact recovery through the interaction between the null space of A and sparse supports. For the WDSN penalty Rη, which is generally nonconvex when η > 0, the following η-augmented NSP is a sufficient null-space condition adapted to the additional negative quadratic term in Rη.
+
+Definition 2.1 (η-Augmented NSP) . Let k be a positive integer and 0 ≤ η ≤ 1. A matrix 
+
+A ∈ Rm×n is said to satisfy the η-augmented NSP of order k, abbreviated as the (η, k )-ANSP, if for every nonzero vector v ∈ N (A) \ { 0}, and every index set S ⊂ { 1, . . . , n } with |S| ≤ k,one has 
+
+∥vS ∥1 + η∥v∥2 < ∥vSc ∥1. (2) 
+
+Remark 2.2. When η = 0 , the (η, k )-ANSP states that, for every v ∈ N (A) \ { 0} and every index set S with |S| ≤ k, one has ∥vS ∥1 < ∥vSc ∥1. This is exactly the classical NSP for ℓ1
+
+minimization. 
+
+3Lemma 2.3. Let η ∈ [0 , 1] and define Rη(x) := ∥x∥21 − η∥x∥22. Let C ⊆ Rn be a feasible set, and let ˆx ∈ arg min x∈C Rη(x). Suppose that x∗ ∈ C , set h := ˆx − x∗, and let S ⊆ { 1, . . . , n }
+
+satisfy supp( x∗) ⊆ S . Then 
+
+∥hSc ∥1 ≤ ∥ hS ∥1 + η∥h∥2. (3) 
+
+Proof. Since x∗ ∈ C and ˆx is a global minimizer of Rη over C, we have 
+
+∥ˆx∥21 − η∥ˆx∥22 ≤ ∥ x∗∥21 − η∥x∗∥22. (4) Rearranging (4) gives 
+
+∥ˆx∥21 − ∥ x∗∥21 ≤ η  ∥ˆx∥22 − ∥ x∗∥22
+
+ . (5) If ∥ˆx∥1 ≤ ∥ x∗∥1, then (3) follows immediately. Hence we may assume that ∥ˆx∥1 > ∥x∗∥1. In this case, (5) excludes η = 0 , and therefore η > 0. It follows from the difference-of-squares identity in (5) that 
+
+ ∥ˆx∥1 − ∥ x∗∥1
+
+  ∥ˆx∥1 + ∥x∗∥1
+
+ ≤ η ∥ˆx∥2 − ∥ x∗∥2
+
+  ∥ˆx∥2 + ∥x∗∥2
+
+. (6) The left-hand side of (6) is positive, hence ∥ˆx∥2 > ∥x∗∥2. Since ∥ˆx∥2 − ∥ x∗∥2 ≤ ∥ ˆx − x∗∥2 =
+
+∥h∥2 and ∥ˆx∥2 +∥x∗∥2 ≤ ∥ ˆx∥1 +∥x∗∥1, it follows from (6) that  ∥ˆx∥1 −∥ x∗∥1
+
+  ∥ˆx∥1 +∥x∗∥1
+
+ ≤
+
+η∥h∥2
+
+ ∥ˆx∥1 + ∥x∗∥1
+
+. Dividing by the positive quantity ∥ˆx∥1 + ∥x∗∥1 gives ∥ˆx∥1 − ∥ x∗∥1 ≤
+
+η∥h∥2. Since supp( x∗) ⊆ S , we have x∗Sc = 0 , and hence 
+
+∥ˆx∥1 = ∥x∗S + hS ∥1 + ∥hSc ∥1 ≥ ∥ x∗∥1 − ∥ hS ∥1 + ∥hSc ∥1.
+
+Therefore, we have ∥hSc ∥1 − ∥ hS ∥1 ≤ ∥ ˆx∥1 − ∥ x∗∥1 ≤ η∥h∥2, where the last inequality follows from ∥ˆx∥1 − ∥ x∗∥1 ≤ η∥h∥2. This is precisely (3), and the proof is complete. 
+
+Theorem 2.4. Assume that A satisfies the (η, k )-ANSP. Then, for every k-sparse vector x∗ ∈
+
+Rn with b = Ax ∗, the vector x∗ is the unique global minimizer of Pη.Proof. Let x∗ be an arbitrary k-sparse vector and set S := supp( x∗). Then |S| ≤ k and x∗ is feasible for Pη with b = Ax ∗. Let x be any feasible point of Pη and define h := x − x∗. Since 
+
+Ax = b and Ax ∗ = b, we have Ah = 0, that is, h ∈ N (A). If h = 0, then x = x∗. Hence it remains to consider the case h̸ = 0. Since S = supp( x∗), one has x∗Sc = 0. From x = x∗ + h,it follows that xS = x∗S + hS and xSc = hSc . Therefore, one has 
+
+∥x∥1 = ∥xS ∥1 + ∥xSc ∥1 = ∥x∗S + hS ∥1 + ∥hSc ∥1 ≥ ∥ x∗S ∥1 − ∥ hS ∥1 + ∥hSc ∥1. (7) Here the last inequality follows from the triangle inequality. Since ∥x∗S ∥1 = ∥x∗∥1, (7) implies 
+
+∥x∥1 − ∥ x∗∥1 ≥ ∥ hSc ∥1 − ∥ hS ∥1. (8) Because A satisfies the (η, k )-ANSP, and because h ∈ N (A) \ { 0} and |S| ≤ k, we have 
+
+∥hSc ∥1 > ∥hS ∥1 + η∥h∥2. (9) Combining (8) with (9) yields 
+
+∥x∥1 − ∥ x∗∥1 > η ∥h∥2. (10) Since 0 ≤ η ≤ 1, (10) implies ∥x∥1 − ∥ x∗∥1 > 0. Hence ∥x∥1 > ∥x∗∥1. From the definition of 
+
+Rη, we have 
+
+Rη(x) − R η(x∗) =  ∥x∥1 − ∥ x∗∥1
+
+  ∥x∥1 + ∥x∗∥1
+
+
+
+− η ∥x∥2 − ∥ x∗∥2
+
+  ∥x∥2 + ∥x∗∥2
+
+. (11) 4The reverse triangle inequality gives ∥x∥2 − ∥ x∗∥2 ≤ ∥ x − x∗∥2 = ∥h∥2, and since ∥z∥2 ≤ ∥ z∥1
+
+for every z ∈ Rn, we also have ∥x∥2 + ∥x∗∥2 ≤ ∥ x∥1 + ∥x∗∥1. It follows that 
+
+∥x∥22 − ∥ x∗∥22 ≤ ∥ h∥2
+
+ ∥x∥1 + ∥x∗∥1
+
+. (12) On the other hand, (10) implies 
+
+∥x∥21 − ∥ x∗∥21 > η ∥h∥2
+
+ ∥x∥1 + ∥x∗∥1
+
+. (13) Combining (12) and (13), we obtain ∥x∥21 − ∥ x∗∥21 > η (∥x∥22 − ∥ x∗∥22), which is equivalent to 
+
+Rη(x) > Rη(x∗). Thus every feasible point x̸ = x∗ has strictly larger objective value than 
+
+x∗. Hence x∗ is the unique global minimizer of Pη. Since x∗ was arbitrary among all k-sparse vectors, the conclusion holds uniformly for every k-sparse signal. This proves the theorem. The (η, k )-ANSP in Definition 2.1 serves as a sufficient null space condition for exact recovery by the EC-WDSN model. We next derive a spreadness-type null space condition, expressed through the ratio ∥v∥1/∥v∥2, that implies the (η, k )-ANSP. 
+
+Definition 2.5 (Null-space ℓ1/ℓ 2 spreadness bound) . Let k ∈ N and ω > 0. We say that 
+
+A satisfies the null-space ℓ1/ℓ 2 spreadness bound of order k with constant ω if, for every v ∈N (A) \ { 0}, one has 
+
+∥v∥2 ≤ ω
+
+√k ∥v∥1. (14) 
+
+Proposition 2.6. Let 0 ≤ η ≤ 1. Assume that A satisfies the ℓ1-NSP of order k with constant 
+
+γ ∈ (0 , 1) , namely, ∥vS ∥1 ≤ γ∥vSc ∥1 for every v ∈ N (A) \ { 0} and every index set S ⊂ {1, . . . , n } with |S| ≤ k. Suppose further that A satisfies the null-space ℓ1/ℓ 2 spreadness bound 
+
+(14) . If γ + ηω (1 + γ)/√k < 1, then A satisfies the (η, k )-ANSP. Proof. Let v ∈ N (A) \ { 0} and let S ⊂ { 1, . . . , n } satisfy |S| ≤ k. By the assumed ℓ1-NSP, we have 
+
+∥v∥1 = ∥vS ∥1 + ∥vSc ∥1 ≤ (1 + γ)∥vSc ∥1. (15) Combining (14) with (15), we obtain 
+
+∥v∥2 ≤ ω
+
+√k ∥v∥1 ≤ ω(1 + γ)
+
+√k ∥vSc ∥1. (16) It follows from the assumed ℓ1-NSP and (16) that 
+
+∥vS ∥1 + η∥v∥2 ≤ γ∥vSc ∥1 + ηω (1 + γ)
+
+√k ∥vSc ∥1 =
+
+
+
+γ + ηω (1 + γ)
+
+√k
+
+
+
+∥vSc ∥1. (17) By the condition γ + ηω (1 + γ)/√k < 1, the coefficient in (17) is strictly less than one. Hence 
+
+∥vS ∥1 + η∥v∥2 < ∥vSc ∥1. Since v ∈ N (A) \ { 0} and S with |S| ≤ k were arbitrary, A satisfies the (η, k )-ANSP. 
+
+Remark 2.7. Condition (14) requires nonzero null-space vectors to be sufficiently spread in the 
+
+ℓ1/ℓ 2 sense. Equivalently, it imposes ∥v∥1 
+
+> ∥v∥2
+
+≥ √kω for every v ∈ N (A) \ { 0}. Thus smaller values of ω exclude null-space vectors that are too concentrated. In Proposition 2.6, this assumption is useful only when ω is small enough to satisfy ω <  
+
+> √k(1 −γ)
+> η(1+ γ)
+
+with η > 0. By contrast, the trivial inequality ∥v∥2 ≤ ∥ v∥1 corresponds to the choice ω = √k, and therefore does not by itself provide a nontrivial spreadness guarantee. 
+
+5Corollary 2.8. Assume that A satisfies the ℓ1-NSP of order k with constant γ ∈ (0 , 1) and the null-space ℓ1/ℓ 2 spreadness bound of order k with constant ω > 0. If γ + ηω (1 + γ)/√k < 1,then, for every k-sparse vector x∗ ∈ Rn with b = Ax ∗, the vector x∗ is the unique global minimizer of Pη.Proof. By Proposition 2.6, the ℓ1-NSP, the null-space ℓ1/ℓ 2 spreadness bound, and condition 
+
+γ + ηω (1 + γ)/√k < 1 imply that A satisfies the (η, k )-ANSP. Therefore, Theorem 2.4 applies and gives the stated uniform exact recovery result. 
+
+Remark 2.9. Condition γ +ηω (1+ γ)/√k < 1 shows how the parameter η affects the null-space requirement. When η = 0 , the condition reduces to γ < 1, which is the standard admissible range for the classical ℓ1-NSP. For η > 0, the additional term ηω (1+ γ) 
+
+> √k
+
+reflects the contribution of the negative quadratic part −η∥x∥22 in the WDSN functional. Thus, for fixed γ, ω, and k, a larger value of η imposes a stronger null-space requirement. Conversely, a smaller spreadness-bound constant ω or a larger sparsity level k makes the condition easier to satisfy. 
+
+3. Stable Recovery under a δ2k-RIP Condition 
+
+The preceding section provided a null-space characterization of exact recovery for the noise-less model. We now turn to the noisy measurements and study stable recovery for Pεη . Let the measurements satisfy b = Ax ∗ + e with ∥e∥2 ≤ ε, where x∗ ∈ Rn denotes the ground-truth signal. Throughout this section, we assume that x∗ is k-sparse, namely ∥x∗∥0 ≤ k. We first recall the restricted isometry property (RIP). 
+
+Definition 3.1 (RIP and Restricted isometry constant) . For a positive integer s, the restricted isometry constant (RIC) δs of A ∈ Rm×n is defined as the smallest number δ ≥ 0 such that 
+
+(1 − δ)∥z∥22 ≤ ∥ Az ∥22 ≤ (1 + δ)∥z∥22 (18) 
+
+for every z ∈ Rn satisfying ∥z∥0 ≤ s. The matrix A is said to satisfy the RIP of order s if 
+
+δs < 1.
+
+Lemma 3.2 (Restricted Orthogonality) . Suppose that A satisfies the RIP of order s with constant δs. Let u, v ∈ Rn have disjoint supports and assume that | supp( u) ∪ supp( v)| ≤ s.Then |⟨ Au , Av ⟩| ≤ δs∥u∥2∥v∥2.Proof. If u = 0 or v = 0, then the asserted inequality follows immediately. It remains to consider the case u̸ = 0 and v̸ = 0. Set eu = u/∥u∥2 and ev = v/∥v∥2. Since u and v have disjoint supports, we have ⟨eu, ev⟩ = 0 , and hence ∥eu + ev∥22 = ∥eu − ev∥22 = 2 . Moreover, both 
+
+eu + ev and eu − ev are supported on supp( u) ∪ supp( v), whose cardinality is at most s. Therefore, the defining inequality for the RIC δs gives 
+
+2(1 − δs) ≤ ∥ A(eu ± ev)∥22 ≤ 2(1 + δs). (19) It follows from the polarization identity that 
+
+⟨Aeu, Aev⟩ = 14
+
+ ∥A(eu + ev)∥22 − ∥ A(eu − ev)∥22
+
+ . (20) Using (19), the difference in parentheses in (20) is bounded in absolute value by 4δs. Con-sequently, |⟨ Aeu, Aev⟩| ≤ δs. Multiplying this inequality by ∥u∥2∥v∥2 yields |⟨ Au , Av ⟩| ≤ 
+
+δs∥u∥2∥v∥2. The proof is complete. 6Applying Lemma 2.3 to the noise-constrained feasible set Cε := {x ∈ Rn : ∥Ax − b∥2 ≤ ε},we obtain an ℓ1-norm upper bound for the error h on Sc. We next partition hSc into magnitude-ordered blocks and derive upper bounds for their ℓ2-norms. These bounds will be used in the RIP analysis below. 
+
+Lemma 3.3 (Blockwise tail bound) . Let S := supp( x∗) with |S| ≤ k, and let ˆx be a global minimizer of Pεη . Set h := ˆx−x∗. Let {S j }Jj=1 be a magnitude-ordered partition of Sc associated with h; that is, |S j | = k for 1 ≤ j < J , |S J | ≤ k, and |hi| ≥ | hℓ| whenever i ∈ S j , ℓ ∈ S j+1 ,and 1 ≤ j < J . Set T01 := S ∪ S 1. Then, we have 
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2 ≤ ∥ hS ∥2 + η
+
+√k ∥h∥2, (21) 
+
+and JX
+
+> j=2
+
+∥hSj ∥2 ≤ ∥ hT01 ∥2 + η
+
+√k ∥h∥2. (22) 
+
+Proof. If J = 1 , then the sum in (21) is empty, and the assertion is immediate. Hence we assume J ≥ 2. By the magnitude-ordered construction of {S j }Jj=1 , for each j = 2 , . . . , J , every entry of hSj is no larger in magnitude than every entry of hSj−1 . Since |S j−1| = k, it follows that 
+
+|hi| ≤ 1
+
+k ∥hSj−1 ∥1, i ∈ S j , j = 2 , . . . , J. (23) Applying the pointwise bound (23) to the squared ℓ2-norm of hSj gives 
+
+∥hSj ∥2 =
+
+X
+
+> i∈S j
+
+|hi|2
+
+
+
+> 1/2
+
+≤
+
+|S j |
+
+k2
+
+1/2
+
+∥hSj−1 ∥1 ≤ 1
+
+√k ∥hSj−1 ∥1, j = 2 , . . . , J, (24) where the last inequality uses |S j | ≤ k. Summing (24) over j = 2 , . . . , J , one has 
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2 ≤ 1
+
+√k
+
+> J−1
+
+X
+
+> j=1
+
+∥hSj ∥1 ≤ 1
+
+√k ∥hSc ∥1. (25) Since x∗ is feasible for Cε := {x ∈ Rn : ∥Ax − b∥2 ≤ ε} and ˆx is a global minimizer of Rη over this feasible set, Lemma 2.3 applied with S yields 
+
+∥hSc ∥1 ≤ ∥ hS ∥1 + η∥h∥2. (26) Combining (25) and (26), we obtain 
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2 ≤ 1
+
+√k ∥hS ∥1 + η
+
+√k ∥h∥2. (27) Because |S| ≤ k, the Cauchy–Schwarz inequality gives 
+
+∥hS ∥1 ≤ p|S|∥ hS ∥2 ≤ √k∥hS ∥2. (28) Substituting (28) into (27) gives PJj=2 ∥hSj ∥2 ≤ ∥ hS ∥2 + η√k ∥h∥2, which proves (21). Finally, since S ⊆ T 01 , we have ∥hS ∥2 ≤ ∥ hT01 ∥2. Therefore, (21) immediately implies (22). 7Since (21) and (22) still contain ∥h∥2 on the right-hand side, we need to relate the full error norm to the leading block. The next lemma provides such a relation under the condition 
+
+η < √k.
+
+Lemma 3.4 (Leading-block control of the error) . Under the notation and assumptions of Lemma 3.3, the following bound holds: 
+
+∥hT01 ∥2 ≥ 1 − η/ √k
+
+2 ∥h∥2. (29) 
+
+Proof. The disjoint decomposition h = hT01 + PJj=2 hSj and the triangle inequality give 
+
+∥h∥2 ≤ ∥ hT01 ∥2 +
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2. (30) Using the blockwise tail bound (22) in (30), we obtain ∥h∥2 ≤ 2∥hT01 ∥2 + η√k ∥h∥2 . Hence 
+
+
+
+1 − η
+
+√k
+
+
+
+∥h∥2 ≤ 2∥hT01 ∥2. (31) Since k ≥ 1 and η ∈ [0 , 1] , we have 1 − η/ √k ≥ 0. Dividing (31) by 2 yields (29). 
+
+Theorem 3.5 (Stable recovery under a δ2k-RIP condition) . Let x∗ ∈ Rn be k-sparse, and suppose that b = Ax ∗ +e with ∥e∥2 ≤ ε. Let ˆx be a global minimizer of Pεη , and set h := ˆx−x∗.If A satisfies the RIP of order 2k with RIC δ2k and 
+
+δ2k < 1 − η√k
+
+(1 + √2) + ( √2 − 1) η√k
+
+, (32) 
+
+then 
+
+∥ˆx − x∗∥2 ≤ 4√1 + δ2k
+
+
+
+1 − η√k
+
+
+
+− δ2k
+
+h
+
+1 + √2 + ( √2 − 1) η√k
+
+iε. (33) 
+
+Proof. Set h := ˆx − x∗ and θ := η/ √k. Under the standing assumption η ∈ [0 , 1] , we have 
+
+θ ≥ 0. Moreover, since δ2k ≥ 0 and the denominator in (32) is positive, condition (32) implies 
+
+1 − θ > 0, and hence θ < 1.Since both ˆx and x∗ are feasible for Pεη , one has ∥Aˆx−b∥2 ≤ ε and ∥Ax ∗ −b∥2 = ∥e∥2 ≤ ε.Therefore, by the triangle inequality, one has 
+
+∥Ah ∥2 = ∥Aˆx − Ax ∗∥2 ≤ ∥ Aˆx − b∥2 + ∥b − Ax ∗∥2 ≤ 2ε. (34) Let S := supp( x∗) and T01 := S ∪ S 1, where S1 contains the indices of the largest k entries of hSc in magnitude. Then |T 01 | ≤ |S| + |S 1| ≤ 2k. Using the disjoint decomposition h =
+
+hT01 + PJj=2 hSj , we obtain 
+
+⟨Ah T01 , Ah ⟩ = ∥Ah T01 ∥22 +
+
+> J
+
+X
+
+> j=2
+
+⟨Ah T01 , Ah Sj ⟩.
+
+8Since hT01 is supported on a set of cardinality at most 2k, the RIP of order 2k gives 
+
+(1 − δ2k)∥hT01 ∥22 ≤ ∥ Ah T01 ∥22 = ⟨Ah T01 , Ah ⟩ − 
+
+> J
+
+X
+
+> j=2
+
+⟨Ah T01 , Ah Sj ⟩.
+
+Taking absolute values on the right-hand side gives 
+
+(1 − δ2k)∥hT01 ∥22 ≤ |⟨ Ah T01 , Ah ⟩| +
+
+> J
+
+X
+
+> j=2
+
+|⟨ Ah T01 , Ah Sj ⟩| . (35) By the Cauchy–Schwarz inequality, one has |⟨ Ah T01 , Ah ⟩| ≤ ∥ Ah T01 ∥2∥Ah ∥2. Using the RIP upper bound for hT01 and (34), we get 
+
+|⟨ Ah T01 , Ah ⟩| ≤ ∥ Ah T01 ∥2∥Ah ∥2 ≤ 2εp1 + δ2k∥hT01 ∥2. (36) It remains to estimate the cross terms in (35) without invoking an RIP constant of order larger than 2k. For this purpose, we split hT01 = hS + hS1 . For every j = 2 , . . . , J , we have 
+
+⟨Ah T01 , Ah Sj ⟩ = ⟨Ah S , Ah Sj ⟩ + ⟨Ah S1 , Ah Sj ⟩. (37) The sets S and Sj are disjoint and satisfy |S ∪ S j | ≤ |S| + |S j | ≤ 2k. Similarly, S1 and Sj are disjoint and |S 1 ∪ S j | ≤ 2k. Therefore, Lemma 3.2 with s = 2 k gives 
+
+|⟨ Ah S , Ah Sj ⟩| ≤ δ2k∥hS ∥2∥hSj ∥2, |⟨ Ah S1 , Ah Sj ⟩| ≤ δ2k∥hS1 ∥2∥hSj ∥2. (38) It follows from a + b ≤ p2( a2 + b2) for a, b ≥ 0 that 
+
+∥hS ∥2 + ∥hS1 ∥2 ≤ √2  ∥hS ∥22 + ∥hS1 ∥22
+
+1/2 .
+
+Since S and S1 are disjoint, one has ∥hS ∥22 + ∥hS1 ∥22 = ∥hT01 ∥22. Combining (37) and (38), we obtain 
+
+|⟨ Ah T01 , Ah Sj ⟩| ≤ δ2k (∥hS ∥2 + ∥hS1 ∥2) ∥hSj ∥2 ≤ √2δ2k∥hT01 ∥2∥hSj ∥2. (39) Summing (39) over j = 2 , . . . , J yields 
+
+> J
+
+X
+
+> j=2
+
+|⟨ Ah T01 , Ah Sj ⟩| ≤ √2δ2k∥hT01 ∥2
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2. (40) Substituting (36) and (40) into (35) gives 
+
+(1 − δ2k)∥hT01 ∥22 ≤ 2εp1 + δ2k∥hT01 ∥2 + √2δ2k∥hT01 ∥2
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2. (41) If ∥hT01 ∥2 = 0 , then Lemma 3.4 and θ < 1 imply ∥h∥2 = 0 , and the desired result follows immediately. Hence we may assume that ∥hT01 ∥2 > 0. Dividing (41) by ∥hT01 ∥2 gives 
+
+(1 − δ2k)∥hT01 ∥2 ≤ 2εp1 + δ2k + √2δ2kJX
+
+> j=2
+
+∥hSj ∥2. (42) 9It follows from the upper bound (22) that 
+
+> J
+
+X
+
+> j=2
+
+∥hSj ∥2 ≤ ∥ hT01 ∥2 + θ∥h∥2. (43) Combining (42) and (43), we get 
+
+
+
+1 − (1 + √2) δ2k
+
+
+
+∥hT01 ∥2 ≤ 2εp1 + δ2k + √2δ2kθ∥h∥2. (44) Condition (32) also implies δ2k < 1/(1 + √2) . Indeed, since θ ≥ 0, we have 
+
+1 − θ
+
+(1 + √2) + ( √2 − 1) θ ≤ 11 + √2.
+
+Thus 1 − (1 + √2) δ2k > 0. Applying Lemma 3.4 to the left-hand side of (44) gives 
+
+"  1 − (1 + √2) δ2k
+
+ (1 − θ)2 − √2δ2kθ
+
+#
+
+∥h∥2 ≤ 2εp1 + δ2k. (45) It remains to simplify the coefficient in (45). With θ = η/ √k, we have 
+
+ 1 − (1 + √2) δ2k
+
+ (1 − θ)2 − √2δ2kθ = (1 − θ) − δ2k
+
+1 + √2 + ( √2 − 1) θ
+
+2 .
+
+Therefore, (45) becomes 
+
+
+
+1 − η√k
+
+
+
+− δ2k
+
+h
+
+1 + √2 + ( √2 − 1) η√k
+
+i
+
+2 ∥h∥2 ≤ 2εp1 + δ2k. (46) By (32), the coefficient in (46) is positive. Dividing by this positive coefficient yields 
+
+∥h∥2 ≤ 4√1 + δ2k
+
+
+
+1 − η√k
+
+
+
+− δ2k
+
+h
+
+1 + √2 + ( √2 − 1) η√k
+
+iε. 
+
+Since h = ˆx − x∗, this proves (33). 
+
+Remark 3.6. In the noiseless case, namely ε = 0 , the ℓ2-stable recovery bound (33) reduces to 
+
+∥ˆx − x∗∥2 = 0 . Hence ˆx = x∗. Therefore, under the RIP condition (32) , NC-WDSN model Pεη
+
+guarantees exact recovery in the absence of measurement noise. 
+
+Remark 3.7. When η = 0 , NC-WDSN model Pεη reduces to min x∈Rn {∥ x∥21 : ∥Ax − b∥2 ≤ ε}.Since t 7 → t2 is strictly increasing on [0 , ∞), this problem has the same set of global minimizers as min x∈Rn {∥ x∥1 : ∥Ax − b∥2 ≤ ε}. Moreover, the RIP condition (32) becomes δ2k < 11+ √2 =
+
+√2−1. Thus the η = 0 case is consistent with the classical Candès-type sufficient RIP condition for stable recovery by constrained ℓ1 minimization. 
+
+10 4. Stable Recovery for General Signals 
+
+We continue to consider the NC-WDSN model Pεη under noisy measurements b = Ax ∗ + e
+
+with ∥e∥2 ≤ ε. Throughout this section, the target signal x∗ ∈ Rn is arbitrary and is not assumed to be exactly k-sparse. The sufficient δ2k-RIP condition remains the same as in the exactly sparse case, while the error bound gains an additional term measuring the best k-term approximation error of x∗.To make this approximation term precise, we first fix a best k-term support of x∗ and record the corresponding ℓ1 tail error. This support will be used throughout the block decomposition and RIP estimates below. 
+
+Definition 4.1. Let x∗ ∈ Rn be an arbitrary signal, and let 1 ≤ k ≤ n. A set S ⊂ { 1, . . . , n }
+
+is called a best k-term index set of x∗ if S ∈ arg max T ⊂{ 1,...,n }, |T | =k ∥x∗T ∥1. The best k-term approximation error of x∗ in the ℓ1 norm is defined by 
+
+σk(x∗)1 := inf  
+
+> ∥z∥0≤k
+
+∥x∗ − z∥1.
+
+For any best k-term index set S of x∗, we have σk(x∗)1 = ∥x∗Sc ∥1.
+
+In contrast to the exactly k-sparse case, x∗ may have nonzero entries on Sc. Consequently, the recovery bound contains an additional term depending on ∥x∗Sc ∥1. The following lemma makes this observation precise. 
+
+Lemma 4.2. Let x∗ ∈ Rn be arbitrary, and let S be a best k-term index set of x∗ in the sense of Definition 4.1. Assume that b = Ax ∗ + e with ∥e∥2 ≤ ε. Let ˆx be a global minimizer of Pεη
+
+and set h := ˆx − x∗. Then 
+
+∥hSc ∥1 ≤ ∥ hS ∥1 + η∥h∥2 + 2 σk(x∗)1. (47) 
+
+Proof. Since b = Ax ∗ + e and ∥e∥2 ≤ ε, one has ∥Ax ∗ − b∥2 = ∥e∥2 ≤ ε. Hence x∗ is feasible for Pεη . By the global minimality of ˆx, one has 
+
+∥ˆx∥21 − η∥ˆx∥22 ≤ ∥ x∗∥21 − η∥x∗∥22.
+
+It follows that 
+
+∥ˆx∥21 − ∥ x∗∥21 ≤ η ∥ˆx∥22 − ∥ x∗∥22
+
+. (48) If ∥ˆx∥1 ≤ ∥ x∗∥1, then ∥ˆx∥1 − ∥ x∗∥1 ≤ η∥h∥2 is immediate. It remains to treat the case 
+
+∥ˆx∥1 − ∥ x∗∥1 > 0. Dividing (48) by ∥ˆx∥1 + ∥x∗∥1 gives 
+
+∥ˆx∥1 − ∥ x∗∥1 ≤ η ∥ˆx∥22 − ∥ x∗∥22
+
+∥ˆx∥1 + ∥x∗∥1
+
+≤ η ∥ˆx∥2 − ∥ x∗∥2
+
+ ∥ˆx∥2 + ∥x∗∥2
+
+
+
+∥ˆx∥1 + ∥x∗∥1
+
+≤ η∥h∥2
+
+∥ˆx∥2 + ∥x∗∥2
+
+∥ˆx∥1 + ∥x∗∥1
+
+≤ η∥h∥2, (49) where we used the reverse triangle inequality and the norm relation ∥z∥2 ≤ ∥ z∥1. Since 
+
+ˆx = x∗ + h, the decomposition with respect to S gives 
+
+∥ˆx∥1 − ∥ x∗∥1 = ∥x∗S + hS ∥1 + ∥x∗Sc + hSc ∥1 − ∥ x∗S ∥1 − ∥ x∗Sc ∥1
+
+≥ ∥ x∗S ∥1 − ∥ hS ∥1 + ∥hSc ∥1 − ∥ x∗Sc ∥1 − ∥ x∗S ∥1 − ∥ x∗Sc ∥1
+
+= ∥hSc ∥1 − ∥ hS ∥1 − 2∥x∗Sc ∥1. (50) 11 Combining ∥ˆx∥1 −∥ x∗∥1 ≤ η∥h∥2 and (50) yields ∥hSc ∥1 −∥ hS ∥1 −2∥x∗Sc ∥1 ≤ η∥h∥2. It follows that 
+
+∥hSc ∥1 ≤ ∥ hS ∥1 + η∥h∥2 + 2 ∥x∗Sc ∥1.
+
+Since S is a best k-term index set of x∗, Definition 4.1 gives ∥x∗Sc ∥1 = σk(x∗)1, and hence (47) follows, which completes proof. The next lemma uses the previous bound on ∥hSc ∥1 to control the tail part of h in the ℓ2
+
+norm. This is the form needed for applying the RIP. 
+
+Lemma 4.3. Let x∗ ∈ Rn be arbitrary, and let S be a best k-term index set of x∗ in the sense of Definition 4.1. Let ˆx be a global minimizer of Pεη , and set h := ˆx − x∗. Arrange the entries of hSc in nonincreasing order of magnitude, and let S1, S2, . . . be the corresponding disjoint blocks, each of cardinality k except possibly the last one. Define T01 := S ∪ S 1. Then 
+
+X
+
+> j≥2
+
+∥hSj ∥2 ≤ ∥ hT01 ∥2 + η
+
+√k ∥h∥2 + 2
+
+√k σk(x∗)1.
+
+Proof. By the ordering of the blocks, for any j ≥ 2 with Sj̸ = ∅, one has 
+
+|hi| ≤ | hℓ|, i ∈ S j , ℓ ∈ S j−1.
+
+It follows from |S j−1| = k that ∥hSj−1 ∥1 ≥ k∥hSj ∥∞. Hence ∥hSj ∥∞ ≤ 1 
+
+> k
+
+∥hSj−1 ∥1 for j ≥ 2.Consequently, for every j ≥ 2, we have 
+
+∥hSj ∥2 ≤
+
+q
+
+|S j | ∥ hSj ∥∞ ≤ √k 1
+
+k ∥hSj−1 ∥1 = 1
+
+√k ∥hSj−1 ∥1. (51) Summing (51) over j ≥ 2 yields 
+
+X
+
+> j≥2
+
+∥hSj ∥2 ≤ 1
+
+√k
+
+X
+
+> j≥2
+
+∥hSj−1 ∥1 ≤ 1
+
+√k ∥hSc ∥1. (52) By Lemma 4.2, one has 
+
+∥hSc ∥1 ≤ ∥ hS ∥1 + η∥h∥2 + 2 σk(x∗)1. (53) Combining (52) and (53), we obtain 
+
+X
+
+> j≥2
+
+∥hSj ∥2 ≤ 1
+
+√k ∥hS ∥1 + η
+
+√k ∥h∥2 + 2
+
+√k σk(x∗)1. (54) Since |S| = k, the Cauchy–Schwarz inequality gives 1√k ∥hS ∥1 ≤ ∥ hS ∥2. Moreover, S ⊆ T 01 ,and therefore ∥hS ∥2 ≤ ∥ hT01 ∥2. Substituting this into (54) gives 
+
+X
+
+> j≥2
+
+∥hSj ∥2 ≤ ∥ hT01 ∥2 + η
+
+√k ∥h∥2 + 2
+
+√k σk(x∗)1,
+
+which proves the assertion. The tail estimate also shows that, to bound the whole error h, it is enough to control the main block hT01 and the approximation error term. 12 Lemma 4.4. Let x∗ ∈ Rn be arbitrary, and let S be a best k-term index set of x∗ in the sense of Definition 4.1. Let ˆx be a global minimizer of Pεη , and set h := ˆx − x∗. Let S1, S2, . . . be the block decomposition of Sc induced by the nonincreasing rearrangement of the magnitudes of 
+
+hSc , as in Lemma 4.3, and define T01 := S ∪ S 1. For 0 ≤ η ≤ 1, one has 
+
+∥hT01 ∥2 ≥ 1 − η/ √k
+
+2 ∥h∥2 − 1
+
+√k σk(x∗)1. (55) 
+
+Proof. By the definition of T01 and the block decomposition of Sc, the vector h can be written as h = hT01 + P 
+
+> j≥2
+
+hSj . Consequently, the triangle inequality yields 
+
+∥h∥2 ≤ ∥ hT01 ∥2 + X
+
+> j≥2
+
+∥hSj ∥2. (56) Applying Lemma 4.3 to the second term on the right-hand side of (56), we obtain 
+
+∥h∥2 ≤ ∥ hT01 ∥2 + ∥hT01 ∥2 + η
+
+√k ∥h∥2 + 2
+
+√k σk(x∗)1
+
+= 2 ∥hT01 ∥2 + η
+
+√k ∥h∥2 + 2
+
+√k σk(x∗)1. (57) It follows from (57) that 
+
+
+
+1 − η
+
+√k
+
+
+
+∥h∥2 ≤ 2∥hT01 ∥2 + 2
+
+√k σk(x∗)1. (58) Rearranging (58) and then dividing by 2 gives 
+
+∥hT01 ∥2 ≥ 1 − η/ √k
+
+2 ∥h∥2 − 1
+
+√k σk(x∗)1,
+
+which proves (55). We now give the main recovery result for general signals. The RIP condition is the same as in the exactly k-sparse case, while the error bound contains the additional best k-term approximation error. 
+
+Theorem 4.5. Let x∗ ∈ Rn be arbitrary, and suppose that the measurements satisfy b =
+
+Ax ∗ + e with ∥e∥2 ≤ ε. Let ˆx be a global minimizer of Pεη , and set h := ˆx − x∗. Let S
+
+be a best k-term index set of x∗ in the sense of Definition 4.1. Let S1, S2, . . . be the block decomposition of Sc induced by the nonincreasing rearrangement of the magnitudes of hSc , and define T01 := S ∪ S 1. Assume that A satisfies the RIP of order 2k with constant δ2k and that 
+
+δ2k < 1 − η√k
+
+1 + √2 + ( √2 − 1) η√k
+
+. (59) 
+
+Then 
+
+∥ˆx − x∗∥2 ≤ Cεε + Capp 
+
+σk(x∗)1
+
+√k , (60) 
+
+where 
+
+Cε := 4√1 + δ2k
+
+
+
+1 − η√k
+
+
+
+− δ2k
+
+h
+
+1 + √2 + ( √2 − 1) η√k
+
+i, (61) 13 and 
+
+Capp := 2 1 + ( √2 − 1) δ2k
+
+
+
+1 − η√k
+
+
+
+− δ2k
+
+h
+
+1 + √2 + ( √2 − 1) η√k
+
+i. (62) 
+
+Proof. Since both x∗ and ˆx are feasible for Pεη , the measurement residual satisfies 
+
+∥Ah ∥2 = ∥Aˆx − Ax ∗∥2 ≤ ∥ Aˆx − b∥2 + ∥Ax ∗ − b∥2 ≤ 2ε. (63) For notational brevity, write δ := δ2k and θ := η/ √k. It follows from 0 ≤ η ≤ 1 that 0 ≤ θ ≤ 1.The RIP condition (59) implies 
+
+D := 1 − θ − δ
+
+h
+
+1 + √2 + ( √2 − 1) θ
+
+i
+
+> 0. (64) Since |T 01 | ≤ 2k, the RIP lower bound and the decomposition h = hT01 + P 
+
+> j≥2
+
+hSj give 
+
+(1 − δ)∥hT01 ∥22 ≤ ∥ Ah T01 ∥22 = ⟨Ah T01 , Ah ⟩ − X
+
+> j≥2
+
+Ah T01 , Ah Sj
+
+≤ |⟨ Ah T01 , Ah ⟩| + X
+
+> j≥2
+
+Ah T01 , Ah Sj . (65) The first term on the right-hand side is controlled by the RIP upper bound and (63), that is, 
+
+|⟨ Ah T01 , Ah ⟩| ≤ ∥ Ah T01 ∥2∥Ah ∥2 ≤ 2ε√1 + δ ∥hT01 ∥2. (66) It remains to bound the cross terms. Since hT01 = hS + hS1 , for each j ≥ 2, one has 
+
+Ah T01 , Ah Sj ≤ Ah S , Ah Sj + Ah S1 , Ah Sj
+
+≤ δ (∥hS ∥2 + ∥hS1 ∥2) ∥hSj ∥2 ≤ √2δ∥hT01 ∥2∥hSj ∥2, (67) where the second inequality follows from the restricted orthogonality consequence of the δ2k-RIP applied to the disjoint pairs (S, Sj ) and (S1, Sj ), and the last inequality uses 
+
+∥hS ∥2 + ∥hS1 ∥2 ≤ √2  ∥hS ∥22 + ∥hS1 ∥22
+
+1/2 = √2∥hT01 ∥2.
+
+Summing (67) over j ≥ 2 yields 
+
+X
+
+> j≥2
+
+Ah T01 , Ah Sj ≤ √2δ∥hT01 ∥2
+
+X
+
+> j≥2
+
+∥hSj ∥2. (68) Combining (65), (66), and (68), we obtain 
+
+(1 − δ)∥hT01 ∥22 ≤ 2ε√1 + δ ∥hT01 ∥2 + √2δ∥hT01 ∥2
+
+X
+
+> j≥2
+
+∥hSj ∥2. (69) If ∥hT01 ∥2 = 0 , Lemma 4.4 gives ∥h∥2 ≤ 21−θσk (x∗)1 
+
+> √k
+
+. Moreover, (64) implies 
+
+Capp − 21 − θ = 2 1 + ( √2 − 1) δ
+
+D − 21 − θ = 4√2δD(1 − θ) ≥ 0. (70) Thus (60) holds in this case. 14 Assume henceforth that ∥hT01 ∥2 > 0. Dividing (69) by ∥hT01 ∥2 and applying Lemma 4.3 give 
+
+(1 − δ)∥hT01 ∥2 ≤ 2ε√1 + δ + √2δ X
+
+> j≥2
+
+∥hSj ∥2
+
+≤ 2ε√1 + δ + √2δ
+
+
+
+∥hT01 ∥2 + θ∥h∥2 + 2 σk(x∗)1
+
+√k
+
+
+
+. (71) Consequently, 
+
+h
+
+1 − (1 + √2) δ
+
+i
+
+∥hT01 ∥2 ≤ 2ε√1 + δ + √2δθ ∥h∥2 + 2 √2δ σk(x∗)1
+
+√k . (72) Set C1 := 1 − (1 + √2) δ. Since (59) implies δ < 1/(1 + √2) , one has C1 > 0. By Lemma 4.4, 
+
+∥hT01 ∥2 ≥ 1 − θ
+
+2 ∥h∥2 − σk(x∗)1
+
+√k . (73) Substituting (73) into the left-hand side of (72) yields 
+
+C1
+
+1 − θ
+
+2 ∥h∥2 − σk(x∗)1
+
+√k
+
+
+
+≤ 2ε√1 + δ + √2δθ ∥h∥2 + 2 √2δ σk(x∗)1
+
+√k . (74) After collecting the terms involving ∥h∥2, we obtain 
+
+
+
+C1
+
+1 − θ
+
+2 − √2δθ 
+
+
+
+∥h∥2 ≤ 2ε√1 + δ +
+
+
+
+C1 + 2 √2δ
+
+ σk(x∗)1
+
+√k . (75) The coefficient on the left-hand side of (75) satisfies 
+
+C1
+
+1 − θ
+
+2 − √2δθ = 1 − θ − δ 1 + √2 + ( √2 − 1) θ
+
+2 = D
+
+2 . (76) Moreover, 
+
+C1 + 2 √2δ = 1 − (1 + √2) δ + 2 √2δ = 1 + ( √2 − 1) δ. (77) Using (76) and (77) in (75), and then multiplying by 2, gives 
+
+D∥h∥2 ≤ 4ε√1 + δ + 2 
+
+h
+
+1 + ( √2 − 1) δ
+
+i σk(x∗)1
+
+√k .
+
+Since D > 0, division by D gives 
+
+∥h∥2 ≤ 4√1 + δD ε + 2 1 + ( √2 − 1) δ
+
+Dσk(x∗)1
+
+√k .
+
+Restoring δ = δ2k and the definition of D gives exactly (60)–(62). Since h = ˆx − x∗, the proof is complete. 
+
+Remark 4.6. When η = 0 , the RIP condition becomes δ2k < 11+ √2 = √2 − 1. Moreover, the recovery bound becomes 
+
+∥ˆx − x∗∥2 ≤ 4√1 + δ2k
+
+1 − (1 + √2) δ2k
+
+ε + 2 1 + ( √2 − 1) δ2k
+
+
+
+1 − (1 + √2) δ2k
+
+∥x∗Sc ∥1
+
+√k .
+
+This coincides with the classical RIP-based stable recovery estimate for constrained ℓ1 mini-mization obtained by Candès [4, 5]. 
+
+15 Remark 4.7. If x∗ is exactly k-sparse, then choosing S = supp( x∗) gives x∗Sc = 0 . Therefore, 
+
+∥x∗Sc ∥1 = 0 . Thus the approximation term vanishes, and the oracle inequality (60) reduces to 
+
+∥ˆx − x∗∥2 ≤ Cεε, which recovers the stable recovery estimate for k-sparse signals. 
+
+Remark 4.8. The recovery constants in Theorems 3.5 and 4.5 contain the denominator 
+
+Dη,k := 
+
+
+
+1 − η
+
+√k
+
+
+
+− δ2k
+
+
+
+1 + √2 + ( √2 − 1) η
+
+√k
+
+
+
+.
+
+The RIP condition imposed in these theorems is precisely the positivity condition Dη,k > 0.Hence, as η/ √k approaches 1, the admissible upper bound on δ2k tends to zero, and the recovery constants become unbounded whenever the noise level or the approximation error is nonzero. This degeneration should not be regarded merely as a byproduct of loose estimates in the proof. It reflects a structural feature of the WDSN penalty. Indeed, for any one-sparse vector v,
+
+∥v∥21 − η∥v∥22 = (1 − η)∥v∥22. Thus, when η → 1, the penalty becomes increasingly weak along one-sparse directions; in the limiting case η = 1 , it vanishes identically on all one-sparse vectors. Consequently, the WDSN penalty loses coercivity along these directions, and the present RIP-based recovery argument cannot yield a uniform stable recovery bound near this boundary. Under the assumption 0 ≤ η ≤ 1, this degeneracy can occur only in the nearly one-sparse case k = 1 with η close to one. For k ≥ 2, one has η/ √k ≤ 1/√2, and therefore the factor 
+
+1 − η/ √k remains uniformly separated from zero. 
+
+The RIP condition (59) is identical to the condition obtained in the exactly k-sparse case. Removing exact sparsity does not require a stronger bound on δ2k. Instead, the lack of exact sparsity appears in the recovery estimate only through ∥x∗Sc ∥1/√k. This term is small when 
+
+x∗ is well approximated by a k-sparse vector. 
+
+5. Proximal Operator of Rη
+
+In this section, we derive the proximal operator of the function Rη. For a given stepsize 
+
+t > 0 and a vector v ∈ Rn, the proximal operator of tRη is defined by 
+
+Prox tRη (v) := arg min 
+
+> x∈Rn
+
+
+
+Rη(x) + 12t∥x − v∥22
+
+
+
+. (78) Multiplying the objective function in (78) by the positive scalar t, we obtain the equivalent minimization problem 
+
+Prox tRη (v) = arg min 
+
+> x∈Rn
+
+
+
+t∥x∥21 − tη ∥x∥22 + 12∥x − v∥22
+
+
+
+. (79) Expanding the last term gives 12 ∥x − v∥22 = 12 ∥x∥22 − v⊤x + 12 ∥v∥22. Since the constant 12 ∥v∥22
+
+does not affect the minimizers, the problem is equivalent to 
+
+min 
+
+> x∈Rn
+
+
+
+t∥x∥21 + 1 − 2tη 
+
+2 ∥x∥22 − v⊤x
+
+
+
+. (80) We first reduce (80) to a nonnegative optimization problem. 16 Lemma 5.1 (Reduction to the nonnegative orthant) . Let v ∈ Rn, and set q := |v| compo-nentwise. Let c := 1 − 2tη and define F (x) := t∥x∥21 + c 
+
+> 2
+
+∥x∥22 − v⊤x. Under the standing assumption 0 ≤ η ≤ 1, define 
+
+G(u) := t(1⊤u)2 + c
+
+2∥u∥22 − q⊤u, u ∈ Rn
+
+> +
+
+. (81) 
+
+Then 
+
+arg min 
+
+> x∈Rn
+
+F (x) = 
+
+(
+
+sign( v) ⊙ u : u ∈ arg min 
+
+> u∈Rn
+> +
+
+G(u)
+
+)
+
+,
+
+where sign(0) = 0 . In particular, every global minimizer ¯x of F satisfies ¯xivi ≥ 0 for all i, and 
+
+¯xi = 0 whenever vi = 0 .Proof. We first note that G attains its minimum on Rn
+
+> +
+
+. For every u ∈ Rn
+
+> +
+
+, we have 1⊤u = ∥u∥1
+
+and ∥u∥21 ≥ ∥ u∥22. Hence 
+
+t(1⊤u)2 + c
+
+2∥u∥22 = t∥u∥21 + 1 − 2tη 
+
+2 ∥u∥22 ≥
+
+12 + t(1 − η)
+
+
+
+∥u∥22.
+
+Under 0 ≤ η ≤ 1, the coefficient 12 + t(1 − η) is positive. Since −q⊤u ≥ −∥ q∥2∥u∥2, it follows that G is coercive on the closed set Rn
+
+> +
+
+. By continuity, G has a global minimizer over Rn
+
+> +
+
+.For any x ∈ Rn, set u := |x|. Then ∥x∥1 = 1⊤u and ∥x∥2 = ∥u∥2. Moreover, v⊤x ≤Pni=1 |vi|| xi| = q⊤u. It follows that F (x) ≥ G(|x|). Let ¯u be a global minimizer of G over Rn
+
+> +
+
+.If vi = 0 and ¯ui > 0 for some index i, let ˜u be obtained from ¯u by setting the ith component to zero and leaving all other components unchanged. Put r := ¯ ui and a := 1⊤ ˜u. Since qi = 0 ,we have 
+
+G( ¯ u) − G( ˜ u) = t (a + r)2 − a2 + c
+
+2r2 = 2 tar +
+
+
+
+t + c
+
+2
+
+
+
+r2 = 2 tar +
+
+12 + t(1 − η)
+
+
+
+r2 > 0,
+
+where we used 0 ≤ η ≤ 1. This contradicts the global minimality of ¯u. Therefore, ¯ui = 0 
+
+whenever vi = 0 .Let ¯x be a global minimizer of F . Suppose that ¯xivi < 0 for some index i. Let ˜x be obtained from ¯x by replacing ¯xi with −¯xi and leaving all other components unchanged. Since this operation does not change the componentwise magnitudes, one has ∥ ˜x∥1 = ∥ ¯x∥1 and 
+
+∥ ˜x∥2 = ∥ ¯x∥2. Thus the only change in the objective value comes from the linear term. More precisely, −v⊤ ˜x −  −v⊤ ¯x = 2 vi ¯xi < 0. It follows that F ( ˜ x) < F ( ¯ x), contradicting the global minimality of ¯x. Therefore, ¯xivi ≥ 0 for every i.If vi = 0 and ¯xi̸ = 0 , let ˜x be obtained from ¯x by setting the ith component to zero and keeping all other components unchanged. Put r := |¯xi| and a := ∥ ˜x∥1. Since the linear term is unchanged, the same computation gives 
+
+F ( ¯ x) − F ( ˜ x) = t (a + r)2 − a2 + c
+
+2r2 = 2 tar +
+
+12 + t(1 − η)
+
+
+
+r2 > 0,
+
+again contradicting the global minimality of ¯x. Thus ¯xi = 0 whenever vi = 0 . Together with the sign alignment, this gives ¯x = sign( v) ⊙ | ¯x|.By F (x) ≥ G(|x|), if | ¯x| were not a global minimizer of G over Rn
+
+> +
+
+, then there would exist 
+
+u ∈ Rn 
+
+> +
+
+such that G(u) < G (| ¯x|). Choosing a vector z with |zi| = ui and vizi = |vi|ui for every 
+
+i, we obtain F (z) = G(u), and hence F (z) = G(u) < G (| ¯x|) = F ( ¯ x), which contradicts the global minimality of ¯x. Therefore, | ¯x| is a global minimizer of G.17 Conversely, let ¯u be a global minimizer of G over Rn
+
+> +
+
+. It follows that ¯ui = 0 whenever 
+
+vi = 0 . Hence F (sign( v) ⊙ ¯u) = G( ¯ u). For any x ∈ Rn, F (x) ≥ G(|x|) gives F (x) ≥ G(|x|) ≥
+
+G( ¯ u) = F (sign( v) ⊙ ¯u). Thus sign( v) ⊙ ¯u is a global minimizer of F . This proves the claimed reduction. After the sign reduction in Lemma 5.1, the computation of Prox tRη (v) reduces to minimizing 
+
+G over Rn
+
+> +
+
+. The curvature parameter c = 1 − 2tη determines the structure of this reduced problem: c > 0 gives a strictly convex problem, c = 0 gives a degenerate convex problem, and 
+
+c < 0 gives a nonconvex problem. We analyze these three cases separately. We first consider the case c > 0, equivalently η < 1/(2 t). In this case, the function G
+
+is strictly convex. Indeed, ∇2G(u) = 2 t11 ⊤ + cI, and hence, for every nonzero z ∈ Rn,
+
+z⊤∇2G(u)z = 2 t(1⊤z)2 + c∥z∥22 > 0. Thus G is strictly convex on Rn
+
+> +
+
+, so the reduced problem has at most one minimizer. Since G is also coercive when c > 0, this minimizer exists and is unique. We now characterize it by the KKT conditions. 
+
+Lemma 5.2 (KKT characterization in the case c > 0). Assume that c > 0. A vector u∗ ∈ Rn
+
+> +
+
+is the unique global minimizer of (81) if and only if, with S∗ := 1⊤u∗, it satisfies 
+
+u∗ 
+
+> i
+
+= max 
+
+
+
+0, qi − 2tS ∗
+
+c
+
+
+
+, i = 1 , . . . , n. (82) 
+
+Consequently, at the minimizer, S∗ satisfies the scalar fixed-point equation 
+
+S∗ =
+
+> n
+
+X
+
+> i=1
+
+max 
+
+
+
+0, qi − 2tS ∗
+
+c
+
+
+
+. (83) 
+
+Proof. Since G is differentiable and convex on the closed convex set Rn
+
+> +
+
+, the KKT conditions are necessary and sufficient for global optimality. Its gradient is ∇G(u) = 2 t(1⊤u)1 + cu − q.Therefore, a vector u∗ ∈ Rn 
+
+> +
+
+is a global minimizer if and only if the KKT conditions for the constraint u ≥ 0 hold: 
+
+u∗ ≥ 0, ∇G(u∗) ≥ 0, u∗ 
+
+> i
+
+[∇G(u∗)] i = 0 , i = 1 , . . . , n. 
+
+Since S∗ = 1⊤u∗, the ith component of the gradient is [∇G(u∗)] i = 2 tS ∗ + cu ∗ 
+
+> i
+
+− qi. Hence, for each i = 1 , . . . , n , we have u∗ 
+
+> i
+
+≥ 0, 2tS ∗ + cu ∗ 
+
+> i
+
+− qi ≥ 0 and u∗ 
+
+> i
+
+(2 tS ∗ + cu ∗ 
+
+> i
+
+− qi) = 0 . If 
+
+u∗ 
+
+> i
+
+> 0, the complementarity condition gives 2tS ∗ + cu ∗ 
+
+> i
+
+− qi = 0 , and hence u∗ 
+
+> i
+
+= qi−2tS ∗ 
+
+> c
+
+. In this case, necessarily qi > 2tS ∗. If u∗ 
+
+> i
+
+= 0 , the dual feasibility condition gives 2tS ∗ − qi ≥ 0,that is, qi ≤ 2tS ∗. Combining the two alternatives yields (82). Conversely, if the displayed identity holds with S∗ = 1⊤u∗, then u∗ ≥ 0. Moreover, if qi > 2tS ∗, then u∗ 
+
+> i
+
+= ( qi − 2tS ∗)/c 
+
+and 2tS ∗ + cu ∗ 
+
+> i
+
+− qi = 0 ; if qi ≤ 2tS ∗, then u∗ 
+
+> i
+
+= 0 and 2tS ∗ + cu ∗ 
+
+> i
+
+− qi = 2 tS ∗ − qi ≥ 0. Thus the KKT conditions hold. Summing this identity over i = 1 , . . . , n and using S∗ = 1⊤u∗ gives (83). Since G is strictly convex when c > 0, any global minimizer is unique. This proves the lemma. By Lemma 5.2, the minimizer is determined once the scalar S∗, or equivalently the threshold 
+
+2tS ∗, is known. Since the active indices are those for which qi > 2tS ∗, we sort the entries of q
+
+in nonincreasing order. Let 
+
+q(1) ≥ q(2) ≥ · · · ≥ q(n) ≥ 0 (84) 18 be such a rearrangement, and define 
+
+Qk := 
+
+> k
+
+X
+
+> i=1
+
+q(i), k = 1 , . . . , n. (85) The following theorem gives an explicit construction of S∗ from these sorted entries. 
+
+Theorem 5.3. Assume that c = 1 − 2tη > 0. If v = 0, then Prox tRη (0) = {0}. If v̸ = 0,define 
+
+k∗ := max 
+
+
+
+k ∈ { 1, . . . , n } : q(k) > 2tQ k
+
+c + 2 tk 
+
+
+
+. (86) 
+
+Set S∗ := Qk∗ 
+
+> c+2 tk ∗
+
+. Then Prox tRη (v) is given by 
+
+x∗ 
+
+> i
+
+= sign( vi) max 
+
+
+
+0, |vi| − 2tS ∗
+
+c
+
+
+
+, i = 1 , . . . , n. (87) 
+
+Proof. If v = 0, then q = 0 and the function G becomes G(u) = t(1⊤u)2 + c 
+
+> 2
+
+∥u∥22 with u ∈ Rn
+
+> +
+
+.Since t > 0 and c > 0, one has G(u) ≥ 0, and equality holds if and only if u = 0. Hence 0 is the unique minimizer of G over Rn
+
+> +
+
+. Lemma 5.1 therefore gives Prox tRη (0) = {0}.If v̸ = 0, then q(1) > 0. For k = 1 , it follows from c > 0 that 2tQ 1 
+
+> c+2 t
+
+= 2tq (1)  
+
+> c+2 t
+
+< q (1) , Therefore, the index set in (86) is nonempty, and k∗ is well defined. Let τ ∗ := 2 tS ∗ = 2tQ k∗ 
+
+> c+2 tk ∗
+
+. By the definition of k∗, one has q(k∗) > τ ∗. It follows from the monotonicity of the sorted sequence that 
+
+q(i) > τ ∗ for i = 1 , . . . , k ∗. It remains to identify the entries beyond the first k∗. If k∗ = n, then there is no such entry. Suppose that k∗ < n . By the maximality of k∗, the index k∗ + 1 does not satisfy the strict inequality in (86). Hence q(k∗+1) ≤ 2tQ k∗+1  
+
+> c+2 t(k∗+1)
+
+. Since Qk∗+1 = Qk∗ + q(k∗+1) ,this implies q(k∗+1) (c + 2 t(k∗ + 1)) ≤ 2tQ k∗ + 2 tq (k∗+1) , and therefore q(k∗+1) (c + 2 tk ∗) ≤ 2tQ k∗ .Since c + 2 tk ∗ > 0, we obtain q(k∗+1) ≤ 2tQ k∗ 
+
+> c+2 tk ∗
+
+= τ ∗. Using the monotonicity of the sorted sequence again, we obtain q(i) ≤ τ ∗ for i = k∗ + 1 , . . . , n . It follows that the indices satisfying 
+
+qi > τ ∗ are exactly the first k∗ indices in the sorted order. Thus their cardinality is k∗, and P  
+
+> i:qi>τ ∗
+
+qi = Qk∗ . Define u∗ ∈ Rn 
+
+> +
+
+by 
+
+u∗ 
+
+> i
+
+:= max 
+
+
+
+0, qi − τ ∗
+
+c
+
+
+
+, i = 1 , . . . , n. (88) Then 
+
+1⊤u∗ = X 
+
+> i:qi>τ ∗
+
+qi − τ ∗
+
+c = Qk∗ − k∗τ ∗
+
+c = Qk∗ − 2tk ∗S∗
+
+c .
+
+Using S∗ = Qk∗ /(c + 2 tk ∗), equivalently Qk∗ = cS ∗ + 2 tk ∗S∗, we obtain 1⊤u∗ = S∗. Together with τ ∗ = 2 tS ∗, (88) becomes (82), and S∗ = 1⊤u∗. Hence u∗ satisfies the KKT condition in Lemma 5.2. Since G is strictly convex for c > 0, u∗ is the unique global minimizer of the reduced problem. Finally, Lemma 5.1 yields the corresponding unique minimizer of the original proximal subproblem: 
+
+x∗ 
+
+> i
+
+= sign( vi)u∗ 
+
+> i
+
+= sign( vi) max 
+
+
+
+0, |vi| − 2tS ∗
+
+c
+
+
+
+, i = 1 , . . . , n. (89) This proves (87). 19 When c = 0 , the term c 
+
+> 2
+
+∥u∥22 vanishes from the function G. Thus the quadratic part of G
+
+depends only on the total mass 1⊤u, while the linear term determines where this mass should be placed. In particular, for a fixed value of 1⊤u, the objective is minimized by assigning all mass to the indices where qi is maximal. This leads to a set-valued proximal formula. Let q∞ := ∥q∥∞ = ∥v∥∞, and define the maximal-index set M := {i : qi = q∞}.
+
+Theorem 5.4. Assume that c = 1 − 2tη = 0 . If v = 0, then Prox tRη (0) = {0}. If v̸ = 0, then 
+
+Prox tRη (v) = 
+
+
+
+sign( v) ⊙ u : u ∈ Rn
+
+> +
+
+, supp( u) ⊆ M , ∥u∥1 = ∥v∥∞
+
+2t
+
+
+
+. (90) 
+
+Proof. When c = 0 , the function G is G(u) = t(1⊤u)2 − q⊤u, u ∈ Rn
+
+> +
+
+. For any u ∈ Rn
+
+> +
+
+, set 
+
+S := 1⊤u = ∥u∥1. Since qi ≤ q∞ and ui ≥ 0 for all i, one has 
+
+q⊤u =
+
+> n
+
+X
+
+> i=1
+
+qiui ≤ q∞
+
+> n
+
+X
+
+> i=1
+
+ui = q∞S. 
+
+It follows that 
+
+G(u) ≥ tS 2 − q∞S. (91) Moreover, 
+
+q∞S − q⊤u =
+
+> n
+
+X
+
+> i=1
+
+(q∞ − qi)ui. (92) Each term on the right-hand side of (92) is nonnegative. Hence equality in q⊤u ≤ q∞S
+
+holds if and only if (q∞ − qi)ui = 0 for i = 1 , . . . , n . Equivalently, supp( u) ⊆ M , where 
+
+M := {i : qi = q∞}.Consider the scalar function ϕ(S) := tS 2 − q∞S, S ≥ 0. Since t > 0, ϕ is strictly convex on [0 , ∞), and ϕ′(S) = 2 tS − q∞. Thus its unique minimizer is S∗ = q∞ 
+
+> 2t
+
+. The lower bound (91) is sharp: for any S ≥ 0 and any j ∈ M , the vector Sej satisfies 1⊤(Sej ) = S and 
+
+q⊤(Sej ) = q∞S, and therefore G(Sej ) = ϕ(S). Hence the global minimum of G over Rn
+
+> +
+
+equals min S≥0 ϕ(S). It follows that every global minimizer of G must satisfy both 1⊤u = S∗
+
+and equality in q⊤u ≤ q∞1⊤u. By the equality characterization above, this is equivalent to 
+
+supp( u) ⊆ M and ∥u∥1 = S∗.If v = 0, then q = 0 and q∞ = 0 . Hence S∗ = 0 , and the only vector u ∈ Rn 
+
+> +
+
+satisfying 
+
+∥u∥1 = S∗ is u = 0. Thus 0 is the unique global minimizer of G over Rn
+
+> +
+
+. Lemma 5.1 gives 
+
+Prox tRη (0) = {0}.If v̸ = 0, then q∞ > 0 and S∗ > 0. From the preceding argument, every global minimizer of G over Rn 
+
+> +
+
+must satisfy supp( u) ⊆ M and ∥u∥1 = q∞/(2 t). Conversely, if u ∈ Rn 
+
+> +
+
+satisfies these two conditions, then 1⊤u = S∗ and q⊤u = q∞S∗. Hence G(u) = t(S∗)2 − q∞S∗ =
+
+ϕ(S∗) = min S≥0 ϕ(S). Together with the lower bound (91), this shows that such u is a global minimizer of G. Therefore, 
+
+arg min 
+
+> u∈Rn
+> +
+
+G(u) = 
+
+n
+
+u ∈ Rn 
+
+> +
+
+: supp( u) ⊆ M , ∥u∥1 = q∞
+
+2t
+
+o
+
+. (93) Since q∞ = ∥q∥∞ = ∥v∥∞, Lemma 5.1 yields 
+
+Prox tRη (v) = 
+
+
+
+sign( v) ⊙ u : u ∈ Rn
+
+> +
+
+, supp( u) ⊆ M , ∥u∥1 = ∥v∥∞
+
+2t
+
+
+
+. (94) This proves (90). 20 We finally consider the case c = 1 − 2tη < 0. In contrast to the case c > 0, the reduced objective is no longer convex in general. Nevertheless, its global minimizers can still be char-acterized by separating the total mass S := 1⊤u from the distribution of this mass among the coordinates. For a fixed S ≥ 0, define ∆S := u ∈ Rn 
+
+> +
+
+: 1⊤u = S . The term t(1⊤u)2
+
+is fixed. Since c < 0, the term c 
+
+> 2
+
+∥u∥22 favors concentration of the mass, while the linear term 
+
+−q⊤u favors placing mass on coordinates where qi is largest. The following lemma identifies the minimizers of G on each fixed-mass simplex. 
+
+Lemma 5.5 (Minimization over fixed-mass simplexes for c < 0). Assume that c < 0. For 
+
+S ≥ 0, one has 
+
+min 
+
+> u∈∆S
+
+G(u) = 
+
+
+
+t + c
+
+2
+
+
+
+S2 − q∞S. (95) 
+
+Moreover, 
+
+arg min 
+
+> u∈∆S
+
+G(u) = {Sej : j ∈ M} , (96) 
+
+where ej denotes the jth canonical basis vector. In particular, when S = 0 , the set in (96) 
+
+reduces to {0}.Proof. Fix S ≥ 0 and let u ∈ ∆S . Then u ≥ 0 and 1⊤u = S. Since 
+
+S2 − ∥ u∥22 =
+
+> n
+
+X
+
+> i=1
+
+ui
+
+!2
+
+−
+
+> n
+
+X
+
+> i=1
+
+u2 
+
+> i
+
+= 2 X
+
+> 1≤i<j ≤n
+
+uiuj ≥ 0,
+
+we have ∥u∥22 ≤ S2. Moreover, since qi ≤ q∞ and ui ≥ 0 for all i,
+
+q∞S − q⊤u =
+
+> n
+
+X
+
+> i=1
+
+(q∞ − qi)ui ≥ 0.
+
+Using G(u) = tS 2 + c 
+
+> 2
+
+∥u∥22 − q⊤u, we obtain 
+
+G(u) −
+
+h 
+
+t + c
+
+2
+
+
+
+S2 − q∞S
+
+i
+
+= c
+
+2
+
+ ∥u∥22 − S2 +  q∞S − q⊤u
+
+= − c
+
+2
+
+ S2 − ∥ u∥22
+
+ +
+
+> n
+
+X
+
+> i=1
+
+(q∞ − qi)ui ≥ 0, (97) where the last inequality follows from c < 0, S2 − ∥ u∥22 ≥ 0, and q∞ − qi ≥ 0. Hence 
+
+G(u) ≥
+
+
+
+t + c
+
+2
+
+
+
+S2 − q∞S, u ∈ ∆S .
+
+It remains to characterize the equality case in (97). Since both terms on the right-hand side of (97) are nonnegative, equality holds if and only if S2 − ∥ u∥22 = 0 and 
+
+(q∞ − qi)ui = 0 , i = 1 , . . . , n. (98) The identity S2 −∥ u∥22 = 2 P 
+
+> 1≤i<j ≤n
+
+uiuj shows that S2 −∥ u∥22 = 0 is equivalent to uiuj = 0 for all i̸ = j, that is, u has at most one nonzero component. On the other hand, (98) is equivalent to supp( u) ⊆ M , where M = {i : qi = q∞}.Therefore, equality in the lower bound is attained precisely when u has at most one nonzero component and this component, if present, is indexed by an element of M. Together with the 21 constraint 1⊤u = S, this gives u = Sej for some j ∈ M . For every such j, direct substitution yields 
+
+G(Sej ) = tS 2 + c
+
+2S2 − q∞S =
+
+
+
+t + c
+
+2
+
+
+
+S2 − q∞S. 
+
+Thus the lower bound is attained exactly at the vectors Sej , j ∈ M , which proves (95) and (96). When S = 0 , all vectors Sej coincide with 0, and hence the argmin set reduces to {0}.By Lemma 5.5, once the total mass S = 1⊤u is fixed, the minimum of G over ∆S is  t + c
+
+> 2
+
+ S2 − q∞S. Since c = 1 − 2tη , we have t + c 
+
+> 2
+
+= 1+2 t(1 −η)2 . Under the standing assumption 
+
+0 ≤ η ≤ 1, this coefficient is positive. Thus the remaining minimization over S ≥ 0 is a one-dimensional strictly convex quadratic problem. The following theorem gives the proximal formula. 
+
+Theorem 5.6 (Proximal formula in the case c < 0). Assume that 0 ≤ η ≤ 1 and c = 1 −2tη < 0.Let q∞ := ∥q∥∞ = ∥v∥∞ and M := {i : |vi| = q∞}. Define S∗ := q∞ 
+
+> 1+2 t(1 −η)
+
+. Then 
+
+Prox tRη (v) = {sign( vj )S∗ej : j ∈ M} .
+
+In particular, Prox tRη (v) = {0} if v = 0, and it is single-valued whenever v̸ = 0 and the largest entry of |v| is unique. Proof. By Lemma 5.5, for every fixed S ≥ 0, one has min u∈∆S G(u) =  t + c
+
+> 2
+
+ S2 − q∞S, and the minimizers over ∆S are precisely Sej with j ∈ M . Since Rn 
+
+> +
+
+= S 
+
+> S≥0
+
+∆S , the global minimization of G over Rn 
+
+> +
+
+reduces to minimizing the scalar function ψ(S) :=  t + c
+
+> 2
+
+ S2 − q∞S
+
+with S ≥ 0. Using c = 1 − 2tη , we have t + c 
+
+> 2
+
+= 1+2 t(1 −η)2 . Since 0 ≤ η ≤ 1, the coefficient 
+
+1 + 2 t(1 − η) is positive. Therefore, ψ is strictly convex on [0 , ∞). Its derivative is ψ′(S) = (1 + 2 t(1 − η)) S − q∞, and hence the unique minimizer is S∗ = q∞ 
+
+> 1+2 t(1 −η)
+
+. It follows again from Lemma 5.5 that the global minimizers of G are exactly arg min u∈Rn 
+
+> +
+
+G(u) = {S∗ej : j ∈ M} .Applying the sign reduction in Lemma 5.1, we obtain sign( v) ⊙ (S∗ej ) = sign( vj )S∗ej for 
+
+j ∈ M . Thus Prox tRη (v) = {sign( vj )S∗ej : j ∈ M} .
+
+Remark 5.7. When c > 0, the function G is strictly convex, and hence Prox tRη (v) is single-valued. In contrast, when c = 0 or c < 0, the proximal operator may be set-valued. In the case 
+
+c = 0 , u is allowed to have support inside the maximal-index set M := {i : |vi| = ∥v∥∞},while its ℓ1 norm is fixed. Thus, if M contains more than one index and v̸ = 0, the proximal set contains infinitely many points. In the case c < 0, if v̸ = 0, every global minimizer of G is one-sparse and is supported on an index in M. Hence, for v̸ = 0, the proximal operator is set-valued precisely when the largest magnitude of v is attained at more than one index. If v = 0,then S∗ = 0 and the proximal set reduces to {0} under the standing assumption 0 ≤ η ≤ 1.
+
+The restriction η ∈ [0 , 1] guarantees that the proximal subproblem is well-defined for every stepsize t > 0. Indeed, in the nonconvex case c < 0, the relevant scalar quadratic coefficient is  
+
+> 1+2 t(1 −η)2
+
+. For the proximal subproblem to be bounded below for every v, one needs 1 + 2 t(1 −
+
+η) > 0, or equivalently, η < 1 + 12t . Thus, if one allows η > 1, the proximal operator may still exist for sufficiently small t, provided η < 1 + 12t . However, if η ≥ 1 + 12t , then along a one-sparse ray u = Sej with j ∈ M , one obtains G(Sej ) = 1+2 t(1 −η)2 S2 − q∞S. If the quadratic coefficient is negative, then G(Sej ) → −∞ as S → +∞. If the coefficient is zero and q∞ > 0,then again G(Sej ) → −∞ linearly. At the boundary 1 + 2 t(1 − η) = 0 with v = 0, the reduced problem is bounded below but has nonunique one-sparse minimizers. Hence the strict condition 
+
+1 + 2 t(1 − η) > 0 is the correct condition for existence for every v.22 Algorithm 1: Compact computation of Prox tRη (v)
+
+Input: v ∈ Rn, η ∈ [0 , 1] , stepsize t > 0
+
+Output: One element x∗ ∈ Prox tRη (v) 
+
+> 1
+
+Compute magnitudes and curvature: q ← | v|, c ← 1 − 2tη ; 
+
+> 2
+
+if v = 0 then  
+
+> 3
+
+return x∗ = 0; 
+
+> 4
+
+if c > 0 then  
+
+> 5
+
+Sort magnitudes: q(1) ≥ · · · ≥ q(n); 
+
+> 6
+
+Accumulate sorted magnitudes: Qk ← Pki=1 q(i), k = 1 , . . . , n ; 
+
+> 7
+
+Determine active-set size: k∗ ← max {k ∈ { 1, . . . , n } : q(k) > 2tQ k/(c + 2 tk )}; 
+
+> 8
+
+Compute total mass: S∗ ← Qk∗ /(c + 2 tk ∗); 
+
+> 9
+
+Recover signs: x∗ 
+
+> i
+
+← sign( vi) max {0, (|vi| − 2tS ∗)/c }, i = 1 , . . . , n ; 
+
+> 10
+
+return x∗; 
+
+> 11
+
+Identify maximal entries: q∞ ← ∥ q∥∞, M ← { i : qi = q∞}; 
+
+> 12
+
+if c = 0 then  
+
+> 13
+
+Select critical-regime magnitude: choose u ∈ Rn 
+
+> +
+
+with supp( u) ⊆ M and 
+
+∥u∥1 = q∞/(2 t); 
+
+> 14
+
+Recover signs: x∗ ← sign( v) ⊙ u; 
+
+> 15
+
+return x∗; 
+
+> 16
+
+if c < 0 then  
+
+> 17
+
+Select maximal coordinate: choose j ∈ M ; 
+
+> 18
+
+Form one-sparse minimizer: x∗ ← sign( vj )q∞ej /[1 + 2 t(1 − η)] ; 
+
+> 19
+
+return x∗;For this reason, the range η ∈ [0 , 1] is natural: it guarantees the nonnegativity of the penalty 
+
+∥x∥21 − η∥x∥22 ≥ 0, because ∥x∥2 ≤ ∥ x∥1, and it also ensures the unconditional existence of the proximal operator for arbitrary t > 0.The resulting proximal computation is summarized in Algorithm 1. In the branch c > 0, the active-set search in Algorithm 1 is dominated by sorting the magnitudes |vi|. Thus the sorting-based proximal step costs O(n log n) arithmetic operations, while the cost can be reduced to 
+
+O(n) if a selection-based active-set search is used. 
+
+6. ADMM Algorithm 
+
+The preceding recovery results are formulated for the constrained WDSN models Pη and 
+
+Pεη in (1). These formulations are convenient for recovery analysis, because the data-fidelity constraint is stated explicitly. In the noiseless case, the constraint is Ax = b, whereas in the noisy case the residual is required to satisfy ∥Ax − b∥2 ≤ ε.To write the two constrained models in a unified form, we use the indicator function of a set D, defined by ιD(y) := 0 if y ∈ D and +∞ otherwise. Let Bδ := {r ∈ Rm : ∥r∥2 ≤ δ}.Then both models can be written as 
+
+min  
+
+> x∈Rn
+
+{R η(x) + ιBδ (Ax − b)} , δ ∈ { 0, ε }. (99) When δ = 0 , since B0 = {0}, the condition Ax − b ∈ B0 is equivalent to Ax = b, and (99) reduces to Pη. When δ = ε, (99) reduces to Pεη . Thus (99) gives a common indicator-function 23 formulation of the noiseless and noisy constrained WDSN models; the two cases differ only in the choice of the set Bδ.For computation, we replace the indicator function in (99) by the standard quadratic data-fidelity term. This leads to the regularized WDSN (RWDSN) model 
+
+min  
+
+> x∈Rn
+
+Fλ(x) = 12∥Ax − b∥22 + λRη(x), λ > 0. (100) The regularization parameter λ determines the relative weight of the WDSN penalty with respect to the data-fidelity term. The smaller values of λ emphasize data fidelity, whereas larger values assign more weight to the WDSN regularization. Thus (100) should be regarded as a penalized computational formulation associated with the constrained models. The connection with the noiseless model Pη can still be made precise at the level of global minimizers. Let xλ be a global minimizer of (100), and let x⋆ be a global minimizer of Pη.Since Ax ⋆ = b, the global optimality of xλ gives 
+
+12∥Ax λ − b∥22 + λRη(xλ) ≤ λRη(x⋆). (101) For 0 ≤ η ≤ 1, one has Rη(x) ≥ 0 for all x ∈ Rn. Hence (101) implies 
+
+∥Ax λ − b∥2 ≤
+
+q
+
+2λRη(x⋆). (102) Thus the residual of any global minimizer of (100) tends to zero as λ ↓ 0. Moreover, (101) also yields Rη(xλ) ≤ R η(x⋆). Let λj ↓ 0 and suppose that the sequence {xλj } has a cluster point ¯x. Passing to a subsequence if necessary, we may assume that xλj → ¯x. By (102), we have A ¯x = b, and hence ¯x is feasible for Pη. Since Rη is continuous, Rη(xλ) ≤ R η(x⋆)
+
+gives Rη( ¯ x) ≤ R η(x⋆). On the other hand, since x⋆ is a global minimizer of Pη and ¯x is equality-feasible, one also has Rη(x⋆) ≤ R η( ¯ x). Therefore, Rη( ¯ x) = Rη(x⋆), and ¯x is also a global minimizer of Pη. This argument gives a relation between the constrained model and the penalized model at the level of global minimizers. For noisy data, let xλ be a global minimizer of (100), and define ελ := ∥Ax λ − b∥2. Then 
+
+xλ is a global minimizer of 
+
+min  
+
+> x∈Rn
+
+{R η(x) : ∥Ax − b∥2 ≤ ελ} . (103) Indeed, let y be feasible for (103). If Rη(y) < Rη(xλ), then, since ∥Ay −b∥2 ≤ ελ = ∥Ax λ−b∥2,we would have 12 ∥Ay − b∥22 + λRη(y) < 12 ∥Ax λ − b∥22 + λRη(xλ), which contradicts the global minimality of xλ for (100). Therefore no feasible point of (103) has a smaller WDSN value than xλ, and hence xλ solves (103). This observation gives the usual relationship between the penalized and constrained formu-lations. We now derive an ADMM scheme for (100). Let f (x) := 12 ∥Ax − b∥22. Introducing a consensus variable separates the smooth data-fidelity term from the nonsmooth WDSN penalty: 
+
+min  
+
+> x,z∈Rn
+
+f (x) + λRη(z)s.t. x − z = 0.
+
+(104) With scaled dual variable u and penalty parameter ρ > 0, the scaled augmented Lagrangian is 
+
+Lρ(x, z, u) = f (x) + λRη(z) + ρ
+
+2 ∥x − z + u∥22 − ρ
+
+2 ∥u∥22. (105) 24 Algorithm 2: z-first ADMM for the regularized WDSN model 
+
+Input: A, b, η ∈ [0 , 1] , λ > 0, ρ > 0, x(0) , u(0) , εpri > 0, εdual > 0, K
+
+Output: An approximate solution of (100)  
+
+> 1
+
+Precompute a factorization of A⊤A + ρI; 
+
+> 2
+
+for k = 0 , 1, 2, . . . , K − 1 do  
+
+> 3
+
+Form proximal input: p(k) ← x(k) + u(k); 
+
+> 4
+
+Choose z(k+1) ∈ Prox (λ/ρ )Rη (p(k)); 
+
+> 5
+
+Assemble right-hand side: h(k+1) ← A⊤b + ρ(z(k+1) − u(k)); 
+
+> 6
+
+Solve quadratic subproblem: (A⊤A + ρI)x(k+1) = h(k+1) ; 
+
+> 7
+
+Update scaled dual variable: u(k+1) ← u(k) + x(k+1) − z(k+1) ; 
+
+> 8
+
+Compute primal residual: r(k+1) ← x(k+1) − z(k+1) ; 
+
+> 9
+
+Compute dual residual: s(k+1) ← ρ(x(k+1) − x(k)); 
+
+> 10
+
+if ∥r(k+1) ∥2 ≤ εpri and ∥s(k+1) ∥2 ≤ εdual then  
+
+> 11
+
+return z(k+1) ; 
+
+> 12
+
+return z(K);The corresponding ADMM iteration is written in the z-first Gauss–Seidel order: 
+
+
+
+z(k+1) ∈ arg min 
+
+> z∈Rn
+
+n
+
+λRη(z) + ρ
+
+2 ∥x(k) − z + u(k)∥22
+
+o
+
+,
+
+x(k+1) = arg min 
+
+> x∈Rn
+
+12∥Ax − b∥22 + ρ
+
+2 ∥x − z(k+1) + u(k)∥22
+
+
+
+,
+
+u(k+1) = u(k) + x(k+1) − z(k+1) .
+
+(106a) (106b) (106c) The z-subproblem is exactly a WDSN proximal step. Define p(k) := x(k) + u(k). After dividing (106a) by λ > 0, we obtain 
+
+z(k+1) ∈ arg min 
+
+> z∈Rn
+
+n
+
+Rη(z) + ρ
+
+2λ∥z − p(k)∥22
+
+o
+
+.
+
+It follows that z(k+1) ∈ Prox (λ/ρ )Rη (p(k)).The x-subproblem is a strongly convex quadratic problem. Its first-order optimality con-dition is A⊤(Ax (k+1) − b) + ρ(x(k+1) − z(k+1) + u(k)) = 0 . Equivalently, x(k+1) is obtained by solving the fixed-coefficient linear system 
+
+(A⊤A + ρI)x(k+1) = A⊤b + ρ(z(k+1) − u(k)). (107) Since ρ > 0, the matrix A⊤A + ρI is positive definite, so this subproblem has a unique minimizer. In implementation, the coefficient matrix is unchanged across iterations, and its factorization can be reused. Algorithm 2 summarizes the ADMM scheme for the penalized model (100). The same penalized solver can be applied to data generated from either noiseless or noisy measurement models; the noise level affects the practical choice of the regularization parameter λ.
+
+7. Convergence Analysis 
+
+In this section, we establish the global convergence of the proposed ADMM scheme (Algo-rithm 2). Throughout the rest of this section, let 
+
+g(z) := λRη(z), Fλ := f + λRη, Lf := ∥A⊤A∥2,
+
+25 and write w(k) := ( x(k), z(k), u(k)) and Lkρ := Lρ(x(k), z(k), u(k)). For s ∈ Rn, we use SGN( s)
+
+for the set-valued sign vector, that is, SGN( s) := {ξ ∈ Rn : ξi = sign( si) if si̸ = 0 , ξ i ∈
+
+[−1, 1] if si = 0 }.
+
+Theorem 7.1 (Existence of global minimizers) . Let A ∈ Rm×n, b ∈ Rm, λ > 0, and η ∈ [0 , 1] .Assume that either 0 ≤ η < 1, or η = 1 and 
+
+{d ∈ Rn \ { 0} : Ad = 0, R1(d) = 0 } = ∅. (108) 
+
+Then Fλ(x) is coercive. Consequently, the solution set of (100) is nonempty and compact. Proof. Since ∥x∥1 ≥ ∥ x∥2, for every x ∈ Rn one has Rη(x) = ∥x∥21 − η∥x∥22 ≥ (1 − η)∥x∥22 ≥ 0.If 0 ≤ η < 1, then Fλ(x) ≥ λ(1 − η)∥x∥22, and hence Fλ(x) → +∞ as ∥x∥2 → +∞. Thus Fλ
+
+is coercive in this case. It remains to consider η = 1 . In this case, R1(x) = ∥x∥21 − ∥ x∥22 = 2 P 
+
+> 1≤i<j ≤n
+
+|xi|| xj | ≥ 0.For every x̸ = 0, write x = td, where t := ∥x∥2 > 0 and d := x/∥x∥2, so that ∥d∥2 = 1 . Define 
+
+Θ( d) := 12 ∥Ad ∥22 + λR1(d) for ∥d∥2 = 1 . By (108) and the nonnegativity of both terms in Θ,we have Θ( d) > 0 on the unit sphere Sn−1 := {d ∈ Rn : ∥d∥2 = 1 }. Since Θ is continuous and 
+
+Sn−1 is compact, there exists c > 0 such that Θ( d) ≥ c for all d ∈ Sn−1. Using the quadratic homogeneity of R1, we get 
+
+Fλ(td) = 12∥tAd − b∥22 + λt 2R1(d) = t2Θ( d) − t⟨Ad , b⟩ + 12∥b∥22 ≥ ct 2 − t∥A∥2∥b∥2 + 12∥b∥22.
+
+The right-hand side tends to +∞ as t → +∞. Since t = ∥x∥2, Fλ(x) → +∞ as ∥x∥2 → +∞.Hence Fλ is coercive. Thus Fλ is continuous and coercive under the stated assumptions. Therefore, its lower level sets are compact. Let {xk} be a minimizing sequence. Since Fλ(0) < +∞, this sequence is eventually contained in a compact lower level set and hence admits a convergent subsequence 
+
+xkj → x⋆. By continuity, Fλ(x⋆) = inf x∈Rn Fλ(x). Thus x⋆ is a global minimizer. The solution set is closed by continuity and bounded by coercivity, and is therefore compact. 
+
+Lemma 7.2 (Bregman-Lagrangian identity and lower bound) . Let {w(k)} be generated by the exact ADMM iteration (106) . For every k ≥ 1,
+
+ρu(k) = −∇ f (x(k)). (109) 
+
+Moreover, 
+
+Lkρ = Fλ(z(k)) − 12∥A(z(k) − x(k))∥22 + ρ
+
+2 ∥x(k) − z(k)∥22, (110) 
+
+where Fλ = f + λRη. Consequently, 
+
+Lkρ ≥ Fλ(z(k)) + ρ − Lf
+
+2 ∥x(k) − z(k)∥22. (111) 
+
+Proof. For the quadratic function f (x) = 12 ∥Ax − b∥22, the Bregman divergence satisfies 
+
+Df (z, x) := f (z) − f (x) − ⟨∇ f (x), z − x⟩ = 12∥A(z − x)∥22. (112) For k ≥ 1, the first-order optimality condition of the x-subproblem is 
+
+∇f (x(k)) + ρ(x(k) − z(k) + u(k−1) ) = 0.
+
+26 Combining this relation with the dual update u(k) = u(k−1) +x(k)−z(k) gives ρu(k) = −∇ f (x(k)).Moreover, substituting ρu(k) = −∇ f (x(k)) into the augmented Lagrangian function gives 
+
+Lkρ = f (x(k)) + λRη(z(k)) + ⟨ρu(k), x(k) − z(k)⟩ + ρ
+
+2 ∥x(k) − z(k)∥22
+
+= f (x(k)) − ⟨∇ f (x(k)), x(k) − z(k)⟩ + λRη(z(k)) + ρ
+
+2 ∥x(k) − z(k)∥22. (113) It follows from the Df (z, x) that 
+
+f (x(k)) − ⟨∇ f (x(k)), x(k) − z(k)⟩ = f (z(k)) − D f (z(k), x(k)).
+
+This proves (110). Finally, ∥A(z − x)∥22 ≤ Lf ∥z − x∥22 gives (111). 
+
+Lemma 7.3 (Sufficient descent) . Let {w(k)} be generated by Algorithm 2. If ρ > √2Lf , then, for every k ≥ 1, one has 
+
+Lk+1  
+
+> ρ
+
+≤ L kρ −
+
+ρ
+
+2 − L2
+
+> f
+
+ρ
+
+
+
+∥x(k+1) − x(k)∥22. (114) 
+
+Proof. By the optimality of z(k+1) in the z-subproblem, we have 
+
+Lρ(x(k), z(k+1) , u(k)) ≤ L ρ(x(k), z(k), u(k)).
+
+For fixed (z(k+1) , u(k)), the x-subproblem has Hessian A⊤A + ρI ⪰ ρI. Therefore, 
+
+Lρ(x(k+1) , z(k+1) , u(k)) ≤ L ρ(x(k), z(k+1) , u(k)) − ρ
+
+2 ∥x(k+1) − x(k)∥22.
+
+The dual update gives u(k+1) − u(k) = x(k+1) − z(k+1) , and hence 
+
+Lρ(x(k+1) , z(k+1) , u(k+1) ) − L ρ(x(k+1) , z(k+1) , u(k))= ρ⟨u(k+1) − u(k), x(k+1) − z(k+1) ⟩ = ρ∥u(k+1) − u(k)∥22.
+
+The first-order optimality condition of the x-subproblem is ∇f (x(k+1) ) + ρ(x(k+1) − z(k+1) +
+
+u(k)) = 0. Using the dual update, this becomes ρu(k+1) = −∇ f (x(k+1) ). For k ≥ 1, the same identity holds at index k. It follows from the Lf -Lipschitz continuous of ∇f that 
+
+ρ∥u(k+1) − u(k)∥2 = ∥∇ f (x(k+1) ) − ∇ f (x(k))∥2 ≤ Lf ∥x(k+1) − x(k)∥2. (115) Combining the preceding estimates gives Lk+1  
+
+> ρ
+
+≤ L kρ − ρ 
+
+> 2
+
+∥x(k+1) − x(k)∥22 + L2 
+
+> f
+> ρ
+
+∥x(k+1) − x(k)∥22,which proves (114). 
+
+Lemma 7.4 (Boundedness of the ADMM sequence) . Assume that the hypotheses of Theo-rem 7.1 hold and that ρ > √2Lf . Then {w(k)} is bounded. Proof. By Theorem 7.1, Fλ = f + λRη is coercive. By Lemma 7.3, {L kρ}k≥1 is nonincreasing. Since 0 ≤ η ≤ 1, one has Rη(x) ≥ 0 for every x, and hence Fλ ≥ 0. Combining this with (111) and ρ > √2Lf > L f gives 
+
+0 ≤ Fλ(z(k)) + ρ − Lf
+
+2 ∥x(k) − z(k)∥22 ≤ L kρ ≤ L 1
+
+> ρ
+
+, k ≥ 1.
+
+Therefore {Fλ(z(k))} is bounded above, and the coercivity of Fλ implies that {z(k)} is bounded. The same estimate bounds {x(k) − z(k)}, so {x(k)} is bounded. Finally, ρu(k) = −∇ f (x(k)) and the affine form of ∇f imply that {u(k)}k≥1 is bounded. Adding the finite initial term, {w(k)}
+
+is bounded. 27 Theorem 7.5 (Subsequential convergence) . Suppose that the sequence {w(k)} is generated by Algorithm 2. Assume that the hypotheses of Theorem 7.1 hold and that ρ > √2Lf . Then the following assertions hold: (i) The sequence {w(k)} has at least one accumulation point. (ii) The iterates satisfy ∥x(k+1) − x(k)∥2 → 0, ∥z(k+1) − z(k)∥2 → 0, ∥u(k+1) − u(k)∥2 → 0, and 
+
+∥x(k) − z(k)∥2 → 0.(iii) For every accumulation point ( ¯ x, ¯z, ¯u), we have ¯x = ¯z, ∇f ( ¯ x) + ρ ¯u = 0, and 0 ∈
+
+∂g ( ¯ z) − ρ ¯u. Consequently, ¯x = ¯ z is a stationary point of (100) , namely 
+
+0 ∈ A⊤(A ¯x − b) + 2 λ∥ ¯x∥1 SGN( ¯ x) − 2λη ¯x.
+
+Proof. (i) By Lemma 7.4, the sequence {w(k)} is bounded. Since the ambient space is finite-dimensional, the Bolzano–Weierstrass theorem gives at least one accumulation point. (ii) By Lemma 7.3, for every k ≥ 1, one has 
+
+Lk+1  
+
+> ρ
+
+≤ L kρ −
+
+ρ
+
+2 − L2
+
+> f
+
+ρ
+
+
+
+∥x(k+1) − x(k)∥22.
+
+The coefficient is positive because ρ > √2Lf . Moreover, (111), Fλ ≥ 0, and ρ > L f imply that Lkρ is bounded from below for k ≥ 1. Summing the descent inequality over k therefore gives P∞ 
+
+> k=1
+
+∥x(k+1) − x(k)∥22 < +∞. Hence ∥x(k+1) − x(k)∥2 → 0. The dual estimate (115) gives ∥u(k+1) − u(k)∥2 → 0. The dual update gives x(k+1) − z(k+1) = u(k+1) − u(k), and hence 
+
+∥x(k) − z(k)∥2 → 0. Finally, for k ≥ 1, we have 
+
+z(k+1) − z(k) = x(k+1) − x(k) − (u(k+1) − u(k)) − (u(k) − u(k−1) ) .
+
+Therefore ∥z(k+1) − z(k)∥2 → 0.(iii) Let (x(kj ), z(kj ), u(kj )) → ( ¯ x, ¯z, ¯u). By (ii), ¯x = ¯ z. Passing to the limit in (109) along this subsequence yields ∇f ( ¯ x) + ρ ¯u = 0. The optimality condition of the z-subproblem is 
+
+0 ∈ ∂g (z(k+1) ) − ρ(x(k) − z(k+1) + u(k)).
+
+Using (ii), we have z(kj +1) → ¯z. Since g is continuous and the graph of the limiting subdiffer-ential is closed, passing to the limit along the same subsequence gives 
+
+0 ∈ ∂g ( ¯ z) − ρ( ¯ x − ¯z + ¯ u) = ∂g ( ¯ z) − ρ ¯u.
+
+Combining the two limiting relations gives 0 ∈ ∇ f ( ¯ x) + ∂g ( ¯ x). Since ∇f ( ¯ x) = A⊤(A ¯x − b)
+
+and ∂g ( ¯ x) = 2 λ∥ ¯x∥1 SGN( ¯ x) − 2λη ¯x, the stated stationarity condition follows. 
+
+Lemma 7.6 (Subgradient bound) . Let {w(k)} be generated by Algorithm 2. Then, for ev-ery k ≥ 1, one has dist  0, ∂ Lρ(w(k+1) ) ≤ Cρ∥x(k+1) − x(k)∥2, where one may take Cρ := 
+
+q
+
+2L2 
+
+> f
+
++ ( ρ + Lf )2. If ρu(0) = −∇ f (x(0) ), then the same estimate also holds for k = 0 .Proof. The first-order optimality condition of the x-subproblem is 
+
+∇f (x(k+1) ) + ρ(x(k+1) − z(k+1) + u(k)) = 0.
+
+28 Together with the dual update u(k+1) = u(k) +x(k+1) −z(k+1) , this gives ρu(k+1) = −∇ f (x(k+1) ).Hence, for k ≥ 1, one has 
+
+ρ∥u(k+1) − u(k)∥2 = ∥∇ f (x(k+1) ) − ∇ f (x(k))∥2 ≤ Lf ∥x(k+1) − x(k)∥2.
+
+We now construct an element of ∂Lρ(w(k+1) ). The x- and u-components satisfy 
+
+d(k+1)  
+
+> x
+
+:= ∇xLρ(w(k+1) ) = ρ(u(k+1) − u(k)),
+
+and d(k+1)  
+
+> u
+
+:= ∇uLρ(w(k+1) ) = ρ(x(k+1) − z(k+1) ) = ρ(u(k+1) − u(k)). For the z-component, the optimality condition of the z-subproblem gives an element v(k+1)  
+
+> z
+
+∈ ∂g (z(k+1) ) such that 
+
+v(k+1)  
+
+> z
+
++ ρ(z(k+1) − x(k) − u(k)) = 0. Therefore, 
+
+d(k+1)  
+
+> z
+
+:= v(k+1)  
+
+> z
+
+− ρ(x(k+1) − z(k+1) + u(k+1) )= ρ(x(k) − x(k+1) + u(k) − u(k+1) ) ∈ ∂z Lρ(w(k+1) ).
+
+Thus d(k+1) := ( d(k+1)  
+
+> x
+
+, d(k+1)  
+
+> z
+
+, d(k+1)  
+
+> u
+
+) ∈ ∂Lρ(w(k+1) ). Using the preceding dual bound, 
+
+∥d(k+1)  
+
+> x
+
+∥2 ≤ Lf ∥x(k+1) − x(k)∥2, ∥d(k+1)  
+
+> u
+
+∥2 ≤ Lf ∥x(k+1) − x(k)∥2,
+
+and 
+
+∥d(k+1)  
+
+> z
+
+∥2 ≤ ρ∥x(k+1) − x(k)∥2 + ρ∥u(k+1) − u(k)∥2 ≤ (ρ + Lf )∥x(k+1) − x(k)∥2.
+
+Consequently, dist  0, ∂ Lρ(w(k+1) ) ≤ ∥ d(k+1) ∥2 ≤
+
+q
+
+2L2 
+
+> f
+
++ ( ρ + Lf )2 ∥x(k+1) − x(k)∥2. This proves the claim. With the sufficient descent and subgradient bounds established, we are now ready to state the global convergence theorem. 
+
+Theorem 7.7 (Global Convergence) . Suppose that the sequence {w(k)} is generated by Algo-rithm 2, with each z-subproblem solved globally. Assume that the hypotheses of Theorem 7.1 hold and that ρ > √2Lf . Then the sequence has finite length 
+
+> ∞
+
+X
+
+> k=0
+
+(x(k+1) − x(k), z(k+1) − z(k), u(k+1) − u(k)) 2 < +∞.
+
+Consequently, the whole sequence converges to a stationary point of the split problem (104) . In particular, the common primal limit is a stationary point of (100) .Proof. Set a := ρ 
+
+> 2
+
+− L2 
+
+> f
+> ρ
+
+> 0 and sk := ∥x(k+1) − x(k)∥2. By Lemma 7.3, for every k ≥ 1, one has 
+
+Lkρ − L k+1  
+
+> ρ
+
+≥ as 2
+
+> k
+
+. (116) On the other hand, (111), Fλ ≥ 0, and ρ > L f show that {L kρ}k≥1 is bounded from below. Thus 
+
+Lkρ converges to some finite value L∞ 
+
+> ρ
+
+, and (116) implies P∞ 
+
+> k=1
+
+s2 
+
+> k
+
+< +∞. Hence s2 
+
+> k
+
+→ 0, and therefore sk → 0. Lemma 7.6 gives the relative-error estimate 
+
+dist  0, ∂ Lρ(w(k+1) ) ≤ Cρsk, k ≥ 1. (117) The augmented Lagrangian function Lρ is continuous and semi-algebraic, and therefore satisfies the Kurdyka–Łojasiewicz property. Moreover, Lemma 7.4 gives the boundedness of {w(k)}. Let 29 Ω denote its set of accumulation points. Then Ω is nonempty and compact, dist( w(k), Ω) → 0,and, by continuity of Lρ, Lρ( ¯ w) = L∞ 
+
+> ρ
+
+for ¯w ∈ Ω. The uniformized KL property on Ω yields constants τ > 0, ν > 0, and a concave function φ ∈ C1(0 , ν ) with φ′ > 0, such that 
+
+φ′ Lρ(w) − L ∞
+
+> ρ
+
+ dist  0, ∂ Lρ(w) ≥ 1 (118) whenever dist( w, Ω) < τ and 0 < Lρ(w) − L ∞ 
+
+> ρ
+
+< ν .If LKρ = L∞ 
+
+> ρ
+
+for some K ≥ 1, then the monotonicity of {L kρ} implies Lkρ = L∞ 
+
+> ρ
+
+for k ≥ K.Consequently, by (116), 
+
+0 ≤ as 2 
+
+> k
+
+≤ L kρ − L k+1  
+
+> ρ
+
+= 0 , k ≥ K, 
+
+and hence x(k+1) = x(k) for k ≥ K. Using (115), we further obtain u(k+1) = u(k) for k ≥ K. The dual update then gives x(k+1) − z(k+1) = u(k+1) − u(k) = 0 for k ≥ K. Thus, with K0 := K + 1 ,
+
+w(k) = w(K0) for k ≥ K0. It follows that P∞ 
+
+> k=K0
+
+∥w(k+1) − w(k)∥2 = 0 , and the finite-length property follows. Moreover, (117) yields dist  0, ∂ Lρ(w(k+1) ) ≤ Cρsk = 0 for k ≥ K, so w(K0)
+
+is a stationary point of the split problem. Assume now that, for some N0 ≥ 1, Lkρ > L∞ 
+
+> ρ
+
+for k ≥ N0. Choose N ≥ N0 such that 
+
+dist( w(k+1) , Ω) < τ , 0 < Lk+1  
+
+> ρ
+
+− L ∞ 
+
+> ρ
+
+< ν for k ≥ N . Then (118) applies to w(k+1) , and together with (117) gives 
+
+1 ≤ Cρφ′ Lk+1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+sk, k ≥ N. (119) In particular, sk > 0 for all k ≥ N . Define Θk := φ Lk+1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+ − φ Lk+2  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+ for k ≥ N .By the concavity of φ, (116), and (119), one has 
+
+Θk ≥ φ′ Lk+1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+  Lk+1  
+
+> ρ
+
+− L k+2 
+
+> ρ
+
+ ≥ aφ ′ Lk+1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+s2 
+
+> k+1
+
+≥ as 2
+
+> k+1
+
+Cρsk
+
+, k ≥ N. 
+
+Hence s2 
+
+> k+1
+
+≤ Cρ 
+
+> a
+
+skΘk for k ≥ N . Using 2√αβ ≤ α + β, we obtain 
+
+sk+1 ≤ 12sk + Cρ
+
+2a Θk, k ≥ N. (120) Summing (120) from k = N to M gives  
+
+> M+1
+
+X 
+
+> j=N+1
+
+sj ≤ 12sN + 12
+
+> M
+
+X 
+
+> j=N+1
+
+sj + Cρ
+
+2a
+
+> M
+
+X
+
+> k=N
+
+Θk.
+
+Therefore, PM +1   
+
+> j=N+1
+
+sj ≤ sN + Cρ
+
+> a
+
+PMk=N Θk. By the definition of Θk, the sum can be written as 
+
+> M
+
+X
+
+> k=N
+
+Θk = φ LN +1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+ − φ LM +2  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+ ≤ φ LN +1  
+
+> ρ
+
+− L ∞
+
+> ρ
+
+.
+
+Letting M → ∞ yields ∞X
+
+> k=0
+
+∥x(k+1) − x(k)∥2 < +∞. (121) It follows from (115) and (121) that 
+
+> ∞
+
+X
+
+> k=1
+
+∥u(k+1) − u(k)∥2 ≤ Lf
+
+ρ
+
+> ∞
+
+X
+
+> k=1
+
+∥x(k+1) − x(k)∥2 < +∞.
+
+30 Moreover, for k ≥ 1, z(k+1) − z(k) = x(k+1) − x(k) − (u(k+1) − u(k)) + ( u(k) − u(k−1) ). Thus 
+
+> ∞
+
+X
+
+> k=1
+
+∥z(k+1) − z(k)∥2 ≤
+
+> ∞
+
+X
+
+> k=1
+
+∥x(k+1) − x(k)∥2
+
++
+
+> ∞
+
+X
+
+> k=1
+
+∥u(k+1) − u(k)∥2 +
+
+> ∞
+
+X
+
+> k=1
+
+∥u(k) − u(k−1) ∥2 < +∞.
+
+Consequently, P∞ 
+
+> k=0
+
+∥w(k+1) − w(k)∥2 < +∞. Hence {w(k)} is a Cauchy sequence and hence converges. Denote its limit by ¯w := ( ¯ x, ¯z, ¯u). It remains to show that this limit is stationary. By Lemma 7.6, for every k ≥ 1 there exists q(k+1) ∈ ∂Lρ(w(k+1) ) such that ∥q(k+1) ∥2 ≤ Cρsk.Since sk → 0, q(k+1) → 0. Together with w(k+1) → ¯w, Lρ(w(k+1) ) → L ρ( ¯ w), the closedness of the limiting-subdifferential graph gives 0 ∈ ∂Lρ( ¯ w). Equivalently, ∇f ( ¯ x) + ρ( ¯ x − ¯z + ¯ u) = 0,
+
+0 ∈ ∂g ( ¯ z) − ρ( ¯ x − ¯z + ¯ u), and ¯x − ¯z = 0. Therefore, ¯x = ¯ z, ∇f ( ¯ x) + ρ ¯u = 0, ρ ¯u ∈ ∂g ( ¯ x).It follows that 0 ∈ ∇ f ( ¯ x) + ∂g ( ¯ x), which is the stationarity condition for (100). Hence ¯w is a stationary point of (104), and ¯x is a stationary point of (100). 
+
+8. Numerical Experiments 
+
+This section evaluates the efficiency of the ADMM algorithm based on the closed-form prox-imal mapping derived in Section 5, and compares it with the HV algorithm. The experiments cover both noiseless and noisy compressed sensing problems, with the aim of highlighting the computational advantage brought by exactly solving the full WDSN proximal subproblem. 
+
+8.1. Noiseless Compressed Sensing 
+
+We first evaluate the two solvers in noiseless compressed sensing settings. For the problem sizes, we set M = 500 , 600 , . . . , 1000 , N = 10 M , and s = M/ 10 , and perform 20 random Monte Carlo trials. The two solvers use the same ℓ1 warm start, the same parameters η = 1 and 
+
+λ = 10 −6, the same maximum number of iterations 5N , and the same stopping tolerance 10 −8;the penalty parameter in ADMM is set to ρ = 10 . We test two types of sensing matrices: oversampled DCT matrices with oversampling factor F = 20 , and Gaussian matrices with correlation parameter r = 0 .2. Figures 1 and 2 report, respectively, the average number of iterations, the average CPU running time, the CPU running-time scatter plot, and the CPU running time speedup of the two solvers. The oversample DCT experiment in Figure 1 shows a crossover pattern rather than a uniform small-scale advantage. For N = 5000 , the HV solver has lower mean CPU time, although ADMM already requires fewer iterations on average. This indicates that the per-iteration linear-algebra cost of ADMM is not fully amortized at the smallest tested dimension. Starting from N = 6000 , however, ADMM becomes faster, and the CPU running time speedup of the two solvers generally grows with the ambient dimension. At N = 10000 , ADMM reduces the mean iteration count from 12860 .6 to 5039 .6, corresponding to an iteration reduction of about 
+
+60 .8% , and reduces the mean runtime from 111 .4 seconds to 60 .6 seconds. The speedup at this largest dimension is 1.85 . Thus, for oversampled DCT matrices, the exact WDSN proximal module offers a computational advantage once the reduction in outer iterations outweighs the additional cost incurred by solving the ADMM quadratic subproblems. The Gaussian experiment in Figure 2 gives a substantially stronger scaling advantage for ADMM. Across all six dimensions, the mean ADMM iteration count remains between 135 .3 and 
+
+155 .5, whereas the mean HV iteration count increases from 2683 .0 to 5563 .3. This separation 31 N
+
+5000 6000 7000 8000 9000 10000 
+
+> Mean iterations
+
+2000 
+
+4000 
+
+6000 
+
+8000 
+
+10000 
+
+12000 
+
+14000 
+
+> ADMM
+> HV
+
+(a) Mean iterations. 5000 6000 7000 8000 9000 10000 
+
+N
+
+10 1
+
+10 2 
+
+> Mean runtime (s, log scale)  ADMM
+> HV
+
+(b) Mean CPU runtime. HV time (s) 
+
+0 50 100 150 200 
+
+> ADMM time (s)
+
+0
+
+50 
+
+100 
+
+150 
+
+200 
+
+5000 
+
+6000 
+
+7000 
+
+8000 
+
+9000 
+
+10000 N
+
+(c) CPU runtime. N
+
+5000 6000 7000 8000 9000 10000 
+
+> Time speedup (HV / ADMM)
+
+0
+
+0.5 
+
+1
+
+1.5 
+
+2
+
+(d) Speedup. 
+
+Figure 1: Runtime and iteration comparison between HV and ADMM for oversampled DCT sensing matrices. N
+
+5000 6000 7000 8000 9000 10000 
+
+> Mean iterations
+
+0
+
+1000 
+
+2000 
+
+3000 
+
+4000 
+
+5000 
+
+6000 
+
+> ADMM
+> HV
+
+(a) Mean iterations. 5000 6000 7000 8000 9000 10000 
+
+N
+
+10 0
+
+10 1 
+
+> Mean runtime (s, log scale)  ADMM
+> HV
+
+(b) Mean CPU runtime. HV time (s) 
+
+0 20 40 60 
+
+> ADMM time (s)
+
+0
+
+10 
+
+20 
+
+30 
+
+40 
+
+50 
+
+60 
+
+70 
+
+5000 
+
+6000 
+
+7000 
+
+8000 
+
+9000 
+
+10000 N
+
+(c) CPU runtime. N
+
+5000 6000 7000 8000 9000 10000 
+
+> Time speedup (HV / ADMM)
+
+0
+
+5
+
+10 
+
+15 
+
+20 
+
+25 
+
+(d) Speedup. 
+
+Figure 2: Runtime and iteration comparison between HV and ADMM for Gaussian sensing matrices. 
+
+32 is reflected in CPU time: the mean ADMM time ranges from 0.21 to 2.60 seconds, while the mean HV time ranges from 2.18 to 60 .45 seconds. The paired mean speedup ranges from 10 .08 
+
+to 23 .36 and reaches 23 .36 at N = 10000 , where the mean iteration reduction is about 97 .2% .These results support the algorithmic role of the full WDSN proximal mapping: the HV update treats the negative quadratic term through the smooth gradient step and applies a proximal map only for the squared ℓ1 term, whereas the proposed ADMM update applies the closed-form proximal map of the full WDSN penalty in the z-subproblem. It remains to verify that the faster ADMM runs do not obtain their speed by terminating at poorer objective values. Tables 1 and 2 therefore report the final RWDSN objective values on the same trials. The relative gap (RG) is computed as |fADMM − fHV |/ max {1, |fHV |} .
+
+Table 1: Comparison of final objective values between HV and ADMM for oversampled DCT sensing matrices. The notation μ ± σ reports the mean and standard deviation; Max RG reports the worst trial.                                                                                  
+
+> Problem Final objective value
+> NMsADMM HV RG ( μ±σ)Max RG 5000 500 50 2.686e-4 ±6.6e-5 2.686e-4 ±6.6e-5 2.75e-10 ±1.08e-10 5.20e-10 6000 600 60 3.659e-4 ±9.7e-5 3.659e-4 ±9.7e-5 3.49e-10 ±1.10e-10 5.74e-10 7000 700 70 4.372e-4 ±1.3e-4 4.372e-4 ±1.3e-4 4.74e-10 ±1.93e-10 9.70e-10 8000 800 80 6.206e-4 ±1.9e-4 6.206e-4 ±1.9e-4 6.64e-10 ±2.62e-10 1.21e-9 9000 900 90 7.071e-4 ±1.9e-4 7.071e-4 ±1.9e-4 6.89e-10 ±3.48e-10 1.67e-9 10000 1000 100 8.658e-4 ±2.1e-4 8.658e-4 ±2.1e-4 7.36e-10 ±2.67e-10 1.11e-9
+
+Table 2: Comparison of final objective values between HV and ADMM for Gaussian sensing matrices. The notation μ ± σ reports the mean and standard deviation; Max RG reports the worst trial.                                                                                  
+
+> Problem Final objective value
+> NMsADMM HV RG ( μ±σ)Max RG 5000 500 50 2.692e-4 ±7.3e-5 2.692e-4 ±7.3e-5 1.59e-9 ±4.03e-10 2.43e-9 6000 600 60 3.165e-4 ±1.0e-4 3.165e-4 ±1.0e-4 2.39e-9 ±5.32e-10 3.62e-9 7000 700 70 4.777e-4 ±1.7e-4 4.777e-4 ±1.7e-4 3.91e-9 ±1.44e-9 9.11e-9 8000 800 80 5.112e-4 ±1.6e-4 5.113e-4 ±1.6e-4 4.76e-9 ±1.48e-9 7.84e-9 9000 900 90 7.099e-4 ±1.9e-4 7.099e-4 ±1.9e-4 7.11e-9 ±1.61e-9 1.18e-8 10000 1000 100 9.156e-4 ±2.6e-4 9.156e-4 ±2.6e-4 1.01e-8 ±2.05e-9 1.41e-8
+
+In the DCT experiments, the mean RG always stays within a small range between 2.75 ×
+
+10 −10 and 7.36 × 10 −10 , and the maximum gap is only 1.67 × 10 −9. Even in the Gaussian cases, where the speedup is much larger, the mean RGs are still between 1.59 × 10 −9 and 1.01 × 10 −8,with the largest gap being 1.41 × 10 −8. Therefore, in the noiseless case, ADMM and HV give very close RWDSN objective values. This shows that the advantage of the proposed ADMM is purely computational: because it solves the proximal subproblem of Rη exactly, it needs fewer outer iterations, especially for Gaussian sensing matrices and large oversampled DCT cases. 
+
+8.2. Noisy Compressed Sensing 
+
+Next, we evaluate the robustness and computational performance of the regularized WDSN model in the presence of measurement noise. The noisy data are generated according to b =
+
+Ax ∗ + e. We consider three problem sizes: (M, N, s ) = (300 , 3000 , 30) , (400 , 4000 , 40) , and 
+
+(500 , 5000 , 50) , as well as three SNR levels: 30 , 40 , and 50 dB. For each problem size and SNR level, the reported statistical results are averaged over 20 Monte Carlo trials. In each trial, both ADMM and HV utilize the same sensing matrix and noisy observations. This 33 experimental setup ensures that the reported differences primarily reflect the variations in the algorithm update mechanisms, rather than the impact of other varying factors. We test two sensing matrices. In the oversampled DCT matrices, the oversampling factor is F = 10 and the support separation is set to 2F . In the Gaussian matrices, the correlation parameter is r = 0 .5, and the support separation is set to 20. The noise magnitude is de-termined by the prescribed SNR. Specifically, for g ∼ N (0, IM ), we set σ = ∥Ax ∗∥2
+
+√M 10 SNR /20 and 
+
+e = σ√M g
+
+∥g∥2 . This construction gives SNR = 20 log 10 
+
+∥Ax ∗∥2
+
+∥e∥2 .Both solvers start from the same noisy ℓ1 warm start. In all tests, we set η = 1 , use at most 
+
+5N iterations, and set both the absolute and relative stopping tolerances to 10 −8. For ADMM, the penalty parameter is fixed at ρ = 1 . The WDSN regularization parameter is scaled with the noise level according to λ = 5 × 10 −2σ√2 log N , and the ℓ1 warm-start is set to λ = σ√2 log N .To assess recovery quality, we report the reconstruction SNR 
+
+RSNR( ˆx, x∗) := −10 log 10 
+
+∥ˆx − x∗∥22
+
+∥x∗∥22
+
+,
+
+where larger values indicate more accurate reconstruction. We also report top-K support metrics with K = s: topKhit is the number of true support indices contained in the s largest-magnitude entries of ˆx, topKrec is topKhit /s , and topKerr is 1 − topKrec . Table 3 reports the results for the oversampled DCT matrices. 
+
+Table 3: Noisy recovery results for oversampled DCT sensing matrices at three SNR levels. The notation μ ± σ
+
+reports the mean and sample standard deviation.                                                                                                                                                                                                                                                                                                                                                                                                                
+
+> SNR (M, N, s )Solver Iter Obj. Time(s) topKhit topKrec topKerr RSNR(dB) 30 (300 ,3000 ,30) ADMM 373 .5±272 .31.124e −1±5.477e −20.50 ±0.41 27 .1±1.0 0 .905 ±0.033 0 .095 ±0.033 22 .40 ±1.09
+> 30 (300 ,3000 ,30) HV 11345 .6±3122 .5 1 .124e −1±5.477e −210 .19 ±2.86 27 .1±1.0 0 .905 ±0.033 0 .095 ±0.033 22 .39 ±1.10
+> 30 (400 ,4000 ,40) ADMM 319 .4±124 .21.393e −1±5.669e −20.74 ±0.28 35 .4±1.4 0 .884 ±0.035 0 .116 ±0.035 20 .29 ±1.72
+> 30 (400 ,4000 ,40) HV 11564 .8±3630 .0 1 .393e −1±5.669e −216 .83 ±5.31 35 .4±1.4 0 .884 ±0.035 0 .116 ±0.035 20 .28 ±1.74
+> 30 (500 ,5000 ,50) ADMM 375 .6±340 .01.946e −1±8.067e −21.39 ±1.15 43 .0±1.4 0 .861 ±0.029 0 .139 ±0.029 19 .87 ±1.35
+> 30 (500 ,5000 ,50) HV 12115 .8±5573 .7 1 .946e −1±8.067e −2 27 .47 ±13 .27 43 .0±1.4 0 .861 ±0.029 0 .139 ±0.029 19 .88 ±1.35
+> 40 (300 ,3000 ,30) ADMM 463 .6±448 .23.640e −2±1.796e −20.65 ±0.62 28 .9±0.8 0 .963 ±0.026 0 .037 ±0.026 31 .86 ±1.19
+> 40 (300 ,3000 ,30) HV 9809 .1±3714 .03.640e −2±1.796e −28.65 ±3.32 28 .9±0.8 0 .963 ±0.026 0 .037 ±0.026 31 .85 ±1.19
+> 40 (400 ,4000 ,40) ADMM 296 .4±126 .14.573e −2±1.888e −20.72 ±0.30 38 .2±0.9 0 .955 ±0.022 0 .045 ±0.022 29 .68 ±1.82
+> 40 (400 ,4000 ,40) HV 11282 .0±4982 .7 4 .573e −2±1.888e −216 .31 ±7.06 38 .2±0.9 0 .955 ±0.022 0 .045 ±0.022 29 .69 ±1.82
+> 40 (500 ,5000 ,50) ADMM 331 .4±273 .36.446e −2±2.718e −21.22 ±1.02 47 .2±1.5 0 .945 ±0.030 0 .055 ±0.030 29 .00 ±1.42
+> 40 (500 ,5000 ,50) HV 9564 .9±2799 .26.446e −2±2.718e −221 .71 ±6.69 47 .2±1.5 0 .945 ±0.030 0 .055 ±0.030 29 .00 ±1.42
+> 50 (300 ,3000 ,30) ADMM 367 .4±411 .21.161e −2±5.757e −30.48 ±0.50 29 .7±0.5 0 .990 ±0.016 0 .010 ±0.016 41 .71 ±1.10
+> 50 (300 ,3000 ,30) HV 8074 .2±3387 .81.161e −2±5.757e −37.24 ±2.93 29 .7±0.5 0 .990 ±0.016 0 .010 ±0.016 41 .66 ±1.18
+> 50 (400 ,4000 ,40) ADMM 296 .1±214 .71.465e −2±6.080e −30.68 ±0.45 39 .0±0.9 0 .976 ±0.024 0 .024 ±0.024 39 .46 ±1.81
+> 50 (400 ,4000 ,40) HV 9260 .0±4536 .41.465e −2±6.080e −313 .33 ±6.48 39 .0±0.9 0 .976 ±0.024 0 .024 ±0.024 39 .46 ±1.81
+> 50 (500 ,5000 ,50) ADMM 285 .1±165 .42.072e −2±8.791e −31.08 ±0.72 49 .1±0.7 0 .983 ±0.015 0 .017 ±0.015 38 .78 ±1.45
+> 50 (500 ,5000 ,50) HV 8050 .1±2916 .22.072e −2±8.791e −318 .52 ±6.50 49 .1±0.7 0 .983 ±0.015 0 .017 ±0.015 38 .78 ±1.44
+
+Experimental results on the oversampled DCT matrix show that recovery quality depends on the noise level. As the SNR increases from 30 dB to 50 dB, topKhit improves from 0.86 –0.91 to 
+
+0.98 –0.99 , and the RSNR increases by about 18–20 dB. At the same noise level, ADMM and HV yield almost identical objective function values, support metrics, and RSNR. The computational difference, however, remains clear. Across the nine DCT settings, ADMM reduces the average number of iterations by about 95 .3% –97 .4% and gives an average runtime speedup between 
+
+13 .3 and 22 .7, based on the reported mean CPU times. In every DCT setting, the average runtime of ADMM is lower than that of HV. The Gaussian results are reported in Table 4. These tests show an even clearer difference in computational efficiency. In all settings, HV reaches, or nearly reaches, the prescribed maximum number of iterations, whereas ADMM stops after an average of 163 .4–571 .1 iterations. 34 Table 4: Noisy recovery results for Gaussian sensing matrices at three SNR levels. Values are computed over 20 paired Monte Carlo trials. The notation μ ± σ reports the mean and sample standard deviation.                                                                                                                                                                                                                                                                                                                                                                                                                   
+
+> SNR (M, N, s )Solver Iter Obj. Time(s) topKhit topKrec topKerr RSNR(dB) 30 (300 ,3000 ,30) ADMM 571 .1±207 .69.033e −3±4.935e −30.86 ±0.41 28 .6±0.8 0 .953 ±0.027 0 .047 ±0.027 25 .86 ±1.94
+> 30 (300 ,3000 ,30) HV 15000 .0±0.09.041e −3±4.940e −314 .06 ±5.98 28 .4±0.9 0 .948 ±0.030 0 .052 ±0.030 25 .39 ±2.00
+> 30 (400 ,4000 ,40) ADMM 391 .4±117 .11.809e −2±1.409e −21.26 ±0.39 37 .9±1.6 0 .948 ±0.039 0 .052 ±0.039 25 .94 ±2.81
+> 30 (400 ,4000 ,40) HV 20000 .0±0.01.810e −2±1.410e −239 .31 ±8.95 37 .8±1.7 0 .945 ±0.042 0 .055 ±0.042 25 .58 ±2.83
+> 30 (500 ,5000 ,50) ADMM 263 .3±56 .92.310e −2±9.040e −30.96 ±0.20 47 .0±1.7 0 .940 ±0.034 0 .060 ±0.034 26 .41 ±1.82
+> 30 (500 ,5000 ,50) HV 25000 .0±0.02.311e −2±9.045e −355 .97 ±0.91 47 .0±1.7 0 .940 ±0.034 0 .060 ±0.034 26 .15 ±1.84
+> 40 (300 ,3000 ,30) ADMM 467 .4±171 .92.684e −3±1.432e −30.65 ±0.24 29 .3±0.7 0 .977 ±0.024 0 .023 ±0.024 35 .64 ±1.88
+> 40 (300 ,3000 ,30) HV 15000 .0±0.02.684e −3±1.433e −313 .68 ±5.87 29 .2±0.8 0 .975 ±0.026 0 .025 ±0.026 35 .14 ±1.91
+> 40 (400 ,4000 ,40) ADMM 302 .4±75 .15.420e −3±4.196e −31.06 ±0.62 39 .3±0.9 0 .982 ±0.023 0 .018 ±0.023 35 .84 ±2.81
+> 40 (400 ,4000 ,40) HV 20000 .0±0.05.421e −3±4.198e −3 39 .59 ±10 .54 39 .4±0.9 0 .984 ±0.023 0 .016 ±0.023 35 .49 ±2.83
+> 40 (500 ,5000 ,50) ADMM 207 .2±42 .66.962e −3±2.747e −30.78 ±0.18 48 .7±1.0 0 .974 ±0.020 0 .026 ±0.020 36 .23 ±1.92
+> 40 (500 ,5000 ,50) HV 25000 .0±0.06.964e −3±2.747e −356 .00 ±1.18 48 .7±1.0 0 .974 ±0.020 0 .026 ±0.020 35 .96 ±1.96
+> 50 (300 ,3000 ,30) ADMM 335 .4±103 .88.317e −4±4.406e −40.47 ±0.17 29 .7±0.5 0 .990 ±0.016 0 .010 ±0.016 45 .57 ±1.88
+> 50 (300 ,3000 ,30) HV 14986 .0±62 .48.318e −4±4.406e −414 .93 ±5.59 29 .6±0.5 0 .988 ±0.016 0 .012 ±0.016 45 .05 ±1.90
+> 50 (400 ,4000 ,40) ADMM 227 .6±58 .41.684e −3±1.301e −30.76 ±0.28 39 .9±0.4 0 .996 ±0.009 0 .004 ±0.009 45 .79 ±2.84
+> 50 (400 ,4000 ,40) HV 19675 .8±1190 .0 1 .685e −3±1.301e −339 .43 ±9.43 39 .8±0.4 0 .995 ±0.010 0 .005 ±0.010 45 .43 ±2.87
+> 50 (500 ,5000 ,50) ADMM 163 .4±28 .32.168e −3±8.577e −40.62 ±0.13 49 .6±0.5 0 .992 ±0.010 0 .008 ±0.010 46 .10 ±1.95
+> 50 (500 ,5000 ,50) HV 24827 .7±770 .82.168e −3±8.577e −455 .80 ±2.29 49 .6±0.5 0 .992 ±0.010 0 .008 ±0.010 45 .80 ±2.00
+
+Based on the reported averages, ADMM reduces the iteration count by about 96 .2% –99 .3% and gives an average runtime speedup between 16 .3 and 90 .0. The recovery performance remains comparable. The two solvers give almost the same objective values and similar top-K recall. In these Gaussian tests, the average RSNR of ADMM is also slightly higher, by about 0.26 –0.52 
+
+dB. This difference, however, should be viewed as a minor effect, since the two solvers use the same regularization parameter and the same initialization. The main point is still the large gain in computational efficiency. Overall, the noisy experiments show that our ADMM algorithm substantially improves computational efficiency while maintaining the same recovery quality as the HV solver. This indicates that the exact treatment of the WDSN proximal operator in ADMM provides a clear algorithmic advantage without degrading the objective function value, support recovery accuracy, or reconstruction accuracy. 
+
+8.3. Amplitude Rescaling Experiment 
+
+We next test the effect of amplitude rescaling when the regularization parameter is selected at one signal amplitude and then kept fixed. The WDSN functional is two-homogeneous, namely 
+
+Rη(cx) = c2Rη(x) with c > 0, which has the same homogeneity as the quadratic data-fidelity term 12 ∥A(cx) − cb∥22 = c2 1 2 ∥Ax − b∥22. Thus the relative balance between the data-fidelity term and the WDSN penalty is preserved when the data amplitude is rescaled. In contrast, the ℓ1 − αℓ 2 penalty is one-homogeneous, and therefore keeping the same λ after amplitude rescaling changes its effective regularization strength. We generate Gaussian sensing matrices with (M, N, s ) = (40 , 100 , 8) and SNR = 50 dB. For each Monte Carlo trial, the WDSN parameter λWDSN and the ℓ1 − αℓ 2 parameter λℓ1−αℓ 2 are selected separately on the original problem with c = 1 . We then solve the rescaled problems bc =
+
+cb with c ∈ { 10 −3, 10 −2, 10 −1, 1, 10 , 10 2, 10 3}, while each method keeps its own value of λ selected at c = 1 . Both methods use the same ℓ1 warm start for each scaled problem. We set η = α = 1 ,use ρ = 1 , and average the results over 100 Monte Carlo trials. The metrics reported in Table 5 are defined as follows: RelErr( c) := ∥bx(cb) − x∗
+
+c ∥2/∥x∗
+
+c ∥2, the relative reconstruction error with respect to the rescaled ground truth x∗
+
+c = cx∗; ScaleErr( c) := ∥bx(cb) − cbx(b)∥2/∥cbx(b)∥2,the deviation from exact output scaling; bk, the number of recovered entries whose magnitudes 35 Table 5: Amplitude rescaling experiment results. Values are reported as mean ± sample standard deviation.                                                                                                                                                                                                               
+
+> RelErr ScaleErr bkFP Conv.
+> cWDSN ℓ1−ℓ2WDSN ℓ1−ℓ2WDSN ℓ1−ℓ2WDSN ℓ1−ℓ2WDSN ℓ1−ℓ2
+> 10 −35.619 ×10 −3±2.155 ×10 −39.145 ×10 −1±1.298 ×10 −12.508 ×10 −3±1.200 ×10 −39.143 ×10 −1±1.302 ×10 −18.00 ±0.00 1.82 ±1.90 0.00 ±0.00 0.24 ±0.73 1.00 0.74 10 −24.878 ×10 −3±1.984 ×10 −31.380 ×10 −1±5.205 ×10 −21.345 ×10 −3±1.001 ×10 −31.362 ×10 −1±5.210 ×10 −28.00 ±0.00 8.08 ±0.31 0.00 ±0.00 0.08 ±0.31 1.00 1.00 10 −14.233 ×10 −3±1.424 ×10 −31.353 ×10 −2±4.399 ×10 −31.910 ×10 −4±1.795 ×10 −41.149 ×10 −2±4.231 ×10 −38.00 ±0.00 8.00 ±0.00 0.00 ±0.00 0.00 ±0.00 1.00 1.00 14.176 ×10 −3±1.383 ×10 −32.991 ×10 −3±6.644 ×10 −40±00±08.00 ±0.00 8.00 ±0.00 0.00 ±0.00 0.00 ±0.00 1.00 1.00 10 4.171 ×10 −3±1.382 ×10 −34.185 ×10 −3±1.264 ×10 −32.087 ×10 −5±1.771 ×10 −52.675 ×10 −3±9.579 ×10 −48.00 ±0.00 8.00 ±0.00 0.00 ±0.00 0.00 ±0.00 1.00 0.69 10 24.171 ×10 −3±1.382 ×10 −35.261 ×10 −3±1.752 ×10 −32.239 ×10 −5±1.957 ×10 −53.645 ×10 −3±1.326 ×10 −38.00 ±0.00 8.00 ±0.00 0.00 ±0.00 0.00 ±0.00 1.00 0.00 10 34.171 ×10 −3±1.382 ×10 −35.874 ×10 −3±1.920 ×10 −32.252 ×10 −5±1.977 ×10 −54.184 ×10 −3±1.490 ×10 −38.00 ±0.00 8.00 ±0.00 0.00 ±0.00 0.00 ±0.00 1.00 0.00
+
+exceed 10 −2∥bx(cb)∥∞; FP, the number of such recovered entries outside the true support; Conv., the proportion of trials satisfying the ADMM convergence criterion. The results in Table 5 show the expected scaling behavior of WDSN. With the same value of λ selected at c = 1 , WDSN keeps the relative reconstruction error in the narrow range from 
+
+4.171 × 10 −3 to 5.619 × 10 −3 over six orders of magnitude in amplitude, and its scale error remains below 2.51 × 10 −3. It also recovers bk = 8 with zero false positives and converges in all tested trials. For the ℓ1 − ℓ2 model, its relative error increases to 9.15 × 10 −1 at c = 10 −3, where it recovers only 1.82 entries on average. Its scale error remains much larger than that of WDSN away from the tuning scale, and the proportion of converged runs drops to 0 at both c = 10 2
+
+and c = 10 3. These results show that WDSN can keep the same λ across data amplitudes, whereas the one-homogeneous ℓ1 − ℓ2 penalty is sensitive to amplitude rescaling. 
+
+9. Conclusion 
+
+This paper developed a recovery theory and an algorithmic framework for sparse recovery with the WDSN penalty Rη(x) = ∥x∥21 − η∥x∥22. On the theoretical side, we introduced an 
+
+η-augmented NSP and used it to obtain a sufficient condition for uniform exact recovery in the noiseless model. For noisy measurements, we established RIP-based stable recovery guarantees for both exactly k-sparse signals and general signals. In the general case, the error bound contains both the measurement noise and the best k-term approximation error, and it reduces to the exactly k-sparse case when the approximation error vanishes. On the algorithmic side, we derived a closed-form proximal mapping of Rη in the three regimes determined by 1 − 2tη . Embedding this exact WDSN proximal step into a ADMM scheme gives an efficient solver for the regularized WDSN model. Under coercivity and a sufficiently large penalty parameter, we proved subsequential convergence of the ADMM al-gorithm. Under the Kurdyka–Łojasiewicz property, we further established convergence of the whole sequence to a stationary point of the split problem. The numerical experiments show the computational benefit of the exact WDSN proximal step. With the same initialization, parameter settings, and stopping criteria, the proposed ADMM method reaches final objective values and support-recovery accuracy comparable to those of the HV method, while using far fewer iterations and less CPU time. The improvement is clearer for Gaussian sensing matrices and in the noisy tests. The amplitude-rescaling experiment further shows that WDSN can keep the same regularization parameter across a wide range of signal amplitudes, whereas the one-homogeneous ℓ1 − ℓ2 penalty is more sensitive to this rescaling. Future work includes improving the recovery constants, designing adaptive rules for choosing λ, η, and ρ, and comparing WDSN with other sparse recovery penalties. 
+
+References 
+
+[1] B. K. Natarajan, Sparse approximate solutions to linear systems, SIAM Journal on Com-puting 24 (2) (1995) 227–234. 36 [2] D. L. Donoho, Compressed sensing, IEEE Transactions on Information Theory 52 (4) (2006) 1289–1306. [3] E. J. Candès, T. Tao, Decoding by linear programming, IEEE Transactions on Information Theory 51 (12) (2005) 4203–4215. [4] E. J. Candès, J. Romberg, T. Tao, Stable signal recovery from incomplete and inaccurate measurements, Communications on Pure and Applied Mathematics 59 (8) (2006) 1207– 1223. [5] E. J. Candès, The restricted isometry property and its implications for compressed sensing, Comptes Rendus Mathematique 346 (9–10) (2008) 589–592. [6] S. Foucart, H. Rauhut, A Mathematical Introduction to Compressive Sensing, Birkhäuser, New York, 2013. [7] R. Chartrand, Exact reconstruction of sparse signals via nonconvex minimization, IEEE Signal Processing Letters 14 (10) (2007) 707–710. [8] R. Chartrand, V. Staneva, Restricted isometry properties and nonconvex compressive sens-ing, Inverse Problems 24 (3) (2008) 035020. [9] R. Zhang, S. Li, Optimal RIP bounds for sparse signals recovery via ℓp minimization, Applied and Computational Harmonic Analysis 47 (3) (2019) 566–584. [10] P. Yin, Y. Lou, Q. He, J. Xin, Minimization of ℓ1 − ℓ2 for compressed sensing, SIAM Journal on Scientific Computing 37 (1) (2015) A536–A563. [11] Y. Xu, A. Narayan, H. Tran, C. G. Webster, Analysis of the ratio of ℓ1 and ℓ2 norms in compressed sensing, Applied and Computational Harmonic Analysis 55 (2021) 486–511. [12] Z. Zhou, J. Yu, Minimization of the q-ratio sparsity with 1 < q ≤ ∞ for signal recovery, Signal Processing 189 (2021) 108250. [13] H. Ge, Y. Xie, W. Chen, Uniform RIP analysis for the ℓp − ωℓ q minimization, Journal of Computational and Applied Mathematics 451 (2024) 116100. [14] Y. Lou, M. Yan, Fast L1–L2 minimization via a proximal operator, Journal of Scientific Computing 74 (2018) 767–785. [15] H. Ge, W. Chen, M. K. Ng, New restricted isometry property analysis for ℓ1 − ℓ2 mini-mization methods, SIAM Journal on Imaging Sciences 14 (2) (2021) 530–557. [16] L. Ding, W. Han, αℓ 1 − βℓ 2 regularization for sparse recovery, Inverse Problems 35 (2019) 125009. [17] L. Li, L. Ding, ℓ21 − ηℓ 22 sparsity regularization for nonlinear ill-posed problems, Journal of Computational and Applied Mathematics 487 (2026) 117715. [18] L. Li, L. Ding, ℓ21 − ηℓ 22 regularization for sparse recovery (2025). arXiv:2506.11372 .37
