@@ -1,0 +1,234 @@
+Title: A Novel Method with Encoder-Decoder for Cross-Sensor Adaptation in Surface Shape Sensing with Sparse Strain Sensors
+
+URL Source: https://arxiv.org/pdf/2606.05903v1
+
+Published Time: Fri, 05 Jun 2026 00:54:20 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# A Novel Method with Encoder-Decoder for Cross-Sensor Adaptation in Surface Shape Sensing with Sparse Strain Sensors 
+
+Shuo Wang, Heng Luo, Student Member, IEEE , Dian Jin and Xiaoming Tao, Member, IEEE 
+
+Abstract — Performance variations in sensor arrays, caused by intrinsic differences or installation conditions, can lead to incon-sistent results during shape sensing. To obtain accurate results, a large amount of data is usually required, and a separate model must be retrained for each sensor array, thereby increasing the cost and time of data acquisition, transmission, and computation. To address this issue, this work proposes an encoder-decoder architecture for surface shape sensing based on sparse strain sensors and further incorporates meta-learning and few-shot adaptation strategies to enable adaptation across different groups of sensor arrays. Experimental results demonstrate that, after the cross-sensor adaptation, a newly deployed sensor array achieves a sensing error of approximately 4.0 mm relying on less than 5.0% newly labeled data and requiring an adaptation time of under 1 second, which represents a substantial improvement from 23.0 mm error without adaptation and 20-minute data collection time required to train a new model. Moreover, the number of points with errors below 5.0 mm increased by more than 65.0%. These results indicate that the proposed method can substantially reduce the cost and training burden of surface shape sensing, and it has broad potential applications in soft robotics and wearable devices. 
+
+I. I NTRODUCTION 
+
+In recent years, soft and flexible structures have been increasingly incorporated in robotic systems to be used for surgery [1] or rehabilitation [2]. The actual shape and posture of the robot are inevitably influenced by their deformability with the interactive environment [3]. Flexible electronic patch-like sensors have been developed for monitoring physiological signals or other functionalities. Due to the complex and dy-namic nature of the human body, these patches are susceptible to deformation-induced errors when they are conformally attached to anatomical sites. For example, the performance of flexible ultrasound transducers [4, 5] is influenced by the deformation of the sensor attached to the surface of the human body. Similar challenges arise in soft robotics: when a robot interacts with a soft object, accurate shape sensing becomes difficult, and force measurements alone often provide insufficient guidance. Consequently, directly quantifying surface morphology has emerged as a key research topic. Non-contact techniques using external device include optical marker-based methods [6, 7], stereo camera and laser imaging, detection and ranging-based approaches [8], electromagnetic tracking systems [9] and oth-ers. However, they all require complex and high-precision ex-ternal equipment, and then derive the shape deformation from the measured surface feature data. The necessity of additional sophisticated equipment limits their flexibility, rendering them bulky, difficult to integrate, and susceptible to environmental noise interference, which implies great obstacles to their adaptation in real-time robotic systems or other soft wearable systems. Employing self-contained sensors to capture local deforma-tion and orientation data constitutes an alternative method. Polymeric optical fiber was used for one-dimensional bending shape detecting in a small specific area as wearable sensors [10]. Electrical impedance tomography shows the possibility of using electrical impedance or mutual inductance of shape characteristics [11–13]. Microelectromechanical systems en-able the incorporation of a lot of miniaturized sensors that provide localized data, facilitating the complete reconstruction of global surface geometry [14]. Fiber Bragg gratings mea-sure point-distributed strain and achieve high-precision shape sensing [15–19]. Low-cost strain sensors or gauges can also be used for surface shape sensing [20–23], which has more flexibility and less complicated. Compared to optical ones, the electronic systems do not require light sources and bulky spectral equipment, which makes them easier to integrate and deploy in portable or volume-constrained applications while still achieving high sensing accuracy. Strain sensors have been shown to enable shape mapping by using deep learning methods or geometric formulations [20–23]. However, the performance characteristics can vary substantially due to individual variations, particularly for lab-made or low-cost sensors. Even commercial sensors have significant variations between batches, which has a great influence on the final results [24]. When such sensors are deployed or applied on a large scale, current deep learning methods typically require continuous acquisition of a large amount of labeled data for model training, which inevitably consumes substantial time and computational resources and increases the overall system cost. In practical applications, performance degradation caused by intrinsic differences among arrays or by installation mis-alignments can be regarded as a problem of cross-sensor domain adaptation or transfer learning. Among various sensing applications, one solution to address these issues is to map data from different sensors into a common latent space and to align their representations [25]. Few-shot unsupervised domain adaptation is successfully utilized to reduce cross-sensor domain gaps with tactile sensors [26]. For piezore-sistive sensor array, the local message passing network with message passing mechanism enables single touch data to learn correlations between neighboring sensor subelements, which can narrow the domain shift of the single touch and multi touch datasets [27]. Many other sensors, such as magnetic sensors, gas sensors, and inertial measurement units, have been calibrated using few-shot learning to reduce discrepancies 
+
+> arXiv:2606.05903v1 [cs.RO] 4 Jun 2026
+
+between sensor measurements and theoretical models [28], while meta-learning approaches have been employed to further improve their measurement stability and overall performance [29, 30]. When different sensors are used, differences among sensors and noise from various sources can degrade or even invalidate existing models, underscoring the practical impor-tance of cross-sensor adaptation. It is therefore crucial to account for variations arising from sensor characteristics or other factors, as these can shift the feature distribution and lead to significant errors in shape sensing when using strain sensors. To address this challenge, this study adopts two deep learning methods: encoder–decoder neural network and meta-learning. The encoder–decoder network is a supervised ar-chitecture in which an encoder compresses the input into a latent representation and a decoder reconstructs the target output, enabling end-to-end modeling of complex nonlinear relationships between high-dimensional inputs and outputs [31]. Meta-learning trains models across multiple tasks so that they can rapidly adapt to new tasks or domains with only a small amount of data, thereby improving sample efficiency, adaptation speed, and robustness to distribution shifts [29, 30]. The encoder–decoder neural network is used to map strain sensor readings to relative feature point coordinates obtained from a stereo camera, and is combined with meta-learning and few-shot adaptation to achieve efficient cross-sensor adap-tation. A new group of strain sensor array can thus be calibrated with only a small amount of data under diverse deformations, enabling rapid and accurate surface shape sens-ing. Consequently, the strain sensor array can subsequently operate independently of the camera in practical use, and multiple arrays performing the same sensing task can achieve high precision without extensive additional data collection or repeated model retraining. Thus, the system and model can easily be tailored or integrated to specific applications. The main contributions of this study are: 1) A new platform with a simple backend acquisition device and computational model for surface shape sensing with sparse strain sensor data that can solely be used for calculation after model training for shape sensing. 2) An encoder–decoder framework with a Transformer encoder and a graph neural network decoder, incorporating the graph structure of the measured surface into the loss function and using virtual tasks constructed from strain sensor data in meta-learning to enable adaptation to new groups of sensor arrays with only a few labeled samples. 3) Experiments with multiple sensor arrays, demonstrating high sensing accuracy with less than 5.0% new labeled data and enabling fast adaptation ( ≤ 1s), thereby greatly reducing data collection and model training costs for new groups of sensor arrays. II. M ETHODS 
+
+A. Mapping of Strain Values to Coordinates 
+
+The analysis is conducted for a small-scale, thin surface whose thickness is much smaller than its in-plane dimensions. According to elasticity theory, in this type of surface, local deformation generates a smooth global strain field, through which strain information propagates across the material. As a result, strain measurements at a limited number of locations are, in principle, sufficient to reconstruct the surface deforma-tion with acceptable accuracy. To enable shape sensing, a checkerboard pattern with n
+
+red feature points is attached to the surface, as illustrated in Fig. 1. Point k is chosen as the coordinate origin, and the deformation is described by the relative displacement of each feature point with respect to point k. All coordinate changes are thus expressed in this local reference frame. To simplify the analysis, we focus on a feature point i and consider three neighboring regions, labeled a, b and c. When region a deforms, the corresponding strain ϵa is measured, and the strain information is assumed to influence point i through a latent function ga. Similarly, strains ϵb and ϵc in regions b and 
+
+c affect point i through gb and gc, respectively. The combined effect of these transmitted strain contributions results in the observed displacement of point i, which is described by a mapping function f acting on the latent responses. Direct determination of ga, gb, gc and f is highly challenging and generally intractable. Instead, these intermediate functions are implicitly eliminated, and an effective mapping Fi is introduced that directly relates the displacement of point i to the measurable strains in regions a, b and c. For any other point on the measured surface, if several strain measurements in its surrounding region are available, an analogous relationship can be derived, and this strain information can be further propagated to other points. Consequently, if m strain sensors are distributed on the surface to obtain strain measurements, the coordinate change of the ith point can be expressed as (1): 1 
+
+> 2
+> n
+
+X
+
+Y 
+
+> a
+
+Z
+
+Detected  surface 
+
+> Feature points
+
+…
+
+> …
+
+…  
+
+> …
+> j
+> i
+> ab
+> ck
+> ΔP ik
+> Fig. 1. Mapping relationship.
+
+∆Pik T = Fi direct (ϵs1 , ϵ s2 , . . . ϵ sm ) i = 1 , 2 . . . n (1) where ∆Pik ∈ R3, it represents the coordinate change of point i in X, Y and Z axis. Fi direct means the direct mapping from strain measurements to the coordinates’ change of the ith point on the surface. ϵsm means the measurement of the mth sensor, and n represents the number of points. Therefore, the objective of the surface shape sensing problem can be defined as establishing a series of mapping relationships between the readings of the strain sensor array (as the input) and the changes in the coordinates of feature points on the checkerboard (as the output) during deformation. B. Proposed Method 1) Ground truth computing with a stereo camera: Sub-pixel corner detection is utilized to detect the coordinate changes of feature points when the surface has deformation. The target is a checkerboard test paper attached on a soft polyvinyl chloride (PVC) surface, and the world coordinates of the feature points are obtained via a stereo camera. The sub-pixel corner detection and stereo camera calculation methods can be learned from [32, 33], which are commonly employed techniques in the realm of computer vision. 
+
+2) Model: The proposed model comprises two main mod-ules: an encoder with sensor embeddings and Transformer encoder blocks, and a decoder module with graph attention convolution modules. A detailed description of each module is shown below. 
+
+2.1) Encoder: In the encoder module, a linear embedding from 6 to 128 dimensions is utilized to augment the sparse strain data into a richer representation, effectively simulating a virtual dense strain sensing field. Subsequently, upon obtaining an increased number of channels, two transformer encoder blocks with four attention heads perform feature extraction, capturing latent relationships in the embedded strain represen-tation. 
+
+2.2) Decoder: In order to maintain a lightweight model design, the decoder module contains a node embedding and residual connection parts, followed by two graph attention con-volution layers (GATconv), then the output will be projected to the three-dimensional tensor which corresponds to (x, y, z )
+
+of points. The embedding layer contains learnable parameters of shape (20 , 128) , followed by two GATconv layers with dimensions (128 , 128) and (256 , 128) , using 2 and 1 attention heads, respectively. 
+
+2.3) Graph construction and curvature representation: 
+
+A 4 × 5 grid with 20 nodes corresponds to the target surface. Each node and its edges are recorded and used to construct the edge indices of the grid. Taking the X direction as an example, the discrete second derivative at row i and column 
+
+j is approximated as: 
+
+Dx(i,j ) = dx(i+1 ,j ) − 2 dx(i,j ) + dx(i−1,j )
+
+h2 (2) where h is the constant spacing between adjacent grid rows and columns, and dx(i,j ) denotes the displacement of point at row i and column j. To obtain a curvature-related quantitative descriptor of bending that has the same physical dimension as the displacement, we define: 
+
+Cx(i,j ) = Dx(i,j ) h2 (3) The corresponding quantity in the Y direction, Cy(i,j ), is defined analogously. We then define Coverall as: 
+
+Coverall = mean  |Cx(i,j )| + mean  |Cy(i,j )|, (4) In (4), i = 2 , 3 and j = 2 , 3, 4. For boundary nodes ( i = 1 , 4 or 
+
+j = 1 , 5), |Cx(i,j )| or |Cy(i,j )| is set to zero because the finite-difference stencil is not available. | · | denotes the Euclidean norm, and Coverall is proportional to the overall curvature and has the same physical dimension as the displacement. 
+
+3) Loss function: The loss function of the model consists of two main components: the mean squared error and acurvature term Coverall , denoted by Lcurvature and weighted by λ in this paper. Incorporating the Lcurvature as a loss term helps suppress excessively abrupt coordinate changes during prediction, ensuring that the model preserves the smooth physical properties of the surface rather than focusing solely on coordinate accuracy. The complete loss function can be represented as (5): 
+
+L = LMSE + λ · L curvature (5) where LMSE denotes the MSE loss, and λ is a tunable hyperparameter set to 0.01 in this study. 
+
+4) Meta-learning: We aim to leverage meta-learning to enable rapid adaptation of the model across different sensor arrays. 
+
+4.1) Generation of virtual tasks: To avoid the high cost of collecting large-scale data from diverse tasks, we generated virtual tasks for meta-learning based on characteristic differ-ences among several strain sensors. Fig. 2 (a) visualizes the bending platform of a PVC with a strain sensor array attached, and tests can be conducted in five different levels of bending. Then, the normalized variations of two groups of strain sensors can be seen in Fig. 2 (b). The specific arrangement of the sensor array can be seen in Section III. According to the tests, the responses of different sensor arrays to the same deformation exhibit variability and fluctuations. Therefore, during the generation of random tasks, data augmentation is applied to the input data. The augmentation includes scaling, offset, correlation noise among sensors, and scaling of the noise level. In this study, the scaling factor is sampled from 0.8 to 1.2, the random offset from 0 to 0.4, and the correlation noise from 0.7 to 1.0. In addition, an extra scaling factor for the correlation noise level is applied, with values between 0.05 and 0.15. The outputs corresponding to the initial source input data used for virtual task generation are employed as labels, serving as the outputs of the virtual tasks. Finally, these inputs and the corresponding outputs are used to train as virtual tasks. 
+
+4.2) Training and model adaptation process: For meta-learning, it involves parameter updates in two stages: inner-loop updates and outer-loop updates. For model adaptation to new groups of strain sensors, only the decoder is fine-tuned for several steps. The adaptation steps, learning rate, unfreeze parameters, and adaptation ratio can all be adjusted to fine-tune the model. The meta-learning training procedure is shown in Algorithm 1. The whole structure and workflow can be visualized in Fig. 3. In practical applications, only a few labeled samples collected with the stereo camera are needed for a totally new group of strain sensor array to fine-tune the model. Subsequently, the trained model is applied to surface shape sensing in various scenarios, using only strain sensor data. The specific parameters have been described in Section II-B. (a) 
+
+(b) Fig. 2. Performance of two groups of strain sensors. (a) Five level of bending test platform. (b) Results of each strain sensor. 
+
+Algorithm 1 Meta-learning Training 
+
+Input: Labeled source data S and labeled source target T
+
+Output: Average loss of tasks L 
+
+> 1:
+
+Initialize virtual task number: n tasks and adaptation steps: n steps.  
+
+> 2:
+
+for task = 1 to n tasks do : 
+
+> 3:
+
+Virtual tasks generation: virtual data and corre-sponding label . 
+
+> 4:
+
+Clone model parameters: clone parameters . 
+
+> 5:
+
+for step = 1 to n steps do : 
+
+> 6:
+
+Compute loss with virtual data and label . 
+
+> 7:
+
+Update clone parameters . 
+
+> 8:
+
+end for  
+
+> 9:
+
+Compute task loss: task losses . 
+
+> 10:
+
+Update meta gradient: meta grads . 
+
+> 11:
+
+end for  
+
+> 12:
+
+Update optimizer with average meta grads . 
+
+> 13:
+
+Clear the old gradients. III. E XPERIMENTS 
+
+A. Experimental Setup 
+
+The hardware system consists of three main modules: a stereo camera, a PVC test surface ( 65 mm × 53 mm ×
+
+0.6 mm ) with a 4 × 5 chessboard test paper attached to its front surface and six strain sensors mounted on its bottom surface around the center at 60-degree intervals, and a data acquisition module. The stereo camera is a four-megapixel dual 1080P synchronized camera. The strain sensors, supplied by Shenzhen RunesKee Technology Co., Ltd. , use beryllium bronze as the sensitive material, with a detection area of 10.7 mm by 2.9 mm. Resistance drift relative to the average is 0.4 ohms, and resistance varies with bending direction, yielding increases or decreases. The sensitivity factor is 2 with a relative error within 1%. The data acquisition module (a) 
+
+(b) 
+
+> Fig. 3. Model structure and workflow of the proposed method. (a) Model structure. (b) Model training and cross-sensor adaptation workflow.
+
+includes wheatstone bridge circuits and an arduino board with an ATMEGA328P MCU, communicating via serial at 250000 BPS for Python-based data capture. During data collection, strain data received via the serial port and the stereo camera video stream are recorded simultaneously, with timestamps aligned. Fig. 4 illustrates the overall hardware system. Then, four different groups of strain sensors were tested using the system. A dataset was collected to train a surface shape sensing model of a sensor array, while the other three arrays utilize a substantially smaller volume of data for the adaptation process. The performances of these models were later evaluated. 
+
+> Fig. 4. Hardware system.
+
+B. Data Synchronization between Stereo Camera and Strain Sensor Array 
+
+During data acquisition, strain sensors and stereo camera data were recorded synchronously with different acquisition rates, with the camera operating at 30 fps and the strain sensors at 8 fps. Timestamps were recorded upon data arrival in both modalities. The PVC surface was slowly deformed into various shapes while data was captured. The recorded video was then sampled at two-frame intervals, with each frame assigned a timestamp. Using these timestamps as references, a binary search was applied to find the closest strain sensor timestamp, linking strain values to the corresponding video frames. The synchronization error was kept under 0.1 s, ensuring an accurate alignment between the strain measurements and the video data. 
+
+C. Test Processes 
+
+Four sensor arrays designated as a, b, c, and d are used for testing. A large dataset from array a is collected to train a high-performance model as the basic model, whereas, only small datasets from the other three arrays are used for adaptation. The detailed data volumes for each array are provided in Section IV. Specifically, the array b is used to visualize the shape sensing performances before and after adaptation, while the arrays c and d quantify error improvements before and after adaptation. Finally, ablation experiments and analysis are conducted to validate the practical performance of each module and the proposed model. On the other hand, the origin of the feature points in all experiments was set to number 11, as its proximity to the geometric center of the shape results in more uniform and symmetric coordinate variations. Then, the adaptation processes below mainly contain the adjustment of the decoder learning rate and the proportion of frozen parameters. Meanwhile, all experiments were conducted on a single NVIDIA A100 GPU. IV. R ESULTS 
+
+A. Basic Model Performance of Sensor Array a 
+
+The dataset acquired from the sensor array a was used for basic model training, totally 12850 groups of data with a split ratio of 8:1:1 for training, validation, and test sets, respectively. The model was trained for 50 epochs using the Adam optimizer with a learning rate of 0.001. Meta-learning was performed every five batches, with 25 tasks (n tasks) and 15 steps (n steps) per meta-learning iteration. Upon completion of training, the model achieved a loss of 2.79 in this sensor array and a mean absolute distance error of 2.21 mm in its test set. 
+
+B. Performance Visualization of Sensor Array b
+
+For the sensor array b in this part, the recorded data was about half that of the array a. Subsequently, we fine-tuned the decoder of the basic model using newly recorded data from this array. The new data were divided into 8:1:1 as training set, validation set, and test set. When the decoder was fine-tuned, the training set was used and the adaptation steps, learning rate, unfreeze parameter ratio, and training set ratio values were set as 20, 0.003, 0.3, and 0.1, respectively. That is, 510 groups of new data that are less than 5.0% of the sensor array a were used for adaptation. The average adaptation time of the sensor array b was less than 1 s. Then the typical surface sensing results in test set of the sensor array b with the adapted model can be visualized in Fig. 5. In Fig. 5 (a), four different shapes are visualized, and it can be noticed that without adaptation, the sensing results do not accurately reflect the characteristics of these shapes. After adaptation, the model improves a lot and can be used for different shapes. In Fig. 5 (b), the distance errors of the points in these four shapes are illustrated, and most errors arise along the Z axis. Compared to the results without adaptation, the results after adaptation demonstrate significant improvement across all three axes. For each shape, the maximum values of 
+
+|Cx(i,j )| and |Cy(i,j )| in (4) were computed, and the larger of the two ( |Cx(i,j )| or |Cy(i,j )|) was used as the metric for analysis. The performances were improved from 45.90, 42.35, 44.31 and 42.88 mm to 40.97, 42.65, 38.85 and 42.90 mm, respectively, while the corresponding ground-truth values are 42.58, 45.10, 39.17 and 43.05 mm. Then 500 samples were tested to evaluate the performance of the adapted model. The mean distance error across all points was 3.30 mm—only 1.09 mm higher than sensor the array a. After fine-tuning, the accuracy improved by 47.2%, 39.4%, and 47.6% along the X, Y , and Z axes, respectively. By contrast, using the model without adaptation on this sensor array yielded a mean distance error of 6.25 mm, causing significant deviations in the sensed shape. 
+
+C. Evaluations with Strain Sensor Array c and d
+
+In this part, for the other two sensor arrays c and d, the data collection and processing procedures were consistent with those described in Section III. The data volumes used for adaptation were 170 and 245 for these two arrays and the test results can be seen in Fig. 6. It can be noticed that the adapted models (Fig. 6 (b) and Fig. 6 (d)) both performed better than those without adaptations (Fig. 6 (a) and Fig. 6 (c)). Meanwhile, the model trained with meta-learning showed better performance after adaptation compared to the model without meta-learning. The errors of these two sensor arrays improved from 4.34 mm to 4.05 mm and from 4.67 mm to 4.10 mm compared to the models without meta-learning, respectively. Without adaptation, the errors were about 23.0 mm for these two sensor arrays. Finally, the statistics showed that, after adaptation, the number of samples with errors within 5.0 mm increased from 5.0% to 71.0% and 70.5% for these two sensor arrays, respectively. 
+
+D. Ablation Experiment and Analysis 
+
+Different parameter settings have been used to evaluate the performance of the proposed method under different condi-tions, and Fig. 7 visualizes the results. Fig. 7 (a) shows the results in the test set of sensor array b for 100 rounds. It can be noticed that the proposed encoder-decoder architecture itself exhibits strong post-fine-tuning generalization perfor-mance. However, compared with the model without meta-learning, introducing meta-learning reduces the sensitivity of the model to the proportion of new data, leading to more stable performance and smaller error fluctuations. This observation is further supported by the results in Fig. 7 (b). Random noise with an amplitude ranging from 0% to 30% of the original data magnitude was added, and 100 test sets were evaluated at each noise level. The error curve increases with higher noise levels, and the average MSEs of models with or without meta-learning remain close. However, in all results, the models with meta-learning exhibit consistently narrower (a)  (b) Fig. 5. Typical surface sensing results of sensor array b. (a) Shape sensing results. (b) Error comparisons of results: Pred Before means calculating before adaptation, Pred After means calculating after adaptation and distance error statistics (Mean and Standard Deviation). (a)  (b) 
+
+> (c)(d)
+
+Fig. 6. Evaluation of two other sensor arrays c and d. (a) Results of sensor array c without adaptation. (b) Results of sensor array c
+
+with adaptation. (c) Results of sensor array d without adaptation. (d) Results of sensor array d with adaptation. 
+
+standard deviation ranges compared to those without meta-learning, which indicates that the model with meta-learning has achieved an improved level of noise robustness. As shown in Fig. 7 (c), results from 10 groups of randomly selected data in the test set indicate that, without meta-learning, the (a)  (b)  
+
+> (c) (d)
+
+Fig. 7. Evaluation with different adapted parameters and without different modules. (a) Performance of different adaptation ratios of data from a new sensor array. (b) Performance of different noise levels of data from a new sensor array. (c) Performance of ten groups of test data from a new sensor array. (d) Training performance without different modules. TABLE I. Comparison of different methodologies                                           
+
+> Techniques Easy to integrate and portable Shape sensing dimension Average accuracy of shape sensing Cross-sensor adaptation [6] Capacitive sensors + Optical tracking + Deep learning Yes 3<5 mm No [16] FBG + Optical tracking + Deep learning No 3<2 mm No [20] Strain sensors + Geometric computation Yes 27.15 mm /[21] Piezoelectric sensors + Vision + Linear regression Yes 3>10 mm No [22] Capacitive sensors + Geometric computation Yes 2Relevant to radii /This Paper Strain sensors + Vision + Deep learning Yes 3∼4.0mm Yes (a) (b)
+> Fig. 8. Results of coordinates with/without constraint. (a) With constraint. (b) Without constraint.
+
+model exhibits unstable adaptability to new samples, with significant performance fluctuations. In contrast, meta-learning yields more consistent results, corroborating previous analysis. In addition, the average MSEs in Fig. 7 (c) are 7.57 and 8.07, respectively. The results in Fig. 7 (d) demonstrate the significant contributions of the Transformer and graph neural network components to the proposed model. In Fig. 8, an example illustrating the effect of the constraint is presented. It can be clearly seen that, when the constraint is removed from the loss function, the calculated coordinates may exhibit abrupt variations and even extremely large errors, as highlighted by the orange box in the figures. This demonstrates that the introduced constraint plays a crucial role in the model. 
+
+E. Comparisons with Other Work 
+
+Many other methods have been used for surface shape sensing, and the specific performance of each method can be visualized in Table I. It is very difficult to achieve high shape sensing accuracy while the device is easily portable. On the other hand, all these methods that combine different sensor data with machine learning or deep learning fail to consider cross-sensor generalization. In real applications, there are significant differences in characteristics even among sensors of the same type. Meanwhile, it is impractical to perform labor-intensive calibration and data collection work repeatedly to adapt sensors to their corresponding applications. This paper is also the first to propose a potential solution to this problem from this perspective, achieving favorable results. V. D ISCUSSION AND LIMITATION 
+
+A. Discussion 
+
+This paper proposes a robust surface shape sensing method with cross-sensor adaptation ability. Given the challenge of few-shot adaptation across different sensor arrays, an encoder-decoder architecture and training it through meta-learning are proposed—ultimately developing a cross-sensor adaptation solution that enables stable shape sensing. Different groups of sensors may experience slight displacement because of installation when attached to the measured surface, which further demonstrates that the algorithm also has strong ad-vantages in interference resistance. Experimental results show that this method achieves high accuracy in surface shape sensing. Furthermore, the developed system is not only simple in structure but also portable, allowing easy integration in other scenarios that rely on sensing technology, such as flexible robotics and flexible electronic skins. 
+
+B. Limitations and Potential Improvements 
+
+There is still room for improvement in the future. Firstly, al-though data collected for training covered many bending types and degrees such as bending in the longitudinal and transverse directions, single-corner, multiple-corner, and diagonal bend-ing and so on, it was not enough. Thus, the method’s perfor-mance under more complex deformations remains untested. However, the results suggest the method is stable and has great potential to perform well in such cases. Secondly, the number of sensing elements in the array, as well as their spatial arrangement, should also be investigated to optimize performance for more complex shapes. Then, finite element simulation can incorporate data of more virtual feature points based on physical knowledge and existing feature points, and combining this with deep learning methods could potentially achieve better results. Finally, unsupervised learning shows great future potential, especially if cross-sensor adaptation can be done without extra labeled data, which would greatly increase applicability and impact. VI. C ONCLUSION 
+
+This research proposed a transformer encoder and graph neural network decoder architecture with meta-learning, achieving robust surface shape sensing and excellent cross-sensor adaptation performance. The proposed method can be adapted to a new sensor array with less than 5.0% new labeled data in less than 1 second with an average error of approximately 4.0 mm. The proposed method holds promise in fields such as soft electronic skin, soft robotics and wearable devices. REFERENCES [1] Kit-Hang Lee, Denny KC Fu, Martin CW Leong, Marco Chow, Hing-Choi Fu, Kaspar Althoefer, Kam Yim Sze, Chung-Kwong Yeung, and Ka-Wai Kwok. Nonparametric online learning control for soft contin-uum robot: An enabling technique for effective endoscopic navigation. 
+
+Soft robotics , 4(4):324–337, 2017. [2] Panagiotis Polygerinos, Zheng Wang, Kevin C Galloway, Robert J Wood, and Conor J Walsh. Soft robotic glove for combined assistance and at-home rehabilitation. Robotics and autonomous systems , 73:135–143, 2015. [3] Cecilia Laschi, Barbara Mazzolai, and Matteo Cianchetti. Soft robotics: Technologies and systems pushing the boundaries of robot abilities. 
+
+Science robotics , 1(1):eaah3690, 2016. [4] Weicen Chen, Jiamei Liu, Shuang Lei, Zidong Yang, Qi Zhang, Yongchuan Li, Jiqing Huang, Yuming Dong, Hairong Zheng, Dawei Wu, et al. Flexible ultrasound transducer with embedded optical shape sensing fiber for biomedical imaging applications. IEEE Transactions on Biomedical Engineering , 70(10):2841–2851, 2023. [5] Chisato Hojo, Hiroki Kawagishi, Hiroki Shigemune, and Ryosuke Tsumura. Shape sensing with electrostatic differential capacitance for ultrasound imaging by flexible array transducer. In 2023 IEEE International Conference on Soft Robotics (RoboSoft) , pages 1–6. IEEE, 2023. [6] Oliver Glauser, Daniele Panozzo, Otmar Hilliges, and Olga Sorkine-Hornung. Deformation capture via soft and stretchable sensor arrays. 
+
+ACM Transactions on Graphics (TOG) , 38(2):1–16, 2019. [7] Michal Karol Dobrzynski, Ramon Pericet-Camara, and Dario Floreano. Contactless deflection sensor for soft robots. In 2011 IEEE/RSJ Interna-tional Conference on Intelligent Robots and Systems , pages 1913–1918. IEEE, 2011. [8] Giovanna Sansoni, Marco Trebeschi, and Franco Docchio. State-of-the-art and applications of 3d imaging sensors in industry, cultural heritage, medicine, and criminal investigation. Sensors , 9(1):568–601, 2009. [9] Shuang Song, Zheng Li, Haoyong Yu, and Hongliang Ren. Electromag-netic positioning for tip tracking and shape sensing of flexible robots. 
+
+IEEE Sensors Journal , 15(8):4565–4575, 2015. [10] Yu-Lin Wang, Bin Liu, Yi-Neng Pang, Juan Liu, Jiu-Lin Shi, Sheng-Peng Wan, Xing-Dao He, Jinhui Yuan, and Qiang Wu. Low-cost wearable sensor based on a d-shaped plastic optical fiber for respiration monitoring. IEEE Transactions on Instrumentation and Measurement ,70:1–8, 2021. [11] James Avery, Mark Runciman, Ara Darzi, and George P Mylonas. Shape sensing of variable stiffness soft robots using electrical impedance tomography. In 2019 International Conference on Robotics and Automa-tion (ICRA) , pages 9066–9072. IEEE, 2019. [12] Manuchehr Soleimani, Gavin Dingley, Ella Semaj, and Maria Petrou. Shape self-sensing with mutual inductance sensor array. IEEE Sensors Journal , 2023. [13] Wenci Xin, Fangmeng Zhu, Peiyi Wang, Zhexin Xie, Zhiqiang Tang, and Cecilia Laschi. Electrical impedance tomographic shape sensing for soft robots. IEEE Robotics and Automation Letters , 8(3):1555–1562, 2023. [14] Atis Hermanis, Ricards Cacurs, and Modris Greitans. Acceleration and magnetic sensor network for shape sensing. IEEE Sensors Journal ,16(5):1271–1280, 2015. [15] Xuan Thao Ha, Di Wu, Mouloud Ourak, Gianni Borghesan, Jenny Dankelman, Arianna Menciassi, and Emmanuel Vander Poorten. Shape sensing of flexible robots based on deep learning. IEEE Transactions on Robotics , 39(2):1580–1593, 2022. [16] Tian Le Tim Lun, Kui Wang, Justin DL Ho, Kit-Hang Lee, Kam Yim Sze, and Ka-Wai Kwok. Real-time surface shape sensing for soft and flexible structures using fiber bragg gratings. IEEE Robotics and Automation Letters , 4(2):1454–1461, 2019. [17] X Wang, J DAI, HS TONG, K WANG, G FANG, R XIE, YH LIU, KWS AU, and KW Kwok. Learning-based visual-strain fusion for eye-in-hand soft robot pose estimation and control. IEEE Transactions on Robotics (TRO) , 2023. [18] Kui Wang, Chi-Hin Mak, Justin DL Ho, Zhiyu Liu, Kam-Yim Sze, Kenneth KY Wong, Kaspar Althoefer, Yunhui Liu, Toshio Fukuda, and Ka-Wai Kwok. Large-scale surface shape sensing with learning-based computational mechanics. Advanced Intelligent Systems , 3(11):2100089, 2021. [19] Xiyue Dong, Chin-Kiu Lam, Wei Chen, Bohan Yang, and Yun-Hui Liu. A robotic skin using low-density fbgs for human-robot interaction. In 2024 IEEE International Conference on Robotics and Biomimetics (ROBIO) , pages 129–134. IEEE, 2024. [20] Chin-yu Chien, Rong-Hao Liang, Long-Fei Lin, Liwei Chan, and Bing-Yu Chen. Flexibend: Enabling interactivity of multi-part, deformable fabrications using single shape-sensing strip. In Proceedings of the 28th Annual ACM Symposium on User Interface Software & Technology ,pages 659–663, 2015. [21] Christian Rendl, David Kim, Sean Fanello, Patrick Parzer, Christoph Rhemann, Jonathan Taylor, Martin Zirkl, Gregor Scheipl, Thomas Rothl¨ ander, Michael Haller, et al. Flexsense: a transparent self-sensing deformable surface. In Proceedings of the 27th annual ACM symposium on User interface software and technology , pages 129–138, 2014. [22] Fereshteh Shahmiri and Paul H Dietz. Sharc: A geometric technique for multi-bend/shape sensing. In Proceedings of the 2020 CHI Conference on Human Factors in Computing Systems , pages 1–12, 2020. [23] Liangshu Liu, Xinghao Huang, Xiaoci Zhang, Baiyu Zhang, Hao Xu, Vedanshee Mihir Trivedi, Kenneth Liu, Zoheb Shaikh, and Hangbo Zhao. Model-based 3d shape reconstruction of soft robots via distributed strain sensing. Soft Robotics , 2025. [24] HBM (Hottinger Baldwin Messtechnik). Strain gauge based wheatstone bridge - why an exact gauge factor setup is so important. Technical report, HBM, 2021. Application Note, retrieved from HBM official website. [25] Haifeng Luo, Ziyi Chen, Feng Ye, Tianqiang Huang, Hanxian He, and Wenyan Hu. Cross-sensor adaptive semantic segmentation for mobile laser scanning point clouds based on continuous potential scene surface reconstruction. ISPRS Journal of Photogrammetry and Remote Sensing ,228:537–551, 2025. [26] Xingshuo Jing and Kun Qian. Reducing cross-sensor domain gaps in tactile sensing via few-sample-driven style-to-content unsupervised domain adaptation. Sensors , 25(1):256, 2025. [27] Min Kim, Hyungmin Choi, Kyu-Jin Cho, and Sungho Jo. Single to multi: Data-driven high resolution calibration method for piezoresistive sensor array. IEEE Robotics and Automation Letters , 6(3):4970–4977, 2021. [28] Shijian Su, Sishen Yuan, Mengya Xu, Huxin Gao, Xiaoxiao Yang, and Hongliang Ren. Amagposenet: Real-time 6-dof magnet pose estimation by dual-domain few-shot learning from prior model. IEEE Transactions on Industrial Informatics , 2023. [29] Patrick Tritschler, Torsten Ohms, Bin Yang, and Andr´ e Zimmer-mann. Meta-learning for few-shot sensor self-calibration to increase stress robustness. Engineering Applications of Artificial Intelligence ,138:109171, 2024. [30] Feng Tianliang, Xiong Xingchuang, and Jin Shangzhong. The develop-ment of a meta-learning calibration network for low-cost sensors across domains. Metrology and Measurement Systems , pages 617–635, 2023. [31] Vijay Badrinarayanan, Alex Kendall, and Roberto Cipolla. Segnet: A deep convolutional encoder-decoder architecture for image segmenta-tion. IEEE transactions on pattern analysis and machine intelligence ,39(12):2481–2495, 2017. [32] Yujing Qiao, Yanchao Tang, and Junshi Li. Improved harris sub-pixel corner detection algorithm for chessboard image. In Proceedings of 2013 2nd International Conference on Measurement, Information and Control , volume 2, pages 1408–1411. IEEE, 2013. [33] Kusworo Adi and Catur Edi Widodo. Distance measurement with a stereo camera. Int. J. Innov. Res. Adv. Eng , 4(11):24–27, 2017.

@@ -1,0 +1,1083 @@
+Title: Paper Title (use style: paper title)
+
+URL Source: https://arxiv.org/pdf/2606.06876v1
+
+Published Time: Mon, 08 Jun 2026 00:25:13 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+A Wall Function for Turbulent Boundary Layers 
+
+# under Rotation via Symbolic Regression 
+
+Yao Ma 
+
+Research Institute of Aero -
+
+Engine 
+
+Beihang University 
+
+Beijing , China 
+
+upwind @buaa.edu .com 
+
+Zhi Tao 
+
+Research Institute of Aero -
+
+Engine 
+
+Beihang University 
+
+Beijing , China 
+
+quick @buaa.edu.cn 
+
+Ruquan You *
+
+Research Institute of Aero -
+
+Engine 
+
+Beihang University 
+
+Beijing , China 
+
+youruquan10353@buaa.edu.c 
+
+n
+
+*Corresponding author 
+
+Haiwang Li 
+
+Research Institute of Aero -
+
+Engine 
+
+Beihang University 
+
+Beijing , China 
+
+09620@buaa.edu.cn 
+
+Abstract —This study employs symbolic regression to derive 
+
+physically interpretable, white -box wall -function expressions for 
+
+turbulent boundary layers under system rotation . Flows in a 
+
+rotating frame are subject to Coriolis forces, which deflect the 
+
+boundary layer profile from static case . The classical law of the 
+
+wall, formulated under non -rotating conditions, is ill -suited to 
+
+describing the effects of rotation. To obtain the wall function 
+
+under rotation, we examine the deflection behavior of the 
+
+turbulent boundary layers on the leading and trailing side s, and 
+
+construct wall functions that are valid over a wide range of 
+
+rotation numbers. The analytical expressions show that, as the 
+
+rotation effect intensifies, the boundary layer on the leading side 
+
+contracts whereas that on the trailing side expands, and the 
+
+leading side exhibits a tendency towards relaminari zation ,
+
+consistent with high -fidelity numerical results. The resulting 
+
+symbolic expressions are compact and interpretable. The wall 
+
+functions obtained in this study complement conventional wall 
+
+functions, and provide a new avenue for turbulence model closure 
+
+subject to system rotation. 
+
+Keywords —turbulen ce, rotating condition, sym bol ic regression 
+
+I.  INTRODUCTION 
+
+Rotating wall -bounded turbulence is widely encountered in 
+
+nature and fluid machine, notably turbomachines. When the 
+
+flow is observed in a rotating frame of reference, additional body 
+
+forces , such as Coriolis force, the centrifugal force and the 
+
+buoyancy force , are induced . The flow and heat -transfer 
+
+characteristics deviate from those in stationary configurations. 
+
+The flow resistance coefficient and convective heat -transfer 
+
+coefficient in the internal cooling channels of rotating turbine 
+
+blades in aero -engines can differ by as much as 50% from those 
+
+under non -rotating conditions [1] . To investigate the influence 
+
+of rotation on flow and heat transfer, and to elucidate the 
+
+underlying physics of rotating turbulent flows, studies have 
+
+largely relied on experiments and numerical simulations. 
+
+Experimental facilities are, however, difficult t o set up and 
+
+prohibitively expensive, which restrict s the deeper research of 
+
+compl icated flows [2 -8] . Numerical simulations relying on 
+
+turbulence models are ubiquitous in fluid mechanics, with the 
+
+RANS (Reynolds averaged Navier Stokes ) [9 -16] . Yet RANS -
+
+based closures are usually calibrated under non -rotating 
+
+conditions and contain empirical parameters that introduce non -
+
+physical unreality. Compounded by the non -conservative of the 
+
+Coriolis force and the nonlinearity of the Navier –Stokes 
+
+equations, conventional RANS models perform poorly in 
+
+predicting flow and heat transfer under rotation , and 
+
+discrepancies with experimental measurements can be as much 
+
+as 50% [15] .
+
+The difficulty of predicting turbulent flow lies in the nature 
+
+of turbulence as a multi -scale self -organizing system . The wall -
+
+bounded internal flow exhibit s a series of characteristic scales .
+
+How rotation alters the dynamics at each of these scales remains 
+
+an open question to be solved . If a n appropriate non -dimensional 
+
+characteristic quantities that collapse onto a universal form , the 
+
+turbulent structures are said to exhibit similarity at that scale. 
+
+Using the viscous length scale 𝜈 /𝑢 𝜏 and the friction velocity 𝑢 𝜏 
+
+yields the classical law of the wall . For example, we can get the 
+
+viscous sublayer 𝑢 + = 𝑦 + and the logarithmic region 𝑢 + =
+
+2.04 ln 𝑦 + + 5.5 . These universal formulas indicate that the 
+
+viscous sublayer and the logarithmic layer are closely related to 
+
+the near -wall activities . Motivated by this idea, Cole s considered 
+
+similarity laws that hold at larger scales and proposed a unified 
+
+velocity profile spanning the logarithmic region through to the 
+
+outer layer. 
+
+𝑢 + = 1
+
+κ ln 𝑦 + + 𝐵 + Π ( 𝑦 
+
+𝐻 ) (1)
+
+Where κ and 𝐵 are universal constants, and 𝐻 is a global 
+
+integral scale such as the channel half -width or the boundary -
+
+layer thickness . The wake function Π accounts for the influence 
+
+of large -scale structures that are independent of viscosity. 
+
+Furthermore, Spalding proposed an implicit wall function that 
+
+encompasses the viscous sublayer, the buffer region, the 
+
+logarithmic region and the outer layer :
+
+𝑦 + = 𝑢 + + 𝑒 −κ𝐵 [𝑒 κ𝑢 +
+
+− ∑ (κ𝑢 +)𝑛 
+
+𝑛 !
+
+> 3
+> 𝑛 =0
+
+] (2)
+
+Under rotating conditions, the turbulent boundary layer 
+
+keeps the same form as its non -rotating counterpart : a viscous 
+
+sublayer, a buffer region and a logarithmic region are still identifiable , but the shape parameters that characterize these 
+
+regions vary with the rotation number , seen in Fig. 4 and Fig. 5 .
+
+Consequently, some investigators have introduced rotation -
+
+dependent corrections to the coefficients of the law of the wall 
+
+and obtained distributions that agree with reference data [2-8].
+
+Such corrections, however, lack a clear physical justification. 
+
+The present study therefore seeks to probe the mechanism 
+
+through which system rotation modifies the boundary layer, with 
+
+the aim of uncovering a simpler underlying physical description. 
+
+To overcome the poor predictive performance of turbulence 
+
+models in rotating flows, numerous modifications have been 
+
+proposed [11,12,17,18] . These efforts are categorize d into two 
+
+typ es . The first adjusts the empirical coefficients embedded in 
+
+the models so that th ose match refernce data better ; the second 
+
+alters the expression form of the models, for example by adding 
+
+or removing terms to improve accuracy. The first approach is 
+
+straightforward and relies entirely on statistical fitting , with a 
+
+sufficiently large sample it can, in principle, achieve arbitrary 
+
+accuracy . B ut it offers no physical insight. The second approach 
+
+may introduce physic al corrections, yet constructing them is 
+
+difficult and the terms are often fortuitous rather than systematic. 
+
+To overcome and balance the shortcomings of both approaches, 
+
+investigators have combined the power of statistical data -
+
+assimilation with the transparency and interpretability of 
+
+symbolic manipulation, giving rise to symbolic regression — an 
+
+optimization algorithm that employs symbolic operations to 
+
+uncover the physical laws underlying the observed phenomena. 
+
+This methodology has already been applied with success to 
+
+aerodynamic design of aircraft [19 -21] .
+
+This paper employs symbolic regression (SR) to combine the 
+
+strengths of high -fidelity numerical data with the physical 
+
+transparency of white -box models. Using heuristic genetic 
+
+algorithms, we construct analytical wall functions for turbulent 
+
+boundary layer s that explicitly account for the effects of system 
+
+rotation. This approach deepens the physical understanding of 
+
+rotating wall -bounded turbulence, improves the predictive 
+
+accuracy of turbulence models for system rotating flows, and 
+
+advances the design of internal cooling in rotating turbine blades. 
+
+To highlight the role of the Coriolis force in system rotating 
+
+flows, we take the internal flow in rotating turbine blade as a 
+
+canonical configuration and idealize it as an incompressible, 
+
+fully developed, spanwise -rotating plane channel flow bounded 
+
+by two opposing walls. The mean velocity and Reynolds stress 
+
+fields serve as the bridge connecting the rotational forcing to the 
+
+resulting changes in the flow. Our objective is to reconstruct the 
+
+velocity field under rotating conditions. The remainder of the 
+
+paper is organized as follows. Section II describes the numerical 
+
+approach employed in this study. Section III presents the typical 
+
+results of the flow under rotatio n and the approach taken to find 
+
+the wall function under rotation . Conclusions and an outlook are 
+
+given in Section IV .
+
+II.  NUMERICAL APPROCH 
+
+A. Governing Equations 
+
+We d enot e the velocity field by 𝒖 = (𝑢 , 𝑣 , 𝑤 )T, the pressure 
+
+by 𝑝 , the density by 𝜌 = 1, the time by 𝑡 , and the kinematic 
+
+viscosity by 𝜈 . Taking 𝑥 as the streamwise direction, 𝑦 as the 
+
+wall -normal direction, and 𝑧 as the spanwise direction of the 
+
+channel, the governing equations are: 
+
+𝛁 ⋅ 𝒖 = 0 (3)
+
+𝜕 𝑡 𝒖 + (𝒖 ⋅ 𝛁 )𝒖 = −𝛁 𝑝 + ν ∇2𝒖 + 2Ω𝒌 × 𝒖 (4)
+
+The dimensionless parameters are the friction Reynolds 
+
+number 𝑅 𝑒 𝜏 = 𝑢 𝜏 ℎ/𝜈 and the rotation number 𝑅 𝑜 𝜏 = 2Ωℎ/𝑢 𝜏 ,
+
+where Ω is the angular velocity in 𝑧 direction and 𝒌 is the unit 
+
+vector in 𝑧 direction . In what follows, the wall towards which 
+
+the Coriolis force acts on the main flow is referred to as the 
+
+trailing side (near 𝑦 = 0), and the opposite wall, towards which 
+
+the Coriolis force is directed away from the bulk, is referred to 
+
+as the leading side (near 𝑦 = 2ℎ ). Here, ℎ is half the distance 
+
+between the two parallel walls and 𝑢 𝜏 = √𝜏 𝑤 = √𝜈 (𝜕 𝑢 /𝜕𝑦 )𝑤 
+
+is the friction velocity based on the wall shear stress . To obtain 
+
+statistically stationary solutions, (1) and (2) are Reynolds -
+
+averaged. The Reynolds averaging employed in this study 
+
+consists of a time average over 𝑡 together with a spatial average 
+
+over the homogeneous 𝑥 and 𝑧 directions . This operation 
+
+commutes with addition, multiplication by a scalar, 
+
+differentiation and integration. In the notation adopted here, the 
+
+Reynolds average is denoted by an overbar. Any variable 𝜙 can 
+
+be decomposed into a mean field 𝜙 and a fluctuating field 𝜙 ′,
+
+satisfying the following rules :
+
+𝜙 = 𝜙 + 𝜙 ′ (5)
+
+𝜙 = 𝜙 ̿ , 𝜙 ′ = 0 (6)
+
+Applying the Reynolds -averaging operation, the Reynolds -
+
+averaged form of (1) and (2) is obtained: 
+
+𝛁 ⋅ 𝒖 = 0 (7)
+
+𝜕 𝑡 𝒖 + (𝒖 ⋅ 𝛁 )𝒖 = −𝛁 𝑝 + 𝜈 ∇2𝒖 + 2Ω𝒌 × 𝒖 + ∇𝝉 𝑅𝑒 (8)
+
+Where 𝒖 = (𝑢 , 𝑣 , 𝑤 )T is the averaged velocity , 𝝉 𝑅𝑒 = −𝒖 ′⨂𝒖 ′
+
+is the Reynolds shear stress tensor .
+
+To obtain high -fidelity reference data, equations (1) and (2) 
+
+are solved numerically using Nek5000, an open -source code 
+
+based on the spectral -element method. The friction Reynolds 
+
+number is set to 𝑅 𝑒 𝜏 = 180 . The computational domain has 
+
+dimensions 𝐿 𝑥 : 𝐿 𝑦 : 𝐿 𝑧 = 4𝜋 ℎ: 2ℎ : 2𝜋 ℎ in the streamwise (x),
+
+wall -normal (y) and spanwise (z) directions , respectively. Time 
+
+integration is performed using a third -order backward 
+
+differentiation scheme (BDF3) with a maximum Courant 
+
+number of approximately 0.5; and the sampling period satisfies 
+
+𝑇 𝑢 𝜏 /ℎ > 40 . The spatial discretization is employ ed seventh -
+
+order polynomials, with 20, 12 and 16 spectral elements in the 
+
+𝑥 , 𝑦 and 𝑧 directions, respectively. The wall -normal element is 
+
+stretched from the uniform distribution according to the 
+
+hyperbolic tangent distribution :
+
+𝑦 /ℎ = 1 + tanh (2.4𝑦 ′/ℎ − 2.4)
+
+tanh (2.4) (9)
+
+where 𝑦 ′denotes t he positions of the spectral‑element edges ,
+
+uniformly distributed over [0,2ℎ ] ( the nodes are located at the 
+
+Gauss –Lobatto –Legendre quadrature points within each 
+
+mapped element). The spatial and temporal resolution satisfies 
+
+the grid -independence requirement, and the statistical averaging period is sufficiently long. The computed profiles of 𝑢 agree s
+
+with those of Kim [22] to within 2% , as shown in Fig. 1.    
+
+> Fig. 1. Comparison of the present DNS results with those of Kim [22] and the
+> theoretical solution.
+
+The parameters adopted in the present work are listed in 
+
+table I. 𝑅 𝑒 𝑏 is the Reynolds number based on the bulk velocity, 
+
+and 𝑅 𝑒 𝜏 ,L and 𝑅 𝑒 𝜏 ,T are the friction Reynolds numbers at the 
+
+leading and trailing sides , respectively.                                                                                          
+
+> TABLE I. CALCULATION PARAMETERS .
+> Case 𝑹 𝒐 𝝉 𝑹 𝒆 𝒃 𝑹 𝒆 𝝉 ,𝐋 𝑹 𝒆 𝝉 ,𝐓
+> ST 02850 180 180
+> A1 0.1 284 0177 183
+> A30.3 288 0167 191
+> A50.5 2980 154 202
+> A70.7 300 0148 207
+> A90.9 3020 144 209
+> B1 13020 142 210
+> B3 328 90 134 217
+> B5 528 80 130 218
+> B7 7283 0129 219
+> B9 9302 0130 218
+> C1 103080 130 218
+> C315 339 0133 215
+> C520 3720 138 206
+> A20.2 2860 172 187
+> A80.8 301 0146 208
+> B222950 133 216
+> B88297 0129 219
+> C212320 0131 216
+> C4173220 135 212
+> Fig. 2. Averaged streamwise velocity profiles for the different cases.
+
+Fig . 2 shows th at 𝑢 + = 𝑢 /𝑢 𝜏 depart s from the non -rotating 
+
+case only when 𝑅 𝑜 𝜏 > 0.5; the velocity profile near the trailing 
+
+side is blunt , whereas that near the leading side exhibits a deficit. 
+
+Because the velocity profiles on the two walls are not similar ,
+
+simple analytical expressions can not describe this difference ,
+
+an d 𝑢 must be calculated from iterated computation. Extracting 
+
+the 𝑦 component of (8) and keeping the non -zero terms by 
+
+streamwise and spanwise homogeneit ies :
+
+d𝑢 ′𝑣 ′
+
+d𝑦 = − 𝜕𝑝 
+
+𝜕𝑥 + 𝜈 d2𝑢 
+
+d𝑦 2 (10 )
+
+d𝑣 ′𝑣 ′
+
+d𝑦 = − 𝜕𝑝 
+
+𝜕𝑦 + 2Ω𝑢 (11 )
+
+Applying the no -slip and no -penetration boundary 
+
+conditions at the walls and integrating (10) across the full 
+
+channel height yields the streamwise pressure gradien t
+
+−𝜕𝑝 /𝜕𝑥 ̅̅̅̅̅̅̅̅ = 𝜏 w/ℎ. Under rotating conditions, the leading and 
+
+trailing sides each possess a local wall shear stress . To 
+
+distinguish them, we introduce the subscripts 'L' and 'T' when 
+
+referring specifically to the leading and trailing sides, 
+
+respectively; a subscript -free quantity denotes the average shear 
+
+stress or shear velocity. The momentum conservation relation is 
+
+given by :
+
+𝜏 w = 𝜏 w,L + 𝜏 w,S, 𝑢 𝜏 = √𝑢 𝜏 ,L 
+
+> 2
+
++ 𝑢 𝜏 ,S 
+
+> 2
+
+(12 )
+
+For convenience, when discussing the trailing side the wall -
+
+normal distance 𝑦 is retained in its original form, whereas for 
+
+the leading side the real wall distance is 2ℎ − 𝑦 . For brevity, 
+
+when discussing each side separately, the wall distance s of both 
+
+sides are nominally denoted by 𝑦 .A notable outcome is that the streamwise direction (10) is 
+
+not explicitly affected by rotation; the influence of the Coriolis 
+
+force manifests indirectly through the 𝑦 -normal Reynolds stress 
+
+(11) . The present study does not pursue the detailed mechanism 
+
+by which the Coriolis force couples the streamwise and wall -
+
+normal turbulent fluctuations, but focuses instead on how 
+
+rotation modifies the averaged velocity . Equations ( 10 ) and ( 11 )
+
+contain unclosed Reynolds -stress terms, and the number of 
+
+unknowns still exceeds the number of equations . Fortunately, 
+
+DNS (Direct Numerical Simulation ) provides an a priori 
+
+solution of ( 3) and ( 4), from which every component of 𝝉 𝑅𝑒 can 
+
+be obtained. 
+
+In engineering practice, the eddy -viscosity hypothesis is 
+
+widely employed to close the Reynolds -stress tensor. For 
+
+channel flow, this admits a particularly compact formulation .
+
+Introducing the eddy viscosity 𝜈 t yields a Reynolds stress 
+
+expression analogous to Newton's law of viscosity: 
+
+−𝑢 ′𝑣 ′ = 𝜈 t
+
+d𝑢 
+
+d𝑦 (13 )
+
+From the high -fidelity DNS data, 𝑢 ′𝑣 ̅̅̅̅ can be calculated 
+
+statistically , from which the eddy viscosity is obtained as: 
+
+𝜈 t
+
+𝜈 = −𝑢 ′𝑣 ′̅̅̅̅̅̅
+
+νd𝑢 /d𝑦 (14 )
+
+Rearranging the right -hand side of (1 4) and introducing the 
+
+dimensionless quantities: 𝑦 + = 𝑦 𝑢 𝜏 /𝜈 and 𝑢 + = 𝑢 /𝑢 𝜏 , there is 
+
+𝜈 t
+
+𝜈 = −𝑢 ′𝑣 ′̅̅̅̅̅̅ /𝑢 𝜏 
+
+> 2
+
+d𝑢 +/d𝑦 + (15 )
+
+In the non -rotating case, the eddy viscosity is commonly 
+
+estimated through the mixing length 𝑙 + = 𝑙 𝑢 𝜏 /𝜈 :
+
+𝜈 t
+
+𝜈 = 𝑙 + |d𝑢 +
+
+d𝑦 +| d𝑢 +
+
+d𝑦 + (16 )
+
+von Ká rmá n invoked the similarity hypothesis to close the 
+
+mixing length finally :
+
+𝑙 + = κ𝑦 + (17 )
+
+van Driest proposed a more elaborate damping correction :
+
+𝑙 + = κ𝑦 +(1 − exp (−𝑦 +/𝐴 +)) (18 )
+
+Where κ ≈ 0.41 , and 𝐴 + ≈ 26 . None of the above formulations 
+
+explicitly captures the influence of rotation. Wei [3] and Tao [5] 
+
+introduced rotation -dependent corrections to both 𝜅 and 𝐴 + in 
+
+(1 8), but no consistent improvement was obtained. This is 
+
+unsurprising given that the mixing -length model is itself a 
+
+heuristic construct and, by its nature, lacks the capacity to reflect 
+
+rotational effects. Moreover, d𝑢 +/d𝑦 + vanishes near the cent er 
+
+plane of channel , and the eddy viscosity obtained from (15) can 
+
+even become negative which would be catastrophic for 
+
+computational stability. This motivates an alternative approach: 
+
+if the concept of eddy viscosity is dropped , one may directly 
+
+obtain the law of d𝑢 +/d𝑦 + and recover 𝑢 by integration, with 
+
+the no -slip boundary condition at the wall, thereby bypassing the 
+
+need for computationally expensive DNS . The present study 
+
+therefore targets d𝑢 +/d𝑦 + as the modelling quantity . Its 
+
+behavior provides an indirect measure of how the Coriolis force 
+
+affects the velocity field. 
+
+Given that d𝑢 +/d𝑦 + generally does not admit a simple 
+
+closed form, the mean velocity field lacks a simple analytical 
+
+expression. Deep neural network obscure s physical detail, while 
+
+constructing models from elementary function s or algebraic –
+
+differential equations is exceedingly difficult. Symbolic 
+
+regression overcomes both difficulties . Therefore , the present 
+
+study employs it to investigate the distribution of d𝑢 +/d𝑦 +.
+
+B. A brief introduction of symbold regression 
+
+The core idea of SR is to recast formula learning as a search -
+
+and -evolution process over mathematical expressions. Rather 
+
+than prescribing a fixed model structure (e.g. nested functions), 
+
+one initializes a population of expressions assembled from a 
+
+predefined set of basic operators (e.g. addition, multiplication, 
+
+trigonometric functions, exponentials and logarithms , etc. ), each 
+
+encoded as a manipulable tree. The population then undergoes 
+
+iterative genetic evolution through crossover, combination, 
+
+mutation and fitness evaluation: the quality of each individual is 
+
+assessed according to both fitting accuracy and expression 
+
+com plexity, superior individuals are retained, and partial sub -
+
+trees undergo crossover or mutation to generate new, improved 
+
+expressions. Over many generations, the population converges 
+
+towards an analytical formula that is both accurate and compact, 
+
+thereby automatically extracting the hidden mathematical 
+
+relationships within the data and yielding interpretable 
+
+regression models. 
+
+The pipeline of S R is illustrated in Fig. 3. Starting from a 
+
+finite set of prescribed operators, the evolutionary process 
+
+proceeds through successive crossover, recombination and 
+
+constant optimization ; the optimal expression is ultimately 
+
+selected under the constraints of expression complexity and the 
+
+loss function .    
+
+> Fig. 3.Schematic of the SR workflow.
+
+To verify the reliability of the symbolic regression, a more 
+
+compact expression was re -discovered for the law of the wall at 
+
+𝑅 𝑒 𝜏 = 180 under non -rotating conditions, yielding the implicit 
+
+wall function: 
+
+𝑦 + = 𝑢 + + 0.0192 𝑒 0.483 𝑢 + (19 )This expression agrees closely with the DNS data and can be 
+
+viewed as a low -order truncation of Spalding's formula (2). As 
+
+shown in Fig. 1, the maximum deviation is less than 3%, 
+
+demonstrating a high level of accuracy. This result confirms that 
+
+symbolic regression is capable of extracting patterns from small -
+
+sample data. Accordingly, the present study employs symbolic 
+
+regression to investig ate how system rotation affects the law of 
+
+the wall in turbulent boundary layers. 
+
+III.  RESULT S AND DISSCUSSIONS 
+
+A. Boundary layer profile 
+
+Fig . 4 and 5 show the velocity profiles in semi -logarithmic 
+
+coordinates. The legend follows that of figure 2, and likewise for 
+
+all subsequent figures. Comparing the rotating and non -rotating 
+
+profiles, it is evident that as the rotation number increases from 
+
+zero , 𝑢 + on the leading side is progressively elevated while 𝑢 +
+
+on the trailing side is progressively suppressed , call ed the 
+
+'Coriolis shift' by Tao [23] , and is also captured in laboratory 
+
+experiments, lending confidence to the present computations. 
+
+The elevation of the leading -side profile is accompanied by a 
+
+shift of the velocity peak towards the leading side, implying that, 
+
+at fixed Reynolds number, the leading -side velocity boundary 
+
+layer becomes progressively thinner with increasing rotation.        
+
+> Fig. 4.Dimensionless velocity profiles on the leading side.
+> Fig. 5.Dimensionless velocity profiles on the trailing side.
+
+Logarithmic scaling compresses the range of 𝑦 + and can 
+
+lead to underfitting; d𝑢 +/d𝑦 + is therefore chosen as the 
+
+learning target. Reconstructing 𝑢 + by integration further 
+
+reduces random errors. Since the boundary -layer extent on the 
+
+leading and trailing sides varies with the rotation number, the 
+
+region 𝑦 + < 100 is uniformly adopted as the boundary layer in 
+
+what follows .          
+
+> Fig. 6.Dimensionless velocity gradient on the leading side.
+> Fig. 7.Dimensionless velocity gradient on the trailing side.
+
+B. Results of symbol regression 
+
+In our study, the PySR package is applied for SR 
+
+manipulation. Since the leading and trailing sides possess 
+
+distinct local friction velocities, they are treated separately. The 
+
+variables and operators employed in the SR are listed in table II :   
+
+> TABLE II .VARIABLES AND OPERATORS EMPLOYED IN THE SR.
+
+Variables  𝒚 /𝒉 , 𝒚 +, 𝑹 𝒐 𝝉 
+
+Unary operators  tanh (𝑥 ), exp (𝑥 ), ln (𝑥 )
+
+Binary operators  𝑥 + 𝑦 , 𝑥 ∗ 𝑦 , 𝑥 /𝑦 , 𝑥 𝑦 
+
+Maximum complexity  35 
+
+Loss function threshold  L1 norm less than 0.01 
+
+The training terminated after 3 5 steps, with the L1 norm of 
+
+loss function reduced below 0.01; the results are shown in Fig. 
+
+8. Taking the result at the 30th training step, the expression for 
+
+the leading side is :
+
+d𝑢 /d𝑦 + = (1 − 1.8tanh (𝑦 /ℎ))
+
+∗ tanh (16 .2𝑅 𝑜 𝜏 /𝑦 +) ∗ tanh (𝑅 𝑜 𝜏 + 0.05 ℎ/𝑦 ) (20 )and that for the trailing side is :
+
+d𝑢 /d𝑦 + = 0.0046 𝑅 𝑜 𝜏 tanh (0.41 𝑦 /ℎ𝑅 𝑜 𝜏 ) +
+
+tanh ( 2.7
+
+𝑦 +(𝑦 /ℎ𝑅 𝑜 𝜏 + 0.024 𝑦 + + 0.038 ) + 1.08 ) (21 ) 
+
+> Fig. 8. Evolution of the loss function.
+
+Taking A2, A8, B2, B8, C2 and C4 as the validation set, the 
+
+predicted d𝑢 +/d𝑦 + distributions on the leading side are shown 
+
+in Fig.9 , where the lines represent the reference data and the 
+
+symbols the predictions. The maximum error is below 0.02 for 
+
+𝑅 𝑜 𝜏 < 15 and below 0.05 for 𝑅 𝑜 𝜏 > 15 . As shown in Fig. 9, t he 
+
+effect of rotation on the leading side is not monotonic: 
+
+excessively high rotation numbers suppress the turbulent 
+
+activity on the leading side.     
+
+> Fig. 9. Predictions of d𝑢 +/d𝑦 +for the leading -side test set.
+
+The predictions on the trailing side are superior to those on 
+
+the leading side. As shown in Fig. 10 , the maximum deviation is 
+
+below 5% in all cases — an appreciable level of accuracy. 
+
+Integrating d𝑢 +/d𝑦 + yields the dimensionless velocity 
+
+distribution in the boundary layer :
+
+𝑢 +(𝑦 +) = ∫ d𝑢 +
+
+d𝑦 + 𝑑 𝑦 +
+
+> 𝑦 +
+> 0
+
+(22 )
+
+As shown in Fig. 11 and Fig. 12, the relative error in and below 
+
+the logarithmic region does not exceed 5% for all cases except 
+
+the highest rotation number 𝑅 𝑜 𝜏 = 17 .          
+
+> Fig. 10 .Predictions of d𝑢 +/d𝑦 +for the trailing -side test set.
+> Fig. 11.Integrated results for the leading -side validation set.
+> Fig. 12.Integrated results for the trailing -side validation set.
+
+IV.  CONCLUSION 
+
+Symbolic regression was employed in the present work to 
+
+discover wall -function expressions for turbulent boundary 
+
+layers at various rotation numbers; the resulting expressions are 
+
+interpretable, white -box formulations. For rotation numbers 
+
+below 10, the pr edictions deviate from the reference data by less 
+
+than 5%, a high level of accuracy. The wall functions capture 
+
+how rotation, quantified by the rotation number, shifts the 
+
+boundary -layer wall function. Incorporating these expressions 
+
+into RANS or LES forwa rd computations reduces the grid 
+
+resolution required to resolve the near -wall flow dynamics , and 
+
+improves the accuracy of wall -bounded turbulen t models in 
+
+turbomachine. Owing to limitations in computational resources, higher -Reynolds -number flows or temperature boundary layers 
+
+were not investigated in this study, which constitutes a limitation; 
+
+future work should extend the analysis to a range of Reynolds 
+
+numbers and cases with heat -transfer .
+
+ACKNOWLEDGMENT 
+
+It is gratefully acknowledged that Beihang University and 
+
+the National Natural Science Foundation of China (No. 
+
+52376042) supported this work. 
+
+REFERENCES 
+
+[1] J. H. Wagner, B. V. Johnson, T. J. Hajek. Heat Transfer in Rotating 
+
+Passages With Smooth Walls and Radial Outward Flow. Journal of 
+
+Turbomachinery, vol. 113, pp. 42 -51, 1991. 
+
+[2] K. Wei, Z. Tao, H. W. Deng, R. Q. You, editors. Interaction of secondary 
+
+flow with developing, turbulent boundary layers in a rotating duct. 
+
+Proceedings of The American Society of Mechanical Engineers 
+
+Turbomachinery Technical Conference & Exposition 2015; 2015; 
+
+Montreal, Quebec. Montreal, Quebec, CanadaASME Turbo Expo 2015: 
+
+Turbine Technical Conference and Exposition. 
+
+[3] K. Wei, Z. Tao, R. You, H. Wu, H. Li. Development of a turbulent 
+
+boundary layer in a rotating square cross -section channel with relatively 
+
+high local rotation parameter. Exp Therm Fluid Sci, vol. 86, pp. 85 -97, 
+
+2017. 
+
+[4] G. F. Li, Z. Tao, H. J. Wu, R. Q. You, H. W. Li, editors. Experimental 
+
+investigation on boundary layer flow under the effect of temperature 
+
+gradient in a smooth rotating channel using hot -wire. Proceedings of The 
+
+American Society of Mechanical Engineers Tu rbomachinery Technical 
+
+Conference & Exposition 2018; 2018; Pittsburgh, Pennsylvania. Volume 
+
+8B: Heat Transfer and Thermal EngineeringASME 2018 International 
+
+Mechanical Engineering Congress and Exposition. 
+
+[5] Z. Tao, H. Wu, R. You, H. Li, K. Wei. Turbulent characteristics and 
+
+rotation correction of wall function in rotating channel with high local 
+
+rotation parameter. Chin J Aeronaut, vol. 31, pp. 1985 -99, 2018. 
+
+[6] R. Q. You, K. Wei, Z. Tao, H. W. Li, G. Q. Xu. Development of 
+
+secondary flow field under rotating condition in a straight channel with 
+
+square cross -section. Chin J Aeronaut, vol. 31, pp. 1703 -15, 2018. 
+
+[7] Z. Y. Jiang, H. W. Li, R. Q. You. Experiment on turbulent flow in rotating 
+
+smooth channel with 1D hot wire. J Aerosp Power, vol. 34, pp. 556 -66, 
+
+2019. 
+
+[8] H. Li, Z. Jiang, Z. Tao, R. You, H. Wu. Effect of system rotating on 
+
+turbulent boundary layer flow. Int J Heat Fluid Flow, vol. 75, pp. 185 -94, 
+
+2019. 
+
+[9] J. H. G. Howard, S. V. Patankar, R. M. Bordynuik. Flow Prediction in 
+
+Rotating Ducts Using Coriolis -Modified Turbulence Models. ASME J 
+
+Fluids Eng, vol. 102, pp. 456 -61, 1980. 
+
+[10] A. K. Majumdar, V. S. Pratap, D. B. Spalding. Numerical Computation 
+
+of Flow in Rotating Ducts. In: Patankar SV, Pollard A, Singhal AK, 
+
+Vanka SP, editors. Numerical Prediction of Flow, Heat Transfer, 
+
+Turbulence and Combustion: Pergamon; 1983. p. 211 -6. 
+
+[11] B. E. Launder, D. P. Tselepidakis, B. A. Younis. A second -moment 
+
+closure study of rotating channel flow. J Fluid Mech, vol. 183, pp. 63 -75, 
+
+1987. 
+
+[12] C. G. Speziale. Turbulence Modeling in Noninertial Frames of Reference. 
+
+Theoretical and Computational Fluid Dynamics, vol. 1, pp. 3 -19, 1989. 
+
+[13] C. Prakash, R. Zerkle. Prediction of Turbulent Flow and Heat Transfer in 
+
+a Radially Rotating Square Duct. Journal of Turbomachinery, vol. 114, 
+
+pp. 835 -46, 1992. 
+
+[14] H. Z. Asan. A computational study of laminar and turbulent flows in 
+
+rotating rectangular ducts [Dissertation/Thesis]1993. 
+
+[15] P. Tekriwal. Heat Transfer Predictions With Extended k –ε Turbulence 
+
+Model in Radial Cooling Ducts Rotating in Orthogonal Mode. Journal of 
+
+Heat Transfer, vol. 116, pp. 369 -80, 1994. 
+
+[16] P. Tekriwal. Heat Transfer Predictions in Rotating Radial Smooth 
+
+Channel: Comparative Study of k -ε Models With Wall Function and Low -
+
+Re Model. Volume 4: Heat Transfer; Electric Power; Industrial and 
+
+Cogeneration1994. 
+
+[17] J. Bredberg, editor Turbulence Modelling for Internal Cooling of Gas -
+
+Turbine Blades2002. 
+
+[18] S. Jakirlic, K. Hanjalic, C. Tropea. Modeling Rotating and Swirling 
+
+Turbulent Flows: A Perpetual Challenge. AIAA J, vol. 40, pp. 1984 -96, 
+
+2002. 
+
+[19] H. Liao, X. Sun, Y. Liu, W. Zhang. Data -driven turbulence modeling: A 
+
+mutually coupled framework for symbolic regression and data 
+
+assimilation. Phys Fluids, vol. 37, pp. 075211, 2025. 
+
+[20] Z. Yang, X. Shan, X. I. A. Yang, W. Zhang. Data -enabled discovery of 
+
+specific and generalisable turbulence closures. J Fluid Mech, vol. 1016, 
+
+pp. R1, 2025. 
+
+[21] H. Wu, R. Chen, Y. Ye, J. Lou, Z. Yin, S. Zhou, et al. Modeling of wall 
+
+function based on symbolic regression under streamwise pressure 
+
+gradient. Aerospace Science and Technology, vol. 168, pp. 111107, 2026. 
+
+[22] J. Kim, P. Moin, R. Moser. Turbulence statistics in fully developed 
+
+channel flow at low Reynolds number. J Fluid Mech, vol. 177, pp. 133 -
+
+66, 1987. 
+
+[23] Z. Tao, R. You, Y. Ma, H. Li. Temperature and velocity characteristics of 
+
+rotating turbulent boundary layers under non -isothermal conditions. Phys 
+
+Fluids, vol. 34, pp. 065138, 2022.

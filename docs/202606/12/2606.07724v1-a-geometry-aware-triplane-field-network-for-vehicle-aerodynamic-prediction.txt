@@ -1,0 +1,482 @@
+Title: A Geometry-Aware Triplane Field Network for Vehicle Aerodynamic Prediction
+
+URL Source: https://arxiv.org/pdf/2606.07724v1
+
+Published Time: Tue, 09 Jun 2026 00:07:52 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# A Geometry-Aware Triplane Field Network for Vehicle Aerodynamic Prediction 
+
+Kangkang Qi a,b , Huiyu Yang a,b , Keqi Ding c, ∗∗ , Yunpeng Wang a,b , Yuntian Chen d, Yuanwei Bin d,c , Rikui Zhang c, Jianchun Wang a,b, ∗
+
+> aDepartment of Mechanics and Aerospace Engineering, Southern University of Science and Technology, Shenzhen 518055, China
+> bShenzhen Key Laboratory of Complex Aerospace Flows, Southern University of Science and Technology, Shenzhen 518055, China
+> cShenzhen Tenfong Technology Co., Ltd., Shenzhen 518000, China
+> dNingbo Key Laboratory of Advanced Manufacturing Simulation, Eastern Institute of Technology, Ningbo 315200, China
+
+Abstract 
+
+High-fidelity computational fluid dynamics (CFD) is crucial to vehicle aerodynamic analysis, but its cost still constrains early-stage design exploration. Machine-learning-based surface-field prediction offers a faster alternative if the model can efficiently capture both global flow context and local geometric detail. This work proposes a machine-learning-based method, named the geometry-aware triplane field network (GTF-Net), for vehicle aerodynamic pres-sure and wall shear stress prediction. GTF-Net constructs triplane features directly from sampled surface points through a shared multilayer perceptron (MLP) and smooth bilin-ear rasterization. The planes are then processed by a dual-stream backbone that combines adaptive Fourier neural operator (AFNO) spectral mixing with convolutional neural net-work (CNN) refinement, so long-range aerodynamic coupling and local geometry-induced variations are modeled in the same representation. At query stage, sampled triplane features are combined with vehicle-aligned directional coordinates, normal-projection features, and a voxel-based curvature proxy. GTF-Net is compared with Transolver, geometry-informed neural operator (GINO), and TripNet, a triplane-based surrogate model. GTF-Net im-proves the relative L2 error from the strongest baseline value of 0.157 to 0.145 for pressure prediction and from 0.237 to 0.226 for wall shear stress prediction. Ablation results show that AFNO mixing, local CNN refinement, and query-side geometric encoding each con-tribute to accuracy, supporting the proposed mechanism of combining structured triplane 
+
+> ∗Corresponding author: wangjc@sustech.edu.cn
+> ∗∗ Corresponding author: dingkq@tenfong.cn
+> arXiv:2606.07724v1 [cs.LG] 5 Jun 2026
+
+representation with explicit aerodynamic geometry cues. 
+
+Keywords: Vehicle Aerodynamics, Neural Operator, Fourier Neural Operator, Triplane Field, Machine Learning 
+
+1. Introduction 
+
+High-fidelity computational fluid dynamics (CFD) remains indispensable in vehicle aero-dynamic analysis, but its computational cost limits large-scale design iteration. Data-driven surrogates that predict aerodynamic quantities directly from geometry have therefore at-tracted growing attention. Physics-informed and transfer-learning approaches have been explored for data-scarce fluid and aerodynamic prediction tasks [1, 2]. Operator learn-ing methods, including DeepONet and the Fourier neural operator (FNO), learn mappings between function spaces [3, 4]. More recently, general-geometry neural solvers, includ-ing Transolver and the spatially-aware transformer operator (SATO), have demonstrated strong performance on complex partial differential equation (PDE) domains [5, 6]. Scalable point-cloud and transformer neural operators have further targeted large or variable three-dimensional geometries through million-scale solvers, point-cloud operators, and multiscale CFD architectures [7, 8, 9, 10]. In automotive aerodynamics, surrogate modeling is shifted from simplified canonical bodies toward realistic high-fidelity vehicle geometries based on large-scale datasets. Dri-vAerNet introduced a parametric car dataset for aerodynamic design and prediction [11], while DrivAerNet++ extended this line with large-scale multimodal CFD simulations and learning benchmarks [12]. CarBench further broadened the benchmark landscape for neural surrogates in high-fidelity three-dimensional car aerodynamics [13]. Related vehicle-oriented surrogates have progressed from interactive three-dimensional flow prediction to scalable automotive aerodynamic operators [14, 15, 16, 17]. Recent studies have further expanded this line of research toward real-world automotive design scenarios, including multi-scale transformer models for drag coefficient estimation, mesh-free CAD-to-flow prediction on non-watertight geometries, and multi-output aerodynamic surrogates for rapid design iter-ation [18, 19, 20]. Agentic vision–physics–decision frameworks have also begun to connect aerodynamic prediction with design decision making [21]. CNN-based studies have also explored real-time aerodynamic evaluation and vehicle flow-field prediction for arbitrary vehicle shapes, cars, and buses [22, 23, 24]. There are several types of representations for learning on irregular 3D geometry. Point-based architectures, including PointNet, PointNet++, PointNeXt, and Point Transformer, 2provide flexible encoders for unordered point samples [25, 26, 27, 28]. Graph- and mesh-based models including MeshGraphNets directly exploit discrete geometric connectivity and local interactions [29]. Geometry-aware operator models including geometry-aware Fourier neural operator (Geo-FNO) and GINO further extend neural operators to irregular geo-metric settings [30, 31]. Neural field approaches, exemplified by the Aero-NeF neural field model, represent aerodynamic quantities as continuous implicit functions of spatial coordi-nates [32]. Across these representation families, the core challenge is the same: balancing geometric fidelity, long-range physical context, and computational efficiency on complex surfaces. Among structured representations, the triplane representation was popularized in 3D-aware generative modeling as a compact way to encode 3D information with three axis-aligned feature planes [33]. By converting a 3D field into a form amenable to efficient 2D backbones, triplanes offer an appealing compromise between memory efficiency and spatial continuity. In vehicle aerodynamics, it was shown that triplane representations can support drag prediction, surface pressure estimation, and full 3D flow-field inference on DrivAerNet and DrivAerNet++ [34]. For the high-fidelity surface-field setting considered here, however, two issues remain open. First, TripNet constructs its triplane representation through an additional object-specific preprocessing and fitting stage before downstream prediction [34], whereas a surface-field model can instead seek to build the latent representation directly from sampled surface points. Second, although triplane features support continuous query-based prediction, the role of explicit geometric conditioning at the decoding stage remains underexplored for surface pressure and wall shear stress, whose distributions depend not only on global vehicle shape but also on local orientation and geometric variation. We address these issues with the geometry-aware triplane field network (GTF-Net), a triplane framework built around three improvements. First, instead of relying on a separate object-specific fitting step, we use a shared multilayer perceptron (MLP) that maps each surface sample to a latent feature before smooth bilinear rasterization onto the three planes. Second, a dual-stream backbone combines adaptive Fourier neural operator (AFNO) spectral mixing [35] with convolutional layers, capturing both long-range aerodynamic correlations and local spatial patterns. Third, a geometry-aware query decoder augments sampled tri-plane features with vehicle-aligned directional coordinates, normal-projection features, and a local curvature proxy, so explicit geometric conditioning is injected exactly where the field value is predicted. 3We evaluate GTF-Net on the DrivAerNet++ surface-field benchmark for both pressure and wall shear stress prediction, comparing against Transolver [5], GINO [31], and TripNet [34]. The main contributions are: 
+
+• We propose a triplane field network with a shared MLP and smooth bilinear raster-ization that builds triplane features directly from sampled surface points, avoiding a separate object-specific fitting step and providing a richer geometric input to the structured backbone. 
+
+• We introduce a geometry-aware query decoder that combines sampled triplane fea-tures with vehicle-aligned directional encoding, normal-projection features, and a lo-cal curvature proxy through learnable residual gating, providing explicit geometric conditioning at the decode stage. 
+
+• We demonstrate on the DrivAerNet++ surface-field benchmark that the proposed model improves the prediction ability over Transolver, GINO, and TripNet on both pressure and wall shear stress prediction. 
+
+2. Method 
+
+2.1. Governing equations and conventional CFD 
+
+In external vehicle aerodynamics, air is commonly modeled as an incompressible fluid governed by the Navier–Stokes equations [36]: 
+
+∂v
+
+∂t + ( v · ∇ )v = −∇ p + ν∆v + f , in Ω,
+
+∇ · v = 0 , in Ω.
+
+(1) where Ω denotes the fluid domain around the vehicle, Γ denotes the vehicle surface boundary, 
+
+t is time, v is the velocity field, p is the pressure field, ν is the kinematic viscosity, ∇ is the spatial gradient operator, ∆ is the Laplacian operator, and f is an external body force, which is typically neglected in external aerodynamic simulations. On the vehicle surface Γ, the standard no-slip condition v = 0 is imposed, while freestream conditions are prescribed on the far-field boundary. The flow regime is characterized by the Reynolds number 
+
+Re = U∞Lc
+
+ν , (2) 4Figure 1: Overview of GTF-Net. Surface samples are mapped to three differentiable triplane feature maps, refined by a dual-stream AFNO–CNN backbone, and decoded at query locations using triplane features together with positional and geometry-aware encodings. 
+
+where U∞ is the incoming freestream velocity and Lc is a characteristic vehicle length. For the high-Reynolds-number turbulent flows typical of road vehicles, practical CFD most often solves the Reynolds-averaged Navier–Stokes (RANS) equations. 
+
+(¯ v · ∇ )¯ v = −∇ ¯p + ν∆¯ v − ∇ · τ R, in Ω,
+
+∇ · ¯v = 0 , in Ω, (3) where ¯v and ¯p are Reynolds-averaged velocity and pressure, and τ R is the Reynolds-stress tensor introduced by turbulence averaging. Closing this system requires a turbulence model, including the k–ω SST model commonly used in automotive aerodynamics [37]. Classical numerical solvers discretize these equations on computational grids using meth-ods including the finite difference method, finite element method, finite volume method, and spectral method, while alternative approaches including the lattice Boltzmann method solve kinetic equations that recover the same macroscopic behavior [38]. In automotive CFD, 5finite-volume RANS solvers are especially common. They resolve the full volumetric flow around the vehicle, but they remain computationally expensive on high-resolution meshes. This cost motivates machine-learning-based surrogate models that predict target surface quantities directly. 
+
+2.2. Problem formulation 
+
+Our objective is to learn a surrogate model that maps vehicle surface geometry to the corresponding surface field, rather than solving the full flow field in Ω [31, 32, 34]. This mapping can be expressed as: 
+
+Fp : Γ 7 → ¯p|Γ, Fτ : Γ 7 → τ w|Γ. (4) where Γ represents the vehicle surface geometry, ¯p|Γ is the pressure field restricted to that surface, and τ w|Γ is the wall shear stress restricted to that surface. In practice, the surface is represented by a discrete point sample X ⊂ Γ, with X =
+
+{xi}Ni=1 , where xi ∈ R3 is a three-dimensional surface coordinate and N is the number of sampled surface points. We approximate the surface operator with a query-based surrogate 
+
+ˆuθ(x; X) ≈ u(x), x ∈ Γ. (5) Here, u denotes the generic target surface field, corresponding to ¯p|Γ for pressure prediction and τ w|Γ for wall shear stress prediction, while ˆuθ is the model prediction parameterized by 
+
+θ.During training, the loss is evaluated on a sampled query subset XQ ⊆ X:
+
+LMSE = MSE = 1
+
+M
+
+> M∑
+> i=1
+
+(yi − ˆyi)2 , (6) where MSE denotes mean squared error, yi and ˆyi represent the ground-truth and predicted values, respectively, after flattening all evaluated surface points and field components, and 
+
+M is the total number of scalar entries. 
+
+2.3. Triplane feature construction 
+
+As shown in Figure 1(b), the input surface geometry is first converted into a triplane feature tensor. The sampled surface point set X = {xi}Ni=1 is used to construct the triplane. In the reported configuration, only the normalized point coordinates are used as input. Each point is lifted to a latent feature by a shared multilayer perceptron: 
+
+hi = Eθ(xi), hi ∈ Rde , (7) 6where Eθ denotes a shared MLP applied independently to each surface point and de is the point embedding dimension. The three-dimensional point xi = ( xi, y i, z i) is then projected onto three axis-aligned planes. The projection operators are defined as 
+
+Pxy (xi) = ( xi, y i), Pyz (xi) = ( yi, z i), Pxz (xi) = ( xi, z i).
+
+For a plane π ∈ { xy, yz, xz }, let Λπ ⊂ R2 denote its two-dimensional grid domain and let 
+
+ξ ∈ Λπ be a grid location on this plane. The feature at ξ is obtained by bilinear weighted rasterization: 
+
+Tπ(ξ) =  
+
+> ∑Ni=1
+
+wi,π (ξ)hi 
+
+> ∑Ni=1
+
+wi,π (ξ) + ϵ, (8) where wi,π (ξ) is the bilinear interpolation weight between the projected point Pπ(xi) and the grid location ξ, and ϵ = 10 −8 is a small constant for numerical stability. This formulation separates the quantities in three-dimensional space and those on the two-dimensional planes. Specifically, xi ∈ R3 is a surface point, Pπ(xi) ∈ R2 and ξ ∈ R2 are plane coordinates, hi ∈ Rde is the learned point feature, and Tπ(ξ) ∈ Rde is the rasterized triplane feature at that grid location. After rasterization, unoccupied cells are filled by local average smoothing. The three planes are concatenated along the channel dimension to form the triplane tensor 
+
+T = Concat( Txy , T yz , T xz ) ∈ R3de×H×W (9) where H × W is the plane resolution. 
+
+2.4. Dual-stream backbone 
+
+As shown in Figure 1(c), the rasterized triplane tensor is processed by a dual-stream backbone. The input tensor T ∈ R3de×H×W is sent to an AFNO-based spectral stream and a local CNN refinement stream in parallel. The spectral stream is used to model long-range aerodynamic correlations on the structured triplane representation, while the CNN stream refines local spatial patterns near geometric transitions. In the spectral stream, the triplane tensor is first lifted to a hidden feature space through a convolutional patch embedding operator: 
+
+Z0 = P(T ) + Epos ,
+
+where P denotes the patch embedding operator and Epos is a learnable positional embedding on the patch grid. The hidden feature is then processed by a stack of AFNO blocks following 7the adaptive Fourier neural operator design [35]. For the ℓ-th block, the update can be written as 
+
+¯Zℓ = Zℓ + Aℓ (LN( Zℓ)) , (10) 
+
+Zℓ+1 = ¯Zℓ + Mℓ
+
+> (
+
+LN( ¯Zℓ))
+
+, (11) where LN( ·) denotes layer normalization, Aℓ is the AFNO spectral mixing operator, and 
+
+Mℓ is a pointwise multilayer perceptron. The AFNO operator performs token mixing in the Fourier domain over the two-dimensional patch grid: 
+
+Aℓ(Z) = F−1 (Wℓ (F(Z))) , (12) where F and F−1 denote the Fourier transform and inverse Fourier transform, and Wℓ is the learnable frequency-domain transformation in the ℓ-th AFNO block. After the AFNO blocks, the hidden feature is projected back to the dense triplane resolution: 
+
+TAFNO = FAFNO (T ), TAFNO ∈ RC×H×W (13) where C is the backbone width. In parallel, the local CNN stream refines short-range spatial details directly on the rasterized triplane tensor: 
+
+TCNN = Cout (RB (Cin (T ))) , TCNN ∈ RC×H×W . (14) Here, Cin and Cout are 1 × 1 convolutional projections, and RB denotes B residual CNN blocks. Each residual block contains two 3 × 3 convolutions with group normalization and GELU activation. The outputs of the two streams are fused by element-wise addition: 
+
+T ′ = TAFNO + TCNN , T ′ ∈ RC×H×W . (15) The refined feature map T ′ is then used for query-based decoding. This dual-stream design allows the backbone to combine Fourier-domain long-range mixing with local convolutional refinement. 
+
+2.5. Geometry-aware query decoding 
+
+As shown in Figure 1(d), the decoder predicts the aerodynamic field value at each query point by combining sampled triplane features with query-side positional and geometric en-codings. Let Q = {qj }Nq 
+
+> j=1
+
+denote the query surface points, where qj ∈ R3 and Nq is the number of query points. 8For a query point qj , the refined feature map T ′ is sampled by bilinear interpolation using the three plane projections: 
+
+s(qj ) = [
+
+S(T ′, P xy (qj )) , S (T ′, P yz (qj )) , S (T ′, P xz (qj )) ]
+
+, (16) where S(·, ·) denotes bilinear sampling from the refined feature map. Since each sampled feature has C channels, the concatenated triplane feature satisfies s(qj ) ∈ R3C . For all query points, s(Q) ∈ RNq ×3C .A Fourier positional encoding is applied to the query coordinate: 
+
+ϕpos (qj ) = [
+
+qj , sin(2 0πqj ), cos(2 0πqj ), . . . , sin(2 Kq −1πqj ), cos(2 Kq −1πqj )]
+
+, (17) where Kq is the number of query Fourier bands, and the sine and cosine functions are applied componentwise to the vector qj .The geometric encoding ϕgeo (qj ) contains directional, normal-projection, and curvature components. First, a vehicle-aligned orthonormal frame (dflow , dsym , dvert ) is constructed from the flow direction and the symmetry direction. In the reported experiments, the default flow and symmetry directions are the canonical vehicle axes. Let ¯qj = qj − c, where 
+
+c is the bounding-box center of the query surface points. The directional feature is defined as 
+
+η(qj ) =  
+
+> [
+
+¯qj · dflow 
+
+σflow 
+
+, ¯qj · dsym 
+
+σsym 
+
+, |¯qj · dsym |
+
+σsym 
+
+, ¯qj · dvert 
+
+σvert 
+
+> ]
+
+, (18) where σflow , σsym , and σvert are the corresponding maximum absolute projections over the query points. Second, when surface normals are available, normal-projection features are used in the query-side geometric encoding. Let n(qj ) denote the unit normal at qj . The normal feature is 
+
+f n(qj ) = [
+
+n(qj ) · dflow , n(qj ) · dsym , n(qj ) · dvert , |n(qj ) · dflow |]
+
+. (19) In the reported configuration, surface normals are used in the query decoder but not in the shared MLP used for triplane construction. Third, a voxel-based curvature proxy is computed from the query surface points. The surface is partitioned into a G3 voxel grid. For the voxel containing qj , let V(qj ) be the set of surface points inside the voxel, Mj = |V (qj )|, and ¯xj = M −1  
+
+> j
+> ∑
+> xm∈V (qj)
+
+xm. The local covariance matrix is computed as 
+
+Σ(qj ) = 1
+
+Mj 
+
+> ∑
+> xm∈V (qj)
+
+(xm − ¯xj )( xm − ¯xj )T + 10 −6I, (20) 9where xm is a surface point in the voxel and I is the 3 × 3 identity matrix. The term 10 −6I
+
+is added for numerical stability. The curvature proxy is then defined as 
+
+κ(qj ) = λ1
+
+λ1 + λ2 + λ3
+
+, (21) where λ1 ≤ λ2 ≤ λ3 are the eigenvalues of the local covariance matrix. The curvature value is log-normalized before being encoded by a multilayer perceptron. The directional, normal, and curvature branches are encoded separately and summed to form the geometric encoding: 
+
+ϕgeo (qj ) = Pgeo 
+
+> (
+
+ϕdir (qj ) + ϕnormal (qj ) + ϕcurv (qj ))
+
+. (22) The positional and geometric encodings are combined through a learnable residual gate: 
+
+z(qj ) = ϕpos (qj ) + tanh( α)ϕgeo (qj ), (23) where α is a learnable scalar gate that controls the contribution of the geometric encoding and is initialized to zero. This initialization allows the decoder to start from the positional encoding and gradually incorporate geometric conditioning during training. The final prediction is produced by a multilayer perceptron: 
+
+ˆuθ(qj ; X) = Dθ
+
+> (
+
+[s(qj ), z(qj )] )
+
+. (24) For pressure prediction, ˆuθ(qj ; X) ∈ R1, and for wall shear stress prediction, ˆuθ(qj ; X) ∈ R3.
+
+2.6. Training objective 
+
+The model is trained with mean squared error on normalized targets. For a sampled query set XQ, the training objective is 
+
+LMSE = 1
+
+|XQ|Cu  
+
+> ∑
+> qj∈XQ
+> ∥∥∥
+
+ˆuθ(qj ; X) − u(qj )∥∥∥22 . (25) where XQ is the set of sampled query points during training, |XQ| is the number of query points, and Cu is the number of target-field channels. For pressure prediction, Cu = 1 , and for wall shear stress prediction, Cu = 3 . The term ˆuθ(qj ; X) is the model prediction at query point qj conditioned on the surface sample X, and u(qj ) is the corresponding CFD ground truth. The normalization statistics, subsampling strategy, and other training details are de-scribed in Section 3. 10 3. Experimental setup 
+
+3.1. Dataset and task 
+
+All numerical experiments are conducted on the DrivAerNet++ surface-field bench-mark [12]. DrivAerNet++ is a large-scale multimodal automotive aerodynamics dataset generated from high-fidelity CFD simulations of diverse vehicle configurations, including fastback, notchback, and estateback bodies with variations in underbody and wheel design. In addition to aerodynamic coefficients, the dataset provides geometric representations and CFD-derived flow and surface fields; this work focuses on the surface fields associated with pressure and wall shear stress. We evaluate two tasks: surface pressure prediction and wall shear stress (WSS) prediction. The dataset is split into training, validation, and test sets at approximately 71.7%, 14.1%, and 14.2%, corresponding to 5,819, 1,148, and 1,154 samples, respectively. 
+
+3.2. Preprocessing 
+
+The preprocessing includes geometry normalization, target standardization, surface-normal estimation, and curvature-proxy construction. Surface coordinates are normalized to the range [−1, 1] [39] as 
+
+xnorm = 2 x − bmin 
+
+bmax − bmin 
+
+− 1. (26) where xnorm is the normalized coordinate, x is the original coordinate, and bmin and bmax 
+
+are the training-set componentwise coordinate bounds. Target fields are standardized by z-score normalization [39], 
+
+˜u = u − μu
+
+σu + ϵ , (27) where ˜u is the standardized target field, u is the original target field, μu and σu are the training-set mean and standard deviation, and ϵ = 10 −8 avoids division by very small values. Point normals are computed from the mesh with automatic orientation. For a surface point xi, the normal is obtained by aggregating the normals of its incident faces, 
+
+ni =   
+
+> ∑
+> f∈N (i)
+
+Af nf   
+
+> ∥∥∥∑
+> f∈N (i)
+
+Af nf
+
+> ∥∥∥2
+
+, (28) where N (i) is the set of faces incident to point xi, nf is the unit normal of face f , and Af
+
+is its area. The local curvature proxy is precomputed on a 16 3 voxel grid as described in Section 2. During training, each sample is randomly subsampled to 20,000 surface points; validation and testing use the full-resolution surface. 11 3.3. Baselines 
+
+We compare against Transolver [5], GINO [31], and TripNet [34]. Transolver is a general-geometry neural PDE solver that uses physics-aware attention with learnable slicing to handle irregular point sets. GINO extends neural operator learning to general geometric domains. TripNet is the closest structured-representation baseline because it also uses tri-plane features and query-based field decoding. In the original TripNet pipeline, however, each vehicle first undergoes a separate object-specific occupancy-fitting stage to obtain its triplanes, which are then processed by a U-Net-style backbone and queried with an MLP for surface-field prediction. In contrast, GTF-Net constructs triplane features directly from sampled surface points through a shared MLP and smooth bilinear rasterization, without an additional fitting stage, and further adds dual-stream AFNO–CNN processing and query-side geometric conditioning. For comparison under the shared DrivAerNet++ surface-field protocol, we align the data splits, target definitions, normalization pipeline, evaluation met-rics, and available training or inference protocols across methods. Each baseline retains its original model design; only experiment-level settings required by the common protocol are adjusted. 
+
+3.4. Implementation details 
+
+The key architectural and training hyperparameters are summarized in Table 1. The point-to-triplane construction module uses three 128 × 128 planes with a 16-dimensional point embedding, while the backbone combines a four-layer AFNO stream of width 128 with a two-block local CNN stream of width 64. The query decoder uses 10 Fourier bands for positional encoding, 4 Fourier bands for geometric encoding, and a four-layer MLP of width 128. During training, 20,000 surface points are sampled per vehicle, and the model is optimized for 200 epochs using AdamW with a learning rate of 10 −3 and weight decay of 10 −5.Unless otherwise noted, the pressure and wall shear stress models use the same architecture and training schedule, differing only in the output dimension of the final prediction head. All numerical experiments are conducted on a single NVIDIA A100 GPU with 40 GB memory. 
+
+3.5. Evaluation metrics 
+
+We adopt relative L2 error and the coefficient of determination ( R2) as the main di-mensionless evaluation metrics. Metrics are computed on denormalized predictions after flattening all evaluated surface points and field components. Let y ∈ RN and ˆy ∈ RN
+
+denote the flattened ground-truth and predicted arrays, respectively, where N is the total number of scalar entries. 12 Table 1: Key architectural and training hyperparameters used in the numerical experiments. 
+
+Hyperparameter Value 
+
+Triplane encoder 
+
+Plane resolution ( H × W ) 128 × 128 
+
+Point MLP width / depth 32 / 4
+
+Point embedding dimension ( de) 16 
+
+Empty-cell smoothing kernel 5 × 5
+
+Backbone 
+
+AFNO width / layers 128 / 4
+
+AFNO patch size / padding 16 / 6
+
+AFNO channel blocks 8
+
+Local CNN width / residual blocks ( B) 64 / 2
+
+Query encoding 
+
+Positional Fourier bands ( Kq) 10 
+
+Geometric Fourier bands 4
+
+Curvature voxel grid ( G3) 16 3
+
+Decoder 
+
+MLP width / layers 128 / 4
+
+Training 
+
+Optimizer / learning rate / weight decay AdamW / 10 −3 / 10 −5
+
+Training points per sample ( |XQ|) 20 ,000 
+
+Batch size / accumulation / epochs 16 / 4 / 200 
+
+The coefficient of determination measures how much of the ground-truth variance is explained by the prediction: 
+
+R2 = 1 −
+
+> ∑Ni=1
+
+(yi − ˆyi)2
+
+> ∑Ni=1
+
+(yi − ¯y)2 , (29) where ¯y denotes the mean of the ground-truth values. The relative L2 error measures the normalized Euclidean difference between predictions and ground truth: 
+
+Relative L2 Error = ∥ˆy − y∥2
+
+∥y∥2
+
+. (30) For wall shear stress, the three vector components are included in the flattened array before each metric is computed, so the reported values measure joint accuracy across all compo-nents. 13 4. Results and discussion 
+
+4.1. Surface pressure prediction 
+
+We first consider the high-fidelity surface pressure task. Table 2 summarizes the quantita-tive comparison of GTF-Net with Transolver, GINO, and TripNet. For pressure prediction, GTF-Net gives the lowest relative L2 error and highest R2, reducing relative L2 from the strongest baseline value of 0.157 (GINO) to 0.145. Figure 2 presents a qualitative comparison of different models on a representative test sample, with pressure visualized as the nondimensional coefficient Cp. The largest pressure errors are concentrated near sharp geometric transitions, including the mirror, door handle, and wheel-arch region. Compared with the baselines, GTF-Net produces smaller and more localized errors in these high-gradient areas, consistent with the aggregate results in Table 2. For this visualization, the pressure field is expressed as the nondimensional pressure coefficient [12], 
+
+Cp = p − p∞ 
+
+> 12
+
+ρU 2
+
+> ∞
+
+, (31) where p∞, ρ, and U∞ denote the freestream pressure, air density, and freestream velocity, respectively. The error maps show the prediction error between the predicted and CFD-reference Cp fields.   
+
+> Table 2: Dimensionless quantitative comparison on the DrivAerNet++ test split for surface pressure and wall shear stress prediction. Lower is better for relative L2; higher is better for R2.
+
+Task Method Rel. L2 R2
+
+Pressure GINO 0.157 0.958 Transolver 0.173 0.952 TripNet 0.173 0.952 
+
+GTF-Net 0.145 0.964 
+
+WSS Transolver 0.237 0.927 GINO 0.244 0.934 TripNet 0.258 0.927 
+
+GTF-Net 0.226 0.943 
+
+To check whether this improvement is consistent across designs, Figure 3 compares the per-sample relative L2 errors of GTF-Net and the baselines on the full test set. The probability density function (PDF) in Figure 3a shows that GTF-Net has lower errors across 14 Figure 2: Visualization of the performance of different models in predicting the pressure coefficient Cp on a DrivAerNet++ test sample: (a) input mesh; (b) ground-truth Cp; (c) error of Transolver; (d) error of GINO; (e) error of TripNet; (f) error of GTF-Net. 
+
+most test samples, rather than only on a small number of outlier cases. Figure 3b reports the per-sample relative improvement of GTF-Net over each baseline, 
+
+Im = em − eGTF 
+
+em
+
+, (32) where em is the per-sample relative L2 error of baseline m and eGTF is the corresponding error of GTF-Net. Positive values therefore denote test samples for which GTF-Net is more accurate. 15 (a) PDF of per-sample relative L2 error. (b) Per-sample relative improvement over each baseline. 
+
+Figure 3: Per-sample surface-pressure prediction performance on the DrivAerNet++ test set. (a) Probability density of relative L2 error for GTF-Net, Transolver, GINO, and TripNet. (b) Relative improvement of GTF-Net over each baseline for individual test samples; colored dots denote individual test samples, black dots denote the median improvement for each baseline, and positive values denote cases where GTF-Net is more accurate. 
+
+Figure 4 shows pressure profiles along the roof and underside median lines of the same sample; GTF-Net remains closer to the CFD reference near sharp pressure changes and recovery regions. 16 Figure 4: Comparison of the predicted surface pressure along the median line on the roof (a) and underside (b) of a DrivAerNet++ test sample for different models. 
+
+4.2. Wall shear stress prediction 
+
+Wall shear stress provides a complementary test because it is a vector-valued field and is more sensitive to local surface orientation. Table 2 shows that GTF-Net gives the lowest WSS errors among the compared methods, reducing relative L2 from 0.237 for Transolver, 0.244 for GINO, and 0.258 for TripNet to 0.226. Taken together with the pressure results, this observation suggests that the triplane pipeline with geometry-aware decoding transfers effectively across both scalar and vector-valued surface-field tasks in the present evaluation setting. Figure 5 provides a qualitative comparison for WSS using the same layout and model set as the pressure visualization, with WSS magnitude visualized as the nondimensional coefficient Cf . Because WSS is a vector quantity with stronger local variation, the error magnitudes are generally larger than those for pressure. Prediction errors tend to appear 17 Figure 5: Visualization of the performance of different models in predicting the wall-friction coefficient Cf  
+
+> on a DrivAerNet++ test sample: (a) input mesh; (b) ground-truth Cf; (c) error of Transolver; (d) error of GINO; (e) error of TripNet; (f) error of GTF-Net.
+
+in regions with complex three-dimensional separation, including the underbody, wheel re-gion, and rear diffuser, where local surface orientation changes rapidly. Compared with the baselines, GTF-Net produces smaller and more localized WSS errors in these geometrically complex regions. For this visualization, the wall shear stress magnitude is expressed as the wall-friction coefficient [12], 
+
+Cf = |τ w| 
+
+> 12
+
+ρU 2
+
+> ∞
+
+. (33) where τ w is the wall shear stress vector, and ρ and U∞ are the air density and freestream velocity, respectively. The error maps show the prediction error between the predicted and CFD-reference Cf fields. Figure 6 further compares the per-sample relative L2 errors for WSS prediction. The 18 (a) PDF of per-sample relative L2 error. (b) Per-sample relative improvement over each baseline. 
+
+Figure 6: Per-sample wall shear stress prediction performance on the DrivAerNet++ test set. (a) Probability density of relative L2 error for GTF-Net, Transolver, GINO, and TripNet. (b) Relative improvement of GTF-Net over each baseline for individual test samples; colored dots denote individual test samples, black dots denote the median improvement for each baseline, and positive values denote cases where GTF-Net is more accurate. 
+
+probability density function (PDF) in Figure 6a shows the error distribution over the full test set, while Figure 6b reports the per-sample relative improvement of GTF-Net over each baseline using the same definition as in the pressure analysis. GTF-Net gives the most favorable distribution among the compared models, with positive median improvements over all baselines. Figure 7 shows WSS magnitude profiles along the roof and underside median lines of the same sample. GTF-Net follows the CFD reference more closely than the baselines along both profiles, especially near regions with rapid WSS variation. 19 Figure 7: Comparison of the predicted wall shear stress magnitude along the median line on the roof (a) and underside (b) of a DrivAerNet++ test sample for different models. 
+
+4.3. Ablation study 
+
+We next analyze model components on the prediction of pressure, where the complete ablation suite is run and where localized surface discontinuities make architectural differ-ences particularly visible. Table 3 shows that both streams of the backbone are important. Removing the AFNO branch increases the relative L2 error from 0.145 to 0.157, indicat-ing that local convolutional refinement benefits from global spectral mixing. Removing the CNN branch causes a larger degradation, with relative L2 error increasing to 0.198, showing that local refinement is crucial for resolving pressure variations near geometric transitions. The geometric query encoding also contributes. Removing the curvature proxy alone is more harmful than removing the entire geometric encoding branch. To examine this asym-metry, we also remove both normal projections and the curvature proxy while retaining only directional encoding. This variant recovers to the level of the full geometric-encoding abla-20 tion, suggesting that the large effect of the curvature proxy is tied to how normal-projection features are used. Finally, the reduced backbone/query configuration degrades performance markedly, indicating that the default capacity is appropriate for the DrivAerNet++ pressure task.                     
+
+> Table 3: Ablation study on the DrivAerNet++ pressure task. Each row removes or modifies one design component relative to the full model.
+> Variant Rel. L2R2
+> Full model 0.145 0.964
+> Without CNN branch 0.198 0.938 Without AFNO branch 0.157 0.959 Without geometric encoding 0.147 0.963 Without normal projection 0.148 0.963 Without curvature proxy 0.172 0.951 Without normal + curvature 0.148 0.963 Reduced backbone/query configuration 0.170 0.952
+
+4.4. Discussion 
+
+The ablation results highlight two levels of complementarity in the model design. At the backbone level, removing either branch degrades all metrics, with a larger drop when the CNN branch is removed. This observation suggests that local convolutional refinement is particularly important for resolving pressure variations near geometric transitions, while the AFNO stream still contributes global spectral mixing over the vehicle surface. At the decoder level, the three sub-components of the geometric query encoding— directional coordinates, normal projections, and curvature proxy—are not independently additive but interact in a structured way. One plausible interpretation is that the curvature proxy helps the decoder determine where normal orientation is aerodynamically informative; without this cue, the normal signal may introduce more noise than useful conditioning. For computational costs, the proposed model is trained for 200 epochs in approximately 5.0 hours on a single A100 GPU. Figure 8 compares the computational scaling of GTF-Net and baseline models as the input surface-sample size varies from a 20,000-point anchor to 20%, 40%, 60%, 80%, and 100% of the full mesh. The most pronounced widening gap is observed against Transolver: at the 20k-point setting, Transolver is about 1.4 times slower per training step and 1.6 times slower at inference, whereas near full resolution it is about 21 Figure 8: Computational scaling comparison between GTF-Net and baseline models on a single A100 GPU as the input surface-sample size varies from a 20,000-point anchor to 20%, 40%, 60%, 80%, and 100% of the full mesh. The figure reports memory and time for training and inference; throughput curves are omitted for readability. 
+
+6.9 times slower in training, uses 3.7 times more training memory, and is 5.9 times slower at inference. GINO shows a flatter time curve but uses comparable training memory at full resolution, while TripNet remains computationally light in this profiling but gives lower prediction accuracy in Table 2. These differences indicate that the efficiency advantage of GTF-Net is most evident against point-based or attention-heavy baselines whose cost grows directly with the number of surface samples, whereas triplane-style or operator baselines 22 exhibit different accuracy–efficiency trade-offs. Several limitations remain. First, the baseline set covers attention, operator-learning, and triplane models but is not exhaustive, partly because public DrivAerNet++ surface-field implementations remain limited. Second, the evaluation is restricted to the current DrivAerNet++ setting, and generalization to other vehicle datasets or flow conditions has not yet been tested. 
+
+5. Conclusions 
+
+We propose a geometry-aware triplane field network (GTF-Net) for high-fidelity aero-dynamic surface-field prediction that refines the standard pipeline at three points: a shared MLP with smooth bilinear rasterization replaces direct coordinate projection, a dual-stream backbone combining AFNO spectral mixing and convolutional layers processes the struc-tured triplane representation, and a geometry-aware query decoder reintroduces vehicle-aligned directional encoding, normal projections, and curvature cues at prediction time. On the DrivAerNet++ surface-field benchmark, the method improves aggregate metrics over Transolver, GINO, and TripNet on both pressure and wall shear stress prediction, reducing relative L2 error from the strongest baseline value of 0.157 to 0.145 for pressure and from 0.237 to 0.226 for WSS. The model trains in approximately 5.0 hours on a single A100 GPU. Targeted ablations show that the AFNO stream, CNN branch, and geometric query encoding all contribute to the performance. In particular, removing the CNN branch gives the largest backbone-level degradation, while removing the curvature proxy alone is more damaging than disabling the entire geometric encoding branch. Together, these results support the combination of structured triplane representations, dual-stream backbone processing, and geometry-aware query decoding for vehicle aerody-namic surface-field learning. Extending the approach to volumetric flow-field prediction, multi-condition generalization, and integration with shape-optimization or decision-oriented aerodynamic design frameworks remains a natural next step [21]. 
+
+Appendix A. DrivAerNet++ Dataset 
+
+DrivAerNet++ contains more than 8,000 high-fidelity automotive CFD cases covering three vehicle body types: Notchback, Estateback, and Fastback [12]. The official split contains 5,819 training samples, 1,148 validation samples, and 1,154 test samples. Each CFD case provides surface mesh geometry and corresponding surface-field quantities. In this 23 work, the prediction targets are surface pressure and wall shear stress. The full-resolution surface mesh contains approximately 5 × 10 5 points per vehicle, while each training sample is randomly subsampled to 20,000 surface points. 
+
+Appendix B. Baseline Models 
+
+The following baseline models are adapted for surface-field regression on the DrivAer-Net++ dataset and evaluated under the standardized protocol described in the main text. 
+
+Transolver. 
+
+The Transolver model ingests per-point geometric coordinates and lifts them to a 256-dimensional hidden representation with a multilayer perceptron [5]. A learnable global placeholder vector is added to the hidden representation before transformer processing. The network stacks five transformer blocks with eight attention heads. In each block, the physics-aware attention module softly assigns surface points to 32 learned slices, pools features within each slice to form slice tokens, applies self-attention among the slice tokens, and projects the attended information back to the surface points. A position-wise feed-forward network with an expansion ratio of 1.5, Layer Normalization, and residual connections is used in each block. In the final block, a Layer Normalization layer followed by a linear projection produces the target surface-field value at each point. 
+
+GINO. 
+
+The GINO baseline ingests normalized surface coordinates and surface normal vectors [31]. Each surface point is encoded using Fourier positional features of the coordinates concate-nated with the normal vector, and a pointwise multilayer perceptron maps the resulting feature to a 64-dimensional latent representation. The point features are splatted onto a 
+
+32 3 Cartesian latent grid by trilinear weighting. Grid coordinates and a normalized density channel are concatenated with the accumulated features, and a 1 × 1 × 1 convolution lifts the grid representation. The latent grid is processed by four three-dimensional operator blocks. Each block combines spectral convolution over the retained Fourier modes with a local 1 × 1 × 1 convolution, followed by Group Normalization, GELU activation, residual connections, and a pointwise convolutional multilayer perceptron. For prediction, latent features are sampled back at query surface points by trilinear interpolation, concatenated with query positional encoding and the surface normal vector, and decoded by a four-layer multilayer perceptron to produce the surface pressure or wall shear stress value. 
+
+TripNet. 
+
+24 TripNet encodes each vehicle into a triplane representation consisting of three orthogonal feature planes [34]. Each plane contains 32 latent channels at a resolution of 128 × 128 ,and the three planes are reshaped into a 96-channel two-dimensional feature map. This feature map is processed by a U-Net-style convolutional encoder–decoder with residual skip connections, Batch Normalization, GELU activations, and a base width of 64 channels. The refined feature map is reshaped back into three triplanes. For each query point, features are sampled from the three planes by bilinear interpolation and combined into a triplane feature vector. The sampled feature is concatenated with the query coordinates and passed through a four-layer multilayer perceptron with hidden dimension 256 to predict the aerodynamic field value. 
+
+Declaration of competing interest 
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper. 
+
+Data availability 
+
+The DrivAerNet++ dataset used in this study is publicly available through Harvard Dataverse under the Creative Commons Attribution-NonCommercial 4.0 International Li-cense (CC BY-NC 4.0). The official train, validation, and test splits provided by DrivAer-Net++ were used in this work. The processed data and evaluation artifacts generated in this study are available from the corresponding authors upon reasonable request. 
+
+Acknowledgments 
+
+This work was supported by the National Natural Science Foundation of China (NSFC) (Grant Nos. 12588301 and 12302283); the NSFC Excellence Research Group Program for “Multiscale Problems in Nonlinear Mechanics” (No. 12588201); the Shen-zhen Science and Technology Program (Grant Nos. SYSPG20241211173725008 and KQTD20180411143441009); and the Department of Science and Technology of Guangdong Province (Grant Nos. 2019B21203001, 2020B1212030001, and 2023B1212060001). Addi-tional support was provided by the Innovation Capability Support Program of Shaanxi (Program No. 2023-CX-TD-30), the National Key R&D Program of China (Grant No. 2024YFF1500600), and the Center for Computational Science and Engineering of Southern University of Science and Technology. The authors wish to extend their sincere gratitude 25 to Hui Li from Tenfong Technology Co. Ltd., Zhou Jiang and Shi Yang from Chongqing University, and Ning Chang from Ningxia University for the insightful discussions and invaluable assistance throughout this study. 
+
+References 
+
+[1] C. Rao, H. Sun, Y. Liu, Physics-informed deep learning for incompressible laminar flows, Theoretical & Applied Mechanics Letters 10 (3) (2020) 207–212. [2] H. Zhang, Y. Shen, W. Huang, Z. Xie, Y.-B. Niu, Deep transfer learning for three-dimensional aerody-namic pressure prediction under data scarcity, Theoretical & Applied Mechanics Letters 15 (2) (2025) 100571. [3] L. Lu, P. Jin, G. Pang, Z. Zhang, G. E. Karniadakis, Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators, Nature Machine Intelligence 3 (2021) 218–229. [4] Z. Li, N. B. Kovachki, K. Azizzadenesheli, B. Liu, K. Bhattacharya, A. Stuart, A. Anandkumar, Fourier Neural Operator for parametric partial differential equations, International Conference on Learning Representations (2021). [5] H. Wu, H. Luo, H. Wang, J. Wang, M. Long, Transolver: A fast transformer solver for PDEs on general geometries, in: Proceedings of the 41st International Conference on Machine Learning, Vol. 235 of Proceedings of Machine Learning Research, PMLR, 2024, pp. 53681–53705. [6] H. Yang, J. Gu, Y. Chen, Y. Bin, J. Wang, S. Chen, Spatially-aware transformer operator for real-time aerodynamic evaluations of arbitrary three-dimensional vehicles, Journal of Computational Physics 545 (2026) 114456. [7] H. Luo, H. Wu, H. Zhou, L. Xing, Y. Di, J. Wang, M. Long, Transolver++: An accurate neural solver for PDEs on million-scale geometries (2025). [8] C. Zeng, Y. Zhang, J. Zhou, Y. Wang, Z. Wang, Y. Liu, L. Wu, D. Z. Huang, Point Cloud Neural Operator for parametric PDEs on complex and variable geometries, Computer Methods in Applied Mechanics and Engineering 443 (2025) 118022. [9] Q. Wang, C. Wang, M. Zhang, J. Sun, P. Yang, S. Tang, S. Xiang, MNO: Multiscale neural operator for computational fluid dynamics with 3D point cloud data (2025). [10] P. Zeng, G. Wang, H. Gu, X. Hu, T. Gao, Z. Wang, A. Yang, X. Song, LRQ-solver: A transformer-based neural operator for fast and accurate solving of large-scale 3D PDEs (2025). [11] M. Elrefaie, A. Dai, F. Ahmed, DrivAerNet: A parametric car dataset for data-driven aerodynamic design and prediction, Journal of Mechanical Design 147 (4) (2025) 041712. [12] M. Elrefaie, F. Morar, A. Dai, F. Ahmed, DrivAerNet++: A large-scale multimodal car dataset with computational fluid dynamics simulations and deep learning benchmarks, Advances in Neural Information Processing Systems (2024). [13] M. Elrefaie, D. Shu, M. Klenk, F. Ahmed, CarBench: A comprehensive benchmark for neural surrogates on high-fidelity 3D car aerodynamics, arXiv preprint arXiv:2512.07847 (2025). [14] N. Umetani, B. Bickel, Learning three-dimensional flow for interactive aerodynamic design, ACM Transactions on Graphics 37 (4) (2018) 89:1–89:10. 
+
+26 [15] B. Alkin, M. Bleeker, R. Kurle, T. Kronlachner, R. Sonnleitner, M. Dorfer, J. Brandstetter, AB-UPT: Scaling neural CFD surrogates for high-fidelity automotive aerodynamics simulations via anchored-branched universal physics transformers, Transactions on Machine Learning Research (2025). [16] C. Choy, A. Kamenev, J. Kossaifi, M. Rietmann, J. Kautz, K. Azizzadenesheli, Factorized implicit global convolution for automotive computational fluid dynamics prediction (2025). [17] P. Liu, P. Wang, X. Ren, H. Yuan, Z. Hao, C. Xu, S. Cai, D. Ni, AeroGTO: An efficient graph-transformer operator for learning large-scale aerodynamics of 3D vehicle geometries, in: Proceedings of the AAAI Conference on Artificial Intelligence, Vol. 39, 2025, pp. 18924–18932. [18] Y. Liu, Y. Chen, DragSolver: A multi-scale transformer for real-world automotive drag coefficient estimation, in: Proceedings of the 42nd International Conference on Machine Learning, Vol. 267 of Proceedings of Machine Learning Research, PMLR, 2025, pp. 38102–38118. [19] J. Gu, Y. Chen, Y. Bin, S. Chen, GeoFormer: Mesh-free geometry-to-flow alignment framework for real-time aerodynamics on non-watertight vehicle geometries, Physics of Fluids 38 (1) (2026) 015153, available at SSRN 5601950. [20] Y. Liu, Y. Chen, Y. Bin, S. Chen, EMOS: Efficient multi-output aerodynamic surrogates for rapid vehicle design iteration, in: Proceedings of the IEEE International Conference on Multimedia and Expo, 2026, in press. [21] Y. Liu, S. Liu, H. Yang, J. Gu, W. Fan, Z. Yang, D. Wang, S. Chen, Z. Jiang, Y. Bin, S. Chen, Y. Chen, AeroAgent: A vision–physics–decision framework for aerodynamic vehicle design, in: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2026, in press. [22] S. J. Jacob, M. Mrosek, C. Othmer, H. Köstler, Deep learning for real-time aerodynamic evaluations of arbitrary vehicle shapes (2021). [23] F. Chen, K. Akasaka, 3D flow field estimation around a vehicle using convolutional neural networks, in: Proceedings of the British Machine Vision Conference, 2021. [24] R. Garcia-Fernandez, K. Portal-Porras, O. Irigaray, Z. Ansa, U. Fernandez-Gamiz, CNN-based flow field prediction for bus aerodynamics analysis, Scientific Reports 13 (2023) 21213. [25] C. R. Qi, H. Su, K. Mo, L. J. Guibas, PointNet: Deep learning on point sets for 3D classification and segmentation, in: Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, 2017, pp. 652–660. [26] C. R. Qi, L. Yi, H. Su, L. J. Guibas, PointNet++: Deep hierarchical feature learning on point sets in a metric space, in: Advances in Neural Information Processing Systems, 2017, pp. 5099–5108. [27] G. Qian, Y. Li, H. Peng, J. Mai, H. Hammoud, M. Elhoseiny, B. Ghanem, PointNeXt: Revisiting PointNet++ with improved training and scaling strategies, Advances in Neural Information Processing Systems (2022). [28] H. Zhao, L. Jiang, J. Jia, P. H. S. Torr, V. Koltun, Point Transformer, in: Proceedings of the IEEE/CVF International Conference on Computer Vision, 2021, pp. 16259–16268. [29] T. Pfaff, M. Fortunato, A. Sanchez-Gonzalez, P. W. Battaglia, Learning mesh-based simulation with graph networks, International Conference on Learning Representations (2021). [30] Z. Li, D. Z. Huang, B. Liu, A. Anandkumar, Fourier Neural Operator with learned deformations for PDEs on general geometries, Journal of Machine Learning Research 24 (388) (2023) 1–26. 
+
+27 [31] Z. Li, N. B. Kovachki, C. Choy, B. Li, J. Kossaifi, S. P. Otta, M. A. Nabian, M. Stadler, C. Hundt, K. Azizzadenesheli, A. Anandkumar, Geometry-Informed Neural Operator for large-scale 3D PDEs, arXiv preprint arXiv:2309.00583 (2023). [32] G. Catalani, S. Agarwal, X. Bertrand, F. Tost, M. Bauerheim, J. Morlier, Aero-NeF: Neural fields for rapid aircraft aerodynamics simulations, arXiv preprint arXiv:2407.19916 (2024). [33] E. R. Chan, C. Z. Lin, M. A. Chan, K. Nagano, B. Pan, S. D. Mello, O. Gallo, L. Guibas, J. Tremblay, S. Khamis, T. Karras, G. Wetzstein, Efficient geometry-aware 3D generative adversarial networks, in: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2022, pp. 16123–16133. [34] Q. Chen, M. Elrefaie, A. Dai, F. Ahmed, TripNet: Learning large-scale high-fidelity 3D car aerody-namics with triplane networks, arXiv preprint arXiv:2503.17400 (2025). [35] J. Guibas, M. Mardani, Z. Li, A. Tao, A. Anandkumar, B. Catanzaro, Adaptive Fourier Neural Oper-ators: Efficient token mixers for transformers, CoRR abs/2111.13587 (2021). [36] S. B. Pope, Turbulent Flows, Cambridge University Press, 2000. [37] F. R. Menter, Two-equation eddy-viscosity turbulence models for engineering applications, AIAA Jour-nal 32 (8) (1994) 1598–1605. [38] J. H. Ferziger, M. Perić, Computational Methods for Fluid Dynamics, 3rd Edition, Springer, 2002. [39] F. Pedregosa, G. Varoquaux, A. Gramfort, V. Michel, B. Thirion, O. Grisel, M. Blondel, P. Pret-tenhofer, R. Weiss, V. Dubourg, J. Vanderplas, A. Passos, D. Cournapeau, M. Brucher, M. Perrot, É. Duchesnay, Scikit-learn: Machine learning in Python, Journal of Machine Learning Research 12 (2011) 2825–2830. 
+
+28

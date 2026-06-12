@@ -1,0 +1,3730 @@
+Title: High-order thermodynamic nonequilibrium in three-dimensional compressible flows: Kinetic moment closure and multigradient coupling
+
+URL Source: https://arxiv.org/pdf/2606.05938v1
+
+Published Time: Fri, 05 Jun 2026 00:57:12 GMT
+
+Number of Pages: 42
+
+Markdown Content:
+This draft was prepared using the LaTeX style file belonging to the Journal of Fluid Mechanics 1
+
+# High-order thermodynamic nonequilibrium in three-dimensional compressible flows: Kinetic moment closure and multigradient coupling 
+
+Huilin Lai 1, Qinghong Guo 1, Yanbiao Gan 2†, Bin Yang 3, Hailong Liu 4, Pengfei Lin 5,6 
+
+> 1
+
+School of Mathematics and Statistics & Key Laboratory of Analytical Mathematics and Applications (Ministry of Education) & Fujian Key Laboratory of Analytical Mathematics and Applications (FJKLAMA) & Center for Applied Mathematics of Fujian Province (FJNU), Fujian Normal University, Fuzhou 350117, P. R. China 
+
+> 2
+
+Hebei Key Laboratory of Trans-Media Aerial Underwater Vehicle, North China Institute of Aerospace Engineering, Langfang 065000, P. R. China 
+
+> 3
+
+School of Energy and Safety Engineering, Tianjin Chengjian University, Tianjin 300384, China 
+
+> 4
+
+Laoshan Laboratory, Qingdao 266237, China 
+
+> 5
+
+State Key Laboratory of Earth System Numerical Modeling and Application, Institute of Atmospheric Physics, Chinese Academy of Sciences, Beijing 100029, China 
+
+> 6
+
+College of Earth and Planetary Sciences, University of Chinese Academy of Sciences, Beijing 100049, China (Received xx; revised xx; accepted xx) 
+
+High-order thermodynamic nonequilibrium (TNE) in three-dimensional compressible flows reflects the breakdown of low-order kinetic moment closure in strong-gradient regions. Using Chapman–Enskog analysis, we identify the kinetic moment constraints required to describe third-order TNE. The analysis yields the third-order constitutive relations and evolution equations for the viscous stress ∆∗ 
+
+> 2
+
+and heat flux ∆∗
+
+> 3,1
+
+, together with second-order expressions for their associated higher-order fluxes, ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+.These constraints enable the construction of a three-dimensional super-Burnett-level dis-crete Boltzmann model with 91 discrete velocities. The resulting D3V91 model reproduces shock-tube wave structures and resolves high-order TNE contributions that lower-order DBMs do not capture reliably. These results demonstrate that high-order TNE has a multigradient, rather than single-gradient, origin. For the four TNE quantities considered here, odd-order central moments, including the heat flux ∆∗ 
+
+> 3,1
+
+and the viscous-stress flux ∆∗
+
+> 3
+
+, are primarily governed by temperature gradients, whereas even-order central moments, including the viscous stress ∆∗ 
+
+> 2
+
+and the heat-flux-related flux ∆∗
+
+> 4,2
+
+, are domi-nated by velocity gradients. These leading-gradient dependences are not exclusive; they are substantially modified by density gradients, secondary gradients and transition-layer 
+
+† Email address for correspondence: Gan@nciae.edu.cn 
+
+> arXiv:2606.05938v1 [physics.flu-dyn] 4 Jun 2026
+
+2 Lai, Guo, Gan, Yang, Liu and Lin 
+
+widths through higher-order derivative terms, gradient products and cross-couplings. When the secondary contributions become comparable to the leading-gradient terms, the nonequilibrium response transitions from a near-linear regime to an approximately exponential regime. This work establishes a super-Burnett-level DBM framework that treats kinetic moment closure and multigradient coupling consistently, providing a basis for resolving and interpreting high-order TNE in three-dimensional compressible flows. 
+
+1. Introduction 
+
+High-speed compressible flows commonly contain strong-gradient structures, including shock waves, rarefaction waves, contact discontinuities and shear layers. Across these structures, density, temperature and velocity may vary over length scales comparable to the kinetic relaxation scale, so local kinetic effects become appreciable. The molec-ular velocity distribution can then depart markedly from local equilibrium, producing thermodynamic nonequilibrium (TNE) effects that cannot be inferred from conserved macroscopic variables alone (Cercignani 2000; Xu & Zhang 2022). Such effects are central to hypersonic, reacting, detonating and shock-driven flows, as well as to spacecraft re-entry aerothermodynamics and high-energy-density physics (R. Courant and K.O. Friedrichs 1999; Wang et al. 2024; Nagnibeda & Kustova 2009; Hosseini et al. 2024; Zhou 2017; Liang & Luo 2023; Ivanov & Gimelshein 1998; Chen et al. 2026). Resolving these effects is essential because nonequilibrium transport controls shock thickness, tempera-ture overshoot, heat flux, viscous dissipation and entropy production, and mediates the feedback between kinetic relaxation and macroscopic flow evolution. The kinetic information relevant to TNE is not contained in the conserved fields alone. Density, velocity and temperature specify the macroscopic state but do not determine the nonequilibrium part of the distribution function. Non-conserved kinetic moments, including viscous stress, heat flux and their higher-order fluxes, quantify local transport, dissipation and relaxation. They therefore link mesoscale structures directly to nonequi-librium transport mechanisms. As nonequilibrium strengthens, conserved variables and low-order fluxes no longer provide a sufficient description of the system state. Higher-order non-conserved moments then become sensitive probes of small-scale structures, fast kinetic modes and strongly coupled components of the distribution function. Resolving high-order TNE is therefore essential both for kinetic modelling and for identifying the driving mechanisms and coupling pathways of nonequilibrium transport (Gan et al. 2022; Xu et al. 2024). The Navier–Stokes–Fourier (NSF) equations describe gas flows effectively near local equilibrium. Their validity relies on scale separation: the molecular mean free path must be much smaller than the macroscopic length scale, and the kinetic relaxation time must be much shorter than the characteristic flow time. When this separation weakens, non-local kinetic effects become important and the NSF description loses validity (Bird 1994; Kinetic moment closure and multigradient coupling in high-order TNE 3Struchtrup 2005). At the NSF level, viscous stress and heat flux are linearly related to local velocity and temperature gradients. These first-order constitutive relations are adequate only for weak nonequilibrium with smoothly varying gradients. In strong-gradient regions, stress and heat flux may also depend on density variation, velocity compression, temperature curvature, relaxation inhomogeneity and products of different gradients. These contributions involve higher-order kinetic moments and therefore cannot be represented by a first-order closure (Chapman & Cowling 1990). A low-order model may therefore reproduce the main wave pattern while still failing to describe local nonequilibrium transport inside shock layers, near contact discontinuities and around extrema of macroscopic gradients (Mott-Smith 1951; Gan et al. 2018 b). Burnett-level descriptions extend the NSF approximation by retaining second-order terms in the Chapman–Enskog expansion (Garc´ ıa-Col´ ın et al. 2008). This extension accounts for part of the non-local transport, but remains insufficient when third-order TNE contributions become non-negligible. In the Chapman–Enskog framework, the Euler, NSF, Burnett and super-Burnett levels correspond to zeroth-, first-, second- and third-order approximations in the Knudsen number, respectively. Here, super-Burnett level is used in this kinetic sense: it refers to the moment constraints required for third-order TNE, not to the direct solution of the classical super-Burnett transport equations. A super-Burnett-level description must therefore connect viscous stress and heat flux to their associated higher-order fluxes and represent their evolution consistently. This requirement leads directly to the kinetic moment closure problem. This closure problem is central to high-order discrete kinetic modelling. A discrete kinetic model does not resolve a nonequilibrium quantity simply by recovering the conserved moments or reproducing macroscopic profiles. To describe a target TNE quantity, the discrete velocity set and the corresponding equilibrium distribution must satisfy the kinetic moment relations associated with that quantity and with the prescribed approximation order. Otherwise, the model may predict density, velocity and tempera-ture accurately while giving incorrect non-conserved moments, such as high-order heat fluxes, viscous-stress fluxes and their extrema. Thus, constructing a high-order discrete Boltzmann model is not merely a matter of increasing the number of discrete velocities; it requires identifying the moment constraints associated with the target nonequilibrium quantities and designing a discrete velocity set that satisfies them. Strong nonequilibrium also raises a mechanistic question: how do multiple macro-scopic gradients jointly drive high-order TNE quantities? These quantities are generally not governed by a single gradient. Different gradients may dominate different kinetic moments: temperature gradients primarily drive energy-transport moments, whereas velocity gradients dominate momentum-transport moments. Density gradients, secondary gradients and transition-layer widths further modify these leading dependences through gradient products, curvature terms and cross-couplings. Such coupling is particularly important in shock and interface problems, where density, velocity and temperature 4 Lai, Guo, Gan, Yang, Liu and Lin 
+
+vary simultaneously over comparable spatial scales. High-order TNE should therefore be viewed as a multigradient-coupled kinetic response, rather than as a one-to-one correspondence between a nonequilibrium quantity and a macroscopic gradient. Kinetic approaches provide a natural framework for analysing these effects. Direct Boltzmann solvers, simplified collision models and multiscale unified frameworks have been widely used to study nonequilibrium gas flows (Yin et al. 2026; Wu et al. 2017; Hosseini & Karlin 2023; Guo et al. 2026; Lu et al. 2026; Fei et al. 2023). Among these approaches, the discrete Boltzmann method (DBM) is particularly useful for TNE analysis because it provides non-conserved kinetic moments as well as macroscopic fields (Gan et al. 2022; Xu et al. 2024; Zhang et al. 2026; Lin et al. 2016; Lin & Luo 2019). These moments allow viscous stress, heat flux, higher-order fluxes and other TNE measures to be extracted and compared with analytical constitutive relations. DBM therefore serves both as a flow solver and as a kinetic diagnostic framework for nonequilibrium transport. Existing three-dimensional DBM formulations, however, remain mainly at the NSF (Gan et al. 2018 a; Ji et al. 2021, 2022) or Burnett level (Guo et al. 2025). Although these models can represent some lower-order nonequilibrium effects, they do not provide the kinetic moment closure required for third-order TNE. In particular, a Burnett-level model may describe part of the second-order nonequilibrium response, but it cannot reliably resolve the third-order constitutive structure of viscous stress and heat flux or the second-order behaviour of their associated higher-order fluxes. This restriction limits the analysis of how different gradients drive, amplify or suppress high-order TNE quantities, and motivates the development of a three-dimensional super-Burnett-level kinetic closure within the DBM framework. Here we construct such a closure and use it to analyse high-order TNE in three-dimensional compressible flows. Starting from the Chapman–Enskog expansion, we iden-tify the kinetic moment constraints required for third-order TNE. We derive third-order constitutive relations and evolution equations for viscous stress and heat flux, together with second-order expressions for their associated higher-order fluxes. We then construct a 91-velocity discrete velocity set, denoted D3V91, that satisfies these constraints. We first test the model for macroscopic consistency using shock-tube problems and then use it to analyse second- and third-order non-conserved kinetic moments driven by temperature, velocity and density gradients and by the transition-layer width. Unlike lower-order models such as D3V55 (Guo et al. 2025), the proposed D3V91 model is designed to enforce the super-Burnett-level moment constraints, rather than merely to increase the number of discrete velocities. This provides a three-dimensional kinetic closure that links super-Burnett-level moment constraints to the multigradient coupling of high-order TNE. The remainder of this paper is organised as follows. Section 2 derives the kinetic mo-ment relations required for third-order TNE and presents the analytical expressions and evolution equations for the relevant nonequilibrium quantities. Section 3 constructs the D3V91 discrete velocity set and the corresponding three-dimensional super-Burnett-level Kinetic moment closure and multigradient coupling in high-order TNE 5DBM, and validates the model using one-dimensional benchmark problems. Section 4 analyses the second- and third-order nonequilibrium quantities, including ∆∗
+
+> 3
+
+, ∆∗
+
+> 4,2
+
+, ∆∗
+
+> 2
+
+and ∆∗
+
+> 3,1
+
+, with emphasis on multigradient coupling mechanisms. Section 5 concludes the paper and outlines future directions. 
+
+2. A three-dimensional super-Burnett-level discrete Boltzmann model 
+
+This section develops a three-dimensional discrete Boltzmann model for resolving third-order TNE. The construction has two objectives. The first is to identify, through the CE expansion, the kinetic moment constraints required to describe the third-order constitutive relations and evolution equations for the viscous stress ∆∗ 
+
+> 2
+
+and heat flux 
+
+∆∗
+
+> 3,1
+
+, together with the second-order expressions for their associated higher-order fluxes, namely the viscous-stress flux ∆∗ 
+
+> 3
+
+and the heat-flux-related flux ∆∗
+
+> 4,2
+
+. The second is to derive these TNE quantities. In this sense, the term super-Burnett-level denotes the kinetic moment closure required for third-order TNE, rather than a direct numerical solution of the classical super-Burnett transport equations. 2.1. Kinetic moment constraints for third-order TNE 
+
+The discrete Boltzmann equation is written as 
+
+∂f i
+
+∂t + vi · ∂f i
+
+∂r = − 1
+
+τ [fi − f (0)  
+
+> i
+
+], (2.1) where i = 1 , . . . , N indexes the discrete velocities, fi is the discrete distribution function, 
+
+f (0)  
+
+> i
+
+is the discrete equilibrium distribution, vi is the discrete velocity, and τ is the relaxation time. Velocity discretisation is introduced not to preserve the continuous distribution func-tion pointwise, but to retain the kinetic moments required by the target hydrodynamic and TNE descriptions. These moments carry the physical information needed to describe macroscopic fields and nonequilibrium responses. The discrete velocity set and the corresponding equilibrium distribution must therefore reproduce the required continuous moment relations, 
+
+Φ′ =
+
+∫
+
+f Ψ ′(v, η )dv = ∑
+
+> i
+
+fiΨ ′(vi, η i), (2.2) where Ψ ′ denotes the set of moment basis functions. The order of this basis determines the highest-order nonequilibrium information that the model can represent. To determine these constraints, we apply the CE expansion to Eq. (2.1). The distribu-tion function, time derivative and spatial derivative are expanded as 
+
+fi = f (0)  
+
+> i
+
++ f (1)  
+
+> i
+
++ f (2)  
+
+> i
+
++ f (3)  
+
+> i
+
++ f (4)  
+
+> i
+
++ · · · , (2.3) 
+
+∂t = ∂t1 + ∂t2 + ∂t3 + ∂t4 + · · · , (2.4) 
+
+∇ = ∇1. (2.5) 6 Lai, Guo, Gan, Yang, Liu and Lin 
+
+Here f (j) 
+
+> i
+
+denotes the jth-order departure from equilibrium, and ∂tj denotes differentia-tion on the corresponding time scale. Substituting Eqs. (2.3)–(2.5) into Eq. (2.1) gives 
+
+(∂t1 + ∂t2 + ∂t3 + ∂t4 + · · · )( f (0)  
+
+> i
+
++ f (1)  
+
+> i
+
++ f (2)  
+
+> i
+
++ f (3)  
+
+> i
+
++ f (4)  
+
+> i
+
++ · · · )
+
++ vi · ∇1
+
+(f (0)  
+
+> i
+
++ f (1)  
+
+> i
+
++ f (2)  
+
+> i
+
++ f (3)  
+
+> i
+
++ f (4)  
+
+> i
+
++ · · · )
+
+= − 1
+
+τ
+
+(f (1)  
+
+> i
+
++ f (2)  
+
+> i
+
++ f (3)  
+
+> i
+
++ f (4)  
+
+> i
+
++ · · · ).
+
+(2.6) Collecting terms at the same asymptotic order yields 
+
+f (1)  
+
+> i
+
+= −τ
+
+[
+
+∂t1 f (0)  
+
+> i
+
++ ∇1 · (f (0)  
+
+> i
+
+vi)
+
+]
+
+, (2.7) 
+
+f (2)  
+
+> i
+
+= −τ
+
+[
+
+∂t2 f (0)  
+
+> i
+
++ ∂t1 f (1)  
+
+> i
+
++ ∇1 · (f (1)  
+
+> i
+
+vi)
+
+]
+
+= −τ ∂ t2 f (0)  
+
+> i
+
++ τ 2∂2 
+
+> t1
+
+f (0)  
+
+> i
+
++ τ 2∂t1
+
+[
+
+∇1 · (f (0)  
+
+> i
+
+vi)
+
+]
+
++τ 2∇1 ·
+
+[
+
+∂t1 f (0)  
+
+> i
+
+vi + ∇1 · (f (0)  
+
+> i
+
+vivi)
+
+]
+
+,
+
+(2.8) and 
+
+f (3)  
+
+> i
+
+= −τ
+
+[
+
+∂t3 f (0)  
+
+> i
+
++ ∂t2 f (1)  
+
+> i
+
++ ∂t1 f (2)  
+
+> i
+
++ ∇1 ·
+
+(
+
+f (2)  
+
+> i
+
+vi
+
+)] 
+
+= −τ ∂ t3 f (0)  
+
+> i
+
++ τ 2∂t2
+
+[
+
+∂t1 f (0)  
+
+> i
+
++ ∇1 ·
+
+(
+
+f (0)  
+
+> i
+
+vi
+
+)] 
+
++ τ 2∂t1
+
+(
+
+∂t2 f (0) 
+
+> i
+
+)
+
+− τ 3∂3 
+
+> t1
+
+f (0) 
+
+> i
+
+− τ 3∂2
+
+> t1
+
+[
+
+∇1 ·
+
+(
+
+f (0)  
+
+> i
+
+vi
+
+)] 
+
+− τ 3∂t1
+
+{
+
+∇1 ·
+
+[
+
+∂t1 f (0)  
+
+> i
+
+vi + ∇1 ·
+
+(
+
+f (0)  
+
+> i
+
+vivi
+
+)]} 
+
++ τ 2∇1 ·
+
+[
+
+∂t2
+
+(
+
+f (0)  
+
+> i
+
+vi
+
+)] 
+
+− τ 3∇1 ·
+
+[
+
+∂2
+
+> t1
+
+(
+
+f (0)  
+
+> i
+
+vi
+
+)] 
+
+− τ 3∇1 · ∂t1
+
+[
+
+∇1 ·
+
+(
+
+f (0)  
+
+> i
+
+vivi
+
+)] 
+
+− τ 3∇21 ·
+
+[
+
+∂t1 f (0)  
+
+> i
+
+vivi + ∇1 ·
+
+(
+
+f (0)  
+
+> i
+
+vivivi
+
+)] 
+
+.
+
+(2.9) Equations (2.7)–(2.9) show that f (3)  
+
+> i
+
+can be expressed in terms of f (0)  
+
+> i
+
+and its deriva-tives, but involves higher-order velocity polynomials than those required at the NSF or Burnett level. A DBM designed to resolve third-order TNE must therefore impose suffi-ciently high-order equilibrium moment constraints. Accordingly, we choose the moment basis as Ψ (v, η ) = [1 , v, 1 
+
+> 2
+
+(v2 + η2), vv , 1 
+
+> 2
+
+(v2 + η2)v, vvv , 1 
+
+> 2
+
+(v2 + η2)vv , vvvv , 1 
+
+> 2
+
+(v2 +
+
+η2)vvv , vvvvv , 1 
+
+> 2
+
+(v2 + η2)vvvv ]. This basis provides the equilibrium moment relations needed for third-order TNE closure. The corresponding equilibrium moments are 
+
+M0 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+= ρ, (2.10) 
+
+M1 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+vi = ρu, (2.11) 
+
+M2,0 = ∑
+
+> i
+
+1
+
+2 f (0)  
+
+> i
+
+(v2 
+
+> i
+
++ η2 
+
+> i
+
+) = 1
+
+2 ρ [(n + 3) RT + u2] , (2.12) 
+
+M2 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+vivi = ρ (RT I + uu ) , (2.13) Kinetic moment closure and multigradient coupling in high-order TNE 7
+
+M3,1 = ∑
+
+> i
+
+1
+
+2 f (0)  
+
+> i
+
+(v2 
+
+> i
+
++ η2 
+
+> i
+
+)vi = 1
+
+2 ρu [(n + 5) RT + u2] , (2.14) 
+
+M3 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+vivivi = ρ [RT (uαδβγ + uβ δαγ + uγ δαβ ) eαeβ eγ + uuu ] , (2.15) 
+
+M4,2 = ∑
+
+> i
+
+1
+
+2 f (0) 
+
+> i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vivi
+
+= 1
+
+2 ρ [(n + 5) R2T 2 + RT u 2] I + 1
+
+2 ρ [(n + 7) RT + u2] uu ,
+
+(2.16) 
+
+M4 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+vivivivi = ρ (R2T 2 (δαβ δγλ + δαγ δβλ + δαλ δβγ ) eαeβ eγ eλ + RT (uαuβ δγλ 
+
++uαuγ δβλ + uαuλδβγ + uβ uγ δαλ + uβ uλδαγ + uγ uλδαβ ) eαeβ eγ eλ + uuuu ) ,
+
+(2.17) 
+
+M5,3 = ∑
+
+> i
+
+1
+
+2 f (0) 
+
+> i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vivivi = ρ
+
+[( n + 9 
+
+2 RT + u2
+
+2
+
+)
+
+uuu 
+
++
+
+( n + 7 
+
+2 RT + u2
+
+2
+
+)
+
+RT (uαδβγ + uβ δαγ + uγ δαβ ) eαeβ eγ
+
+]
+
+,
+
+(2.18) 
+
+M5 = ∑
+
+> i
+
+f (0)  
+
+> i
+
+vivivivivi = ρ [R2T 2 (uαδβγ δλε + uαδβλ δγε + uαδβε δγλ + uβ δαγ δλε 
+
++ uβ δαλ δγε + uβ δαε δγλ + uγ δαβ δλε + uγ δαλ δβε + uγ δαε δβλ + uλδαβ δγε + uλδαγ δβε 
+
++uλδαε δβγ + uεδαβ δγλ + uεδαγ δβλ + uεδαλ δβγ ) eαeβ eγ eλeε + RT (uγ uλuεδαβ 
+
++uβ uλuεδαγ + uβ uγ uεδαλ + uβ uλuγ δαε + uαuλuεδβγ + uαuγ uεδβλ + uαuλuγ δβε 
+
++uαuβ uεδγλ + uαuβ uλδγε + uαuβ uγ δλε ) eαeβ eγ eλeε + uuuuu ] ,
+
+(2.19) 
+
+M6,4 = ∑
+
+> i
+
+1
+
+2 f (0) 
+
+> i
+
+(v2 
+
+> i
+
++ η2
+
+> i
+
+) vivivivi
+
+= ρ
+
+[( n + 11 
+
+2 RT + u2
+
+2
+
+)
+
+uuuu +
+
+( n + 9 
+
+2 RT + u2
+
+2
+
+)
+
+RT (uαuβ δγλ 
+
++uαuγ δβλ + uαuλδβγ + uβ uγ δαλ + uβ uλδαγ + uγ uλδαβ ) eαeβ eγ eλ
+
++
+
+( n + 7 
+
+2 RT + u2
+
+2
+
+)
+
+R2T 2 (δαβ δγλ + δαγ δβλ + δαλ δβγ ) eαeβ eγ eλ
+
+]
+
+.
+
+(2.20) Together, Eqs. (2.10)–(2.20) provide 91 independent equilibrium moment constraints. These constraints define the moment space of the D3V91 model. These constraints can be written in matrix form as 
+
+Φ = Cf (0) , (2.21) where 
+
+Φ = ( M0, M1, M2,0, M2, M3,1, M3, M4,2, M4, M5,3, M5, M6,4)T
+
+is the vector of independent equilibrium moments. The matrix C maps the discrete equilibrium distribution to this moment vector. For the D3V91 model, C is a 91 × 91 8 Lai, Guo, Gan, Yang, Liu and Lin 
+
+square matrix. Provided that C is invertible, the equilibrium distribution is obtained from 
+
+f (0) = C−1Φ. (2.22) Thus, the D3V91 velocity set is defined by the super-Burnett-level moment constraints required for third-order TNE. Its role is not merely to increase the number of discrete velocities, but to ensure that the target non-conserved kinetic moments are represented consistently. 2.2. Derivation of high-order TNE effects 
+
+Taking the zeroth-, first- and second-order moments of Eq. (2.1) gives the generalized hydrodynamic equations 
+
+∂tρ + ∇ · (ρu) = 0 , (2.23) 
+
+∂t(ρu) + ∇ · (ρuu + P I + ∆∗
+
+> 2
+
+) = 0 , (2.24) 
+
+∂t(ρe ) + ∇ · [( ρe + P )u + ∆∗ 
+
+> 2
+
+· u + ∆∗
+
+> 3,1
+
+] = 0 , (2.25) where P = ρRT , e = cvT + u2/2, and cv = ( n + 3) R/ 2. Here ∆∗ 
+
+> 2
+
+denotes the non-organized momentum flux, or viscous stress, and ∆∗ 
+
+> 3,1
+
+denotes the non-organized energy flux, or heat flux. We next define the generalized nonequilibrium moments used to quantify TNE. The non-central moment is 
+
+∆m,n = Mm,n (fi − f (0)  
+
+> i
+
+) = ∑
+
+> i
+
+( 1
+
+2
+
+)1−δmn 
+
+(fi − f (0)  
+
+> i
+
+) vivi · · · vi
+
+︸ ︷︷ ︸
+
+> n
+
+(v2 
+
+> i
+
++ η2 
+
+> i
+
+)(m−n)/2,
+
+(2.26) and the corresponding central moment is 
+
+∆∗ 
+
+> m,n
+
+= M∗
+
+> m,n
+
+(fi − f (0)  
+
+> i
+
+) = ∑
+
+> i
+
+( 1
+
+2
+
+)1−δmn 
+
+(fi − f (0)  
+
+> i
+
+) v∗ 
+
+> i
+
+v∗ 
+
+> i
+
+· · · v∗
+
+> i
+
+︸ ︷︷ ︸
+
+> n
+
+(v∗2 
+
+> i
+
++ η2 
+
+> i
+
+)(m−n)/2.
+
+(2.27) The contribution associated with the jth-order departure f (j) 
+
+> i
+
+is defined as 
+
+∆∗(j) 
+
+> m,n
+
+= M∗
+
+> m,n
+
+(f (j) 
+
+> i
+
+) = ∑
+
+> i
+
+( 1
+
+2
+
+)1−δmn 
+
+f (j) 
+
+> i
+
+v∗ 
+
+> i
+
+v∗ 
+
+> i
+
+· · · v∗
+
+> i
+
+︸ ︷︷ ︸
+
+> n
+
+(v∗2 
+
+> i
+
++ η2 
+
+> i
+
+)(m−n)/2, (2.28) where δmn is the Kronecker delta and v∗ 
+
+> i
+
+= vi − u. When m = n, ∆∗ 
+
+> m,n
+
+is abbreviated as ∆∗
+
+> m
+
+. Replacing v∗ 
+
+> i
+
+with vi gives the corresponding non-central moment. The evolution equations for the non-conserved central moments are obtained by taking higher-order moments of the discrete Boltzmann equation. For a central moment of order 
+
+m, the evolution equation is 
+
+∂t∆∗ 
+
+> m
+
++ ∂tM∗
+
+> m
+
+(f (0)  
+
+> i
+
+) + ∇ · [M∗
+
+> m+1
+
+(f (0)  
+
+> i
+
+) + M∗
+
+> m
+
+(f (0)  
+
+> i
+
+)u
+
++ ∆∗ 
+
+> m+1
+
++ ∆∗
+
+> m
+
+u] = − 1
+
+τ ∆∗
+
+> m
+
+.
+
+(2.29) Kinetic moment closure and multigradient coupling in high-order TNE 9The corresponding contracted central moment satisfies 
+
+∂t∆∗ 
+
+> m,n
+
++ ∂tM∗
+
+> m,n
+
+(f (0)  
+
+> i
+
+) + ∇ · [M∗
+
+> m+1 ,n +1
+
+(f (0)  
+
+> i
+
+) + M∗
+
+> m,n
+
+(f (0)  
+
+> i
+
+)u
+
++ ∆∗ 
+
+> m+1 ,n +1
+
++ ∆∗
+
+> m,n
+
+u] = − 1
+
+τ ∆∗
+
+> m,n
+
+.
+
+(2.30) Equations (2.29) and (2.30) show that each non-conserved TNE quantity evolves through its associated higher-order flux. Thus, viscous stress and heat flux cannot be closed independently once high-order TNE effects are retained. Their evolution requires the corresponding higher-order fluxes, ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+, which provides the kinetic origin of the moment-closure requirement. We focus on four TNE quantities. The viscous stress ∆∗ 
+
+> 2
+
+and heat flux ∆∗ 
+
+> 3,1
+
+are the generalized constitutive quantities of the flow, whereas ∆∗ 
+
+> 3
+
+and ∆∗ 
+
+> 4,2
+
+are their associated higher-order fluxes. Specifically, the viscous-stress flux ∆∗ 
+
+> 3
+
+provides the higher-order closure associated with the transport of ∆∗
+
+> 2
+
+, whereas the flux associated with the heat flux, ∆∗
+
+> 4,2
+
+, provides the corresponding closure for ∆∗
+
+> 3,1
+
+. Equations (2.29) and (2.30) show that these higher-order fluxes enter the evolution equations for ∆∗ 
+
+> 2
+
+and ∆∗ 
+
+> 3,1
+
+and therefore control their transport and relaxation dynamics. The CE expansion is therefore used to derive the third-order contributions to ∆∗ 
+
+> 2
+
+and 
+
+∆∗
+
+> 3,1
+
+, together with the second-order contributions to ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+. Taking moments of Eq. (2.7) with the collision invariants (1 , vi, (v2 
+
+> i
+
++ η2 
+
+> i
+
+)/2) gives the first-order relations between ∂t1 and ∇1:
+
+∂t1 ρ = −∇1 · (ρu), (2.31) 
+
+∂t1 u = −R∇1T − RT 
+
+ρ ∇1ρ − u · ∇1u, (2.32) 
+
+∂t1 T = −u · ∇1T − 2T
+
+n + 3 ∇1 · u. (2.33) Substitution of these relations gives the first-order terms ∆∗(1) 3 and ∆∗(1) 4,2 , whose explicit forms are listed in Table 5. Applying the same procedure to Eq. (2.8) gives the second-order time-scale relations, 
+
+∂t2 ρ = 0 , (2.34) 
+
+ρ∂ t2 u = −∇1 · ∆(1) 2 , (2.35) 
+
+∂t2
+
+[ (n + 3) 
+
+2 ρT + 1
+
+2 ρu 2
+
+]
+
+= −∇1 · ∆(1) 3,1. (2.36) These relations yield the second-order terms ∆∗(2) 3 and ∆∗(2) 4,2 , whose explicit forms are listed in Tables 6–7. The second-order expressions for the associated higher-order fluxes are therefore 
+
+∆∗ 
+
+> 3
+
+= ∆∗(1) 3 + ∆∗(2) 3 , (2.37) 
+
+∆∗ 
+
+> 4,2
+
+= ∆∗(1) 4,2 + ∆∗(2) 4,2 . (2.38) 10 Lai, Guo, Gan, Yang, Liu and Lin 
+
+The third-order time-scale relations follow from Eq. (2.9): 
+
+∂t3 ρ = 0 , (2.39) 
+
+ρ∂ t3 u = −∇1 · ∆(2) 2 , (2.40) 
+
+∂t3
+
+[ (n + 3) 
+
+2 ρT + 1
+
+2 ρu 2
+
+]
+
+= −∇1 · ∆(2) 3,1. (2.41) Substitution of these relations gives the third-order contributions to the viscous stress and heat flux, 
+
+∆∗(3) 2 = ∑
+
+> i
+
+f (3)  
+
+> i
+
+v∗ 
+
+> i
+
+v∗ 
+
+> i
+
+= −(σSuper-Burnett − σBurnett ), (2.42) 
+
+∆∗(3) 3,1 = ∑
+
+> i
+
+f (3) 
+
+> i
+
+v∗2 
+
+> i
+
++ η2
+
+> i
+
+2 v∗ 
+
+> i
+
+= −(jq, Super-Burnett − jq, Burnett ). (2.43) These terms represent the super-Burnett corrections to the Burnett-level constitutive relations under the present sign convention. To simplify the mechanism analysis, we focus on the x-direction components of the viscous stress and heat flux. The model remains fully three-dimensional, and the other components can be obtained in the same way. The explicit third-order expressions for 
+
+∆∗(3) 2xx and ∆∗(3) 3,1x are listed in Tables 8–9. The resulting third-order constitutive expansions are 
+
+∆∗ 
+
+> 2
+
+= ∆∗(1) 2 + ∆∗(2) 2 + ∆∗(3) 2 , (2.44) 
+
+∆∗ 
+
+> 3,1
+
+= ∆∗(1) 3,1 + ∆∗(2) 3,1 + ∆∗(3) 3,1 . (2.45) Equations (2.37)–(2.38) and (2.44)–(2.45) define the TNE measures used below to analyse multigradient coupling in high-order nonequilibrium responses. 
+
+3. Model verification 
+
+This section implements the kinetic moment constraints derived above through D3V91 discrete velocity sets. The resulting model is then tested using shock-tube benchmarks to assess its ability to reproduce the macroscopic wave structures of high-speed com-pressible flows. Finally, the influence of the spatial discretization scheme on high-order TNE quantities is examined, because these quantities are more sensitive to numerical smoothness and resolution than conserved macroscopic fields. 3.1. Phase-space discretization scheme 
+
+Phase-space discretization is fundamental to both the formulation and the numerical implementation of the DBM. The discrete velocity set must preserve the target kinetic moment relations using a finite number of velocity points. Its structure therefore affects both the numerical behaviour of the discrete Boltzmann equation and the ability of the model to resolve high-order TNE effects. Based on the moment constraints derived in the Kinetic moment closure and multigradient coupling in high-order TNE 11  
+
+> Figure 1. Schematic diagram of the D3V91(I) discrete velocity set.
+
+previous section, we construct a first D3V91 discrete velocity set, denoted D3V91(I), as shown in Fig. 1. The corresponding discrete velocity values are listed in Table 3 of the Appendix. Figure 2 shows the decomposition of D3V91(I). The first velocity is the zero velocity. Velocities 2–7 are face-centred velocities; velocities 8–19 are second-diagonal velocities; velocities 20–27 are cube-vertex velocities; velocities 28–51 are third-diagonal velocities; velocities 52–63 are also second-diagonal velocities; velocities 64–87 are higher-order mixed-diagonal velocities; and the last four velocities are special velocities with reduced symmetry, introduced to make the moment matrix invertible. The internal degree pa-rameter is prescribed as 
+
+ηi =
+
+
+
+10 η0 i = 1 ,η0 2 6 i 6 7, i = 15 , 19 , 20 , 26 ,
+
+35 6 i 6 40 , 52 6 i 6 53 , 60 , 64 , 65 ,
+
+0 otherwise ,
+
+where c and η0 are two free parameters introduced to ensure the existence of the inverse matrix C−1.The D3V91(I) set is mainly used to describe ∆∗(1)+(2) 3 and ∆∗(1)+(2) 4,2 . To improve the representation of ∆∗(1)+(2)+(3) 2 and ∆∗(1)+(2)+(3) 3,1 , we further modify the velocity set and 12 Lai, Guo, Gan, Yang, Liu and Lin  
+
+> Figure 2. Decomposition of the D3V91(I) discrete velocity set.
+
+construct a second realization, denoted D3V91(II). As shown in Figs. 3 and 4, D3V91(II) has two main features. First, the magnitude of the discrete velocities is extended from 0.7 to 12.9, covering a wider velocity range. Second, additional discrete velocity directions are introduced while the overall symmetry of the velocity set is preserved. These modifications in velocity magnitude and direction improve the representation of distribution functions in high-speed compressible flows with strong discontinuities and enhance numerical robustness in strongly nonequilibrium regimes (Wu et al. 2025). The detailed discrete velocity values of this model are listed in Table 4 of the Appendix. In D3V91(II), ηi is given by 
+
+ηi =
+
+
+
+10 η0 i = 1 ,η0 2 6 i 6 7, i = 11 , 22 , 26 , 32 , 40 , 43 ,
+
+51 , 58 , 63 , 68 , 75 , 83 , 84 , 86 ,
+
+0 otherwise .
+
+The DBM specifies the moment constraints required to represent the target physical Kinetic moment closure and multigradient coupling in high-order TNE 13  
+
+> Figure 3. Schematic diagram of the D3V91(II) discrete velocity set.
+
+system, but it does not impose a unique discretization in time, space or velocity space. The D3V91 discrete velocity sets used here are therefore feasible realizations that satisfy the present moment constraints, rather than uniquely optimal choices in a general sense. We next use one-dimensional shock-tube benchmarks to test whether the model re-produces the macroscopic structures generated by strong gradients. Time integration uses a second-order implicit–explicit Runge–Kutta finite-difference scheme (Ascher et al. 
+
+1997). The spatial derivative is discretized using either a fifth-order weighted essentially non-oscillatory (5th WENO) scheme (Liu et al. 1994) or a second-order non-oscillatory, no-parameter dissipation (2nd NND) scheme (Zhang 1988). 
+
+Sod shock tube 
+
+The initial condition for the Sod shock tube problem (Sod 1978) is 
+
+{
+
+(ρ, T, u x, u y, u z ) |L = (1 .0, 1.0, 0.0, 0.0, 0.0) ,
+
+(ρ, T, u x, u y, u z ) |R = (0 .125 , 0.8, 0.0, 0.0, 0.0) . (3.1) For D3V91(II), the parameters are τ = 6 × 10 −5, n = 0, c = 2, η0 = 10, ∆x = ∆y =
+
+∆z = 3 × 10 −3 and ∆t = 10 −4.Figure 5 compares the DBM results with the Riemann solution for the Sod shock tube at t = 0 .1. The density, pressure, velocity and temperature profiles are consistent with the reference solution. The model reproduces the main Riemann wave structures, includ-14 Lai, Guo, Gan, Yang, Liu and Lin  
+
+> Figure 4. Decomposition of the D3V91(II) discrete velocity set.
+
+ing the shock wave, contact discontinuity and rarefaction wave. This benchmark tests the macroscopic consistency of D3V91(II) in a one-dimensional compressible Riemann problem. Similar results are obtained with D3V91(I). 
+
+Lax shock tube 
+
+The initial condition for the Lax shock tube problem is 
+
+{
+
+(ρ, T, u x, u y, u z ) |L = (0 .445 , 7.928 , 0.698 , 0.0, 0.0) ,
+
+(ρ, T, u x, u y, u z ) |R = (0 .50 , 1.142 , 0.0, 0.0, 0.0) , (3.2) where τ = 5 × 10 −5, n = 0, c = 1 .5, η0 = 7 .6, ∆x = ∆y = ∆z = 3 × 10 −3 and 
+
+∆t = 5 × 10 −4.Figure 6 compares the DBM results with the Riemann solution for the Lax shock tube. Compared with the Sod case, this problem contains a larger temperature contrast and a non-zero left-state velocity. The density, pressure, velocity and temperature profiles remain consistent with the reference solution, indicating that the model can reproduce the main macroscopic wave structures under stronger temperature and velocity gradients. Kinetic moment closure and multigradient coupling in high-order TNE 15 
+
+# -0.50 -0.25 0.00 0.25 0.50 0.0 0.4 0.8 1.2 
+
+# -0.50 -0.25 0.00 0.25 0.50 0.0 0.4 0.8 1.2 
+
+# -0.50 -0.25 0.00 0.25 0.50 0.0 0.3 0.6 0.9 
+
+# -0.50 -0.25 0.00 0.25 0.50 0.6 0.9 1.2 1.5 
+
+## DBM 
+
+## Riemann solution 
+
+> r
+> x
+> (a )
+> P
+> x
+> (b)
+> u
+> x
+> x
+> (c)
+> T
+> x
+> (d)
+
+Figure 5. Comparison between the DBM simulation and the Riemann solution for the Sod shock tube at t = 0 .1: (a) density, (b) pressure, (c) velocity and (d) temperature. 
+
+# -1.0 -0.5 0.0 0.5 1.0 0.3 0.6 0.9 1.2 
+
+# -1.0 -0.5 0.0 0.5 1.0 01234
+
+# -1.0 -0.5 0.0 0.5 1.0 0.0 0.5 1.0 1.5 
+
+# -1.0 -0.5 0.0 0.5 1.0 02468
+
+## DBM 
+
+## Riemann solution 
+
+> r
+> x
+> (a )
+> P
+> x
+> (b)
+> u
+> x
+> x
+> (c)
+> T
+> x
+> (d)
+
+Figure 6. Comparison between the DBM simulation and the Riemann solution for the Lax shock tube at t = 0 .1: (a) density, (b) pressure, (c) velocity and (d) temperature. 16 Lai, Guo, Gan, Yang, Liu and Lin 
+
+3.2. Influence of numerical schemes on the description of TNE effects 
+
+To characterize the nonequilibrium state, we introduce an 11-component nonequilib-rium intensity vector, STNE = ( τ , ρ, T , u, ∇ρ, ∇T , ∇u, ∆∗(1)+(2)+(3) 2 , ∆∗(1)+(2)+(3) 3,1 ,
+
+∆∗(1)+(2) 3 , ∆∗(1)+(2) 4,2 ). This vector collects the relaxation parameter, macroscopic fields, gradients and non-conserved kinetic moments that determine the TNE response. To assess whether the third-order DBM resolves nonequilibrium effects at different asymptotic orders, we perform a series of fluid-collision tests. By varying the initial states and physical parameters, we generate TNE responses dominated by different-order contributions. The initial conditions are 
+
+ρ(x, y, z ) = ρL + ρR
+
+2 − ρL − ρR
+
+2 tanh 
+
+( x − Nx∆x/ 2
+
+Lρ
+
+)
+
+, (3.3) 
+
+T (x, y, z ) = TL + TR
+
+2 − TL − TR
+
+2 tanh 
+
+( x − Nx∆x/ 2
+
+LT
+
+)
+
+, (3.4) 
+
+ux(x, y, z ) = −u0 tanh 
+
+( x − Nx∆x/ 2
+
+Lu
+
+)
+
+. (3.5) Here Lρ, Lu and LT denote the widths of the density, velocity and temperature transition layers, respectively. The quantities ρL and ρR are the left- and right-state densities, and 
+
+TL and TR are the corresponding temperatures. The transverse velocities are set to uy = 0 and uz = 0. The computational domain is a cuboid of size 1 .5 × 0.006 × 0.006, discretised by a uniform grid of 1000 × 4 × 4. Numerical schemes play a critical role in realizing the resolving capability of a high-order DBM. Although the moment constraints determine which TNE quantities can be represented, the numerical scheme must provide sufficiently smooth and accurate macroscopic fields and gradients for these quantities to be evaluated reliably. Figure 7 compares the TNE quantities ∆∗
+
+> 3
+
+, ∆∗
+
+> 4,2
+
+, ∆∗ 
+
+> 2
+
+and ∆∗ 
+
+> 3,1
+
+computed using the 2nd NND and 5th WENO schemes under the same initial conditions. Blue open circles denote the DBM results. For ∆∗ 
+
+> 3xxx
+
+and ∆∗
+
+> 4,2xx
+
+, the green dash-dotted and red solid lines denote the first- and second-order analytical solutions, respectively. For ∆∗ 
+
+> 2xx
+
+and ∆∗
+
+> 3,1x
+
+,the green dash-dotted, dark-blue dashed and red solid lines denote the first-, second- and third-order analytical solutions, respectively. When the 2nd NND scheme is employed, clear discrepancies remain between the numerical profiles and the high-order analytical expressions, even with the high-order DBM. Oscillations also appear in the evaluated high-order TNE profiles. This indicates that a second-order scheme does not provide sufficiently smooth or accurate macroscopic fields and gradients for reliable evaluation of high-order TNE quantities. By contrast, the fifth-order WENO scheme gives results that are consistent with the high-order analytical expressions. Its adaptive weighting suppresses nonphysical oscilla-tions and reduces excessive numerical dissipation, yielding smoother macroscopic fields and gradients. The results also show that different TNE quantities have distinct multiscale Kinetic moment closure and multigradient coupling in high-order TNE 17 
+
+400 450 500 550 600 -0. 8 -0. 4 0. 0 0. 4 0. 8 
+
+400 450 500 550 600 -0. 8 -0. 4 0. 0 0. 4 0. 8 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 0. 2 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 0. 2 
+
+400 450 500 550 600 0. 0 0. 6 1. 2 1. 8 
+
+400 450 500 550 600 0. 0 0. 6 1. 2 1. 8 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+D 3V91 D BM (N N D ) 
+
+D*( 1) 3x x x 
+
+D*( 1) 3x x x +D*( 2) 3x x x 
+
+# x
+
+I ( a) =5× 10 -3 
+
+rL=3.0, rR=3.0 
+
+TL=2.0, TR=2.0 
+
+ux L =3.5, ux R =0.1 
+
+D 3V91 D BM (WEN O ) 
+
+D*( 1) 3x x x 
+
+D*( 1) 3x x x +D*( 2) 3x x x 
+
+# x
+
+I ( b) =5× 10 -3 
+
+rL=3.0, rR=3.0 
+
+TL=2.0, TR=2.0 
+
+ux L =3.5, ux R =0.1 
+
+# x
+
+I I ( a) =3× 10 -3 
+
+rL=4.0, rR=0.5 
+
+TL=2.0, TR=0.5 
+
+ux L =0.3, ux R =0 
+
+D 3V91 D BM (N N D ) 
+
+D*( 1) 4, 2x x 
+
+D*( 1) 4, 2x x +D*( 2) 4, 2x x 
+
+# x
+
+I I ( b) =3× 10 -3 
+
+rL=4.0, rR=0.5 
+
+TL=2.0, TR=0.5 
+
+ux L =0.3, ux R =0 
+
+D 3V91 D BM (WEN O ) 
+
+D*( 1) 4, 2x x 
+
+D*( 1) 4, 2x x +D*( 2) 4, 2x x 
+
+# x
+
+I I I ( a) =5× 10 -3 
+
+rL=10.0, rR=1.0 
+
+TL=1.0, TR=4.0 
+
+ux L =3.0, ux R =0.2 
+
+D3V91 DBM ( NND) 
+
+D*(1) 2x x
+
+D*(1) 2x x +D*(2) 2x x 
+
+D*(1) 2x x +D*(2) 2x x +D*(3) 2x x 
+
+# x
+
+I I I ( b) =5× 10 -3 
+
+rL=10.0, rR=1.0 
+
+TL=1.0, TR=4.0 
+
+ux L =3.0, ux R =0.2 
+
+D3V91 DBM ( W E NO) 
+
+D*(1) 2x x 
+
+D*(1) 2x x +D*(2) 2x x 
+
+D*(1) 2x x +D*(2) 2x x +D*(3) 2x x 
+
+D3V91 DBM ( NND) 
+
+D*(1) 3,1x
+
+D*(1) 3,1x +D*(2) 3,1x
+
+D*(1) 3,1x +D*(2) 3,1x +D*(3) 3,1x
+
+I V( a) =5× 10 -3 
+
+rL=3.5, rR=1.0 
+
+TL=3.5, TR=3.5 
+
+ux L =0.1, ux R =0.1 
+
+# x
+
+D3V91 DBM ( W E NO) 
+
+D*(1) 3,1x
+
+D*(1) 3,1x +D*(2) 3,1x
+
+D*(1) 3,1x +D*(2) 3,1x +D*(3) 3,1x
+
+I V( b) =5× 10 -3 
+
+rL=3.5, rR=1.0 
+
+TL=3.5, TR=3.5 
+
+ux L =0.1, ux R =0.1 
+
+# x
+
+Figure 7. Distributions of the TNE quantities computed using the 2nd NND scheme (left column) and the 5th WENO scheme (right column). Blue open circles denote the DBM results. The green dash-dotted, black dashed and red solid lines denote the first-, second- and third-order analytical solutions, respectively. 18 Lai, Guo, Gan, Yang, Liu and Lin 
+
+characteristics. Under the present conditions, second-order contributions are sufficient to describe ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+, whereas ∆∗ 
+
+> 2
+
+and ∆∗ 
+
+> 3,1
+
+require third-order contributions. These comparisons indicate that, as the TNE intensity increases and the dominant asymptotic order changes, the numerical scheme must resolve the relevant physical scales to realize the moment-closure capability of the model. This provides the numerical basis for the multigradient coupling analysis in the following sections. 
+
+4. Capability to resolve nonequilibrium effects 
+
+This section examines the ability of the D3V91 super-Burnett-level DBM to resolve the high-order TNE quantities considered here, namely ∆∗
+
+> 3
+
+, ∆∗
+
+> 4,2
+
+, ∆∗ 
+
+> 2
+
+and ∆∗
+
+> 3,1
+
+. The analysis has two aims. First, we test whether the D3V91 model, which satisfies the super-Burnett-level moment constraints, reproduces constitutive relations beyond the Burnett level. Second, we use these TNE quantities to determine how leading gradients, secondary gradients and transition-layer widths jointly regulate nonequilibrium responses. This section therefore links kinetic moment closure to the multigradient-coupling mechanisms analysed below. 4.1. Capability to resolve ∆∗
+
+> 3
+
+To test the ability of the model to resolve ∆∗
+
+> 3
+
+, we consider three cases with increasing TNE intensity. The initial jumps and transition-layer widths are prescribed as follows: (i) ρL = 0 .1, ρ R = 0 .1, T L = 2 , T R = 0 .1, u xL = 0 , u xR = 0 , L ρ = Lu = LT = 20 , τ =2 × 10 −3;(ii) ρL = 1 , ρ R = 1 , T L = 1 , T R = 1 , u xL = 2 , u xR = 0 .1, L ρ = Lu = LT = 20 , τ =2 × 10 −3;(iii) ρL = 3 , ρ R = 3 , T L = 3 , T R = 3 , u xL = 3 .5, u xR = 0 .1, L ρ = Lu = LT = 10 , τ =3 × 10 −3.Figure 8 compares ∆∗ 
+
+> 3xxx
+
+obtained with the Burnett-level D3V55 model and the super-Burnett-level D3V91 model. In case I, only a temperature gradient is imposed initially. The constitutive expression for ∆∗ 
+
+> 3xxx
+
+shows that the first-order term ∆∗(1) 3xxx is propor-tional to ∂xT and therefore dominates the TNE response. At the initial stage, the velocity-curvature term and the velocity–temperature-gradient coupling terms in the second-order contribution vanish (see Appendix table 7, S37 –S39 ). During the early evolution, the imposed temperature gradient has not yet generated an appreciable velocity gradient, so ∆∗(2) 3xxx remains weak. Figures 8I(a,b) show that the first- and second-order analytical profiles almost coincide. The maximum relative TNE intensity, RTNE = |∆∗(2) 3xxx /∆ ∗(1) 3xxx |
+
+(Gan et al. 2022), is only 0.046 at x ≈ 496, confirming that the second-order contribution is negligible. Under these conditions, both D3V55 and D3V91 resolve the dominant first-order response. The lower-order model, however, shows noticeable deviations near the TNE peak. Kinetic moment closure and multigradient coupling in high-order TNE 19 
+
+400 450 500 550 600 0. 000 0. 007 0. 014 0. 021 
+
+400 450 500 550 600 0. 000 0. 006 0. 012 0. 018 
+
+400 450 500 550 600 -0. 30 -0. 15 0. 00 0. 15 0. 30 
+
+400 450 500 550 600 -0. 14 -0. 07 0. 00 0. 07 0. 14 
+
+400 450 500 550 600 -6 -4 -2 024
+
+400 450 500 550 600 -4 -2 024
+
+D 3V55 D BM 
+
+D*( 1) 3x x x 
+
+D*( 1) 3x x x +D*( 2) 3x x x 
+
+# x
+
+I ( a) =2× 10 -3 
+
+> rL
+
+=0.1, rR=0.1 
+
+> TL
+
+=2.0, TR=0.1 
+
+ux L =0, ux R =0 
+
+D 3V91 D BM 
+
+D*( 1) 3x x x 
+
+D*( 1) 3x x x +D*( 2) 3x x x 
+
+# x
+
+I ( b) =2× 10 -3 
+
+> rL
+
+=0.1, rR=0.1 
+
+> TL
+
+=2.0, TR=0.1 
+
+ux L =0, ux R =0 
+
+# x
+
+I I ( a) =2× 10 -3 
+
+> rL
+
+=1.0, rR=1.0 
+
+> TL
+
+=1.0, TR=1.0 
+
+ux L =2.0, ux R =0.1 
+
+# x
+
+I I ( b) =2× 10 -3 
+
+> rL
+
+=1.0, rR=1.0 
+
+> TL
+
+=1.0, TR=1.0 
+
+ux L =2.0, ux R =0.1 
+
+# x
+
+I I I ( a) =3× 10 -3 
+
+> rL
+
+=3.0, rR=3.0 
+
+> TL
+
+=3.0, TR=3.0 
+
+ux L =3.5, ux R =0.1 
+
+# x
+
+I I I ( b) =3× 10 -3 
+
+> rL
+
+=3.0, rR=3.0 
+
+> TL
+
+=3.0, TR=3.0 
+
+ux L =3.5, ux R =0.1 
+
+Figure 8. Distributions of ∆∗ 
+
+> 3xxx
+
+for the weak (I), moderate (II), and strong (III) cases computed using the D3V55 model (left column) and the D3V91 model (right column). Blue open circles denote the DBM results. The green dash-dotted and red solid lines denote the first-and second-order analytical solutions, respectively. The corresponding times for cases I–III are 
+
+t=0.012, 0.012, and 0.014, respectively. 
+
+In case II, the temperature is initially uniform, so ∆∗(1) 3xxx = 0 at the initial time. The second-order contribution ∆∗(2) 3xxx is then driven by the velocity gradient through the velocity-curvature and velocity-gradient-product terms (see Appendix table 7). At 
+
+t = 0 .012, however, ∆∗(1) 3xxx becomes dominant, while RTNE remains 0.31. This suggests that the second-order contribution modifies the temperature-gradient-driven first-order response through viscous-stress work, but subsequently loses its dominant role. Although the first-order contribution dominates at this time, the D3V55 model does not contain the moment constraints required to represent the formation of ∆∗(2) 3xxx and its feedback on the temperature gradient. As a result, its numerical solution deviates from the constitutive 20 Lai, Guo, Gan, Yang, Liu and Lin 
+
+description. The oscillatory behaviour in the evaluated higher-order profiles is associated with discontinuities in the macroscopic fields. In case III, the density, temperature and relaxation time are increased, the velocity gradient is strengthened, and the interface width is reduced. The strong velocity gradient then makes the second-order contribution dominate the TNE response. The relative TNE intensity reaches RTNE ≈ 1.28 at x ≈ 511, well above 0.5. Owing to the larger macroscopic amplitudes and relaxation time, the TNE intensity is approximately 40 times larger than that in case II. The D3V55 model lacks the high-order non-conserved moment constraints required in this regime and therefore deviates from the constitutive description. By contrast, the D3V91 model satisfies the moment relations required to describe ∆∗(1) 3xxx and ∆∗(2) 3xxx , and its numerical results agree closely with the second-order analytical solution. These comparisons show that resolving ∆∗ 
+
+> 3
+
+requires super-Burnett-level moment constraints when the second-order contribution becomes comparable to, or larger than, the first-order contribution. 4.2. Nonequilibrium phase diagram of ∆∗
+
+> 3
+
+High-order TNE quantities are generally controlled by coupled macroscopic gradients rather than by a single driving gradient. Each quantity has a leading-gradient dependence associated with its lowest-order constitutive contribution, whereas secondary gradients, gradient products, curvature terms and transition-layer widths modify the higher-order contributions. A complete description of high-order TNE therefore requires both the leading-gradient response and the secondary-gradient corrections. We first test whether the D3V91 model resolves the target TNE quantities and then analyse how different gradients and transition-layer widths regulate their multigradient-coupled responses. For ∆∗
+
+> 3
+
+, the temperature gradient ∂xT is the leading driver of ∆∗(1) 3xxx , whereas sec-ondary gradients and gradient-coupling terms contribute to ∆∗(2) 3xxx . These include second-order velocity derivatives ( ∂2
+
+> x
+
+ux, ∂2
+
+> xy
+
+uy , ∂2 
+
+> xz
+
+uz ) and temperature–velocity coupling terms (∂y T ∂ yux, ∂z T ∂ zux). We therefore examine the velocity-gradient and density-gradient effects on ∆∗ 
+
+> 3
+
+to clarify how secondary gradients modify its leading temperature-gradient response. Figure 9(a) shows the velocity-gradient effect on ∆∗
+
+> 3xxx -max
+
+. The right-state velocity is fixed at −0.5, while the left-state velocity is increased. As ∂xux increases, ∆∗
+
+> 3xxx -max
+
+exhibits two-stage growth behaviour: (i) Linear growth stage (0 < u xL < 1): ∆∗ 
+
+> 3xxx −max
+
+= A1uxL + B1. In the absence of an initial temperature gradient, and for weak velocity gradients, the relevant terms in ∆∗(2) 3xxx are approximately linear in ∂xux, such as the contribution proportional to (5 + 3 n)∂xux. Nonlinear contributions from second-order velocity derivatives, squared velocity-gradient terms and temperature–velocity coupling terms remain weak. The TNE intensity therefore increases approximately linearly with ∂xux.(ii) Exponential growth stage ( uxL > 1): ∆∗ 
+
+> 3xxx −max
+
+= A2eB2 uxL + C2. As the velocity Kinetic moment closure and multigradient coupling in high-order TNE 21 
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 0.0 0.2 0.4 0.6 0.8 
+
+0 1 2 3 4 5 60.024 0.028 0.032 0.036       
+
+> =2 × 1 0 -3
+> rL=1 .5 , rR=1 .0
+> TL=1 .0 , TR=1 .0
+> Lr=Lu=LT=2 0 .0
+
+D3V 91 DBM 
+
+D*3 xxx -m ax =A1 uxL +B1
+
+D*3 xxx -m ax =A2 eB2 u xL +C2
+
+> D *3xxx-max
+
+# uxL 
+
+lin ea r r e gim e
+
+expo nentia l r e gim e
+
+# (a) 
+
+D3V 91 DBM 
+
+D*3 xxx -m ax =A1 eB1 rL +C1
+
+D*3 xxx -m ax =A2 rL+B2
+
+> D *3xxx-max
+
+## rL        
+
+> =2 × 1 0 -3
+> TL=1 .0 , TR=1 .0
+> uxL =1 .5 , uxR =0
+> Lr=Lu=LT=2 0 .0
+
+expo nentia l r e gim e
+
+lin ea r r e gim e
+
+# (b) 
+
+Figure 9. Effects of the velocity gradient (a) and density gradient (b) on the nonequilibrium quantity ∆∗ 
+
+> 3
+
+: linear and exponential responses, where for (a): A1 = 0.051, B1 = 0.010, 
+
+A2 = 0 .023, B2 = 1 .102, C2 = 0 .003; for (b): A1 = 0 .011, B1 = 0 .713, C1 = 0 .016, A2 = 0 .001, 
+
+B2 = 0 .032. 
+
+gradient increases, second-order velocity derivatives and temperature–velocity coupling terms become more pronounced. These additional transport channels amplify the TNE response, producing an approximately exponential increase in ∆∗
+
+> 3xxx
+
+.Thus, although the velocity gradient is not the leading driver of ∆∗(1) 3xxx , it strongly modulates ∆∗ 
+
+> 3xxx
+
+through second-order coupling channels. This sensitivity indicates that ∆∗ 
+
+> 3xxx
+
+contains both energy-transport information and momentum-gradient-induced coupling effects. Figure 9(b) shows the density-gradient effect on ∆∗
+
+> 3xxx -max
+
+, with the right-state density fixed at ρR = 0 .5. As ρL increases, the absolute density difference increases and ∆∗
+
+> 3xxx -max
+
+exhibits two response regimes. This case provides a reference for the density-gradient responses discussed below. The relevant driving measure, however, is the relative density variation, ∇ρ/ρ , rather than the absolute density gradient alone. (i) Exponential growth stage (0 .5 < ρ L < 2): ∆∗ 
+
+> 3xxx −max
+
+= A1eB1ρL + C1. In this low-density regime, even a modest absolute density variation can produce a large relative density gradient. The enhanced relative variation strengthens compressibility effects and activates nonlinear transport channels, including higher-order velocity and temperature derivatives and their gradient-product couplings. These coupled contributions amplify 
+
+∆∗ 
+
+> 3xxx
+
+and produce an approximately exponential increase in ∆∗
+
+> 3xxx -max
+
+.(ii) Linear growth stage ( ρL > 2): ∆∗ 
+
+> 3xxx −max
+
+= A2ρL + B2. As the background density increases, the relative density variation weakens even though the absolute density difference continues to grow. The compressibility-driven nonlinear couplings are therefore reduced, and the response becomes governed mainly by leading linear driving terms. Consequently, ∆∗ 
+
+> 3xxx -max
+
+varies approximately linearly with ρL.22 Lai, Guo, Gan, Yang, Liu and Lin 
+
+400 450 500 550 600 0. 000 0. 005 0. 010 0. 015 
+
+400 450 500 550 600 0. 000 0. 003 0. 006 0. 009 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+400 450 500 550 600 -0. 04 0. 00 0. 04 0. 08 0. 12 
+
+400 450 500 550 600 -3 -2 -1 012
+
+400 450 500 550 600 -3 -2 -1 012
+
+D 3V55 D BM 
+
+D*( 1) 4, 2x x 
+
+D*( 1) 4, 2x x +D*( 2) 4, 2x x 
+
+# x
+
+I ( a) =1× 10 -3 
+
+> rL
+
+=0.5, rR=0.5 
+
+TL=0.5, TR=0.5 
+
+ux L =1.0, ux R =0 
+
+D 3V91 D BM 
+
+D*( 1) 4, 2x x 
+
+D*( 1) 4, 2x x +D*( 2) 4, 2x x 
+
+# x
+
+I ( b) =1× 10 -3 
+
+> rL
+
+=0.5, rR=0.5 
+
+TL=0.5, TR=0.5 
+
+ux L =1.0, ux R =0 
+
+# x
+
+I I ( a) =2× 10 -3 
+
+> rL
+
+=2.0, rR=0.5 
+
+TL=2.0, TR=0.5 
+
+ux L =0.5, ux R =0 
+
+# x
+
+I I ( b) =2× 10 -3 
+
+> rL
+
+=2.0, rR=0.5 
+
+TL=2.0, TR=0.5 
+
+ux L =0.5, ux R =0 
+
+# x
+
+I I I ( a) =3× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=3.0, TR=1.0 
+
+ux L =0, ux R =0 
+
+# x
+
+I I I ( b) =3× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=3.0, TR=1.0 
+
+ux L =0, ux R =0 
+
+Figure 10. Distributions of ∆∗ 
+
+> 4,2xx
+
+for the weak (I), moderate (II) and strong (III) cases computed using the D3V55 model (left column) and the D3V91 model (right column). Blue open circles denote the DBM results. The green dash-dotted and red solid lines denote the first-and second-order analytical solutions, respectively. The corresponding times for cases I–III are 
+
+t = 0 .002, 0 .008 and 0 .0055, respectively. 
+
+4.3. Capability to resolve ∆∗
+
+> 4,2
+
+To test the ability of the model to resolve ∆∗
+
+> 4,2
+
+, we consider three cases with increasing TNE intensity: (i) ρL = 0 .5, ρ R = 0 .5, T L = 0 .5, T R = 0 .5, u xL = 1 , u xR = 0 , L ρ = Lu = LT = 20 , τ =1 × 10 −3;(ii) ρL = 2 , ρ R = 0 .5, T L = 2 , T R = 0 .5, u xL = 0 .5, u xR = 0 , L ρ = Lu = LT = 20 , τ =2 × 10 −3;(iii) ρL = 3 , ρ R = 1 , T L = 3 , T R = 1 , u xL = 0 , u xR = 0 , L ρ = Lu = LT = 8 , τ =3 × 10 −3.Kinetic moment closure and multigradient coupling in high-order TNE 23 Blue open circles denote the DBM results. The green dash-dotted and red solid lines denote the first- and second-order analytical expressions, respectively. Figure 10 compares ∆∗ 
+
+> 4,2xx
+
+obtained with the Burnett-level D3V55 model and the super-Burnett-level D3V91 model. In case I, only a velocity gradient is imposed initially, while the density and temper-ature are uniform. The constitutive expressions show that ∆∗(1) 4,2xx is primarily driven by the velocity gradient, whereas the density-, temperature- and gradient-coupling-related terms in ∆∗(2) 4,2xx remain weak. The system therefore stays close to the first-order TNE regime, and the first- and second-order analytical profiles nearly coincide, as shown in Figs. 10I(a,b). Nevertheless, the D3V55 model shows visible deviations near the TNE peak. This indicates that ∆∗ 
+
+> 4,2xx
+
+is sensitive to the moment-closure accuracy of the discrete velocity model even when the relative TNE intensity is weak. The D3V91 model, which satisfies the required higher-order moment constraints, better resolves the TNE structure near the gradient extrema. This comparison shows that the applicability of a discrete velocity model is not determined solely by the magnitude of the TNE intensity. It also depends on whether the discrete velocity set satisfies the moment relations required by the target TNE quantity. Even in weakly nonequilibrium regimes, incomplete moment closure can produce visible deviations near gradient extrema, and these closure-induced deviations become more pronounced as the TNE intensity increases. In case II, density and temperature gradients are introduced, the relaxation time is increased, and the velocity gradient is reduced. The first-order contribution ∆∗(1) 4,2xx 
+
+remains dominant, but nonlinear second-order terms are enhanced. These terms include second-order density and temperature derivatives, ∂2
+
+> x
+
+ρ and ∂2
+
+> x
+
+T , and squared-gradient terms such as ( ∂xux)2, ( ∂xT )2 and ( ∂xρ)2. At this stage, RTNE ≈ 0.39. Figures 10II(a,b) show that D3V55 deviates from both the first- and second-order analytical solutions, whereas D3V91 is consistent with the second-order analytical solution. The Burnett-level closure is therefore insufficient for representing ∆∗(2) 4,2xx in multigradient-driven flows. In case III, the density and temperature gradients are further increased, the interface width is reduced, the relaxation time is increased, and the velocity gradient is removed. The first-order contribution ∆∗(1) 4,2xx is then reduced, while the terms S66 –S67 and S72 –
+
+S73 in ∆∗(2) 4,2xx become dominant. The relative TNE intensity reaches RTNE ≈ 1.58, indicating a regime dominated by second-order TNE effects. The TNE intensity is about 15 times larger than that in case II. Under these stronger TNE conditions, D3V91 remains consistent with the second-order analytical description, whereas the lower-order closure is no longer sufficient. These comparisons show that resolving ∆∗
+
+> 4,2
+
+requires the corresponding super-Burnett-level moment constraints when the second-order contribution dominates the TNE response. 24 Lai, Guo, Gan, Yang, Liu and Lin 
+
+0.0 0.4 0.8 1.2 1.6 2.0 2.4 0.0 0.1 0.2 0.3 
+
+2.0 2.4 2.8 3.2 3.6 4.0 4.4 0.0 0.1 0.2 0.3 0.4 0.5         
+
+> =3 × 1 0 -3
+> TL=3 .0 , TR=1 .0
+> uxL =0 .5 , uxR =0 .5
+> Lr=Lu=LT=1 5 .0
+
+D3V 91 DBM 
+
+D*4 ,2 xx -m ax =A1 eB1 rL +C1
+
+D*4 ,2 xx -m ax =A2 rL+B2
+
+> D *4, 2 xx-max
+
+## rL
+
+lin ea r r e gim e
+
+expo nentia l r e gim e
+
+# (a) (b) 
+
+D3V 91 DBM 
+
+D*4 ,2 xx -m ax =A1 TL+B1
+
+D*4 ,2 xx -m ax =A2 eB2 TL +C2
+
+> D *4, 2 xx-max
+
+# TL
+
+linear regi me
+
+expo nentia l r e gim e        
+
+> =3 × 1 0 -3
+> rL=1 .0 , rR=0 .2
+> uxL =0 .5 , uxR =0 .5
+> Lr=Lu=LT=1 5 .0
+
+Figure 11. Effects of the density gradient (a) and temperature gradient (b) on the nonequilibrium quantity ∆∗
+
+> 4,2
+
+: linear and exponential responses, where for (a): A1 = 0 .025, 
+
+B1 = 2 .185, C1 = 0 .001, A2 = 0 .090, B2 = 0 .066; for (b): A1 = 0 .124, B1 = −0.192, A2 = 0 .141, 
+
+B2 = 0 .404, C2 = −0.275. 
+
+4.4. Nonequilibrium phase diagram of ∆∗
+
+> 4,2
+
+Because ∆∗ 
+
+> 4,2
+
+is primarily governed by the velocity gradient, we next examine how the density-gradient and temperature-gradient effects modify its response. Figure 11(a) shows the density-gradient effect on ∆∗ 
+
+> 4,2xx -max
+
+in the absence of an initial velocity gradient, with ρR = 0 .2. The quantity ∆∗ 
+
+> 4,2xx -max
+
+again exhibits two response regimes as ρL increases. (i) Exponential growth stage (0.1 < ρ L < 0.9): ∆∗ 
+
+> 4,2xx −max
+
+= A1eB1ρL + C1. The exponential branch reflects the activation of second-order coupling terms in ∆∗(2) 4,2xx . Unlike 
+
+∆∗
+
+> 3xxx
+
+, this tensorial heat-flux-related flux contains density-, temperature- and velocity-gradient-related terms more directly. As a result, even without an initial velocity gradient, density variation can produce a relatively strong nonlinear response through induced velocity and temperature fields. (ii) Linear growth stage ( ρL > 0.9): ∆∗ 
+
+> 4,2xx −max
+
+= A2ρL + B2. The linear branch remains appreciable, with a fitted slope A2 = 0 .090. This indicates that, after the non-linear coupling weakens, density-related terms still provide a strong direct contribution to ∆∗
+
+> 4,2xx -max
+
+.Figure 11(b) shows the temperature-gradient effect on ∆∗
+
+> 4,2xx −max
+
+, with TR = 0 .2fixed. The response changes from linear to nonlinear as TL increases. (i) Linear growth stage (2.1 < T L < 2.7): ∆∗ 
+
+> 4,2xx −max
+
+= A1TL+B1. Under weak temper-ature gradients, temperature-related terms and weak coupling contributions dominate, giving an approximately linear response. (ii) Exponential growth stage ( TL > 2.7): ∆∗ 
+
+> 4,2xx −max
+
+= A2eB2TL + C2. As the temperature gradient increases, the local pressure gradient is enhanced and induces non-zero velocity gradients. This activates velocity-gradient-coupled terms in ∆∗(2) 4,2xx . At the same time, second-order temperature-gradient terms and temperature–velocity coupling Kinetic moment closure and multigradient coupling in high-order TNE 25 
+
+400 450 500 550 600 -0. 025 0. 000 0. 025 0. 050 
+
+400 450 500 550 600 -0. 025 0. 000 0. 025 0. 050 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+400 450 500 550 600 0. 0 0. 2 0. 4 0. 6 
+
+400 450 500 550 600 0. 0 0. 8 1. 6 2. 4 
+
+400 450 500 550 600 0. 0 0. 5 1. 0 1. 5 
+
+D 3V 55 D BM 
+
+D*(1) 2x x 
+
+D*(1) 2x x + D*(2) 2x x 
+
+D*(1) 2x x + D*(2) 2x x + D*(3) 2x x 
+
+# x
+
+I ( a) =2× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=1.0, TR=3.0 
+
+ux L =2.0, ux R =0.5 
+
+D 3V 91 D BM 
+
+D*(1) 2x x 
+
+D*(1) 2x x + D*(2) 2x x 
+
+D*(1) 2x x + D*(2) 2x x + D*(3) 2x x 
+
+# x
+
+I ( b) =2× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=1.0, TR=3.0 
+
+ux L =2.0, ux R =0.5 
+
+# x
+
+I I ( a) =5× 10 -3 
+
+> rL
+
+=5.0, rR=1.0 
+
+TL=1.0, TR=3.0 
+
+ux L =2.5, ux R =0.5 
+
+# x
+
+I I ( b) =5× 10 -3 
+
+> rL
+
+=5.0, rR=1.0 
+
+TL=1.0, TR=3.0 
+
+ux L =2.5, ux R =0.5 
+
+# x
+
+I I I ( a) =5× 10 -3 
+
+> rL
+
+=9.0, rR=1.0 
+
+TL=1.0, TR=4.0 
+
+ux L =3.0, ux R =0.2 
+
+# x
+
+I I I ( b) =5× 10 -3 
+
+> rL
+
+=9.0, rR=1.0 
+
+TL=1.0, TR=4.0 
+
+ux L =3.0, ux R =0.2 
+
+Figure 12. Distributions of ∆∗ 
+
+> 2xx
+
+for the weak (I), moderate (II) and strong (III) cases computed using the D3V55 model (left column) and the D3V91 model (right column). Blue open circles denote the DBM results. The green dash-dotted, black dashed and red solid lines denote the first-, second- and third-order analytical solutions, respectively. The corresponding times for cases I–III are t = 0 .015, 0 .0325 and 0 .03, respectively. 
+
+terms are amplified. The combined effect produces nonlinear enhancement and leads to exponential growth of ∆∗
+
+> 4,2xx −max
+
+.Thus, temperature gradients can drive ∆∗ 
+
+> 4,2
+
+through second-order coupling mecha-nisms. Even without an imposed velocity gradient, temperature gradients can induce high-order TNE responses through pressure-gradient-mediated velocity variations. 4.5. Capability to resolve ∆∗
+
+> 2
+
+To test the ability of the model to resolve the viscous stress ∆∗
+
+> 2
+
+, we compare the Burnett-level D3V55 model with the super-Burnett-level D3V91 model under three prescribed cases: 26 Lai, Guo, Gan, Yang, Liu and Lin 
+
+(i) ρL = 3 , ρ R = 1 , T L = 1 , T R = 3 , u xL = 2 , u xR = 0 .5, L ρ = Lu = LT = 15 , τ =2 × 10 −3;(ii) ρL = 5 , ρ R = 1 , T L = 1 , T R = 3 , u xL = 2 .5, u xR = 0 .5, L ρ = Lu = LT = 20 , τ =5 × 10 −3;(iii) ρL = 9 , ρ R = 1 , T L = 1 , T R = 4 , u xL = 3 , u xR = 0 .2, L ρ = Lu = LT = 20 , τ =5 × 10 −3.Figure 12 compares the distributions of ∆∗
+
+> 2xx
+
+, and Table 1 reports the relative contri-butions of the second- and third-order components. Table 1: Relative TNE intensities of the viscous stress for the weak (I), moderate (II) and strong (III) nonequilibrium cases. 
+
+Location ∆∗(2) 2xx 
+
+∆∗(1) 2xx 
+
+∆∗(3) 2xx 
+
+∆∗(1) 2xx 
+
+Case I 
+
+x = 495 0.31 0.05 
+
+x = 509 0.45 0.18 
+
+x = 522 0.29 0.02 
+
+Case II 
+
+x = 499 0.27 0.06 
+
+x = 515 1.15 0.30 
+
+x = 534 0.15 0.02 
+
+Case III 
+
+x = 497 0.21 0.06 
+
+x = 515 2.38 0.68 
+
+x = 534 0.18 0.04 
+
+In case I, the relaxation time and the density, temperature and velocity gradients are relatively small, corresponding to a weak-TNE regime. The constitutive expressions for 
+
+∆∗ 
+
+> 2xx
+
+show that ∆∗(1) 2xx is primarily driven by the velocity gradient, while its magnitude is modulated by ρ, T and τ . The higher-order terms include second-order derivatives of macroscopic quantities, such as ∂2
+
+> x
+
+ρ, third-order derivatives, such as ∂3
+
+> x
+
+ρ and ∂3
+
+> x
+
+ux, and multigradient coupling terms such as ∂xux ∂2
+
+> x
+
+ux, ∂xρ ∂ 2
+
+> x
+
+ux and ∂xT ∂ 2
+
+> x
+
+ux. Figures 12I(a,b) show that D3V55 deviates from the first-, second- and third-order analytical solutions, whereas D3V91 is consistent with the third-order analytical solution. At x = 509, the relative intensities of the second- and third-order components reach R(2) /(1) TNE =
+
+∆∗(2) 2xx /∆ ∗(1) 2xx = 0 .45 and R(3) /(1) TNE = ∆∗(3) 2xx /∆ ∗(1) 2xx = 0 .18, respectively. Thus, even in a weak-TNE regime, a lower-order closure can fail when the high-order contributions are not negligible. In case II, the relaxation time, density gradient and velocity gradient are increased, strengthening nonlinear multigradient coupling. At x = 515, the relative intensities increase to R(2) /(1) TNE = 1 .15 and R(3) /(1) TNE = 0 .30. The second-order contribution therefore Kinetic moment closure and multigradient coupling in high-order TNE 27 
+
+1 2 3 4 5 6 7 8 9 10 0.00 0.02 0.04 0.06 0.08 
+
+2 3 4 5 6 7 80.0 0.2 0.4 0.6         
+
+> =5 × 1 0 -3
+> TL=2 .0 , TR=2 .0
+> uxL =2 .0 , uxR =2 .0
+> Lr=Lu=LT=1 5 .0
+
+D3V 91 DBM 
+
+D*2 xx-max =A1 eB1 rL +C1
+
+D*2 xx-max =A2 rL+B2
+
+> D *2xx-max
+
+## rL
+
+lin ea r r e gim e
+
+expo nentia l r e gim e
+
+D3V 91 DBM 
+
+D*2 xx -m ax =A1 TR+B1
+
+D*2 xx -m ax =A2 eB2 TR+C2
+
+> D *2xx-max
+
+# TR
+
+lin ea r r e gim e
+
+expo nentia l r e gim e        
+
+> =5 × 1 0 -3
+> rL=3 .0 , rR=1 .0
+> uxL =2 .0 , uxR =2 .0
+> Lr=Lu=LT=1 5 .0
+
+# (a) (b) 
+
+Figure 13. Effects of the density gradient (a) and temperature gradient (b) on the nonequilibrium quantity ∆∗ 
+
+> 2
+
+: linear and exponential responses, where for (a): A1 = 0 .095, 
+
+B1 = 0 .153, C1 = −0.089, A2 = 0 .005, B2 = 0 .026; for (b): A1 = 0 .051, B1 = −0.066, 
+
+A2 = 0 .290, B2 = 0 .139, C2 = −0.352. 
+
+exceeds the first-order contribution, while the third-order contribution also becomes important. D3V91 remains consistent with the third-order analytical solution, whereas D3V55 shows larger deviations because it lacks the moment relations required to represent the cross-couplings among gradients at different scales. In case III, the density, temperature and velocity gradients are further increased, driving the system into a strongly nonequilibrium regime. At x = 515, the relative intensities reach R(2) /(1) TNE = 2 .38 and R(3) /(1) TNE = 0 .68, indicating that high-order com-ponents dominate the viscous-stress response. The relative intensities also vary strongly among different spatial locations, reflecting the multiscale nature of the TNE response. Figures 12III(a,b) show substantial deviations from the constitutive descriptions for D3V55. The oscillatory behaviour in the evaluated higher-order profiles is associated with discontinuities in the macroscopic fields. By contrast, D3V91 resolves the third-order contribution and remains consistent with the third-order analytical solution. These results show that resolving ∆∗ 
+
+> 2
+
+requires the corresponding super-Burnett-level moment constraints when the second- and third-order contributions become appreciable. 4.6. Nonequilibrium phase diagram of ∆∗
+
+> 2
+
+Although ∆∗ 
+
+> 2
+
+is primarily associated with velocity gradients, density and tempera-ture gradients also modify its response through explicit thermodynamic dependences and higher-order coupling terms. We therefore examine these effects to identify the multigradient-coupling mechanisms associated with the viscous stress. Figure 13(a) shows the density effect on ∆∗
+
+> 2xx -max
+
+. As ρL increases, ∆∗ 
+
+> 2xx -max
+
+exhibits two response regimes. Unlike the density-gradient effects discussed above, the response of ∆∗ 
+
+> 2xx
+
+is controlled not only by the relative density variation, ∇ρ/ρ , but also by the explicit density dependence in the constitutive expressions. 28 Lai, Guo, Gan, Yang, Liu and Lin 
+
+(i) Exponential growth stage (1.5 < ρ L < 6): ∆∗ 
+
+> 2xx −max
+
+= A1eB1ρL + C1. The first-order term ∆∗(1) 2xx is proportional to the density, whereas the higher-order terms contain nonlinear density dependences, including ρ2, 1 /ρ , ρ−2 and ρ3, as well as density-derivative terms such as ∂2
+
+> x
+
+ρ and ( ∂xρ)2. In the lower-density regime, the relative density variation remains sufficiently large to enhance compressibility-related coupling. Together with the explicit nonlinear density dependences, these terms amplify the viscous-stress response and produce an approximately exponential increase in ∆∗
+
+> 2xx -max
+
+.(ii) Linear growth stage ( ρL > 6): ∆∗ 
+
+> 2xx −max
+
+= A2ρL + B2. The fitted slope of the linear branch is small, A2 = 0 .005, showing that the density effect on ∆∗ 
+
+> 2
+
+becomes weak once the nonlinear density-dependent terms have saturated. The remaining response is governed mainly by the leading explicit density dependence of the first-order viscous-stress contribution. Figure 13(b) shows the temperature-gradient effect on ∆∗ 
+
+> 2xx -max
+
+by increasing the right-state temperature TR, with TL = 1 fixed. As the temperature gradient increases, the response changes from an approximately linear dependence to nonlinear growth. (i) Linear growth stage (2 < T R < 3): ∆∗ 
+
+> 2xx −max
+
+= A1TR + B1. For weak temper-ature gradients, the higher-order contributions remain small. The response is therefore dominated by the first-order term, and the induced velocity-gradient response is weak. (ii) Exponential nonlinear growth stage ( TR > 3): ∆∗ 
+
+> 2xx −max
+
+= A2eB2TR + C2. As the temperature gradient increases, multigradient coupling becomes more pronounced. The second-order contribution contains terms involving T 2, T , ( ∂xT )2 and mixed gradients. The third-order contribution further introduces couplings among temperature, velocity and density gradients, together with curvature-related terms such as ∂xT ∂ 2
+
+> x
+
+ux, ∂xT ∂ 2
+
+> x
+
+ρ
+
+and ∂xux(∂xT )2, with an overall scaling proportional to τ 3. These coupled terms am-plify the viscous-stress response and lead to an approximately exponential increase in 
+
+∆∗
+
+> 2xx -max
+
+.Thus, density and temperature gradients modify ∆∗ 
+
+> 2
+
+through different mechanisms. The density effect combines explicit density dependence with relative-gradient-related corrections, whereas the temperature effect mainly enters through mixed-gradient and curvature couplings. These results show that the viscous stress is not determined by the velocity gradient alone once higher-order TNE contributions become appreciable. 4.7. Capability to resolve ∆∗
+
+> 3,1
+
+To test the capability of the model to resolve heat flux ∆∗
+
+> 3,1
+
+, we consider three cases with different TNE intensities: (i) ρL = 1 , ρ R = 3 , T L = 2 , T R = 2 , u xL = 0 , u xR = 0 , L ρ = Lu = LT = 20 , τ =3 × 10 −3;(ii) ρL = 3 , ρ R = 1 , T L = 4 , T R = 4 , u xL = 0 .1, u xR = 0 .1, L ρ = Lu = LT = 20 , τ =5 × 10 −3;Kinetic moment closure and multigradient coupling in high-order TNE 29 
+
+400 450 500 550 600 -0. 015 0. 000 0. 015 0. 030 
+
+400 450 500 550 600 -0. 015 0. 000 0. 015 0. 030 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+400 450 500 550 600 -0. 2 -0. 1 0. 0 0. 1 
+
+400 450 500 550 600 0. 0 0. 7 1. 4 2. 1 
+
+400 450 500 550 600 0. 0 0. 7 1. 4 2. 1 
+
+D 3V 55 D BM 
+
+D*(1) 3, 1x
+
+D*(1) 3, 1x + D*(2) 3, 1x
+
+D*(1) 3, 1x + D*(2) 3, 1x + D*(3) 3, 1x
+
+# x
+
+I ( a) =3× 10 -3 
+
+> rL
+
+=1.0, rR=3.0 
+
+TL=2.0, TR=2.0 
+
+ux L =0, ux R =0 
+
+D 3V 91 D BM 
+
+D*(1) 3, 1x
+
+D*(1) 3, 1x + D*(2) 3, 1x
+
+D*(1) 3, 1x + D*(2) 3, 1x + D*(3) 3, 1x
+
+# x
+
+I ( b) =3× 10 -3 
+
+> rL
+
+=1.0, rR=3.0 
+
+TL=2.0, TR=2.0 
+
+ux L =0, ux R =0 
+
+# x
+
+I I ( a) =5× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=4.0, TR=4.0 
+
+ux L =0.1, ux R =0.1 
+
+# x
+
+I I ( b) =5× 10 -3 
+
+> rL
+
+=3.0, rR=1.0 
+
+TL=4.0, TR=4.0 
+
+ux L =0.1, ux R =0.1 
+
+# x
+
+I I I ( a) =5× 10 -3 
+
+> rL
+
+=4.0, rR=4.0 
+
+TL=4.0, TR=1.0 
+
+ux L =0.1, ux R =0.1 
+
+# x
+
+I I I ( b) =5× 10 -3 
+
+> rL
+
+=4.0, rR=4.0 
+
+TL=4.0, TR=1.0 
+
+ux L =0.1, ux R =0.1 
+
+Figure 14. Distributions of ∆∗ 
+
+> 3,1x
+
+for the weak (I), moderate (II), and strong (III) cases computed using the D3V55 model (left column) and the D3V91 model (right column). Blue open circles denote the DBM results. The green dash-dotted, black dashed and red solid lines denote the first-, second- and third-order analytical solutions, respectively. The corresponding times for cases I–III are t = 0 .015, 0 .018, and 0 .016, respectively. 
+
+(iii) ρL = 4 , ρ R = 4 , T L = 4 , T R = 1 , u xL = 0 .1, u xR = 0 .1, L ρ = Lu = LT = 20 , τ =5 × 10 −3.Figure 14 compares ∆∗ 
+
+> 3,1x
+
+obtained with the Burnett-level D3V55 model and the super-Burnett-level D3V91 model. In case I, no temperature gradient is imposed initially, so the early heat-flux response is initiated by the density gradient. The density gradient first drives the second-order contribution ∆∗(2) 3,1x and induces a velocity-gradient response. During the subsequent evolution, this coupled response generates a temperature gradient, so the first-order contribution ∆∗(1) 3,1x becomes dominant at the analysed time. The maxi-mum relative intensities of the second- and third-order components are R(2) /(1) TNE = 0 .08 at 
+
+x = 495 and R(3) /(1) TNE = 0 .12 at x = 469, respectively. Thus, although the instantaneous 30 Lai, Guo, Gan, Yang, Liu and Lin 
+
+heat flux is dominated by the first-order contribution, its formation is affected by the density-gradient-induced higher-order pathway. Even in this weakly nonequilibrium regime, D3V55 shows visible deviations because it lacks the moment constraints required to represent the higher-order derivative and coupling terms involved in this pathway. By contrast, D3V91 is consistent with the third-order truncated analytical expression. This comparison indicates that density-gradient-induced heat-flux responses can be sensitive to high-order moment closure, even when the first-order contribution dominates the total signal. Table 2: Relative nonequilibrium intensities of the heat flux for weak (I), moderate (II), and strong (III) nonequilibrium conditions. 
+
+corresponding location 
+
+∆∗(2) 3,1x
+
+∆∗(1) 3,1x
+
+∆∗(3) 3,1x
+
+∆∗(1) 3,1x
+
+Case I 
+
+x = 469 0.07 0.12 
+
+x = 495 0.08 0.1 
+
+x = 522 0.08 0.07 
+
+Case II 
+
+x = 478 0.12 0.15 
+
+x = 506 0.1 0.21 
+
+x = 533 0.08 0.25 
+
+Case III x = 497 0.005 0.03 
+
+In case II, the relaxation time and macroscopic amplitudes are increased, which strengthens multiscale coupling among gradients and transport orders. The maximum relative intensities increase to R(2) /(1) TNE = 0 .12 at x = 478 and R(3) /(1) TNE = 0 .25 at x = 533. The third-order contribution thus becomes more important, although the first-order heat flux remains dominant. The D3V55 model cannot represent the enhanced multigradient coupling and therefore deviates from the constitutive descriptions (Figs. 14II(a,b)). By contrast, D3V91 remains consistent with the third-order analytical solution, showing its advantage for coupled heat-flux transport. In case III, the density gradient is removed while the temperature gradient is increased. Although the absolute TNE intensity is about 20 times that in case II, the relative higher-order contributions are reduced: R(2) /(1) TNE = 0 .005 and R(3) /(1) TNE = 0 .03 at x = 497. The system therefore returns to a first-order heat-flux regime. Higher-order coupling is weak because heat transport broadens the macroscopic interface and reduces the effective TNE driving strength. In this regime, the discrepancy of D3V55 decreases, while D3V91 still represents the third-order heat-flux behaviour consistently. These results show that resolving ∆∗ 
+
+> 3,1
+
+requires super-Burnett-level moment constraints when density-gradient-induced or multigradient coupling contributions become appreciable. Kinetic moment closure and multigradient coupling in high-order TNE 31 
+
+0.0 0.5 1.0 1.5 2.0 0.000 0.005 0.010 0.015 
+
+8 12 16 20 24 28 0.00 0.06 0.12 0.18 D3V 91 DBM   
+
+> D*3,1x-max
+
+=A1 eB 1 rR+C1  
+
+> D*3,1x-max
+
+=A2 rR+B2
+
+> D *3, 1 x-max
+
+rR
+
+lin ea r r e gim e
+
+expo nentia l r e gim e        
+
+> =3 × 1 0 -3
+> TL=2 .0 , TR=2 .0
+> uxL =0 , uxR =0
+> Lr=Lu=LT=2 0 .0
+
+# (a) (b) 
+
+D3V 91 DBM   
+
+> D*3,1x-m ax
+
+=A1 eB1 L+C1  
+
+> D*3,1x-m ax
+
+=A2 L+B2
+
+> D *3, 1 x-max
+
+## L         
+
+> =3 × 1 0 -3
+> rL=1 .0 , rR=3 .0
+> TL=2 .0 , TR=2 .0
+> uxL =0 , uxR =0
+
+expo nentia l r e gim e
+
+lin ea r r e gim e
+
+Figure 15. Effects of the density gradient (a) and transition-layer width (b) on the heat flux 
+
+∆∗
+
+> 3,1
+
+: exponential and linear responses, where for (a): A1 = 0 .013, B1 = 0 .917, C1 = −0.005, 
+
+A2 = 0 .006, B2 = 0 .002; for (b): A1 = −0.703, B1 = −0.110, C1 = 0 .012, A2 = −0.002, 
+
+B2 = 0 .061. 
+
+4.8. Nonequilibrium phase diagram of ∆∗
+
+> 3,1
+
+Figure 15(a) shows the density-gradient effect on ∆∗ 
+
+> 3,1x-max
+
+when no temperature or velocity gradient is imposed initially and the left-state density is fixed at ρL = 0 .2. Among the four TNE quantities considered here, this is the weakest density-induced response: the fitted values remain at the order of 10 −2.(i) Exponential growth stage (0.25 < ρ R < 1.1): ∆∗ 
+
+> 3,1x−max
+
+= A1eB1 ρR + C1. The exponential branch is mild. Because ∆∗ 
+
+> 3,1
+
+is aheat-flux-related vector moment, a pure density gradient affects it mainlythrough an indirect pathway: density variation first induces higher-ordernonequilibrium and regular velocity or temperature responses, which then feedback into the heat-flux component. This indirect pathway explains thenonlinear form of the fit. (ii) Linear growth stage ( ρR > 1.1): ∆∗ 
+
+> 3,1x−max
+
+= A2ρR + B2. The fitted slope is only A2 = 0 .006, confirming that the density-gradient effect remains weak in the high-density branch. Thus, for ∆∗
+
+> 3,1
+
+, density variation acts as a secondary trigger rather than a dominant driving mechanism. We next isolate the transition-layer-width effect of the imposed density interface by varying Lρ = L∆x , where L denotes the dimensionless interface width in grid units. In this test, TL = TR and uxL = uxR = 0, so temperature and velocity gradients are not imposed initially but may be generated during the subsequent evolution. Figure 15(b) shows the variation of ∆∗ 
+
+> 3,1x-max
+
+with L for τ = 3 × 10 −3. Increasing L broadens the density interface and reduces the imposed density gradient. Consequently, the heat-flux response decreases monotonically and exhibits two response regimes. (i) Exponential decay stage (8 < L < 20): ∆∗ 
+
+> 3,1x−max
+
+= A1eB1L +C1. In narrow density transition layers, the imposed density gradient is strong. It induces localized velocity and temperature responses during the early evolution, so the resulting gradients remain 32 Lai, Guo, Gan, Yang, Liu and Lin 
+
+concentrated near the interface and couple effectively. Increasing L rapidly weakens the imposed density gradient and reduces the induced multigradient coupling. This produces an approximately exponential decay of ∆∗
+
+> 3,1x-max
+
+.(ii) Linear decay stage ( L > 20): ∆∗ 
+
+> 3,1x−max
+
+= A2L + B2. In wide transition layers, the imposed density gradient is weaker, and the induced velocity and temperature responses are more diffuse. The nonlinear coupling is then reduced, and the response is governed mainly by the gradual decrease of the density-gradient strength with interface width. As a result, ∆∗ 
+
+> 3,1x-max
+
+decays approximately linearly with L.A similar decrease with increasing transition-layer width is observed for ∆∗
+
+> 3
+
+, ∆∗
+
+> 4,2
+
+and ∆∗
+
+> 2
+
+. This common behaviour indicates that the transition-layer width controls high-order TNE mainly by regulating the strength, localization and overlap of the imposed and induced macroscopic gradients. Narrow transition layers enhance nonlinear multigradient coupling, whereas wide transition layers weaken this coupling and lead to a more nearly linear response. 
+
+5. Conclusions and outlook 
+
+This study develops a three-dimensional super-Burnett-level discrete Boltzmann model for high-order thermodynamic nonequilibrium (TNE) in compressible flows. The central objective is to connect kinetic moment closure with high-order non-conserved moments and their multigradient-coupled responses. First, we derived the kinetic moment relations required for high-order TNE from the Chapman–Enskog expansion. These relations specify the moment con-straints needed to describe third-order contributions to ∆∗ 
+
+> 2
+
+and ∆∗
+
+> 3,1
+
+, together with second-order contributions to ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+. The resulting moment set is 
+
+Φ = (M0, M1, M2,0, M2, M3,1, M3, M4,2, M4, M5,3, M5, M6,4). Based on this set, we constructed two D3V91 discrete velocity realizations and obtained the corresponding three-dimensional nonlinear constitutive relations. Compared with two-dimensional formulations, the three-dimensional construction contains more independent moment components and involves richer coupling among gradients, curvature terms and high-order fluxes. Second, one-dimensional compressible benchmark problems were used to assess the macroscopic consistency of the model. The D3V91 model reproduces the main Riemann wave structures, including shocks, rarefaction waves and contact discontinuities. These tests assess the implementation of the discrete velocity model in one-dimensional strong-gradient flows, while not constituting a complete validation for fully three-dimensional flow configurations. Third, we used the model to examine high-order TNE quantities. The results show that the Burnett-level D3V55 model can describe some lower-order TNE responses, but becomes insufficient when high-order contributions become comparable to, or larger than, Kinetic moment closure and multigradient coupling in high-order TNE 33 the leading-order terms. By contrast, the D3V91 model satisfies the additional moment constraints required to represent third-order contributions to ∆∗ 
+
+> 2
+
+and ∆∗
+
+> 3,1
+
+, and second-order contributions to ∆∗ 
+
+> 3
+
+and ∆∗
+
+> 4,2
+
+. These comparisons show that the ability to resolve a target TNE quantity depends not only on the number of discrete velocities, but more fundamentally on whether the required kinetic moment relations are satisfied. Fourth, the parametric response analysis shows that high-order TNE quantities are not driven by a single macroscopic gradient. Instead, they arise from coupled leading gradients, secondary gradients, gradient products, curvature terms and transition-layer widths. Depending on the relative strength of these driving factors, the TNE response may change from an approximately linear dependence to nonlinear or exponential growth, and may return to an approximately linear regime. The density-gradient analysis further shows that the relevant driving measure is often the relative density variation, ∇ρ/ρ ,rather than the absolute density gradient alone. These results identify multigradient coupling as a key mechanism controlling high-order TNE in strong-gradient compressible flows. The present model has several limitations. The single-relaxation-time formulation assumes a common relaxation rate for all kinetic modes, whereas realistic nonequilibrium flows may involve mode-dependent relaxation associated with momentum transport, heat transport, internal-energy exchange, chemical reactions and multicomponent diffusion. The numerical tests are also restricted mainly to one-dimensional configurations, although the discrete velocity model and the moment relations are three-dimensional. Further assessment is therefore required for genuinely three-dimensional flows with shock interac-tions, vortical structures and strong thermal or compositional gradients. In addition, the stability properties of the present high-order velocity set and its coupling with numerical schemes remain to be analysed systematically. Future work should proceed in three directions. First, moment closures beyond the present super-Burnett level should be developed for more extreme nonequilibrium regimes. Second, multiple-relaxation-time and mode-dependent collision models should be constructed to represent the distinct relaxation rates of different kinetic processes. Third, systematic stability analyses, including von Neumann analysis, should be carried out to identify the constraints imposed by the discrete velocity set, relaxation parameters and numerical schemes. These developments will extend high-order DBMs to more complex compressible, rarefied, reacting and multicomponent flows. 
+
+Acknowledgements 
+
+This work was supported by the National Natural Science Foundation of China (Grant Nos. U2242214, 11875001 and 12172061), the Hebei Outstanding Youth Science Foun-dation (Grant No. A2023409003), the Natural Science Foundation of Fujian Province 34 Lai, Guo, Gan, Yang, Liu and Lin 
+
+(Grant No. 2026J001415), and the Fujian Provincial Special Funds for Education and Research in Provincial Units (Grant No. K3-949). 
+
+Appendix A. Discrete velocity sets and high-order constitutive terms 
+
+This appendix lists the discrete velocity sets and the analytical constitutive terms used in the D3V91 models. Tables 3 and 4 give the two 91-velocity realizations used in the numerical tests. Tables 5–9 provide the first-, second- and third-order TNE expressions used to compare the DBM results with the Chapman–Enskog constitutive relations. Table 3: Discrete velocity set D3V91(I), with 91 discrete velocities. 
+
+Index (vx, v y , v z ) Index (vx, v y , v z ) Index (vx, v y , v z )
+
+1 (0,0,0) 32 (−1,2,0) 62 (0, −2, −2) 
+
+2 (1,0,0) 33 (1, −2,0) 63 (0,2, −2) 
+
+3 (−1,0,0) 34 (−2,1,0) 64 (2,1,3) 
+
+4 (0,1,0) 35 (2, −1,0) 65 (−2, −1, −3) 
+
+5 (0, −1,0) 36 (0,2,1) 66 (3,1,2) 
+
+6 (0,0,1) 37 (0, −2, −1) 67 (−3, −1, −2) 
+
+7 (0,0, −1) 38 (0,1,2) 68 (3,1, −2) 
+
+8 (1,1,0) 39 (0, −1, −2) 69 (−3, −1,2) 
+
+9 (−1,1,0) 40 (0, −1,2) 70 (2,1, −3) 
+
+10 (−1, −1,0) 41 (0,1, −2) 71 (−2, −1,3) 
+
+11 (1, −1,0) 42 (0, −2,1) 72 (3,2,1) 
+
+12 (1,0,1) 43 (0,2, −1) 73 (−3, −2, −1) 
+
+13 (1,0, −1) 44 (2,0,1) 74 (2,3,1) 
+
+14 (−1,0, −1) 45 (−2,0, −1) 75 (−2, −3, −1) 
+
+15 (−1,0,1) 46 (1,0,2) 76 (−2,3,1) 
+
+16 (0,1,1) 47 (−1,0, −2) 77 (2, −3, −1) 
+
+17 (0, −1,1) 48 (−1,0,2) 78 (−3,2,1) 
+
+18 (0, −1, −1) 49 (1,0, −2) 79 (3, −2, −1) 
+
+19 (0,1, −1) 50 (−2,0,1) 80 (1,2,3) 
+
+20 (1,1,1) 51 (2,0, −1) 81 (−1, −2, −3) 
+
+21 (−1, −1, −1) 52 (2,2,0) 82 (1,3,2) 
+
+22 (−1,1,1) 53 (−2,2,0) 83 (−1, −3, −2) 
+
+23 (1, −1, −1) 54 (−2, −2,0) 84 (1,3, −2) 
+
+24 (−1, −1,1) 55 (2, −2,0) 85 (−1, −3,2) 
+
+25 (1,1, −1) 56 (2,0,2) 86 (1,2, −3) 
+
+26 (1, −1,1) 57 (2,0, −2) 87 (−1, −2,3) 
+
+27 (−1,1, −1) 58 (−2,0, −2) 88 (−2,1, −1) Kinetic moment closure and multigradient coupling in high-order TNE 35 
+
+Index (vx, v y , v z ) Index (vx, v y , v z ) Index (vx, v y , v z )
+
+28 (2,1,0) 59 (−2,0,2) 89 (−2, −2,2) 
+
+29 (−2, −1,0) 60 (0,2,2) 90 (2, −3, −3) 
+
+30 (1,2,0) 61 (0, −2,2) 91 (2,4,4) 
+
+31 (−1, −2,0) 
+
+Table 4: Discrete velocity set D3V91(II), with 91 discrete velocities. 
+
+Index (vx, v y , v z ) Index (vx, v y , v z ) Index (vx, v y , v z )
+
+1 (0, 0, 0) 32 (0, −2, 0) 62 (−3.1, 3.5, 3.1) 
+
+2 (0.7, 0, 0) 33 (0, 0, 2) 63 (−3.1, −3.5, −3.1) 
+
+3 (−0.7, 0, 0) 34 (0, 0, −2) 64 (−3.1, 3.5, −3.1) 
+
+4 (0, 0.7, 0) 35 (1.1, 3, 0) 65 (−3.1, −3.5, 3.1) 
+
+5 (0, −0.7, 0) 36 (−1.1, 3, 0) 66 (3.5, 5, 5) 
+
+6 (0, 0, 0.7) 37 (1.1, −3, 0) 67 (3.5, −4.6, 4.6) 
+
+7 (0, 0, −0.7) 38 (−1.1, −3, 0) 68 (3.5, 4.2, −4.2) 
+
+8 (0.7, 0.7, 0) 39 (0, 2.1, 2.8) 69 (3.5, −3.8, −3.8) 
+
+9 (−0.7, 0.7, 0) 40 (0, −2.1, 2.8) 70 (−3.5, 3.8, 3.8) 
+
+10 (−0.7, −0.7, 0) 41 (0, 2.1, −2.8) 71 (−3.5, −4.2, 4.2) 
+
+11 (0.7, −0.7, 0) 42 (0, −2.1, −2.8) 72 (−3.5, 4.6, −4.6) 
+
+12 (0.7, 0, 0.7) 43 (3, 0, 3.5) 73 (−3.5, −5, −5) 
+
+13 (0.7, 0, −0.7) 44 (−3, 0, 3.5) 74 (7.2, 0, 0) 
+
+14 (−0.7, 0, −0.7) 45 (3, 0, −3.5) 75 (−7.2, 0, 0) 
+
+15 (−0.7, 0, 0.7) 46 (−3, 0, −3.5) 76 (0, 7.2, 0) 
+
+16 (0, 0.7, 0.7) 47 (5, 3.1, 1.7) 77 (0, −7.2, 0) 
+
+17 (0, −0.7, 0.7) 48 (−4.6, 3.1, 2) 78 (0, 0, 7.2) 
+
+18 (0, −0.7, −0.7) 49 (4.2, −3.1, 2.3) 79 (0, 0, −7.2) 
+
+19 (0, 0.7, −0.7) 50 (−3.8, −3.1, 2.6) 80 (5.5, 5, 6) 
+
+20 (1.9, 1.9, 1.9) 51 (3.8, 3.1, −2.6) 81 (5.5, 5, −6) 
+
+21 (−1.9, −1.9, −1.9) 52 (−4.2, −3.1, −2.3) 82 (−5.5, −5, 6) 
+
+22 (−1.9, 1.9, 1.9) 53 (4.6, 3.1, −2) 83 (−5.5, −5, −6) 
+
+23 (1.9, −1.9, −1.9) 54 (−5, −3.1, −1.7) 84 (6.5, 6.5, 0) 
+
+24 (−1.9, −1.9, 1.9) 55 (3.1, 3.5, 3.1) 85 (6.5, −6.5, 0) 
+
+25 (1.9, 1.9, −1.9) 56 (3.1, −3.5, 3.1) 86 (−6.5, 6.5, 0) 
+
+26 (1.9, −1.9, 1.9) 57 (−3.1, 3.5, 3.1) 87 (−6.5, −6.5, 0) 
+
+27 (−1.9, 1.9, −1.9) 58 (3.1, 3.5, −3.1) 88 (−4, 7, −5) 
+
+28 (2, 0, 0) 59 (3.1, −3.5, −3.1) 89 (−4, 9, 6) 
+
+29 (−2, 0, 0) 60 (−3.1, −3.5, −3.1) 90 (2, −7, −8) 36 Lai, Guo, Gan, Yang, Liu and Lin 
+
+Index (vx, v y , v z ) Index (vx, v y , v z ) Index (vx, v y , v z )
+
+30 (0, 2, 0) 61 (−3.1, 3.5, −3.1) 91 (6, −9, 7) 
+
+31 (0, −2, 0) 
+
+The expressions for the first-order ∆∗(1) 3 and ∆∗(1) 4,2 in three-dimensions are presented in Table 5. Table 5: Expressions for ∆∗(1) 3 and ∆∗(1) 4,2 .
+
+TNE Formula 
+
+∆∗(1) 3xxx −3τ ρR 2T ∂ xT
+
+∆∗(1) 3xxy −τ ρR 2T ∂ yT
+
+∆∗(1) 3xxz −τ ρR 2T ∂ z T
+
+∆∗(1) 3xyy −τ ρR 2T ∂ xT
+
+∆∗(1) 3xyz 0
+
+∆∗(1) 3xzz −τ ρR 2T ∂ xT
+
+∆∗(1) 3yyy −3τ ρR 2T ∂ yT
+
+∆∗(1) 3yyz −τ ρR 2T ∂ z T
+
+∆∗(1) 3yzz −τ ρR 2T ∂ yT
+
+∆∗(1) 3zzz −3τ ρR 2T ∂ z T
+
+∆∗(1) 4,2xx −n−13 n7τ ρR 2T 2 (n2∂xux − ∂y uy − ∂z uz )
+
+∆∗(1) 4,2xy − 1 
+
+> 2
+
+n7τ ρR 2T 2 (∂y ux + ∂xuy)
+
+∆∗(1) 4,2xz − 1 
+
+> 2
+
+n7τ ρR 2T 2 (∂z ux + ∂xuz )
+
+∆∗(1) 4,2yy −n−13 n7τ ρR 2T 2 (−∂xux + n2∂y uy − ∂z uz )
+
+∆∗(1) 4,2yz − 1 
+
+> 2
+
+n7τ ρR 2T 2 (∂z uy + ∂y uz )
+
+∆∗(1) 4,2zz −n−13 n7τ ρR 2T 2 (−∂xux − ∂y uy + n2∂z uz )
+
+na n + a
+
+The expressions for the second-order ∆∗(2) 3 and ∆∗(2) 4,2 in three-dimensions are presented in Table 6, with the associated terms S1, . . . , S 68 listed in Table 7. Table 6: Expressions for ∆∗(2) 3 and ∆∗(2) 4,2 .
+
+TNE Formula 
+
+∆∗(2) 3xxx 6n−13 τ 2ρR 2T (T S 1 + ∂xT S 2 + n3S3)
+
+∆∗(2) 3xxy 2n−13 τ 2ρR 2T (T S 4 + ∂y T S 5 + n3S6)
+
+∆∗(2) 3xxz 2n−13 τ 2ρR 2T (T S 7 + ∂z T S 8 + n3S9)
+
+∆∗(2) 3xyy 2n−13 τ 2ρR 2T (T S 10 + ∂xT S 11 + n3S12 )
+
+∆∗(2) 3xyz 2τ 2ρR 2T (T S 13 + S14 )Kinetic moment closure and multigradient coupling in high-order TNE 37 
+
+TNE Formula 
+
+∆∗(2) 3xzz 2n−13 τ 2ρR 2T (T S 15 + ∂xT S 16 + n3S17 )
+
+∆∗(2) 3yyy 6n−13 τ 2ρR 2T (T S 18 + ∂y T S 19 + n3S20 )
+
+∆∗(2) 3yyz 2n−13 τ 2ρR 2T (T S 21 + ∂z T S 22 + n3S23 )
+
+∆∗(2) 3yzz 2n−13 τ 2ρR 2T (T S 24 + ∂y T S 25 + n3S26 )
+
+∆∗(2) 3zzz 6n−13 τ 2ρR 2T (T S 27 + ∂z T S 28 + n3S29 )
+
+∆∗(2) 4,2xx 
+
+−n−23 τ 2ρ−1R2T [n3n7ρRT 2S30 − n23ρ2RT S 31 + ρ2T (S32 + S33 − n3S34 −
+
+n3S35 ) − n3n7ρ2RS 36 − n3n7RT 2S37 ]
+
+∆∗(2) 4,2xy 
+
+−n−13 τ 2ρ−1R2T (n3n7RT 2S38 − n3n7ρ2RS 39 − ρ2T ∂ yuxS40 − ρ2T ∂ xuy S41 −
+
+n3ρ2T S 42 )
+
+∆∗(2) 4,2xz 
+
+−n−13 τ 2ρ−1R2T (n3n7RT 2S43 − n3n7ρ2RS 44 − ρ2T ∂ zuxS45 − ρ2T ∂ xuz S46 −
+
+n3ρ2T S 47 )
+
+∆∗(2) 4,2yy 
+
+−n−23 τ 2ρ−1R2T [n3n7ρRT 2S48 − n23ρ2RT S 49 + ρ2T (S50 + S51 − n3S52 −
+
+n3S53 ) − n3n7ρ2RS 54 − n3n7RT 2S55 ]
+
+∆∗(2) 4,2yz 
+
+−n−13 τ 2ρ−1R2T (n3n7RT 2S56 − n3n7ρ2RS 57 − ρ2T ∂ zuyS58 − ρ2T ∂ yuz S59 −
+
+n3ρ2T S 60 )
+
+∆∗(2) 4,2zz 
+
+−n−23 τ 2ρ−1R2T [n3n7ρRT 2S61 − n23ρ2RT S 62 + ρ2T (S63 + S64 − n3S65 −
+
+n3S66 ) − n3n7ρ2RS 67 − n3n7RT 2S68 ]
+
+Table 7: Expressions for Si, i = 1 , ..., 68. 
+
+TNE Formula 
+
+S1 n1∂2
+
+> x
+
+ux − 2∂2
+
+> xy
+
+uy − 2∂2 
+
+> xz
+
+uz
+
+S2 (5 + 3 n)∂xux − 4∂yuy − 4∂z uz
+
+S3 ∂y T ∂ yux + ∂z T ∂ zux
+
+S4 2n2∂2 
+
+> xy
+
+ux + n3∂2
+
+> x
+
+uy − 2∂2 
+
+> y
+
+uy − 2∂2
+
+> yz
+
+uz
+
+S5 2n1∂xux + n−1∂y uy − 4∂zuz
+
+S6 (2 ∂y ux + 3 ∂xuy )∂xT + ∂z T ∂ zuy
+
+S7 2n2∂2 
+
+> xz
+
+ux − 2∂2
+
+> yz
+
+uy + n3∂2
+
+> x
+
+uz − 2∂2 
+
+> z
+
+uz
+
+S8 2n1∂xux − 4∂yuy + n−1∂z uz
+
+S9 (2 ∂z ux + 3 ∂xuz )∂xT + ∂y T ∂ yuz
+
+S10 −2∂2
+
+> x
+
+ux + n3∂2 
+
+> y
+
+ux + 2 n2∂2 
+
+> xy
+
+uy
+
+S11 n−1∂xux + 2 n1∂y uy − 4∂zuz
+
+S12 (3 ∂y ux + 2 ∂xuy )∂y T + ∂z T ∂ zux
+
+S13 ∂2 
+
+> yz
+
+ux + ∂2 
+
+> xz
+
+uy + ∂2 
+
+> xy
+
+uz
+
+S14 (∂z uy + ∂y uz )∂xT + ( ∂xuz + ∂z ux)∂y T + ( ∂xuy + ∂y ux)∂z T
+
+S15 −2∂2
+
+> x
+
+ux + n3∂2 
+
+> z
+
+ux − 2∂2
+
+> xy
+
+uy + 2 n2∂2 
+
+> xz
+
+uz
+
+S16 n−1∂xux − 4∂y uy + 2 n1∂z uz38 Lai, Guo, Gan, Yang, Liu and Lin 
+
+TNE Formula 
+
+S17 (3 ∂z ux + 2 ∂xuz )∂z T + ∂y T ∂ yux
+
+S18 −2∂2
+
+> xy
+
+ux + n1∂2 
+
+> y
+
+uy − 2∂2 
+
+> yz
+
+uz
+
+S19 −4∂xux + (5 + 3 n)∂yuy − 4∂z uz
+
+S20 ∂xT ∂ xuy + ∂z T ∂ z uy
+
+S21 −2∂2
+
+> xz
+
+ux + 2 n2∂2 
+
+> yz
+
+uy + n3∂2 
+
+> y
+
+uz − 2∂2 
+
+> z
+
+uz
+
+S22 −4∂xux + 2 n1∂y uy + n−1∂z uz
+
+S23 (3 ∂y uz + 2 ∂z uy)∂y T + ∂xT ∂ xuz
+
+S24 −2∂2
+
+> xy
+
+ux − 2∂2 
+
+> y
+
+uy + n3∂2 
+
+> z
+
+uy + 2 n2∂2 
+
+> yz
+
+uz
+
+S25 −4∂xux + n−1∂y uy + 2 n1∂z uz
+
+S26 (3 ∂z uy + 2 ∂y uz)∂z T + ∂xT ∂ xuy
+
+S27 −2∂2
+
+> xz
+
+ux − 2∂2
+
+> yz
+
+uy + n1∂2 
+
+> z
+
+uz
+
+S28 −4∂xux − 4∂yuy + (5 + 3 n)∂z uz
+
+S29 ∂xT ∂ xuz + ∂yT ∂ y uz
+
+S30 n2∂2
+
+> x
+
+ρ − ∂2 
+
+> y
+
+ρ − ∂2 
+
+> z
+
+ρ
+
+S31 n8∂2
+
+> x
+
+T − ∂2 
+
+> y
+
+T − ∂2 
+
+> z
+
+T
+
+S32 −n2(n2 + 14 n + 9)( ∂xux)2 + ( n2 + 6 n − 15)[( ∂y uy)2 + ( ∂z uz )2]
+
+S33 4( n2 + 12 n + 15)( ∂y uy + ∂z uz )∂xux − 8n9∂y uy∂z uz
+
+S34 (n2 +11 n+20)[( ∂yux)2 +( ∂z ux)2]+ n−1[( ∂xuy)2 +( ∂xuz )2]−n7[( ∂z uy )2 +( ∂y uz )2]
+
+S35 4n3(∂y ux∂xuy + ∂z ux∂xuz )
+
+S36 (4 n + 11)( ∂xT )2 + n2(∂y T )2 + n2(∂z T )2
+
+S37 n2(∂xρ)2 − (∂y ρ)2 − (∂z ρ)2
+
+S38 ρ∂ 2
+
+> xy
+
+ρ − ∂xρ∂ y ρ
+
+S39 T ∂ 2
+
+> xy
+
+T + 3 ∂xT ∂ yT
+
+S40 2n−5∂xux + n11 (n1∂y uy − 2∂z uz)
+
+S41 (n2 + 12 n + 11) ∂xux + 2 n−5∂y uy − 2n11 ∂z uz
+
+S42 (n9∂z uy + 2 ∂y uz)∂z ux + 2 ∂z uy∂xuz + 2 ∂y uz ∂xuz
+
+S43 ρ∂ 2 
+
+> xz
+
+ρ − ∂xρ∂ z ρ
+
+S44 T ∂ 2
+
+> xz
+
+T + 3 ∂xT ∂ z T
+
+S45 2n−5∂xux + n11 (−2∂y uy + n1∂z uz )
+
+S46 (n2 + 12 n + 11) ∂xux − 2n11 ∂y uy + 2 n−5∂z uz
+
+S47 (n9∂y uz + 2 ∂z uy)∂y ux + 2 ∂xuy ∂y uz + 2 ∂z uy∂xuy
+
+S48 −∂2
+
+> x
+
+ρ + n2∂2 
+
+> y
+
+ρ − ∂2 
+
+> z
+
+ρ
+
+S49 −∂2
+
+> x
+
+T + n8∂2 
+
+> y
+
+T − ∂2 
+
+> z
+
+T
+
+S50 −n2(n2 + 14 n + 9)( ∂y uy )2 + ( n2 + 6 n − 15)[( ∂xux)2 + ( ∂z uz )2]
+
+S51 4( n2 + 12 n + 15)( ∂xux + ∂z uz )∂y uy − 8n9∂xux∂z uz
+
+S52 (n2 +11 n+20)[( ∂xuy )2 +( ∂z uy)2]+ n−1[( ∂y ux)2 +( ∂y uz)2]−n7[( ∂z ux)2 +( ∂xuz )2]
+
+S53 4n3(∂y ux∂xuy + ∂z uy∂y uz )Kinetic moment closure and multigradient coupling in high-order TNE 39 
+
+TNE Formula 
+
+S54 n2(∂xT )2 + (4 n + 11)( ∂yT )2 + n2(∂z T )2
+
+S55 −(∂xρ)2 + n2(∂y ρ)2 − (∂z ρ)2
+
+S56 ρ∂ 2 
+
+> yz
+
+ρ − ∂yρ∂ z ρ
+
+S57 T ∂ 2
+
+> yz
+
+T + 3 ∂yT ∂ z T
+
+S58 2n−5∂y uy + n11 (−2∂xux + n1∂z uz )
+
+S59 −2n11 ∂xux + ( n2 + 12 n + 11) ∂yuy + 2 n−5∂z uz
+
+S60 (n9∂xuz + 2 ∂z ux)∂xuy + 2 ∂y ux∂xuz + 2 ∂yux∂z ux
+
+S61 −∂2
+
+> x
+
+ρ − ∂2 
+
+> y
+
+ρ + n2∂2 
+
+> z
+
+ρ
+
+S62 −∂2
+
+> x
+
+T − ∂2 
+
+> y
+
+T + n8∂2 
+
+> z
+
+T
+
+S63 (n2 + 6 n − 15)[( ∂xux)2 + ( ∂y uy)2] − n2(n2 + 14 n + 9)( ∂z uz)2
+
+S64 4( n2 + 12 n + 15)( ∂xux + ∂y uy )∂z uz − 8n9∂xux∂y uy
+
+S65 (n2 +11 n+20)[( ∂xuz )2 +( ∂y uz)2]+ n−1[( ∂z ux)2 +( ∂z uy)2]−n7[( ∂y ux)2 +( ∂xuy)2]
+
+S66 4n3(∂z ux∂xuz + ∂z uy ∂y uz)
+
+S67 n2(∂xT )2 + n2(∂y T )2 + (4 n + 11)( ∂z T )2
+
+S68 −(∂xρ)2 − (∂y ρ)2 + n2(∂z ρ)2
+
+The expressions for the Third-order viscous stress ∆∗(3) 2 and heat flux ∆∗(3) 3,1 in three-dimensions are presented in Table 8, with the associated terms S69 , . . . , S 82 listed in Table 9. Table 8: Expressions for ∆∗(3) 2 and ∆∗(3) 3,1 .
+
+TNE Formula 
+
+∆∗(3) 2xx 
+
+−2n2n−23 τ 3ρ−2R(n3ρ2RT 2S69 + n3ρ2T ∂ 2
+
+> x
+
+uxS70 − n3ρRT ∂ 2
+
+> x
+
+ρS 71 +
+
+n3ρ3R∂ 2
+
+> x
+
+T S 72 + ρ2(∂xux)2S73 + n3ρR∂ xuxS74 − n23Ru x∂xρS 75 )
+
+∆∗(3) 3,1x
+
+2n−23 τ 3ρ−2R(n3ρ2RT 2S76 − 1 
+
+> 4
+
+n3ρ2RT ∂ 2
+
+> x
+
+T S 77 − 1 
+
+> 2
+
+ρ2RT ∂ 2
+
+> x
+
+uxS78 −
+
+n3ρRT 2∂2
+
+> x
+
+ρS 79 − n3ρ2R(∂xT )2S80 − 1 
+
+> 4
+
+ρRT ∂ xT S 81 + n2T S 82 )
+
+Table 9: Expressions for Si, i = 69 , ..., 82. 
+
+TNE Formula 
+
+S69 n1ρ∂ 3
+
+> x
+
+ux − n3ux∂3
+
+> x
+
+ρ
+
+S70 2n−1ρu x∂xux + n1RT ∂ xρ + (10 n + 18) ρR∂ xT
+
+S71 (5 n + 11) ρT ∂ xux − 2n3ux(T ∂ xρ − ρ∂ xT )
+
+S72 (5 n + 7) T ∂ xux − 2n3ux∂xT
+
+S73 3( n2 − 5) ρT ∂ xux + n−1n3ux(T ∂ xρ − ρ∂ xT )
+
+S74 2(5 n + 9) ρ2(∂xT )2 + (5 n + 7) ρT ∂ xρ∂ xT + (5 n + 11) T 2(∂xρ)2
+
+S75 (∂xρ)2T 2 − 2ρT ∂ xρ∂ xT − ρ2(∂xT )240 Lai, Guo, Gan, Yang, Liu and Lin 
+
+TNE Formula 
+
+S76 − 1 
+
+> 4
+
+(n2 + 12 n + 23) ρR∂ 3
+
+> x
+
+T − 1 
+
+> 2
+
+n−1ρu x∂3
+
+> x
+
+ux + n2RT ∂ 3
+
+> x
+
+ρ
+
+S77 12( n2 + 11 n + 22) ρR∂ xT + ( n2 + 12 n + 23) RT ∂ xρ + 2( n2 + 10 n + 13) ρu x∂xux
+
+S78 n1n3n11 ρu x∂xT + (20 n2 + 52 n + 12) ρT ∂ xux + n3n−1T u x∂xρ
+
+S79 − 3 
+
+> 4
+
+(n2 + 12 n + 23) ρR∂ xT + n2(2 RT ∂ xρ − ρu x∂xux)
+
+S80 1 
+
+> 4
+
+(7 n2 + 68 n + 129) ρR∂ xT + ( n2 + 11 n + 21) RT ∂ xρ + 1 
+
+> 2
+
+(n2 + 12 n + 17) ρu x∂xux
+
+S81 
+
+2(3 n3 + 62 n2 + 197 n + 158) ρ2(∂xux)2 + 2 n3(n2 + 10 n + 13) ρu x∂xρ∂ xux +3n3(n2 + 12 n + 23) RT (∂xρ)2
+
+S82 
+
+−3n1ρ2RT ∂ xρ(∂xux)2 + n3R2T 2(∂xρ)3 − n−1ρ3ux(∂xux)3 −
+
+n3ρRT u x(∂xρ)2∂xux
+
+Declaration of interests 
+
+The authors report no conflict of interest. 
+
+Author ORCIDs 
+
+H. Lai, https://orcid.org/0000-0001-5978-5736 Q. Guo, https://orcid.org/0009-0004-9568-4712 Y. Gan, https://orcid.org/0000-0002-0191-9022 B. Yang, https://orcid.org/0000-0003-4015-199X H. Liu, https://orcid.org/0000-0002-8780-0398 P. Lin, https://orcid.org/0000-0003-2361-0066 
+
+REFERENCES Ascher, U.M., Ruuth, S.J. & Spiteri, R.J. 1997 Implicit-explicit Runge-Kutta methods for time-dependent partial differential equations. Appl. Numer. Math. 25 (2-3), 151–167. 
+
+Bird, Graeme A 1994 Molecular gas dynamics and the direct simulation of gas flows . Oxford university press. 
+
+Cercignani, Carlo 2000 Rarefied gas dynamics: from basic concepts to actual calculations , , vol. 21. Cambridge University Press. 
+
+Chapman, Sydney & Cowling, Thomas George 1990 The mathematical theory of non-uniform gases: an account of the kinetic theory of viscosity, thermal conduction and diffusion in gases . Cambridge University Press. 
+
+Chen, Z, Yuan, YT, Wang, LF, Tu, SY, Miao, WY, Wu, JF, Li, JW, Yin, CS, Deng, B, Zhang, J & others 2026 Observation of secular growth dominated dynamics in x-ray driven foils. Physical Review Letters 136 (14), 145103. 
+
+Fei, L.L., Qin, F.F., Wang, G., Huang, J.W., Wen, B.H., Zhao, J.L., Luo, K.H., Derome, D. & Carmeliet, J. 2023 Coupled lattice Boltzmann method–discrete element method model for gas–liquid–solid interaction problems. J. Fluid Mech. 975 , A20. 
+
+Gan, Y.B., Xu, A.G., Lai, H.L., Li, W., Sun, G.L. & Succi, S. 2022 Discrete Boltzmann multi-scale modelling of non-equilibrium multiphase flows. J. Fluid Mech. 951 , A8. 
+
+Gan, Y.B., Xu, A.G., Zhang, G.C. & Lai, H.L. 2018 a Three-dimensional discrete Boltzmann models for compressible flows in and out of equilibrium. Proc. Inst. Mech. Eng. C J. Mech. Eng. Sci. 232 (3), 477–490. 
+
+Gan, Y.B., Xu, A.G., Zhang, G.C., Zhang, Y.D. & Succi, S. 2018 b Discrete Boltzmann trans-scale modeling of high-speed compressible flows. Phys. Rev. E 97 (5), 053312. Kinetic moment closure and multigradient coupling in high-order TNE 41 
+
+Garc´ ıa-Col´ ın, Leopoldo S, Velasco, Rosa M & Uribe, Francisco J 2008 Beyond the navier–stokes equations: burnett hydrodynamics. Physics Reports 465 (4), 149–189. 
+
+Guo, Q.H., Gan, Y.B., Yang, B., Wu, Y.H., Lai, H.L. & Xu, A.G. 2025 Thermodynamic nonequilibrium effects in three-dimensional high-speed compressible flows: Multiscale modeling and simulation via the discrete Boltzmann method. Phys. Fluids 37 (4), 046117. 
+
+Guo, Z.L., Xu, K. & Zhu, Y.J. 2026 A unified gas-kinetic framework from Boltzmann to Navier-Stokes scales. Adv. Aerodyn. 8 (1), 8. 
+
+Hosseini, S.A., Boivin, P., Th´ evenin, D. & Karlin, I. 2024 Lattice Boltzmann methods for combustion applications. Prog. Energy Combust. Sci. 102 , 101140. 
+
+Hosseini, Seyed Ali & Karlin, Iliya V 2023 Lattice boltzmann for non-ideal fluids: Fundamentals and practice. Physics Reports 1030 , 1–137. 
+
+Ivanov, Mikhail S & Gimelshein, SF1609761 1998 Computational hypersonic rarefied flows. 
+
+Annual Review of Fluid Mechanics 30 (1), 469–505. 
+
+Ji, Y., Lin, C.D. & Luo, K.H. 2021 Three-dimensional multiple-relaxation-time discrete Boltzmann model of compressible reactive flows with nonequilibrium effects. AIP Adv. 
+
+11 (4), 045217. 
+
+Ji, Y., Lin, C.D. & Luo, K.H. 2022 A three-dimensional discrete Boltzmann model for steady and unsteady detonation. J. Comput. Phys. 455 , 111002. 
+
+Liang, Yu & Luo, Xisheng 2023 Review on hydrodynamic instabilities of a shocked gas layer. 
+
+Science China Physics, Mechanics & Astronomy 66 (10), 104701. 
+
+Lin, Chuandong & Luo, Kai H 2019 Discrete boltzmann modeling of unsteady reactive flows with nonequilibrium effects. Physical Review E 99 (1), 012142. 
+
+Lin, Chuandong, Xu, Aiguo, Zhang, Guangcai & Li, Yingjun 2016 Double-distribution-function discrete boltzmann model for combustion. Combustion and Flame 164 , 137–151. 
+
+Liu, X.D., Osher, S. & Chan, T. 1994 Weighted essentially non-oscillatory schemes. J. Comput. Phys. 115 (1), 200–212. 
+
+Lu, X.Q., Yu, Z.Z., Cheng, S.M., Yang, L.M., Ding, H. & Lu, X.Y. 2026 A cut-cell discrete-velocity method for fluid-structure interactions in rarefied gases. J. Comput. Phys. p. 114822. 
+
+Mott-Smith, Harold Meade 1951 The solution of the boltzmann equation for a shock wave. 
+
+Physical Review 82 (6), 885. 
+
+Nagnibeda, Ekaterina & Kustova, Elena 2009 Non-equilibrium reacting gas flows: kinetic theory of transport and relaxation processes . Springer Science & Business Media. 
+
+R. Courant and K.O. Friedrichs 1999 Supersonic flow and shock waves , , vol. 21. Springer Science & Business Media. 
+
+Sod, G.A. 1978 A survey of several finite difference methods for systems of nonlinear hyperbolic conservation laws. J. Comput. Phys. 27 (1), 1–31. 
+
+Struchtrup, H. 2005 Macroscopic transport equations for rarefied gas flows. In Macroscopic Transport Equations for Rarefied Gas Flows: Approximation Methods in Kinetic Theory .Springer. 
+
+Wang, Yue, Wang, Yunpeng & Jiang, Zonglin 2024 Experimental and numerical investigation on the unsteady interaction in longitudinal stage separation for parallel-staged two-body configuration. Physics of Fluids 36 (1). 
+
+Wu, L., Zhang, Y.H. & Li, Z.H. 2017 Computable model on the collision integral of Boltzmann equation and application to rarefied aerodynamics. Sci. Sin. Phys. Mech. Astron. 47 (7), 070004. 
+
+Wu, Y.H., Gan, Y.B., Xu, A.G. & Yang, B. 2025 Stability analysis of discrete Boltzmann simulation for supersonic flows: Influencing factors, coupling mechanisms, and optimization strategies. Phys. Fluids 37 (7). 
+
+Xu, Aiguo, Zhang, Dejia & Gan, Yanbiao 2024 Advances in the kinetics of heat and mass transfer in near-continuous complex flows. Frontiers of Physics 19 (4), 42500. 
+
+Xu, A.G. & Zhang, Y.D. 2022 Kinetic theory of complex media . Beijing: Science Press. 
+
+Yin, T.A., Cai, Z.N. & Wang, Y.L. 2026 A fast fourier spectral method for the linearized Boltzmann collision operator. SIAM J. Sci. Comput. 48 (1), B83–B111. 
+
+Zhang, D.J., Gan, Y.B., Yang, B., Shan, Y.M. & Xu, A.G. 2026 Shock wave kinetics: Multiscale hydrodynamic and thermodynamic non-equilibrium via the discrete Boltzmann method. Front. Phys. 21 (5), 054203. 42 Lai, Guo, Gan, Yang, Liu and Lin 
+
+Zhang, H.X. 1988 Non-oscillatory and non-free-parameter dissipation difference scheme. Acta Aerodyn. Sin. 6 (02), 143–165. 
+
+Zhou, Ye 2017 Rayleigh–taylor and richtmyer–meshkov instability induced flow, turbulence, and mixing. ii. Physics Reports 723 , 1–160.
