@@ -1,0 +1,411 @@
+Title: Contrast encodes inductive bias: separating slow noise from dynamics in predictive representation learning
+
+URL Source: https://arxiv.org/pdf/2606.07770v1
+
+Published Time: Tue, 09 Jun 2026 00:16:29 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# Contrast encodes inductive bias: separating slow noise from dynamics in predictive representation learning 
+
+Paarth Gulati 
+
+Department of Physics, and Initiative in Theory and Modeling of Living Systems Emory University, Atlanta, GA 
+
+Ilya Nemenman 
+
+Departments of Physics and Biology, and Initiative in Theory and Modeling of Living Systems Emory University, Atlanta, GA 
+
+# Abstract 
+
+Self-supervised methods that learn representations and predict dynamics fully in the latent space, such as JEPA, have been shown to confuse slowly varying noise with the dynamical signals they aim to capture. Specifically, when noise features remain approximately constant within each trajectory, contrastive predictive ob-jectives preferentially encode these features instead of the true latent variables governing the system. The learned representation then becomes dominated by trajectory-specific noise, so downstream performance degrades with noise strength and does not improve even as the number and duration of training trajectories increase. We argue that this failure is a property of the objective itself, shared by a long line of contrastive predictive objectives that sample negatives across trajectories. To illustrate this generality, we study the failure mode and its remedy in two settings: a standard SimCLR-style JEPA on a synthetic moving-dot dataset, and DySIB, a recently introduced method designed for extracting physically inter-pretable representations of dynamics, on movies of a rigid-body pendulum. When negatives are instead sampled within a single trajectory, the slow noise can no longer distinguish frames within that trajectory, removing the predictive shortcut. Training one encoder simultaneously on many such trajectories then forces it to encode the variables relevant for the dynamics, with longer trajectories yielding better representations even for strong slow noise. Our results point toward prin-ciples for designing contrastive predictive objectives in dynamical representation learning, especially for physical systems with noisy experimental observations. 
+
+# 1 Introduction 
+
+Latent-variable models that learn compact representations of high-dimensional observations and predict their dynamics entirely in the latent space, including Joint Embedding Predictive Architectures (JEPAs) and others, have become a central tool for self-supervised learning of physical and embodied systems [Assran et al., 2023, Bardes et al., 2024, Assran et al., 2025, Balestriero and LeCun, 2025, Maes et al., 2026, Wang et al., 2022]. The promise is that an encoder trained in this way will discover the variables that actually govern the system, without supervision and from raw data alone, and that it will do so with substantially less data than self-supervised approaches that predict in the data space [Martini and Nemenman, 2024, Van Assel et al., 2025]. In practice, what is most predictable in a data stream is often not what we want a representation to capture. Realistic recordings, including the 
+
+> Preprint.
+> arXiv:2606.07770v1 [cs.LG] 5 Jun 2026
+
+experimental videos used to learn physically interpretable descriptions of dynamics [Chen et al., 2022, Schmitt et al., 2024, Gurevich et al., 2024, Farrell et al., 2023, Krieger and Gilpin, 2025, Daniels et al., 2019, Yu et al., 2025b], contain many forms of noise across a range of timescales. The most difficult to handle are noises that change little for the duration of a trajectory T and vary only across trajectories, such as background textures, lighting, and dust on the lens. Predictive objectives focus on such noises since their across-trajectory variation supplies the entropy that prediction requires, and their within-trajectory persistence makes the future easy to predict. The variables that actually carry the dynamics or the consequences of actions change with time and are much harder to learn. Thus, a latent representation organized around what is easiest to predict ends up encoding trajectory identity, and the dynamics of the system are lost in the noise. Similar problems have been observed for a wide class of video self-supervised learning (SSL) methods, where they have been called background bias, shortcut learning, or over-reliance on static features [Wang et al., 2021, Huang et al., 2021, Ding et al., 2022, Thoker et al., 2023, Kowal et al., 2022]. Several remedies have been proposed, typically augmenting positive and negative pairs with image transformations that suppress the static content. The same failure has been flagged for predictive objectives in the JEPA family by Sobal et al. [2022], and analogous fixes have begun to appear [Yu et al., 2025a, Nam et al., 2026, Toso et al., 2026]. Theoretical analyses of related scenarios show that representation learning from video alone under temporally correlated exogenous noise can be exponentially hard [Misra et al., 2024, Efroni et al., 2022], and that the idealized predictive loss is minimized when the encoder represents the slowest features of the dynamics [Ruiz-Morales et al., 2025]. It remains unclear whether the failure is a fundamental property of predictive objectives that pair pasts and futures of dynamics more broadly, or whether the right choice of objective resolves it. We approach this question by systematically studying two contrastive predictive architectures on simulated and experimental data. The first is the SimCLR-predictor of Sobal et al. [2022], evaluated on a simulated dataset, where each trajectory is a stochastic walk of a single dot, with noise added to every pixel of every frame. The second is DySIB [Martini et al., 2026] (Dynamical Symmetric Information Bottleneck), applied to experimental video of a rigid pendulum. This recently introduced information-bottleneck encoder [Tishby et al., 1999, Friedman et al., 2001, Alemi et al., 2017, Abdelaleem et al., 2025] compresses both past and future of the dynamics while preserving the predictive information [Bialek et al., 2001] between them in the latent space. In each case we add noise of varying amplitude σ and correlation time τ to the frames, so that the nuisance can range from independent frame-to-frame fluctuations ( τ → 0) to a fixed pattern that varies only across trajectories (τ → ∞ ). The two methods differ substantially, so that studying them together separates failures intrinsic to contrastive predictive learning from those specific to implementations. We show that in both architectures the standard contrastive predictive objective fails similarly. As 
+
+τ approaches the trajectory length, the encoder organizes the latent space around the trajectory-specific nuisance, and probes can no longer recover the dynamical variables. The shared failure across architectures shows that the source of the problem in the contrastive predictive objective itself, independent of other details. The mechanism can be traced to the explicit focus on slow features in a long line of predictive objectives on which modern methods are built [Wiskott and Sejnowski, 2002, van den Oord et al., 2018]. We show that a modification of the contrast structure resolves this failure. The standard objective uses across-trajectory negatives (ATN). We replace these with within-trajectory negatives (WTN), so that the slow nuisance pattern is shared across positives and negatives and cannot be exploited as a predictive shortcut. Provided the trajectory traverses a wide enough region of the system’s phase space, positive pairs of nearby pasts and futures lie closer in latent space than negatives drawn from more distant points on the same trajectory, and the objective focuses on features that change with the dynamics, recovering the true dynamical degrees of freedom even under strong slow noise, with longer trajectories systematically reducing the probe error. Thus, the contrast structure of the objective controls both the failure and its fix. A nuisance shared by positives and negatives gives the encoder nothing to encode, while one that differs between them becomes a predictive shortcut. In dynamics-paired predictive learning, contrast design is then an analogue of augmentation design in image self-supervised learning, with both shaping what the encoder discards [Saunshi et al., 2022, von Kügelgen et al., 2021, Wang and Isola, 2020, Tian et al., 2020, Xiao et al., 2021]. We hope to elevate the structure of the contrast in predictive objectives to a design choice, on a par with the choice of architecture, augmentations, or the form of the loss. 2(A) 
+
+· · · 
+
+T          
+
+> Encoder Encoder Encoder
+> ztzt+1 zt+2
+> LInfoNCE LInfoNCE
+> atat+1
+> Predictor ˆzt+1 Predictor ˆzt+2
+
+· · · 
+
+(B) 
+
+· · · 
+
+T         
+
+> Encoder Encoder Encoder Encoder
+> stst+1 st+2 st+3
+> Linear Variational Encoder
+> Linear Variational Encoder
+> zt
+> δ-Predictor
+> ˆzt+2 LInfoNCE zt+2
+
+· · · 
+
+Figure 1: Datasets and architectures. The two (dataset, architecture) pairs studied here; both panels show example frames from length-T trajectories with added temporally correlated noise. (A) SimCLR-predictor [Sobal et al., 2022] on a synthetic moving-dot dataset, with an action-conditioned predictor that maps the encoded current frame and action to the encoded next frame. (B) DySIB [Martini et al., 2026] on experimental video of a rigid pendulum [Chen et al., 2022], with a δ-predictor mapping between non-overlapping nF = 2 frame windows in a Gaussian latent. Dashed circles denote the variational encoder (reparameterization trick). Both methods, as published, use an InfoNCE loss with across-trajectory negatives (ATN). Here we also explore within-trajectory negatives (WTN), see §2. 
+
+Contributions. This work (i) reproduces the failure mode of Sobal et al. [2022], originally demon-strated at the fixed-noise limit, and extends it to intermediate correlation times and to a second distinct architecture, locating the source of the problem in the objective itself; (ii) maps the failure across the parameter space (σ, τ, T ), where the baseline fails with increasing noise correlation time while our fix struggles only at τ ≈ T ; (iii) shows that drawing negatives from within the same trajectory allows to recover the dynamical variables, with the peak probe error decreasing as trajectory length grows; and (iv) frames the contrast structure of a predictive objective as an inductive bias. 
+
+# 2 Setup 
+
+Problem setting. We consider a training batch of N trajectories {x(n) 
+
+> t
+
+}Tt=1 , n = 1 , . . . , N , sampled from a possibly larger dataset. Each frame x(n) 
+
+> t
+
+∈ RD is a high-dimensional observation (a movie frame) of a dynamical system, possibly contaminated with temporally correlated noise whose structure we control (see below). The encoder ϕ takes a window of nF consecutive frames, z(n) 
+
+> t
+
+=
+
+ϕ(x(n) 
+
+> t−nF+1
+
+, . . . , x (n) 
+
+> t
+
+) ∈ Rkz , and is trained against a contrastive predictive objective that aligns 
+
+z(n) 
+
+> t
+
+with its prediction ˆz(n) 
+
+> t
+
+derived from the context nF frames before. The choice of negative-sample distribution is treated as a design knob below: across-trajectory negatives (ATN) versus within-trajectory negatives (WTN). At evaluation, the encoder is frozen and a low-capacity probe is trained to predict a known dynamical variable y(n) 
+
+> t
+
+from z(n) 
+
+> t
+
+, so that probe accuracy reflects the representation rather than the probe’s own capacity. 
+
+Datasets and architectures. Figure 1 shows the two (dataset, architecture) pairs we study, both taken from prior work, with added noise (see below) as the only modification; see Appendix B for details. The first (Fig. 1A) is the SimCLR-predictor of Sobal et al. [2022] applied to their synthetic moving-dot dataset, in which each trajectory is a random walk of a single dot, with each step set by a random action at ∈ R2, and noise added to every pixel. A per-frame encoder ( nF = 1 ) maps each frame xt to a latent zt = ϕ(xt). Starting from ˆz1 = z1, an action-conditioned predictor f
+
+autoregressively rolls out latents ˆzt = f (ˆ zt−1, a t−1) for t = 2 , . . . , T , and an InfoNCE [van den Oord et al., 2018] loss aligns each ˆzt with the encoded zt. The second (Fig. 1B) is DySIB [Martini et al., 2026] applied to a public dataset of experimental videos of a rigid pendulum swinging under gravity [Chen et al., 2022]. A single per-frame encoder st = g(xt) (with shared weights across past and future windows) is followed by a linear variational encoder h. Together, g and h map a window 3of nF = 2 consecutive frames to a Gaussian latent zt = h(st−nF +1 , . . . , s t). Then a δ-predictor maps the past-window latent zt−nF to a prediction of the next non-overlapping future-window latent 
+
+ˆzt = zt−nF + δ(zt−nF ). The contrastive InfoNCE loss again aligns the prediction with zt. DySIB also includes a regularizer on the latent, but it is weighted at 1/100 of the predictive term in our experiments and contributes negligibly. The simulated dot offers full control over dynamics and noise; the recorded pendulum confirms the conclusions on a real physical system with a directly visualizable 2-D state (angle and angular velocity). 
+
+Noise model. We add to each frame a slowly varying nuisance whose temporal structure we control. The noise field follows an Ornstein–Uhlenbeck recursion in time, with independent processes at every pixel and every trajectory, 
+
+ηt = μ + α (ηt−1 − μ) + p1 − α2 (ξt − μ), 0 ≤ α ≤ 1, (1) where the ξt are i.i.d. with mean μ and η0 ∼ ξ. To check robustness to the noise distribution, we draw ξt ∼ Unif(0 , 1) (μ = 1 /2) for the moving dot (matching Sobal et al. [2022]) and ξt ∼ N (0 , 1) 
+
+(μ = 0 ) for the pendulum, both spatially uncorrelated (Sobal et al. [2022] demonstrate that spatial structure is irrelevant for the failure mode). The noiseless frame ˆxt is normalized to [0 , 1] , and the noisy frame is xt = ˆ xt + σ η t. For the pendulum we clip the result to [0 , 1] , while for the moving dot we leave it unclipped to match Sobal et al. [2022]. The amplitude σ and correlation time 
+
+τ ≡ − 1/ ln α control the scale and timescale, with autocovariance ⟨ηtηt′ ⟩ − μ2 ∝ e−| t−t′|/τ . At 
+
+τ → 0 (α = 0 ) the noise is independently sampled at every frame ( changing noise ). At τ → ∞ 
+
+(α = 1 ) a single pattern is fixed within a trajectory but varies across trajectories ( fixed noise ), the regime where standard predictive objectives fail. Intermediate values of τ have not been tested previously to our knowledge, and their exploration is one of our contributions. Since the numerical values of σ are not directly comparable across settings, we use distinct symbols σU and σG and report results for each case separately. 
+
+Standard predictive objective: Across-trajectory negatives. Both architectures are trained with an InfoNCE contrastive loss [van den Oord et al., 2018]. A batch consists of N trajectories of T time points each, with trajectory indices B = {1, . . . , N } and time indices T = {1, . . . , T }. For each predicted future latent ˆz(n) 
+
+> t
+
+, the matched positive is the corresponding future encoding z(n) 
+
+> t
+
+, and the per-anchor and batch losses are 
+
+ℓ(n) 
+
+> t
+
+= − log exp s(ˆ z(n) 
+
+> t
+
+, z (n) 
+
+> t
+
+)exp s(ˆ z(n) 
+
+> t
+
+, z (n) 
+
+> t
+
+) + P 
+
+> z−∈N (n)
+> t
+
+exp s(ˆ z(n) 
+
+> t
+
+, z −) , L = 1
+
+N T 
+
+X
+
+> n∈B , t ∈T
+
+ℓ(n) 
+
+> t
+
+, (2) where s is a similarity score (cosine similarity for the SimCLR-predictor, predictive Gaussian log-density for DySIB; see Appendix B for details) and N (n) 
+
+> t
+
+is the negative set associated with the anchor. 1 The standard choice for both architectures takes across-trajectory negatives (ATN), 
+
+N (n)ATN ,t =
+
+n
+
+z(n′) 
+
+> t
+
+: n′ ∈ B , n ′̸ = n
+
+o
+
+, (3) so the matched future encoding z(n) 
+
+> t
+
+is contrasted against future encodings at the same time index from the other trajectories in the batch. 
+
+Within-trajectory negatives. The within-trajectory variant (WTN) keeps the InfoNCE form, Eq. (2) ,unchanged but replaces the negative set with samples drawn from the same trajectory at other times, 
+
+N (n)WTN ,t =
+
+n
+
+z(n) 
+
+> t′
+
+: t′ ∈ T , t ′̸ = t
+
+o
+
+. (4) The slow nuisance pattern is now shared by the positive and negative samples within the same trajectory, so it can no longer distinguish the matched pair from the negatives. WTN requires each trajectory to span a representative portion of the system’s phase space within its T frames, so that negatives drawn from the same trajectory define a meaningful contrast. 
+
+Evaluation metrics. To evaluate representation quality, we train low-capacity probers to predict known dynamical targets y(n) 
+
+> t
+
+: the dot position (x, y ) for the moving-dot dataset and (cos θ, sin θ)
+
+for the pendulum (the pendulum’s angular velocity is also available but we focus on the angle). Since   
+
+> 1Sobal et al. [2022] use a symmetrized variant of ℓ(n)
+> twhile DySIB does not; the difference does not affect our analysis.
+
+4Figure 2: ATN but not WTN predictive objectives fail under fixed noise. (A) Stochastic moving-dot dataset with the SimCLR-predictor objective. (B) Experimental pendulum videos with the DySIB objective at kz = 8 (chosen following the original DySIB study to reduce sensitivity to local optima during training; Appendix B). We add temporally correlated noise to the observations and report the probe RMSE on the true dynamical variables as a function of noise strength σ. Changing noise 
+
+is sampled independently per frame. Fixed noise is sampled once per trajectory and held constant within. Dotted lines show supervised baselines (one per noise regime, with the two coinciding on the moving dot). Thin dashed lines indicate performance under random guessing. Under ATN, the changing-noise probe error tracks its supervised baseline, while the fixed-noise probe error grows with σ toward random guessing performance. Under WTN, both the changing- and the fixed-noise probe errors follow their respective supervised baseline curves. Training details are in Appendix B. See Appendix A.2 for stability across hyperparameters and seeds. for the moving-dot we use a high-dimensional latent representation, it suffices for the probe to be a linear readout directly from the learned representation. For the pendulum, latent representations are low-dimensional and nonlinearly related to the variables of interest (Fig. 3). Thus we use a fixed random-features map followed by a trainable linear readout, which gives a simple nonlinear probe while keeping the trainable part linear. We report the probe RMSE, sweeping the noise amplitude σ,the correlation time τ , and the trajectory length T . As a reference, we compare against a supervised baseline using the same encoder architecture trained directly on y(n) 
+
+> t
+
+with an MSE loss. Train/test splits and prober architectures follow the original publications [Sobal et al., 2022, Martini et al., 2026] and are detailed in Appendix B. 
+
+# 3 Results 
+
+3.1 ATN predictive objectives fail under fixed noise 
+
+We first reproduce the known failure of ATN contrastive predictive objectives under fixed noise. The WTN variant is taken up in §3.3. We begin with the supervised baselines. For the moving dot (Fig. 2A), the encoder sees one frame at a time, so the temporal correlation of the noise is invisible and the changing- and fixed-noise baselines overlap. For the pendulum (Fig. 2B), the supervised regressor takes two consecutive frames as input. With changing noise, the two frames carry independent noise realizations, so parts of the pendulum obscured in one frame are often visible in the other. With fixed noise, the same pattern is applied to both frames, providing no such redundancy. The fixed-noise baseline is therefore elevated even with full supervision. On the moving dot, the standard ATN objective reproduces the failure reported by Sobal et al. [2022]. With changing noise, the SimCLR-predictor tracks the supervised baseline as σ grows. With fixed noise, the probe error grows with σ and saturates near random guessing, far above the (overlapping) baseline. DySIB on the pendulum shows the same failure (Fig. 2B). With changing noise, the predictor tracks the changing-noise baseline as σ grows. With fixed noise, the probe error climbs with 5Figure 3: Fixed noise breaks ATN but not WTN angular embeddings. DySIB embeddings of the pendulum dataset with a two-dimensional bottleneck ( kz = 2 ), colored by the true pendulum angle. Each point is a sample from the variational posterior q(zt | xt−nF +1: t) for every nF -frame block in the training data. Rows: ATN (top), WTN (bottom). Columns: no added noise, changing noise, fixed noise ( σG = 0 .2 for both). Without added noise and with changing noise, both objectives produce latent spaces smoothly organized by angle. With fixed noise, the ATN representation organizes by trajectory-specific nuisances, breaking the global angular structure. WTN suppresses this predictive noise cue within the trajectory, and the fixed-noise embedding again organizes smoothly by angle. 
+
+σ toward random guessing, well above even the elevated fixed-noise baseline. Despite very different compression schemes, both architectures fail similarly under fixed noise, showing that the failure is generic to contrastive predictive learning with across-trajectory negatives. 
+
+3.2 Failure mode: ATN representations primarily encode trajectory-specific noise 
+
+We would like to visualize the failure mode directly, which is feasible only with a low-dimensional latent. DySIB on the pendulum has kz = 2 , matching the state dimensionality of angle and angular velocity, so its latent space can be inspected visually. The SimCLR-predictor on the moving dot uses 512-dimensional latents (Appendix B) and cannot be visualized the same way. Figure 3 (top row) shows the latent embedding of the full dataset colored by the pendulum angle, not used for training. With no added noise (left column), the latent forms a ring whose angular coordinate tracks the physical angle. With changing noise (middle column), the ring is preserved, and a simple probe recovers the angle from the latent coordinates. With fixed noise (right column), the ring breaks into trajectory-specific clusters, and the dominant organization is now by trajectory-specific nuisance. Each trajectory still traces an arc whose direction reflects local angular motion (Fig. S1), but the arcs are not aligned across trajectories, so the probe error is large (Fig. 2). This geometry is a consequence of the ATN loss: since different trajectories carry distinct fixed nuisances, nuisance encoding is a perfect way to separate negative pairs. 
+
+3.3 WTN objectives recover the underlying dynamical variables even with fixed noise 
+
+Within-trajectory negatives (Eq. 4) fix the contrast structure by restricting the loss to compare each anchor only with other frames from the same trajectory. A nuisance that stays fixed within a trajectory takes the same value across all frames in the comparison, so it carries no information that distinguishes 6Figure 4: After WTN removes the fixed-noise failure, the largest errors occur at intermediate noise correlation times. Stochastic moving-dot dataset with temporally correlated uniform noise of strength σU (colors) and correlation time τ (horizontal axis), at fixed trajectory duration T = 17 .Dotted colored horizontal lines mark the changing-noise ( τ → 0) probe RMSE at the corresponding 
+
+σU . Black dashed line is chance performance. (A) ATN. Error grows monotonically with τ , saturating near random guessing in the fixed-noise limit. The crossover scales with T (Fig. S4). (B) WTN. Error stays low at both ends and develops a peak at intermediate τ . See Appendix A.2 for stability across hyperparameters and seeds. them and cannot reduce the loss. The encoder is therefore driven to encode features that vary along the trajectory, which are the true dynamical variables. Figure 2 shows the WTN curves alongside the ATN curves analyzed earlier. With WTN, the fixed-noise probe error tracks the supervised baselines over the full range of noise strengths, on both the moving dot and the pendulum. The bottom row of Fig. 3 confirms this for the pendulum embedding: under fixed noise, the WTN representation again forms a ring-like structure organized by the true angle, with no trajectory-specific clustering. WTN succeeds only when the training trajectories together cover a broad range of phase space, so that within-trajectory comparisons span the dynamics the encoder must represent (§2). To illustrate this, we now explore the dependence of the losses on T and τ .
+
+3.4 Dependence on noise strength and temporal correlation 
+
+As we have seen, WTN removes the failure at fixed noise. We now explore what happens at intermediate correlation times. We use the OU noise model from the setup (§2), varying noise strength σU and correlation time τ at fixed trajectory duration T = 17 on the moving-dot dataset. Since in this and the next subsection vary τ and T , we omit the pendulum, whose maximum T is fixed by the experimental videos, to conserve compute. Figure 4 shows that ATN probe error grows monotonically with τ , saturating near random guessing in the fixed-noise limit. With WTN, error stays low at both ends and develops a finite peak at intermediate τ ≈ T . At those correlation times, the noise stays predictive within a trajectory yet varies enough across it so that WTN cannot treat it as a trajectory-level constant. This is expected since with matched correlation times, contrasts based on autocorrelation alone cannot separate noise from signal, connecting to Wiener’s filtering [Wiener, 1949] in classical signal processing. The peak height grows with σU , and is barely above the changing noise threshold ( τ → 0) at small noise, σU ≲ 2. Even at σU = 1 .5 the noise is not negligible (Fig. S6) and detecting the dot is hard. That WTN nevertheless filters out the noise across essentially all correlation times at this strength is surprising. 
+
+3.5 Longer trajectories improve performance of WTN but not ATN objectives 
+
+We now explore the combined effect of trajectory duration T and noise correlation time τ , omitting the pendulum for the same reason as in §3.4. ATN is expected to remain near random guessing under fixed noise regardless of T , since longer videos reinforce the same trajectory-specific shortcut. For 7Figure 5: Longer trajectories help WTN, not ATN. Stochastic moving-dot dataset with temporally correlated uniform noise of strength σU = 3 .0, varying trajectory duration T and correlation time τ .
+
+(A) Probe RMSE for ATN. The fixed-noise failure region at τ ≫ T persists at every T . (B) Probe RMSE for WTN. The only remaining failure is the intermediate-correlation peak near τ ≈ T , which weakens as T grows. (C) Maximum (worst) probe RMSE over τ as a function of T . ATN saturates near random guessing. WTN decreases toward the supervised baseline. Inset: excess of the WTN maximum over the supervised baseline, log–log axes. The decay is consistent with a power law in T .See Appendix A.2 for stability across hyperparameters and seeds. WTN, one expects that larger T provides more within-trajectory training data, which the encoder can use to discriminate noise from signal even if τ ≈ T .Figure 5 demonstrates this for the stochastic moving-dot dataset with temporally correlated noise at fixed strength σU = 3 .0 by sweeping T and the correlation time τ . For ATN, the failure region at τ ≫ T persists at every T , and the maximum probe error over τ saturates near random guessing (Fig. 5A,C). For WTN, the only remaining failure is the intermediate-τ peak around τ ≈ T , and it weakens monotonically as T grows (Fig. 5B). Expressed as excess over the supervised baseline, the WTN maximum decays as approximately a power law in T (Fig. 5C, inset), so WTN representations approach the supervised limit while ATN representations do not benefit from longer trajectories. The error peak’s location and shrinkage have different causes. As shown in §3.4, the peak is at τ ≈ T ,where autocorrelation alone cannot separate signal from noise. It shrinks with T because longer trajectories provide more data, letting the encoder utilize features beyond correlation time. Further, WTN also requires that the trajectory cover enough phase space for within-trajectory contrasts to be informative, and increasing T helps. The moving dot covers phase space by construction; real-world trajectories confined to small regions may not, and would not gain from longer T in the same way. 
+
+# 4 Discussion 
+
+In two very different architectures (the deterministic SimCLR-JEPA and the variational information bottleneck of DySIB), we traced the common failure of encoders focusing on slow nuisances to the across-trajectory-negatives (ATN) structure of the contrastive objective. Under long-correlation-time noise, we showed that the encoder organizes its latent around the trajectory-specific nuisance, and probes cannot recover the dynamical variables. Replacing ATN with within-trajectory negatives (WTN) removes the predictive nuisance shortcut and recovers the latent variables relevant for dynamics. The residual probe error decreases with T and peaks at τ ≈ T . Practitioners using 8contrastive predictive losses on real dynamical data should consider WTN as a default starting point when slow or intermediate-timescale nuisance is suspected. 
+
+Relation to prior work. The slow-noise failure is well documented across contrastive video SSL, where it has been called background bias, shortcut learning, or over-reliance on static features (see Introduction for citations). The standard remedies augment positive and negative pairs with image transformations that suppress the static content. We restructure the contrast itself, leaving the inputs unchanged. Conditioning pair selection on auxiliary structure has appeared in non-dynamic contexts, e.g., for fairness invariance [Ma et al., 2021], but not as a remedy for slow-noise shortcuts in dynamics-paired predictive learning. The slow-nuisances failure traces back to objectives that take extracting slow features as their stated goal. For example, Slow Feature Analysis [Wiskott and Sejnowski, 2002] formalizes slowness as a learning principle, and Contrastive Predictive Coding (CPC) [van den Oord et al., 2018] explicitly says “these ‘slow features’ that span many time steps are often more interesting.” Thus ATN does what it was designed to do: under fixed noise, it encodes the slowest features available, which happen to be the trajectory-specific nuisance pattern. In other words, the premise that slowness is a useful proxy for predictive content must be re-evaluated. 
+
+Predictive sufficiency and nuisance invariance. Achille and Soatto [2018] characterize a good representation as sufficient for the task and minimal in everything else. With the future of a trajectory as the task, sufficiency means retaining the predictive information [Bialek et al., 2001], and minimality means discarding everything else. The contrast structure controls how the encoder approaches this. WTN holds the slow nuisance fixed across positives and negatives, removing it from the discriminative signal. The encoder must then encode within-trajectory variation, which, in physics language, is the dynamical state itself i.e. the same features across realizations that are predictive within each realization. ATN under fixed noise instead minimizes the loss via trajectory-specific nuisances, which distinguish negative pairs without predicting future dynamics. 
+
+Contrast as temporal filtering. WTN is a form of temporal filtering. By comparing frames within a trajectory, the loss is minimized by features that vary on the trajectory’s timescale, neither too fast to average out nor too slow to be removed by WTN. This parallels the classical Wiener filtering [Wiener, 1949], where the filter that extracts a signal from noise depends on the autocorrelation structure of both. Thus when signal and noise share an autocorrelation time, contrasts have a hard time telling them apart, and the intermediate-τ peak in §3.4 shows this. Resolving this problem requires using higher-order or spatial statistics in contrast design, such as contrasting delay-embedded latents at delays greater than one frame to expose higher-order temporal structures. 
+
+Objective design as conditional predictive information. The choice between WTN and ATN looks like a sampling technicality, but it can be interpreted as changing the quantity being optimized. As typically implemented, ATN draws negatives at the same time t from other trajectories, so the InfoNCE bound is on I(Zt; ˆZt | t), the predictive mutual information averaged over realizations conditional on time. Any feature that varies between trajectories at fixed t can tighten this bound, including a slow nuisance constant within a trajectory. WTN instead draws negatives from the same trajectory at other times, so the bound is on I(Zt; ˆZt | trajectory ), the predictive information that remains after conditioning on trajectory identity. Trajectory-level variables then cancel from the contrast, forcing the encoder to use only features that vary within a trajectory, the dynamical degrees of freedom, which are typically what matters physically. Neither choice gives the truly unconditional 
+
+I(Zt; ˆZt). Estimating that would require sampling negatives jointly across time and trajectories, with care in re-weighting because trajectory lengths and counts are usually very uneven. 
+
+Computational efficiency. For batch size N and trajectory length T , the number of negative comparisons scales as O(T N 2) for ATN and O(T 2N ) for WTN. When N ≫ T , WTN is cheaper, though in practice N is a tunable batch-size parameter. Thus WTN opens a useful tradeoff: fewer longer trajectories can become statistically and computationally competitive with many short ones. 
+
+Limitations. Our results come from two systems with known and low-dimensional dynamical states (synthetic moving-dot and experimental pendulum), with simple probe targets (dot position and pendulum angle). For systems with high-dimensional states or strongly chaotic dynamics, both the probe choice and the within-trajectory contrast may need more care. WTN also depends on each trajectory covering enough of the system’s phase space; a stationary trajectory cannot resolve the dynamics regardless of T . With periodic orbits, when a trajectory spans more than one period, within-trajectory contrasts may push apart physically identical configurations, requiring T restricted to one period. Even where coverage holds, the intermediate-τ peak persists at all T we test, weakening at 9large T but never disappearing, and we lack a theoretical account of its power-law decay. Finally, our analysis is restricted to InfoNCE-style contrastive losses; whether the same restructuring helps non-contrastive predictive losses is an open question. 
+
+Future work. The most direct next step is incorporating WTN into JEPA-style frame-works [Balestriero and LeCun, 2025, Maes et al., 2026] and into predictive SSL on physical dynam-ics [Martini et al., 2026, Chen et al., 2022], where slow noise is the norm. More ambitiously, one may abandon explicit contrasts altogether, or learn the contrast itself, for example by attention mechanisms that select which past-future pairs to compare. A different approach could mix contrast designs, drawing negatives within and across trajectories on a schedule that encodes domain knowledge about which nuisances to suppress, in the spirit of motion-aware video contrasts [Thoker et al., 2023]. Finally, in the spectral language of Ruiz-Morales et al. [2025], bare JEPA collapses onto eigenvalue-1 Koopman eigenfunctions, and whether different contrast designs move the encoder onto modes with 
+
+|λ| < 1, recovering finite-timescale predictive content, is an open question. 
+
+Main message: Contrast design as inductive bias. The structure of the contrast determines what the encoder discards and what it preserves, selecting, in the language of Achille and Soatto [2018], which point of the predictive-sufficient set the encoder converges to. Thus contrast design deserves attention on par with the architecture, the augmentations, or the form of the loss. For dynamical systems, the noise and the signal can have complex temporal structure, unknown a priori. Consequently, whether SSL on dynamics is feasible without substantial domain knowledge or expensive exploration of contrast designs is, in our view, the open question this work highlights. 
+
+# Acknowledgments 
+
+We would like to thank Randall Balestriero, Ravid Shwartz-Ziv, K. Michael Martini, and Eslam Abdelaleem for useful discussions. This work was funded, in part, by the Simons Foundation Investigator grant to IN and by the National Science Foundation Grant No. 2409416. PG was additionally funded by the Tarbutton Interdisciplinary Postdoctoral Fellowship at the Emory College of Arts and Sciences. We acknowledge support of our work through the use of the HyPER C3 cluster of Emory University’s AI.Humanity Initiative. 
+
+# References 
+
+E. Abdelaleem, I. Nemenman, and K. M. Martini. Deep variational multivariate information bottleneck—a framework for variational losses. Journal of Machine Learning Research , 26 (140):1–50, 2025. A. Achille and S. Soatto. Emergence of invariance and disentanglement in deep representations. 
+
+Journal of Machine Learning Research , 19(50):1–34, 2018. A. Alemi, I. Fischer, J. Dillon, and K. Murphy. Deep variational information bottleneck. In 
+
+International Conference on Learning Representations , 2017. M. Assran, Q. Duval, I. Misra, P. Bojanowski, P. Vincent, M. Rabbat, Y. LeCun, and N. Ballas. Self-supervised learning from images with a joint-embedding predictive architecture. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 15619–15629, 2023. M. Assran, A. Bardes, D. Fan, Q. Garrido, R. Howes, M. Komeili, M. Muckley, A. Rizvi, C. Roberts, K. Sinha, A. Zholus, S. Arnaud, A. Gejji, A. Martin, F. R. Hogan, D. Dugas, P. Bojanowski, V. Khalidov, P. Labatut, F. Massa, M. Szafraniec, K. Krishnakumar, Y. Li, X. Ma, S. Chandar, F. Meier, Y. LeCun, M. Rabbat, and N. Ballas. V-JEPA 2: Self-supervised video models enable understanding, prediction and planning. 2025. R. Balestriero and Y. LeCun. Lejepa: Provable and scalable self-supervised learning without the heuristics. 2025. A. Bardes, Q. Garrido, J. Ponce, X. Chen, M. Rabbat, Y. LeCun, M. Assran, and N. Ballas. Revisiting feature prediction for learning visual representations from video. 2024. 10 W. Bialek, I. Nemenman, and N. Tishby. Predictability, complexity, and learning. Neural Computation ,13(11):2409–2463, 2001. B. Chen, K. Huang, S. Raghupathi, I. Chandratreya, Q. Du, and H. Lipson. Automated discovery of fundamental variables hidden in experimental data. Nature Computational Science , 2(7):433–442, 2022. B. C. Daniels, W. S. Ryu, and I. Nemenman. Automated, predictive, and interpretable inference of Caenorhabditis elegans escape dynamics. Proceedings of the National Academy of Sciences , 116 (15):7226–7231, 2019. S. Ding, M. Li, T. Yang, R. Qian, H. Xu, Q. Chen, J. Wang, and H. Xiong. Motion-aware contrastive video representation learning via foreground-background merging. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 9716–9726, 2022. Y. Efroni, D. Misra, A. Krishnamurthy, A. Agarwal, and J. Langford. Provable RL with exogenous dis-tractors via multistep inverse dynamics. In International Conference on Learning Representations ,2022. S. Farrell, M. Mani, and S. Goyal. Inferring single-cell transcriptomic dynamics with structured latent gene expression dynamics. Cell Reports Methods , 3(9):100581, 2023. N. Friedman, O. Mosenzon, N. Slonim, and N. Tishby. Multivariate information bottleneck. In 
+
+Proceedings of the 17th Conference on Uncertainty in Artificial Intelligence (UAI) , pages 152–161, 2001. D. R. Gurevich, M. R. Golden, P. A. K. Reinbold, and R. O. Grigoriev. Learning fluid physics from highly turbulent data using sparse physics-informed discovery of empirical relations (SPIDER). 
+
+Journal of Fluid Mechanics , 996:A25, 2024. L. Huang, Y. Liu, B. Wang, P. Pan, Y. Xu, and R. Jin. Self-supervised video representation learning by context and motion decoupling. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 13886–13895, 2021. M. Kowal, M. Siam, M. A. Islam, N. D. B. Bruce, R. P. Wildes, and K. G. Derpanis. A deeper dive into what deep spatiotemporal networks encode: Quantifying static vs. dynamic information. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 13999–14009, 2022. M. S. Krieger and W. Gilpin. Interpretable gene network inference with nonlinear causality. 2025. M. Q. Ma, Y.-H. H. Tsai, P. P. Liang, H. Zhao, K. Zhang, R. Salakhutdinov, and L.-P. Morency. Conditional contrastive learning for improving fairness in self-supervised learning. 2021. L. Maes, Q. Le Lidec, D. Scieur, Y. LeCun, and R. Balestriero. Leworldmodel: Stable end-to-end joint-embedding predictive architecture from pixels. 2026. K. M. Martini and I. Nemenman. Data efficiency, dimensionality reduction, and the generalized symmetric information bottleneck. Neural Computation , 36(7):1353–1379, 2024. K. M. Martini, E. Abdelaleem, P. Gulati, and I. Nemenman. Information bottleneck for learning the phase space of dynamics from high-dimensional experimental data. 2026. D. Misra, A. Saran, T. Xie, A. Lamb, and J. Langford. Towards principled representation learning from videos for reinforcement learning. In International Conference on Learning Representations ,2024. J. Nam, Q. Le Lidec, L. Maes, Y. LeCun, and R. Balestriero. Causal-JEPA: Learning world models through object-level latent interventions. 2026. Ali Rahimi and Benjamin Recht. Random features for large-scale kernel machines. Advances in neural information processing systems , 20, 2007. P. Ruiz-Morales, D. Vanoost, D. Pissoort, and M. Verbeke. Koopman invariants as drivers of emergent time-series clustering in joint-embedding predictive architectures. 2025. 11 N. Saunshi, J. Ash, S. Goel, D. Misra, C. Zhang, S. Arora, S. Kakade, and A. Krishnamurthy. Understanding contrastive learning requires incorporating inductive biases. In International Conference on Machine Learning , pages 19250–19286, 2022. M. S. Schmitt, J. Colen, S. Sala, J. Devany, S. Seetharaman, A. Caillier, M. L. Gardel, P. W. Oakes, and V. Vitelli. Machine learning interpretable models of cell mechanics from protein images. Cell ,187(2):481–494, 2024. V. Sobal, J. SV, S. Jalagam, N. Carion, K. Cho, and Y. LeCun. Joint embedding predictive architectures focus on slow features. 2022. F. M. Thoker, H. Doughty, and C. G. M. Snoek. Tubelet-contrastive self-supervision for video-efficient generalization. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 13812–13823, 2023. Y. Tian, C. Sun, B. Poole, D. Krishnan, C. Schmid, and P. Isola. What makes for good views for contrastive learning? Advances in Neural Information Processing Systems , 33:6827–6839, 2020. N. Tishby, F. C. Pereira, and W. Bialek. The information bottleneck method. In 37th Annual Allerton Conference on Communication, Control, and Computing , pages 368–377, 1999. L. F. Toso, D. Shadunts, Y. Lu, N. Sharma, D. Zhan, N. H. Nguyen, and J. Anderson. Learning invariant visual representations for planning with joint-embedding predictive world models. 2026. H. Van Assel, M. Ibrahim, T. Biancalani, A. Regev, and R. Balestriero. Joint embedding vs recon-struction: Provable benefits of latent space prediction for self-supervised learning. 2025. A. van den Oord, Y. Li, and O. Vinyals. Representation learning with contrastive predictive coding. 2018. J. von Kügelgen, Y. Sharma, L. Gresele, W. Brendel, B. Schölkopf, M. Besserve, and F. Locatello. Self-supervised learning with data augmentations provably isolates content from style. In Advances in Neural Information Processing Systems , volume 34, pages 16451–16467, 2021. J. Wang, Y. Gao, K. Li, Y. Lin, A. J. Ma, H. Cheng, P. Peng, F. Huang, R. Ji, and X. Sun. Removing the background by adding the background: Towards background robust self-supervised video representation learning. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 11804–11813, 2021. T. Wang and P. Isola. Understanding contrastive representation learning through alignment and uniformity on the hypersphere. In International Conference on Machine Learning , pages 9929– 9939, 2020. T. Wang, S. S. Du, A. Torralba, P. Isola, A. Zhang, and Y. Tian. Denoised mdps: Learning world models better than the world itself. 2022. N. Wiener. Extrapolation, Interpolation, and Smoothing of Stationary Time Series . MIT Press, 1949. L. Wiskott and T. J. Sejnowski. Slow feature analysis: Unsupervised learning of invariances. Neural Computation , 14(4):715–770, 2002. T. Xiao, X. Wang, A. A. Efros, and T. Darrell. What should not be contrastive in contrastive learning. In International Conference on Learning Representations , 2021. J. Yu, S. Chen, M. Liu, N. Horiuchi, V. Braverman, Z. Xu, D. Haramati, and R. Balestriero. Why and how auxiliary tasks improve JEPA representations. 2025a. W. Yu, E. Abdelaleem, I. Nemenman, and J. C. Burton. Physics-tailored machine learning reveals unexpected physics in dusty plasmas. Proceedings of the National Academy of Sciences , 122(31): e2505725122, 2025b. 12 Appendix: Table of Contents 
+
+A Supplementary results 13 
+
+A.1 Learned pendulum representations in two dimensions . . . . . . . . . . . . . . . . 13 A.2 Stability to hyperparameter choices and random seeds . . . . . . . . . . . . . . . . 14 A.3 Scaling with trajectory duration T . . . . . . . . . . . . . . . . . . . . . . . . . . 15 
+
+B Datasets, architectures and training 16 
+
+B.1 Dataset details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 B.2 SimCLR JEPA architecture and training . . . . . . . . . . . . . . . . . . . . . . . 16 B.3 DySIB architecture and training . . . . . . . . . . . . . . . . . . . . . . . . . . . 17 B.4 Prober architectures and training . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 B.5 Computational resources . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 
+
+# A Supplementary results 
+
+A.1 Learned pendulum representations in two dimensions 
+
+Figure S1: Trajectory-connected latent paths reveal ATN’s clustering by trajectory identity under fixed noise. Latent-space trajectories of individual test-set pendulum sequences in the 2-D learned representation ( kz = 2 ). Rows: ATN (top), WTN (bottom). Columns: changing noise ( α = 0 ,
+
+σG = 0 .2; panels A, C) and fixed noise ( α = 1 , σG = 0 .2; panels B, D). Same trained representations as in Fig. 3, now with points connected within each trajectory and colored by trajectory index. DySIB with across-trajectory negatives (ATN) on pendulum data does not smoothly encode the relevant dynamical variable (angle) under fixed noise (Fig. 3). Figure S1 shows the held-out test-set 13 embeddings, with points connected within each trajectory and colored by trajectory index (colors repeat across the test set). As discussed in the main text, both ATN and WTN disregard trajectory identity under changing noise. Under fixed noise, ATN instead organizes the learned embeddings around trajectory identity, i.e., the fixed noise patterns; WTN removes this predictive shortcut. 
+
+A.2 Stability to hyperparameter choices and random seeds 
+
+For the SimCLR-predictor on the moving-dot dataset, we train the model with 50 pseudorandom hyperparameter combinations spanning orders of magnitude for each noise and dataset configuration 
+
+(σ, τ, T ) (see Appendix B for training details). Throughout the main text, we report the minimum probe RMSE over all 50 trials. To show that this is not an artifact of a single lucky hyperparameter setting, Figs. S2 and S3 reproduce the main-text plots using the 5 best hyperparameter combinations: the light fill spans the range of probe RMSEs over those 5 trials, and lines and scatter points mark the median. We do not show mean and standard deviation, since averaging over different hyperparameter values is not meaningful. For the pendulum panel (Fig. S2B), we instead vary the random seed at fixed hyperparameters: 15 replicate seeds per point, with the same fill/median convention applied to the 5 trials with the smallest error. The two protocols probe variability under two distinct sources of stochasticity, hyperparameter choice for the synthetic moving-dot setting and seed-level randomness for the experimental pendulum, each natural for its setting. 
+
+Figure S2: Stability of the noise-strength sweep to hyperparameter choices and random seeds. 
+
+Prober RMSE for fixed and changing noise in both datasets as a function of noise strength; parallels Fig. 2. (A) Moving dot: 50 pseudorandom hyperparameter combinations per point. Light fill spans min–max probe RMSE over the 5 trials with the smallest error; lines and points mark the median. (B) Pendulum: 15 replicate seeds per point with fixed hyperparameters; same fill/median convention applied to the 5 trials with the lowest error. 14 Figure S3: Hyperparameter variability of the τ -sweep. Prober RMSE for the moving dot using the SimCLR-predictor as a function of noise correlation time τ , for both ATN and WTN; parallels Fig. 4. In both panels, 50 pseudorandom hyperparameter combinations per point; light fill spans min–max probe RMSE over the 5 trials with the smallest error; lines and points mark the median. 
+
+A.3 Scaling with trajectory duration T
+
+This section supplements §3.5. Figure S4 plots the probe error from the phase diagrams of Fig. 5A,B against the rescaled correlation time τ /T . Under ATN, the rescaled data collapse with a transition at τ /T ≈ 1, consistent with the phase diagram in the main text. Longer trajectories do not remove the fixed-noise shortcut: any finite-length trajectory retains this structure in the representation. Under WTN, the peak error decays as T grows, with the peak position remaining at τ ≈ T .Figure S5 extends Fig. 5C, which shows the decay of WTN’s peak error at σU = 3 .0, to smaller σU ,where the overall error at T = 17 is already smaller (cf. Fig. 4). The excess error (peak error minus supervised-baseline floor) decays approximately as a power law in T for each σU , with faster decay at smaller noise strengths. We do not claim a universal exponent and leave this for future investigation. 
+
+Figure S4: Probe error collapses under τ /T rescaling for ATN, while WTN’s peak shifts with T .
+
+Probe RMSE for the SimCLR-predictor with (A) ATN and (B) WTN, plotted against the rescaled correlation time τ /T at fixed noise amplitude σU = 3 .0. Each colored curve is a different trajectory duration T .15 Figure S5: WTN’s peak error decays as a power law in T across noise strengths. Peak probe RMSE as a function of trajectory length T for the SimCLR-predictor with WTN at different noise magnitudes σU . (A) Absolute peak RMSE (maximum over τ ). Dashed horizontal lines mark the supervised baseline floor at each σU . (B) Excess peak RMSE above the supervised floor, log–log axes. Dashed lines show power-law fits ∼ T −γ . Shaded regions and error bars are 68% bootstrap confidence intervals ( N = 500 resamples). The excess error follows a power law in T at all three noise strengths. The exponent’s magnitude is larger at smaller noise, so the problem is easier and scales more favorably with T as the noise weakens. 
+
+# B Datasets, architectures and training 
+
+B.1 Dataset details 
+
+We use two datasets, both illustrated in Fig. S6. The moving-dot dataset [Sobal et al., 2022] is synthetic: each trajectory follows a single point moving in a unit square under random actions 
+
+at ∈ R2 of bounded norm ∥at∥2 ≤ 0.14 , with the dot’s position clipped to remain inside the square. Action directions are sampled from a von Mises distribution centered on a per-trajectory global angle (concentration 1.3), and step sizes are sampled uniformly on [0 , 0.14] , which gives each trajectory a randomly chosen drift direction and ensures non-zero expected displacement. The rendered frames 
+
+xt are 28 × 28 grayscale images ( D = 784 ) showing the dot blurred by a Gaussian of width 0.05 ,and trajectories have length T = 17 frames (the initial frame plus 16 actions), matching the default in Sobal et al. [2022]; we additionally vary T in some experiments to study the dependence of the learned representation on trajectory duration. Since this dataset is synthetic, fresh trajectories are generated for both training and evaluation. The pendulum dataset [Chen et al., 2022] consists of real experimental video recordings of a rigid pendulum swinging under gravity. Each video is downsampled to 28 × 28 grayscale ( D = 784 )frames, with pixel values normalized to [0 , 1] , and contains T = 60 frames; we use 1000 videos for training and 200 held out for testing, following Martini et al. [2026]. In both cases, noise with different strengths and temporal correlations is added to the frames as described in the main text. 
+
+B.2 SimCLR JEPA architecture and training 
+
+We use the SimCLR-predictor of Sobal et al. [2022] unchanged, available under the MIT license. The encoder g has three 2D convolutional blocks with channel counts (32 , 64 , 64) , kernel sizes (5 , 5, 3) ,strides (2 , 2, 1) , and padding (2 , 2, 1) ; each block is followed by a ReLU nonlinearity and BatchNorm. A 2 × 2 average pool and a single fully-connected layer then produce the 512-dimensional latent 
+
+zt = g(xt) ∈ R512 . The predictor f is a recurrent network with one GRU layer of width 512 driven by the action input at ∈ R2, so that ˆz1 = z1 = g(x1) initializes the GRU hidden state, and subsequent applications produce ˆzt = f (ˆ zt−1, a t−1) for t = 2 , . . . , T , with the GRU hidden state at each step taken as the predicted latent. 16 Figure S6: Example frames from the two datasets. Left: moving-dot dataset [Sobal et al., 2022], noise amplitude σU = 1 .5. Right: pendulum dataset [Chen et al., 2022], noise amplitude σG = 0 .2.
+
+Top row: clean noiseless frames. Middle row: fixed noise. Bottom row: changing noise. The training objective is the symmetrized InfoNCE used for JEPA in Sobal et al. [2022], 
+
+LSimCLR −JEPA = 12( T − 1) 
+
+> T
+
+X
+
+> t=2
+
+[InfoNCE(ˆ zt, z t) + InfoNCE( zt, ˆzt)] , (5) where each InfoNCE( ·, ·) takes the form of Eq. (2) averaged over the batch, with similarity score 
+
+s(u, v ) = u⊤v/τ NCE (applied to L2-normalized or unnormalized vectors depending on the condition; see below) at temperature τNCE . For the objective with across-trajectory negatives (ATN), negatives are drawn from all other trajectories in the batch at each time step; for the objective with within-trajectory negatives (WTN), negatives are all other time steps within the same trajectory. The loss is computed directly on the 512-dimensional encoder outputs with an identity projection head. Frames are not augmented, and the encoder and predictor are trained jointly for 100 epochs using the LARS optimizer with a cosine learning-rate schedule and a 10-epoch linear warm-up. Four hyperparameters are selected per noise condition (α, σ, T ) by random search: LARS base learning rate ηbase , log-spaced over 16 values from 2.5 × 10 −4 to 3.9 and scaled with batch size as 
+
+η = ηbase × B/ 256 ; InfoNCE temperature τNCE , log-spaced over 9 values from 0.1 to 128 ; batch size B ∈ { 64 , 128 , 256 , 512 }; and whether encoder outputs are L2-normalized before computing the loss. For each noise condition we draw 50 random combinations from the Cartesian product of these grids and report the lowest probe RMSE in the main text. Prober architecture and training are described below. 
+
+B.3 DySIB architecture and training 
+
+We use the DySIB architecture and training setup of Martini et al. [2026] unchanged, available under the MIT license. The window encoder ϕ is built from a single per-frame three-layer fully connected MLP with hidden width 256 and ReLU activations, applied to each of the nF = 2 frames. The per-frame embeddings are concatenated and fed to two parallel linear heads producing the mean 
+
+μ ∈ Rkz and log-variance ℓ ∈ Rkz of the Gaussian variational posterior q(zt | xt−nF +1 , . . . , x t) = 
+
+N (μ, diag(exp ℓ)) . The same backbone and heads are shared between the past and future windows. The δ-predictor is a three-layer fully connected MLP with hidden width 64 and ReLU activations, producing both the shift δ(zt) that defines ˆzt+nF = zt + δ(zt) and a per-dimension log-variance for the predictive distribution. The DySIB training objective [Martini et al., 2026] is the symmetric variational information bottleneck 
+
+LDySIB = eIE (X; Zt) + eIE (Y ; Zt+nF ) − β eID (Zt; Zt+nF ), (6) where X and Y denote the past and future frame windows, and the superscripts E and D stand for encoder-side (compression) and decoder-side (prediction) terms. The encoder-side eIE terms 17 are upper bounds on I(X; Zt) and I(Y ; Zt+nF ), implemented as KL divergences [Alemi et al., 2017] between each posterior and a standard normal prior. The decoder-side eID term is an InfoNCE lower bound on I(Zt; Zt+nF ), derived as in Abdelaleem et al. [2025], with critic given by the log-density s(zt, z t+nF ) = log r(zt+nF | zt) of the Gaussian predictive distribution r(· | zt) = 
+
+N (zt + δ(zt), diag(exp ℓδ (zt))) , where ℓδ (zt) denotes the per-dimension log-variance head of the 
+
+δ-predictor. As with the SimCLR-predictor (§B.2), the InfoNCE term is typically evaluated with across-trajectory negatives (ATN); here we also explore within-trajectory negatives (WTN). We set 
+
+β = 100 , large enough that the compression terms contribute negligibly relative to the predictive one. The latent dimensionality kz then controls the effective bottleneck, not the compression weight. All weight matrices use Xavier-uniform initialization, and we train with Adam at learning rate 10 −4,batch size 1024 , for 100 epochs. The latent dimension kz used in this work varies across analyses. We use kz = 2 for embedding visualizations (Fig. 3), where the two-dimensional latent matches the two phase-space degrees of freedom of the pendulum, the angle and the angular velocity. For prober experiments we use kz = 8 .As shown in Martini et al. [2026], the predictive mutual information I(Zt; Zt+nF ) saturates at kz = 2 ,so latents at any kz ≥ 2 retain equivalent predictive information. Slightly enlarging the latent space reduces the fraction of optimization runs that fail to find a good local optimum, while the effective intrinsic dimension of the learned manifold remains close to two. For details about prober architecture and training, see below. 
+
+B.4 Prober architectures and training 
+
+Probers are minimal models that map the frozen learned representation to known dynamical targets, kept low-capacity so that probe accuracy reflects the representation rather than the probe’s own learning. For the moving-dot dataset, the SimCLR-predictor latent is 512-dimensional and, matching Sobal et al. [2022], the prober is a linear map (no bias) from this latent to the 2-dimensional dot position, trained with Adam (learning rate 10 −3) for 30 epochs using an MSE loss, with the SimCLR weights frozen. The latent is high-dimensional enough that a linear probe suffices. For the pendulum, the targets are nonlinear functions of the DySIB latent (Fig. 3 illustrates the case 
+
+kz = 2 ), so a prober that can capture nonlinear structure in a low-dimensional setting is needed. We use a random-feature linear prober [Rahimi and Recht, 2007]: a single fixed (randomly initialized, never updated) linear projection from kz to 512 dimensions (matching the dimensionality of the embedding for the moving dot) followed by a Softplus nonlinearity, with a trainable linear readout .The expansion weights are drawn from N (0 , 2/√kz ), the variance-preserving initialization for Softplus. The angle θ is regressed in (cos θ, sin θ) form, with predictions converted back via atan2 
+
+and angular error wrapped to handle the ±π boundary. The readout is fitted, with DySIB weights frozen, by closed-form ridge regression (regularization λ = 10 −3). During DySIB training, a fresh prober is fitted from scratch every epoch on the current model’s frozen representations (a single closed-form solve), yielding a trajectory of test θ-RMSE values. The reported test RMSE is the minimum over this trajectory, i.e., an oracle estimate of the best representation the model achieves at any point during training, which guards against the representation degrading in the final epochs. We verified that the qualitative conclusions are unchanged when using the final-epoch prober instead. 
+
+B.5 Computational resources 
+
+SimCLR experiments were conducted on AWS instances of NVIDIA B200 GPUs. As a representative single run at the canonical T = 17 and batch size 256, with a linear position prober (30 training epochs) evaluated every 10 epochs of encoder training, runtime was approximately 120 s for the within-trajectory-negative variant (WTN) and 200 s for the across-trajectory-negative variant (ATN). The bulk of compute arose from the hyperparameter sweeps, which spanned 13 OU memory values 
+
+α, 4 noise amplitudes σ at T = 17 for both variants, 7 additional trajectory lengths T for σ = 3 .0
+
+for both variants, and (see Fig. S5) 2 and 3 further trajectory lengths for σ = 2 .5 and σ = 2 .75 
+
+respectively for the WTN variant, amounting to 351 distinct (T, σ, α, variant ) conditions, each evaluated with 50 random hyperparameter combinations (as described in Sec. B.2), for approximately 
+
+17 , 500 training runs in total. At an average of ∼3 min per run (the compute time per run depends on 18 the trajectory length, batch size and negative variant), the total compute required approximately 900 GPU-hours. DySIB experiments were conducted on AWS instances of NVIDIA H100 GPUs. Each run trained the model for 100 epochs with a fresh prober (50 training epochs) evaluated every two epochs of DySIB training; including this probing overhead, each run took approximately 10 minutes. The full paper sweep comprised 2 ( kz ) × 6 ( σ) × 2 ( α) × 2 ( WTN/ATN variant ) × 15 ( replicates ) = 720 
+
+independent runs, totalling approximately 120 GPU-hours. 19

@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "extractor": "pdffigures2",
+  "figures": [
+    {
+      "url": "assets/figures/arxiv/2606.07770v1/fig-003.webp",
+      "caption": "Figure 1: Datasets and architectures. The two (dataset, architecture) pairs studied here; both panels show example frames from length-T trajectories with added temporally correlated noise. (A) SimCLRpredictor [Sobal et al., 2022] on a synthetic moving-dot dataset, with an action-conditioned predictor that maps the encoded current frame and action to the encoded next frame. (B) DySIB [Martini et al., 2026] on experimental video of a rigid pendulum [Chen et al., 2022], with a δ-predictor mapping between non-overlapping nF = 2 frame windows in a Gaussian latent. Dashed circles denote the variational encoder (reparameterization trick). Both methods, as published, use an InfoNCE loss with across-trajectory negatives (ATN). Here we also explore within-trajectory negatives (WTN), see §2.",
+      "page": 3,
+      "index": 3,
+      "width": 812,
+      "height": 319
+    },
+    {
+      "url": "assets/figures/arxiv/2606.07770v1/fig-005.webp",
+      "caption": "Figure 2: ATN but not WTN predictive objectives fail under fixed noise. (A) Stochastic movingdot dataset with the SimCLR-predictor objective. (B) Experimental pendulum videos with the DySIB objective at kz = 8 (chosen following the original DySIB study to reduce sensitivity to local optima during training; Appendix B). We add temporally correlated noise to the observations and report the probe RMSE on the true dynamical variables as a function of noise strength σ. Changing noise is sampled independently per frame. Fixed noise is sampled once per trajectory and held constant within. Dotted lines show supervised baselines (one per noise regime, with the two coinciding on the moving dot). Thin dashed lines indicate performance under random guessing. Under ATN, the changing-noise probe error tracks its supervised baseline, while the fixed-noise probe error grows with σ toward random guessing performance. Under WTN, both the changing- and the fixed-noise probe errors follow their respective supervised baseline curves. Training details are in Appendix B. See Appendix A.2 for stability across hyperparameters and seeds.",
+      "page": 5,
+      "index": 5,
+      "width": 664,
+      "height": 367
+    },
+    {
+      "url": "assets/figures/arxiv/2606.07770v1/fig-001.webp",
+      "caption": "Figure 3: Fixed noise breaks ATN but not WTN angular embeddings. DySIB embeddings of the pendulum dataset with a two-dimensional bottleneck (kz = 2), colored by the true pendulum angle. Each point is a sample from the variational posterior q(zt | xt−nF+1:t) for every nF -frame block in the training data. Rows: ATN (top), WTN (bottom). Columns: no added noise, changing noise, fixed noise (σG = 0.2 for both). Without added noise and with changing noise, both objectives produce latent spaces smoothly organized by angle. With fixed noise, the ATN representation organizes by trajectory-specific nuisances, breaking the global angular structure. WTN suppresses this predictive noise cue within the trajectory, and the fixed-noise embedding again organizes smoothly by angle.",
+      "page": 6,
+      "index": 1,
+      "width": 764,
+      "height": 504
+    },
+    {
+      "url": "assets/figures/arxiv/2606.07770v1/fig-002.webp",
+      "caption": "Figure 4: After WTN removes the fixed-noise failure, the largest errors occur at intermediate noise correlation times. Stochastic moving-dot dataset with temporally correlated uniform noise of strength σU (colors) and correlation time τ (horizontal axis), at fixed trajectory duration T = 17. Dotted colored horizontal lines mark the changing-noise (τ → 0) probe RMSE at the corresponding σU . Black dashed line is chance performance. (A) ATN. Error grows monotonically with τ , saturating near random guessing in the fixed-noise limit. The crossover scales with T (Fig. S4). (B) WTN. Error stays low at both ends and develops a peak at intermediate τ . See Appendix A.2 for stability across hyperparameters and seeds.",
+      "page": 7,
+      "index": 2,
+      "width": 706,
+      "height": 283
+    },
+    {
+      "url": "assets/figures/arxiv/2606.07770v1/fig-004.webp",
+      "caption": "Figure 5: Longer trajectories help WTN, not ATN. Stochastic moving-dot dataset with temporally correlated uniform noise of strength σU = 3.0, varying trajectory duration T and correlation time τ . (A) Probe RMSE for ATN. The fixed-noise failure region at τ ≫ T persists at every T . (B) Probe RMSE for WTN. The only remaining failure is the intermediate-correlation peak near τ ≈ T , which weakens as T grows. (C) Maximum (worst) probe RMSE over τ as a function of T . ATN saturates near random guessing. WTN decreases toward the supervised baseline. Inset: excess of the WTN maximum over the supervised baseline, log–log axes. The decay is consistent with a power law in T . See Appendix A.2 for stability across hyperparameters and seeds.",
+      "page": 8,
+      "index": 4,
+      "width": 748,
+      "height": 497
+    }
+  ]
+}

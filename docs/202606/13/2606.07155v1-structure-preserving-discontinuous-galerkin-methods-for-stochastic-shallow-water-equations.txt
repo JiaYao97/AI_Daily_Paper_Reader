@@ -1,0 +1,1815 @@
+Title: Structure-Preserving Discontinuous Galerkin Methods for Stochastic Shallow Water Equations
+
+URL Source: https://arxiv.org/pdf/2606.07155v1
+
+Published Time: Mon, 08 Jun 2026 00:46:01 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# Structure-Preserving Discontinuous Galerkin Methods for Stochastic Shallow Water Equations 
+
+## Yekaterina Epshteyn †1, Akil Narayan ‡1,2 , and Yinqian Yu §11Department of Mathematics, University of Utah, 155 S 1400 E, Salt Lake City, 84112, UT, USA 
+
+> 2
+
+Scientific Computing and Imaging Institute, University of Utah, 72 S Central Campus Dr, Salt Lake City, 84112, UT, USA 
+
+Abstract 
+
+Shallow water equations (SWE) are fundamental models in fluid dynamics that are essential for studying a wide range of geophysical and engineering phenomena. In many practical applications, uncertainties arising from initial conditions and bottom topography must be taken into account, motivating the development of stable and accurate numerical methods for stochastic SWE. Building on the hyperbolicity-preserving stochastic Galerkin formulation for SWE [Dai, Epshteyn, Narayan, 2021 SISC] and a stochastic extension of the entropy stable discontinuous Galerkin methods for skew-symmetric SWE [Fu, 2022 JSC], we develop a structure-preserving, entropy conservative, and entropy stable discontinuous Galerkin–stochastic Galerkin method for the stochastic shallow water system, with the well-balanced property. We demonstrate the accuracy, applicability, and robustness of the proposed structure-preserving algorithms through several numerical experiments. 
+
+Keywords: stochastic shallow water equation, stochastic Galerkin, discontinuous Galerkin, structure-preserving, entropy stability. 
+
+# 1 Introduction 
+
+The Saint-Venant system of shallow water equations (SWE) is a classical and widely used model in the mathematical and physical description of geophysical fluid flows, particularly in regimes where the horizontal length scale is significantly larger than the vertical one, such as rivers, lakes, and coastal regions [17]. This system is capable of capturing the essential dynamics of wave propagation, trans-port processes, and general hydrodynamic behavior under the shallow-water assumption, making it a fundamental model for a broad range of practical applications involving water flows. Despite its wide applicability, deterministic shallow water models are often insufficient in realistic settings, since envi-ronmental data and operating conditions are frequently uncertain or partially unknown. Incorporating such uncertainty is therefore essential for improving predictive capability, which motivates the develop-ment of parameterized stochastic shallow water equations (SWE), in which randomness is introduced through random inputs to model uncertainty propagation. To represent uncertainty, we employ the polynomial chaos expansion (PCE) framework, which pro-vides a systematic approach for representing random fields in terms of orthogonal polynomial bases. Originally introduced by Wiener [60] for Gaussian processes using Hermite polynomials, the method has been extended to more general orthogonal polynomial families suitable for arbitrary probability distributions [29, 42, 59, 70]. In this framework, uncertainty is encoded through a truncated spectral 
+
+> †epshteyn@math.utah.edu
+> ‡akil@sci.utah.edu
+> §yinqian.yu@utah.edu
+
+1
+
+> arXiv:2606.07155v1 [math.NA] 5 Jun 2026
+
+expansion, which transforms the stochastic partial differential equation into a coupled deterministic system governing the expansion coefficients. Two main classes of numerical methods arise from this formulation: intrusive and non-intrusive approaches. Non-intrusive methods, based on sampling strategies [46, 47, 69], construct the stochastic solu-tion by repeatedly solving deterministic realizations of the system at selected samples of the random variables. This approach has the advantage of directly utilizing existing and well-established deter-ministic solvers for the shallow water equations, including a wide range of finite volume and related methods [73, 36, 53, 12, 64, 65, 66, 37, 4, 22, 35, 45, 62, 63, 72]. However, while convenient and flexi-ble, non-intrusive approaches may suffer from reduced accuracy compared to spectral methods, and it is often difficult to guarantee important physical properties such as entropy stability, and the ability of preserving equilibrium states. In contrast, intrusive stochastic Galerkin (SG) methods project the truncated PCE representation onto the stochastic basis, leading to a coupled deterministic system for the expansion coefficients [60, 70]. Although this approach requires significant modifications to existing deterministic solvers and results in increased algebraic and computational complexity, it is generally expected to achieve higher-order accuracy than non-intrusive methods. Since the SG method is based on projection, it leads to near-optimal accuracy in the L2 sense for static problems [1, 41]. Moreover, the SG framework facilitates rigorous analysis of both the resulting SG system and its associated nu-merical discretizations. As a consequence, SG methods have been successfully applied to uncertainty quantification in diffusion problems [71, 20], kinetic equations [32, 55], and conservation and balance laws with symmetric Jacobian matrices [58]. Nevertheless, for general nonlinear hyperbolic systems such as the shallow water equations and the Euler equations, the resulting SG system may lose hyperbolicity [19, 27, 33], leading to ill-posedness, potentially producing unphysical solutions, and compromising the robustness of the subsequent numerical schemes. To address these challenges, various structure-preserving strategies have been proposed in the lit-erature. Recent advances include SG-based analysis and algorithms for scalar conservation laws [74], including well-balanced schemes [34], Haar wavelet-based approaches [28], hyperbolicity-preserving for-mulations based on non-equivalent Roe variables [26, 2, 48], filtering techniques [39], limiter-based strategies [54], hyperbolicity-preserving formulations for linear problems [51] and approaches based on linearization [61], operator splitting methods [8, 9], non-conservative formulations of SG SWE systems [6], and entropy-variable representations [50, 49]. In this paper, we build upon the recent work on a hyperbolicity-preserving SG formulation for the stochastic SWE [14] and combine it with a skew-symmetric formulation of SWE [25] with a stochastic extension, resulting in a hyperbolicity-preserving skew-symmetric SG system for stochastic SWE. De-spite the hyperbolicity-preserving property, the SG system is a nonlinear hyperbolic conservation law or balance law, and therefore it inherits the standard challenges associated with the numerical approx-imation of such systems. For instance, solutions may develop shock discontinuities in finite time for generic initial data, leading to non-unique weak solutions. To select the physically relevant solution, an additional entropy condition must be enforced, either explicitly or implicitly. Moreover, the strong nonlinearity of the system poses significant challenges for implicit time discretizations [13, 43, 44]. Over the past decades, a variety of high-resolution numerical methods have been developed for such hyperbolic systems, most notably finite volume (FV) and discontinuous Galerkin (DG) methods [44, 11]. FV schemes provide robust shock-capturing capabilities through conservative flux formulations [38], while DG methods can further achieve high-order accuracy with a variational framework using piecewise polynomial approximations [31]. In recent years, considerable effort has been devoted to the design of structure-preserving schemes, including entropy-conservative and entropy-stable methods that enforce consistency with the entropy inequality [57, 24], as well as well-balanced schemes that exactly preserve steady states at the discrete level for balance laws such as the shallow water equations [3, 64, 5]. These challenges inherited from nonlinear hyperbolic conservation/balance laws are further compounded in the stochastic Galerkin setting, where the coupling between stochastic modes introduces additional complexity, making the design of robust, structure-preserving numerical schemes significantly more difficult. 21.1 Contributions of this paper 
+
+In this paper, we develop a discontinuous Galerkin–stochastic Galerkin (DG-SG) scheme for stochastic shallow water equations (SWE), with the desired well-balanced property, entropy stability, and an applicable positivity-preserving criterion for the fully discrete numerical scheme. 
+
+• We derive a skew-symmetric hyperbolicity-preserving stochastic Galerkin (SG) formulation for the stochastic SWE. This formulation builds on the SGSWE in [14], together with the stochastic extension of the skew-symmetric SWE in [25]. The resulting skew-symmetric SGSWE is essential for constructing a DG scheme that satisfies the entropy admissibility criterion to resolve the non-uniqueness of weak solutions. 
+
+• Based on the skew-symmetric SGSWE, we construct high-order, well-balanced, entropy conser-vative, and entropy stable semi-discrete DG-SG schemes for the stochastic SWE. The designed numerical fluxes in our DG-SG scheme are stochastic extensions of those developed in [25] for the deterministic SWE. We present practical fully-discrete versions of semi-discrete scheme that are implementable algorithms to simulate the system. 
+
+• We present several challenging numerical experiments to evaluate the performance of our schemes, including accuracy, well-balanced property, energy decay, and numerical robustness. Compared with closely related SG methods for the stochastic SWE, the present work combines a different SG formulation with a different spatial discretization. The hyperbolicity-preserving SG formu-lation in [14] leads to well-balanced finite-volume-type schemes, whereas here we develop a high-order DG discretization based on a skew-symmetric SG formulation. In contrast to entropy-stable DG ap-proaches based on Roe-variable transformations [26, 2, 48], the proposed method works directly with the hyperbolicity-preserving conserved-variable SG formulation, accommodates general orthonormal polynomial bases associated with the random input distribution, and uses a velocity projection in the DG discretization. This construction yields a DG-SG scheme that is simultaneously high-order, well-balanced, entropy conservative or entropy stable, and compatible with a practical hyperbolicity-preserving criterion. An outline of this paper is as follows: In Section 2, we review the polynomial chaos expansion (PCE) framework and develop a skew-symmetric stochastic Galerkin (SG) formulation of the shallow water equations (SWE) following [14]. In Section 3, we develop a DG-SG formulation for the skew-symmetric SG system introduced in Section 2, and we construct well-balanced, entropy conservative, and entropy stable numerical fluxes for our proposed DG-SG scheme. In Section 4, we provide algorithm details of our scheme for practical implementation. In Section 5, we present several challenging numerical examples to demonstrate the performance of the proposed schemes and verify their theoretical properties. In Section 6 we summarize the main results and discuss possible directions. 
+
+# 2 Skew-symmetric stochastic Galerkin formulation of shallow water equations 
+
+In this section, we introduce a skew-symmetric stochastic Galerkin formulation of the shallow water equations (SWE), which possesses a hyperbolicity-preserving property with a reasonable condition [14]. We begin with the stochastic SWE: 
+
+Ut(x, t, ξ ) + F (U )x = S(U ), U = [h, q ]⊺, (2.1) where F (U ) represents the flux and S(U ) is the source term: 
+
+F (U ) = ( q 
+
+> q2
+> h
+
++ gh 2
+
+> 2
+
+) , S(U ) = ( 0
+
+−ghB x
+
+) , (2.2) 3Here U = [h, q ]⊺ is the vector of conservative variables, h = h(x, t, ξ ) is the water height, and q = q(x, t, ξ )
+
+is the discharge, and B = B(x, ξ ) is the time-independent bottom topography. ξ is a random field, which could result from uncertainty or ignorance of the inputs, for example, bottom topography and initial data. Therefore, our solution depends not only on the spatial and temporal variable (x, t ), but also on the stochastic random variable ξ. Our goal is to develop accurate, efficient, and robust numerical algorithms for the stochastic SWE (2.1). We begin with some preliminaries for the stochastic model formulation. 
+
+## 2.1 Polynomial chaos expansion 
+
+In this subsection, we provide a brief review of polynomial chaos expansion (PCE). For further details, see [18, 56, 68]. Let ξ ∈ Rd be a d-dimensional random variable with a Lebesgue density function ρ.Define the L2-integrable function space associated with ρ as follows: 
+
+L2
+
+> ρ
+
+(Rd) ∶= {f ∶ Rd → R ∣ (∫Rd
+
+f 2(s)ρ(s)ds )
+
+> 1/2
+
+< +∞ } . (2.3) Assuming that ρ has finite polynomial moments of all orders, there exists a d-variate orthonormal polynomial basis {ϕk}∞ 
+
+> k=1
+
+such that, 
+
+E[ϕk(ξ)ϕl(ξ)] = ⟨ϕk, ϕ l⟩ρ ∶= ∫Rd
+
+ϕk(s)ϕl(s)ρ(s)ds = δk,l , ∀k, l ∈ N, ϕ1(ξ) ≡ 1, (2.4) where δk,l is the Kronecker delta. Further, under mild conditions [23], then these basis functions span 
+
+L2
+
+> ρ
+
+: For any z ∈ L2
+
+> ρ
+
+, then 
+
+z(x, t, ξ ) L2
+
+> ρ
+
+=
+
+> ∞
+
+∑
+
+> k=1
+
+̂ zk(x, t )ϕk(ξ),̂ zk = ⟨z, ϕ k⟩ρ , (2.5) where x, t are deterministic spatial and temporal variables, and ̂ zk(x, t ) are the deterministic Fourier-type coefficients corresponding to the orthonormal basis {ϕk}∞
+
+> k=1
+
+. Numerical computations require finite truncations of these expansions. Let P = span {ϕk, k = 1, 2, . . . , K } be a K-dimensional polynomial subspace of L2
+
+> ρ
+
+. We then define the K-term PCE approximation of a random field z on this subspace as follows: ΠP [z]( x, t, ξ ) ∶=
+
+> K
+
+∑
+
+> k=1
+
+̂ zk(x, t )ϕk(ξ). (2.6) The statistics of Π P [z] can be derived from its expansion coefficients. Specifically, the mean and variance of the random field z can be expressed in terms of these coefficients as follows: 
+
+E[ΠP [z]( x, t, ξ )] =̂ z1(x, t ), Var [ΠP [z]( x, t, ξ )] =
+
+> K
+
+∑
+
+> k=2
+
+̂ z2
+
+> k
+
+(x, t ). (2.7) Our numerical schemes involve specific manipulations of truncated expansion coefficients. Let ̂ z =
+
+(̂ z1, . . . , ̂ zK )⊺ ∈ RK be the vector of truncated K−term PCE coefficients of z, then define the linear operator P ∶ RK → RK×K as follows: 
+
+P(̂ z) ∶=
+
+> K
+
+∑
+
+> k=1
+
+̂ zkMk, Mk ∈ RK×K , (Mk)l,m ∶= ⟨ϕk, ϕ lϕm⟩ρ. (2.8) This operator P(⋅) satisfies the symmetry and commutativity properties as follows: 
+
+P(̂ z) = (M1̂ z, M2̂ z, . . . , MK̂ z), P(̂ a)̂ b = P(̂ b)̂ a, ̂ b⊺P(̂ a) =̂ a⊺P(̂ b), (2.9) The last two properties are proved in [16, Lemma 2.1], using the definition and symmetry of P. Astochastic Galerkin (SG) formulation of a ξ-parameterized partial differential equation (PDE) assumes 4that the state variable lies in the polynomial space P and forms a scheme corresponding to projecting the PDE residual onto P . Note that the hyperbolicity of the straightforward SG formulation for nonlinear hyperbolic PDEs, such as the shallow water equations, is not automatically guaranteed. Therefore, special designs are required for the SG formulation of these nonlinear hyperbolic PDEs to preserve such an important property. 
+
+## 2.2 Hyperbolicity-preserving stochastic Galerkin formulation (SG) for shal-low water equations (SWE) 
+
+In this subsection, we review existing results on the hyperbolicity-preserving stochastic Galerkin for-mulation of shallow water equations (SGSWE) [14]. We follow a standard Galerkin procedure in the stochastic space. It begins with reducing the problem to an alternative finite-dimensional form by replacing the solutions (h, q ) by the ansatz, 
+
+h ≃ hP ∶= ∑
+
+> k∈[K]
+
+̂
+
+hk(x, t )ϕk(ξ),q ≃ qP ∶= ∑
+
+> k∈[K]
+
+̂
+
+qk(x, t )ϕk(ξ), (2.10) respectively, and the bottom B by Π P [B] defined in (2.6), where notation [K] ∶= {1, 2, ..., K }. With a special choice of how the Galerkin projection is applied to the nonlinear, non-polynomial term q2/h
+
+introduced in [14], a SG system of balance laws was derived, with state variables being the coefficients in (2.10) ̂
+
+Ut +̂ F (̂ U )x =̂ S(̂ U , ̂ B), (2.11) where ̂ U = (̂ h⊺,̂ q⊺)⊺ ∈ R2K , and ̂ h, ̂ q are length-K vectors whose entries are the coefficients in (2.10). The flux and source term are defined by ̂
+
+F (̂ U ) = (̂ q
+
+P(̂ q)P−1(̂ h)̂ q + 12 gP(̂ h)̂ h) ,̂ S(̂ U , ̂ B) = ( 0
+
+−gP(̂ h)̂ Bx
+
+) . (2.12) In the deterministic case, the flux and source term (2.12) reduce to their corresponding deterministic forms. Recall the deterministic SWE is hyperbolic under the condition of positive water height ( h > 0). There is a natural extension of this property to the SG system (2.11). 
+
+Theorem 1 (Theorem 3.1 in [14]) . If the matrix P(̂ h) is strictly positive definite at every point (x, t )
+
+in the computational spatial-temporal domain, then the SG formulation (2.11) is hyperbolic. 
+
+This result is proven by identifying a symmetrizing similarity transform of the SG SWE flux Jaco-bians ∂̂ F∂̂ U . This flux Jacobian will be useful for us later, so we explicitly provide it below: When P(̂ h)
+
+is invertible, the well-defined velocity ̂
+
+u ∶= P−1(̂ h)̂ q, (2.13) is a stochastic representation of the velocity variable, i.e., this term can be interpreted as the vectors of the PCE coefficients of the velocity u ∶= q/h. The flux Jacobian of the SG SWE system (2.11) can then be expressed in terms of K × K blocks as follows: 
+
+∂̂ F∂̂ U = ( 0 IgP(̂ h) − P(̂ q)P−1(̂ h)P(̂ u) P(̂ q)P−1(̂ h) + P(̂ u)) . (2.14) 
+
+## 2.3 Skew-symmetric stochastic Galerkin formulation for shallow water equa-tions (SGSWE) 
+
+In this subsection, we introduce a skew-symmetric form of the SGSWE, which also preserves hyperbolic-ity. However, the skew-symmetric SGSWE is not a standard conservation/balance law, which motivates the following two definitions. 5Definition 1 (Hyperbolicity for first-order PDE) . A first-order system of partial differential equations is said to be hyperbolic if it can be written, via an invertible linear transformation, in the quasilinear form 
+
+Ut + A(U )Ux = S(U ), (2.15) 
+
+where the transformation consists of left multiplication by an invertible matrix L(U ) that depends only on the state variable and involves no spatial or temporal derivatives. The system (2.15) is called hyperbolic if the matrix A(U ) is diagonalizable with real eigenvalues [40, 44]. 
+
+Definition 2. For an arbitrary first-order (in time and space) system of partial differential equations, it has an associated companion balance law if it can be transformed to a conservation law 
+
+Ut + F (U )x = S(U ), (2.16) 
+
+where the transformation consists of left multiplication by an invertible matrix L(U ) that depends only on the state variable and involves no spatial or temporal derivatives. Assume U is smooth, and it has an associated companion balance law. We say (2.16) has a companion balance law if there exists an entropy flux pair (E(U ), H (U )) satisfying 
+
+E(U )t + H(U )x = 0, (2.17) 
+
+where E(U ) is convex on U .
+
+Remark 1. In the deterministic case, the skew-symmetric SWE is 
+
+ht + (hu )x = 0
+
+(hu )t + (hu 2)x + gh (h + b)x − ( 12 htu + 12 (hu )xu) = 0, (2.18) 
+
+which can be obtained by applying a linear operator L ∶ R2 → R2 to 
+
+ht + qx = 0
+
+qt + ( 12 gh 2 + hu 2)x = −ghb x, (2.19) 
+
+where the matrix L(U ) = ( 1 0
+
+− 12 u 1) , which is invertible. Hence, the skew-symmetric SWE (2.18) is hyperbolic if (2.19) is hyperbolic, which is true when h > 0. In addition, let V ∶= [g(h + b) − 12 u2, u ]⊺ be the entropy variable. Multiplying (2.19) by V ⊺, we can recover the companion balance law 
+
+E(U )t + H(U )x = 0, (2.20) 
+
+where E(U ) = 12 (hu 2 + gh 2) + ghb , and H(U ) = 12 hu 3 + ghu (h + b). Let the modified entropy variable 
+
+˜V ∶= (L⊺)−1V = [g(h + b), u ]⊺. Multiplying the skew symmetric SWE (2.18) by ˜V ⊺, we can also recover the same companion balance law (2.20) .
+
+Note: ˜V ≠ ( ∂E ∂(LU ) )⊺, since L may be related to U . In the case of SWE, L involves velocity u, which is related to the state variable U . Instead, we can define ˜V = (L⊺)−1V = (L⊺)−1( ∂E ∂U )⊺. It follows that 
+
+˜V ⊺(LU t) = ∂E ∂U (L)−1LU t = ∂E ∂U Ut = Et. (2.21) We can then derive the skew-symmetric SGSWE, starting from the skew-symmetric stochastic SWE: 
+
+ht(x, t, ξ ) + qx(x, t, ξ ) = 0,qt(x, t, ξ ) + (hu 2)x(x, t, ξ ) + gh (h + B)x(x, t, ξ ) − 12 htu(x, t, ξ ) − 12 qxu(x, t, ξ ) = 0, (2.22) 6where u ∶= qh . This skew-symmetric system (2.22) can be derived by multiplying the first equation of (2.1) by u 
+
+> 2
+
+, and subtracting it from the second equation of (2.1). The skew-symmetric form of the shallow water equations has been widely employed in recent studies to derive entropy-stable DG discretizations. In this work, we extend the idea of [25] to the stochastic case, which requires great effort and more details. We first consider stochastic discretization on (2.22), which is based on the idea of the hyperbolicity-preserving stochastic Galerkin formulation of shallow water equations [14]. We follow a standard Galerkin procedure in the stochastic space, which starts from reducing the problem to an alternative finite-dimensional form by replacing the solutions (h, q ) by the ansatz, 
+
+h ≃ hs(x, t, ξ ) = ∑
+
+> j≤K
+
+̂ hj (x, t )ϕj (ξ) q ≃ qs(x, t, ξ ) = ∑
+
+> j≤K
+
+̂ qj (x, t )ϕj (ξ), (2.23) where ̂ hj ,̂ qj are the truncated PCE coefficients of the SG solutions depending on the physical variable 
+
+x and the time variable t. In addition, the bottom B is replaced by Π P [B]. With a special choice of how the Galerkin projection is applied to the nonlinear, non-polynomial term q2/h introduced in [14], a SG system of balance laws was derived, whose state variables are the coefficients in (2.23) ̂
+
+ht +̂ qx = 0̂
+
+qt + (P(̂ q)̂ u)x + gP(̂ h)(̂ h +̂ B)x − 12 P(̂ ht)̂ u − 12 P(̂ qx)̂ u = 0, (2.24) where ̂ u ∶= P−1(̂ h)̂ q. In the deterministic case, the stochastic Galerkin system (2.24) reduces to the deterministic skew-symmetric SWE (2.18), and the hyperbolicity condition reduces to h being positive. There is a natural extension of this property to the SG formulation of the SWE. 
+
+Theorem 2 (Hyperbolicity of skew-symmetric SGSWE) . If the matrix P(̂ h) is strictly positive definite at every point (x, t ) in the computational spatial-temporal domain, then the SG formulation (2.24) is hyperbolic. Proof. Since the skew-symmetric SGSWE (2.24) is not in the standard form of conservation/balance laws, to discuss its hyperbolicity, we need to recall the definition of hyperbolicity for first-order PDE in Definition 1. The skew-symmetric SGSWE (2.24) can be obtained by applying a linear operator ̂ L to the SGSWE (2.11). Here ̂ L ∶ R2K → R2K ,̂
+
+L (̂ x̂
+
+y) ∶= (̂ x̂
+
+y − 12 P(̂ x)̂ u) ,̂ x, ̂ y ∈ RK .
+
+Equivalently, the matrix of ̂ L is defined by ̂
+
+LM = ( I 0
+
+− 12 P(̂ u) I) . (2.25) Since ̂ L is an invertible linear operator, the skew-symmetric SGSWE (2.24) is hyperbolic if (2.11) is hyperbolic, which is true when P(̂ h) is symmetric positive definite. 
+
+Remark 2. Let ̂ V ∶= [− 12̂ u⊺P(̂ u) + g(̂ h +̂ B)⊺,̂ u⊺]⊺. Multiplying the SGSWE (2.11) by ̂ V ⊺, we can recover the stochastic companion balance law ̂
+
+E(̂ U )t +̂ H(̂ U )x = 0, (2.26) 
+
+where ̂ E(̂ U ) = 12 (̂ q⊺̂ u + g∥̂ h∥2) + ĝ h⊺̂ B, and ̂ H(̂ U ) = 12̂ u⊺P(̂ q)̂ u + ĝ q⊺(̂ h +̂ B). In addition, let the modified stochastic entropy variable ˜̂V ∶= (̂ L∗)−1̂ V = [g(̂ h +̂ B)⊺,̂ u⊺]⊺. Multiplying the skew symmetric SGSWE 
+
+(2.24) by ( ˜̂V )⊺
+
+, we can also recover the same stochastic companion balance law (2.26) .
+
+73 Entropy conservative, entropy stable, and well-balanced dis-continuous Galerkin formulation for skew-symmetric SGSWE 
+
+## 3.1 Discontinuous Galerkin–stochastic Galerkin formulation for skew-symmetric stochastic shallow water equations 
+
+In this section, we derive a discontinuous Galerkin–stochastic Galerkin (DG-SG) formulation for the skew-symmetric stochastic shallow water equations. In this section and the rest of this paper, we use the subscript ∆ x for quantities after spatial discretization. Let the physical domain Ω be periodic, partitioned into elements Ii = [xi−1/2, x i+1/2]. Let ∆ xi ∶= ∣Ii∣
+
+denote the size of each element. Let {Ei} denote the set of all cell interfaces. For any polynomial degree 
+
+k ≥ 0, let 
+
+V k 
+
+> ∆x
+
+∶= {v ∈ L2(Ω) ∶ v∣Ii ∈ Pk(Ii), ∀Ii ⊂ Ω}, (3.1) where Pk(Ii) is the space of polynomials of degree at most k on the element Ii. Let Vk 
+
+> ∆x
+
+be the vectorized version of the space V k
+
+> ∆x
+
+. At each interface xi+1/2 = Ii ∩ Ii+1, we define average and jump quantities by 
+
+{a}i+1/2 ∶= a∣+ 
+
+> i+1/2
+
++ a∣−
+
+> i+1/2
+
+2 , JaKi+1/2 ∶= a∣+ 
+
+> i+1/2
+
+− a∣−
+
+> i+1/2
+
+, (3.2) where a∣+ 
+
+> i+1/2
+
+∶= lim x→x+ 
+
+> i+1/2
+
+a∣Ii+1 (x) and a∣− 
+
+> i+1/2
+
+∶= lim x→x− 
+
+> i+1/2
+
+a∣Ii (x).The semi-discrete DG-SG formulation of (2.24) reads as follows: find DG solutions (̂ h∆x,̂ q∆x,̂ u∆x) ∈
+
+Vk
+
+> ∆x
+
+, such that 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(̂ h∆x,j )t̂ e∆x,j dx − ∑
+
+> Ii⊂Ω
+
+∫Iî q∆x,j (̂ e∆x,j )x dx − ∑
+
+> Ei
+
+(̂ fq )j Ĵe∆x,j K = 0, (3.3) for all ̂ e∆x,j ∈ V k
+
+> ∆x
+
+, j = 1, . . . , K , and 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(̂ q∆x,j )t̂ v∆x,j dx − ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(P(̂ q∆x)̂ u∆x)j (̂ v∆x,j )x dx − ∑
+
+> Ei
+
+(̂ fqu )j Ĵ v∆x,j K
+
++ ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(P(̂ h∆x +̂ B∆x)x̂ v∆x,j ̂ h∆x)j dx + ∑
+
+> Ei
+
+(gP(Ĵ h∆x +̂ B∆xK){̂ v∆x,j ̂ h∆x}) j
+
+− ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 (P(̂ h∆x)t̂ u∆x)ĵ v∆x,j dx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 (P(̂ q∆x)(̂ v∆x,j ̂ u∆x)x)j dx 
+
++ ∑
+
+> Ei
+
+12 (P(̂ fq )Ĵ v∆x,j ̂ u∆xK)j = 0,
+
+(3.4) for all ̂ v∆x,j ∈ V k
+
+> ∆x
+
+, j = 1, . . . , K , and 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(P(̂ h∆x)̂ u∆x −̂ q∆x)̂ w∆x,j dx = 0, ∀̂w∆x,j ∈ V k
+
+> ∆x
+
+, j = 1, . . . , K. (3.5) Here, ̂ h∆x(x, t ) and ̂ q∆x(x, t ) are vector-valued functions (the PCE coefficients vectors), whose 
+
+j−th components are denoted by ̂ h∆x,j (x, t ) and ̂ q∆x,j (x, t ), respectively. The last equation (3.5) is introduced to define the velocity update ̂ u∆x such that ̂ q∆x is the L2-projection of P(̂ h∆x)̂ u∆x onto the DG approximation space V k
+
+> ∆x
+
+. This relation allows ̂ u∆x to be used as a test function in the proposed DG-SG scheme. Moreover, (3.5) plays a key role in the derivation of the discrete entropy equation. The numerical fluxes ̂ fq and ̂ fqu will be specified later to ensure that the resulting DG-SG scheme satisfies the desired physical properties, including the well-balanced property and entropy stability. 83.2 Entropy conservative, entropy stable, and well-balanced numerical fluxes 
+
+In this subsection, we establish the entropy stability and well-balanced property of the proposed DG-SG formulation with appropriate choices of numerical fluxes. We start by defining the well-balanced property of a numerical scheme in the stochastic context, which ensures that stochastic “lake-at-rest” steady states are equilibrium states at the discrete level. 
+
+Definition 3 (Well-Balanced DG-SG scheme for stochastic SWE) . The solution (h∆x,s , q ∆x,s ) of the proposed scheme (3.3) –(3.5) is said to be well-balanced if it satisfies the stochastic “lake-at-rest” solution, 
+
+q∆x,s (x, t, ξ ) ≡ 0, h∆x,s (x, t, ξ ) + B∆x(x, t, ξ ) ≡ C(ξ), (3.6) 
+
+where C(ξ) is a random scalar depending only on ξ. Such a well-balanced solution describes a still water surface with a flat but stochastic water surface. In terms of the system of PCE coefficients, (3.6) is equivalent to the following vector equations ̂
+
+q∆x ≡ 0,̂ h∆x +̂ B∆x ≡̂ C, ∀(x, t ) ∈ Ω × [0, T ], (3.7) 
+
+with spatial domain Ω and terminal time T . Note that the vector equations (3.7) represent a steady state of the skew-symmetric SG SWE (2.24) .
+
+Many geophysical flows, including lake perturbations and tsunami propagation, involve small devia-tions from the lake-at-rest equilibrium of the shallow water equations. In such regimes, it is essential for numerical schemes to be well-balanced to preserve steady states and avoid generating spurious waves that can dominate the true dynamics. In addition, to ensure physical admissibility of nonlinear weak solutions, it is also necessary to impose an entropy condition. We recover the stochastic companion balance law (2.26) from the skew-symmetric SGSWE (2.24), and we therefore expect the semi-discrete numerical scheme to inherit the semi-discrete entropy conservative/stable property in a discrete sense. 
+
+Definition 4 (Entropy conservative/stable DG-SG scheme) . The semi-discrete DG-SG solutions de-fined in (3.3) –(3.5) , with corresponding numerical fluxes, are said to be entropy conservative or stable if, 
+
+ddt E∆x = 0, or, ddt E∆x ≤ 0, (3.8) 
+
+respectively, where 
+
+E∆x = ∑
+
+> I⊂Ω
+
+∫I
+
+( 12 g∥̂ h∆x∥2 
+
+> l2
+
++ ĝ h⊺
+
+> ∆x
+
+̂ B∆x + 12̂ q⊺
+
+> ∆x
+
+̂ u∆x)dx. (3.9) Our main result is that we can ensure the entropy conservative/stable property through special selection of the numerical fluxes ̂ fq ,̂ fqu .
+
+Theorem 3 (Entropy conservative/stable and well-balanced DG-SG scheme) . Suppose that the bottom topography function B is independent of time. The semi-discrete DG-SG scheme (3.3) –(3.5) for the skew-symmetric SG SWE system (2.24) , is well-balanced, and, 
+
+• entropy conservative, with the central fluxes ̂
+
+fq = {P(̂ h∆x)̂ u∆x},̂ fqu = P(̂ fq ){̂ u∆x} = P({ P(̂ h∆x)̂ u∆x}){̂ u∆x}, (3.10) 
+
+• entropy stable, with the Lax-Friedrichs type numerical fluxes ̂
+
+fq = {P(̂ h∆x)̂ u∆x} − 12 α1Ĵ h∆x +̂ B∆xK,̂ fqu = P({ P(̂ h∆x)̂ u∆x}){̂ u∆x} − 12 α1JP(̂ h∆x +̂ B∆x)̂ u∆xK,
+
+(3.11) 
+
+for any α1 ≥ 0.
+
+9Before proving the entropy stability, we first introduce two lemmas: 
+
+Lemma 1 (Commutative dot product) . For any symmetric matrix A ∈ Rk×k and vectors ⃗ b, ⃗ c ∈ Rk, ∀k ∈
+
+N, we have 
+
+A⃗ b ⋅⃗ c = A⃗c ⋅⃗ b. (3.12) 
+
+Lemma 2 (A property of P). For any ̂ a, ̂ b, we have the equality 
+
+12 (P(̂ a)̂ b+ ⋅̂ b+ − P(̂ a)̂ b− ⋅̂ b−) = P(̂ a){̂ b} ⋅ ĴbK. (3.13) 
+
+Proof of Theorem 3. It begins with constructing the entropy equation by taking ̂ e∆x,j = g(̂ h∆x,j +̂
+
+B∆x,j ), ∀j in (3.3) and taking ̂ v∆x,j =̂ u∆x,j , ∀j in (3.4), and adding the equations (3.3) and (3.4) together, then we get the following equation 
+
+∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(̂ h∆x,j )tg(̂ h∆x,j +̂ B∆x,j )dx + ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(̂ q∆x,j )t̂ u∆x,j dx 
+
+− ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+( 12 P(̂ h∆x)t̂ u∆x)ĵ u∆x,j dx 
+
+∶=I1 + I2,
+
+(3.14) where we combine all time-derivative terms in the left-hand side (LHS) of (3.14), and in the right-hand side (RHS) of (3.14), we denote spatial terms without gravitational terms by I1 and those with gravitational terms by I2 as follows, 
+
+I1 ∶= ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(P(̂ q∆x)̂ u∆x)j (̂ u∆x,j )xdx − ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+12 (P(̂ q∆x)(̂ u∆x,j ̂ u∆x)x)j dx 
+
++ ( ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(̂ fqu )j Ĵ u∆x,j K − ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+12 (P(̂ fq )Ĵ u∆x,j ̂ u∆xK)j ),
+
+(3.15) and, 
+
+I2 ∶= ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Iî q∆x,j (g(̂ h∆x,j +̂ B∆x,j )) xdx − ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(gP(̂ h∆x +̂ B∆x)x̂ u∆x,j ̂ h∆x)j dx 
+
+− ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(gP(Ĵ h∆x +̂ B∆xK){̂ u∆x,j ̂ h∆x}) j + ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(̂ fq )j Jg(̂ h∆x,j +̂ B∆x,j )K.
+
+(3.16) 10 The LHS of (3.14) is evaluated to obtain the derivative of semi-discrete entropy in (3.9): 
+
+∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(̂ h∆x,j )tg(̂ h∆x,j +̂ B∆x,j )dx + ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(̂ q∆x,j )t̂ u∆x,j dx 
+
+− ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+( 12 P(̂ h∆x)t̂ u∆x)ĵ u∆x,j dx 
+
+> ∑Kj=1
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ h∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ B∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(̂ q∆x)t ⋅̂ u∆xdx 
+
+− ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ h∆x)t̂ u∆x ⋅̂ u∆xdx 
+
+> (3.5)
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ h∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ B∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 (̂ q∆x)t ⋅̂ u∆xdx 
+
++ ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ h∆x)t̂ u∆x ⋅̂ u∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ h∆x)(̂ u∆x)t ⋅̂ u∆xdx 
+
+− ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ h∆x)t̂ u∆x ⋅̂ u∆xdx 
+
+> (3.5) ,(3.12)
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ h∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+g(̂ h∆x)t ⋅̂ B∆xdx + ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 (̂ q∆x)t ⋅̂ u∆xdx 
+
++ ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12̂ q∆x ⋅ (̂ u∆x)tdx 
+
+> (3.9)
+
+= ddt E∆x.
+
+(3.17) The terms I1 and I2 can be simplified as follows. 
+
+I1 = ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(P(̂ q∆x)̂ u∆x)j (̂ u∆x,j )xdx − ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+12 (P(̂ q∆x)(̂ u∆x,j ̂ u∆x)x)j dx 
+
++ ( ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(̂ fqu )j Ĵ u∆x,j K − ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+12 (P(̂ fq )Ĵu∆x,j ̂ u∆xK)j )
+
+> ∑Kj=1
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+P(̂ q∆x)̂ u∆x ⋅ (̂ u∆x)x − ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ q∆x)̂ u∆x ⋅ (̂ u∆x)x − ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+12 P(̂ q∆x)(̂ u∆x)x ⋅̂ u∆xdx 
+
++ ∑
+
+> Ei
+
+(̂ fqu ⋅ Ĵ u∆xK − ( 12 P(̂ fq )̂ u+ 
+
+> ∆x
+
+⋅̂ u+ 
+
+> ∆x
+
+− 12 P(̂ fq )̂ u− 
+
+> ∆x
+
+⋅̂ u−
+
+> ∆x
+
+)) 
+
+> (3.13)
+
+= ∑
+
+> Ei
+
+(̂ fqu ⋅ Ĵu∆xK − P(̂ fq ){̂ u∆x} ⋅ Ĵu∆xK).
+
+(3.18) 11 I2 = ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Iî q∆x,j (g(̂ h∆x,j +̂ B∆x,j )) xdx − ∑
+
+> Ii⊂Ω
+> K
+
+∑
+
+> j=1
+
+∫Ii
+
+(gP(̂ h∆x +̂ B∆x)x̂ u∆x,j ̂ h∆x)j dx 
+
+− ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(gP(Ĵ h∆x +̂ B∆xK){̂ u∆x,j ̂ h∆x}) j + ∑
+
+> Ei
+> K
+
+∑
+
+> j=1
+
+(̂ fq )j Jg(̂ h∆x,j +̂ B∆x,j )K
+
+> (3.2)
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+ĝ q∆x ⋅ (̂ h∆x +̂ B∆x)xdx − ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+gP((̂ h∆x +̂ B∆x)x)̂ h∆x ⋅̂ u∆xdx 
+
+− ∑
+
+> Ei
+
+12 gP(Ĵ h∆x +̂ B∆xK)̂ h+ 
+
+> ∆x
+
+⋅̂ u+ 
+
+> ∆x
+
+− ∑
+
+> Ei
+
+12 gP(Ĵh∆x +̂ B∆xK)̂ h− 
+
+> ∆x
+
+⋅̂ u−
+
+> ∆x
+
++ ∑
+
+> Ei
+
+ĝ fq ⋅ Ĵ h∆x +̂ B∆xK
+
+> (3.12) ,(3.13) ,(2.9)
+
+= ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+ĝ q∆x ⋅ (̂ h∆x +̂ B∆x)xdx − ∑
+
+> Ii⊂Ω
+
+∫Ii
+
+gP(̂ h∆x)̂ u∆x ⋅ (̂ h∆x +̂ B∆x)xdx 
+
+− ∑
+
+> Ei
+
+{gP(̂ h∆x)̂ u∆x} ⋅ Ĵh∆x +̂ B∆xK + ∑
+
+> Ei
+
+ĝ fq ⋅ Ĵh∆x +̂ B∆xK
+
+> (3.5)
+
+= ∑
+
+> Ei
+
+g(̂ fq − {P(̂ h∆x)̂ u∆x}) ⋅ Ĵh∆x +̂ B∆xK.
+
+(3.19) To make the proposed scheme entropy conservative or entropy stable (3.8), it suffices to select appro-priate numerical fluxes ̂ fq ,̂ fqu to let I1 and I2 both vanish or non-positive. If we take ̂
+
+fq = {P(̂ h∆x)̂ u∆x} − 12 α1Ĵh∆x +̂ B∆xK, (3.20) for some α1 ≥ 0, I2 becomes a diffusive term 
+
+I2 = − g
+
+2 α1 ∑
+
+> Ei
+
+∥Ĵ h∆x +̂ B∆xK∥2 
+
+> l2
+
+≤ 0. (3.21) In addition, by substituting (3.20) into (3.18), we have 
+
+I1 = ∑
+
+> Ei
+
+((̂ fqu − P(̂ fq ){̂ u∆x}) ⋅ Ĵ u∆xK)
+
+= ∑
+
+> Ei
+
+((̂ fqu − P({ P(̂ h∆x)̂ u∆x}){̂ u∆x} + 12 α1P(Ĵ h∆x +̂ B∆xK){̂ u∆x}) ⋅ Ĵ u∆xK).
+
+(3.22) To balance the contribution of ̂ fq in I1, we can further take ̂
+
+fqu = P({ P(̂ h∆x)̂ u∆x}){̂ u∆x} − 12 α1JP(̂ h∆x +̂ B∆x)̂ u∆xK, (3.23) and substitute it into (3.22) and directly expand the jump and average quantities by definition (3.2). Note that since only the spatial derivative of the bottom is involved in the continuous system and the DG-SG discretization, the vertical datum is chosen so that the discrete bottom representation satisfies 
+
+B∆x(x, ξ ) ≥ 0, (3.24) for all x ∈ Ω and for ρ-a.e. ξ. Under this assumption, P ({̂ h∆x +̂ B∆x}) is symmetric positive definite, since the hyperbolicity-preserving condition gives P ({̂ h∆x}) > 0, while B∆x ≥ 0 implies P ({̂ B∆x}) ≥ 0. Hence, I1 also becomes dissipative: 
+
+I1 = − 12 α1 ∑
+
+> Ei
+
+P({̂ h∆x +̂ B∆x}) Ĵ u∆xK ⋅ Ĵu∆xK,
+
+≤ − 12 α1 ∑
+
+> Ei
+
+λ1∥Ĵ u∆xK∥2 
+
+> l2
+
+,
+
+(3.25) 12 where λ1 is the smallest eigenvalue of the symmetric positive definite matrix P({̂ h∆x +̂ B∆x}) . Therefore,  
+
+> ddt
+
+E∆x = I1 + I2 ≤ 0, which shows the entropy stability property. Note that when α ≡ 0 in I1 and I2, the DG-SG scheme will reduce to an entropy conservative numerical scheme. Finally, to establish the well-balanced property, it suffices to show that, for the initial data ̂
+
+u∆x ≡ 0,̂ h∆x +̂ B∆x = const vector , ∀x ∈ Ω, t = 0, (3.26) the time derivatives of all PCE coefficients vanish, i.e., 
+
+(̂ h∆x,j )t = 0, (̂ q∆x,j )t = 0, ∀j = 1, . . . , K. (3.27) Under the condition (3.26), all spatial volume and numerical flux terms in the DG-SG scheme vanish. In particular, combining (3.3) with (3.26) yields (̂ h∆x,j )t = 0, ∀j = 1, . . . , K. Substituting this result into (3.4) and again using (3.26), we further obtain (̂ q∆x,j )t = 0, ∀j = 1, . . . , K. Therefore, the semi-discrete solution preserves the discrete steady state, which proves the well-balanced property (3.7). 
+
+Remark 3 (Adaptive diffusion) . We may introduce different diffusion parameters in the two numerical fluxes by incorporating an adaptive diffusion quantity in ̂ fqu . Suppose that we take the first numerical flux in (3.20) and consider ̂ fqu adaptively as ̂
+
+fqu = P({ P(̂ h∆x)̂ u∆x}){̂ u∆x} − 12 α1JW1K − 12 (α2 − α1)JW2K, (3.28) 
+
+which implies 
+
+I1 = − ∑
+
+> Ei
+
+12 α1(JW1K − P(Ĵ h∆x +̂ B∆xK){̂ u∆x}) ⋅ Ĵu∆xK,
+
+− ∑
+
+> Ei
+
+( 12 α2 − 12 α1)JW2K ⋅ Ĵ u∆xK.
+
+(3.29) 
+
+To make the first term of I1 in (3.29) perform as a diffusive term, we can take W1 = P(̂ h∆x +̂ B∆x)̂ u∆x.For the second term, a straightforward way is to take W2 = sign (α2 − α1)(̂ u∆x) to make it a diffusive term. With these choices, we have an adaptive second numerical flux (3.28) , resulting in 
+
+I1 = − 12 α1 ∑
+
+> Ei
+
+P({̂ h∆x +̂ B∆x}) Ĵ u∆xK ⋅ Ĵu∆xK − 12 ∣α2 − α1∣ ∑
+
+> Ei
+
+∥Ĵ u∆xK∥2 
+
+> l2
+
+,
+
+≤ − ∑
+
+> Ei
+
+( 12 α1λ1 + 12 ∣α2 − α1∣)∥ Ĵu∆xK∥2 
+
+> l2
+
+.
+
+(3.30) In the context of the shallow water equations, we use the terminologies entropy and energy inter-changeably, as they represent the same convex functional associated with the system. Accordingly, we will refer to entropy conservation/stability and energy conservation/stability with the same meaning throughout this work. 
+
+# 4 Algorithmic details and pseudocode 
+
+In this section, we present the algorithm details of the corresponding fully discrete schemes. The complete algorithmic pseudocode is given in algorithm 1. In the following, we describe several key components required to ensure robustness and stability in implementation. 13 4.1 Desingularization 
+
+To avoid the singularity in the velocity reconstruction when the water height approaches zero, we employ a desingularization procedure in one spatial dimension. Instead of directly computing the velocity as 
+
+u = q/h, we define the discrete velocity through a regularized relation based on the PCE coefficients. More precisely, let ̂ h∆x and ̂ q∆x denote the vectors of the PCE coefficients of the water height and discharge, respectively. We define the DG velocity ̂ u∆x by (3.5) 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(P(̂ h∆x)̂ u∆x −̂ q∆x)̂ w∆x,j dx = 0, ∀̂w∆x,j , j = 1, . . . , K. (4.1) Hence, the computation of ̂ u∆x requires (P(̂ h∆x)) −1, which could be ill-conditioned in some situations, for example, when the water height is too small in the near-dry region. To address this issue, we adopt a desingularization procedure introduced in [37], whose stochastic variant was introduced in [14, 15, 16, 21]. Let P(̂ h) = Q⊺ΠQ, be the eigenvalue decomposition of P(̂ h), where Π = diag (λ1, . . . , λ K ). For each eigenvalue λi, i = 1, . . . , K , and a given positive constant ϵ, we define Πcor ∶= diag (λcor  
+
+> 1
+
+, . . . , λ cor K ), λcor i ∶=
+
+√λ4 
+
+> i
+
++ max (λ4 
+
+> i
+
+, ϵ 4)√2λi
+
+. (4.2) In the numerical experiments, we take ϵ = ∆xI on each element I. We then define P(̂ h∆x)cor ∶= Q⊺Πcor Q
+
+and substitute it into the velocity update formula in our DG-SG scheme: 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(P(̂ h∆x)cor ̂ u∆x −̂ q∆x)̂ w∆x,j dx = 0, ∀̂w∆x,j , j = 1, . . . , K, (4.3) To maintain consistency of the scheme, the discharge ̂ q∆x needs to be subsequently recomputed by 
+
+∑
+
+> Ii⊂Ω
+
+∫Ii
+
+(P(̂ h∆x)̂ u∆x −̂ q∆x)̂ w∆x,j dx = 0, ∀̂w∆x,j , j = 1, . . . , K. (4.4) 
+
+## 4.2 Hyperbolicity-preserving criterion 
+
+The hyperbolicity of the skew-symmetric SGSWE (2.24) requires that P(̂ h) be positive-definite, i.e., 
+
+P(̂ h) > 0. In our DG-SG semi-discrete scheme, this corresponds to the condition P(̂ h∆x) > 0 holding for each DG-quadrature point in each cell involved in the scheme. While this may be true at the current time, additional conditions must be imposed to ensure that it is valid at the next time step. A sufficient condition, [14, Theorem 3.2], was introduced to make it applicable. Based on this, we define the hyperbolicity-preserving property for a fully discrete numerical scheme as follows. 
+
+Definition 5. For the DG-SGSWE scheme, provided 
+
+h∆x,s (xi, t n, ξ j ) ∶= ∑
+
+> k≤K
+
+̂ h∆x,k (xi, t n)ϕk(ξj ) > 0, ∀i = 1, ..., N q , j = 1, ..., M. (4.5) 
+
+where {xi} is the set of DG quadrature points involved in the scheme, tn is the current time step, 
+
+{ξj } are stochastic nodes such that the M −point positivity quadrature rule is exact on P 3Λ. Then the DG-SGSWE scheme is said to preserve positivity of the water height, if 
+
+h∆x,s (xi, t n+1, ξ j ) > 0, ∀i = 1, ..., N q , j = 1, ..., M. (4.6) Suppose that (4.5) is satisfied and the forward Euler method is applied. To enforce (4.6) at the next time level, we use one of the following two strategies. 14 Remark 4 (Mean-positivity-preserving and linear scaling) . Let Φ(ξ) ∶= (ϕ1(ξ), ϕ 2(ξ), ...ϕ K (ξ)) ⊺. Sup-pose at each element I with size ∆xI , ∆t satisfies 
+
+∆tn < ∆tn 
+
+> ∆xI
+
+∶= min  
+
+> j=1,...,M
+
+(∆xI ∣ (̂ hn
+
+> ∆x
+
+)⊺Φ(ξj )(̂ fq ∣n 
+
+> I+
+
+−̂ fq ∣n 
+
+> I−
+
+)⊺Φ(ξj ) ∣) , (4.7) 
+
+for sufficiently large M , s.t., the M −point quadrature rule that is exact on P 3Λ on the stochastic space. Then rescale the water height at each quadrature points in physical space ( SI denotes the set of involved points) involved in the DG-SG scheme at the element I as follows: 
+
+˜h∆x,s (x, ξ j )n = θ(h∆x,s (x, ξ j )n − h∆x,s (ξj )n) + h∆x,s (ξj ), θ = min {1, h ∆x,s (ξj )n ⊘ (h∆x,s (ξj )n − mI )} ,
+
+(4.8) 
+
+where mI = min x∈SI hn
+
+> ∆x,s
+
+(x, ξ j ), and ⊘ is the elementwise division. This linear scaling is extended from [67] to fit our DG-SG formulation. 
+
+Remark 5 (Straightforward restriction) . Compared to the first way, one can make a more straightfor-ward restriction on ∆t as follows: 
+
+∆tn < ∆tn 
+
+> ∆xI
+
+∶= min   
+
+> i=1,..., ∣SI∣,
+
+min  
+
+> j=1,...,M
+
+(∣̂ hn
+
+> ∆x
+
+(xi)⊺Φ(ξj )
+
+L(̂ hn
+
+> ∆x
+
+)⊺ 
+
+> i
+
+Φ(ξj ) ∣) . (4.9) 
+
+Here ∣SI ∣ denotes the size of the set SI , consisting of involved physical quadrature points in the DG-SG scheme, L(̂ hn
+
+> ∆x
+
+)i ∶= L(̂ hn
+
+> ∆x
+
+)∣ xi is defined by rewriting the DG-SG scheme with forward Euler time discretization on the variable ̂ h∆x in the form of ̂ hn+1∆x =̂ hn 
+
+> ∆x
+
++ ∆tnL(̂ hn
+
+> ∆x
+
+).
+
+## 4.3 The troubled-cell indicator and characteristic TVB limiter 
+
+In order to suppress spurious oscillations near solution discontinuities, a slope limiter procedure is needed. We follow the standard slope limiting procedure in RKDG methods [11, 52], which consists of two steps: 
+
+• First, we identify the troubled cells, i.e., the elements that need the limiting procedure. 
+
+• Second, we apply the corresponding slope limiter to the solutions in troubled cells First, we extend the scaling modification of Fu-Shu troubled-cell indicator proposed in [25] to a stochastic version to identify troubled cells. The troubled-cell indicator for a discontinuous function 
+
+p ∈ V k 
+
+> ∆x
+
+is defined as follows: 
+
+II (p) = ∑T ∈ω(I) ∣pT − pI ∣
+
+pmax − pmin 
+
+, (4.10) where ω(I) is the union of cells sharing a common edge with the element I, and p∣T is the discontinuous function defined on T ∈ ω(I), and pT is the cell-average of the polynomial p∣T extended to the cell I
+
+from its neighboring cell T , and pmax and pmin are the global maximal and minimal cell average on the domain. For a given tolerance tol > 0, the cell I is marked as a troubled cell if II (p) > tol . In our DG-SG scheme, we take the stochastic mean of h∆x,s + B∆x as the indicating function. Second, in those detected troubled cells, we apply the characteristic-wise TVB limiter [11, 10] on the equilibrium variables (̂ h⊺ 
+
+> ∆x
+
++̂ B⊺
+
+> ∆x
+
+,̂ q⊺
+
+> ∆x
+
+)⊺ in our DG-SG scheme. The use of the water surface ̂ h∆x +̂ B∆x,rather than ̂ h∆x alone, is compatible with the well-balanced structure and avoids unnecessary limiting near the lake-at-rest steady state. 15 4.4 High order SSP-RK fully discretization with adaptive time step size 
+
+The timestep restriction for the positivity-preserving criterion in Section 4.2 is derived under the as-sumption of a forward Euler time discretization. This restriction can be extended to higher-order strong stability-preserving Runge–Kutta (SSP-RK) methods, which may be written as convex combinations of forward Euler steps with multiple intermediate stages [30]. We employ the adaptive time-stepping strategy proposed in [7], which permits the application of forward Euler-based timestep restrictions within SSP-RK schemes. In practice, the timestep constraint is updated at each intermediate stage of the Runge–Kutta procedure. 
+
+## 4.5 Augmented energy 
+
+Definition 4 characterizes energy conservative and energy stable schemes based on properties satisfied in the interior of the computational domain. However, this definition does not, in general, guarantee global energy conservation or stability in the presence of boundary contributions. In particular, boundary fluxes may introduce energy into the domain, leading to an increase in the total energy. Such behavior is not attributable to a deficiency of the numerical scheme, but rather reflects the underlying physical dynamics of the model. This phenomenon may arise even for standard implementations with outflow boundary conditions; see, e.g., [21]. With the same idea of removing the boundary effect when computing the entropy/energy in our DG-SG solution, we define the augmented energy ̃ E∆x over the one-spatial computational domain divided into N elements as 
+
+ddt ̃ E∆x(t) =
+
+> N
+
+∑
+
+> i=1
+
+ddt ̃ E∆x,i (t)
+
+=
+
+> N
+
+∑
+
+> i=1
+
+ddt E∆x,i (t) − boundary terms 
+
+> (3.18) ,(3.19)
+
+=
+
+> N
+
+∑
+
+> i=1
+
+ddt E∆x,i (t) − {(̂ fqu ⋅̂ u∆x)∣ xL
+
+− (̂ fqu ⋅̂ u∆x)∣ xR
+
++ 12 (P(̂ fq )̂ u∆x ⋅̂ u∆x)∣ xR
+
+− 12 (P(̂ fq )̂ u∆x ⋅̂ u∆x)∣ xL
+
+}
+
++ 12 g(P(Ĵ h∆x +̂ B∆xK)̂ h∆x ⋅̂ u∆x)∣ xL
+
++ 12 g(P(Ĵ h∆x +̂ B∆xK)̂ h∆x ⋅̂ u∆x)∣ xR
+
++ (ĝ fq ⋅ (̂ h∆x +̂ B∆x))∣ xR
+
+− (ĝ fq ⋅ (̂ h∆x +̂ B∆x))∣ xL
+
+,̃
+
+E∆x(0) =
+
+> N
+
+∑
+
+> i=1
+
+E∆x,i (0).
+
+(4.11) where xL, x R represent the left boundary and the right boundary, respectively. This definition allows us to assess the intrinsic energy behavior of the numerical scheme independently of boundary effects. 
+
+# 5 Numerical experiments 
+
+In this section, we assess the performance of the proposed DG-SG schemes through a sequence of numerical experiments. The examples are designed to verify the main structural properties established in the previous sections, including high-order accuracy, well-balanced preservation of stochastic lake-at-rest states, entropy stability, robustness near dry regions, and applicability to multivariate random inputs. Unless specifically stated, the following numerical setup is used. Let ξ be a one-dimensional random variable supported on [−1, 1] with Beta distribution 
+
+ρ(ξ) ∝ (1 − ξ)α(1 + ξ)β , α, β > −1.
+
+The associated orthonormal polynomial basis is given by the Jacobi polynomials with parameters (α, β ).The special case α = β = 0 corresponds to the uniform distribution on [−1, 1], with Legendre polynomials 16 Algorithm 1 Pseudocode of the fully discrete DG-SG scheme for stochastic SWE using SSPRK3 
+
+Input: Initial data: h0, q 0; Bottom topography B; Terminal time T ; Polynomial index set Λ for stochastic Galerkin projection; A basis of DG solution space. 
+
+Initialize (SG): Compute PCE coefficients ̂ h, ̂ q, ̂ B as functions of x.
+
+Initialize (DG): Compute DG approximation solutions ̂ h∆x,̂ u∆x,̂ q∆x and bottom ̂ B∆x.
+
+Initialize time: Set current time t = 0. 
+
+while t < T do Stage 1 of RK3 (Input: ̂ h∆x,̂ q∆x,̂ u∆x)Compute the ∆ t using the positivity-preserving criterion in Section 4.2 and CFL condition. Compute ̂ h(1) 
+
+> ∆x
+
+by (3.3) using forward Euler with ∆ t.Compute ̂ q(1) 
+
+> ∆x
+
+for all by (3.4) using forward Euler with ∆ t.Apply the slope limiting procedure in Section 4.3 to (̂ h(1) 
+
+> ∆x
+
++̂ B∆x,̂ q(1)
+
+> ∆x
+
+)
+
+Compute ̂ u(1) 
+
+> ∆x
+
+using (3.5). 
+
+Stage 2 of RK3 (Input: ̂ h(1)
+
+> ∆x
+
+,̂ q(1)
+
+> ∆x
+
+,̂ u(1)
+
+> ∆x
+
+)Compute the ∆ t2 using the positivity-preserving criterion in Section 4.2 and CFL condition. 
+
+if ∆t2 ≥ ∆t then 
+
+Compute ̂ h(2∗) 
+
+> ∆x
+
+by (3.3) using forward Euler ∆ t.Compute ̂ q(2∗) 
+
+> ∆x
+
+for all by (3.4) using forward Euler ∆ t.Update ̂ h(2)
+
+> ∆x
+
+,̂ q(2) 
+
+> ∆x
+
+using the coefficients for SSPRK3 state 2: ̂
+
+h(2) 
+
+> ∆x
+
+= 34̂ h∆x + 14̂ h(2∗) 
+
+> ∆x
+
+,̂ q(2) 
+
+> ∆x
+
+= 34̂ q∆x + 14̂ q(2∗)
+
+> ∆x
+
+Apply the slope limiting procedure in Section 4.3 to (̂ h(2) 
+
+> ∆x
+
++̂ B∆x,̂ q(2)
+
+> ∆x
+
+)
+
+Compute ̂ u(2) 
+
+> ∆x
+
+using (3.5) with inputs ̂ h(2)
+
+> ∆x
+
+,̂ q(2)
+
+> ∆x
+
+.
+
+else if ∆t2 < ∆t then 
+
+Go back to Stage 1 of RK3 and set ∆ t = ∆t2
+
+end if Stage 3 of RK3 (Input: ̂ h(2)
+
+> ∆x
+
+,̂ q(2)
+
+> ∆x
+
+,̂ u(2)
+
+> ∆x
+
+)Compute the ∆ t3 using the positivity-preserving criterion in Section 4.2 and CFL condition. 
+
+if ∆t3 ≥ ∆t then 
+
+Compute ̂ h(3∗) 
+
+> ∆x
+
+by (3.3) using forward Euler ∆ t.Compute ̂ q(3∗) 
+
+> ∆x
+
+for all by (3.4) using forward Euler ∆ t.Update ̂ h(3)
+
+> ∆x
+
+,̂ q(3) 
+
+> ∆x
+
+using the coefficients for SSPRK3 state 3: ̂
+
+h(3) 
+
+> ∆x
+
+= 13̂ h∆x + 23̂ h(3∗) 
+
+> ∆x
+
+,̂ q(3) 
+
+> ∆x
+
+= 13̂ q∆x + 23̂ q(3∗)
+
+> ∆x
+
+Apply the slope limiting procedure in Section 4.3 to (̂ h(3) 
+
+> ∆x
+
++̂ B∆x,̂ q(3)
+
+> ∆x
+
+)
+
+else if ∆t3 < ∆t then 
+
+Go back to Stage 1 of RK3 and set ∆ t = ∆t3
+
+end if 
+
+Denote ̂ h∆x =̂ h(3)
+
+> ∆x
+
+,̂ q∆x =̂ q(3) 
+
+> ∆x
+
+and update ̂ u∆x using (3.5) with ̂ h∆x,̂ q∆x.
+
+t ← t + ∆t
+
+end while 
+
+17 as the orthonormal basis. We also consider the case of a two-dimensional random variable ξ = (ξ(1), ξ (2)),where ξ(1), ξ (2) iid 
+
+∼ Beta (β + 1, α + 1). The joint density is given by ρ(ξ) = ρ(ξ(1))ρ(ξ(2)), and the corresponding orthonormal basis is obtained by tensorizing one-dimensional orthonormal polynomials. Throughout this section, we set the gravitational constant to g = 9.812 in the first two examples and to g = 1 in the remaining examples. Unless otherwise stated, we employ KPCE = 4 terms in the polynomial chaos expansion. For discontinuous problems, we implement the slope limiting procedure and take tol = 0.02 as the default parameter in our troubled-cell indicator. For visualization, we plot the water surface w ∶= h + B rather than the conservative variable h. We impose periodic boundary conditions in the accuracy test of Section 5.1, wall boundary conditions in the well-balanced tests of Section 5.2, and outflow boundary conditions using zero-order extrapolation in the rest of examples. To compare energy conservation and dissipation, we measure the relative change in energy for periodic boundary conditions and the relative change in augmented energy for non-periodic boundary conditions, introduced in Section 4.5: relative change in (original) energy = E∆x(t) − E∆x(0)
+
+E∆x(0) , for periodic boundary (5.1) relative change in augmented energy =̃ E∆x(t) −̃ E∆x(0)̃ 
+
+E∆x(0) , for non-periodic boundary (5.2) where E∆x(t) = ∑i E∆x,i (t) = ∑i ∫Ii ( 12 g∥̂ h∆x∥2 
+
+> l2
+
++ ĝ h⊺
+
+> ∆x
+
+̂ B∆x + 12̂ q⊺
+
+> ∆x
+
+̂ u∆x)dx .
+
+## 5.1 Accuracy test 
+
+We begin by examining the order of accuracy of the proposed DG-SG scheme for the stochastic shallow water system. This test is a stochastic modification of the test discussed in [25]. Consider the smooth problem with a stochastic initial water surface. 
+
+B(x) = sin 2(πx ), h(x, 0, ξ ) = 5 + ecos (2πx ) + 0.1ξ, q(x, 0) = sin (cos (2πx )) , (5.3) where ξ follows the uniform distribution on [−1, 1]. The computational domain is a periodic unit interval 
+
+[0, 1], and the final time is t = 0.1. A reference solution is computed on a fine grid with 320 elements for each scheme. For the time evolution solver, we utilize the third-order Strong Stability-Preserving (SSP) Runge-Kutta (RK3) method [30]. We illustrate the order of accuracy of our schemes using the water height h by computing the error between the reference solution and the numerical test solution with the L2 norm in physical space and the weighted L2 
+
+> ρ
+
+norm in stochastic space. Error (h∆x,s ) = ∥h∆x,s (x, t, ξ ) − href (x, t, ξ )∥ L2(Ω; L2
+
+> ρ(Rd))
+
+,
+
+∥h(x, t, ξ )∥ L2(Ω; L2 
+
+> ρ(Rd))
+
+∶=
+
+√
+
+∫Ω
+
+∥h(x, t, ξ )∥ 2
+
+> L2
+> ρ
+
+dx (5.4) We compute the convergence orders of the numerical solutions for different polynomial degrees, as summarized in Table 1. In this smooth test case, no slope limiting is applied. The results demonstrate that the DG schemes achieve the expected theoretical orders of accuracy for all polynomial degrees. The relative energy evolution shown in Figure 1 is also consistent with theoretical predictions. Despite the use of an energy-conservative (EC) numerical flux, the fully discrete DG scheme exhibits energy decay due to temporal discretization. As the time step decreases, the numerical solution approaches the energy-conservative limit. 18 t = 0.09 t = 0.1Scheme Grid size Error Order Error Order 
+
+KDG = 120 2.1060e-02 2.7132e-02 40 5.2827e-03 1.9951 6.8268e-03 1.9907 80 1.0850e-03 2.2836 1.5494e-03 2.1395 160 1.9148e-04 2.5024 2.6830e-04 2.5297 
+
+KDG = 220 2.3581e-03 3.8999e-03 40 3.0620e-04 2.9451 5.3899e-04 2.8551 80 2.9930e-05 3.3548 5.6016e-05 3.2663 160 3.4251e-06 3.1274 5.6957e-06 3.2979 
+
+KDG = 320 5.1125e-04 9.1144e-04 40 3.0818e-05 4.0522 8.0658e-05 3.4983 80 1.7763e-06 4.1168 4.1137e-06 4.2933 160 1.0971e-07 4.0171 2.4117e-07 4.0924                       
+
+> Table 1: Accuracy test for Section 5.1. Orders of convergence at t=0.09 and t=0.1. The reference solution is computed with 320 elements. CCFL =0.1. Error is computed using (5.4).
+> (a) EC compared to ES, CCFL =0.1(b) EC, CCFL =0.01 Figure 1: Relative energy evolution for the accuracy test in Section 5.1. Left: comparison of entropy-conservative (EC) and entropy-stable (ES) fluxes with CCFL =0.1. Right: entropy-conservative flux with CCFL =0.01.
+
+## 5.2 Well-balanced test 
+
+In this example, we test the well-balanced property of our proposed methods to ensure that the lake-at-rest steady state is exactly preserved. This is a stochastic modification of the well-balanced test in [25], with different choices of bottom topography. The stochastic smooth bottom is given by 
+
+B(x, ξ ) = 5 exp ( − 0.4(x − 5)2) + 0.01 ξ, (5.5) and the stochastic discontinuous bottom is given by 
+
+B(x, ξ ) = {4 + 0.01 ξ, 4 < x < 8,
+
+0, otherwise , (5.6) and the steady state initial condition is given by 
+
+w(x, 0) = 10 , q(x, 0) = 0. (5.7) 19 # of elements L2 Error in h∆x,s L2 Error in u∆x,s L2 Error in q∆x,s 
+
+100 1.4666e-14 2.1661e-13 1.8548e-12 200 2.2580e-14 4.4469e-13 3.8231e-12 400 2.5704e-14 8.1617e-13 6.9626e-12          
+
+> Table 2: Well-balanced test with smooth stochastic bottom in (5.5). T=0.5. Third order DG with KDG =2 and KPCE =4.
+
+# of elements L2 Error in h∆x,s L2 Error in u∆x,s L2 Error in q∆x,s 
+
+100 2.4975e-14 3.2160e-13 2.3598e-12 200 2.7255e-14 6.5619e-13 4.7504e-12 400 2.7366e-14 1.3076e-12 9.4330e-12         
+
+> Table 3: Well-balanced test with discontinuous stochastic bottom in (5.6). T=0.5. Third order DG with KDG =2 and
+> KPCE =4.
+
+We solve the problem in the computational domain [0, 10 ] with wall boundary conditions [25], up to time t = 0.5 on three uniform meshes with 100 , 200, and 400 cells, and compute the L2(Ω; L2
+
+> ρ
+
+(Rd)) 
+
+errors defined in (5.4) in Table 2 and 3. The errors are measured against the initial steady state at the final time. All errors are at the level of round-off, confirming the well-balanced property of the proposed scheme. 
+
+## 5.3 Another well-balanced test with near-dry region 
+
+We consider another well-balanced test with a near-dry region. The test is modified from [14], with a stochastic water surface, 
+
+w(x, 0, ξ ) = {1 + 0.001 (ξ + 1), 0.1 < x < 0.2,
+
+1, otherwise, ξ ∼ U(−1, 1), u(x, 0) = 0, (5.8) and a deterministic bottom topography 
+
+B(x) =
+
+⎧⎪⎪⎪⎪⎪⎪⎪⎨⎪⎪⎪⎪⎪⎪⎪⎩
+
+9.995 (x − 0.3), 0.3 ≤ x ≤ 0.4,
+
+0.9995 − 0.0025 sin 2(25 π(x − 0.4)) , 0.4 ≤ x ≤ 0.6,
+
+− 9.995 (x − 0.7), 0.6 ≤ x ≤ 0.7,
+
+0, otherwise .
+
+(5.9) This example is designed to assess the robustness of the proposed DG-SG scheme when the water height becomes small and the hyperbolicity-preserving criterion and velocity desingularization become impor-tant. The computational domain is [−1, 1], up to time t = 1. A small uncertainty region was originally located at x ∈ (0.1, 0.2), where the water surface is slightly perturbed. The positivity-preserving crite-rion is activated due to the existence of a near-dry region, where the water height h is relatively small. We compute the solution on a uniform mesh with mesh size ∆ x = 1/100, and plot the mean, standard deviation and quantile region, of water surface and discharge, respectively, in Figure 2. We also observe that the energy decays throughout the simulation. The initial stochastic perturbation on the water surface is 10 −3. Throughout the time evolution, the maximum water surface displacement from the steady state remains within its initial perturbation threshold, demonstrating the capability of our proposed scheme to accurately capture the lake-at-rest solution under small perturbations. 20 Figure 2: Mean, standard deviation, quantile region, and augmented relative energy evolution for the near-dry perturbation test in Section 5.3. ∆ x = 1/100. T = 1. Third order DG with KDG = 2 and KPCE = 4. 
+
+21 5.4 Perturbation to lake at rest 
+
+We consider an example proposed in [16, 9], which is a perturbation to the lake-at-rest solution with a stochastic initial water surface 
+
+w(x, 0, ξ ) = {1 + 0.001 (ξ + 1), ∣x∣ ≤ 0.05 ,
+
+1, otherwise, u(x, 0) = 0, (5.10) and with the deterministic bottom topography 
+
+B(x) =
+
+⎧⎪⎪⎪⎪⎨⎪⎪⎪⎪⎩
+
+0.25 (cos (5π(x + 0.35 )) + 1), − 0.55 < x < −0.15 ,
+
+0.125 (cos (10 π(x − 0.35 )) + 1), 0.25 < x < 0.45 ,
+
+0, otherwise. (5.11) The computational domain is [−1, 1], and ξ ∼ U(−1, 1). In this example, we choose a relatively large tolerance tol = 0.05 in the troubled-cell indicator to reduce the number of detected troubled cells and thereby improve resolution. We compute the DG solution up to time t = 0.8 on meshes with 
+
+Nx = 200 and 400 cells. A third-order DG method (polynomial degree KDG = 2) is used for the spatial discretization, together with KPCE = 4 terms in the PCE for the stochastic Galerkin approximation. As shown in Figure 3, the proposed DG-SG scheme accurately captures both left- and right-going waves of small amplitude, including the propagation of uncertainty. This behavior is consistent with the well-balanced structure of the DG-SG scheme. As expected, the finer mesh yields improved solution resolution. Moreover, the DG results provide higher resolution than the finite volume (FV) results reported in [16] on comparable meshes. From the energy plot in Figure 4, the energy decays as the theoretical result. In addition, the solution with the finer mesh demonstrates less numerical dissipation. In addition, we illustrate the accuracy of the DG-SG schemes on this problem with a discontinuous initial water surface in Table 4 and Table 5 at different evolution time. From the tables, we observe that our proposed DG-SG scheme performs well on problems with nonsmooth solutions. Note that the order of convergence is limited by the solution regularity and hence cannot achieve the optimal convergence rate, as expected. In this discontinuous problem, we also introduce the L1(Ω; L2
+
+> ρ
+
+(Rd)) error used in [16] as (5.12). The results are reported in Table 4 and Table 5, which are consistent with the FVM result in [16]. Error (h∆x,s ) = ∥h∆x,s (x, t, ξ ) − href (x, t, ξ )∥ L1(Ω; L2
+
+> ρ(Rd))
+
+,
+
+∥h(x, t, ξ )∥ L1(Ω; L2 
+
+> ρ(Rd))
+
+∶= ∫Ω
+
+∥h(x, t, ξ )∥ L2 
+
+> ρ
+
+dx (5.12) Scheme Grid size Error L1L2 
+
+> ρ
+
+Order Error L2L2 
+
+> ρ
+
+Order 
+
+KDG = 2
+
+KPCE =2 50 4.5994e-04 6.2557e-04 100 1.5884e-04 1.5339 2.0524e-04 1.6079 200 4.7583e-05 1.7390 7.5775e-05 1.4375 400 1.3179e-05 1.8523 3.0206e-05 1.3269            
+
+> Table 4: Accuracy test for the perturbation-to-lake-at-rest problem in Section 5.4. Order of convergence for KDG =2, KPCE =2,
+> T=0.8. Reference solution computed with 800 elements. CCFL =0.1.
+
+## 5.5 Perturbation to lake at rest with a two-dimensional random variable 
+
+As a final test, we consider a two-dimensional stochastic space variant of the example used for the perturbation to lake at rest in Section 5.4. We consider the shallow water system with a stochastic water surface 
+
+w(x, 0, ξ ) =
+
+⎧⎪⎪⎨⎪⎪⎩
+
+1 + 0.001 (ξ1 + 1), ∣x∣ ≤ 0.05 ,
+
+1, otherwise , q(x, 0) = 0, (5.13) 22 Figure 3: Mean, standard deviation, quantile region of the water surface and discharge for the perturbation-to-lake-at-rest problem in Section 5.4 at T = 0.8. Left: Nx = 200. Right: Nx = 400. Third-order DG with KDG = 2 and KPCE = 4. 
+
+Figure 4: Augmented relative energy evolution for the perturbation-to-lake-at-rest problem in Section 5.4. Left: Nx = 200. Right: Nx = 400. Third-order DG with KDG = 2 and KPCE = 4. 
+
+23 Scheme Grid size Error L1L2 
+
+> ρ
+
+Order Error L2L2 
+
+> ρ
+
+Order 
+
+KDG = 2
+
+KPCE =2 50 4.6058e-04 6.2550e-04 100 1.6004e-04 1.5250 2.0582e-04 1.6037 200 4.7728e-05 1.7455 7.5782e-05 1.4414 400 1.3215e-05 1.8526 3.0205e-05 1.3270            
+
+> Table 5: Accuracy test for the perturbation-to-lake-at-rest problem in Section 5.4. Order of convergence for KDG =2, KPCE =2,
+> T=0.85. Reference solution computed with 800 elements. CCFL =0.1.
+
+and with a stochastic bottom topography 
+
+B(x, ξ ) =
+
+⎧⎪⎪⎪⎪⎨⎪⎪⎪⎪⎩
+
+0.25 (cos (5π(x + 0.35 )) + 1) + 0.12 eξ2 , −0.55 < x < −0.15 ,
+
+0.125 (cos (10 π(x − 0.35 )) + 1) + 0.1(1 + ξ1), 0.25 < x < 0.45 ,
+
+0, otherwise .
+
+(5.14) where ξ1 and ξ2 are independent, beta-distributed variables each with parameters (α, β ) = (1, 3). We use 
+
+K1 = K2 = 4 PCE modes for the random variables ξ1 and ξ2, resulting in a tensor-product polynomial space of dimension KPCE = K1K2 = 16. We compute the DG solution up to time t = 0.8 on meshes with Nx = 200 and 400 cells, using a third-order DG method (polynomial degree KDG = 2) for spatial discretization.              
+
+> Figure 5: Mean, standard deviation, quantile region of the water surface and discharge plot of Section 5.5. Left: solution with
+> Nx=200 elements. Right: solution with Nx=400 elements. Third order DG with KDG =2 and KPCE =K1K2=16.
+
+24 Figure 6: Augmented relative energy evolution for the two-dimensional stochastic-input test in Section 5.5. Left: Nx = 200. Right: Nx = 400. Third-order DG with KDG = 2 and KPCE = K1K2 = 16. 
+
+From the solution plot in Figure 5, the DG solutions exhibit more complex wave structures than those in Section 5.4, due to the more intricate uncertainties embedded in the bottom topography. These results demonstrate that the proposed DG-SG scheme remains effective for multi-dimensional stochastic inputs and can resolve the interaction between uncertainty in the initial water surface and uncertainty in the bottom topography. In addition, the energy plots in Figure 6 are consistent with those in Section 5.4, supporting the entropy stability of the method in the multivariate stochastic setting. 
+
+# 6 Conclusion 
+
+In this work, we developed a semi-discrete discontinuous Galerkin–stochastic Galerkin (DG-SG) scheme for the hyperbolicity-preserving skew-symmetric SG SWE system. Using the skew-symmetric structure, we constructed well-balanced, energy conservative and energy stable numerical fluxes for the proposed numerical schemes, ensuring the discrete entropy admissibility criteria for selecting the desired physical solution among non-unique weak solutions. We presented several numerical experiments demonstrating the efficiency and robustness of our schemes. Currently, our schemes are constructed on one-physical dimension; one future direction is to extend the present framework to two-physical dimension with unstructured meshes. Another possibility for future research is to extend the developed framework to models associated with dry/wet interfaces. 
+
+# Acknowledgement 
+
+The work of Yekaterina Epshteyn, Akil Narayan and Yinqian Yu was partially supported by NSF DMS-2207207. AN was also partially supported by NSF DMS-1848508. 25 References 
+
+[1] I. Babuska, R. Tempone, and G. E. Zouraris , Galerkin finite element approximations of stochastic elliptic partial differential equations , SIAM Journal on Numerical Analysis, 42 (2004), pp. 800–825. [2] J. Bender and P. ¨Offner , Entropy-conservative discontinuous Galerkin methods for the shallow water equations with uncertainty , Communications on Applied Mathematics and Computation, 6 (2024), pp. 1978–2010. [3] A. Bermudez and M. E. Vazquez , Upwind methods for hyperbolic conservation laws with source terms , Computers & Fluids, 23 (1994), pp. 1049–1071. [4] S. Bryson, Y. Epshteyn, A. Kurganov, and G. Petrova , Well-balanced positivity preserving central-upwind scheme on triangular grids for the Saint-Venant system , ESAIM: M2AN, 45 (2011), pp. 423–446. [5] M. Castro, A. Pardo, C. Par´ es, and E. Toro , On some fast well-balanced first order solvers for nonconservative systems , Mathematics of Computation, 79 (2010), pp. 1427–1472. [6] C. Chen, C. Dawson, and E. Valseth , Cross-mode stabilized stochastic shallow water systems using stochastic finite element methods , Computer Methods in Applied Mechanics and Engineering, 405 (2023), p. 115873. [7] A. Chertock, S. Cui, A. Kurganov, and T. Wu , Well-balanced positivity preserving central-upwind scheme for the shallow water system with friction terms , International Journal for Numerical Methods in Fluids, 78 (2015), pp. 355–383. [8] A. Chertock, S. Jin, and A. Kurganov , An operator splitting based stochastic Galerkin method for the one-dimensional compressible Euler equations with uncertainty , Preprint, (2015), pp. 1–21. [9] A. Chertock, S. Jin, and A. Kurganov , A well-balanced operator splitting based stochastic Galerkin method for the one-dimensional Saint-Venant system with uncertainty , Preprint, (2015). [10] B. Cockburn and C.-W. Shu , The Runge–Kutta discontinuous Galerkin method for conservation laws V: multidi-mensional systems , Journal of Computational Physics, 141 (1998), pp. 199–224. [11] B. Cockburn and C.-W. Shu , Runge–Kutta discontinuous Galerkin methods for convection-dominated problems ,Journal of Scientific Computing, 16 (2001), pp. 173–261. [12] N. ˇCrnjari´ c-ˇZic, S. Vukovi´ c, and L. Sopta , Balanced finite volume WENO and central WENO schemes for the shallow water and the open-channel flow equations , Journal of Computational Physics, 200 (2004), pp. 512–548. [13] C. M. Dafermos , Hyperbolic Conservation Laws in Continuum Physics , Springer, 2016. [14] D. Dai, Y. Epshteyn, and A. Narayan , Hyperbolicity-preserving and well-balanced stochastic Galerkin method for shallow water equations , SIAM Journal on Scientific Computing, 43 (2021), pp. A929–A952. [15] D. Dai, Y. Epshteyn, and A. Narayan , Hyperbolicity-preserving and well-balanced stochastic Galerkin method for two-dimensional shallow water equations , Journal of Computational Physics, 452 (2022), p. 110901. [16] D. Dai, Y. Epshteyn, and A. Narayan , Energy stable and structure-preserving schemes for the stochastic Galerkin shallow water equations , ESAIM: Mathematical Modelling and Numerical Analysis, 58 (2024), pp. 723–757. [17] B. De St Venant , Th´ eorie du mouvement non-permanent des eaux avec application aux crues des rivi` eres et ` al’introduntion des Marees dans leur lit , Academic de Sci. Comptes Redus, 73 (1871), pp. 148–154, 237–240. [18] B. J. Debusschere, H. N. Najm, P. P. P´ ebay, O. M. Knio, R. G. Ghanem, and O. P. Le Maˆ ıtre , Numeri-cal challenges in the use of polynomial chaos representations for stochastic processes , SIAM Journal on Scientific Computing, 26 (2004), pp. 698–719. [19] B. Despr´ es, G. Po¨ ette, and D. Lucor , Robust uncertainty propagation in systems of conservation laws with the entropy closure method , in Uncertainty Quantification in Computational Fluid Dynamics, Springer, 2013, pp. 105– 149. [20] M. Eigel, C. J. Gittelson, C. Schwab, and E. Zander , Adaptive stochastic Galerkin FEM , Computer Methods in Applied Mechanics and Engineering, 270 (2014), pp. 247–269. [21] Y. Epshteyn, A. Narayan, and Y. Yu , Energy stable and structure-preserving algorithms for the stochastic Galerkin system of 2D shallow water equations , Computer Methods in Applied Mechanics and Engineering, 440 (2025), p. 117932. [22] Y. Epshteyn and T. Nguyen , Adaptive central-upwind scheme on triangular grids for the Saint–Venant system ,Communications in Mathematical Sciences, 21 (2023), pp. 671–708. [23] O. G. Ernst, A. Mugler, H.-J. Starkloff, and E. Ullmann , On the convergence of generalized polynomial chaos expansions , ESAIM: Mathematical Modelling and Numerical Analysis, 46 (2012), pp. 317–339. [24] U. S. Fjordholm, S. Mishra, and E. Tadmor , Well-balanced and energy stable schemes for the shallow water equations with discontinuous topography , Journal of Computational Physics, 230 (2011), pp. 5587–5609. [25] G. Fu , A high-order velocity-based discontinuous Galerkin scheme for the shallow water equations: local conser-vation, entropy stability, well-balanced property, and positivity preservation , Journal of Scientific Computing, 92 (2022), p. 86. 
+
+26 [26] S. Gerster and M. Herty , Entropies and symmetrization of hyperbolic stochastic Galerkin formulations , Commu-nications in Computational Physics, 27 (2020), pp. 639–671. [27] S. Gerster, M. Herty, and A. Sikstel , Hyperbolic stochastic Galerkin formulation for the p-system , Journal of Computational Physics, 395 (2019), pp. 186–204. [28] S. Gerster, A. Sikstel, and G. Visconti , Haar-type stochastic Galerkin formulations for hyperbolic systems with Lipschitz continuous flux function , arXiv preprint arXiv:2203.11718, (2022). [29] R. Ghanem , Stochastic finite elements: A spectral approach , Courier Corporation, (1991). [30] S. Gottlieb, C.-W. Shu, and E. Tadmor , Strong stability-preserving high-order time discretization methods , SIAM Review, 43 (2001), pp. 89–112. [31] J. S. Hesthaven and T. Warburton , Nodal discontinuous Galerkin methods: algorithms, analysis, and applications ,Springer, 2008. [32] J. Hu and S. Jin , A stochastic Galerkin method for the Boltzmann equation with uncertainty , Journal of Computa-tional Physics, 315 (2016), pp. 150–168. [33] S. Jin and R. Shu , A study of hyperbolicity of kinetic stochastic Galerkin system for the isentropic Euler equations with uncertainty , Chinese Annals of Mathematics, Series B, 40 (2019), pp. 765–780. [34] S. Jin, D. Xiu, and X. Zhu , A well-balanced stochastic Galerkin method for scalar hyperbolic balance laws with random inputs , Journal of Scientific Computing, 67 (2016), pp. 1198–1218. [35] A. Kurganov , Finite-volume schemes for shallow-water equations , Acta Numerica, 27 (2018), pp. 289–351. [36] A. Kurganov and D. Levy , Central-upwind schemes for the Saint-Venant system , ESAIM: Mathematical Modelling and Numerical Analysis, 36 (2002), pp. 397–425. [37] A. Kurganov and G. Petrova , A Second-Order Well-Balanced Positivity Preserving Central-Upwind Scheme for the Saint-Venant System , Communications in Mathematical Sciences, 5 (2007), pp. 133 – 160. [38] A. Kurganov and E. Tadmor , New high-resolution central schemes for nonlinear conservation laws and convection– diffusion equations , Journal of Computational Physics, 160 (2000), pp. 241–282. [39] J. Kusch, R. G. McClarren, and M. Frank , Filtered stochastic Galerkin methods for hyperbolic equations , Journal of Computational Physics, 403 (2020), p. 109073. [40] P. D. Lax , Hyperbolic systems of conservation laws and the mathematical theory of shock waves , SIAM, 1973. [41] O. Le Maˆ ıtre and O. M. Knio , Spectral methods for uncertainty quantification: with applications to computational fluid dynamics , Springer Science & Business Media, 2010. [42] O. Le Maˆ ıtre, O. M. Knio, H. N. Najm, and R. G. Ghanem , Uncertainty propagation using Wiener–Haar expansions , Journal of Computational Physics, 197 (2004), pp. 28–57. [43] R. J. LeVeque , Numerical methods for conservation laws , vol. 214, Springer, 1992. [44] LeVeque, Randall J , Finite volume methods for hyperbolic problems , vol. 31, Cambridge University Press, 2002. [45] X. Liu, J. Albright, Y. Epshteyn, and A. Kurganov , Well-balanced positivity preserving central-upwind scheme with a novel wet/dry reconstruction on triangular grids for the Saint-Venant system , Journal of Computational Physics, 374 (2018), pp. 213–236. [46] S. Mishra, C. Schwab, and J. Sukys , Multilevel Monte Carlo finite volume methods for shallow water equations with uncertain topography in multi-dimensions , SIAM Journal on Scientific Computing, 34 (2012), pp. B761–B784. [47] F. Nobile, R. Tempone, and C. G. Webster , A sparse grid stochastic collocation method for partial differential equations with random input data , SIAM Journal on Numerical Analysis, 46 (2008), pp. 2309–2345. [48] P. ¨Offner, P. Pettersson, and A. R. Winters , A high-order, structure preserving scheme for the stochas-tic Galerkin shallow water equations–unification and two-dimensional extension , arXiv preprint arXiv:2604.01199, (2026). [49] G. Po¨ ette , Contribution to the mathematical and numerical analysis of uncertain systems of conservation laws and of the linear and nonlinear Boltzmann equation , Ph.D. thesis, Universit´ e de Bordeaux, (2019). [50] G. Po¨ ette, B. Despr´ es, and D. Lucor , Uncertainty quantification for systems of conservation laws , Journal of Computational Physics, 228 (2009), pp. 2443–2467. [51] R. Pulch and D. Xiu , Generalised polynomial chaos for a class of linear conservation laws , Journal of Scientific Computing, 51 (2012), pp. 293–312. [52] J. Qiu and C.-W. Shu , A comparison of troubled-cell indicators for Runge–Kutta discontinuous Galerkin methods using weighted essentially nonoscillatory limiters , SIAM Journal on Scientific Computing, 27 (2005), pp. 995–1013. [53] B. D. Rogers, A. G. Borthwick, and P. H. Taylor , Mathematical balancing of flux gradient and source terms prior to using Roe’s approximate Riemann solver , Journal of Computational Physics, 192 (2003), pp. 422–451. [54] L. Schlachter and F. Schneider , A hyperbolicity-preserving stochastic Galerkin approximation for uncertain hyperbolic systems of equations , Journal of Computational Physics, 375 (2018), pp. 80–98. 
+
+27 [55] R. Shu, J. Hu, and S. Jin , A stochastic Galerkin method for the Boltzmann equation with multi-dimensional random inputs using sparse wavelet bases , Numerical Mathematics: Theory, Methods and Applications, 10 (2017), pp. 465–488. [56] T. J. Sullivan , Introduction to Uncertainty Quantification , vol. 63, Springer, 2015. [57] E. Tadmor , Entropy stability theory for difference approximations of nonlinear conservation laws and related time-dependent problems , Acta Numerica, 12 (2003), pp. 451–512. [58] J. Tryoen, O. Le Maˆ ıtre, M. Ndjinga, and A. Ern , Intrusive Galerkin methods with upwinding for uncertain nonlinear hyperbolic systems , Journal of Computational Physics, 229 (2010), pp. 6485–6511. [59] X. Wan and G. E. Karniadakis , An adaptive multi-element generalized polynomial chaos method for stochastic differential equations , Journal of Computational Physics, 209 (2005), pp. 617–642. [60] N. Wiener , The homogeneous chaos , American Journal of Mathematics, 60 (1938), pp. 897–936. [61] K. Wu, H. Tang, and D. Xiu , A stochastic Galerkin method for first-order quasilinear hyperbolic systems with uncertainty , Journal of Computational Physics, 345 (2017), pp. 224–244. [62] Y. Xing , High order finite volume WENO schemes for the shallow water flows through channels with irregular geometry , Journal of Computational and Applied Mathematics, 299 (2016), pp. 229–244. [63] Y. Xing , Chapter 13 - Numerical methods for the nonlinear shallow water equations , in Handbook of Numerical Methods for Hyperbolic Problems, R. Abgrall and C.-W. Shu, eds., vol. 18 of Handbook of Numerical Analysis, Elsevier, 2017, pp. 361–384. [64] Y. Xing and C.-W. Shu , High order finite difference WENO schemes with the exact conservation property for the shallow water equations , Journal of Computational Physics, 208 (2005), pp. 206–227. [65] Y. Xing and C.-W. Shu , High order well-balanced finite volume WENO schemes and discontinuous Galerkin meth-ods for a class of hyperbolic systems with source terms , Journal of Computational Physics, 214 (2006), pp. 567–598. [66] Y. Xing and C.-W. Shu , A new approach of high order well-balanced finite volume WENO schemes and discontin-uous Galerkin methods for a class of hyperbolic systems with source terms , Comput. Phys, 1 (2006), pp. 100–134. [67] Y. Xing, X. Zhang, and C.-W. Shu , Positivity-preserving high order well-balanced discontinuous Galerkin methods for the shallow water equations , Advances in Water Resources, 33 (2010), pp. 1476–1493. [68] D. Xiu , Numerical Methods for Stochastic Computations: A Spectral Method Approach , Princeton University Press, 2010. [69] D. Xiu and J. S. Hesthaven , High-order collocation methods for differential equations with random inputs , SIAM Journal on Scientific Computing, 27 (2005), pp. 1118–1139. [70] D. Xiu and G. E. Karniadakis , The Wiener–Askey polynomial chaos for stochastic differential equations , SIAM Journal on Scientific Computing, 24 (2002), pp. 619–644. [71] D. Xiu and J. Shen , Efficient stochastic Galerkin methods for random diffusion equations , Journal of Computational Physics, 228 (2009), pp. 266–281. [72] X. Zhong and C.-W. Shu , Entropy stable Galerkin methods with suitable quadrature rules for hyperbolic systems with random inputs , Journal of Scientific Computing, 92 (2022), p. 14. [73] J. G. Zhou, D. M. Causon, C. G. Mingham, and D. M. Ingram , The surface gradient method for the treatment of source terms in the shallow-water equations , Journal of Computational Physics, 168 (2001), pp. 1–25. [74] T. Zhou and T. Tang , Galerkin methods for stochastic hyperbolic problems using bi-orthogonal polynomials , Journal of Scientific Computing, 51 (2012), pp. 274–292. 
+
+28
