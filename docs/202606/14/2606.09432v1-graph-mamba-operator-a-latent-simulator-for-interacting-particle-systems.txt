@@ -1,0 +1,1862 @@
+Title: Graph Mamba Operator: A Latent Simulator for Interacting Particle Systems
+
+URL Source: https://arxiv.org/pdf/2606.09432v1
+
+Published Time: Tue, 09 Jun 2026 02:13:12 GMT
+
+Number of Pages: 29
+
+Markdown Content:
+# Graph Mamba Operator: A Latent Simulator for Interacting Particle Systems 
+
+Karn Tiwari 
+
+Department of Electrical Communication Engineering Indian Institute of Science, Bangalore Bengaluru, 560012, India 
+
+karntiwari@iisc.ac.in 
+
+Niladri Dutta 
+
+Department of Computer Science and Automation Indian Institute of Science, Bangalore Bengaluru, 560012, India 
+
+niladridutta@iisc.ac.in 
+
+N M Anoop Krishnan 
+
+Yardi School of Artificial Intelligence Indian Institute of Technology, Delhi New Delhi, 110016, India 
+
+krishnan@iitd.ac.in 
+
+Prathosh A P 
+
+Department of Electrical Communication Engineering Indian Institute of Science, Bangalore Bengaluru, 560012, India 
+
+prathosh@iisc.ac.in 
+
+## Abstract 
+
+Modeling interacting dynamical systems requires capturing spatial interactions alongside long-range temporal dependencies. Graph neural networks (GNNs) provide a natural representation but typically rely on autoregressive rollouts and treat spatial and temporal dynamics separately, leading to error accumulation over long horizons. Existing approaches also focus on local interactions and short temporal contexts, limiting their ability to capture multi-hop dependencies and global structure. We introduce the Graph Mamba Operator ( GraMO ), a latent-space simulator that integrates state-space models with graph-based interaction learning. In contrast to prior work that sequences nodes or applies spatial and temporal updates in separate stages, GraMO couples graph-based interactions and temporal state updates within a single recurrence. The update is linear in the latent state, with input-dependent coefficients that adapt across regimes. We evaluate GraMO 
+
+on N-body systems, motion capture, and robotics datasets, achieving the lowest error across benchmarks and the largest gains in long-horizon prediction. 
+
+## 1 Introduction 
+
+Interacting particle systems, articulated bodies, and deformable structures together describe a wide range of phenomena governing locomotion, manipulation, and control. These systems share a common mathematical foundation: collections of interacting entities whose collective behavior emerges from local interaction rules governed by differential equations. Classical numerical integrators [Donnelly and Rogers, 2005, Bou-Rabee, 2013] solve these equations at small time steps for stability, which becomes prohibitive when the number of bodies is large, or the temporal horizon is long [Hollingsworth and Dror, 2018]. 
+
+> Preprint.
+> arXiv:2606.09432v1 [cs.LG] 8 Jun 2026
+
+Latent simulators offer a tractable alternative. By learning a compact representation of the system state and propagating it forward, they reduce the cost of explicit force computation by propagating a learned latent state while retaining access to trajectory-level predictions. For particle-based systems, the choice of latent representation is constrained by two requirements. First, the representation must reflect the graph structure of interactions, since the dynamics of each body depend on its neighbors through the interaction potential. Graph neural networks are the standard primitive for this [Kipf et al., 2018, Sanchez-Gonzalez et al., 2020, Pfaff et al., 2020, Bishnoi et al., 2023, Bihani et al., 2024, Xu et al., 2024]. Second, the representation must persist over time, since particle trajectories carry long-range dependencies through inertia, recurring contacts, and slow collective modes. Stepwise GNN rollouts handle the first requirement but not the second: each step is conditioned only on the previous state, and prediction errors compound over the rollout horizon [Xu et al., 2024]. State-space models provide a natural primitive for the temporal component. They evolve a hidden state through a linear recurrence with structured initialization [Gu et al., 2020, Gu and Dao, 2023], support long-range dependencies at linear cost, and admit input-dependent parameters that adapt across regimes [Gu and Dao, 2023, Dao and Gu, 2024]. Recent work applies SSMs to PDE learning [Tiwari et al., 2025] and to graphs through node sequencing [Behrouz and Hashemi, 2024, Wang et al., 2024], but sequencing discards the topology that governs particle interactions. A latent simulator for particle systems requires the SSM recurrence and the graph operator to act jointly on a single latent state at each step, so that temporal memory and spatial interactions evolve within a single update. We propose the Graph Mamba Operator (GraMO ), a latent simulator that couples graph propagation with state-space evolution in a single recurrence. At each step, the latent state is jointly updated along graph edges and the temporal axis, with input-dependent coefficients that adapt to the current system state. The joint update addresses the coupling requirement identified above, while the input-dependent coefficients accommodate regime variation across contact, slow drift, and fast transitions. Trajectories are produced through latent-state evolution rather than recursive prediction in the observation space, thereby avoiding the rollout error accumulation characteristic of autoregressive predictors in observation space. This view also connects the update to time-varying Koopman dynamics, where the latent evolution remains linear while the operator adapts to the current graph state [Kutz et al., 2016]. Our contributions are summarized as follows: 1. We present a graph-coupled state-space operator that evolves a persistent latent state under input-dependent dynamics, jointly modeling spatial interactions and temporal memory in a single latent recurrence. 2. We provide stability and long-range propagation results for the latent recurrence, together with its connection to graph autoregressive moving-average (ARMA) processes. 3. Our method achieves improved trajectory prediction and zero-shot generalization across N-body simulation, motion capture, and robotics benchmarks, outperforming graph-based and neural operator baselines. 
+
+## 2 Related Work 
+
+State-Space Models (SSMs) on Graphs. State-space models have shown strong performance in sequence modeling [Gu and Dao, 2023, Dao and Gu, 2024] and have recently been applied to PDE learning [Tiwari et al., 2025]. Several works explore adapting SSMs to graphs [Qu et al., 2024, Wang et al., 2024, Behrouz and Hashemi, 2024], often by imposing artificial sequential orderings through node sorting or random walks. Such constructions disrupt the intrinsic graph topology and are poorly suited for physical systems with structured interactions. Spatiotemporal graph models incorporating temporal dynamics [Sahili and Awad, 2023, Cini et al., 2023] further extend this line of work, but do not fully exploit the long-range memory and stability properties of SSMs for spatial correlation. Unlike prior graph-state-space models that impose artificial node orderings, GraMO couples spatial propagation and temporal memory within a single continuous-time neural operator formulation. 
+
+Neural Operator. Neural operators learn mappings between function spaces and provide data-driven alternatives to classical numerical solvers [Kovachki et al., 2023, Li et al., 2020, 2023, Xu et al., 2024]. For dynamical systems, this corresponds to learning an operator that maps an observed trajectory history to future evolution. This view is closely related to latent simulator frameworks, where the system is first encoded into a compact latent state and then propagated forward using learned dynamics. Several lines of work instantiate this idea in different ways. Koopman-inspired methods learn latent 2representations in which nonlinear dynamics are approximated by linear evolution, enabling efficient prediction and control [Otto and Rowley, 2021, Brunton et al., 2016, Li et al., 2019]. However, many such approaches rely on fixed or weakly adaptive latent operators, limiting their ability to model strongly time-varying systems. Recent state-space operator models address temporal dependencies by maintaining persistent latent memory through structured recurrences [Gu and Dao, 2023, Tiwari et al., 2025], but they typically do not explicitly encode graph-structured interactions. 
+
+Graph Neural Networks (GNNs). Graph neural networks model particles or bodies as nodes and interactions as edges [Kipf et al., 2018, Mrowca et al., 2018, Sanchez-Gonzalez et al., 2020, Pfaff et al., 2020]. While effective for local physical interactions, standard message-passing models often struggle with multi-hop dependencies and long-term forecasting, especially when used in autoregressive rollouts. More general spatiotemporal graph models [Li et al., 2017, Jin et al., 2023, Xu et al., 2022a, 2023] improve temporal modeling, but spatial and temporal evolution are often handled by separate modules. In contrast, GraMO is a graph-structured latent simulator that couples graph-based interaction learning with state-space evolution inside a single neural operator formulation, allowing spatial propagation and temporal memory to jointly evolve the physical dynamics. 
+
+## 3 Background and Problem Setting 
+
+State-Space Models (SSMs). A continuous-time linear state-space model describes the evolution of a hidden state in response to external inputs. Let the input be x(t) ∈ Rdx , the hidden state be 
+
+h(t) ∈ Rdh , and the output be y(t) ∈ Rdy . The dynamics are given by: 
+
+˙h(t) = Ah (t) + Bx (t), y(t) = Ch (t), (1) where A, B, and C are learnable system matrices. 
+
+Discretization. To integrate SSMs into neural architectures, we discretize the system using a step size ∆ under a zero-order hold assumption: 
+
+h[k] = ¯Ah [k − 1] + ¯Bx [k], y[k] = Ch [k], (2) where, 
+
+¯A = e∆A, ¯B = (∆ A)−1(e∆A − I)B ≈ ∆B. (3) Unrolling the recurrence shows that SSMs admit a convolutional form, providing a principled mechanism for modeling long-range temporal dependencies. 
+
+y = x ∗ K, K = [ CB , CAB , . . . , CA L−1B], (4) providing a principled mechanism for modeling long-range temporal dependencies. 
+
+Selective State-Space Models (S6). Recent advances such as Mamba [Gu and Dao, 2023] extend classical SSMs by making B, C, and the step size ∆ input-dependent. This enables adaptive temporal dynamics, allowing the system to adjust its memory and evolution across different regimes. Despite these advantages, standard SSMs treat inputs as unstructured sequences and do not explicitly incorporate spatial interactions defined by the underlying graph. 
+
+Koopman Operators. Koopman operator theory provides a linear perspective for analyzing nonlinear dynamical systems by lifting them into a space of observables. Let the system state be h(t) ∈ Rdh
+
+evolving under nonlinear dynamics ˙h(t) = f (h(t)) . Instead of modeling the state directly, Koopman theory considers an observable mapping ϕ(h) that lifts the state into a higher-dimensional space. The evolution of observables is governed by a linear operator K:
+
+ddt ϕ(h(t)) = Kϕ(h(t)) . (5) In practice, the infinite-dimensional Koopman operator is approximated using a finite-dimensional representation. Let z(t) = ϕ(h(t)) ∈ Rdz denote the lifted state. The dynamics can then be expressed as a linear system of dynamical systems: 
+
+˙z(t) ≈ Kz (t), (6) where K ∈ Rdz ×dz is a finite-dimensional approximation of the Koopman generator. 3Node 
+
+> Embeddings
+> Edge Indices
+> Repeat
+> x L
+> Graph
+> Convolution
+> GraMO Layer
+> Wt
+> x1
+> x3
+> x2
+> x1
+> x3
+> GraMO Layer
+> x2
+> Learnable
+> Parameter
+> TM
+> Input
+> Dependent
+> Fixed across time
+> Token Mixer
+> State
+> Variables
+> Multiplication
+> Addition
+> Einsum
+> Ht
+> GraMO Layer
+> Decoder
+> LayerNorm
+> Output Projection
+> D
+> GraMO
+> Encoder
+> x1
+> x3x2
+> x1
+> x3
+> x2
+> x1
+> x3
+> x2
+> x1
+> x3x2
+
+Figure 1: Overview. The model maps past graph sequences {G t}Tt=0 to future trajectories {G t}T +∆ Tt=T +1 
+
+using L stacked GraMO blocks. ( Left ) Overall pipeline. ( Right ) A single GraMO layer showing the discretized update and gated skip connection (see Appendix Algorithm 1). 
+
+Discrete-Time Formulation. Under a discrete-time setting with step size ∆, the discrete dynamics can be written as follows: 
+
+z[k] = ¯Kz [k − 1] , ¯K = e∆K, (7) which closely resembles the linear state evolution in state-space models. 
+
+Remark 3.1 . Both Koopman operators and state-space models describe system evolution through linear dynamics in a latent space. Classical Koopman methods rely on predefined or learned observables 
+
+ϕ and assume time-invariant dynamics, whereas modern SSMs admit input-dependent operators that adapt to time-varying systems. We leverage this connection to learn a latent representation with structured, input-dependent dynamics and then couple it with graph Laplacian propagation to incorporate spatial interactions directly into the latent evolution [Das, 2004]. 
+
+Problem Setup (Trajectory Prediction). Let T denote a collection of spatio-temporal trajectories sampled from a data distribution pdata . Each trajectory is represented as a sequence of graph-structured states {G t}T +∆ Tt=0 . We interpret the observed past trajectory segment {G t}Tt=0 as a time-dependent function over the graph, and similarly the future segment {G t}T +∆ Tt=T +1 as its continuation. In addition to mapping trajectories, the model implicitly summarizes the past trajectory into a latent state representation that captures the system’s history. Our goal is to learn a neural operator 
+
+Fθ : {G t}Tt=0 7 → {G t}T +∆ Tt=T +1 that maps the past trajectory function to the future trajectory function, approximating the ground-truth solution operator F† and predicting the future evolution. The learning objective minimizes trajectory discrepancy: 
+
+min  
+
+> θ
+
+E{G t}Tt=0 ∼pdata 
+
+h
+
+L Fθ
+
+ {G t}Tt=0 
+
+ , F† {G t}Tt=0 
+
+ i
+
+, (8) where L measures trajectory discrepancy using the L2 norm. 
+
+## 4 Methodology 
+
+We introduce GraMO , a neural operator that maps past graph trajectories to future trajectories. 
+
+GraMO captures temporal dynamics, graph-based interactions, memory of past states, and time-varying behavior through a unified graph-coupled state-space formulation. 
+
+4.1 GraMO Formulation Framework. Consider a dynamical system on a graph G = ( V, E) with V = |V| nodes. Let 
+
+X(t) ∈ RV ×D denote the input node features at continuous time t, where D is the feature dimension. In our setup, X(t) = [ x(t)∥v(t)∥z(t)] concatenates positions x(t) ∈ RV ×3, velocities v(t) ∈ RV ×3,and node attributes z(t) ∈ RV ×Dz , yielding D = 6 + Dz and let graph connectivity is specified by an adjacency matrix Aadj ∈ RV ×V , constructed from domain-specific interactions. We introduce a latent state H(t) ∈ RV ×D×N that evolves according to following ODE: 
+
+dH(t)
+
+dt = F H(t), X(t), G, (9) 4where feature dimension D preserves physical semantics, N is the state dimension that provides a memory axis that enables long-range temporal integration, and F is an operator coupling spatial graph structure with temporal state dynamics. The output is obtained via a readout Y(t) = R(H(t)) .This formulation provides three desirable properties: (i) continuous trajectories —the latent state evolves smoothly rather than through discrete autoregressive steps; (ii) persistent memory —the state 
+
+H(t) accumulates information from all past observations via its N -dimensional state space; and (iii) 
+
+adaptive dynamics —the operator F depends on current inputs, enabling time-varying modeling. 
+
+Motivation. The design is motivated by three complementary ideas. From the SSM perspective, a learned latent state with structured HiPPO-initialized dynamics [Gu et al., 2020] provides long-range memory and stability. From the operator-theoretic perspective, lifting nonlinear dynamics to a higher-dimensional space where evolution is linear, as in Koopman analysis, offers a principled route to long-term prediction without recursive updates in the observation space. From the graph-learning perspective, message passing provides an inductive bias for modeling local interactions among particles through the underlying graph topology. GraMO draws on these ideas: the recurrence is linear in the latent state at each step, the graph operator propagates information across interacting nodes, and the per-step operator depends on the current input, generalizing classical operator approaches. 
+
+Proposed Method. We instantiate the general framework with a specific architecture that couples 
+
+spatial graph propagation with temporal state evolution. We define the dynamics as: 
+
+dH(t)
+
+dt = A ⊙
+
+˜L H (t) Ws
+
+
+
++ B(t) ⊙ X(t), (10) where ˜L ∈ RV ×V is the normalized adjacency matrix with self-loops defined as ˜L = D−1/2deg (Aadj +
+
+I)D−1/2deg , acting on the node dimension. The matrix Ws ∈ RN ×N is a learnable spatial mixing matrix acting on the state dimension, A ∈ RD×N with A = − exp( Alog ) governs stable temporal state decay and is broadcast across nodes dimension, and B(t) ∈ RV ×D×N is an input-dependent projection where X(t) is broadcast along the state dimension. The output at each time instant is obtained by contracting over the state dimension as follows: 
+
+Y(t) = H(t) · C(t), (11) where C(t) ∈ RV ×N is the output projection and the contraction yields Y(t) ∈ RV ×D . Crucially, 
+
+H(t) is not reset at each timestep, allowing the model to integrate information over time without the error accumulation characteristic of autoregressive rollouts. 
+
+Interpretation. Equation (10) decomposes into two coupled components: (i) Temporal-modulated spatial diffusion (A ⊙ (˜LHW s)), where the latent state first propagates across the graph via ˜LH , then mixes along the state dimension via Ws, and finally undergoes temporal modulation via A; and (ii) 
+
+Input injection (B ⊙ X), which projects the current input features into the latent state space through the input-dependent B. This can be viewed as unifying state-space models with graph Laplacian operators, enabling principled message passing within a continuous-time latent dynamical system. 
+
+4.2 Discretization and Implementation ZOH Discretization. For implementation, we discretize Equation (10) over interval [t, t + ∆ t].Using zero-order hold with learnable timestep ∆t ∈ RV ×D , we obtain: 
+
+Ht+1 = ¯At ⊙
+
+˜L H t Ws
+
+
+
++ ¯Bt ⊙ Xt, (12) where ¯At = exp(∆ t ⊙ A) ∈ RV ×D×N and ¯Bt = ∆ t ⊙ Bt ∈ RV ×D×N are the discretized parameters similar to Equation 3, with ∆t broadcast along the state dimension. Following Gu and Dao [2023], we initialize ¯A using the HiPPO framework [Gu et al., 2020], which provides principled initialization for long-range dependency modeling. The update admits an elegant interpretation: at each step, the latent state is (i) propagated spatially via ˜LH t, (ii) mixed along the state dimension via 
+
+Ws, (iii) modulated temporally via ¯At, and (iv) injected with input features via ¯Bt ⊙ Xt.
+
+The GraMO Interpretation. The recurrence in Equation (12) is linear in the latent state Ht at each step, with operator coefficients that depend on the current input Xt. This structure is reminiscent of finite-dimensional Koopman lifts, in which a learned observable map renders nonlinear dynamics 5linear in a lifted space; GraMO differs from the classical formulation by allowing the lifted operator to vary with the input, which is needed for non-autonomous and regime-switching systems. The latent state Ht ∈ RV ×D×N stores, for each of the V particles, a D-dimensional feature across N
+
+memory slots. The per-step evolution is linear in this lifted representation, structurally similar to the role of Koopman observables but with an input-dependent operator. The factorization couples space (V ), physical features ( D), and temporal memory ( N ) within a single tensor. The update decomposes into several components, each with a specific modeling role, as described below. 
+
+Spatial step — ˜L H t Ws. The normalized Laplacian ˜L propagates information along edges of G,while Ws mixes the N memory slots. Together, they realize the joint operator (˜L ⊗ Ws) that couples multi-hop spatial interactions with cross-scale memory mixing. 
+
+Temporal step — ¯At = exp(∆ t ⊙ A). HiPPO initialization of A provides structured long-range memory; the input-dependent step size ∆t stretches it during slow phases and compresses it during fast transitions (e.g., contact), giving stable yet non-stationary temporal modeling. 
+
+Input drive — ¯Bt ⊙ Xt. The graph-aware, input-dependent projection Bt acts as a content-aware gate, selectively writing relevant features of the current observation into the latent state. 
+
+Unified view. A key property of the update is that it remains linear in the latent state Ht, while the operator itself is input-dependent. The effective propagator is: 
+
+Kt = ¯At ⊙ (˜L ⊗ Ws), (13) which can be interpreted as a time-varying operator defined over the interaction graph. This extends HiPPO-style continuous memory compression, which ignores particle interactions, to a graph-structured dynamical system by propagating the latent state through the normalized graph Laplacian operator, yielding a latent simulator for interacting particle dynamics. 
+
+Selectivity. A key feature of GraMO is that the parameters Bt, Ct, and ∆t are input-dependent ,generated dynamically from Xt via graph convolution: 
+
+Bt, Ct, δt = fθ (Xt, G), ∆t = softplus( δt + b∆), (14) where fθ is a learnable graph neural network and b∆ ∈ RD is a learnable bias. This selective mechanism [Gu and Dao, 2023] enables content-aware gating where Bt controls which input information enters the state, adaptive readout where Ct determines which state components contribute to output, and non-stationary adaptation where ∆t modulates the temporal dynamics based on input. 
+
+Gated Output with Skip Connection. Following Gu and Dao [2023], we apply a gated output mechanism with a residual skip connection. The graph module produces a gate Zt and an auxiliary input ˜Xt, which modulate the state readout via element-wise gating and normalization: 
+
+Ot = LayerNorm 
+
+ Yt + Dskip ⊙ ˜Xt
+
+ ⊙ σ(Zt)
+
+
+
+Wout , (15) where Dskip is a learnable parameter, Wout is the projection matrix and σ denotes activation function. 
+
+Full Architecture. The model stacks L coupled graph-SSM layers. Each layer ℓ applies the discretized update in Equation (12) , with residual connections ensuring stable gradients. We use a bidirectional SSM formulation, where the graph-coupled update is applied in forward and backward temporal directions to capture richer trajectory context. The overall architecture is shown in Figure 1. 
+
+4.3 Theoretical Analysis and Insights 
+
+We summarize the key theoretical properties of GraMO below; full statements and proofs are deferred to Appendix C. The results cover four aspects: a linear-in-latent recurrence, stable long-range propagation, and a graph autoregressive moving-average (ARMA) representation. 
+
+Linear latent recurrence. GraMO can be interpreted as learning an input-conditioned neural operator on graphs. In particular, the update is linear in the lifted latent state, while the effective transition operator depends on the current graph state. This allows GraMO to retain the stability benefits of latent linear evolution while adapting to time-varying dynamics through input-dependent parameters. The formal statement is provided in Appendix C (Theorem C.2). 
+
+Stability and long-range propagation. GraMO enables stable long-range information flow. Since 
+
+ρ(˜L) ≤ 1 (Lemma C.3), unrolling the recurrence yields powers of ˜L, forming a Neumann series. 6Proposition C.5 shows that ˜Lk aggregates information along all length-k walks, while Proposition C.10 shows that the multi-step Jacobian remains bounded due to the controlled spectra of ˜L and the HiPPO-initialized temporal operator ¯A.
+
+Graph ARMA representation. The latent recurrence further induces an adaptive graph ARMA process. Building on the bounded-spectrum analysis in Proposition C.10, Theorem 4.1 shows that the unrolled dynamics admit a graph-filtered moving-average representation. 
+
+Theorem 4.1 (Graph ARMA Representation) . Let Kt = ¯At ⊙ (˜L ⊗ Ws) denote the effective graph-coupled latent transition operator. As shown in Lemma C.9, the stable parameter regime ensures sup t ∥Kt∥ < 1. Then the recursion in (12) admits the absolutely convergent representation 
+
+Ht =
+
+∞X
+
+k=0 
+
+kY
+
+r=1 
+
+Kt−r
+
+!   ¯Bt−1−k ⊙ Xt−1−k
+
+. (16) 
+
+Equivalently, GraMO induces a graph ARMA process with input-dependent coefficients. 
+
+Since ∆t, Bt, and Ct depend on the current graph state, the transition and readout operators vary over time (Proposition C.11), unlike classical graph ARMA models with fixed coefficients. Table 1: Evaluation on N-body Simulation datasets. AMSE ( ×10 −1) and FMSE ( ×10 −1) on N-body simulation. First and Second denote the best and second-best results.                                                                                                               
+
+> Model Charged Particles Spring Dynamics Gravity System AMSE FMSE Average AMSE FMSE Average AMSE FMSE Average
+> ST-GNN 4.860 ±0.240 10 .340 ±0.520 7.600 ±0.380 0.147 ±0.007 0.382 ±0.019 0.265 ±0.013 8.040 ±0.400 16 .150 ±0.810 12 .095 ±0.605
+> ST-TFN 3.360 ±0.170 7.420 ±0.370 5.390 ±0.270 1.000 ±0.050 2.410 ±0.120 1.705 ±0.085 3.320 ±0.170 7.490 ±0.370 5.405 ±0.270
+> ST-SE(3)TR 4.020 ±0.200 9.240 ±0.460 6.630 ±0.330 0.880 ±0.040 2.000 ±0.100 1.440 ±0.070 3.440 ±0.170 8.190 ±0.410 5.815 ±0.290
+> ST-EGNN 1.900 ±0.100 4.180 ±0.210 3.040 ±0.155 0.100 ±0.005 0.226 ±0.011 0.163 ±0.008 3.150 ±0.160 7.000 ±0.350 5.075 ±0.255
+> Koopman 1.780 ±0.090 3.340 ±0.170 2.560 ±0.130 0.376 ±0.019 1.100 ±0.060 0.738 ±0.040 3.290 ±0.160 8.220 ±0.410 5.755 ±0.285
+> EqMotion 1.430 ±0.070 3.040 ±0.150 2.235 ±0.110 0.136 ±0.007 0.365 ±0.018 0.251 ±0.013 3.070 ±0.150 6.600 ±0.330 4.835 ±0.240
+> SVAE 3.720 ±0.190 7.400 ±0.370 5.560 ±0.280 0.122 ±0.006 0.213 ±0.011 0.168 ±0.009 5.900 ±0.300 10 .850 ±0.540 8.375 ±0.420
+> GeoTDM 1.130 ±0.060 2.540 ±0.130 1.835 ±0.095 0.031 ±0.002 0.077 ±0.004 0.054 ±0.003 2.610 ±0.130 6.020 ±0.300 4.315 ±0.215
+> GraphMamba 2.900 ±0.110 5.920 ±0.270 4.410 ±0.190 0.500 ±0.006 0.527 ±0.012 0.514 ±0.009 7.150 ±0.260 9.000 ±0.450 8.075 ±0.355
+> ESTAG 1.090 ±0.140 2.830 ±0.340 1.960 ±0.240 0.045 ±0.004 0.063 ±0.012 0.054 ±0.008 3.150 ±0.170 8.210 ±0.340 5.680 ±0.255
+> GraMO 0.790 ±0.040 2.410 ±0.120 1.600 ±0.080 0.011 ±0.002 0.024 ±0.004 0.018 ±0.002 1.290 ±0.060 3.720 ±0.190 2.505 ±0.125
+
+## 5 Numerical Experiments 
+
+In this section, we evaluate GraMO on a diverse set of physical dynamical systems, including N-body systems (charged, gravitational, and spring interactions), motion capture (MoCap), and robotics datasets (rope control and soft robots), to assess the effectiveness of our core design choices. 
+
+Benchmark Details. We evaluate GraMO on diverse trajectory prediction tasks across articulated dynamical systems, including CMU Motion Capture (Walk #35, Run #9) [CMU, 2003, Huang et al., 2022, Han et al., 2022], N-body simulations (charged particles, spring systems, and gravitational systems) [Brandstetter et al., 2021, Kipf et al., 2018, Satorras et al., 2021b], and robotics datasets (rope control and soft robots) [Li et al., 2019]. 
+
+Baselines. We compare GraMO against a broad set of representative baselines spanning spatio-temporal graph networks, neural operator based including STGCN [Yu et al., 2017], TFN [Thomas et al., 2018], RF [Köhler et al., 2019], Compositional Koopman Operator [Li et al., 2019], SE(3)-Transformer [Fuchs et al., 2020], STEGNN [Satorras et al., 2021a], AGL-STAN [Sun et al., 2022], SVAE [Xu et al., 2022b], EqMotion [Xu et al., 2023], ESTAG [Wu et al., 2023], GraphMamba [Wang et al., 2024], GeoTDM [Han et al., 2024] and NS-GNN [Yuan et al., 2025]. 
+
+Evaluation Metrics. We evaluate performance under two settings: trajectory-to-state ( T2S ) and trajectory-to-trajectory ( T2T ). In the trajectory-to-state setting, performance is measured at the final time step using the Final Mean Squared Error (FMSE), defined as FMSE = ∥X(tT ) − X†(tT )∥2,
+
+where X† denotes the ground-truth state. In contrast, the trajectory-to-trajectory setting evaluates the full rollout using the Average Mean Squared Error (AMSE), AMSE = 1
+
+T
+
+PTt=1 ∥X(t) − X†(t)∥2,
+
+which is used as the evaluation metric unless stated otherwise. 
+
+Training Details. All models are trained using the Adam optimizer [Kingma and Ba, 2014] with the StepLR scheduler. Experiments are conducted on Ubuntu 20.04.3 LTS, equipped with an Intel(R) Core(TM) i9-10900X CPU and a single NVIDIA RTX A6000 GPU with 48 GB of memory. 7Table 2: Evaluation on Robotics datasets. AMSE ( ×10 −1) and FMSE ( ×10 −1) on Rope, Soft Robot, and Swim prediction. First and Second denote the best and second-best results.                                                                                                               
+
+> Model Rope Soft Swim AMSE FMSE Average AMSE FMSE Average AMSE FMSE Average
+> ST-GNN 0.6710 ±0.0550 1.4270 ±0.1150 1.0490 ±0.0637 0.1320 ±0.0110 0.1580 ±0.0090 0.1450 ±0.0071 0.0400 ±0.0040 0.0420 ±0.0030 0.0410 ±0.0025
+> ST-TFN 0.8530 ±0.0720 1.8090 ±0.1670 1.3310 ±0.0909 0.1590 ±0.0100 0.2090 ±0.0110 0.1840 ±0.0074 0.0500 ±0.0030 0.0550 ±0.0030 0.0525 ±0.0021
+> ST-SE(3)TR 0.8570 ±0.0800 1.8410 ±0.1210 1.3490 ±0.0725 0.1640 ±0.0110 0.2100 ±0.0200 0.1870 ±0.0114 0.0500 ±0.0030 0.0570 ±0.0040 0.0535 ±0.0025
+> ST-EGNN 0.3110 ±0.0200 0.6680 ±0.0530 0.4895 ±0.0283 0.0620 ±0.0040 0.0760 ±0.0050 0.0690 ±0.0032 0.0180 ±0.0010 0.0200 ±0.0010 0.0190 ±0.0007
+> Koopman 1.2860 ±0.0940 2.2330 ±0.2630 1.7595 ±0.1396 0.3510 ±0.0250 0.7100 ±0.0380 0.5305 ±0.0227 0.1180 ±0.0120 0.2500 ±0.0190 0.1840 ±0.0112
+> EqMotion 0.3220 ±0.0300 0.6770 ±0.0340 0.4995 ±0.0227 0.0620 ±0.0050 0.0790 ±0.0060 0.0705 ±0.0039 0.0190 ±0.0020 0.0210 ±0.0010 0.0200 ±0.0011
+> SVAE 0.5370 ±0.0390 0.9120 ±0.0890 0.7245 ±0.0486 0.0990 ±0.0060 0.1020 ±0.0080 0.1005 ±0.0050 0.0310 ±0.0030 0.0280 ±0.0030 0.0295 ±0.0021
+> GeoTDM 0.2510 ±0.0210 0.5380 ±0.0430 0.3945 ±0.0239 0.0470 ±0.0040 0.0600 ±0.0050 0.0535 ±0.0032 0.0140 ±0.0010 0.0180 ±0.0010 0.0160 ±0.0007
+> GraphMamba 0.4120 ±0.0300 0.9670 ±0.0630 0.6895 ±0.0349 0.0920 ±0.0050 0.1860 ±0.0040 0.1390 ±0.0032 0.0280 ±0.0020 0.0400 ±0.0020 0.0340 ±0.0014
+> ESTAG 0.2120 ±0.0400 0.5630 ±0.0430 0.3875 ±0.0294 0.0530 ±0.0060 0.0820 ±0.0030 0.0675 ±0.0034 0.0180 ±0.0030 0.0540 ±0.0020 0.0360 ±0.0018
+> GraMO 0.1860 ±0.0100 0.4120 ±0.0400 0.2990 ±0.0206 0.0360 ±0.0030 0.0470 ±0.0030 0.0415 ±0.0021 0.0110 ±0.0010 0.0130 ±0.0010 0.0120 ±0.0007
+
+5.1 N-Body Simulation Experimental Setup. We consider three scenarios in the N-body simulation datasets. (i) Charged Particles [Kipf et al., 2018, Satorras et al., 2021b], where N = 5 particles with charges randomly chosen between +1 / − 1 move under Coulomb forces. (ii) Spring Dynamics [Kipf et al., 2018], where 
+
+N = 5 particles with random masses are connected by springs with a probability of 0.5 between each pair, and the forces follow Hooke’s law. (iii) Gravity System [Brandstetter et al., 2021], where 
+
+N = 10 particles with random masses and initial velocities move under gravitational forces. For all three datasets, we use 3000 trajectories for training, 600 for validation, and 600 for testing. For each trajectory, we use 10 frames as input and predict the next 20 frames. 
+
+Results. Table 1 reports the AMSE and FMSE of all methods across the three N-body simulation regimes, with values in ×10 −1 units. Trajectory models, including the deterministic EqMotion and the probabilistic GeoTDM, generally outperform frame-to-frame predictors by mitigating the error accumulation inherent to iterative roll-out. Across all settings and metrics, GraMO attains the lowest error. On FMSE, it improves over the second-best baseline from 2.540 → 2.410 on Charged Particles 
+
+(GeoTDM), 0.063 → 0.024 on Spring Dynamics (ESTAG), and 6.020 → 3.720 on Gravity System 
+
+(GeoTDM). On AMSE, the comparable gains are 1.090 → 0.790 on Charged , 0.031 → 0.011 on 
+
+Spring , and 2.610 → 1.290 on Gravity . The consistency of improvements across qualitatively distinct interaction types, including short-range electrostatic, harmonic spring, and long-range gravitational interactions, suggests that GraMO captures interaction dynamics in a way that generalizes beyond any single physical dynamical regime. 
+
+5.2 Robotics Dataset Experimental Setup. We evaluate GraMO on robotics environments involving rope manipulation and soft-body control [Li et al., 2019]. We consider three settings: (i) Rope , where the top mass of a rope is actuated horizontally while the remaining masses evolve under internal forces and gravity; (ii) Soft , where a soft robot composed of deformable blocks with embedded actuators is controlled, with one block anchored to the ground; and (iii) Swim , where the same soft robot operates in a fluid environment without anchoring. In the Rope setting, each mass is treated as a node with 2D position and velocity (4D per node). In the Soft and Swim settings, each quadrilateral element is treated as a node with positions and velocities of its four corners (16D per element). We use a 70:15:15 train/validation/test split, conditioning on 10 frames and predicting the next 20. 
+
+Results. Table 2 reports the AMSE and FMSE of all methods across the three robotics environments. Across all settings and metrics, GraMO attains the lowest error. On FMSE, it improves over the second-best baseline from 0.5380 → 0.4120 on Rope , 0.0600 → 0.0470 on Soft , and 0.0180 → 0.0130 on 
+
+Swim (all GeoTDM); the AMSE column shows comparable gains, with ESTAG narrowly displacing GeoTDM as the second-best on Rope . Trajectory-level models such as GeoTDM, ESTAG, and EqMotion outperform frame-to-frame predictors (ST-GNN, ST-TFN, ST-SE(3)TR), reflecting the benefit of mitigating roll-out error accumulation in long-horizon control. The consistency of improvements across qualitatively distinct control regimes, including actuated rope manipulation, anchored soft-body deformation, and free-swimming locomotion in fluid, indicates that GraMO 
+
+captures deformable dynamics in a way that generalizes beyond any single robotic setting. 
+
+5.3 Motion Capture Dataset Experimental Setup. We evaluate human motion dynamics using the walk and run subsets of the CMU Motion Capture Database [CMU, 2003]. Trajectories are filtered for duration, and the task is 8formulated to predict a target frame based on an observation window of 10 historical frames ( ∆t = 1 ). We assess forecasting capability across varying horizons by introducing a time gap between the input and target, specifically at timestamps of {5, 10 , 15 , 20 }. Consistent with prior literature [Yuan et al., 2025], we apply data normalization to the run sequences. Table 3: Ablation Study. N-Body Charged (AMSE 
+
+×10 −1) and MoCap-Run (FMSE ×10 −1) datasets. 
+
+Component Charged MoCap Run 
+
+GraMO w/o Temporal 1.74 ±0.05 5.23 ±0.03 
+
+GraMO w/o BiSSM 1.81 ±0.03 4.57 ±0.04 
+
+GraMO w/o Selectivity 1.23 ±0.01 5.92 ±0.04 
+
+GraMO w/o HiPPO 0.93 ±0.02 4.23 ±0.05 
+
+GraMO 0.79 ±0.04 3.87 ±0.02 
+
+Results. Table 4 reports the FMSE of all methods on the MoCap Walk and Run se-quences. GraMO achieves the lowest error across all settings, reducing the average FMSE from 0.347 → 0.117 on Walk and from 0.508 → 0.161 on Run compared to the second-best baseline NS-EGNN. This corresponds to an average relative error reduction of 67 .3% . The improvement is especially pronounced at longer prediction horizons (15ts, 20ts), indicating that the graph-coupled latent dynamics improve stability and accuracy for long-term motion forecasting. 
+
+5.4 Ablations 
+
+We conduct ablation studies to assess the contribution of each component in GraMO . Table 3 reports results on N-Body Charged and MoCap-Run. Removing temporal modeling leads to the largest degradation, increasing the error from 0.79 to 1.74 on Charged and from 3.87 to 5.23 on MoCap-Run, showing that temporal state evolution is essential for long-horizon prediction. Removing the bidirectional SSM also hurts performance, particularly on MoCap-Run, where the error increases from 3.87 to 4.57 , highlighting the benefit of bidirectional temporal context for motion forecasting. The selectivity mechanism is also important: without input-dependent parameters, the error rises to 
+
+1.23 on Charged and 5.92 on MoCap-Run, indicating that adaptive dynamics are useful for modeling changing system states. Finally, replacing the HiPPO initialization degrades performance to 0.93 and 
+
+4.23 , confirming the benefit of structured long-range memory. Overall, the full GraMO achieves the best performance across both datasets, demonstrating that temporal modeling, selectivity, HiPPO memory, and bidirectional processing all contribute to the final model performance. We further evaluate zero-shot generalization to unseen system sizes. To assess whether the learned inductive bias transfers across particle counts, we train on the robotics rope dataset with N ∈ { 5, 7, 8}, where N
+
+denotes the number of particles/masses in the rope, and test on the held-out setting N = 9 . GraMO 
+
+achieves an AMSE of 0.217 , compared to 0.525 for the Compositional Koopman operator, indicating that the graph-conditioned SSM better extrapolates to unseen system sizes.     
+
+> 00.511.52
+> 0
+> 50
+> 100
+> 150
+> 200
+> 250
+> 300
+> 350
+> NSGNN
+> ESTAG
+> SE(3)-Tr
+> EqMotion
+> AGL-STAN
+> STGCN
+
+Ours    
+
+> FMSE ( ×10 −1)
+> Training Time (ms/epoch) X
+> 050 100 150
+> Y
+> 20
+> 15
+> 10
+> 5
+> 0
+> Z
+> 0
+> 10
+> 20
+> 30
+
+Figure 2: Efficiency and Visualization. (Left ) Training time (ms) versus FMSE ( ×10 −1) for baselines on MoCap (Walk) dataset. ( Right ) MoCap (Run) trajectory visualization, where predicted trajectories are shown with a Blue color gradient over time, and the ground-truth final state is shown in Green .
+
+Visual Demonstrations. Figure 2 illustrates qualitative trajectory pre-dictions on the MoCap dataset. The predicted sequences align well with the ground-truth motion, especially in terms of overall body configuration and torso movement. These visualiza-tions suggest that GraMO effectively models coordinated joint behavior and maintains physically reasonable mo-tion patterns over prediction horizons. 
+
+Efficiency. Figure 2 compares the computational efficiency of GraMO 
+
+on the MoCap dataset against several baseline methods. GraMO demon-strates favorable training efficiency rel-ative to EqMotion, SE(3)-Transformer, STGCN, and ACL-STAN, while achieving lower FMSE on MoCap. Simpler equivariant models, such as NSGNN and ESTAG, train faster but exhibit lower predictive per-formance, suggesting a trade-off between computational efficiency and the ability to model long-range 9Table 4: Evaluation on the MoCap dataset. FMSE for Walk ( ×10 −1) and Run ( ×10 0) cases under different time intervals. First and Second denote the best and second-best results. “-” indicates the model failed to converge during training.                                                                                                                
+
+> Model MoCap Walk MoCap Run 5ts 10ts 15ts 20ts Average 5ts 10ts 15ts 20ts Average
+> ST-GNN 1.121 ±0.159 1.224 ±0.100 2.615 ±0.478 3.359 ±0.601 2.080 ±0.335 0.560 ±0.107 1.160 ±0.166 1.538 ±0.234 1.779 ±0.278 1.259 ±0.196
+> ST-TFN 0.238 ±0.032 0.721 ±0.038 1.320 ±0.067 2.092 ±0.094 1.093 ±0.058 0.396 ±0.073 0.796 ±0.054 1.708 ±0.318 2.086 ±0.133 1.246 ±0.144
+> ST-SE(3)TR 0.146 ±0.017 0.376 ±0.097 0.760 ±0.161 1.119 ±0.347 0.600 ±0.155 0.280 ±0.045 0.700 ±0.131 1.165 ±0.267 1.732 ±0.550 0.969 ±0.248
+> ST-EGNN 0.188 ±0.026 0.591 ±0.103 1.140 ±0.123 2.097 ±0.205 1.004 ±0.114 0.444 ±0.072 1.082 ±0.113 2.375 ±0.202 3.784 ±0.429 1.921 ±0.204
+> EqMotion -----12 .074 ±3.074 15 .299 ±4.127 21 .074 ±2.073 18 .604 ±3.503 16 .763 ±3.194
+> STGCN 0.302 ±0.115 0.828 ±0.203 1.516 ±0.384 1.988 ±0.206 1.159 ±0.227 0.131 ±0.024 0.582 ±0.121 1.101 ±0.089 1.508 ±0.176 0.831 ±0.103
+> AGL-STAN 1.729 ±0.516 1.789 ±0.673 2.030 ±0.704 2.155 ±0.763 1.926 ±0.664 0.511 ±0.137 0.628 ±0.191 0.648 ±0.271 0.831 ±0.283 0.654 ±0.221
+> ESTAG 0.054 ±0.004 0.213 ±0.012 0.530 ±0.038 1.085 ±0.070 0.471 ±0.031 0.041 ±0.002 0.250 ±0.019 0.771 ±0.050 1.767 ±0.251 0.707 ±0.081
+> NS-EGNN 0.051 ±0.002 0.166 ±0.006 0.397 ±0.037 0.775 ±0.085 0.347 ±0.033 0.033 ±0.002 0.187 ±0.009 0.584 ±0.076 1.226 ±0.215 0.508 ±0.076
+> GraMO 0.039 ±0.003 0.075 ±0.006 0.143 ±0.012 0.213 ±0.005 0.117 ±0.007 0.023 ±0.002 0.067 ±0.009 0.164 ±0.016 0.387 ±0.022 0.161 ±0.012
+
+interaction dynamics. Furthermore, Table 1 - 2 shows that the proposed method outperforms artificial node-ordering approaches such as GraphMamba [Wang et al., 2024], highlighting the importance of Laplacian-based graph propagation for joint spatial-temporal modeling. It suggests that preserving the interaction topology is more effective than serializing nodes into an arbitrary sequence when modeling interacting particle dynamics [Mirzaev and Gunawardena, 2013]. 
+
+## 6 Conclusion and Limitations 
+
+We presented GraMO , a neural operator that integrates state-space modeling with graph-based representations to capture long-range interactions in articulated dynamical systems. By jointly modeling temporal evolution and graph-structured dependencies, GraMO provides a principled framework for learning complex spatiotemporal dynamics. Experiments on N-body systems (charged, gravitational, and spring), motion capture, and robotics datasets (rope control and soft robots) demonstrate consistent improvements over baselines. A limitation of the GraMO is its scaling with graph size due to repeated graph–state interactions. Exploring graph sparsification and subgraph sampling presents a promising direction to improve scalability while preserving performance. 
+
+## References 
+
+Ali Behrouz and Farnoosh Hashemi. Graph mamba: Towards learning on graphs with state space models. In 
+
+Proceedings of the 30th ACM SIGKDD conference on knowledge discovery and data mining , pages 119–130, 2024. Vaibhav Bihani, Sajid Mannan, Utkarsh Pratiush, Tao Du, Zhimin Chen, Santiago Miret, Matthieu Micoulaut, Morten M Smedskjaer, Sayan Ranu, and NM Anoop Krishnan. Egraffbench: evaluation of equivariant graph neural network force fields for atomistic simulations. Digital Discovery , 3(4):759–768, 2024. Suresh Bishnoi, Ravinder Bhattoo, Jayadeva Jayadeva, Sayan Ranu, and NM Anoop Krishnan. Learning the Dynamics of Physical Systems with Hamiltonian Graph Neural Networks. In ICLR 2023 Workshop on Physics for Machine Learning , 2023. Boris Bonev, Thorsten Kurth, Christian Hundt, Jaideep Pathak, Maximilian Baust, Karthik Kashinath, and Anima Anandkumar. Spherical fourier neural operators: Learning stable dynamics on the sphere. In International conference on machine learning , pages 2806–2823. PMLR, 2023. Nawaf Bou-Rabee. Time integrators for molecular dynamics. Entropy , 16(1):138–162, 2013. Johannes Brandstetter, Rob Hesselink, Elise van der Pol, Erik J Bekkers, and Max Welling. Geometric and physical quantities improve e (3) equivariant message passing. arXiv preprint arXiv:2110.02905 , 2021. Steven L Brunton, Bingni W Brunton, Joshua L Proctor, and J Nathan Kutz. Koopman invariant subspaces and finite linear representations of nonlinear dynamical systems for control. PloS one , 11(2):e0150171, 2016. Stefan Chmiela, Alexandre Tkatchenko, Huziel E Sauceda, Igor Poltavsky, Kristof T Schütt, and Klaus-Robert Müller. Machine learning of accurate energy-conserving molecular force fields. Science advances , 3(5): e1603015, 2017. Andrea Cini, Ivan Marisca, Filippo Maria Bianchi, and Cesare Alippi. Scalable spatiotemporal graph neural networks. In Proceedings of the AAAI conference on artificial intelligence , volume 37, pages 7218–7226, 2023. CMU. Carnegie-mellon motion capture database. 2003. URL http://mocap.cs.cmu.edu .
+
+10 Tri Dao and Albert Gu. Transformers are ssms: Generalized models and efficient algorithms through structured state space duality. arXiv preprint arXiv:2405.21060 , 2024. K Ch Das. The laplacian spectrum of a graph. Computers & Mathematics with Applications , 48(5-6):715–724, 2004. Denis Donnelly and Edwin Rogers. Symplectic integrators: An introduction. American Journal of Physics , 73 (10):938–945, 2005. Zheng Fang, Qingqing Long, Guojie Song, and Kunqing Xie. Spatial-temporal graph ode networks for traffic flow forecasting. In Proceedings of the 27th ACM SIGKDD conference on knowledge discovery & data mining ,pages 364–373, 2021. Fabian B Fuchs, Daniel E Worrall, Volker Fischer, and Max Welling. Se (3)-transformers: 3d roto-translation equivariant attention networks. arXiv preprint arXiv:2006.10503 , 2020. Albert Gu and Tri Dao. Mamba: Linear-time sequence modeling with selective state spaces. arXiv preprint arXiv:2312.00752 , 2023. Albert Gu, Tri Dao, Stefano Ermon, Atri Rudra, and Christopher Ré. Hippo: Recurrent memory with optimal polynomial projections. Advances in neural information processing systems , 33:1474–1487, 2020. William L. Hamilton, Rex Ying, and Jure Leskovec. Inductive representation learning on large graphs. In 
+
+Advances in Neural Information Processing Systems (NeurIPS) , 2017. Jiaqi Han, Wenbing Huang, Tingyang Xu, and Yu Rong. Equivariant graph hierarchy-based neural networks. 
+
+Advances in Neural Information Processing Systems , 35:9176–9187, 2022. Jiaqi Han, Minkai Xu, Aaron Lou, Haotian Ye, and Stefano Ermon. Geometric trajectory diffusion models. 
+
+Advances in Neural Information Processing Systems , 37:25628–25662, 2024. Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems , 33:6840–6851, 2020. Scott A Hollingsworth and Ron O Dror. Molecular dynamics simulation for all. Neuron , 99(6):1129–1143, 2018. Wenbing Huang, Jiaqi Han, Yu Rong, Tingyang Xu, Fuchun Sun, and Junzhou Huang. Equivariant graph mechanics networks with constraints. In International Conference on Learning Representations , 2022. URL 
+
+https://openreview.net/forum?id=SHbhHHfePhP .Guangyin Jin, Yuxuan Liang, Yuchen Fang, Zezhi Shao, Jincai Huang, Junbo Zhang, and Yu Zheng. Spatio-temporal graph neural networks for predictive learning in urban computing: A survey. IEEE transactions on knowledge and data engineering , 36(10):5388–5408, 2023. Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980 ,2014. Thomas Kipf, Ethan Fetaya, Kuan-Chieh Wang, Max Welling, and Richard Zemel. Neural relational inference for interacting systems. In International conference on machine learning , pages 2688–2697. Pmlr, 2018. Thomas N. Kipf and Max Welling. Semi-supervised classification with graph convolutional networks. In 
+
+Proceedings of the International Conference on Learning Representations (ICLR) , 2017. Jonas Köhler, Leon Klein, and Frank Noé. Equivariant flows: sampling configurations for multi-body systems with symmetric energies. arXiv preprint arXiv:1910.00753 , 2019. Nikola Kovachki, Zongyi Li, Burigede Liu, Kamyar Azizzadenesheli, Kaushik Bhattacharya, Andrew Stuart, and Anima Anandkumar. Neural operator: Learning maps between function spaces with applications to pdes. 
+
+Journal of Machine Learning Research , 24(89):1–97, 2023. J Nathan Kutz, Joshua L Proctor, and Steven L Brunton. Koopman theory for partial differential equations. arXiv preprint arXiv:1607.07076 , 2016. Yaguang Li, Rose Yu, Cyrus Shahabi, and Yan Liu. Diffusion convolutional recurrent neural network: Data-driven traffic forecasting. arXiv preprint arXiv:1707.01926 , 2017. Yunzhu Li, Hao He, Jiajun Wu, Dina Katabi, and Antonio Torralba. Learning compositional koopman operators for model-based control. arXiv preprint arXiv:1910.08264 , 2019. 
+
+11 Zongyi Li, Nikola Kovachki, Kamyar Azizzadenesheli, Burigede Liu, Kaushik Bhattacharya, Andrew Stuart, and Anima Anandkumar. Fourier neural operator for parametric partial differential equations. arXiv preprint arXiv:2010.08895 , 2020. Zongyi Li, Daniel Zhengyu Huang, Burigede Liu, and Anima Anandkumar. Fourier neural operator with learned deformations for pdes on general geometries. Journal of Machine Learning Research , 24(388):1–26, 2023. Xiao Luo, Jingyang Yuan, Zijie Huang, Huiyu Jiang, Yifang Qin, Wei Ju, Ming Zhang, and Yizhou Sun. Hope: High-order graph ode for modeling interacting dynamics. In International conference on machine learning ,pages 23124–23139. PMLR, 2023. Alexander D MacKerell Jr, Nilesh Banavali, and Nicolas Foloppe. Development and current status of the charmm force field for nucleic acids. Biopolymers: original Research on biomolecules , 56(4):257–265, 2000. Inomzhon Mirzaev and Jeremy Gunawardena. Laplacian dynamics on general graphs. Bulletin of mathematical biology , 75(11):2118–2149, 2013. Damian Mrowca, Chengxu Zhuang, Elias Wang, Nick Haber, Li Fei-Fei, Joshua B Tenenbaum, and Daniel LK Yamins. Flexible neural representation for physics prediction. arXiv preprint arXiv:1806.08047 , 2018. Samuel E Otto and Clarence W Rowley. Koopman operators for estimation and control of dynamical systems. 
+
+Annual Review of Control, Robotics, and Autonomous Systems , 4(1):59–87, 2021. Tobias Pfaff, Meire Fortunato, Alvaro Sanchez-Gonzalez, and Peter W Battaglia. Learning mesh-based simulation with graph networks. arXiv preprint arXiv:2010.03409 , 2020. Haohao Qu, Liangbo Ning, Rui An, Wenqi Fan, Tyler Derr, Hui Liu, Xin Xu, and Qing Li. A survey of mamba. 
+
+arXiv preprint arXiv:2408.01129 , 2024. Richard J. Gowers, Max Linke, Jonathan Barnoud, Tyler J. E. Reddy, Manuel N. Melo, Sean L. Seyler, Jan Domański, David L. Dotson, Sébastien Buchoux, Ian M. Kenney, and Oliver Beckstein. MDAnalysis: A Python Package for the Rapid Analysis of Molecular Dynamics Simulations. In Sebastian Benthall and Scott Rostrup, editors, Proceedings of the 15th Python in Science Conference , pages 98 – 105, 2016. doi: 10.25080/Majora-629e541a-00e. Zahraa Al Sahili and Mariette Awad. Spatio-temporal graph neural networks: A survey. arXiv preprint arXiv:2301.10569 , 2023. Alvaro Sanchez-Gonzalez, Jonathan Godwin, Tobias Pfaff, Rex Ying, Jure Leskovec, and Peter Battaglia. Learning to simulate complex physics with graph networks. In International Conference on Machine Learning ,pages 8459–8468. PMLR, 2020. Victor Garcia Satorras, Emiel Hoogeboom, and Max Welling. E(n) equivariant graph neural networks. arXiv preprint arXiv:2102.09844 , 2021a. Vıctor Garcia Satorras, Emiel Hoogeboom, and Max Welling. E (n) equivariant graph neural networks. In 
+
+International conference on machine learning , pages 9323–9332. PMLR, 2021b. Kristof Schütt, Oliver Unke, and Michael Gastegger. Equivariant message passing for the prediction of tensorial properties and molecular spectra. In International conference on machine learning , pages 9377–9388. PMLR, 2021. Sean Seyler and Oliver Beckstein. Molecular dynamics trajectory for benchmarking mdanalysis. URL: https://figshare. com/articles/Molecular_dynamics_ trajectory_for_benchmarking_MDAnalysis/5108170, doi ,10:m9, 2017. Chence Shi, Shitong Luo, Minkai Xu, and Jian Tang. Learning gradient fields for molecular conformation generation. arXiv preprint arXiv:2105.03902 , 2021. Mingjie Sun, Pengyuan Zhou, Hui Tian, Yong Liao, and Haiyong Xie. Spatial-temporal attention network for crime prediction with adaptive graph learning. In International Conference on Artificial Neural Networks ,pages 656–669. Springer, 2022. Nathaniel Thomas, Tess Smidt, Steven Kearnes, Lusann Yang, Li Li, Kai Kohlhoff, and Patrick Riley. Tensor field networks: Rotation-and translation-equivariant neural networks for 3d point clouds. arXiv preprint arXiv:1802.08219 , 2018. Karn Tiwari, Niladri Dutta, NM Krishnan, et al. Latent mamba operator for partial differential equations. arXiv preprint arXiv:2505.19105 , 2025. 
+
+12 Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems , 30, 2017. Petar Veličković, Guillem Cucurull, Arantxa Casanova, Adriana Romero, Pietro Liò, and Yoshua Bengio. Graph attention networks. In Proceedings of the International Conference on Learning Representations (ICLR) ,2018. Chloe Wang, Oleksii Tsepa, Jun Ma, and Bo Wang. Graph-mamba: Towards long-range graph sequence modeling with selective state spaces. arXiv preprint arXiv:2402.00789 , 2024. Liming Wu, Zhichao Hou, Jirui Yuan, Yu Rong, and Wenbing Huang. Equivariant spatio-temporal attentive graph networks to simulate physical dynamics. Advances in Neural Information Processing Systems , 36: 45360–45380, 2023. Chenxin Xu, Robby T Tan, Yuhong Tan, Siheng Chen, Yu Guang Wang, Xinchao Wang, and Yanfeng Wang. Eqmotion: Equivariant multi-agent motion prediction with invariant interaction reasoning. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 1410–1420, 2023. Minkai Xu, Lantao Yu, Yang Song, Chence Shi, Stefano Ermon, and Jian Tang. Geodiff: A geometric diffusion model for molecular conformation generation. In International Conference on Learning Representations ,2022a. URL https://openreview.net/forum?id=PzcvxEMzvQC .Minkai Xu, Jiaqi Han, Aaron Lou, Jean Kossaifi, Arvind Ramanathan, Kamyar Azizzadenesheli, Jure Leskovec, Stefano Ermon, and Anima Anandkumar. Equivariant graph neural operator for modeling 3d dynamics. arXiv preprint arXiv:2401.11037 , 2024. Pei Xu, Jean-Bernard Hayet, and Ioannis Karamouzas. Socialvae: Human trajectory prediction using timewise latents. In European Conference on Computer Vision , pages 511–528. Springer, 2022b. Yi Yan, Changran Peng, and Ercan E Kuruoglu. Graph signal adaptive message passing. IEEE Signal Processing Letters , 2025. Bing Yu, Haoteng Yin, and Zhanxing Zhu. Spatio-temporal graph convolutional networks: A deep learning framework for traffic forecasting. arXiv preprint arXiv:1709.04875 , 2017. Chaohao Yuan, Maoji Wen, Ercan Engin Kuruoglu, Yang Liu, Jia Li, Tingyang Xu, Deli Zhao, Hong Cheng, and Yu Rong. Non-stationary equivariant graph neural networks for physical dynamics simulation. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. Jiani Zhang, Xingjian Shi, Junyuan Xie, Hao Ma, Irwin King, and Dit-Yan Yeung. Gaan: Gated attention networks for learning on large and spatiotemporal graphs. arXiv preprint arXiv:1803.07294 , 2018. 
+
+13 Appendix Contents 
+
+A Notation and Conventions 15 B Additional Related Work 15 
+
+B.1 Graph Neural Networks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15 B.2 Neural Operators . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 
+
+C Preliminaries and Formal Proofs 16 
+
+C.1 Preliminaries . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 C.2 Mathematical Proofs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17 C.3 Computational Complexity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23 
+
+D Benchmark Details 23 E Implementation Details 24 
+
+E.1 Training Details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24 E.2 Hyperparameter Details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25 E.3 Baselines Details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25 E.4 GraMO Block: Algorithm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25 
+
+F Additional Experimental Results 26 
+
+F.1 Molecular Dynamics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26 F.2 Protein Dynamics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27 F.3 Temporal Extrapolation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27 F.4 Qualitative Visualizations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28 
+
+G Limitations 28 H Broader Impact 29 I Use of Large Language Models (LLMs) 29 
+
+14 A Notation and Conventions 
+
+Table 5: Summary of Notations. Notation grouped by general setup, state-space models, and 
+
+GraMO -specific components. 
+
+Notation Description 
+
+General Setup 
+
+G = ( V, E) Interaction graph 
+
+V = |V| Number of nodes 
+
+{G t}T +∆ Tt=0 Trajectory of graph states 
+
+T, ∆T Past length, prediction horizon 
+
+xt ∈ RV ×3 Particle positions 
+
+vt ∈ RV ×3 Particle velocities 
+
+zt ∈ RV ×Dz Node attributes 
+
+Xt ∈ RV ×D Concatenated input, D = 6 + Dz
+
+Aadj Adjacency matrix 
+
+˜L Normalized Laplacian with self-loops 
+
+F†, Fθ True and learned solution operators 
+
+pdata , L Data distribution, L2 trajectory loss 
+
+ρ(·), ∥ · ∥ Spectral radius, L2 norm 
+
+State-Space Models (SSMs) 
+
+x(t), h(t), y(t) Continuous SSM input/state/output 
+
+x[k], h[k], y[k] Discrete SSM input/state/output 
+
+Assm , Bssm , Cssm Continuous SSM matrices 
+
+¯A, ¯B Discretized SSM matrices (ZOH) 
+
+∆ ∈ R+ Discretization step size 
+
+ϕ(·) Koopman observable map 
+
+K, K, ¯K Koopman operator, finite approx., discrete 
+
+GraMO -Specific Components 
+
+D, N Feature dim., SSM state dim. 
+
+Ht ∈ RV ×D×N Latent state (Koopman observables) 
+
+Yt, Ot Per-step readout, gated output 
+
+A ∈ RD×N HiPPO temporal decay matrix 
+
+Ws ∈ RN ×N Spatial mixing matrix 
+
+Bt, Ct Input-dependent SSM projections 
+
+δt, b∆, ∆t Step-size logit, bias, and softplus output 
+
+¯At, ¯Bt Discretized propagator and input gain 
+
+Kt Effective graph-coupled propagator 
+
+Zt, ˜Xt Output gate, auxiliary input 
+
+Dskip , Wout Skip parameter, output projection 
+
+fθ GNN generating Bt, Ct, δt
+
+σ Activation function 
+
+⊙, ⊗ Hadamard, Kronecker product 
+
+L Number of GraMO blocks 
+
+## B Additional Related Work 
+
+B.1 Graph Neural Networks 
+
+Graph neural networks (GNNs) provide a natural framework for modeling articulated rigid body systems by representing bodies as nodes and interactions as edges [Kipf and Welling, 2017, Hamilton et al., 2017, Veličković et al., 2018]. Message-passing architectures have been successfully applied to learning physical interactions and dynamics [Kipf et al., 2018, Mrowca et al., 2018]. However, their reliance on localized propagation limits 
+
+15 the ability to capture long-range dependencies and multi-hop interactions, often leading to over-smoothing and vanishing gradients. Graph Transformers partially mitigate this issue via global attention, but incur quadratic complexity. Continuous-time formulations such as Graph Neural ODEs [Fang et al., 2021, Luo et al., 2023] avoid discretization artifacts but require expensive numerical solvers and can be unstable. More general spatiotemporal graph models [Zhang et al., 2018, Li et al., 2017, Jin et al., 2023] jointly model space and time, yet typically rely on autoregressive rollouts, leading to error accumulation and reduced robustness. Overall, most existing GNN-based approaches implicitly assume stationarity and short-term temporal dependence, limiting their effectiveness for long-horizon articulated dynamics. 
+
+B.2 Neural Operators 
+
+Neural operators learn mappings between function spaces and serve as data-driven alternatives to classical numerical solvers [Kovachki et al., 2023]. Fourier Neural Operators (FNOs [Li et al., 2020, 2023]) have demonstrated strong performance on PDE-driven systems by leveraging frequency-domain representations [Bonev et al., 2023]. Recent work integrates state-space models (SSMs) into operator architectures to better capture long-range temporal dependencies [Gu and Dao, 2023, Tiwari et al., 2025]. However, Fourier-based formulations often assume stationarity and global spectral structure, limiting their ability to model time-varying and non-stationary dynamics. While extensions introduce temporal correlations within operator frameworks [Xu et al., 2024], spatial and temporal dynamics are still largely treated independently, restricting the ability to model tightly coupled spatiotemporal evolution in articulated systems. 
+
+## C Preliminaries and Formal Proofs 
+
+C.1 Preliminaries 
+
+Notation. The graph encodes both static and dynamic particle attributes. Node features H ∈ RV ×d represent time-invariant properties such as atom types or charges. Time-varying geometric states are represented by Zt ∈ RV ×m×3, typically instantiated as Zt = [ xt, vt], where xt ∈ RV ×3 denotes particle positions and vt ∈ RV ×3 denotes velocities, yielding m = 2 . Graph connectivity is specified by an adjacency matrix Aadj ∈ RV ×V , constructed from domain-specific interactions (e.g., chemical bonds) or distance-based neighborhoods (e.g., Euclidean distance). 
+
+Newtonian–SSM Connection. Consider Newtonian dynamics for a particle system governed by ˙x = v and 
+
+m ˙v = −F(x, v, t ) − γv, where F(x, v) represents forces, m represent the masses, and γ is a damping coefficient. By defining the state vector h = [ x; v], the second-order system can be written in first-order state-space form as: 
+
+˙h = Ah + Bu (h), (17) where A =
+
+0 I0 −γI
+
+
+
+, B =
+
+ 0
+
+−I
+
+
+
+, and u(h) = F(x, v).When the forces are linear in the state variables, this yields a linear time-invariant (LTI) system; otherwise, it yields a nonlinear state-space model. The explicit form is: 
+
+˙Z =
+
+ ˙x
+
+m ˙v
+
+
+
+=
+
+ v
+
+−F(x, v) − γv
+
+
+
+(18) 
+
+=
+
+0 I0 −γI
+
+  xv
+
+
+
++
+
+ 0
+
+−I
+
+
+
+F(x, v) (19) This formulation provides a natural connection between particle dynamics and SSM representations, motivating SSM-based approaches for trajectory prediction. Notably, this equation is analogous to Hamiltonian dynamics, with x and mv corresponding to the canonical coordinates q and p representing particle positions and momenta, respectively. 
+
+Non Stationary Signals. Non-stationary time series are characterized by evolving statistical properties and shifting joint distributions, posing significant challenges for deep learning models Yan et al. [2025]. Formally, this property is defined as follows: 
+
+Definition C.1 (Non-stationarity) . The physical dynamics {⃗ Xt} are considered non-stationary if there exist distinct time intervals t1 and t2 such that at least one of the following conditions is satisfied for any lag k:1. E(⃗Xt1 )̸ = E(⃗Xt2 ) (Time-varying mean) 2. Var (⃗Xt1 )̸ = Var (⃗Xt2 ) (Time-varying variance) 3. Cov (⃗Xt1 ,⃗ X t1+k )̸ = Cov (⃗Xt2 ,⃗ X t2+k ) (Time-varying covariance) 
+
+16 In essence, a physical object exhibits non-stationarity if its mean, variance, or autocovariance functions evolve over time. 
+
+Training Objective. In practice, we approximate the continuous objective through empirical risk minimization (ERM) over P uniformly sampled time points {τp}Pp=1 ⊂ [0 , ∆T ]:
+
+min  
+
+> θ
+
+E
+
+"
+
+1
+
+P
+
+> P
+
+X
+
+> p=1
+
+Fθ (G(t))( τp) − F †(G(t))( τp) 2
+
+#
+
+. (20) We focus on modeling geometric evolution: the time-varying descriptors Zt capture the system dynamics, while the structural node features H remain time-invariant. 1
+
+C.2 Mathematical Proofs 
+
+In this section, we formally establish key theoretical properties of GraMO . We first establish the Koopman connection of GraMO in Theorem C.2, which shows that GraMO is linear in the lifted latent state, while its transition operator is conditioned on the current graph state. Hence, GraMO can be viewed as a time-varying Koopman approximation whose operator respects the graph topology via ˜L and adapts to changing dynamics via input-dependent parameters. 
+
+Theorem C.2 (Input-Conditioned Koopman Operator on Graphs) . Let the discretized GraMO update be 
+
+Ht+1 = ¯At ⊙  ˜LH tWs
+
+ + ¯Bt ⊙ Xt, (21) 
+
+where ¯At, ¯Bt, and Ct are input-dependent functions of the current graph state Xt. Define the effective latent transition operator 
+
+Kt(Xt, G) = ¯At ⊙ (˜L ⊗ Ws). (22) 
+
+Then GraMO induces an input-conditioned Koopman operator on the graph, since its latent evolution can be written as 
+
+vec( Ht+1 ) = Kt(Xt, G) vec( Ht) + vec( ¯Bt ⊙ Xt). (23) 
+
+Thus, the dynamics are linear in the lifted latent state Ht, while the Koopman operator itself varies with the current graph state and respects the graph topology through ˜L.Proof. Vectorizing the latent state Ht over node, feature, and memory dimensions, the graph-coupled term in (21) can be written as 
+
+vec  ˜LH tWs
+
+ = ( ˜L ⊗ Ws) vec( Ht). (24) Applying the element-wise temporal modulation ¯At gives the effective transition 
+
+Kt(Xt, G) = ¯At ⊙ (˜L ⊗ Ws). (25) Substituting this into (21) yields 
+
+vec( Ht+1 ) = Kt(Xt, G) vec( Ht) + vec( ¯Bt ⊙ Xt). (26) Since ¯At, ¯Bt, and Ct are generated from Xt through the selective mechanism, the transition operator depends on the current graph state. Therefore, GraMO defines a linear latent evolution with an input-conditioned graph-structured operator, which is precisely a finite-dimensional input-conditioned Koopman operator on graphs. We assume L > 1, corresponding to locally expansive or chaotic dynamics, and uniform per-step approximation error. Next, we show in the following lemma C.3 that the normalized adjacency ˆA always has spectral radius 1,which prevents the plain Neumann series from converging. Introducing a damping factor α ∈ (0 , 1) ensures convergence and yields the standard resolvent form. 
+
+Lemma C.3 (Spectrum and Neumann series ). Let G be an undirected graph and 
+
+ˆL = D−1/2(Aadj + I)D−1/2, D = Diag( Aadj 1 + 1). (27) 
+
+Then σ(ˆL) ⊆ [−1, 1] and ∥ˆL∥2 = ρ(ˆL) = 1 , with eigenvalue 1 having eigenvector D1/21. Hence P∞ 
+
+> t=0
+
+ˆLt
+
+diverges, while for any α ∈ (0 , 1) ,
+
+> ∞
+
+X
+
+> t=0
+
+(αˆL)t = ( I − αˆL)−1 (converges in operator norm). (28)     
+
+> 1For simplicity, we omitted G(t)∼pdata in ERM.
+
+17 Proof. ˆL is symmetric, so its spectrum is real and ∥ˆL∥2 = ρ(ˆL).Define the normalized Laplacian as 
+
+L := I − ˆL = D−1/2 D − (Aadj + I)D−1/2, (29) which is symmetric positive semi-definite. The quadratic form identity gives 
+
+z⊤Lz = 12
+
+X
+
+> i,j
+
+(Aadj + I)ij 
+
+ yi − yj
+
+2, y = D−1/2z, (30) hence 0 ≤ μ ≤ 2 for every eigenvalue μ of L (using (a − b)2 ≤ 2( a2 + b2)). Thus every eigenvalue λ of 
+
+ˆA = I − L satisfies λ ∈ [−1, 1] . Moreover, 
+
+ˆL D 1/21 = D−1/2(Aadj + I)1 = D−1/2D1 = D1/21, (31) so 1 ∈ σ(ˆL) with eigenvector D1/21. This implies ρ(ˆL) = 1 and ∥ˆL∥2 = 1 . Hence ˆLt(D1/21) = D1/21 for all t, so PTt=0 ˆLt diverges (unbounded on that vector). For α ∈ (0 , 1) , ∥αˆL∥2 = α < 1, so the Neumann series converges and sums to 
+
+> ∞
+
+X
+
+> t=0
+
+(αˆL)t = ( I − αˆL)−1. (32) Then we show the following proposition, which establishes that the proposed state-space update rule is permutation equivariant, meaning that relabeling the nodes of the input graph with any permutation matrix P
+
+leads to correspondingly permuted outputs. The proof relies on the fact that the graph operator ˆA conjugates naturally under permutations, while the learnable parameters W, B, C act only on feature dimensions and thus commute with node permutations. This ensures that the model’s predictions are independent of node ordering, a fundamental property for GNNs. 
+
+Proposition C.4 (Permutation Equivariance ). Let G = ( V, E) be a graph with |V| = V nodes. Consider the 
+
+GraMO update 
+
+Ht+1 = ¯At ⊙  ˜L H t Ws
+
+ + ¯Bt ⊙ Xt, Yt = Ht · Ct, (33) 
+
+where Ht ∈ RV ×D×N , Xt ∈ RV ×D , ˜L ∈ RV ×V is the normalized adjacency matrix, and Ws ∈ RN ×N
+
+acts on the state dimension. The discretized parameters are ¯At = exp(∆ t ⊙ A) and ¯Bt = ∆ t ⊙ Bt, where 
+
+A ∈ RD×N is shared across nodes, and ∆t, Bt, and Ct are generated by an equivariant graph convolution 
+
+fθ (Xt, G).Then, for any permutation matrix P ∈ { 0, 1}V ×V , if the inputs transform as 
+
+˜L 7 → P˜LP ⊤, Xt 7 → PX t, H0 7 → PH 0, (34) 
+
+The resulting states and outputs satisfy, for all t ≥ 0,
+
+Ht 7 → PH t, Yt 7 → PY t. (35) 
+
+Proof. We proceed by induction on t. The base case holds by assumption: H0 7 → PH 0.Assume Ht 7 → PH t. Since fθ is permutation equivariant, its outputs transform as 
+
+∆t 7 → P∆t, Bt 7 → PB t, Ct 7 → PC t. (36) Because A is node-independent and broadcast across the node dimension, 
+
+¯At = exp(∆ t ⊙ A) 7 → exp(( P∆t) ⊙ A) = P ¯At, (37) and similarly ¯Bt 7 → P ¯Bt.For the spatial propagation term, we have 
+
+(P˜LP ⊤)( PH t)Ws = P˜L(P⊤P)HtWs = P(˜LH tWs), (38) where P⊤P = I and Ws commutes with node permutations since it acts only on the state dimension. Since both operands of each Hadamard product transform equivariantly, the full update satisfies Ht+1 7 → PH t+1 .Finally, the readout Yt = Ht · Ct also obeys Yt 7 → PY t.
+
+18 Proposition C.5 shows that repeated applications of the GraMO update naturally accumulate information along multi-hop graph walks. Specifically, after k update steps, the latent representation at each node aggregates contributions from all nodes reachable within k hops, weighted by the normalized adjacency matrix. The elementwise decay factor ¯A⊙k controls how information from distant neighborhoods is attenuated over time, while the powers of ˜L encode the combinatorial structure of the graph. As a result, GraMO enables progressive, stable propagation of information across increasingly distant regions of the graph without explicitly increasing the depth of the spatial message-passing operator. 
+
+Proposition C.5 (Information Flow via Graph Walk Accumulation ). Let G = ( V, E) be a graph with 
+
+|V| = V and normalized adjacency ˜L ∈ RV ×V . Consider the discretized GraMO update 
+
+Ht+1 = ¯At ⊙  ˜L H t Ws
+
+ + ¯Bt ⊙ Xt. (39) 
+
+Ignoring the input injection term and assuming time-homogeneous parameters ¯At = ¯A, The latent state after k
+
+steps satisfies 
+
+Ht+k = ¯A⊙k ⊙  ˜Lk Ht Wks
+
+, (40) 
+
+where ¯A⊙k denotes the elementwise k-fold Hadamard power. Moreover, for any nodes i, j ∈ V , the entry (˜Lk )ij equals the total weight of all walks of length k from node i to node j, where each walk contributes the product of the normalized edge weights along that walk. Proof. We omit the input term ¯Bt ⊙ Xt and consider the homogeneous update 
+
+Ht+1 = ¯A ⊙  ˜L H t Ws
+
+. (41) Repeated substitution yields 
+
+Ht+k = ¯A⊙k ⊙  ˜Lk Ht Wks
+
+, (42) where the powers of ˜L arise from successive spatial propagation steps and Wks from repeated state-space mixing, while ¯A accumulates multiplicatively via the Hadamard product. By standard properties of adjacency matrices, the (i, j )-th entry of ˜Lk admits the expansion 
+
+(˜Lk )ij = X
+
+> p1,...,p k−1∈V
+
+˜Lip 1 ˜Lp1p2 · · · ˜Lpk−1j , (43) which enumerates all ordered walks of length k from node i to node j, weighted by the product of normalized edge coefficients along each walk. Substituting this expansion into the unrolled form completes the proof. Next Proposition C.6 characterizes how input perturbations propagate jointly across space and time. Assuming 
+
+fθ is differentiable with respect to its inputs, the Jacobian factorizes into a graph-dependent term, given by powers of the normalized adjacency, and a temporal term governed by the state-space parameters. This separation shows that spatial influence is controlled by graph connectivity, while temporal influence is modulated by state dynamics, ensuring stable, structured spatiotemporal signal propagation. 
+
+Proposition C.6 (Spatiotemporal Jacobian ). Consider the homogeneous GraMO update 
+
+Ht+1 = ¯A ⊙  ˜L H t Ws
+
+ + ¯B ⊙ Xt, (44) 
+
+Yt = Ht · C, (45) 
+
+where parameters ¯A, ¯B, Ws, C are time-invariant. Fix nodes i, j ∈ V and times t > s . Then the Jacobians with respect to the input at time s admit the factorization 
+
+∂ Ht(i, :, :) 
+
+∂ Xs(j, :) =  ˜L t−s−1 
+
+> ij
+
+¯A⊙(t−s−1) ⊙   ¯B W t−s−1
+
+> s
+
+, (46) 
+
+∂ Yt(i, :) 
+
+∂ Xs(j, :) =  ˜L t−s−1
+
+> ij
+
+ ¯A⊙(t−s−1) ⊙   ¯B W t−s−1
+
+> s
+
+
+
+· C. (47) 
+
+Here  ˜Lm 
+
+> ij
+
+is the total weight of all length-m walks from node j to node i, acting as a scalar gain on the node dimension, while ¯A⊙m ⊙ ( ¯BW ms ) acts on the feature–state dimensions. Proof. Let m = t − s. Unrolling the recurrence yields 
+
+Ht = ¯A⊙m ⊙  ˜Lm Hs Wms
+
+ +
+
+> m−1
+
+X
+
+> k=0
+
+¯A⊙k ⊙  ˜Lk ¯B ⊙ Xt−1−k Wks
+
+. (48) 
+
+19 Among the summands, only the term with t − 1 − k = s (i.e., k = m − 1) depends on Xs. Differentiating with respect to Xs therefore gives 
+
+∂ Ht
+
+∂ Xs
+
+= ¯A⊙(m−1) ⊙  ˜L m−1 (·) ¯B W m−1
+
+> s
+
+. (49) Extracting the (i, j ) block selects the scalar factor  ˜L m−1 
+
+> ij
+
+on the node axis, while the remaining term acts on the feature–state dimensions. Finally, contraction with C yields the Jacobian for Yt.
+
+Proposition C.7 (One–step Jacobian of the state update ). Consider the homogeneous GraMO update 
+
+Ht = ¯A ⊙  ˜L H t−1 Ws
+
+ + ¯B ⊙ Xt−1, (50) 
+
+where Ht ∈ RV ×D×N , ˜L ∈ RV ×V , Ws ∈ RN ×N , and ¯A ∈ RD×N is broadcast across nodes. Then the Jacobian of Ht with respect to Ht−1 is the block operator 
+
+∂ Ht
+
+∂ Ht−1
+
+=  Jij 
+
+Vi,j =1 , Jij = ˜Lij 
+
+  ¯A ⊙ Ws
+
+, (51) 
+
+where each block Jij acts on the (D × N ) feature–state dimensions. Proof. For each node i ∈ V ,
+
+Ht(i, :, :) = 
+
+> V
+
+X
+
+> j=1
+
+˜Lij 
+
+  ¯A ⊙ Ht−1(j, :, :) Ws
+
+ + ¯B ⊙ Xt−1(i, :) . (52) The input term does not depend on Ht−1. Differentiating with respect to Ht−1(j, :, :) yields 
+
+∂ Ht(i, :, :) 
+
+∂ Ht−1(j, :, :) = ˜Lij 
+
+  ¯A ⊙ Ws
+
+, (53) which gives the stated block structure. 
+
+Corollary C.8 (Operator norm and spectral bound ). For any sub-multiplicative matrix norm ∥ · ∥ ,
+
+∂ Ht
+
+∂ Ht−1
+
+≤ ∥ ˜L∥ ∥ ¯A∥ ∥ Ws∥. (54) 
+
+Moreover, the spectral radius satisfies 
+
+ρ
+
+ ∂ Ht
+
+∂ Ht−1
+
+
+
+≤ ρ(˜L) ρ( ¯A ⊙ Ws). (55) 
+
+In particular, a sufficient condition for one–step contractivity is 
+
+∥˜L∥ ∥ ¯A∥ ∥ Ws∥ < 1. (56) 
+
+Lemma C.9 (Uniform Bound on the Graph-Coupled Transition) . Let the effective latent transition operator of 
+
+GraMO be 
+
+Kt = ¯At ⊙
+
+˜L ⊗ Ws
+
+
+
+, (57) 
+
+where ˜L is the normalized graph operator, Ws is the memory-mixing matrix, and ¯At = exp(∆ t ⊙ A). Assume: 1. ρ(˜L) ≤ 1 and ∥˜L∥2 ≤ 1;2. ∥Ws∥2 ≤ cs for some constant cs > 0;3. ∥ ¯At∥max ≤ cA uniformly for all t.Then the transition operator is uniformly bounded: 
+
+∥Kt∥2 ≤ cA ∥˜L ⊗ Ws∥2 ≤ cAcs, (58) 
+
+for all t. In particular, if cAcs < 1, then 
+
+sup 
+
+> t
+
+∥Kt∥2 < 1. (59) 
+
+Proof. Using the definition of Kt, we have 
+
+Kt = ¯At ⊙
+
+˜L ⊗ Ws
+
+
+
+. (60) 
+
+20 For any matrices P and Q of compatible size, the spectral norm of their Hadamard product satisfies 
+
+∥P ⊙ Q∥2 ≤ ∥ P∥max ∥Q∥2. (61) Applying this inequality gives 
+
+∥Kt∥2 ≤ ∥ ¯At∥max ˜L ⊗ Ws 2
+
+. (62) By assumption, ∥ ¯At∥max ≤ cA uniformly in t. Moreover, the spectral norm of a Kronecker product factorizes: 
+
+˜L ⊗ Ws 2
+
+= ∥˜L∥2∥Ws∥2. (63) Since ∥˜L∥2 ≤ 1 and ∥Ws∥2 ≤ cs, we obtain 
+
+∥Kt∥2 ≤ cA∥˜L∥2∥Ws∥2 ≤ cAcs. (64) Therefore, Kt is uniformly bounded for all t. If cAcs < 1, then the transition is uniformly contractive, yielding 
+
+sup 
+
+> t
+
+∥Kt∥2 < 1. (65) This completes the proof. 
+
+Proposition C.10 (Multi–step Jacobian of the state update ). Under the same assumptions, for any t > s , the Jacobian of Ht with respect to Hs is 
+
+∂ Ht
+
+∂ Hs
+
+=  J(t−s)
+
+> ij
+
+Vi,j =1 , J(t−s) 
+
+> ij
+
+=  ˜L t−s 
+
+> ij
+
+¯A⊙(t−s) ⊙ W t−ss . (66) 
+
+Proof. Ignoring input terms (which do not affect the Jacobian with respect to Hs), The unrolled update gives 
+
+Ht = ¯A⊙(t−s) ⊙  ˜L t−s Hs W t−ss
+
+. (67) Differentiating entrywise yields, for each node pair (i, j ),
+
+∂ Ht(i, :, :) 
+
+∂ Hs(j, :, :) =  ˜L t−s 
+
+> ij
+
+¯A⊙(t−s) ⊙ W t−ss , (68) which establishes the stated block form. Next, in Proposition C.11, which contrasts with stationary graph neural networks or linear SSMs, where past inputs are weighted by fixed powers of a transition operator, GraMO assigns input-dependent, time-varying 
+
+weights to historical information. The effective memory kernel dynamically adapts to the current graph signal, allowing the model to selectively emphasize or suppress past information in a non-stationary manner. 
+
+Proposition C.11 (Non–stationary Temporal Dynamics ). Consider the GraMO update 
+
+Ht+1 = ¯At ⊙  ˜L H t Ws
+
+ + ¯Bt ⊙ Xt, Yt = Ht · Ct, (69) 
+
+where ¯At = exp(∆ t ⊙ A), ¯Bt = ∆ t ⊙ Bt, and (∆ t, Bt, Ct) = fθ (Xt, G) depend on the current input. Then the induced input–output mapping {Xs}s≤t 7 → Yt is non-stationary in time: there exists no time-invariant operator Φ such that Yt = Φ( Xt−k:t) for all t and fixed window size k.Proof. We unroll the latent dynamics for m ≥ 1 steps: 
+
+Ht =
+
+> m−1
+
+X
+
+> k=0
+
+" kY
+
+> r=1
+
+¯At−r
+
+!
+
+⊙ ˜L k ⊙ W ks ⊙ ¯Bt−1−k ⊙ Xt−1−k
+
+#
+
++ Rm, (70) where Rm contains the contribution from the initial state and products are taken elementwise in the temporal decay terms. Crucially, the coefficients multiplying each past input Xt−1−k depend explicitly on the sequence 
+
+{∆t−r , Bt−r }r≤k , which are themselves functions of the inputs {Xt−r }r≤k through the selector network fθ .Therefore, the effective impulse response Kt,k =
+
+Qkr=1 ¯At−r
+
+
+
+⊙ ¯Bt−1−k depends explicitly on the absolute time index t and the input realization. Hence, 
+
+Kt,k ̸ = Kt′,k for t̸ = t′
+
+In general. This violates the defining property of stationarity, which requires time-translation invariance of the input–output operator. Thus, the GraMO update induces a non-stationary dynamical system. 
+
+21 Finally, we show that GraMO admits an interpretation as a graph autoregressive model. 
+
+Graph ARMA Processes. Let G = ( V, E) be a graph with V = |V| nodes and normalized graph operator ˜L. A graph autoregressive moving-average process, ARMA (p, q ), for graph signals Xt ∈ RV ×d is commonly written as 
+
+Xt =
+
+> p
+
+X
+
+> i=1
+
+Φi(˜L)Xt−i +
+
+> q
+
+X
+
+> j=0
+
+Θj (˜L)εt−j , (71) where Φi(˜L) and Θj (˜L) are graph filters, typically polynomials or rational functions of ˜L, and εt denotes the innovation process. In classical graph ARMA models, these filters are fixed over time. Below, we show that 
+
+GraMO induces a time-varying graph ARMA process whose coefficients are generated from the input trajectory. 
+
+Theorem C.12 (Adaptive Graph ARMA Representation) . Let the discretized GraMO update be 
+
+Ht+1 = ¯At ⊙  ˜LH tWs
+
+ + ¯Bt ⊙ Xt. (72) 
+
+Define the time-dependent graph-coupled transition operator 
+
+Kt = ¯At ⊙ (˜L ⊗ Ws). (73) 
+
+Assume sup t ∥Kt∥ ≤ ρ < 1 and sup t ∥ ¯Bt ⊙ Xt∥ < ∞. Then the latent state admits the absolutely convergent moving-average representation 
+
+Ht =
+
+> ∞
+
+X
+
+> j=0
+> j
+
+Y
+
+> r=1
+
+Kt−r
+
+!   ¯Bt−1−j ⊙ Xt−1−j
+
+, (74) 
+
+with the convention Q0 
+
+> r=1
+
+Kt−r = I. Equivalently, GraMO defines a graph ARMA process with time-varying filters 
+
+Φ(t) 
+
+> i
+
+(˜L) = 
+
+> i
+
+Y
+
+> k=1
+
+  ¯At−k ⊙ (˜L ⊗ Ws), (75) 
+
+Θ(t) 
+
+> j
+
+(˜L) = 
+
+> j
+
+Y
+
+> k=1
+
+  ¯At−k ⊙ (˜L ⊗ Ws)!
+
+¯Bt−j . (76) 
+
+Since ¯At and ¯Bt are input-dependent, the induced AR and MA coefficients vary with t.Proof. For notational clarity, vectorize Ht over the node, feature, and memory dimensions. Then Equation (72) can be written as the linear non-homogeneous recurrence 
+
+Ht+1 = KtHt + Ut, Ut := ¯Bt ⊙ Xt. (77) Unrolling this recurrence for m steps gives 
+
+Ht =
+
+> m
+
+Y
+
+> r=1
+
+Kt−r
+
+!
+
+Ht−m +
+
+> m−1
+
+X
+
+> j=0
+> j
+
+Y
+
+> r=1
+
+Kt−r
+
+!
+
+Ut−1−j . (78) By assumption, ∥Kt∥ ≤ ρ < 1 for all t. Hence, 
+
+> m
+
+Y
+
+> r=1
+
+Kt−r ≤ ρm → 0 as m → ∞ . (79) Moreover, since sup t ∥Ut∥ < ∞, the series in (78) is absolutely convergent: 
+
+> ∞
+
+X
+
+> j=0
+> j
+
+Y
+
+> r=1
+
+Kt−r
+
+!
+
+Ut−1−j ≤ sup 
+
+> s
+
+∥Us∥
+
+> ∞
+
+X
+
+> j=0
+
+ρj < ∞. (80) Taking m → ∞ in (78) yields (74). Finally, each product of Kt−r contains repeated graph-filtered transitions through ˜L, giving the autoregressive graph component, while the injected terms Ut−1−j form the moving-average component. Since ¯At, ¯Bt, and hence Kt depend on the current graph state, the resulting graph ARMA coefficients are time-dependent. 
+
+Interpretation. Theorem C.12 shows that GraMO can be interpreted as an adaptive graph ARMA model in latent space. Repeated graph-coupled transitions form the autoregressive component, while past input injections are accumulated through graph-filtered moving-average terms. Unlike classical graph ARMA models with fixed filters, GraMO learns input-dependent filters, enabling adaptive modeling of time-varying graph dynamics while preserving the graph structure. 
+
+22 Table 6: Computational Complexity Comparison per layer. V, E, T, D, K and N denote the number of nodes, edges, time steps, hidden dimension, diffusion steps and SSM state size, respectively. 
+
+Method Spatial Cost Temporal Cost Total Complexity 
+
+GCN O(ED ) – O(ED )
+
+EGNN O(ED ) O(T D ) O(T (ED + D)) 
+
+SE(3)-Tr. O(ED 2) O(T D 2) O(T (ED 2)) 
+
+GeoTDM O(ED ) O(KT ED ) O(KT ED )
+
+GraphMamba – O(T V DN ) O(T V DN )
+
+GraMO (Ours) O(T EN ) O(T V DN ) O(T (E + V D )N )
+
+GraMO vs. GraphMamba [Behrouz and Hashemi, 2024]. GraphMamba adapts state-space models to graph data by serializing node features and processing them as sequences. While this enables efficient sequence modeling, the resulting dynamics depend on an artificial node ordering and do not directly preserve the interaction topology. In contrast, GraMO is designed for particle-based dynamical systems by coupling state-space evolution with permutation-equivariant graph message passing inside the latent update. Rather than treating nodes as tokens in a sequence, GraMO propagates latent states through the graph at each time step, aligning the model with the underlying physical interactions. This topology-preserving design enables joint modeling of long-range spatial dependencies and adaptive temporal dynamics, admits a graph ARMA interpretation, and makes GraMO better suited for graph-structured physical systems. 
+
+C.3 Computational Complexity 
+
+Table 6 shows the computational costs corresponding to the per-layer computational complexity of a forward pass. Classical GNNs such as GCN and EGNN incur linear spatial costs in E, while attention-based SE(3)-Transformers introduce quadratic dependence on D. Diffusion-based models additionally incur a factor proportional to the number of denoising steps. In contrast, GraMO combines sparse graph propagation with linear-time state-space updates, resulting in complexity that scales linearly with the trajectory length and graph size, while avoiding quadratic feature interactions. 
+
+Efficiency. GraMO is substantially more efficient than probabilistic trajectory models such as GeoTDM Han et al. [2024] and SVAE Xu et al. [2022b], while achieving comparable efficiency to deterministic trajectory prediction baselines such as EqMotion Xu et al. [2023]. Compared to simpler equivariant models like EGNN, 
+
+GraMO incurs a modest increase in computational cost, reflecting the additional modeling capacity required for long-range and non-stationary dynamics. 
+
+## D Benchmark Details 
+
+This section provides comprehensive details for the benchmarks used in our evaluation, including dataset characteristics, training, validation, and test splits, and the graph construction process. 
+
+N-Body Simulation. The N-body dataset [Kipf et al., 2018, Brandstetter et al., 2021, Satorras et al., 2021b] consists of simulated trajectories of interacting particles under various physical forces, including charged-particle systems, spring dynamics, and gravitational interactions. Each system contains a small number of particles (typically N = 5 for charged and spring systems, and N = 10 for gravity) evolving according to known physical laws. Node features include particle positions and velocities, while interactions are defined by fully connected graphs, with edge attributes encoding relative positional information. For the charged system, particles carry charges randomly chosen from {+1 , −1} and interact via Coulomb forces. In the spring system, particles with random masses are connected with springs sampled with probability 
+
+0.5, following Hooke’s law. In the gravity system, particles evolve under pairwise gravitational forces with random initial conditions. For all three settings, we use 3000 /600 /600 trajectories for train/validation/test splits, respectively. Each trajectory consists of multiple time steps, where we condition on the first 10 frames and predict the next 20 .
+
+Robotics Simulation. The Robotics dataset [Li et al., 2019] consists of simulated trajectories from three control environments involving rope manipulation and soft-body deformation, designed to evaluate the ability of learned models to capture contact-rich and deformable dynamics. Each environment contains a small number of articulated nodes that evolve under internal forces, external actuation, and (in one setting) fluid coupling. Node features include 2D positions and velocities, while interactions are defined by fully connected graphs over the constituent elements, with edge attributes encoding relative positional information. 
+
+23 Table 7: MD17 Dataset Summary Statistics. Detailed number of atoms, position extrema and mean (Å), and velocity extrema and mean (Å ps −1) for all eight molecules. 
+
+Position (Å) Velocity (Å ps −1)
+
+Molecule Atoms Xmin Xmax Xmean Vmin Vmax Vmean 
+
+Benzene 12 −178 .112 197 .981 −27 .737 −0.004 0.003 0.000 
+
+Aspirin 21 −3.720 3.105 0.026 −0.011 0.012 0.000 
+
+Ethanol 9 −1.398 1.417 −0.004 −0.011 0.010 0.000 
+
+Malonaldehyde 9 −2.397 2.370 0.000 −0.010 0.009 0.000 
+
+Naphthalene 18 −2.597 2.593 0.000 −0.012 0.011 0.000 
+
+Salicylic 16 −2.734 2.581 −0.051 −0.013 0.012 0.000 
+
+Toluene 15 −1.990 2.630 −0.015 −0.010 0.012 0.000 
+
+Uracil 12 −2.338 2.558 0.012 −0.012 0.011 0.000 
+
+For the Rope environment, the top mass of a rope is actuated horizontally along a fixed-height trajectory, while the remaining masses evolve freely under internal spring-like forces and gravity. Each mass is treated as a node with 2D position and velocity, yielding a 4-dimensional observation per node and a 4N -dimensional state space for a rope of N masses. In the Soft environment, a soft robot composed of deformable quadrilateral blocks is actuated by embedded contractile elements, with one block anchored to the ground as a fixed boundary condition. Each quadrilateral is treated as a node, with the positions and velocities of its four corners forming a 
+
+16 -dimensional observation per node, yielding a 16 N -dimensional state space for a robot of N quadrilaterals. The Swim environment uses the same soft-robot construction as Soft , but removes the ground anchor, allowing the robot to evolve under fluid-coupling forces; the observation structure is identical to Soft . For all three settings, we use a 70 /15 /15 train/validation/test split. Each trajectory consists of multiple time steps, where we condition on the first 10 frames and predict the next 20 .
+
+CMU Motion Capture. The CMU Motion Capture dataset [CMU, 2003] provides 3D trajectories of human actions. We evaluate on two subsets—Subject #35 ( Walk ) and Subject #9 ( Run )—adopting the data splits and preprocessing of Huang et al. [2022], Han et al. [2022]. Subject #35 uses 22/12/12 trajectories for train / val / test, and Subject #9 uses a 5/4/2 split. Each sample is represented as a skeletal graph with 31 nodes (joint locations) and edges encoding the connecting bones. 
+
+Molecular Dynamics. The MD17 dataset [Chmiela et al., 2017] contains molecular-dynamics trajectories for eight small molecules. Node features comprise the atom type concatenated with the speed ∥v∥2. Unlike common practice, hydrogen atoms are not removed, leaving only heavy-atom dynamics to be modeled. For the graph topology, we augment the native molecular graph by adding 2-hop edges as in prior work [Shi et al., 2021, Xu et al., 2022a]; edge attributes are formed by concatenating the hop type, the atomic types of the two endpoints, and the chemical bond type. Furthermore, Table 7 provides complete summary statistics for each molecular structure, and for training, we explicitly used a 2:4:4 split for train/val/test. 
+
+Protein. We utilize the preprocessed AdK equilibrium trajectories provided by Han et al. [2022], which originate from the AdK dataset of Seyler and Beckstein [2017] and are made available via the MDAnalysis toolkit [Richard J. Gowers et al., 2016]. The simulations employ the CHARMM27 force field [MacKerell Jr et al., 2000] with explicit solvent and ions under NPT conditions at 300 K and 1 bar. Trajectory frames were recorded every 
+
+240 ps, yielding a total simulated time of 1.004 μs.
+
+## E Implementation Details 
+
+This section provides the implementation details of the proposed method to ensure clarity and reproducibility. We describe the model architecture, graph construction, input and output representations, training setup, hyperparameter choices, and evaluation protocol used in our experiments. Unless otherwise specified, the same implementation settings are used across datasets, with dataset-specific details reported separately. 
+
+E.1 Training Details 
+
+All models are trained using the Adam optimizer [Kingma and Ba, 2014] along with the StepLR scheduler. Experiments are carried out on a Linux system running Ubuntu 20.04.3LTS, equipped with an Intel(R) Core(TM) i9-10900X CPU and a single NVIDIA RTX A6000 GPU with 48 GB memory. 
+
+24 E.2 Hyperparameter Details 
+
+Table 8 summarizes the hyperparameter settings used across the four primary benchmarks (N-body, Robotics, MoCap, MD17) and the auxiliary AdK protein dataset. While the overall architecture remains consistent, key training parameters such as batch size, learning rate, and number of layers are adjusted to account for differences in dataset scale, trajectory length, and dynamical complexity. For the N-body and Robotics benchmarks, moderate-depth models with batch sizes of 64 –100 are sufficient given the small per-trajectory node counts and well-defined interaction laws. For MoCap, smaller batches and lower learning rates accommodate the longer articulated trajectories and higher variance across motion types. MD17 uses the largest batch size and learning rate, reflecting the abundance of training samples and the need to model fast molecular vibrations. Smaller batches and conservative learning rates are reserved for AdK, where limited data requires stable optimization to prevent overfitting. 
+
+Table 8: Hyperparameter configurations for each dataset. 
+
+Hyperparameter N-body Robotics MoCap MD17 AdK Protein 
+
+Epochs 1000 1000 1000 1000 100 Batch Size 100 64 12 100 4Learning Rate 5 × 10 −4 1 × 10 −4 5 × 10 −4 5 × 10 −3 5 × 10 −5
+
+Time Embedding 32 16 32 32 32 Weight Decay 1 × 10 −12 1 × 10 −12 1 × 10 −12 1 × 10 −12 1 × 10 −4
+
+Number of Layers 4 4 6 6 4Hidden Dimension 64 64 16 64 64 
+
+Time Embedding. To incorporate temporal information, GraMO augments the input features with explicit encoding of the time index for each structure in the trajectory. Specifically, we construct a set of sinusoidal functions at varying frequencies to generate fixed-time embeddings. For a timestep ∆ti, the embedding is given as follows: emb 2j = sin 
+
+ i
+
+10000 2j/d emb 
+
+
+
+,
+
+emb 2j+1 = cos 
+
+ i
+
+10000 2j/d emb 
+
+
+
+,
+
+(81) where demb is the dimensionality of the time embedding space. To ensure the model is aware of the timestep information required for future trajectory prediction, we incorporate 
+
+temporal embeddings . This practice is widely adopted across domains—for example, positional encodings in large language models [Vaswani et al., 2017] and timestep embeddings in diffusion models [Ho et al., 2020]. 
+
+Bidirectional Temporal Modeling. To capture both past and future context along the trajectory, we extend Equation (12) to a bidirectional formulation. For a trajectory {Xt}Tt=1 , we apply the coupled update in both forward ( t = 1 → T ) and backward ( t = T → 1) directions, maintaining separate latent states with independent parameters. The final output sums the contributions from both directions. This bidirectional processing is inspired by bidirectional integration schemes in dynamical systems, allowing the state to incorporate both historical context and future constraints, which is particularly beneficial for noisy or partially observed trajectories. 
+
+E.3 Baselines Details 
+
+For all baseline comparisons, we use the official code bases released by the respective authors and follow their recommended hyperparameter settings. The baselines span three categories: frame-to-frame predictors, deterministic trajectory models, and probabilistic trajectory models, with the latter two receiving primary emphasis. To ensure a fair comparison with our multi-step input formulation on the Motion Capture benchmark, all baselines are adapted to consume the full historical trajectory through a linear encoder, following Yuan et al. [2025]. For hyperparameter tuning, we adopt the protocol of Han et al. [2022]: a random search over the number of layers {4, 6, 8}, hidden dimensions {16 , 32 , 64 }, learning rates {5×10 −3, 1×10 −3, 5×10 −4, 1×10 −4},and batch sizes {32 , 64 , 128 , 256 }, retaining the configuration with the best validation performance. All reported results are averaged over five independent runs. 
+
+E.4 GraMO Block: Algorithm 
+
+Algorithm 1 summarizes the computation performed by a single GraMO block. At each time step, an equivariant graph convolution generates input-dependent state-space parameters that adapt the temporal dynamics to the current graph state. The latent state is then propagated through a discretized state-space update coupled 
+
+25 with graph-based spatial mixing, optionally in both forward and backward time directions. A gated output projection produces the final node representations, enabling expressive spatiotemporal modeling while preserving permutation equivariance and stability. 
+
+Algorithm 1 Graph Mamba Operator ( GraMO ) Block Require: Input Node Features {Xt}Tt=1 ∈ RBN ×T ×D, Graph G = ( V, E), Adj. ˜L
+
+Ensure: Output Node Features {Yt}Tt=1 ∈ RBN ×T ×D 
+
+> 1:
+
+Project input (Equivariant): [z, u, B, C, ∆] ← Split(GCL( {Xt}, G))  
+
+> 2:
+
+Compute system matrix: A ← − exp( Alog ) 
+
+> 3:
+
+Apply local temporal mixing: ˜u ← Act(Conv1d( u))  
+
+> 4:
+
+Discretize parameters: ¯A, ¯B ← Discretize(∆ , A, B) 
+
+> 5:
+
+# GraMO Discrete State Update Equations:  
+
+> 6:
+
+Initialize latent states: Hfw 0 ← 0, Hbw   
+
+> T+1
+
+← 0 
+
+> 7:
+
+for t ← 1 to T do  
+
+> 8:
+
+Hfw  
+
+> t
+
+← ¯At ⊙  ˜LH fw 
+
+> t−1
+
+Ws
+
+ + ¯Bt ⊙ ˜ut 
+
+> 9:
+
+end for  
+
+> 10:
+
+if bidirectional then  
+
+> 11:
+
+Compute backward states {Hbw  
+
+> t
+
+} via reverse spatial update  
+
+> 12:
+
+end if  
+
+> 13:
+
+Combine pathways: H ← Merge( Hfw , Hbw ) + uorig · linear( uorig ) 
+
+> 14:
+
+Apply gated projection: y ← Norm( H ⊙ C, z) 
+
+> 15:
+
+Output: Y ← Output _projection( y)
+
+## F Additional Experimental Results 
+
+In this section, we provide additional experiments on MD17 and protein dynamics, along with ablation studies of 
+
+GraMO , to further evaluate the effectiveness of the proposed approach. 
+
+F.1 Molecular Dynamics 
+
+Experimental Setup. We evaluate GraMO on the MD17 [Chmiela et al., 2017] dataset, which comprises molecular dynamics trajectories from DFT simulations of eight molecular systems. The molecules range in size from 9 atoms (Ethanol and Malonaldehyde) to 21 atoms (Aspirin). Following established experimental setups [Huang et al., 2022], each molecular trajectory is randomly split into 5000 training, 1000 validation, and 1000 test samples, using uniform temporal sampling. In contrast to some previous studies [Xu et al., 2023], hydrogen atoms are explicitly included in the molecular graphs. Since hydrogen atoms dominate high-frequency vibrational modes, their inclusion leads to a more challenging and realistic prediction setting. Atom-level features are encoded using one-hot representations of atomic numbers [Schütt et al., 2021]. The molecular graph is constructed by connecting atoms within three hops in the chemical bond graph [Shi et al., 2021]. For each trajectory, we use the past 10 frames as input and predict the next 20 frames. 
+
+Results. Tables 9 and 10 report trajectory and final-state prediction errors on the eight MD17 molecular systems. Averaged across all systems, GraMO achieves the lowest error on both metrics: AMSE drops from 0.71 
+
+(NS-GNN) to 0.58 , an 18 .3% reduction, and FMSE drops from 1.44 (GeoTDM) to 1.01 , a 29 .9% reduction. The relative gain is larger on FMSE than on AMSE, indicating that GraMO ’s advantage compounds at longer prediction horizons where iterative-rollout baselines accumulate error. Per-molecule trends reinforce this picture: 
+
+GraMO takes the best score on six of the eight molecules in both AMSE and FMSE — including the two largest molecules, Aspirin (21 atoms) and Naphthalene (18 atoms) — while underperforming on Ethanol and Malonaldehyde, the two smallest systems with simpler near-harmonic dynamics that benefit less from adaptive latent state evolution. The pattern is consistent with the design of GraMO : graph-coupled latent dynamics with input-dependent operators provide the most benefit on larger molecules where long-range memory and many-body coupling dominate, and yield smaller margins on small, well-structured systems where simpler equivariant baselines already capture most of the dynamics. Trajectory-level baselines such as GeoTDM, EqMotion, and NS-GNN consistently outperform frame-to-frame predictors (TFN, EGNN, SE(3)-Tr.), confirming that mitigating roll-out error accumulation is the dominant axis of improvement on this benchmark. 
+
+26 Table 9: Evaluation on the MD17 dataset. AMSE ( ×10 −2) for all eight molecules. First and 
+
+Second denote the best and second-best results. Lower value denotes better performance. 
+
+Method Aspirin Benzene Ethanol Malonaldehyde Naphthalene Salicylic Toluene Uracil Average 
+
+RF 4.82 ±0.48 0.76 ±0.08 7.35 ±0.74 4.63 ±0.46 1.48 ±0.15 3.58 ±0.36 2.08 ±0.21 3.00 ±0.30 3.46 
+
+TFN 0.93 ±0.09 0.03 ±0.00 2.12 ±0.21 1.78 ±0.18 0.27 ±0.03 0.69 ±0.07 0.43 ±0.04 0.43 ±0.04 0.84 
+
+SE(3)-Tr. 4.54 ±0.45 0.04 ±0.00 1.86 ±0.19 2.40 ±0.24 0.25 ±0.03 1.88 ±0.19 0.61 ±0.06 0.60 ±0.06 1.52 
+
+EGNN 3.74 ±0.37 0.05 ±0.00 3.77 ±0.38 8.12 ±0.81 0.47 ±0.05 1.33 ±0.13 2.25 ±0.23 1.25 ±0.13 2.62 
+
+EqMotion 1.80 ±0.18 0.04 ±0.00 1.21 ±0.12 1.26 ±0.13 0.28 ±0.03 0.64 ±0.06 0.49 ±0.05 0.41 ±0.04 0.77 
+
+SVAE 4.76 ±0.48 0.68 ±0.07 7.86 ±0.79 4.32 ±0.43 0.81 ±0.08 0.78 ±0.08 1.10 ±0.11 1.10 ±0.11 2.68 
+
+GraphMamba 2.73 ±0.27 0.05 ±0.00 3.15 ±0.48 6.12 ±0.71 0.57 ±0.06 1.23 ±0.23 1.85 ±0.13 1.34 ±0.24 2.13 
+
+GeoTDM 0.86 ±0.06 0.04 ±0.00 1.69 ±0.07 1.40 ±0.06 0.21 ±0.02 0.36 ±0.04 0.76 ±0.04 0.59 ±0.03 0.74 
+
+NS-GNN 0.93 ±0.02 0.04 ±0.00 1.32 ±0.04 1.08 ±0.07 0.36 ±0.05 0.61 ±0.03 0.91 ±0.02 0.42 ±0.01 0.71 
+
+GraMO 0.51 ±0.02 0.02 ±0.00 1.53 ±0.02 1.76 ±0.23 0.18 ±0.00 0.19 ±0.02 0.26 ±0.05 0.16 ±0.07 0.58 
+
+Table 10: Evaluation on the MD17 dataset. FMSE ( ×10 −2) for all eight molecules. First and 
+
+Second denote the best and second-best results. Lower value denotes better performance. 
+
+Method Aspirin Benzene Ethanol Malonaldehyde Naphthalene Salicylic Toluene Uracil Average 
+
+RF 10 .26 ±1.03 3.95 ±0.40 13 .92 ±1.39 10 .83 ±1.08 1.80 ±0.18 6.18 ±0.62 3.26 ±0.33 3.89 ±0.39 6.76 
+
+TFN 3.77 ±0.38 0.13 ±0.01 9.00 ±0.90 7.82 ±0.78 0.50 ±0.05 2.61 ±0.26 1.18 ±0.12 1.33 ±0.13 3.29 
+
+SE(3)-Tr. 16 .24 ±1.62 0.16 ±0.02 6.77 ±0.68 10 .93 ±1.09 0.56 ±0.06 5.11 ±0.51 1.78 ±0.18 2.02 ±0.20 5.45 
+
+EGNN 16 .70 ±1.67 0.09 ±0.01 8.44 ±0.84 48 .21 ±4.82 0.93 ±0.09 6.36 ±0.64 4.54 ±0.45 4.18 ±0.42 11 .18 
+
+EqMotion 3.18 ±0.32 0.10 ±0.01 3.20 ±0.32 3.26 ±0.33 0.44 ±0.04 1.20 ±0.12 0.87 ±0.09 0.71 ±0.07 1.62 
+
+SVAE 9.63 ±0.96 0.93 ±0.09 13 .40 ±1.34 9.71 ±0.97 0.96 ±0.10 1.06 ±0.11 1.54 ±0.15 1.28 ±0.13 4.81 
+
+GraphMamba 13 .60 ±2.68 0.08 ±0.02 6.44 ±0.64 38 .11 ±3.83 0.92 ±0.09 5.87 ±0.74 5.54 ±0.35 5.18 ±0.63 9.47 
+
+GeoTDM 1.96 ±0.20 0.08 ±0.01 3.29 ±0.23 2.63 ±0.16 0.40 ±0.04 0.76 ±0.08 1.77 ±0.08 0.62 ±0.05 1.44 
+
+NS-GNN 2.06 ±0.16 0.09 ±0.02 2.98 ±0.18 2.46 ±0.29 0.48 ±0.07 0.84 ±1.30 2.11 ±1.30 0.58 ±0.03 1.45 
+
+GraMO 0.74 ±0.13 0.04 ±0.01 3.15 ±0.07 2.79 ±0.28 0.27 ±0.03 0.33 ±0.08 0.51 ±0.08 0.27 ±0.08 1.01 
+
+F.2 Protein Dynamics 
+
+Experimental Setup. We further evaluate GraMO on the AdK equilibrium trajectory dataset [Seyler and Beckstein, 2017], accessed through the MDAnalysis toolkit [Richard J. Gowers et al., 2016]. The dataset contains molecular dynamics trajectories of apo adenylate kinase. We follow the experimental protocol and data splits of Han et al. [2022]. Unlike the previous tasks, this setting considers state-to-trajectory ( S2T ) prediction, in which the model predicts the next 4 frames from a single molecular state under uniform temporal discretization. 
+
+Results. Table 11 reports FMSE, where lower values indicate better performance. GraMO achieves lower error than the baselines, reducing FMSE from 1.80 to 1.74 in the S2T setting. This indicates that GraMO can model equilibrium molecular dynamics and predict short future trajectories from a single observed state. The improvement is modest, as expected for AdK: the trajectory is closer to equilibrium and exhibits weaker regime changes than those of the other benchmarks. As a result, the advantage of adaptive temporal modeling is less pronounced. Nevertheless, GraMO remains competitive, demonstrating that the proposed latent graph-SSM formulation generalizes effectively even in near-equilibrium dynamics. 
+
+F.3 Temporal Extrapolation 
+
+A core motivation for GraMO is that a learned latent operator should remain stable when rolled out beyond the training horizon, rather than degrade as soon as it leaves the supervised range. We test this directly by training models on short horizons and asking them to predict farther into the future than they were ever trained. 
+
+Experimental Setup. We compare GraMO against a Compositional-Koopman baseline on three N-body simulations: Charged Particles , Spring Dynamics , and Gravity System . Both models receive Tin = 10 input frames. We consider two training regimes that differ only in the supervised prediction horizon: Tout = 10 (top row) and Tout = 20 (bottom row). At test time, each model is rolled out autoregressively for 30 future steps. A single forward pass produces Tout predictions; the most recent Tin of those are then re-fed as the new input window, and the procedure repeats until 30 frames are accumulated. For the Koopman baseline, this means the latent operator A is re-fit on each call from the model’s own (increasingly extrapolated) predictions, while 
+
+GraMO ’s parameters never change. We report per-step MSE on 600 held-out trajectories. The shaded green region marks the trained horizon, the shaded orange region marks the pure-extrapolation regime, and the dashed vertical line indicates the boundary. 
+
+Results. Within the trained horizon, both models degrade smoothly, but at the boundary, the Koopman baseline collapses sharply while GraMO continues to extrapolate gracefully. The gap widens monotonically as the rollout enters the extrapolation region, with GraMO outperforming Koopman by orders of magnitude across all datasets and training regimes. Doubling the supervised horizon reduces the extrapolation error for both methods, but 
+
+GraMO retains a substantially lower error throughout, indicating that its learned state-space update generalizes beyond the supervised horizon far more reliably than a linear Koopman operator fit on a short window. 
+
+27 Table 11: Evaluation on the Protein dataset. FMSE ( ×10 −2) on the AdK equilibrium trajectory dataset. 
+
+First and Second denotes best results. Lower value denotes better performance. 
+
+Dataset Linear MPNN RF EGNN EGHN EGNO EGHNO GraMO 
+
+AdK 2.890 2.322 2.846 2.735 2.034 2.231 1.80 1.74 5 10 15 20 25 30                                                       
+
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> 10 1
+> 10 2
+> per-step MSE
+> training extrapolation
+> 510 15 20 25 30
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> 10 1training extrapolation
+> 510 15 20 25 30
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> training extrapolation
+> 510 15 20 25 30
+> future timestep
+> 10 3
+> 10 2
+> 10 1
+> 10 0
+> per-step MSE
+> training extrapolation
+> 510 15 20 25 30
+> future timestep
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> 10 1
+> training extrapolation
+> 510 15 20 25 30
+> future timestep
+> 10 2
+> 10 1
+> 10 0
+> training extrapolation
+> GraMO Koopman
+
+Figure 3: Visualization of Per-step trajectory error as a function of prediction horizon for Charged Particles (left), Spring Dynamics (middle), and Gravity System (right). The ( Top Row ) shows models trained on 10 timesteps and rolled out to 30; the ( Bottom Row ) shows models trained on 20 timesteps and rolled out to 30. The shaded green region marks the training horizon, the shaded orange region marks the pure extrapolation regime. 
+
+F.4 Qualitative Visualizations 
+
+In this subsection, we present visualizations of the dynamics predicted by GraMO . Results for particle simulations, 
+
+Mocap-Walk , and Mocap-Run are shown in Figures 4–5. As illustrated, GraMO not only produces accurate final-state predictions but also effectively captures the underlying dynamics by explicitly modeling both spatial and temporal correlations. Furthermore, Figure 6 provides a qualitative visualization of the trajectories predicted by GraMO . The figure illustrates how the model accurately reproduces the system’s temporal evolution, closely aligning with the ground-truth dynamics and capturing both local and global structural changes. X                        
+
+> 025 50 75 100 125 150
+> Y
+> 14
+> 12
+> 10
+> 8
+> 6
+> 4
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150 175
+> Y
+> 8
+> 6
+> 4
+> 2
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 18
+> 20
+> 22
+> 24
+> 26
+> 28
+> 30
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 5.0
+> 2.5
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 32
+> 34
+> 36
+> 38
+> 40
+> 42
+> 44
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 5.0
+> 2.5
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 0
+> 1
+> 2
+> 3
+> 4
+> Timestep
+> 0
+> 1
+> 2
+> 3
+> 4
+> Timestep
+
+Figure 4: Visualization of trajectories generated by GraMO with uniform discretization on Mocap (Walk) dataset. Predicted trajectories are shown with timestep progression indicated by a Blue color gradient, while the ground truth final snapshot is marked in Green .
+
+## G Limitations 
+
+While GraMO demonstrates strong performance across a range of particle-based dynamical systems, several limitations remain. Although GraMO is designed to handle time-varying dynamics, its benefits may be less pronounced for systems that are close to stationary, where simpler models may suffice. In addition, the 
+
+28 X                            
+
+> 025 50 75 100 125 150
+> Y
+> 4
+> 2
+> 02468
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> X
+> 025 50 75 100 125 150
+> Y
+> 5
+> 10
+> 15
+> 20
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 5
+> 10
+> 15
+> 20
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 20
+> 15
+> 10
+> 5
+> Z
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 20
+> 15
+> 10
+> 5
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> X
+> 025 50 75 100 125 150
+> Y
+> 12.5
+> 10.0
+> 7.5
+> 5.0
+> 2.5
+> 0.0
+> 2.5
+> 5.0
+> Z
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 0
+> 1
+> 2
+> 3
+> 4
+> Timestep
+> 0
+> 1
+> 2
+> 3
+> 4
+> Timestep
+
+Figure 5: Visualization of trajectories generated by GraMO with uniform discretization on Mocap (Run) dataset. Predicted trajectories are shown with timestep progression indicated by a Blue color gradient, while the ground truth final snapshot is marked in Green .
+
+Figure 6: Visualization of trajectories generated by GraMO with uniform discretization on AdK equilibrium trajectory dataset. Predicted trajectories are shown with timestep progression indicated by the colorbar above, while the ground-truth final snapshot is marked in Green .
+
+computational cost of GraMO increases with graph size due to repeated graph-coupled state updates, potentially limiting scalability for very large systems. Exploring graph sparsification and subgraph sampling strategies is a promising direction for improving scalability while preserving performance. 
+
+## H Broader Impact 
+
+This work introduces a graph-based neural framework for modeling interacting particle systems. By combining state-space modeling with graph-based message passing, the proposed approach aims to capture long-range interactions and time-varying dynamics more effectively than standard surrogate models. Improved learning-based simulators may support scientific and engineering workflows across physical simulation, robotics, materials modeling, and computational science. The contributions of this work are primarily technical and methodological, focusing on fundamental challenges in learning dynamical systems on graphs. We do not anticipate direct negative ethical or societal impacts from this research. As with other general-purpose simulation tools, potential downstream effects depend on the application context, and we encourage responsible use consistent with established scientific and ethical guidelines. 
+
+## I Use of Large Language Models (LLMs) 
+
+Large language models (LLMs) were used as assistive tools to improve the clarity, grammar, and presentation of the manuscript. Specifically, LLMs were utilized for grammatical correction, rephrasing to enhance clarity, and refining the overall structure of the text. All LLM-assisted content was reviewed and edited by the authors to ensure it accurately reflects the authors’ intent and preserves the scientific content. 
+
+29
