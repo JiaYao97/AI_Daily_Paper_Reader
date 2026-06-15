@@ -1,0 +1,2966 @@
+Title: Low-Variance Randomised Numerical Linear Algebra for Finite Element Simulation
+
+URL Source: https://arxiv.org/pdf/2606.08817v1
+
+Published Time: Tue, 09 Jun 2026 01:52:59 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+LOW-VARIANCE RANDOMISED NUMERICAL LINEAR ALGEBRA FOR FINITE ELEMENT SIMULATION 
+
+NICK POLYDORIDES, YUE WU, HAMID NOORI, HANS VANDIERENDONCK, AND ROGER WOODS 
+
+Abstract. We present a low-variance randomised numerical linear algebra approach for multi-query finite element systems arising from parametric elliptic partial differential equations with applications to digital twins and online model calibration. The method relies on Galerkin subspace projection for reduc-ing the dimensionality, and then combines parameter-oblivious leverage-score Bernoulli sampling with a control variates scheme to yield a reduced-variance ‘forward’ sketch and an invertible ‘inverse’ sketch that are then fused to a single efficient regularised estimator. Effectively, this reduces the computa-tional cost in computing the projected system of equations while preserving the structure, stability, and accuracy of the underlying FEM formulation. We derive probabilistic bounds for the sketching error, in-vertibility, and estimator variance, and then validate the method on large-scale example problems. The results show that when the parameter fields do not vary too sharply, the synergy of control variates to-gether with the sketch fusion can largely offset the loss incurred by the sub-optimal parameter-oblivious sampling. In this regime, our method achieves substantial savings in time, memory, and communication while maintaining accuracy levels that are acceptable for scientific simulation. 
+
+Contents 
+
+1. Introduction 21.1. Notation 22. Finite element method preliminaries 33. Subspace projection 43.1. Preconditioning 44. Randomised sketching 55. Error analysis 75.1. On the coefficients matrix sketch 75.2. On the right hand side sketch 96. Sketch variance reduction 10 6.1. Control variates for sketches 11 6.2. Low variance inverse estimator 13 7. Numerical experiments 17 7.1. Two-dimensional example 18 7.2. Three-dimensional example 20 8. Conclusions 22 Appendix A. Proof of theorem 5.2 22 Appendix B. Proof of proposition 5.4 23 Appendix C. Proof of remark 5.1 23 Appendix D. Proof of lemma 5.5 24 Appendix E. Proof of theorem 5.6 24 Appendix F. Proof of theorem 5.7 24 Appendix G. Sketching the right hand side vector 25 References 25 
+
+2020 Mathematics Subject Classification. 65F05, 65M60, 68W20. 
+
+Key words and phrases. Randomised numerical linear algebra; finite element method; leverage-score sampling; control variates; inverse problem. WORK MADE POSSIBLE THROUGH FUNDING SUPPORT FROM UKRI EPSRC UNDER GRANTS EP/V028618/1 & EP/V02860X/1 ‘RAPID: REAL-TIME PROCESS MODELLING AND DIAGNOSTICS: POW-ERING DIGITAL FACTORIES’.  
+
+> 1
+> arXiv:2606.08817v1 [math.NA] 7 Jun 2026 2N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS
+
+1. Introduction 
+
+Since its inception, the Finite Element Method (FEM) has been a foundational pillar of computational science, providing a practical, agile and principled framework for simulating complex physical phenomena [1, 2]. Engineering applications with online, multi-query modelling scenarios like those encountered in model calibration and parametric uncertainty quantification require rapid solves of large FEM-derived algebraic systems often on constrained computational resources. To maintain algorithmic scalability and tractability in solving such parametric systems, reduced-basis methods have seen a lot of developments [3], and although these tend to perform very well, they rely on strong prior assumptions on the parameters. On the other hand, data-driven surrogates like PINNs [4] and neural operators [5] bypass the high-dimensionality bottleneck but these require simulation data from the FEM or other numerical solvers to train on, and have outstanding issues in performance generalisation and guarantees [6]. Randomised Numerical Linear Algebra (RNLA) [7] provides a middle-ground alternative preserving, in expectation, the theoretical underpinnings of the FEM, whilst expediting algebraic operations by random subsampling and weighting, also known as sketching. Prior work in this area has addressed the use of RNLA to accelerate Krylov-iteration solvers for linear systems [8, 9, 10] as well as projection-based model reduction with random embeddings [11, 12]. Perhaps even more influential to our work is the framework of effective resistances in [13] establishing the link between matrix leverage-scores and resistor networks in the context of graph Laplacian matrices, as indeed that of effective stiffness in [14] that extends these ideas to address explicitly FEM systems. In both cases, the matrices involved have a symmetric product structure similar to the one we consider here. Our contribution targets explicitly the multi-query FEM setting by synergistically combining: 
+
+• leverage-score Bernoulli sampling based on probabilities that depend on the model geometry but are oblivious of the FEM parameters, 
+
+• control variates-based sketch variance reduction, and 
+
+• a regularised formulation that fuses a low-variance forward sketch with an invertible sketch to reduce the mean squared error of the sketched FEM solution. The paper is organised as follows: In section 2 we provide a very brief overview of the elliptic Partial Differential Equation (PDE) in consideration, leading to the formation of the parametric FEM linear system, and a more precise definition of our problem’s setting. Section 3 provides the groundwork for the subspace projection and explains the rationale for preconditioning the projected equations, before introducing our randomised sketching approach in section 4. Section 5 holds our analysis results where we derive probabilistic bounds on the sketching error, failure probabilities and expressions for the sketch variance, and thereafter in section 6 we present our control variates scheme and an optimisation problem that fuses two sketches into a more efficient sketch, while we also provide a detailed description of our algorithm. Finally, in section 7 we present some numerical results of our approach based on two- and three-dimensional FEM models highlighting the algorithmic parameters that control its performance. 1.1. Notation. Scalars and functions are denoted by lowercase letters. Vectors, such as x ∈ Rn, are denoted by bold lowercase letters, and matrices like A ∈ Rn×m, by bold uppercase letters, while their individual entries are written as xi and aij . The minimum and maximum entries of x or a diagonal X
+
+are expressed as xmin and xmax respectively. For a matrix A, the ith row and column are denoted by 
+
+a(i) and a(i), respectively, A⊤ denotes the transpose, and κ(A) its ℓ2 condition number. The notation 
+
+A ⪰ 0 means that A is positive semidefinite, and Tr( A) denotes the trace of a square matrix A. Unless stated otherwise, ∥x∥ denotes the Euclidean norm of x, diag( x) is a diagonal matrix, while diag( A) is the column vector based on the main diagonal of A. For matrices, ∥A∥ and ∥A∥F denote the spectral and Frobenius norms, respectively, while σmax (A) and λmax (A) denote the largest singular value and eigenvalue. For conformably dimensioned matrices A and B, A ◦ B denotes the Hadamard product, while identically distributed random matrices are distinguished by subscripts, e.g. A1, . . . , An. With 
+
+{N } we denote the set of the first N positive integers. For scalar random variables, E[·], V(·), and C(·, ·)denote expectation, variance, and covariance, respectively, while for random vectors or matrices, E[·] is taken element-wise and V(·) in the Frobenius-norm sense. LOW-VARIANCE SKETCHY FEM 3
+
+2. Finite element method preliminaries 
+
+Consider the elliptic PDE with a Dirichlet boundary condition (1) −∇ · ⃗p(x)∇u(x) = f (x) x ∈ Ω, u(x) = u ∂ (x) x ∈ ∂Ω,
+
+where ⃗p is a symmetric tensor field in the interior of a domain Ω ⊂ R d, d ∈ { 2, 3} with spatial coordinates 
+
+x. We are interested in finding the solution u under the influence of a forcing function f , when the solution on the boundary ∂Ω is known to be u∂ . The model equation in (1) has a unique solution, in the strong sense, if f is square integrable over the closure of the domain, provided that the boundary of the domain is sufficiently smooth [2]. In the more general, realistic, setting one typically resorts in computing a weak solution instead. In this respect, multiplying (1) with a continuous test function w : Ω → R that vanishes on the boundary ∂Ω and integrating by parts yields the weak form of the PDE (2) 
+
+Z
+
+> Ω
+
+⃗p(x)∇u(x) · ∇ w(x) d x −
+
+Z
+
+> Ω
+
+f (x) w(x) d x =
+
+Z
+
+> ∂Ω
+
+w(x)⃗p(x)∇u(x) · ˆn ds, 
+
+where ˆn is the outward unit normal on the boundary. To make the problem computationally tractable, the continuous functions in the weak form are approximated by interpolation using functions of compact support. To enable this reduction to finite dimension, the domain geometry is discretised to a mesh (grid) Ω h(nn, n e) comprising nn nodes connected in ne linear elements. This allows to approximate ⃗p
+
+and f as piecewise constant functions on elements and the solution as a piecewise linear function with n
+
+degrees of freedom (3) u(x) ≈
+
+> nn
+
+X
+
+> i=1
+
+uiφi(x) = 
+
+> n
+
+X
+
+> i=1
+
+uiφi(x) + 
+
+> nn
+
+X
+
+> i=n+1
+
+u∂i φi(x)conforming the boundary condition in (1) where {φi}nn 
+
+> i=1
+
+: Ω h → R are linear interpolation functions. Setting w = u and u = u∂ in the boundary integral of (2) and imparting (3) we arrive at a system of n
+
+linear algebraic equations in N .
+
+= dn e parameters and n unknowns (4) A(P)u = d(P)where (5) A(P) = D⊤PD , d(P) .
+
+= f − A∂ (P)u∂ , A∂ (P) = D⊤PD ∂ ,
+
+with P ∈ RN ×N a bounded positive diagonal matrix and D ∈ RN ×n tall sparse matrix with full column rank, resulting in A(P) being symmetric positive definite (SPD). On the right hand side, A∂ (P) ∈ Rn×m
+
+and D∂ ∈ RN ×m are tall sparse matrices with full column rank m .
+
+= nn −n, whilst vector f ∈ Rn depends on the forcing term. Although A(P) is by construction SPD, for certain choices of P and or D, the later of which relates to the regularity of the mesh elements, it may become ill-conditioned [15]. We thus introduce the following assumption regarding the solvability of the high-dimensional FEM system. 
+
+Assumption 2.1. For any admissible P ≻ 0 the solution of (4) (6) u⋆ = A−1(P) f − A∂ (P)u∂ 
+
+exists and has finite norm [2] . In double-precision floating-point arithmetic, this implies that the condition number of the matrix is bounded by κ(A(P)) ≪ 10 16 .
+
+Under standard assumptions, solving (4) has complexity O(n3) with direct methods, whereas non-preconditioned iterative methods require about O(pκ(A) nnz( A)) operations [16]. In the dimensions (n, N ) of interest in this work, both direct and iterative algorithms, even when combined with precondi-tioning, become prohibitively expensive in the multi-query setting. We conclude this introductory section by giving a more precise definition of the problem under consideration. 
+
+Definition 2.2. Given a stream of positive and bounded parameter diagonals P(1) , P(2) , . . . , approximate the solutions u(P(1) ), u(P(2) ), . . . , of (4) for a fixed f , in a memory, communication and time-efficient manner. 4 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+3. Subspace projection 
+
+The first stage of our approach introduces a low-dimensional structure for the sought solution vectors in the form of a subspace projection. Owing to the smoothness of the solution to the underlying PDE (1), a characteristic feature of steady-state diffusion problems, we seek to exploit the resulting low-dimensional structure to reduce the number of degrees of freedom in the discrete model. Although such a structure is not immediately apparent in the high-dimensional system (4), it can be exploited using projection-based model order reduction techniques such as Proper Orthogonal Decomposition (POD) [3]. In effect, we can fix a priori a low-dimensional subspace spanned by s ≪ n orthonormal basis functions that captures, on average, the main features of the solutions u(P) for arbitrary choices of P. The advantage of using the same set of basis vectors for all parameter choices is that it allows for any compute-heavy operations to be performed offline, even though such bases cannot be made optimal for the individual parameter choices. The projection effectively induces an approximation error, which sets a lower bound on the overall error of our approach. To see the effect of the subspace projection approximation let us introduce the subspace (7) S .
+
+= Φw · w ∈ Rs ,
+
+where Φ ∈ Rn×s is a tall matrix holding the orthonormal basis vectors in its columns and consider the decomposition of the high-dimensional solution of (6) into the component that lies into the subspace and that which is orthogonal to it as u⋆ = Πu ⋆ + ( I − Π)u⋆, where Π : Rn → S denotes the orthogonal projection operator. Substituting into the linear system (4) we have (8) d(P) = A(P)Πu ⋆ + ϵ,
+
+where ϵ .
+
+= A(P) I − Πu⋆ is the subspace approximation-induced data discrepancy. The point Πu ⋆
+
+coincides with Φw ⋆ for an optimal w⋆ = Φ⊤u⋆. If the residual ϵ is orthogonal to the subspace S then substituting Πu = Φw and performing a Galerkin projection of the equation (8) onto S leads to the subspace-projected FEM system (9) Φ⊤A(P)Φ w = Φ⊤d(P).
+
+Let w ∈ Rs be the solution of (9), then 
+
+w⋆ − w = Φ⊤u⋆ −  Φ⊤A(P)Φ−1Φ⊤d(P),
+
+and from the triangle inequality we can deduce the overall projection-induced error (10) ∥u⋆ − Φw ∥ ≤ ∥ (I − Π)u⋆∥ + ∥Φ⊤u⋆ − w∥,
+
+revealing that, even in solving (9) exactly, the solution Φw will still be away from the high-dimensional FEM solution u⋆ by a distance that depends not only on the distance of u⋆ from S but also on that of the low-dimensional w from the projection of u⋆ on S.3.1. Preconditioning. When using high-dimensional unstructured meshes, the FEM coefficients (stiff-ness) matrix A(P) may become ill-conditioned. This is known to occur when the variation in the values of the diagonal P spans several orders of magnitude [17], or when the mesh of the domain’s geometry includes some elements with very obtuse or acute angles, which in turn causes some of the elements of the gradients matrix D to be extremely large or almost zero [15]. It is thus advantageous to precondition the projected equations in order to mitigate any undesired geometry effects. As the subspace projection basis is kept fixed for all parameter choices, using a thin Singular Value Decomposition (SVD) DΦ = UΣV ⊤, the coefficients matrix of the projected system (9) can be further developed as (11) Φ⊤A(P)Φ = ( DΦ )⊤P (DΦ ) = VΣ ⊤ (U⊤PU ) ΣV ⊤,
+
+allowing to recast the projected system in a preconditioned form as (12) Y(P)v = q(P),
+
+for a symmetric coefficients matrix (13) Y(P) .
+
+= U⊤PU LOW-VARIANCE SKETCHY FEM 5
+
+through a change of variables v .
+
+= ΣV ⊤w, and a right hand side vector (14) q(P) = Σ−1V⊤Φ⊤d(P).
+
+By virtue of assumption 2.1, D has full column rank and since Φ has orthonormal columns, rank( DΦ ) = s
+
+which implies that Σ ≻ 0, and the mapping between v and w is bijective. Further, as the ℓ2 condition number of the coefficients matrix is important for the numerical stability of the solution, it is prudent to examine those of the original (11) and the preconditioned (13) projected matrices. Since both Y(P) and 
+
+VΣ ⊤Y(P)ΣV ⊤ are SPD, then as V is orthogonal then κ(VΣ ⊤Y(P)ΣV ⊤) = κ(Σ⊤Y(P)Σ). On the other hand, since U has orthonormal columns κ(Y(P)) ≤ κ(P) = pmax /p min . In the special case of P = I,
+
+Y(I) is perfectly conditioned while κ(Σ⊤Y(I)Σ) =  σmax /σ min 
+
+2 can be arbitrarily ill-conditioned. The general case however is more subtle, as it depends on how the eigenstructure of Y(P) interacts with the diagonal scaling induced by Σ.
+
+Remark 3.1. Consider C .
+
+= Y 12 (P)ΣY − 12 (P) through which the projected FEM matrix is expressed as 
+
+Σ⊤Y(P)Σ = Y 12 (P)C⊤CY 12 (P).
+
+Then σmin (C)2I ⪯ C⊤C ⪯ σmax (C)2I, and thus σmin (C)2 Y(P) ⪯ Σ⊤Y(P)Σ ⪯ σmax (C)2 Y(P). Moreover, for SPD matrices Y(P) and Σ⊤Y(P)Σ this implies 
+
+κ(Y(P)) 
+
+κ(C)2 ≤ κ
+
+
+
+Σ⊤Y(P)Σ
+
+
+
+≤ κ(C)2κ(Y(P)) .
+
+Thus κ(C) may be interpreted as a measure of the extent to which the diagonal scaling induced by Σ
+
+distorts the conditioning of the projected system: when κ(C) ≈ 1, this effect is negligible, whereas for large κ(C) it may be substantial, thereby conferring an advantage to the preconditioned system. Remark 3.1 shows that the although the presence of Σ as in the original projected equations can improve the conditioning, heuristically this occurs when directions associated with large eigenvalues of 
+
+Y(P) are weighted weakly by Σ, while those associated with small eigenvalues are weighted more strongly, thereby driving κ(C) closer to 1. In general, however, the effect of Σ is not necessarily beneficial, and it may worsen conditioning by as much as a factor of κ(Σ)2. The reformulation in (12) removes this additional potential source of ill-conditioning and separates the conditioning of Y(P) from the interaction between Σ and the eigenstructure of Y(P). 4. Randomised sketching 
+
+Assembling the low-dimensional system (12), requires computing the s × s symmetric matrix Y(P)and the s × 1 vector q(P), both of which involving N -dimensional matrix products. To mitigate the computational complexity when N is extremely large, we appeal to the RNLA framework to construct estimators ˆY(P) and ˆ q(P) such that ˆ v = ˆY−1(P)ˆ q(P) has a small mean squared error. The sought ˆY(P) must be invertible with high probability, and such a sketch can be designed based on the spectral norm criterion [18] (15) ˆY⋆(P) = arg min 
+
+> ˆY∈Rs×s
+
+∥ ˆY−1(P)Y(P) − I∥.
+
+Regarding the sketch of the right hand side vector, notice that through a thin SVD of the N × m matrix 
+
+D∂ = U∂ Σ∂ V⊤ 
+
+> ∂
+
+this becomes (16) q(P) =  VΣ −1Φ⊤f − U⊤PU ∂ Σ∂ V⊤ 
+
+> ∂
+
+u∂ ,
+
+which for any instance of the parameter matrix, can be estimated by sketching the s × m matrix (17) Z(P) .
+
+= U⊤PU ∂ .
+
+As q(P) is linear in Z(P), this vector is optimally approximated when the sketch of Z(P) is constructed based on the minimum variance criterion [19] (18) ˆZ⋆ = arg min 
+
+> ˆZ∈Rs×m
+
+∥ˆZ(P) − Z(P)∥F,6 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+ultimately leading to a sketch-approximated projected right hand side (19) ˆq(P) =  VΣ −1Φ⊤f − ˆZ(P) Σ∂ V⊤ 
+
+> ∂
+
+u∂ ,
+
+where vector u∂ is typically low-dimensional given that its support is restricted to the boundary of the domain. Furnished with the two matrix sketches satisfying (15) and (18) respectively, we can readily obtain a single sketch estimator of the projected equation solution [20] (20) ˆw = VΣ −1 ˆv, ˆv = ˆY−1(P)ˆ q(P).
+
+Exploiting the positive definiteness of the diagonal P we can cast the desired matrices as weighted outer products as (21) Y(P) = ( P 12 U)⊤(P 12 U), and Z(P) = ( P 12 U)⊤(P 12 U∂ ),
+
+and thereafter subsample their rows according to sampling distributions that conform the criteria in (15) and (18). To derive these distributions we recall the definition of the leverage scores of a matrix. 
+
+Definition 4.1. For a real N × s matrix A = UAΣAV⊤ 
+
+> A
+
+with N > s and rank( A) = s, the statistical leverage scores associated with its rows are given by [18] (22) ℓi(A) .
+
+= a(i)(A⊤A)−1a⊤ 
+
+> (i)
+
+= uA(i)uA⊤ 
+
+> (i)
+
+= uA(i)
+
+> 2
+
+, ∀i ∈ { N },
+
+and these satisfy 0 < ℓ i(A) < 1 and PNi=1 ℓi(A) = s.
+
+Let ξ(U) be a discrete sampling distribution over the index set {N } and consider independent Bernoulli variables γ1, . . . , γ N with non-identical probabilities (23) ηi = P(γi = 1) = min 1, c ξ i(U) > 0, with ξi(U) = 1
+
+s ℓi(U) for all i ∈ { N }
+
+and a positive integer c = EP Ni=1 ηi
+
+ that upper bounds the expected sample size, even though the actual number of samples drawn is random. This allows to define a random sketching diagonal matrix 
+
+S ∈ RN ×N
+
+(24) S = diag 
+
+ γ1
+
+√η1
+
+, . . . , γN
+
+√ηN
+
+
+
+,
+
+leading to a sketch estimator (25) ˆY(P) = ( SP 12 U)⊤(SP 12 U).
+
+This Bernoulli-based sketching is equivalent to sampling the rows of P 12 U independently without re-placement, since its rows can be sampled at most once. Crucially however, this sampling strategy is, by choice, oblivious to the parameters as the sampling probabilities depend on the leverage scores of 
+
+U rather than those of the sampled P 12 U. This is because in the multi-query scenario we focus on, computing the exact leverage scores for each P is computationally more expensive than performing the multiplication in (21) deterministically. Hence instead of ξ(P 12 U) for each choice of P, we settle by necessity to the suboptimal ξ(U) and the associated Bernoulli probabilities η that can be precomputed offline. This approximation of the optimal leverage score sampling comes at the expense of a higher sketching error, even though it retains some partial information of the sampled matrix through U.In regards to constructing the sketched estimator for Z(P) as in (21) with minimal variance as per the Frobenius norm criterion (18) we adapt a classical algorithm for randomised matrix multiplication [21] and set (26) ˆZ(P) .
+
+=  MP 12 U⊤ MP 12 U∂
+
+,
+
+where M ∈ RN ×N is a random sparse diagonal matrix (27) M .
+
+= diag 
+
+ ˜γ1
+
+√˜η1
+
+, . . . , ˜γN
+
+√˜ηN
+
+
+
+,
+
+and ˜ γ1, . . . , ˜γN are independent Bernoulli random variables with probabilities ˜ηi = P(˜ γi = 1) = min 1, c ζ i(U, U∂ ) > 0, with ζi(U, U∂ ) = ℓi(U) ℓi(U∂ )
+
+PNj=1 ℓj (U)ℓj (U∂ ) for all i ∈ { N }.(28) LOW-VARIANCE SKETCHY FEM 7
+
+Unlike [21] however, we opt not to form the optimal distribution but rather sample with suboptimal probabilities that do not depend on the parameters thus allowing to use the same ˜ η-based sketching matrix M for every parameter query, which in turn samples same index rows from P 12 U and P 12 U∂
+
+independently and without replacement. With these sketching mechanisms in place, we can now introduce the principal random objects un-derpinning our developments. Foremost among them is an ensemble of independent and identically distributed (iid) sketches. Let ν > 1 be a positive integer, then define the multi-sketch average estima-tors 
+
+(29) ¯Y(P) = 1
+
+ν
+
+> ν
+
+X
+
+> t=1
+
+ˆYt(P), and ¯Z(P) = 1
+
+ν
+
+> ν
+
+X
+
+> t=1
+
+ˆZt(P),
+
+where each ensemble involves ν iid sketches according to the probabilities η and ˜η respectively, i.e. for 
+
+t = 1 , . . . , ν we have ˆYt = U⊤P 12 S⊤ 
+
+> t
+
+StP 12 U where S1, . . . , St, . . . Sν are iid copies of the sketching matrix in (24) and similarly for ˆZt. This averaging yields the multi-sketch solution estimator (30) ¯w = ( ΣV ⊤−1 ¯v, ¯v = ¯Y−1(P)¯ q(P),
+
+where ¯ q(P) is obtained from (19) by swapping the single sketch estimator with the ν-sketch average. For the sake of clarity we omit the ν-dependence from the multi-sketch averages while we also fix the expected per-sketch sample budget at c. Subject to ¯Y(P) being invertible, it is easy to see that with a total of about νc independent samples, ¯ w is more efficient than the single sketch estimator in (20). 5. Error analysis 
+
+5.1. On the coefficients matrix sketch. We begin our analysis by investigating the impact of sub-optimal probabilities on the multi-sketch average estimator ¯Y(P), focusing on bounding the probability of having a non-invertible sketch, and thereafter address its bias and variance induced errors. Before we embark on this task we must invoke an intermediate lemma. 
+
+Lemma 5.1. [20] For P ≻ 0, let the thin SVD P 12 U = Uy Σy V⊤ 
+
+> y
+
+and a non-negative diagonal sketching matrix S such that ∥U⊤ 
+
+> y
+
+S⊤SU y − I∥ ≤ ϵ for 0 < ϵ < 1, then 
+
+(31) ϵ
+
+1 + ϵ ≤ ∥  U⊤ 
+
+> y
+
+S⊤SU y
+
+−1 − I∥ ≤ ϵ
+
+1 − ϵ .
+
+A sketched estimator (25) that satisfies the conditions of lemma 5.1 incurs a sketching error that is bounded in spectral norm as 
+
+∥ ˆY−1(P)Y(P) − I∥ = ∥ Vy Σy U⊤ 
+
+> y
+
+S⊤SU y Σy V⊤
+
+> y
+
+−1Vy Σ2 
+
+> y
+
+V⊤ 
+
+> y
+
+− I∥
+
+= ∥Σ−1
+
+> y
+
+ U⊤ 
+
+> y
+
+S⊤SU y
+
+−1Σy − Σ−1 
+
+> y
+
+Σy ∥≤ pκ(Y(P)) ∥(U⊤ 
+
+> y
+
+S⊤SU y )−1 − I∥≤ ϵ
+
+1 − ϵ
+
+pκ(Y(P)) ∥U⊤ 
+
+> y
+
+S⊤SU y − I∥,(32) revealing the impact of the condition number of the matrix being sketched on the sketching error. Now consider the multi-sketch average estimator ¯Y(P) as in (29) formed by ν iid sketches, based on the same P-oblivious sampling probabilities and a sketch budget c. The last inequality in (32) allows to bound the error of the multi-sketch average estimator in probability. 
+
+Theorem 5.2. Let P ∈ RN ×N be a positive diagonal and let U ∈ RN ×s have orthonormal columns. Define Y(P) = U⊤PU and its thin SVD P 12 U = Uy Σy V⊤ 
+
+> y
+
+. Fix parameter β ∈ (0 , 1] such that 
+
+ξi(U) ≥ β ξ i(Uy ) for all i ∈ { N }, where ξi(A) = s−1ℓi(A) and ℓi(A) is the leverage score of the i-th row of A. For t = 1 , . . . , ν and i = 1 , . . . , N form independent diagonal sketches St with entries 
+
+diag  γ(t) 
+
+> i
+
+/√ηi
+
+ from independent Bernoulli variables γ(t) 
+
+> i
+
+with probabilities ηi = min {1, c ξ i(U)}. Let 
+
+¯S = 1
+
+> ν
+
+Pνt=1 St, then for any 0 < ϵ < 1,
+
+(33) P  U⊤ 
+
+> y
+
+¯S⊤ ¯S U y − I ≥ ϵ ≤ 2s exp 
+
+
+
+− 3νcβ ϵ 2
+
+6s + 2 sϵ 
+
+
+
+.8 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+Equivalently, to ensure U⊤ 
+
+> y
+
+¯S⊤ ¯S U y − I < ϵ with probability at least 1 − δ, it suffices that 
+
+c ≥ 6s + 2 sϵ 
+
+3νβ ϵ 2 log 2sδ .
+
+Moreover, for ¯Y(P) = 1
+
+> ν
+
+Pνt=1 U⊤P 12 S⊤ 
+
+> t
+
+StP 12 U, we have ¯Y(P) ≻ 0 if U⊤ 
+
+> y
+
+¯S⊤ ¯S U y − I < 1.Proof. Deferred to A. □
+
+This theorem affirms that the probability of the sketching error exceeding some small threshold im-proves linearly with more samples from either of c or ν, and on the other hand it degrades linearly with larger s and a smaller parameter-leverage mismatch β. As we have no control on β with parameter-oblivious sampling, the following corollary suggests that in choosing cν big enough offsets β < 1 while making invertibility overwhelmingly likely. 
+
+Corollary 5.3. Under the assumptions of Theorem 5.2, 
+
+(34) P  ¯Y(P)̸ ≻ 0 ≤ 2s exp 
+
+
+
+− 3νcβ 
+
+8s
+
+
+
+.
+
+In particular, P  ¯Y(P) ≻ 0 ≥ 1 − δ⋆ whenever 
+
+(35) c ≥ 8s
+
+3νβ log 2sδ⋆ .
+
+Proof. The probability δ⋆ can be computed from (33) by setting ϵ = 1. □
+
+In deciding an appropriate pair of values for c and ν, particularly under resource constraints, we may consider reducing the per-sketch sampling budget to take advantage of the rank accumulation in the average. For reasons that will become apparent in the next section where we discuss variance reduction, we choose to keep the per-sketch sample budget c around O(s log s) irrespectively of β and use the ensemble size ν to increase the overall sample size. The following proposition provides invertibility guarantees for the average of positive semidefinite (PSD) sketches under the c < 8s 
+
+> 3νβ
+
+log   2sδ⋆
+
+ regime. 
+
+Proposition 5.4. Let ˆY1(P), . . . , ˆYν (P) be iid PSD sketches based on (25) with s < c < 8s 
+
+> 3νβ
+
+log   2sδ⋆
+
+,and rank   ˆYt(P) ≤ r for all t. Then for ¯Y(P) = 1
+
+> ν
+
+Pνt=1 ˆYt(P) we have 
+
+rank   ¯Y(P) ≤ min s, νr .
+
+If νr < s , then ¯Y(P) is singular with probability 1. Conversely, ¯Y(P) ≻ 0 if the union of sampled indices across the ν sketches contains some fixed spanning set J⋆ ⊂ { N } of dimension s, in which case 
+
+(36) P  ¯Y(P) ≻ 0) ≥ Y
+
+> i∈J⋆
+
+  1 − (1 − ηi)ν  ≥ 1 − X
+
+> i∈J⋆
+
+(1 − ηi)ν .
+
+Proof. Deferred to B. □
+
+We conclude our analysis on ¯Y(P) by examining its bias and variance. From (24), since η ≻ 0
+
+E[S⊤S] = Ediag( γ ◦ γ ◦ η−1) = Ediag( γ ◦ η−1) = diag  E[γ] ◦ η−1 = I,
+
+where η−1is the vector of the reciprocals of the non-zero Bernoulli probabilities. In effect, (37) E[ ¯Y(P)] = E
+
+h 1
+
+ν
+
+> ν
+
+X
+
+> t=1
+
+ˆYt(P)
+
+i
+
+= 1
+
+ν
+
+> ν
+
+X
+
+> t=1
+
+U⊤P 12 ES⊤ 
+
+> t
+
+St
+
+P 12 U = Y(P),
+
+and thus ¯Y(P) is unbiased. For the total variance of the sketch, we are essentially looking for the sum of the element-wise variances as (38) V( ¯Y(P)) .
+
+=
+
+> s
+
+X
+
+> h,k =1
+
+V(¯ yhk (P)) = E
+
+h ¯Y(P) − Y(P) 2F
+
+i
+
+,
+
+but before deriving its expression we state the following remark that exploits the symmetry of the sketch. 
+
+Remark 5.1. Let 1 ≤ h̸ = k ≤ s be two distinct indices. The variance of the off-diagonal entry ¯ yhk (P) of the multi-sketch average estimator is equal to the covariance of the diagonal entries ¯ yhh (P) and ¯ ykk (P), (39) V ¯yhk (P) = C ¯yhh (P), ¯ykk (P).LOW-VARIANCE SKETCHY FEM 9
+
+Proof. Deferred to C. □
+
+Lemma 5.5. Under the setup of theorem 5.2, the Frobenius-variance of the average sketch is 
+
+(40) V( ¯Y(P)) = 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)2.
+
+If, additionally, ηi = cs ℓi(U) with ηi < 12 for all i ∈ { N }, then 
+
+(41) V( ¯Y(P)) ≤ 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+pii 
+
+ sc − ℓi(U)
+
+
+
+ℓi(U), and P ∥ ¯Y(P) − Y(P)∥F ≥ ϵ ≤ sνcϵ 2
+
+> N
+
+X
+
+> i=1
+
+p2
+
+> ii
+
+ℓi(U).
+
+Proof. Deferred to D. □
+
+From (41) notice that the tail concentration of the Frobenius norm variance effectively relies on the alignment between the squared parameters vector and the leverage scores of U. For heterogeneous parameter fields whose mass is concentrated in regions of the domain that coincide topologically with the largest leverage scores then the variance and its tail probability grow. Before addressing the right hand side sketch, for completeness, and to aid comparison with the asymmetric ¯Z(P) (c.f. theorem 5.7), we also provide the tail concentration bound for the spectral norm of the sketching error in ¯Y(P), even though we are only concerned in the error of its inverse as in theorem 5.2. 
+
+Theorem 5.6. Let ¯Y(P) be the s × s matrix average of ν iid sketches for the same parameters P and 
+
+0 < ϵ < 1 then 
+
+P  ¯Y(P) − Y(P) ≥ ϵ ≤ 2s exp 
+
+
+
+− ϵ2/2
+
+∥V ¯Y ∥ + Lϵ/ 3
+
+
+
+,
+
+where 
+
+∥V ¯Y ∥ = 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+p2
+
+> ii
+
+ 1
+
+ηi
+
+− 1
+
+
+
+ℓi(U)u⊤
+
+> (i)
+
+u(i) and L = sc ∥P∥∞.
+
+Proof. Deferred to E. □
+
+5.2. On the right hand side sketch. We now turn our attention to the multi-sketch average estimator of the rectangular s × m matrix Z(P) = U⊤PU ∂ appearing in the parametric right hand side vector of (12). From the definitions (16) and (29) we have a sketching-induced error (42) ∥¯q(P) − q(P)∥ ≤ ∥ ¯Z(P) − Z(P)∥ ∥ Σ∂ V⊤ 
+
+> ∂
+
+u∂ ∥,
+
+for which we aim to derive a tail concentration bound for the spectral norm ∥¯Z(P) − Z(P)∥ and quantify the variance of the estimator. Noting that the multi-sketch estimator is unbiased since E[¯Z(P)] = 
+
+E[ˆZ(P)] = Z(P) and E[M⊤M] = Ediag( ˜γ ◦ ˜γ ◦ ˜η−1) = Ediag( ˜γ ◦ ˜η−1) = diag  E[˜γ] ◦ ˜η−1 = I, then in terms of its variance we have 
+
+V ¯Z(P) = E∥¯Z(P) − Z(P)∥2F
+
+ =
+
+> s
+
+X
+
+> h=1
+> m
+
+X
+
+> k=1
+
+V ¯zhk (P),
+
+and upon using the independence of ˜ γ we can compute and bound the Frobenius variance as 
+
+V ¯Z(P) = 1
+
+ν2
+
+> ν
+
+X
+
+> t=1
+> s
+
+X
+
+> h=1
+> m
+
+X
+
+> k=1
+> N
+
+X
+
+> i=1
+
+V(˜ γ(t) 
+
+> i
+
+)˜η2
+
+> i
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u∂ 2 
+
+> ik
+
+= 1
+
+ν2
+
+> ν
+
+X
+
+> t=1
+> N
+
+X
+
+> i=1
+
+V(˜ γ(t) 
+
+> i
+
+)˜η2
+
+> i
+
+p2
+
+> ii
+
+ℓi(U)ℓi(U∂ )= 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1˜ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)ℓi(U∂ ) ≤ 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+p2
+
+> ii
+
+ PNj=1 ℓj (U)ℓj (U∂ )
+
+c ℓ i(U)ℓi(U∂ ) − 1
+
+
+
+ℓi(U)ℓi(U∂ )= 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+p2
+
+> ii
+
+ PNj=1 ℓj (U)ℓj (U∂ )
+
+c − ℓi(U)ℓi(U∂ )
+
+
+
+,(43) where the inequality is due to the fact that the variance is maximised when ˜ ηi = cζ i < 12 , ∀i ∈ { N }
+
+for ζi = ℓi(U)ℓi(U∂ )     
+
+> PNj=1 ℓj(U)ℓj(U∂)
+
+. Similar to the variance of ¯Y(P), notice that the variance of ¯Z(P) scales to the alignment between the squared parameters vector, and those of ℓ(U) and ℓ(U∂ ). Empirically, we 10 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+expect this to be small as variance amplification now depends on the alignment of three vectors. Using Markov’s inequality for a small error 0 < ϵ < 1 we have 
+
+P ∥¯Z(P) − Z(P)∥F ≥ ϵ = P ∥¯Z(P) − Z(P)∥2F ≥ ϵ2 = 1
+
+ϵ2 V ¯Z(P).(44) Before embarking on bounding the spectral norm of the sketching error we must make a remark on the dimensions of the rectangular s × m matrix ¯Z(P), recalling that m is the number of nodes of the mesh situated on the boundary. Whilst s is assumed to be sufficiently small, e.g. O(10 2), m can be significantly larger even though still much less than n. In turn, proving a concentration bound via Bernstein’s inequality for rectangular matrices, will yield a probability bound proportional to s + m
+
+making it highly conservative. A sharper bound can be obtained by invoking the intrinsic dimension of the matrix as we show in the following theorem. 
+
+Theorem 5.7. Let U ∈ RN ×s and U∂ ∈ RN ×m have orthonormal columns. Define Z(P) = U⊤PU ∂ .For t = 1 , . . . , ν and i = 1 , . . . , N form independent diagonal sketches Mt with entries diag  ˜γ(t) 
+
+> i
+
+/√˜ηi
+
+
+
+for independent Bernoulli variables ˜γ(t) 
+
+> i
+
+with probabilities of success ˜ηi = min {1, c ζ i}, ζi ∝ ℓi(U) ℓi(U∂ )
+
+where ℓi(U) and ℓi(U∂ ) denote the leverage scores of the i-th rows of U and U∂ respectively. Let 
+
+¯Z(P) = 1
+
+> ν
+
+Pνt=1 U⊤P 12 M⊤ 
+
+> t
+
+MtP 12 U∂ . Then for any ϵ > 0(45) P ∥¯Z(P) − Z(P)∥ ≥ ϵ ≤ 2 Tr( V¯Z)
+
+∥V¯Z∥ exp 
+
+
+
+− ϵ2/2
+
+∥V¯Z∥ + L ϵ/ 3
+
+
+
+,
+
+for a symmetric matrix 
+
+V¯Z = 1
+
+ν
+
+"P Ni=1 p2
+
+> ii
+
+  1˜ηi − 1ℓi(U∂ )u⊤
+
+> (i)
+
+u(i) 00 PNi=1 p2
+
+> ii
+
+  1˜ηi − 1ℓi(U)u∂ ⊤
+
+> (i)
+
+u∂ (i)
+
+#
+
+and 
+
+L = 1
+
+νc 
+
+ NX
+
+> i=1
+
+ℓi(U)ℓi(U∂ )
+
+
+
+max 
+
+> i
+
+n pii 
+
+pℓi(U) ℓi(U∂ )
+
+o
+
+Proof. Deferred to F. □
+
+In the tail probability (45) we have reverted to using the intrinsic dimension of the variance in the dilated summands comprising the error ¯Z(P) − Z(P) instead of the ambient dimension s + m, aiming to exploit a potential fast decay in the eigenvalues of the PSD variance matrix V¯Z whose effective rank can be significantly less than the ambient dimension [22]. Within the exponent, L is kept small unless there is an overlap between the indices where the leverage scores ℓ(U), ℓ(U∂ ) and the largest entries of P are concentrated. Without any explicit information on the parameters, it is the leverage score profiles ℓ(U)and ℓ(U∂ ) that effectively control which rows dominate in the symmetric and non-symmetric products that define Y(P) and Z(P). Generally speaking, any significant alignment between the largest entries of 
+
+P with those of ℓ(U) and ℓ(U∂ ) triggers a spike in both the sketch variances and the error probability tail bounds. Since ℓ(U) and ℓ(U∂ ) are generally not aligned, ¯Y(P) is more prone to this unfortunate alignment effect. Variation in the parameters impacts variance quadratically and degrades the inverse sketch error through pκ(Y(P)), whilst parameter choices with very large coefficients of variation result in ill-conditioning for both Y(P) and A(P) [17]. Overall, we should expect good performance when the subspace dimension s is kept modestly low, whilst having νc large enough to compensate for suboptimal sampling when β < 1, provided that parameters and leverage scores are not well aligned. 6. Sketch variance reduction 
+
+The analysis of the previous section prompts the question whether for a given sampling budget we can compute more efficient estimators than ¯Y(P) and ¯Z(P) and in turn obtain a solution with smaller mean squared error than that of ¯ v = ¯Y−1(P)¯ q(P) without compromising the computational complexity. We argue that this is feasible using an approach that entails a control variates method for suppressing the variance in the multi-sketch average estimators followed by an optimisation problem that fuses two sketches into a more accurate one. LOW-VARIANCE SKETCHY FEM 11 
+
+6.1. Control variates for sketches. To improve the efficiency of the multi-sketch averages we appeal to the Monte Carlo scheme of control variates [23]. Indeed, the variance of the entries of these estimators can be suppressed using an additive correction term that involves the sketching error of another random sketch – the control variates – whose expectation is either known or ‘cheap’ to compute exactly. The level of reduction in variance scales to the squared correlation between the sought sketch and its control variate, and so the challenge is to make an appropriate choice of the latter without any high-dimensional computations. Specific to our setting, this involves identifying a matrix T such that the entries of ¯Y(T)correlate strongly with the same-index entries of ¯Y(P) (and likewise an R such that the entries of ¯Z(R)correlate with those of ¯Z(P)). To demonstrate our idea we focus explicitly on Y(P) noting that the procedure is similar for the non-symmetric Z(P) as we outline in G. Let L ⊂ RN ×N be a low-dimensional class of positive diagonal matrices then choosing T ∈ L to maximise the smallest absolute correlation between same-index entries of ¯Y(P) and ¯Y(T) constructed with the same ν iid sketching matrices {S1, . . . , Sν } as in (24) mounts to minimising the Frobenius norm of the variance of their difference (46) T⋆ = arg min  
+
+> T∈L
+
+V  ¯Y(P) − ¯Y(T).
+
+Exploiting symmetry and the remark 5.1 the objective of the minimisation becomes 
+
+V  ¯Y(P) − ¯Y(T) = 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+ pii − tii 
+
+2ℓ2 
+
+> i
+
+(U),(47) assuming 0 < η i < 1 for all i ∈ { N }. Excluding the trivial choice T = P, according to (47) it may suffice to pick a T that is close to P at the indices where η−1 
+
+> i
+
+ℓ2 
+
+> i
+
+(U) is large. In this context, a simple way to obtain a suitable T is by forming a low-resolution piecewise-constant approximation of P that trades-off approximation accuracy and computational effort. With each index in {N } uniquely mapped to one of the ne elements of the mesh Ω h through the FEM interpolation functions, consider the disjoint index sets 
+
+I1, . . . , Iμ topologically mapped to non-overlapping regions of the mesh denoted by R1, . . . , Rμ where (48) {N } =
+
+> μ
+
+[
+
+> j=1
+
+Ij , Ωh =
+
+> μ
+
+[
+
+> j=1
+
+Rj , such that Ij 7 → R j , Rj ∩ R j′ = ∅ for j̸ = j′.
+
+With Ij we associate an s×s matrix U⊤ 
+
+> (Ij)
+
+U(Ij ), where U(Ij ) denotes the Ij rows of matrix U, and upon imposing a region-wise constant approximation on T yields the low-dimensional vector of coefficients (49) τ ⋆j =
+
+P 
+
+> i∈I j
+
+wipii 
+
+P 
+
+> i∈I j
+
+wi
+
+, where wi =
+
+ 1
+
+ηi
+
+− 1
+
+
+
+ℓ2 
+
+> i
+
+(U), for j = 1 , . . . , μ, 
+
+from which we set tii = τ ⋆j , ∀i ∈ I j . The optimal coefficients τ ⋆ always exist unless ηi = 1 for all i ∈ I j .Having precomputed the s × s matrices U(I1), . . . , U(Iμ) and the μ sums in the denominator in (49), the expectation of the control variates matrix can be obtained as an μ-dimensional product (50) E[ ¯Y(T)] = U⊤ 
+
+> (Ij)
+
+diag( τ )U(Ij ),
+
+in O(μs 2) complexity, and the special case of μ = 1 where I1 = {N } yields T to be a multiple of the identity matrix, and thus without loss of generality we can assign E[ ¯Y(T)] = I. To implement this technique it remains to decide how to decompose the domain Ω h into the various disjoint regions. In domains with interior structure and a few dominant spatial features, these regions can be chosen to conform these geometric constraints. Otherwise, we may adopt a maximum entropy assumption on the parameters and form these regions based solely on topological adjacency, using for example the k-means algorithm as shown for example in figure 1 [24]. Under the optimal choice of coefficients, this simple construction of control variates can achieve a reduction in the variance difference 
+
+V  ¯Y(P) − ¯Y(T⋆) = 1
+
+ν
+
+ NX
+
+> i=1
+
+wip2 
+
+> ii
+
+−
+
+> μ
+
+X
+
+> j=1
+
+P 
+
+> i∈I j
+
+wipii 
+
+2
+
+P 
+
+> i∈I j
+
+wi
+
+12 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+Figure 1. On the left, the profile of a 2D isotropic P tensor field on a mesh with 
+
+ne ≈ 5 × 10 6 triangular elements and N ≈ 10 7 indices. Next to it the corresponding profiles of some isotropic T fields with μ = 9 (middle) and μ = 16 (right) disjoint regions. The relative discrepancies ∥P − T∥2F/∥P∥2F are 50% and 35% respectively. confirming that correlation peaks when {pii }i∈I j are well clustered around their region-wide means, or when outliers in the same set are matched with very small leverage scores. Because of the high-dimensional sums in the numerator of the definition of τ ⋆ in (49), the optimal coefficients can be approx-imated by standard Monte Carlo or importance sampling. As we show in G a similar approach can lead to a control variates matrix ¯Z(R) with R ∈ L. If we sketch the pairs  ¯Y(P), ¯Y(T) and ¯Z(P), ¯Z(R) ,then the reduced variance estimators can be obtained as 
+
+(YB (P) = ¯Y(P) − B ◦   ¯Y(T) − E[ ¯Y(T)] ,
+
+ZB (P) = ¯Z(P) − BZ ◦  ¯Z(R) − E[¯Z(R)] ,
+
+(51) for some weights matrices B ∈ Rs×s and BZ ∈ Rs×m with optimal entries (52) 
+
+
+
+b⋆hk = C
+
+ ¯yhk (P),¯yhk (T)
+
+
+
+> V
+
+ ¯yhk (T)
+
+ for 1 ≤ h, k ≤ sbZ ⋆hk = C
+
+ ¯zhk (P),¯zhk (R)
+
+
+
+> V
+
+ ¯zhk (R)
+
+ for 1 ≤ h ≤ s, 1 ≤ k ≤ m.
+
+The reduced variance sketches YB (P) and ZB (P) typically incur a negligibly small amount of bias as the weights are computed using the same ensembles used to compute ¯Y(P) and ¯Z(P). Treating these weights as known constants leads to a conditional Frobenius norm variance (53) V(YB (P)) = 
+
+> s
+
+X
+
+> h,k =1
+
+V(¯ yhk (P))(1 − ρ2
+
+> hk
+
+) + 
+
+> s
+
+X
+
+> h,k =1
+
+V(¯ yhk (T)) V(ˆbhk ),
+
+where ρhk is the correlation coefficient between ¯ yhk (P) and ¯ yhk (T), and ˆbhk is an estimator of b⋆hk ,resulting in a new Frobenius norm concentration bound (54) P ∥YB (P) − Y(P)∥F ≥ ϵ ≤ 1
+
+ϵ2
+
+
+
+(1 − R2)V( ¯Y(P)) + 
+
+> s
+
+X
+
+> h,k =1
+
+V(¯ yhk (T)) V(ˆbhk )
+
+
+
+with R2 = Psh,k =1   
+
+> V(¯ yhk (P))
+> V( ¯Y(P))
+
+ρ2 
+
+> hk
+
+∈ [0 , 1] the weighted coefficient of determination. As V(ˆbhk ) scales to 
+
+ν−1 the second term in (54) diminishes as the size of ensemble grows, leaving an advantage relative to the bound for the uncorrected sketch (41) proportional to (1 − R2). As far as the spectral norm of the corrected sketch’s error ∥YB (P) − Y(P)∥ is concerned, the conclusions there are more nuanced. If the sketch ensemble is restricted to small sizes, e.g. ν ≤ 10, the control variate weights may become too noisy and in turn yield a ‘corrected’ sketch whose error is even worse than that of (33), without achieving any reduction in variance. Also, from a linear algebra point of view, note that whilst we have ¯Y(P) ≻ 0 with high probability, the corrected sketch may become arbitrarily ill-conditioned since from Weyl’s inequality on symmetric matrices we have [25] (55) λmin 
+
+ YB (P) ≥ λmin 
+
+ Y(P) − YB (P) − Y(P) ,LOW-VARIANCE SKETCHY FEM 13 
+
+with the norm term being proportional to ∥B∥ given (51), hence there is no particular lower bound for the eigenvalues of the corrected sketch. Because we utilise averages of ν sketches rather than in-dividual sketches directly, maintaining c ∼ O (s log s) under tight computational constraints is highly advantageous. Scaling ν alone effectively boosts the overall sample budget, which compensates for β < 1and enhances the control variates’ ability to suppress sketch variance. Additionally, when the sampling ratio is extremely low, i.e., c/N ≪ 10 −3 the computation is further accelerated by executing Bernoulli sampling via efficient geometric skipping. 6.2. Low variance inverse estimator. Equipped with ¯Y(P), the corrected YB (P), the sample-based estimators of their variances ˆV( ¯Y(P)) and ˆV(YB (P)), and the vector qB (P) =  VΣ −1Φ⊤f −
+
+ZB (P) Σ∂ V⊤ 
+
+> ∂
+
+u∂ we question whether it is possible to fuse this information in order to obtain a more accurate estimator than the multi-sketch solution in (30), using the same sample budget νc . For the remainder of this section we will be dealing exclusively with P dependent objects, we suppress the argu-ment for clarity. Recall that due to theorem 5.2, ¯Y is SPD with probability no less than 1 − δ⋆, however as indicated in (55) the reduced variance YB does not carry such a guarantee. The approach we advocate below requires both matrices to be SPD, and thus in the event where YB ⊁ 0 a small damping term must be applied to restore positive definiteness. By virtue of the improved Frobenius norm bound established in (54), we now designate YB to be the forward sketch, reflecting its higher fidelity in approximating matrix vector products involving the unknown matrix Y in the sense that ∥YB x − Yx ∥ remains demon-strably small in probability. Conversely, we designate the uncorrected multi-sketch average estimator ¯Y
+
+to be the inverse sketch. As guaranteed by (15), ¯Y−1 closely approximates the inverse of the unknown Y
+
+in spectral norm, thereby ensuring that the error in ∥ ¯Y−1x − Y−1x∥ is bounded with high probability. A robust way fuse the information between the forward and inverse sketches is to pose a regularised optimisation problem over the cone of s × s SPD matrices Cs
+
+> +
+
+, aiming to estimate directly the inverse 
+
+Y−1. In effect we pose the problem (56) H⋆ = arg min 
+
+> H∈Cs
+> +
+
+J (H) .
+
+= L(HY B , I) + L(YB H, I) + θL(H, ¯Y−1),
+
+where for A, B ≻ 0(57) L(A, B) .
+
+= Tr( AB −1) − log det( AB −1) − s
+
+is the Stein’s loss function L : Cs 
+
+> +
+
+× Cs 
+
+> +
+
+→ [0 , +∞), a Bregman-type distance measure based on the logarithmic determinant divergence [26], and θ > 0 is a regularisation parameter. Anchoring our search in the vicinity of the inverse sketch we seek to find a new SPD estimator whose largest eigenvalues are nearer to those of the inverse sketch, but its smallest are closer to those of the forward. The objective in (56) is well suited to our setting because Stein’s loss, through the logarithmic function, penalises heavier the underestimation of eigenvalues rather than their overestimation, which is critical in avoiding ill-conditioned estimators. Moreover, a strictly positive θ balances out the risk of compromising invertibility for the sake of statistical efficiency. Ultimately, for a choice of θ our low-variance projected FEM solution is (58) ¯wθ = ( ΣV ⊤)−1 ¯vθ , where ¯vθ = H q B (P), qB (P) = ( VΣ )−1Φ⊤f − ZB (P)Σ∂ V⊤ 
+
+> ∂
+
+u∂ ,
+
+but before we discuss the algorithmic details of this estimator we must first address its existence and uniqueness. 
+
+Theorem 6.1. Given SPD matrices ¯Y, YB , and a parameter θ > 0 such that 2YB + θ ¯Y ≻ 0 then 
+
+J (H) in (56) is strictly convex on the cone of s × s SPD matrices Cs
+
+> +
+
+. If a solution exists, then it is the unique global minimiser 
+
+(59) H⋆ = (2 + θ)  2YB + θ ¯Y−1.
+
+Proof. From the derivatives of the trace and log determinant functions the gradient of the objective function becomes (60) ∇J (H) = 2 YB + θ ¯Y − (2 + θ) H−1,
+
+and upon differentiating again we obtain its Hessian acting on a symmetric direction ∆ as (61) ∇2J (H)[ ∆] = (2 + θ) H−1∆H −1,14 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+and hence J (H) is continuous and twice differentiable on the cone. Since for any non-zero ∆
+
+d2J (H)[ ∆, ∆] = ∆, ∇2J (H)[ ∆] F = (2 + θ) Tr( ∆⊤H−1∆H −1) = (2 + θ) H− 12 ∆H − 12 2F > 0,
+
+is strictly positive, J is strictly convex on Cs
+
+> +
+
+. In the quadratic form above ⟨· , ·⟩ F is the Frobenius inner product. The unique minimiser can be found by setting the gradient in (60) to zero. □
+
+Having established the uniqueness of our new estimator we now aim to show that this always exists by proving the coercivity of the objective function at the boundary of Cs 
+
+> +
+
+and at infinity under the conditions of theorem 6.1. The following two lemmas capture this desired behaviour. 
+
+Lemma 6.2. For any sequence of matrices {Hk} ⊂ Cs 
+
+> +
+
+whose smallest eigenvalue approaches zero monotonically from within the cone we have 
+
+J (Hk) → +∞ as λmin (Hk) ↓ 0.
+
+Proof. Let the eigenvalues of Hk be ordered as λ1(Hk), . . . , λ s(Hk) > 0 with min i λi(Hk) → 0. Using the properties of the trace and logarithmic determinant functions as well as the symmetry of ¯Y and YB ,the objective function in (56) at Hk expands to 
+
+J (Hk) = Tr 
+
+
+
+Hk
+
+ 2YB + θ ¯Y
+
+− (2 + θ) log det Hk + 2 log det YB − (2 + θ)s. 
+
+Neglecting constant terms and noting that the trace term remains bounded from below on bounded sets, it suffices to show that for the logarithmic determinant term we have 
+
+− log det Hk = −
+
+> s
+
+X
+
+> i=1
+
+log λi(Hk) → +∞ as min  
+
+> i
+
+λi(Hk) → 0,
+
+that causes J (Hk) → +∞ at the boundary. In essence, the objective function acts as a logarithmic barrier on the spectrum of H and in turn minimising sequences are bounded away from the boundary of Cs 
+
+> +
+
+[27]. □
+
+To verify the coercive behaviour of the objective when the spectral norm ∥H∥ grows unbounded we pose the following lemma. 
+
+Lemma 6.3. Under the conditions of theorem 6.1 
+
+J (H) → +∞ as ∥H∥ → +∞.
+
+Proof. Define K .
+
+= 2 YB + θ ¯Y. With K ≻ 0 as per the conditions of the theorem, the objective function can be cast as (62) J (H) = Tr  HK  − (2 + θ) log det H + constant .
+
+Since K ⪰ λmin (K)I with λmin (K) > 0, then for any H ≻ 0 we have H 12 KH 12 ⪰ λmin (K)H, and then by the cyclic property of the trace we get (63) Tr( HK ) = Tr( H 12 KH 12 ) ≥ λmin (K) Tr( H).
+
+To address the logarithmic term in the objective we appeal to the inequality of arithmetic and geometric means on the eigenvalues of the s × s matrix H that asserts det H 1 
+
+> s
+
+≤ 1 
+
+> s
+
+Tr( H). Taking the negative logarithm and rearranging yields (64) − log det H ≥ − s log   1
+
+s Tr( H) = s log s − s log Tr( H).
+
+Introducing (63) and (64) into (62) we get 
+
+J (H) ≥ λmin (K) Tr( H) − (2 + θ)s log Tr( H).
+
+Since ∥H∥ → +∞ implies Tr( H) → +∞, then as the linear trace term is positive and dominates the logarithmic one near infinity then coercivity J (H) → +∞ follows. □LOW-VARIANCE SKETCHY FEM 15 
+
+Note that under the adopted SPD assumption on the two sketches 2 YB + θ ¯Y ≻ 0, a sublevel set 
+
+H ∈ Cs 
+
+> +
+
+· J (H) ≤ α at any finite α is bounded by lemma 6.3 as well as being bounded away from the boundary of Cs 
+
+> +
+
+by lemma 6.2. Hence sublevel sets are contained in a compact set (65) Kα1,α 2
+
+.
+
+=
+
+n
+
+H ∈ Cs 
+
+> +
+
+· Tr( H) ≤ α1 , λ min (H) ≥ α2
+
+o
+
+,
+
+which is closed and bounded in finite dimensions for some positive α1, α 2. With this set in place we can consolidate the existence proof for the new estimator in the form of the following proposition. 
+
+Proposition 6.4. If 2YB + θ ¯Y ≻ 0 then J attains its minimum value on Cs
+
+> +
+
+, that is 
+
+(66) ∃ H⋆ ∈ Cs 
+
+> +
+
+such that J (H⋆) = inf 
+
+> H∈Cs
+> +
+
+J (H).
+
+Proof. Let {Hk} ⊂ Cs 
+
+> +
+
+be a minimising sequence with J (Hk) ↓ inf J . From lemmas 6.2 and 6.3, the sequence must remain in some set Kα1,α 2 so it is relatively compact. Suppose we extract the ℓ-th convergent subsequence as Hkℓ → H† ∈ Kα1,α 2 ⊂ C+ 
+
+> s
+
+, then since J is twice continuously differentiable on the cone Cs 
+
+> +
+
+we evidently have 
+
+J (H†) = lim  
+
+> ℓ→∞
+
+J (Hkℓ ) = inf 
+
+> H∈Cs
+> +
+
+J (H),
+
+and hence H† must be a minimiser. □
+
+It now remains to discuss how to choose the regularisation parameter θ in (56). Intuitively, θ should be chosen in a way that accounts for the ‘uncertainty’ due to sketching-induced errors in YB and ¯Y.Regularisation parameter selection has been central to the development of robust algorithms for ill-posed inverse problems, in particular variational problems in imaging where ℓ2, ℓ1 and total variation norms are inherent [28], but as we are dealing exclusively with Stein’s loss distances it is important to understand the impact of these errors in our setting. Let us denote the our new estimator from (59) as Hθ to emphasise its dependence on the regularisation parameter, and consider 
+
+YB
+
+.
+
+= Y + EB , ¯Y .
+
+= Y + ¯E, and Hθ
+
+.
+
+= Y−1 + ∆H,
+
+assuming that ∥EB ∥, ∥ ¯E∥ and ∥∆H∥ are sufficiently small. Taking a first-order approximation of the Neumann series for the inverse function we have 
+
+Hθ =
+
+
+
+I + 12 + θ Y−1(2 EB + θ ¯E)
+
+−1
+
+Y−1 ≈ Y−1 − 12 + θ Y−1(2 EB + θ ¯E)Y−1,
+
+and hence the error in the inverse becomes (67) ∆H = Hθ − Y−1 ≈ − 12 + θ Y−1(2 EB + θ ¯E)Y−1,
+
+providing an explicit, θ-parametrised expression that relates the forward and inverse sketch errors to that of the optimal solution. As ∆H does not feature in the loss function directly we must seek a connection to the Stein loss terms so that we can relate those to θ. Taking for example the term involving the forward sketch, notice that for Hθ YB ≈ I we have 
+
+L(Hθ YB , I) = Tr( Hθ YB − I) + s − log det( Hθ YB ) − s
+
+≈ Tr( Hθ YB − I) − Tr  (Hθ YB − I) − 12 (Hθ YB − I)2 = 12 Hθ YB − I 2F,
+
+where we have used the identity log det( Hθ YB ) = Tr log( Hθ YB ), and then approximated the matrix logarithm function by its second-order Neumann series, under the assumed proximity of Hθ YB to the identity matrix. As Hθ YB = I + ∆H Y + Y−1EB + ∆H EB , then neglecting the second-order term 
+
+∆H EB and introducing into the approximate Stein loss we arrive at 
+
+L(Hθ YB , I) ≈ 12 ∆H Y + Y−1EB 
+
+> 2F
+
+= 12 Y 12 ∆H Y 12 + Y− 12 EB Y− 12 2F
+
+where the equality is by the cyclic property of the trace. Combining with (67) yields (68) L(Hθ YB , I) ≈ 12(2 + θ)2 (4 + θ)Y− 12 EB Y− 12 + θY− 12 ¯EY − 12 2F,16 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+that shows explicitly that both the forward and inverse errors propagate to the loss function after transformed by a left and right multiplication with Y− 12 . The case of the Stein’s loss function involving the inverse sketch follows similarly. Consequently, to find the optimal θ parameter we can consider (69) θ⋆ = arg min  
+
+> θ> 0
+
+E Y 12 ∆H Y 12 2F
+
+,
+
+which after importing ∆H from (67) becomes 
+
+θ⋆ = arg min 
+
+> θ> 0
+
+1(2 + θ)2 E
+
+h
+
+2Y− 12 EB Y− 12 + θY− 12 ¯EY − 12 2F
+
+i
+
+.
+
+Setting the derivative with respect to θ equal to zero gives the optimal value of the regularisation parameter (70) θ⋆ = 2 E∥Y− 12 EB Y− 12 ∥2F
+
+ − E⟨Y− 12 EB Y− 12 , Y− 12 ¯EY − 12 ⟩F
+
+
+
+E∥Y− 12 ¯EY − 12 ∥2F
+
+ − E⟨Y− 12 EB Y− 12 , Y− 12 ¯EY − 12 ⟩F
+
+ .
+
+As the covariance term has to be smaller than the Frobenius variance norms for boundedness and positivity, the above can be approximated for compute savings to (71) θ⋆ ≈ 2 E∥Y− 12 EB Y− 12 ∥2F
+
+
+
+E∥Y− 12 ¯EY − 12 ∥2F
+
+ ,
+
+but in either case Y is unknown and thus we must invoke a suitable surrogate for it, either through independent sampling or by appealing to its control variates counterpart. On the other hand, if the matrix is expected to be well-conditioned, e.g. when the parameters do not vary wildly, we may further approximate Y ≈ I and thus replace (71) with ˆθ = 2 E∥EB ∥2F
+
+
+
+E∥ ¯E∥2F
+
+ = 2 V(EB )
+
+V( ¯E) = 2 V(YB )
+
+V( ¯Y)noting that the Frobenius variances are readily available without any additional effort from the control variates process. Before we outline our algorithm there is an important observation to be made regarding the sampling process. Exploiting that the per-sketch budget c is deliberately kept small in comparison to N as we pass on the control to increase the overall sample to ν, when c/N ≪ 10 −3 is very small we opt to implement the Bernoulli sampling indirectly, effectively reducing the per-sketch complexity from O(N )to O(c) and thereby achieving a radical speed up of the row sampling process. As outlined in algorithm 2, we can regard the independent sampling of about c of the N rows of a tall matrix as a ‘sequence’ of independent trials under a homogeneous Bernoulli process with probability ηmax = min i ηi < 1. If that were to be the case, then the small number of rows can be sampled by exploiting the fact that the interval between successively selected indices in this sequence follows a geometric distribution with parameter 
+
+ηmax [29]. The saving comes in that after the first row is selected, we then sample by performing random jumps skipping over row intervals with a Geometric distribution of parameter ηmax rather than Bernoulli sampling of individual rows. As the Bernoulli probabilities η and ˜η are not identical however, this geometric skipping is then followed by a rejection sampling scheme (also referred to as Bernoulli thinning) to compensate for any ηi̸ = ηmax . Once a row is selected by the geometric sampling, then this is only accepted with probability ηi/η max . Using basic probability rules, if P(γmax  
+
+> i
+
+= 1) = ηmax , and 
+
+P(γrej  
+
+> i
+
+= 1) = ηi/η max the i-th row is selected iff it gets selected in the geometric skipping and does not get rejected in the thinning process, which turns to be equivalent to the intended Bernoulli sampling since P(γi = 1) = P(γmax  
+
+> i
+
+= 1) P(γrej  
+
+> i
+
+= 1 | γmax  
+
+> i
+
+= 1) = ηi. This process is outlined in some detail in the description of the algorithm 2 next as part of the main algorithm for our method presented in algorithm 1. LOW-VARIANCE SKETCHY FEM 17 
+
+Algorithm 1 Low-variance parametric sketched solver  
+
+> 1:
+
+Input: Parameters P, probabilities η and ˜η, row index subsets {I 1, . . . , Iμ}, per-sketch row index budget c, sketches budget ν, and invertible matrix ΣV ⊤ ∈ Rs×s 
+
+> 2:
+
+Require access to individual rows of U ∈ RN ×s and U∂ ∈ Rm×s 
+
+> 3:
+
+Output: Low-variance sketched projected solution ¯ wθ 
+
+> 4:
+
+Estimate the coefficients of the low-dimensional T, R ∈ L 
+
+> 5:
+
+Evaluate control variates matrices Y(T) ∈ Rs×s and Z(R) ∈ Rm×s 
+
+> 6:
+
+Run sampling Algorithm 2 with inputs ( c, η, P, T, ν), and ( c, ˜η, P, R, ν) 
+
+> 7:
+
+Compute multi-sketch averages ¯Y(P), ¯Y(T), ¯Z(P) and ¯Z(R) 
+
+> 8:
+
+Estimate element-wise covariances C  ¯Y(P), ¯Y(T) and C ¯Z(P), ¯Z(R) 
+
+> 9:
+
+Estimate weights ˆB and ˆBZ and parameter θ 
+
+> 10:
+
+Evaluate the low-variance estimators YB (P), ZB (P) and ¯ qB (P) 
+
+> 11:
+
+Compute H = (2 + θ) 2YB (P) + θ ¯Y(P)−1 
+
+> 12:
+
+Compute ¯ vθ = H q B (P) 
+
+> 13:
+
+Return: ¯wθ = ( ΣV ⊤)−1 ¯vθ
+
+Algorithm 2 Bernoulli sampling via Geometric Skipping & Bernoulli Thinning  
+
+> 1:
+
+Input: Parameters P, T, probabilities η, and iterations ν. 
+
+> 2:
+
+Require access to individual rows of U ∈ RN ×s 
+
+> 3:
+
+Output: Sampled { ˆYt(P)}νt=1 , and { ˆYt(T)}νt=1  
+
+> 4:
+
+Initialize: ηmax = max( η).  
+
+> 5:
+
+for t = 1 to ν do  
+
+> 6:
+
+k ← 0, I ← ∅  
+
+> 7:
+
+while k < N do  
+
+> 8:
+
+Geometric sampling with probability ηmax : 
+
+> 9:
+
+k ← k + ⌈log( u) / log(1 − ηmax )⌉ with u ∼ U (0 , 1).  
+
+> 10:
+
+Rejection sampling : 
+
+> 11:
+
+I ← I ∪ { k} if v < η k/η max where v ∼ U (0 , 1).  
+
+> 12:
+
+end while  
+
+> 13:
+
+Extract sampled rows U (I) and diagonals P(I,I) and T(I,I) 
+
+> 14:
+
+Return: ˆYt(P) ← U⊤
+
+> (I)
+
+P(I,I)U(I), ˆYt(T) ← U⊤
+
+> (I)
+
+T(I,I)U(I) . 
+
+> 15:
+
+end for 
+
+7. Numerical experiments 
+
+To test the performance of our main algorithm 1 we consider the inhomogeneous Poisson equation with variable coefficients as in PDE (1) in two and three physical dimensions. Aside the numerical evidence on the practical performance of our approach, ultimately we aim to verify how much of the variance inflation incurred by not using the optimal, parameter-dependent, leverage scores can be mitigated by the synergistic action of the control variates scheme and the ‘forward-inverse’ sketch fusion. Since our parameter-oblivious sampling is effectively optimal for constant parameters (spatial homogeneity), it is key to understand how does the variation in the profile of the parameters affects the performance of our method and how do we set the sample budget ( ν, c ) and control variates dimension μ to achieve the best results possible. To be systematic, we will describe this variability in the parameters by means of the coefficient of variation (CoV) (72) cV (P) = 
+
+s
+
+N ∥diag( P)∥2
+
+∥diag( P)∥21
+
+− 1,
+
+that takes values in [0 , √N − 1]. 18 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+7.1. Two-dimensional example. In the first set of numerical experiments we consider a square domain geometry Ω ∈ [−1, 1] × [−1, 1] embedded on the xy plane, with fixed forcing and boundary conditions as 
+
+f (x, y ) = 
+
+(1 if 6( x2 + y2)2 + x3 − 3xy 2 < 00 otherwise , u∂ (x, y ) = 14 sin   π
+
+2 (x + y).
+
+The domain is discretised to a mesh with nn = 11212033 nodes connected into ne = 22413312 linear triangular elements. Among the nn nodes, m = 10752 are on the boundary, yielding n = 11201281 degrees of freedom and a large dimension N = 2 ne ≈ 45 million. To generate the parameter profiles for the various choices of P diagonals we restrict to isotropic tensor fields. In each instance, we simulate between 36 and 81 discs of arbitrarily chosen radii and scatter them randomly within the closure of the domain, see for example the image on the left of figure 3. Each of these disks is assigned a positive value from the interval [10 −2, 10 2] uniformly at random, and P is eventually formed by adding the values of the various overlapping disks at any given element of the mesh. Using a POD-obtained subspace projection we set the small dimension to s = 200, and then fix the per-sketch sample budget to c = ⌈5s log s⌉ ≈ 5300, effectively corresponding to a β ≥ 0.2 in theorem 5.2. Running our solver in algorithm 1 on sets of 100 independently chosen P, with ( μ, ν ) ∈ { 1, 16 } × { 10 , 100 } and ν ∈ { 10 , 100 } for parameters have low CoV and ( μ, ν ) ∈ { 1, 16 } × { 50 , 500 } for those with higher CoV yields eight sets of structured and complementary experiments whose results are graphically illustrated in figure 2. In this figure the panels are arranged in increasing cV (P) from top row to bottom, and in increasing control variates regions μ from left to right. Columns 1 to 5 depict the statistical variation of the key error quantities 
+
+∥Y−1 − ¯Y−1∥/∥Y−1∥, ∥Y − ¯Y∥F/∥Y∥F, ∥Y − YB ∥F/∥Y∥F, ∥ ¯wθ − w∥/∥w∥, and ∥ ¯w − w∥/∥w∥ over the 100 runs, while column 6 holds cV (P) for the same set of experiments. We thus expect that on average, i.e., where peak of violin plot is, the errors in the 3rd column are less than those in the 2nd because of the control variates correction, and those in the 4th column showing the error of our improved estimator to be less than the classical multi-sketch estimator at the 5th column, for all choices of ν.In more detail, for the top panels in figure 2 where the CoV is kept moderately low, note that the relative errors of ¯Y−1(P) in spectral norm and that of the Frobenius norm of ¯Y(P) appear to be on average very similar, as one would expect when P 12 does not deviate substantially from a constant diag-onal. In this situation ξ(U) approximates about equally well the optimal ξ(P 12 U) and ζ(P 12 U, P 12 U∂ ). By contrast, in the respective columns of the bottom row where cV (P) is larger, ξ(U) approximates much better ξ(P 12 U), because ζ(P 12 U, P 12 U∂ ) scales linearly to the parameters. This explains why for higher CoV the errors in ¯Y(P) are on average somewhat higher compared to those of ¯Y−1(P). On the other hand, the errors for ¯Y over the 100 runs are significantly more concentrated than those of ¯Y−1
+
+irrespectively of CoV. This behaviour arises because the direct sketching error ¯Y − Y is bounded by the largest eigenvalue of the sketch, meaning its sensitivity to P is governed solely by variations in the largest eigenvalue of ¯Y(P) for each P. Conversely, the error in the inverse ¯Y−1 − Y−1 depends on the inverse of the smallest eigenvalue. This quantity is inherently larger and scales sharply as κ(Y(P)) grows across the parameter space as indicated by (32). Consequently, the inverse error is significantly more sensitive to spectral outliers and exhibits greater dispersion across parameter realisations. Comparing the errors between control variates corrected and uncorrected sketches shows that our simple scheme is always effective in reducing the variance, perhaps somewhat surprisingly even at the small ensemble sizes ν = 10. The reduction is more pronounced at the top row compared with the bottom, where cV (P) is lower, at the right column rather than the left where μ is larger and when the ensemble size ν is bigger than smaller, as this provides additional accuracy in the Monte Carlo approximation of the weights in (52). Finally we compare the relative errors in the proposed low-variance estimator ¯wθ as in (58) plotted in column 4 against the multi-sketch average ¯ w as in (30) in column 5, subject to an important caveat. To compare them under an identical computational and sampling budget, ¯ w
+
+is computed using double the ensemble size at 2 ν. This matches, in expectation, the total number of samples allocated to ¯ wθ , which involves ν sketches for the sought estimator and another ν sketches for its corresponding control variates matrix. Looking across the four panels of figure 2 we see that on either ensemble size, on average our estimator ¯ wθ is superior in terms of the mean squared error. The improvement is considerably larger in the lower CoV regime, where as expected, the error drops with increasing μ or ν. This is because a higher μ yields a higher correlation between the sketch its control LOW-VARIANCE SKETCHY FEM 19 
+
+Figure 2. Statistics for some key error quantities as obtained by running algorithm 1 on 100 independent isotropic parameter choices on the two-dimensional problem. Columns 1 to 5 are on a logarithmic scale and correspond to ∥Y−1 − ¯Y−1∥/∥Y−1∥,
+
+∥Y − ¯Y∥F/∥Y∥F, ∥Y − YB ∥F/∥Y∥F, ∥ ¯wθ − w∥/∥w∥, and ∥ ¯w − w∥/∥w∥. The data in column 6 with linear scale refer to cV (P). The top panels show the variation of these errors at moderately small coefficients of variation at small ( ν = 10) and larger (ν = 100) ensemble sizes, whilst those below refer to larger coefficients of variation, with (ν = 50) and ( ν = 500). The panels on the left are with μ = 1 and those on the right with μ = 16. The relative error of our low-variance estimator ¯ wθ is always smaller than that of the multi-sketch average estimator ¯ w, and this advantage is more pronounced in the small coefficient of variation regime. variates, while a larger ν allows for more accurate estimation of the control variate weights and the regularisation parameter. In particular, after 100 independent runs for different parameters at ν = 10 (blue violins) the average relative errors in ¯ w is 0.0084 while that of ¯ wθ is 0.0047 for μ = 1 and 0.0035 for μ = 16. At ν = 100 (orange violins) the errors for ¯ w average at 0.0026 whilst those for ¯ wθ drop to 0.0014 for μ = 1 and 0.0011 at μ = 16, so overall the error is halved. Interestingly however, notice that our estimator performs only marginally better than the multi-sketch estimator in the higher CoV regime as shown in the bottom left panel where the respective average errors are much closer together at 0.0037 and 0.0040 when ν = 50 and then 0.0009 and 0.0012 for ν = 500. This indicates that the advantage of the proposed approach wears out as P begins to vary wildly. Our findings indicate that for CoV exceeding 2, the low-variance estimator offers no practical advantage unless a more sophisticated domain decomposition strategy is adopted for control variate assignment. Crucially however, note that in such CoV regimes, the original FEM coefficients matrix in (4) inherently becomes ill-conditioned. To visualise the spatial features of the sketched solution once projected to its original high-dimensional space and its discrepancy against the deterministic projected solution we plot a representative outcome in figure 3 corresponding to one of the low CoV experiments. The sketching error has a distinct non-uniform profile with patterns that follow the underlying parameter field. 20 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+Figure 3. Images of the spatial profile of an isotropic parameter field from the first set of tests with cV (P) = 0 .40, μ = 1 and ν = 100 (left), its deterministic projected FEM solution w (middle) and the absolute pointwise error |w − ¯wθ | from its sketched solution (right). Notice that the solution is spatially smooth and the absolute error in the sketched solution is predominantly very small apart from a few isolated areas. 7.2. Three-dimensional example. For the tests in three dimensional FEM we consider a spherical domain Ω of unit radius centred at the origin, with a fixed forcing term and boundary conditions expressed in spherical coordinates as 
+
+f (ϱ, ϑ, φ ) = 
+
+(1 if ϱ ≤ 0.15 cos  3( ϑ + π 
+
+> 3
+
+) cos  2( φ + π 
+
+> 2
+
+)
+
+0 otherwise , u∂ (1 , ϑ, φ ) = 0 .
+
+The domain is discretised into a mesh of ne = 33959932 linear tetrahedral elements connecting nn =5768160 nodes of which m = 14806 are on the boundary, resulting into a FEM model with n = 5753354 degrees of freedom and a large dimension N = 3 ne ≈ 102 million. Aside the higher physical and numerical dimension of this setting we also seek to explore the performance of our approach in dealing with anisotropic parameter fields. To generate the respective parameter matrices we generate a random number between 30 and 90 of possibly overlapping spherical inclusions at arbitrary locations and radii in the closure of the unit sphere. These are assigned piecewise constant anisotropic properties, yielding diagonal tensor profiles with fractional anisotropy between 0.13 and 0.88, and CoV that average at about 0.7, so somewhat higher than those used in the isotropic 2D tests. Similarly to the 2D case, we fix the per-sketch budget to c = ⌈5s log s⌉ and choose ν ∈ { 10 , 100 }.For consistency with the 2D tests, we also keep μ ∈ { 1, 16 }, where the 16 sub-regions of the sphere are equal volume wedges formed by dividing the upper and lower hemisphere into 8 ‘identical’ wedges. The results presented in figure 4 show a similar pattern to those of the two-dimensional tests. Interestingly however, the reduction in the Frobenius variance of the corrected sketch (column 3) from the uncorrected (column 2) is not as large, especially in the μ = 1 case on the left. Recall however that these tests were performed under a larger CoV regime and thus they are more comparable with the bottom panels of figure 2, even though we have used smaller sketch ensemble sizes. At ν = 10 (blue violins) the relative errors for our improved estimator ¯ wθ after 100 independent runs average to 0.0121 at μ = 1 and drop to 0.0096 for μ = 16, while the corresponding figure for ¯ w is 0.0161. It is important to recall that the results on ¯ w are with double the quoted ν, i.e. ¯Y(P) is a 2 ν sketch average. In increasing the ensemble to ν = 100 (orange violins), the relative errors of our estimator average at 0.0036 at μ = 1 and down to 0.0022 when μ = 16, which compared to the average relative error of 0.0052 for ¯ w indicate that the half-error advantage of our method is maintained for the anisotropic case as well. 7.2.1. Timings and memory footprint. The computations as described in the main algorithm 1 and the sampling algorithm 2 are performed on a Intel Xeon Gold 5120 CPU with 14 Cores, 2.2GHz Base, 19.25 MB Cache, and 380 GB RAM running Matlab 2020a. We provide details on the most costly setup we have used, namely that of the 3D anisotropic parameter tests that involves a larger mesh, while using μ = 16 sub-regions for the control variates and ν = 100 sketch ensemble sizes with c ≈ 5300. We report average wall-clock timings as obtained from Matlab’s profiler utility, averaging over 100 sequential runs of the main algorithm. The domain clustering to sub-regions for the construction of the control variates, and LOW-VARIANCE SKETCHY FEM 21 
+
+Figure 4. Statistics for some key error quantities as obtained by running algorithm 1 on 100 independent anisotropic parameter choices on the three-dimensional problem. In each panel the columns 1 to 5 on a logarithmic scale are ∥Y−1 − ¯Y−1∥/∥Y−1∥,
+
+∥Y − ¯Y∥F/∥Y∥F, ∥Y − YB ∥F/∥Y∥F, ∥ ¯wθ − w∥/∥w∥, and ∥ ¯w − w∥/∥w∥. The data on column 6 having a linear scale refer to the coefficient of variation cV (P). The results follow in the trend of those of the two-dimensional problem in fig. 2, in that in both cases the low-variance estimator (column 4) is on average more efficient than the multi-sketch average (column 5). the computation of the tall matrices U ∈ RN ×s and U∂ ∈ RN ×m took place offline along with computing the probabilities η and ˜ η both in RN with s = 200, m = 14806 and N = 101879796. Stored in whole these tall matrices take up 163 GB and 12 TB respectively, so this is best avoided as they needn’t be read into the RAM in whole. Instead one can deploy segmentation and out-of-core row selection implemented using memory mapping to retrieve only the sampled rows of U and U∂ . Each of the probability vectors takes 815 MB to store. The costs for generating the parameter diagonals are not accounted for as these are assumed to be provided in our setting. The critical time to note is that for computing the projected coefficients matrices Y(P) and Z(P) deterministically. The time to compute these are 135.4 s and 62.8 s respectively, using the built in bxfun(@times) command, which takes about half the time for these to be computed as triple products. The time to form the control variate parameters and matrices as in the lines 4 − 5 of algorithm 1 with μ = 16 and based on 500 samples in the Monte Carlo scheme to estimate the optimal coefficients for T and R is 6.4 s. To run the geometric skipping/Bernoulli thinning algorithm 2 twice as in line 6, each time sampling the sketch and its control variates takes 30.7 s, the most costly operation of our approach. Computing the ensemble means and covariances, control variate weights, the regularisation parameter θ and the corrected sketch as per lines 7 − 10 costs only 0.2 s as all these computations are bounded in dimension by max {s, ν }. Finally evaluating the solution of the optimisation and the answer as in lines 11 − 12 takes only a few milliseconds. In conclusion for the choice of ( s, ν, μ ) our algorithm takes less than half the time of computing Y(P) deterministically, using less than 1% of the N indices across the whole sampling process. For further context, note that to use an efficient Krylov iteration method like the preconditioned conjugate gradients algorithm [24] on the full-scale problem (4), incurs the following costs: Around 135.4 s to assemble A(P) having about 85.5 million non-zero entries occupying 1.4 GB of memory and 62.9 s for A∂ (P) with 540 thousand non-zeros taking 9.7 MB. Once the system is assembled then it takes about 31.5 s to compute an incomplete Cholesky factor at a tolerance of 10 −3 and then solving the system iteratively to a relative error of 10 −3 in order to match the sketching precision, takes about 100 iterations and 81.8 s. Overall to solve the original FEM problem deterministically at a lower accuracy takes more than 5 minutes per parameter. By comparison computing the projection deterministically takes only 67 s for equivalent levels of projection approximation error but this requires prohibitive amounts of memory or communication. Our method achieves similar errors at about half the time with substantial storage and communication compared to the deterministic projection. 22 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+8. Conclusions 
+
+The proposed variance-reduced RNLA framework for parametric FEM systems provides a clear im-provement over the classical sketch-and-invert pipeline. For a fixed overall sampling budget, the com-bined use of control variates and forward-inverse sketch fusion yields solution errors that are, on average, approximately half those of the standard approach, while incurring only a marginal increase in computa-tional complexity. This improvement is most pronounced when the parameter fields, whether isotropic or anisotropic, exhibit only moderate variation. As the fields become increasingly discontinuous, the benefit of the variance-reduction mechanism progressively declines and may eventually vanish, unless constraints on the parameters can be exploited in the construction of the control variates. The main computational bottleneck of our approach is the sampling stage itself, still the most time consuming component even after introducing geometric skipping, and therefore warrants further attention, potentially in combi-nation with hardware acceleration. Numerical experiments demonstrate that, for parameters with a coefficient of variation up to 100%, the proposed scheme achieves a two-fold reduction in error compared to standard randomised sketching, while requiring roughly half the computational time of deterministic multiplication. Overall, the results are sufficiently encouraging to support further development of this approach for real-time and resource-constrained scientific computing. 
+
+Appendix A. Proof of theorem 5.2 
+
+We first prove the invertibility of ¯Y(P) conditioned on ¯Y(I) ≻ 0 [20]. If ¯Y(I) ≻ 0 then for any nonzero x ∈ Rs, x⊤ ¯Y(I)x = PNi=1 ¯s2
+
+> ii
+
+ uy (i)x2 > 0, where ¯ sii is the element of ¯S = 1
+
+> ν
+
+Pνt=1 St. By the commutative property of the diagonal matrices P and ¯S we have (73) x⊤ ¯Y(P)x =
+
+> N
+
+X
+
+> i=1
+
+pii ¯s2
+
+> ii
+
+ uy (i)x2 > 0 ⇔ ¯Y(P) ≻ 0,
+
+since pii > 0 and sii ≥ 0. In effect, scaling the rows of Uy by P 12 ≻ 0 preserves invertibility in ¯Y(P)provided that ¯Y(I) ≻ 0. Using lemma 5.1 for 0 < ϵ < 1, we can write the error as a sum of symmetric matrices (74) U⊤ 
+
+> y
+
+¯S⊤ ¯SU y − I =
+
+> ν
+
+X
+
+> t=1
+
+Et, Et =
+
+> N
+
+X
+
+> i=1
+
+Et,i , Et,i = 1
+
+ν
+
+ γ(t)
+
+> i
+
+ηi
+
+− 1
+
+
+
+uy ⊤
+
+> (i)
+
+uy (i),
+
+where {γ(1)  
+
+> i
+
+, . . . , γ (ν) 
+
+> i
+
+}Ni=1 are independent Bernoulli variables with P(γ(t) 
+
+> i
+
+= 1) = ηi = min {1, cξ i(U)},and uy ⊤
+
+> (i)
+
+uy (i) are rank 1 s × s symmetric matrices. To bound the summands in spectral norm we have 
+
+∥Et,i ∥ = 1
+
+ν
+
+γ(t)
+
+> i
+
+ηi
+
+− 1 uy ⊤
+
+> (i)
+
+uy (i) = 1
+
+ν
+
+γ(t)
+
+> i
+
+ηi
+
+− 1 ∥uy (i)∥2 = 1
+
+ν
+
+γ(t)
+
+> i
+
+ηi
+
+− 1 ℓi(Uy ),(75) with the upper bound attained for ηi < 12 and γ(t) 
+
+> i
+
+= 1 for all t ∈ { ν}. Introducing ηi = cξ i(U) ≥
+
+cβξ i(Uy ) and ξi(Uy ) = s−1ℓi(Uy ) into (75) yields 
+
+∥Et,i ∥ ≤ 1
+
+ν
+
+ 1 − ηi
+
+ηi
+
+
+
+ℓi(Uy ) = 1
+
+ν
+
+ 1 − cβs −1ℓi(Uy )
+
+cβs −1ℓi(Uy )
+
+
+
+ℓi(Uy ) = 1
+
+νs − cβℓ i(Uy )
+
+cβ ≤ sνcβ 
+
+For the variance statistic consider first that 
+
+EE2
+
+> t,i
+
+ = 1
+
+ν2 E
+
+h γ(t)
+
+> i
+
+ηi
+
+− 1
+
+2i
+
+uy ⊤
+
+> (i)
+
+uy (i)uy ⊤
+
+> (i)
+
+uy (i) = 1
+
+ν2 E
+
+ γ2 
+
+> i
+
+− 2γiηi + η2
+
+> i
+
+η2
+
+> i
+
+
+
+ℓi(Uy )uy ⊤
+
+> (i)
+
+uy (i)
+
+= 1 − ηi
+
+ν2ηi
+
+ℓi(Uy )uy ⊤
+
+> (i)
+
+uy (i) = s − cβℓ i(Uy )
+
+ν2cβ uy ⊤
+
+> (i)
+
+uy (i) ≤ sν2cβ uy ⊤
+
+> (i)
+
+uy (i),
+
+and thus by the independence of the ν sketches the variance statistic is 
+
+VU⊤   
+
+> y¯S⊤¯SU y
+
+=
+
+> ν
+
+X
+
+> t=1
+
+E[E2 
+
+> t
+
+] = ν E[E2 
+
+> t
+
+] = ν E[E2
+
+> t,i
+
+] ≤ ν sν2cβ uy ⊤
+
+> (i)
+
+uy (i) ≤ sνcβ .LOW-VARIANCE SKETCHY FEM 23 
+
+Assembling into Bernstein’s inequality for matrices we have [30] 
+
+P ∥U⊤ 
+
+> y
+
+¯S⊤ ¯SU y − I∥ ≥ ϵ ≤ 2s exp 
+
+
+
+− 
+
+> ϵ2
+> 2
+> sνβc
+
++ sϵ 
+
+> 3νβc
+
+
+
+= 2 s exp 
+
+
+
+− 3νβcϵ 2
+
+6s + 2 sϵ 
+
+
+
+.
+
+Appendix B. Proof of proposition 5.4 
+
+Rank sub-additivity for the ν sketches implies rank   ¯Y(P) = rank   νX
+
+> t=1
+
+ˆYt(P) ≤
+
+> ν
+
+X
+
+> t=1
+
+rank   ˆYt(P) ≤ νr, 
+
+and thus rank( ˆY(P)) equals the rank of the sum of the ν sketches, which is also bounded by s. Let-ting wi
+
+.
+
+= 1
+
+> ν
+
+Pνt=1  
+
+> γ(t)
+> i
+> ηi
+
+allows to write the average sketch as a sum of rank 1 PSD matrices ¯Y(P) = 
+
+P   
+
+> i·wi>0
+
+pii u⊤
+
+> (i)
+
+u(i), and then using the fact that the null space of the sum is the intersection of the null spaces of the summands we get 
+
+N ( ¯Y(P)) = \  
+
+> i·wi>0
+
+N (u⊤
+
+> (i)
+
+u(i)) = \  
+
+> i·wi>0
+
+x · u⊤
+
+> (i)
+
+x = 0 .
+
+If for some spanning set J⋆ each index i ∈ J⋆ is selected at least once across the ν sketches, then wi > 0 for all i ∈ J⋆ and hence the rows {ui : i ∈ J⋆} (which span Rs by assumption) are present, then ¯Y(P) ≻ 0. Moreover, independence across sketches and rows implies that index i ∈ { N } is not included in a given sketch with probability (1 − ηi), and thus the probability of it being not included across all ν sketches is (1 − ηi)ν . Therefore, 
+
+P every i ∈ J⋆ appears at least once  = Y
+
+> i∈J⋆
+
+ 1 − (1 − ηi)ν .
+
+Appendix C. Proof of remark 5.1 
+
+For any index 1 ≤ h ≤ s, the diagonal element of ¯Y(P) satisfies ¯yhh (P) = 1
+
+ν
+
+> ν
+
+X
+
+> t=1
+> N
+
+X
+
+> i=1
+
+γi
+
+ηi
+
+pii u2
+
+> ih
+
+, and E[¯ yhh (P)] = yhh (P).
+
+The covariance of any two diagonal elements is 
+
+C(¯ yhh (P), ¯ykk (P)) = E[¯ yhh (P)¯ ykk (P)] − E[¯ yhh (P)] E[¯ ykk (P)] = E[¯ yhh (P)¯ ykk (P)] − yhh (P)ykk (P).
+
+By the independence of the ν sketches and the variables γ we have V(¯ yhk (P)) = 1 
+
+> ν
+
+V(ˆ yhk (P)), and 
+
+C(¯ yhh (P), ¯ykk (P)) = 1 
+
+> ν
+
+C(ˆ yhk (P), ˆykk (P)) so it suffices to prove the remark’s claim for the individual sketches. Effectively, for a fixed t
+
+E[ˆ yhh (P)ˆ ykk (P)] = E
+
+ NX
+
+> i=1
+
+γi
+
+ηi
+
+pii u2
+
+> ih
+
+ γi
+
+ηi
+
+pii u2 
+
+> ik
+
++
+
+> N
+
+X 
+
+> j̸=i=1
+
+γj
+
+ηj
+
+pjj u2
+
+> jk
+
+
+
+= E
+
+ NX
+
+> i=1
+
+γ2
+
+> i
+
+η2
+
+> i
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u2 
+
+> ik
+
++
+
+> N
+
+X
+
+> i=1
+> N
+
+X 
+
+> j̸=i=1
+
+γiγj
+
+ηiηj
+
+pii pjj u2
+
+> ih
+
+u2
+
+> jk
+
+
+
+= 1
+
+ν
+
+ NX
+
+> i=1
+
+1
+
+ηi
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u2 
+
+> ik
+
++
+
+> N
+
+X
+
+> i=1
+
+pii u2
+
+> ih N
+
+X 
+
+> j̸=i=1
+
+pjj u2
+
+> jk
+
+
+
+=
+
+> N
+
+X
+
+> i=1
+
+1
+
+ηi
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u2 
+
+> ik
+
++
+
+> N
+
+X
+
+> i=1
+
+pii u2
+
+> ih
+
+ ykk − pii u2
+
+> ik
+
+ =
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u2 
+
+> ik
+
++ yhh ykk ,
+
+hence C(ˆ yhh , ˆykk ) = PNi=1 
+
+ 1 
+
+> ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+u2
+
+> ih
+
+u2 
+
+> ik
+
+= V(ˆ yhk ). The equation on the right can be shown easily by considering the independence of the Bernoulli V(ˆ yhk ) = PNi=1 V  γi 
+
+> ηi
+
+pii uih uik 
+
+.24 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+Appendix D. Proof of lemma 5.5 
+
+Splitting the total sketch variance into that of the diagonal ( h = k) and off-diagonal ( h̸ = k) elements gives 
+
+V  ¯Y(P) = 1
+
+ν
+
+> s
+
+X
+
+> h=1
+
+V(ˆ yhh (P)) + 1
+
+ν
+
+> s
+
+X
+
+> h̸=k
+
+V(ˆ yhk (P)) ,
+
+and by symmetry we have ˆ yhk (P) = ˆ ykh (P) ⇐⇒ V ˆyhk (P) = V ˆykh (P). Imparting (39) from remark 5.1, the off-diagonal sum can be developed to 
+
+V  ¯Y(P) = 1
+
+ν
+
+> s
+
+X
+
+> h=1
+
+V(ˆ yhh (P)) + 1
+
+ν
+
+> s
+
+X
+
+> h=1
+> s
+
+X 
+
+> k̸=h
+
+C ˆyhh (P), ˆykk (P)
+
+which is by definition the variance of the sum of the diagonal entries of ¯Y(P), hence 
+
+V  ¯Y(P) = V
+
+ sX
+
+> h=1
+
+¯yhh (P)
+
+
+
+= V
+
+
+
+Tr   ¯Y(P)
+
+.(76) In effect, the total variance becomes 
+
+V  ¯Y(P) = 1
+
+ν V
+
+ sX
+
+> h=1
+> N
+
+X
+
+> i=1
+
+γi
+
+ηi
+
+pii u2
+
+> ih
+
+
+
+= 1
+
+ν V
+
+ NX
+
+> i=1
+
+γi
+
+ηi
+
+pii ℓi(U)
+
+
+
+= 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)2
+
+≤ 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+p2
+
+> ii
+
+ℓi(U)
+
+ sc − ℓi(U)
+
+
+
+,
+
+and the concentration bound in Frobenius norm (41) follows directly from Markov’s inequality. 
+
+Appendix E. Proof of theorem 5.6 
+
+From a single sketch ˆY(P) = U⊤P 12 S⊤SP 12 U of Y(P) = U⊤PU we have ˆY(P) − Y(P) = 
+
+> N
+
+X
+
+> i=1
+
+Ei, Ei =
+
+ γi
+
+ηi
+
+− 1
+
+
+
+pii u⊤
+
+> (i)
+
+u(i), such that E[Ei] = 0 .
+
+From the independence of {γi}Ni=1 and the formula for the variance of a single sketch 
+
+V ˆY =
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)u⊤
+
+> (i)
+
+u(i),
+
+averaging over ν iid sketches, and taking the spectral norm gives the variance statistic 
+
+V ¯Y = 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1
+
+ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)u⊤
+
+> (i)
+
+u(i) .
+
+To get the upper bound on the spectral norm of the error summands ∥Ei∥ ≤ L, note that the coefficients 
+
+γiη−1 
+
+> i
+
+− 1 are maximised for γi = 1 and ηi < 12 where ηi = cs −1ℓi(U). In effect, this yields 
+
+∥Ei∥ =
+
+ scℓ i(U) − 1
+
+
+
+pii u⊤
+
+> (i)
+
+u(i) ≤
+
+ scℓ i(U) − 1
+
+
+
+pii ℓi(U) ≤ sc ∥P∥∞.
+
+Appendix F. Proof of theorem 5.7 
+
+To prove the tail concentration bound for the right hand side average sketch matrix consider ¯Z(P) − Z(P) = 
+
+> ν
+
+X
+
+> t=1
+
+Et, Et =
+
+> N
+
+X
+
+> i=1
+
+Et,i , Et,i =
+
+ 1
+
+ν
+
+˜γ(t)
+
+> i
+
+˜ηi
+
+− 1
+
+
+
+pii u⊤
+
+> (i)
+
+u∂ (i),
+
+with the summands centred E[Et,i ] = 0. Let the symmetric dilation of the s × m summands as a (s + m) × (s + m) matrix 
+
+Et,i 
+
+.
+
+=
+
+ 0 Et,i )
+
+E⊤ 
+
+> t,i
+
+0
+
+LOW-VARIANCE SKETCHY FEM 25 
+
+such that ∥ Pνt=1 
+
+PNi=1 Et,i ∥ = ∥¯Z(P) − Z(P)∥. The variance of ¯Z(P) can also be cast as 
+
+V¯Z =
+
+> N
+
+X
+
+> i=1
+
+E[E2
+
+> t,i
+
+] = 1
+
+ν
+
+"PNi=1 EEt,i E⊤
+
+> t,i
+
+ 00 PNi=1 EE⊤
+
+> t,i
+
+Et,i 
+
+#
+
+,
+
+and by the independence of the sketches 
+
+∥V¯Z∥ = 1
+
+ν max 
+
+n NX
+
+> i=1
+
+ ˜γ(t)
+
+> i
+
+˜ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U∂ )u⊤
+
+> (i)
+
+u(i) ,
+
+> N
+
+X
+
+> i=1
+
+ ˜γ(t)
+
+> i
+
+˜ηi
+
+− 1
+
+
+
+p2
+
+> ii
+
+ℓi(U)u∂ ⊤
+
+> (i)
+
+u∂ (i)
+
+o
+
+.
+
+To get the upper bound of ∥Et,i ∥ we note that the sum of coefficients ˜ γ(t) 
+
+> i
+
+˜η−1 
+
+> i
+
+− 1 is maximised when ˜γi(t) = 1 for all t ∈ { ν} and ˜ ηi = min {1, cζ i} < 12 . Substituting the definition of ζ from (28) yields 
+
+∥Et,i ∥ = 1
+
+ν
+
+ 1
+
+cζ i
+
+− 1
+
+
+
+pii u⊤
+
+> (i)
+
+u∂ (i) ≤ 1
+
+νc 
+
+ NX
+
+> i=1
+
+ℓi(U)ℓi(U∂ )
+
+
+
+max 
+
+> i
+
+pii 
+
+ℓi(U)ℓi(U∂ ) u⊤
+
+> (i)
+
+u∂ (i)
+
+≤ 1
+
+νc 
+
+ NX
+
+> i=1
+
+ℓi(U)ℓi(U∂ )
+
+
+
+max 
+
+> i
+
+ pii 
+
+pℓi(U)ℓi(U∂ )
+
+
+
+.
+
+Plugging these into Bernstein’s inequality for rectangular zero-mean random matrices gives the result. 
+
+Appendix G. Sketching the right hand side vector 
+
+The right hand side vector estimator qB (P) as used in line 15 of algorithm 1 is evaluated as 
+
+qB (P) =  VΣ −1Φ⊤f − ZB (P)Σ∂ V∂ u∂ ,
+
+where ZB (P) is the control variates corrected sketch average in (51). To find the appropriate low-dimensional set of parameters R ∈ L and set ¯Z(R) as the control variates matrix for ¯Z(P) we set to minimise 
+
+V ¯Z(P) − ¯Z(R) = 1
+
+ν V
+
+ sX
+
+> h=1
+> m
+
+X
+
+> k=1
+> N
+
+X
+
+> i=1
+
+˜γi
+
+˜ηi
+
+(pii − rii )2uih u∂ ik 
+
+
+
+= 1
+
+ν
+
+> N
+
+X
+
+> i=1
+
+ 1˜ηi
+
+− 1
+
+
+
+(pii − rii )2(u(i)1)2(u∂ (i)1)2
+
+where 1 is the vector of ones in the appropriate dimension. Taking the gradient of the above to zero gives the optimal values for the degrees of freedom in the diagonal R.
+
+References 
+
+[1] O. C. Zienkiewicz and Y. K. Cheung, The Finite Element Method in Structural and Continuum Mechanics . McGraw-Hill, 1967. [2] H. C. Elman, D. J. Silvester, and A. J. Wathen, Finite Elements and Fast Iterative Solvers with Applications in Incompressible Fluid Dynamics . Oxford University Press, 2014. [3] P. Benner, M. Ohlberger, A. Cohen, and K. Willcox, eds., Model Reduction and Approximation . Philadelphia, PA: Society for Industrial and Applied Mathematics, jul 2017. [4] M. Raissi, P. Perdikaris, and G. E. Karniadakis, “Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations,” Journal of Computational Physics , vol. 378, pp. 686–707, 2019. [5] Z. Li, N. B. Kovachki, K. Azizzadenesheli, B. Liu, K. Bhattacharya, A. M. Stuart, and A. Anandkumar, “Neural operator: Graph kernel network for partial differential equations,” in ICLR 2020 Workshop on Integration of Deep Neural Models and Differential Equations , 2020. Also available as arXiv:2003.03485. [6] A. Quarteroni, P. Gervasio, and F. Regazzoni, “Combining physics-based and data-driven models: advancing the frontiers of research with scientific machine learning,” Mathematical Models and Methods in Applied Sciences , vol. 35, no. 04, pp. 905–1071, 2025. [7] P.-G. Martinsson and J. A. Tropp, “Randomized numerical linear algebra: Foundations and algorithms,” Acta Nu-merica , vol. 29, p. 403–572, 2020. [8] R. M. Gower and P. Richt´ arik, “Randomized Iterative Methods for Linear Systems,” SIAM Journal on Matrix Analysis and Applications , vol. 36, pp. 1660–1690, jan 2015. [9] Y. Nakatsukasa and J. A. Tropp, “Fast and accurate randomized algorithms for linear systems and eigenvalue prob-lems,” SIAM Journal on Matrix Analysis and Applications , vol. 45, no. 2, pp. 1183–1214, 2024. 26 N. POLYDORIDES, Y. WU, H. NOORI, H. VANDIERENDONCK, AND R. WOODS 
+
+[10] L. Burke, S. G¨ uttel, and K. M. Soodhalter, “Gmres with randomized sketching and deflated restarting,” SIAM Journal on Matrix Analysis and Applications , vol. 46, no. 1, pp. 702–725, 2025. [11] O. Balabanov and A. Nouy, “Randomized linear algebra for model reduction. Part I: Galerkin methods and error estimation,” Advances in Computational Mathematics , vol. 45, no. 5, pp. 2969 – 3019, 2019. [12] O. Balabanov and A. Nouy, “Randomized linear algebra for model reduction—part II: minimal residual methods and dictionary-based approximation,” Advances in Computational Mathematics , vol. 47, no. 26, p. 26, 2021. [13] P. Drineas and M. W. Mahoney, Effective Resistances, Statistical Leverage, and Applications to Linear Equation Solving . ArXiv, may 2010. [14] H. Avron and S. Toledo, Effective Stiffness: Generalizing Effective Resistance Sampling to Finite Element Matrices .ArXiv, oct 2011. [15] R. Kannan, S. Hendry, N. J. Higham, and F. Tisseur, “Detecting the causes of ill-conditioning in structural finite element models,” Computers & Structures , vol. 133, pp. 79–89, 2014. [16] Y. Saad, Iterative Methods for Sparse Linear Systems, Second Edition . 2003. [17] S. A. Vavasis, “Stable finite elements for problems with wild coefficients,” SIAM Journal on Numerical Analysis ,vol. 33, no. 3, pp. 890–916, 1996. [18] P. Drineas, M. Magdon-Ismail, M. W. Mahoney, and D. P. Woodruff, “Fast approximation of matrix coherence and statistical leverage,” Journal of Machine Learning Research , vol. 13, pp. 3475–3506, 2012. [19] P. Drineas and M. Mahoney, “RandNLA: randomised numerical linear algebra,” Communications of the ACM , vol. 59, no. 6, pp. 80–90, 2016. [20] R. Lung, Y. Wu, D. Kamilis, and N. Polydorides, “A sketched finite element method for elliptic models,” Computer Methods in Applied Mechanics and Engineering , vol. 364, p. 112933, 2020. [21] P. Drineas, R. Kannan, and M. W. Mahoney, “Fast monte carlo algorithms for approximate matrix multiplication,” 
+
+SIAM Journal on Computing , vol. 36, no. 1, pp. 172–192, 2006. [22] J. A. Tropp, “User-friendly tail bounds for sums of random matrices,” Foundations of Computational Mathematics ,vol. 12, no. 4, pp. 389–434, 2012. [23] C. Lemieux, Monte Carlo and Quasi-Monte Carlo Sampling . Springer Series in Statistics, New York, NY: Springer, 2009. [24] G. H. Golub and C. F. Van Loan, Matrix Computations . Baltimore, MD: Johns Hopkins University Press, fourth ed., 2013. [25] G. W. Stewart and J.-g. Sun, Matrix Perturbation Theory . Computer Science and Scientific Computing, Boston: Academic Press, 1990. [26] T. Kanamori and A. Ohara, “A bregman extension of quasi-newton updates ii: Analysis of robustness properties,” 
+
+Journal of Computational and Applied Mathematics , vol. 253, pp. 104–122, 2013. [27] Y. Censor and S. A. Zenios, Parallel Optimization: Theory, Algorithms, and Applications . New York: Oxford Uni-versity Press, 1997. [28] M. Benning and M. Burger, “Modern regularization methods for inverse problems,” Acta Numerica , vol. 27, p. 1–111, 2018. [29] D. P. Bertsekas and J. N. Tsitsiklis, Introduction to Probability , vol. 2. Nashua, NH: Athena Scientific, 2008. [30] J. A. Tropp, “An introduction to matrix concentration inequalities,” Foundations and Trends ® in Machine Learning ,vol. 8, no. 1-2, pp. 1–230, 2015. 
+
+Nick Polydorides, School of Engineering, University of Edinburgh, Edinburgh, UK 
+
+Email address : n.polydorides@ed.ac.uk 
+
+Yue Wu, School of Mathematics, University of Strathclyde, Glasgow, UK 
+
+Email address : yue.wu@strath.ac.uk 
+
+Hamid Noori, Department of Computer Science, University of Durham, Durham, UK 
+
+Email address : hamid.noori@durham.ac.uk 
+
+Hans Vandierendonck, Electronics, Electrical Engineering & Computer Science, Queen’s University Belfast, Belfast, UK 
+
+Email address : h.vandierendonck@qub.ac.uk 
+
+Roger Woods, Electronics, Electrical Engineering & Computer Science, Queen’s University Belfast, Belfast, UK 
+
+Email address : r.woods@qub.ac.uk

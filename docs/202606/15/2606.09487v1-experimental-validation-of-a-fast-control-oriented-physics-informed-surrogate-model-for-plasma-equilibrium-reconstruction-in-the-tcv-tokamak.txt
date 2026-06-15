@@ -1,0 +1,601 @@
+Title: Experimental validation of a fast control-oriented, physics-informed surrogate model for plasma equilibrium reconstruction in the TCV tokamak
+
+URL Source: https://arxiv.org/pdf/2606.09487v1
+
+Published Time: Tue, 09 Jun 2026 02:21:32 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Experimental validation of a fast control-oriented, physics-informed surrogate model for plasma equilibrium reconstruction in the TCV tokamak 
+
+M. Grandin 1, A. Mele 2, C. Galperti 2, D. Gonzales Castineiras 2, C. Heiß 2, A. Cenedese 1,TCV team 3 and EUROfusion Tokamak Exploitation team 4
+
+Abstract — Magnetic equilibrium reconstruction provides the plasma state estimate required for real-time shape control in tokamaks. We present a fast, physics-informed neural network surrogate of the liuqe equilibrium reconstruction code [1] for the TCV tokamak at EPFL, achieving inference times below 100 μs and enabling 10 kHz shape control. The model is trained on around 10,000 TCV discharges spanning the full operational range of plasma shapes. Its modu-lar branch/trunk architecture decouples magnetic measurement encoding from spatial coordinate processing, enabling physics-informed regularization via automatic differentiation of the predicted flux map. The surrogate has been compiled and deployed on the TCV real-time control system, and validated both offline and in real time against the models liuqe-rt and lih , showing comparable accuracy. Closed-loop performance assessed with the real-time software in-the-loop fge [2] demonstrates control-equivalent behavior across multiple control strategies. 
+
+I. I NTRODUCTION 
+
+Plasma shape control is a central challenge in tokamak operation, as the plasma boundary determines interactions with plasma-facing components, MHD stability margins, and confinement performance. High control bandwidth is particularly important for advanced or inherently unstable plasma configurations, during fast current ramp-up and ramp-down transients, and more generally to improve shape-tracking accuracy. A 10 kHz shape-control loop would be desirable on these grounds alone; it would additionally enable the unification of shape control with vertical position stabilization, which on most tokamaks already runs at high bandwidth. The Tokamak ` a Configuration Variable (TCV) at EPFL is designed to explore a wide range of plasma shapes and control strategies [3], being equipped with poloidal field (PF) coils and magnetic diagnostics (flux loops and field probes) around the vacuum vessel. The standard equilib-rium reconstruction code is LIUQE [1], which solves the Grad–Shafranov equation (GSE) iteratively on a 28 × 65 
+
+grid. LIUQE -RT limits iterations and interpolation complex-ity, achieving cycle times of ∼0.5 ms and sustaining the current 1 kHz shape-control loop; the vertical stabilization loop, by contrast, already runs at 10 kHz. LIH, the zeroth-iteration first guess of the algorithm, operates at 10 kHz but with substantially reduced accuracy. The 1 kHz constraint            
+
+> 1University of Padova, Padova, Italy
+> 2Ecole Polytechnique Federale de Lausanne (EPFL), Swiss Plasma Center (SPC), 1015 Lausanne, Switzerland
+> 3See author list of B.P. Duval et al 2024 Nucl. Fusion 64 112023
+> 4See author list of E. Joffrin et al 2024 Nucl. Fusion 64 112019
+
+imposed by LIUQE -RT is therefore the primary bottleneck preventing both higher-bandwidth shape control and unified shape-and-position control on TCV. The underlying physical problem is the GSE [4], [5], describing axisymmetric MHD force balance. It is useful to distinguish three related but distinct GSE-constrained problems that appear in the literature. The free-boundary 
+
+problem takes the currents in the PF coils and passive conductors as inputs and finds the flux map together with the plasma boundary. The fixed-boundary problem takes a prescribed last-closed flux surface (LCFS) as a constraint and finds the PF coil currents required to sustain it. Equi-librium reconstruction — the problem addressed in this paper — is an inverse problem: given a set of experimental measurements (magnetic flux loops and field probes around the vacuum vessel), it seeks the flux map ψ(r, z ) and the two free functions p′(ψ) and T T ′(ψ) that simultaneously satisfy the GSE and best reproduce those measurements in a least-squares sense. In general, solving the inverse problem is computationally expensive and time-consuming, thereby motivating the development of fast and parsimonious surrogate models. Neural networks (NN) surrogates for plasma equilib-rium have attracted broad interest, spanning equilibrium reconstruction [6]–[14], free-boundary equilibrium [15], and boundary and LCFS reconstruction [16]–[18], with many adopting a GSE-related physics-informed loss [8], [16], [19]– [21]. A distinct subset uses Neural Operators [22], which learn function-space mappings by separating input-function encoding from spatial coordinate processing [23], naturally yielding Physics-Informed Neural Operators (PINOs) via automatic differentiation. Recent works have applied PINO-type architectures directly to the GSE [24]–[26], including in the fixed-boundary setting [24]. On the control side, the use of a fast NN as a shape-control observer was pioneered by Bishop et al. [27] ( < 50 μs with mixed digital–analog hardware) and Jeon et al. [28], and more recently demonstrated on Globus-M/M2 [29] — albeit with a simple architecture and validated only in simulation. Data-driven approaches via Reinforcement Learning (RL) have also been applied to plasma shape control on TCV [30], DIII-D [31], and HL-3 [32]. FPGA-based acceleration has also been proposed for extreme inference latencies [33], but falls outside the scope of this work, which targets a standard single-core CPU. In this paper, we present a PINO based on a modified DeepONet architecture [22] as a fast surrogate for LIUQE 
+
+> arXiv:2606.09487v1 [physics.plasm-ph] 8 Jun 2026
+
+equilibrium reconstruction on TCV, in which a branch net-work conditioned on the magnetic measurements modulates the spatial basis functions learned by a trunk network. Physics-informed regularization is enforced via automatic differentiation through the trunk path, yielding losses on ψ,
+
+Br , Bz , and j with LIUQE-generated targets. The model has been compiled and deployed on the TCV PCS, where it is validated in real time against LIUQE -RT and LIH. Closed-loop performance is assessed in simulation with the FGE solver [2] on a variety of control strategies. Our work makes the following distinct contributions with respect to the existing literature. First, it demonstrates, to our knowledge, the first PINO-based equilibrium reconstruction surrogate operating at 10 kHz and deployed on the Plasma Control System (PCS) of an actual tokamak. Second, the modular branch/trunk architecture allows the learned flux map to be evaluated at arbitrary collocation points, making the approach compatible with a variety of control strategies without retraining. The remainder of the paper is organized as follows. Section II describes the model architecture and PCS deploy-ment; Section III presents validation and simulation results; Section IV draws conclusions. II. M ETHODS 
+
+A. Grad–Shafranov Eq. and Equilibrium Reconstruction 
+
+The equilibrium of an axisymmetric magnetized plasma is governed by the GSE equation [4], [5], which expresses the balance between plasma pressure gradients and Lorentz forces in the poloidal plane (r, z ):
+
+∆∗ψ = −4π2μ0 r
+
+
+
+r p ′ + T T ′
+
+μ0r
+
+
+
+, (1) where ψ(r, z ) is the poloidal magnetic flux normalized by 2π, p′(ψ) = d p/ dψ and T T ′(ψ) = T dT / dψ are the two free radial profile functions encoding the pressure gradient and the poloidal current function gradient respectively, and 
+
+∆∗ is the Grad–Shafranov elliptic operator: 
+
+∆∗ = r ∂∂r 
+
+ 1
+
+r∂∂r 
+
+
+
++ ∂2
+
+∂z 2 . (2) The poloidal magnetic field components Br (r, z ) − Bz (r, z )
+
+and the toroidal plasma current density j(r, z ) are related to ψ through its first and second partial derivatives (using standard approximations): 
+
+Br (r, z ) = − 12πr ∂ψ ∂z , Bz (r, z ) = 12πr ∂ψ ∂r , (3) 
+
+j(r, z ) = − 12πr 
+
+ ∂2ψ∂r 2 + ∂2ψ∂z 2
+
+
+
++ 12πr 2
+
+∂ψ ∂r . (4) On TCV, LIUQE [1] parametrizes the plasma current den-sity as a linear combination of basis functions and iteratively converges to the equilibrium on the spatial grid. LIUQE -RT 
+
+limits the number of iterations per time step and adopts simplified interpolation routines, achieving ∼200 μs per execution. LIH corresponds to the zeroth iteration of this scheme: it fits a coarse finite-element representation of the toroidal current distribution to the available measurements and reconstructs the flux maps via precomputed Green’s functions, operating at 10 kHz but with significantly reduced accuracy. 
+
+B. Dataset Generation 
+
+The training and validation dataset is generated by apply-ing LIUQE [1] to all available TCV shots acquired between December 2022 and November 2025. Shots and individual time steps are filtered using basic thresholds on plasma current and on the numerical convergence of the iterative scheme, retaining only well-converged equilibria. One times-tamp in every six is retained to reduce computational cost while preserving temporal variability; the resulting dataset covers approximately 10 000 shots with a broad coverage of operating conditions. The resulting dataset spans a wide variety of plasma con-figurations, including limiter and diverted plasmas, standard single-null configurations (ITER-Baseline-like scenarios, the most frequent), negative and positive triangularity shapes, double-null and snowflake divertors, highly elongated plas-mas, and shapes associated with plasma ramp-up and ramp-down transients. As TCV has a significantly elongated cham-ber, a substantial range of plasma vertical positions is also represented. The shape distribution is not uniform: single-null scenarios predominate, reflecting the operational history of the machine, but all other configurations are sufficiently represented to support generalization. For each retained time step, the following quantities are saved: the magnetic measurements (provided by flux loops and magnetic field probes), the full poloidal flux map ψ(r, z )
+
+on the computational grid, the corresponding magnetic field maps Br (r, z ) and Bz (r, z ), and the toroidal current density map j(r, z ). The dataset is split at the shot level, assign-ing 80% of shots to the training set and 20% to the validation set. This ensures that the validation set contains only shots not seen during training, providing an unbiased estimate of generalization performance. 
+
+C. Network Architecture and Training Strategy 1) Neural Operator Foundation: The network architecture is grounded in the DeepONet framework introduced by Lu et al. [22], which targets the learning of mappings between functional spaces, an approach referred to as operator learn-ing. The underlying theoretical foundation is the Universal Approximation Theorem for operators [23], which states that any nonlinear continuous operator G : Rm → Rn mapping an input function u(x), sampled at locations x ∈ Rm, to output values at query points y ∈ Rn, can be approximated as 
+
+G(u)( y) ≈
+
+> K
+
+X
+
+> k=1
+
+bk(u(x)) tk(y), (5) where b(·) and t(·) are the branch and trunk networks respectively, and K is the number of latent units. Because 
+
+x and y are treated independently, the model can be trained 2branch path 
+
+> trunk path
+> outputs
+> d
+> mag. meas.
+> (r, z )
+> query coords
+> Branch Net
+> 1-layer MLP, Swish β
+> Trunk Net
+> 1-layer MLP, Swish β
+> b
+> t(r, z )
+
+⊙element-wise Head Net        
+
+> 1-layer MLP, Swish β
+> ˆψ(r, z ;d)ˆBr,ˆBzˆȷ(r, z )
+> ∂ˆψ∂r
+
+, ∂ ˆψ∂z   
+
+> ∂2ˆψ∂r 2
+
+, ∂2 ˆψ∂z 2                     
+
+> LψLBLj
+> Fig. 1. Schematic of the proposed PINO architecture. The branch network encodes the vector of magnetic measurements dinto a latent embedding b∈RK.The trunk network encodes the query coordinates (r, z )into a matching embedding t(r, z )∈RK. The two embeddings are combined via element-wise multiplication and passed to a shallow regression head that produces the predicted poloidal flux ˆψ(r, z ;d). Magnetic field components ˆBrand ˆBzare obtained via automatic differentiation through the trunk path.
+
+and evaluated at arbitrary query points, improving flexibility and generalization capability. Some prior works have applied Neural Operator or PINN-type architectures to GSE-related problems. Refs. [21], [24] use a DeepONet structure in which position encoding is performed on a regular grid and partial derivatives required for the physics-informed loss are estimated via finite dif-ferences. Refs. [25], [26] instead use point collocation and compute derivatives directly via automatic differentiation, but are limited either to a single fixed equilibrium or to a small set of parameter variations, and restrict collocation points to the interior of the plasma boundary. The present approach retains the branch/trunk decomposition and automatic differ-entiation for derivatives, while conditioning the solution on the full vector of magnetic measurements and using LIUQE-generated targets — which allows collocation points both inside and outside the LCFS. 
+
+2) Architecture: The network consists of three sub-networks, as illustrated in Fig. 1. The branch network encodes the vector of magnetic mea-surements d ∈ R133 into a latent representation: 
+
+b = BranchNet( d) ∈ RK . (6) The trunk network encodes the spatial query point (r, z ):
+
+t(r, z ) = TrunkNet( r, z ) ∈ RK . (7) The two embeddings are combined via element-wise multi-plication, and the result is passed to a shallow head network 
+
+that produces the predicted flux: 
+
+ˆψ(r, z ; d) = HeadNet ψ (t(r, z ) ⊙ b) (8) This formulation modifies the original DeepONet, which uses a dot product between branch and trunk outputs, by replacing it with an element-wise product followed by a regression head. The branch network thereby acts as a
+
+conditioner : it encodes the current plasma scenario, captured in the magnetic measurements d, and modulates the spatial basis functions provided by the trunk. All three sub-networks are implemented as single-layer MLPs with the custom activation function described below. 
+
+3) Activation Function: Because the physics-informed losses (introduced below) require first- and second-order partial derivatives of ˆψ with respect to (r, z ), and these derivatives must themselves be differentiated through the op-timiser during training, a third-order differentiable activation function is necessary. The Swish function [34] satisfies this requirement and is infinitely differentiable: 
+
+Swish β (x) = x σ (βx ) = x
+
+1 + e−βx , (9) 
+
+ddx Swish β (x) = σ(βx ) + βx σ (βx )1 − σ(βx ). (10) where β is a vector of trainable per-unit parameters that controls the sharpness of the activation. This trainable parametrization allows a single-layer network to achieve high nonlinear expressivity without increasing depth, which is critical for inference speed. 
+
+4) Physics-Informed Regularization: Three loss terms are propagated jointly through the network during training. Us-ing Eqs. (3)–(4), the predicted field components ˆBr , ˆBz ,and ˆj are obtained by automatic differentiation of ˆψ with respect to (r, z ). The individual loss terms are: 
+
+Lψ = 1
+
+NcNcX
+
+> i=1
+
+ˆψ(ri, z i) − ψLIUQE (ri, z i) p (11) 
+
+LB = 1
+
+NcNcX
+
+> i=1
+
+ˆB(ri, z i) − BLIUQE  
+
+> p
+
+(12) 
+
+Lj = 1
+
+NcNcX
+
+> i=1
+
+ˆj(ri, z i) − jLIUQE  
+
+> p
+
+(13) where p ∈ { 1, 2} (both ℓ1 and ℓ2 norms were found to work in practice), Nc is the number of collocation points per batch, and all targets are taken directly from LIUQE . The total training loss is the weighted sum: 
+
+L = λψ Lψ + λB LB + λj Lj . (14) The weights λψ and λB , with λψ = 10 λB , are kept constant throughout training, giving higher importance to direct flux accuracy. The weight λj is initialized at a relatively large value and decayed exponentially during training: the current-density loss accelerates convergence in the early stages, but is tapered toward the end because j is not a control target, and also to avoid overfitting to the core current-density profiles, 3which are ill-posed with respect to the boundary magnetic measurements and vary across scenarios. 
+
+5) Collocation Point Sampling: During training, query points (ri, z i) are drawn from a non-uniform distribution that concentrates samples near the LCFS. This importance sampling strategy serves two purposes. First, the LCFS and its neighbourhood are the most control-relevant region of the domain, since virtually all shape control quantities — gap distances, X-point positions, flux-surface geometry — are derived from features of ψ near the plasma boundary. Second, because the model does not receive plasma pressure or current profiles as inputs — consistent with standard practice in real-time equilibrium reconstruction — sampling fewer points in the plasma core reduces the influence of profile-dependent reconstruction errors on the training loss. In the absence of profile information, the network is expected to learn the most probable core profile consistent with the measurement-conditioned boundary solution. 
+
+6) Training Procedure: The model is trained using the Adam optimiser with a batch size of 256 and a learning rate that decays logarithmically from 5 × 10 −3 to 5 × 10 −5
+
+over 50 epochs. The branch/trunk split architecture was found to converge significantly faster and to achieve the same reconstruction accuracy with fewer total trainable parameters compared to a monolithic fully-connected network with identical input/output dimensions. Training and validation loss curves for Lψ and LB are shown in Fig. 2. 0 10 20 30 40 50               
+
+> Epoch
+> 10 −3
+> 10 −2
+> ψ Loss
+> train ψ
+> eval ψ
+> 010 20 30 40 50
+> Epoch
+> 10 −3
+> 10 −2
+> Bd Loss
+> train Bd
+> eval Bd
+> Fig. 2. Training and validation loss curves for the flux loss Lψ(left) and the magnetic-field loss LB(right).
+
+D. Implementation on the Plasma Control System 
+
+Deployment on the TCV plasma control system (PCS) [35] required the network to be compiled to efficient na-tive code compatible with the real-time control infrastruc-ture. The model was implemented as a MATLAB function (r2019a) with code-generation compatibility, allowing the MATLAB/Simulink engine to compile it into efficient C code. This approach guarantees modularity and interoper-ability with the other control system submodules. Magnetic field components Br and Bz are required at run time and are computed by performing a single back-propagation step through the trunk-network path, exploiting the same automatic differentiation mechanism used during training. Profiling of the compiled code revealed that approx-imately 80% of the real-time execution time was consumed by the evaluation of exponentials in the Swish activation function. A key optimization was to cache the exponential                     
+
+> TABLE I DEPLOYED VERSIONS AND MEASURED RECONSTRUCTION TIME
+> Vers. Emb. size Trunk Branch Head tr(μs) Small 32 32 48 48 78 ±5Turbo 16 16 32 32 20 ±1
+
+values computed during the forward pass and reuse them during the backward pass for Br , Bz computation: because the forward and backward activations share the same sigmoid (see Eq. 10), this avoids redundant exponential evaluations and reduces the total inference time by nearly a factor of two. A further optimization — caching and reusing the trunk embedding across time steps when the set of control points does not change within a shot — was identified but deliberately not implemented, in order to preserve the modularity of the approach and allow dynamic control point selection at run time. The module was deployed as a submodule of the full control scheme on a reserved CPU core (Intel i9) of the TCV control server, where it can run in parallel with the active control system during shots, allowing real-time speed characterization without interfering with machine operations. Two network variants were characterized, as summarized in Table I. Both variants operate comfortably within the 100 μsbudget required for 10 kHz control. III. R ESULTS 
+
+A. Network Reconstruction Capabilities 
+
+Figure 3 shows validation-set reconstructions for four plasma configurations (see caption for column layout). The flux ψ achieves the best accuracy, consistent with its dominant weight ( λψ = 10 λB ) in the training loss. 
+
+Br and Bz are accurate across most of the domain, with somewhat higher errors near the vessel corners — regions outside the plasma vessel not covered by training collocation points. j shows the largest errors, as expected: it is not a primary control objective, its reconstruction from boundary measurements alone is ill-posed, and λj is deliberately decayed to avoid overfitting core profiles. The single-null row achieves the best accuracy across all fields, reflecting its predominance in the training set. The double-null row shows good accuracy near the boundary but higher core errors, as the network must infer the core current-density profile from measurements rather than receiving it as input. The remaining configurations confirm good generalization to advanced shapes and a wide range of vertical positions. 
+
+B. Comparison with LIUQE-RT and LIH 
+
+The reconstruction accuracy of the PINO surrogate is compared against LIUQE -RT and LIH, using the offline  
+
+> LIUQE
+
+solution as the ground truth. Figure 4 shows the average and maximum absolute errors across 25 reference control points on the plasma boundary, as a function of time within the discharge (from 0.2 s to 1.6 s), for the flux ψ and the total poloidal magnetic field magnitude pB2 
+
+> r
+
++ B2 
+
+> z
+
+.The PINO trace is generated in real time on the TCV PCS during the shot, while the LIUQE -RT and LIH traces are 4single null 
+
+ψ(r, z )
+
+> 0.45
+> 0.50
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> 0.75
+> 0.80
+> 0.85
+
+ψ(r, z ) % err 
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+
+Br(r, z )
+
+> −0.15
+> −0.10
+> −0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+
+Br(r, z ) % err 
+
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+
+Bz(r, z )
+
+> −0.2
+> −0.1
+> 0.0
+> 0.1
+> 0.2
+
+Bz(r, z ) % err 
+
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+
+Iy(r, z )
+
+> −3.5
+> −3.0
+> −2.5
+> −2.0
+> −1.5
+> −1.0
+> −0.5
+> 0.0
+
+Iy(r, z ) % err 
+
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> double null
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> 0.45
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> −0.10
+> −0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> −0.15
+> −0.10
+> −0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> −2.5
+> −2.0
+> −1.5
+> −1.0
+> −0.5
+> 0.0
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> negative triangularity
+> −0.45
+> −0.40
+> −0.35
+> −0.30
+> −0.25
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> −0.100
+> −0.075
+> −0.050
+> −0.025
+> 0.000
+> 0.025
+> 0.050
+> 0.075
+> 0.100
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> −0.10
+> −0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> −2.5
+> −2.0
+> −1.5
+> −1.0
+> −0.5
+> 0.0
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> high vertical position
+> −1.1
+> −1.0
+> −0.9
+> −0.8
+> −0.7
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> −0.15
+> −0.10
+> −0.05
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> −0.2
+> −0.1
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> 1.25
+> 1.50
+> 1.75
+> 2.00
+> 0
+> 1
+> 2
+> 3
+> 4
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+
+Fig. 3. Reconstruction examples from the validation set for 4 distinct plasma configurations (rows). Collocation points are selected to be the entire regular grid to evaluate contours. The eight columns show, from left to right: predicted vs. ground-truth poloidal flux contours (PINO: solid, LIUQE : dotted), absolute percentage error on ψ (saturated at 1%), Br contours, percentage error on Br (saturated at 2%), Bz contours, percentage error on Bz (saturated at 2%), toroidal current density j contours, and percentage error on j (saturated at 5%). Row 1: standard single-null. Row 2: double-null. Row 3: Negative triangularity. Row 4: High vertical position. 
+
+computed offline in post-processing for the same shot. LIH, as expected, is the least accurate of the three observers: its error is the largest and remains relatively constant through-out the discharge, consistent with its nature as a zeroth-iteration first guess. Nevertheless, even LIH produces errors that remain within a range considered feasible for control purposes. The PINO surrogate and LIUQE -RT perform very similarly, with both observers achieving errors that remain mostly at or below the 10 −3 [Wb, T] level across both quantities. Notably, the PINO surrogate is substantially more accurate than LIUQE -RT for the flux ψ during the first half of the discharge. Averaged across multiple previously unseen shots, the PINO achieves average errors of 1.09 × 10 −3 Wb, 
+
+1.33 × 10 −3 T, and 1.12 × 10 −3 T for ψ, Br , and Bz
+
+respectively — compared to 6.55 ×10 −3 Wb, 1.20 ×10 −3 T, 
+
+9.75 × 10 −4 T for LIUQE -RT , and 1.37 × 10 −2 Wb, 9.11 ×
+
+10 −3 T, 1.12 × 10 −2 T for LIH . These residual errors are comparable to the calibration uncertainty of the magnetic sensors, indicating that the surrogate is operating near the measurement noise floor. 
+
+C. Closed-Loop Control Simulations 
+
+The closed-loop performance of the PINO surrogate as a shape-control observer is assessed in simulation using the FGE free-boundary equilibrium and transport solver [2], [36], thoroughly validated on TCV. Three controllers of increasing complexity are considered; in all cases solid lines correspond to the PINO surrogate and dashed lines to the 50.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6       
+
+> 10 −3
+> 10 −2
+> 10 −1
+> ψ [Wb]
+> Surrogate Liuqe-RT LIH
+> 0.20.40.60.81.01.21.41.6
+> 10 −3
+> 10 −2
+> 10 −1
+> B [T]
+> Surrogate Liuqe-RT LIH
+
+Fig. 4. Reconstruction error comparison across 25 reference control points on a representative shot, as a function of discharge time. In each panel, two lines are shown per observer: the temporal trace of the average error (lower) and maximum error (upper) across the 25 points. All errors are computed with respect to the offline LIUQE solution, taken as ground truth. 
+
+default observer. 
+
+PID gap-based controller. The first controller is the PID-based hybrid shape controller of [37], which tracks a set of gap distances on the plasma boundary, activated at t = 0 .6 s with LIUQE -RT as the default observer. Figure 5 shows the shape control errors across the 10 control points (left) and the projected shape errors (right). Both observers produce essentially indistinguishable closed-loop behaviour: all error channels converge after activation, with the surrogate achieving marginally faster settling on some channels. 0.6 0.7 0.8 0.9   
+
+> −0.01
+> 0.00
+> 0.01
+> 0.02
+> Shape Err  [m]
+> Surrogate Liuqe-RT
+> 0.60.70.80.9
+> −0.08
+> −0.06
+> −0.04
+> −0.02
+> 0.00
+> 0.02
+> Proj Err  [m]
+> Surrogate Liuqe-RT
+
+Fig. 5. Closed-loop simulation with the PID-based hybrid gap controller [37] (default observer: LIUQE -RT ). Left: shape control errors on the plasma boundary across 10 control points. Right: projected shape control errors. The vertical gray dashed line marks controller activation at t = 0 .6 s. 
+
+MPC isoflux-based controller. The second controller is a Model Predictive Controller [38] that tracks flux-surface targets rather than gap distances, using the same shot and activation time. The QP decision variable is the optimal control increment ∆U expressed in a SVD-reduced basis of the control space; Fig. 6 shows the flux-based shape errors (left) and the first six SVD components of the optimal ∆U
+
+[kA/s] (right). The controller activates at t ≈ 0.62 s, delayed by Kalman filter convergence. Shape errors (left) are virtually identical to the PID case, as expected for the same shot and target. The optimal control increments (right) are also very similar between the two observers after the initial transient, confirming that the surrogate drives the MPC to the same control solution as LIUQE -RT .
+
+FMag mixed controller. The third controller is an exper-0.6 0.7 0.8 0.9   
+
+> −0.01
+> 0.00
+> 0.01
+> 0.02
+> Shape Err  [m]
+> Surrogate Liuqe-RT
+> 0.60.70.80.9
+> −2.5
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10 .0
+> Opt  ∆U (6 SVD)  [kA /s]  Surrogate Liuqe-RT
+
+Fig. 6. Closed-loop simulation with the flux-based MPC controller [38] (default observer: LIUQE -RT ). Left: flux-based shape control errors across 10 control points. Right: first six SVD components of the optimal control increment ∆U [kA/s] 
+
+imental mixed controller (FMag) that simultaneously regu-lates plasma current, radial and vertical position, and X-point location. This controller operates at 10 kHz, so the default observer is LIH rather than LIUQE -RT ; the PINO surrogate replaces LIH only for the X-point observer, while position and plasma current observers are identical in both runs. Figure 7 shows the X-point position errors ∆r (blue) and ∆z
+
+(red) in cm (left) and the mixed control errors in arbitrary units (right). In both cases the controller successfully drives all channels to zero; X-point tracking and mixed errors are similarly tight for the surrogate and LIH, with no degradation from the observer substitution. 0.6 0.8 1.0 1.2       
+
+> −0.5
+> 0.0
+> 0.5
+> 1.0
+> X-pt Err [cm]
+> ∆rSurrogate
+> ∆rLIH
+> ∆zSurrogate
+> ∆zLIH
+> 0.60.81.01.2
+> −20
+> −10
+> 0
+> 10
+> Mixed Err [a.u.]
+> Surrogate LIH
+
+Fig. 7. Closed-loop simulation with the experimental FMag mixed controller operating at 10 kHz. Left: X-point position errors ∆r (blue) and ∆z (red) in cm. Right: mixed control errors in arbitrary units across controlled channels. 
+
+Across all three controllers the PINO surrogate produces closed-loop behavior that is essentially equivalent to the respective default observer, demonstrating that the surrogate is a viable drop-in replacement across a range of control architectures and bandwidths. IV. C ONCLUSIONS 
+
+We have presented a PINO surrogate for real-time plasma equilibrium reconstruction on TCV, targeting the 10 kHz bandwidth required for advanced shape control. Based on a modified DeepONet [22] with branch/trunk decomposition, it enforces physics-informed regularization via automatic differentiation using LIUQE-generated targets on ψ, Br , Bz ,and j.Trained on around 10 000 TCV shots and deployed on the TCV PCS, the surrogate achieves 20–80 μs inference at 25 control points, well within the 100 μs budget for 10 kHz operation. Offline and online validation demonstrated 6accuracy comparable to or better than LIUQE -RT , and closed-loop FGE simulations [2] with three controllers of increasing complexity — a PID gap-based controller, a isoflux-based MPC, and a 10 kHz experimental mixed controller — con-firmed essentially equivalent control performance in every case, establishing the viability of PINO-based equilibrium reconstruction as a practical real-time observer. Two limitations remain. First, the absence of plasma pro-file inputs leads to higher reconstruction errors in the plasma core. Second, generalization to strongly out-of-distribution or completely new configurations is not guaranteed and should be verified before deploying the surrogate as the sole observer. Natural extensions include pre-shot fine-tuning — a brief fine-tuning pass before the discharge to improve accuracy for demanding target shapes; adding plasma profile inputs to reduce core reconstruction errors; and the transition to a predictive role, forecasting plasma response to PF coil changes over a short horizon to enable model-based predic-tive control. Real-time closed-loop testing on actual TCV shots, in which the PINO surrogate directly drives the shape controller in the PCS, is currently in preparation and will be the subject of a forthcoming contribution. ACKNOWLEDGMENTS This work has been carried out within the framework of the EUROfusion Consortium, funded by the European Union via the Euratom Research and Training Programme (Grant Agreement No 101052200 — EUROfusion). Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Commission. Neither the European Union nor the European Commission can be held responsible for them. This work was also partially funded by the Italian Ministry of University and Research (MUR) under the National Recovery and Resilience Plan (PNRR), funded by the European Union – NextGenerationEU. 
+
+REFERENCES [1] J.-M. Moret et al. , “Tokamak equilibrium reconstruction code liuqe and its real time implementation,” Fusion Engineering and Design ,vol. 91, pp. 1–15, 2015. [2] F. Carpanese, “Development of free-boundary equilibrium and trans-port solvers for simulation and real-time interpretation of tokamak experiments,” Ph.D. dissertation, EPFL, Lausanne, 2021. [3] B. Duval et al. , “Experimental research on the tcv tokamak,” Nuclear Fusion , vol. 64, no. 11, p. 112023, Oct. 2024. [4] V. D. Shafranov, “Plasma Equilibrium in a Magnetic Field,” Reviews of Plasma Physics , vol. 2, p. 103, Jan. 1966. [5] H. Grad et al. , “Hydromagnetic equilibria and force-free fields,” 
+
+Journal of Nuclear Energy , vol. 7, pp. 284–285, 1958. [6] J. Wai et al. , “Neural net modeling of equilibria in nstx-u,” Nuclear Fusion , vol. 62, no. 8, p. 086042, Jul. 2022. [7] L. L. Lao et al. , “Application of machine learning and artificial intelligence to extend efit equilibrium reconstruction,” Plasma Physics and Controlled Fusion , vol. 64, no. 7, p. 074001, Jun. 2022. [8] S. Madireddy et al. , “Efit-prime: Probabilistic and physics-constrained reduced-order neural network model for equilibrium reconstruction in diii-d,” Physics of Plasmas , vol. 31, no. 9, Sep. 2024. [9] J. Lu et al. , “Fast equilibrium reconstruction by deep learning on east tokamak,” AIP Advances , vol. 13, no. 7, Jul. 2023. [10] G. Zheng et al. , “Real-time equilibrium reconstruction by neural network based on hl-3 tokamak,” 2024. [11] ——, “Efit-mini: An embedded, multi-task neural network-driven equilibrium inversion algorithm,” 2025. [12] Y. Liu et al. , “Surrogate models for plasma displacement and current in 3d perturbed magnetohydrodynamic equilibria in tokamaks,” Nuclear Fusion , vol. 62, no. 12, p. 126067, Nov. 2022. [13] B. Leard et al. , “Self-consistent equilibrium and transport simulations for nstx-u plasmas enhanced via machine learning surrogate models,” 
+
+Fusion Engineering and Design , vol. 219, p. 115201, Oct. 2025. [14] S. Joung et al. , “Deep neural network grad-shafranov solver con-strained with measured magnetic signals,” Nuclear Fusion , vol. 60, no. 1, p. 016034, Dec. 2019. [15] Z. Wang et al. , “Neural-network-based free-boundary equilibrium solver to enable fast scenario simulations,” IEEE Transactions on Plasma Science , vol. 52, no. 9, pp. 4147–4153, 2024. [16] F. Fiorenza et al. , “Caronte: a physics-informed extreme learning machine-based algorithm for plasma boundary reconstruction in mag-netically confined fusion devices,” 2025. [17] M. S. Stokolesov et al. , “Reconstructing the plasma boundary with a reduced set of diagnostics,” 2025. [18] V. Tribaldos et al. , “Neural network tool for rapid recovery of plasma topology,” Review of Scientific Instruments , vol. 68, no. 1, 01 1997. [19] S. Joung et al. , “Gs-deepnet: mastering tokamak plasma equilibria with deep neural networks and the grad-shafranov equation,” Scientific Reports , vol. 13, no. 1, Sep. 2023. [20] J. McClenaghan et al. , “Augmenting machine learning of grad-shafranov equilibrium reconstruction with green’s functions,” Physics of Plasmas , vol. 31, no. 8, Aug. 2024. [21] M. Bonotto et al. , “Reconstruction of plasma equilibrium and sepa-ratrix using convolutional physics-informed neural operator,” Fusion Engineering and Design , vol. 200, p. 114193, Mar. 2024. [22] L. Lu et al. , “Learning nonlinear operators via deeponet based on the universal approximation theorem of operators,” Nature Machine Intelligence , vol. 3, no. 3, pp. 218–229, Mar. 2021. [23] T. Chen et al. , “Universal approximation to nonlinear operators by neural networks with arbitrary activation functions and its application to dynamical systems,” IEEE Transactions on Neural Networks , vol. 6, no. 4, p. 911–917, Jul. 1995. [24] S. Ding et al. , “Physics-informed neural operator learning for nonlinear grad-shafranov equation,” 2025. [25] F. N. Rizqan et al. , “Evaluation and verification of physics-informed neural models of the grad-shafranov equation,” 2025. [26] D. A. Kaltsas et al. , “Neural network tokamak equilibria with incom-pressible flows,” Physics of Plasmas , vol. 29, no. 2, Feb. 2022. [27] C. M. Bishop et al. , “Real-time control of a tokamak plasma using neural networks,” Neural Computation , vol. 7, no. 1, pp. 206–217, 1995. [28] Y.-M. Jeon et al. , “Newly developed double neural network concept for reliable fast plasma position control,” Review of Scientific Instruments ,vol. 72, no. 1, pp. 513–516, Jan. 2001. [29] A. A. Prokhorov et al. , “The plasma shape control system in the tokamak with the artificial neural network as a plasma equilibrium reconstruction algorithm,” IFAC-PapersOnLine , vol. 53, no. 2, pp. 857–862, 2020. [30] J. Degrave et al. , “Magnetic control of tokamak plasmas through deep reinforcement learning,” Nature , vol. 602, no. 7897, pp. 414–419, Feb. 2022. [31] G. F. Subbotin et al. , “Reconstruction-free magnetic control of diii-d plasma with deep reinforcement learning,” 2025. [32] N. Wu et al. , “High-fidelity data-driven dynamics model for reinforce-ment learning-based control in hl-3 tokamak,” 2025. [33] A. Dave et al. , “Fpga-accelerated real-time beam emission spec-troscopy diagnostics at diii-d using the slac neural network library for ml inference,” 2025. [34] P. Ramachandran et al. , “Searching for activation functions,” 2017. [35] C. Galperti et al. , “Overview of the tcv digital real-time plasma control system and its applications,” Fusion Engineering and Design , vol. 208, p. 114640, Nov. 2024. [36] C. Heiß et al. , “Fge: A fast free-boundary grad-shafranov evolutive solver,” 2025. [37] H. Anand et al. , “A novel plasma position and shape controller for advanced configuration development on the tcv tokamak,” Nuclear Fusion , vol. 57, no. 12, p. 126026, Sep. 2017. [38] A. Mele et al. , “First experimental demonstration of plasma shape control in a tokamak through model predictive control,” 2025. 
+
+7

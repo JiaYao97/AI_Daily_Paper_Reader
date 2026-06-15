@@ -1,79 +1,79 @@
 ## 最新日报
-- 最新运行日期：2026-06-14
-- 运行时间：2026-06-14 20:22:25 UTC
+- 最新运行日期：2026-06-15
+- 运行时间：2026-06-15 21:51:20 UTC
 - 运行状态：成功
 - 本次总论文数：21
 - 精读区：8
 - 速读区：13
 
 ### 今日简报（AI）
-今日精选5篇论文，聚焦物理信息约束与数据稀缺场景下的PDE求解新范式。最值得关注的是嵌入能量守恒与熵产的FNO（9.0分）及结合共形预测的数据稀疏Navier-Stokes算子学习（9.0分）。建议优先研读精读文章，并尝试将主动采样策略融入已有仿真流程以提升效率。
-- 详情：[/202606/14/README](/202606/14/README)
+今日精读2篇高评分论文，涵盖实验流体力学数据驱动建模与Navier-Stokes算子学习。重点推荐《Data-driven surrogate models for forecasting experimentally measured fluid flows》和《Operator learning for the 2D incompressible Navier-Stokes equations》，分别聚焦实验数据驱动的代理模型与数据稀缺下的共形预测。建议优先精读这两篇，并关注速读中VAE隐结构发现和等离子体建模等应用方向。
+- 详情：[/202606/15/README](/202606/15/README)
 
 ### 精读区论文标签
-1. [GENERIC-FNO: Embedding Energy Conservation and Entropy Production into Fourier Neural Operators](/202606/14/2606.08343v2-generic-fno-embedding-energy-conservation-and-entropy-production-into-fourier-neural-operators)  
+1. [Data-driven surrogate models for forecasting experimentally measured fluid flows](/202606/15/2606.10848v2-data-driven-surrogate-models-for-forecasting-experimentally-measured-fluid-flows)  
+   标签：评分：10.0/10、query:flow-field
+   evidence：数据驱动的实验流体流动预测替代模型
+2. [Operator learning for the 2D incompressible Navier-Stokes equations: a conformal prediction approach in the data-scarce regime](/202606/15/2606.08654v1-operator-learning-for-the-2d-incompressible-navier-stokes-equations-a-conformal-prediction-approach-in-the-data-scarce-regime)  
    标签：评分：9.0/10、query:flow-field
-   evidence：嵌入热力学约束的傅里叶神经算子用于流体动力学
-2. [Operator learning for the 2D incompressible Navier-Stokes equations: a conformal prediction approach in the data-scarce regime](/202606/14/2606.08654v1-operator-learning-for-the-2d-incompressible-navier-stokes-equations-a-conformal-prediction-approach-in-the-data-scarce-regime)  
+   evidence：针对二维Navier-Stokes方程的神经算子
+3. [Geometry-Aware Anisotropic Boundary Correction for Aerodynamic Simulation](/202606/15/2606.09963v1-geometry-aware-anisotropic-boundary-correction-for-aerodynamic-simulation)  
    标签：评分：9.0/10、query:flow-field
-   evidence：傅里叶神经算子用于纳维-斯托克斯方程
-3. [Data-driven surrogate models for forecasting experimentally measured fluid flows](/202606/14/2606.10848v2-data-driven-surrogate-models-for-forecasting-experimentally-measured-fluid-flows)  
+   evidence：用于气动流场预测的神经算子
+4. [Structure-Preserving Neural Surrogates with Tractable Uncertainty Quantification](/202606/15/2606.11650v1-structure-preserving-neural-surrogates-with-tractable-uncertainty-quantification)  
    标签：评分：9.0/10、query:flow-field
-   evidence：用于实验流体流动预测的数据驱动代理模型
-4. [Structure-Preserving Neural Surrogates with Tractable Uncertainty Quantification](/202606/14/2606.11650v1-structure-preserving-neural-surrogates-with-tractable-uncertainty-quantification)  
+   evidence：用于偏微分方程的数据驱动降阶模型与不确定性量化
+5. [MATLAB-Based Layerwise Self-Adaptive Physics-Informed Neural Network in Applications to Multidimensional Coupled Burgers' Equations with High Reynolds Numbers](/202606/15/2606.12348v1-matlab-based-layerwise-self-adaptive-physics-informed-neural-network-in-applications-to-multidimensional-coupled-burgers-equations-with-high-reynolds-numbers)  
    标签：评分：9.0/10、query:flow-field
-   evidence：使用结构保持神经代理的PDE降阶模型
-5. [Extracting Governing Equations from Latent Dynamics via Multi-View Contrastive Learning](/202606/14/2606.13260v1-extracting-governing-equations-from-latent-dynamics-via-multi-view-contrastive-learning)  
+   evidence：物理信息神经网络求解高雷诺数Burgers方程
+6. [Feature-preserving Latent-EnKF for Data Assimilation of Flows with Shocks](/202606/15/2606.12559v1-feature-preserving-latent-enkf-for-data-assimilation-of-flows-with-shocks)  
    标签：评分：9.0/10、query:pclso
-   evidence：潜在动力学与方程发现
-6. [OnlyDense: Reduced-Order Modeling for Lagrangian simulation](/202606/14/2606.09065v1-onlydense-reduced-order-modeling-for-lagrangian-simulation)  
-   标签：评分：8.0/10、query:flow-field
-   evidence：提出用于拉格朗日模拟的降阶建模学习框架
-7. [Boundary-Layer-Induced Failure of Standard Physics-Informed Neural Networks: A Legendre Wavelet Collocation Benchmark for Singularly Perturbed Transport Problems](/202606/14/2606.09676v1-boundary-layer-induced-failure-of-standard-physics-informed-neural-networks-a-legendre-wavelet-collocation-benchmark-for-singularly-perturbed-transport-problems)  
-   标签：评分：8.0/10、query:flow-field
-   evidence：物理信息神经网络用于边界层输运问题
-8. [Spectrally Regularized Latent Flow Matching for Turbulence Generation](/202606/14/2606.11691v1-spectrally-regularized-latent-flow-matching-for-turbulence-generation)  
-   标签：评分：8.0/10、query:pclso
-   evidence：光谱正则化的潜在流匹配湍流生成
+   evidence：使用潜在空间和物理约束的流场冲击特征保持卡尔曼滤波
+7. [Physics-Informed Neural Networks and Radial Basis Functions for PDEs with Dirac Delta Sources](/202606/15/2606.12735v1-physics-informed-neural-networks-and-radial-basis-functions-for-pdes-with-dirac-delta-sources)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：用于带狄拉克δ源PDE的物理信息神经网络
+8. [A fully GPU-based workflow for building physics emulators of hypersonic flows](/202606/15/2606.13742v1-a-fully-gpu-based-workflow-for-building-physics-emulators-of-hypersonic-flows)  
+   标签：评分：9.0/10、query:q1
+   evidence：构建高超声速流动物理仿真器的GPU工作流，直接支持热防护
 
 ### 速读区论文标签
-1. [Learning Where to Simulate: Generative Active Sampling for Online PDE Surrogate Training](/202606/14/2606.09949v1-learning-where-to-simulate-generative-active-sampling-for-online-pde-surrogate-training)  
+1. [Discovering and decoding latent mean-field structure with variational autoencoders](/202606/15/2606.08694v1-discovering-and-decoding-latent-mean-field-structure-with-variational-autoencoders)  
+   标签：评分：8.0/10、query:pclso
+   evidence：变分自编码器用于潜在表示和重构，具有可解释的平均场结构
+2. [OnlyDense: Reduced-Order Modeling for Lagrangian simulation](/202606/15/2606.09065v1-onlydense-reduced-order-modeling-for-lagrangian-simulation)  
    标签：评分：8.0/10、query:flow-field
-   evidence：PDE代理主动采样训练直接适用于流场预测
-2. [Geometry-Aware Anisotropic Boundary Correction for Aerodynamic Simulation](/202606/14/2606.09963v1-geometry-aware-anisotropic-boundary-correction-for-aerodynamic-simulation)  
+   evidence：拉格朗日仿真的降阶建模框架
+3. [Experimental validation of a fast control-oriented, physics-informed surrogate model for plasma equilibrium reconstruction in the TCV tokamak](/202606/15/2606.09487v1-experimental-validation-of-a-fast-control-oriented-physics-informed-surrogate-model-for-plasma-equilibrium-reconstruction-in-the-tcv-tokamak)  
    标签：评分：8.0/10、query:flow-field
-   evidence：气动模拟的神经算子
-3. [A Physics-Informed B-Spline Framework for Continuous Approximation of Flow Data](/202606/14/2606.10335v1-a-physics-informed-b-spline-framework-for-continuous-approximation-of-flow-data)  
+   evidence：用于等离子体平衡重构的物理信息神经网络代理模型
+4. [Boundary-Layer-Induced Failure of Standard Physics-Informed Neural Networks: A Legendre Wavelet Collocation Benchmark for Singularly Perturbed Transport Problems](/202606/15/2606.09676v1-boundary-layer-induced-failure-of-standard-physics-informed-neural-networks-a-legendre-wavelet-collocation-benchmark-for-singularly-perturbed-transport-problems)  
    标签：评分：8.0/10、query:flow-field
-   evidence：基于物理信息的B样条流数据重构框架
-4. [Dynamic inverse problems: Single-loop online algorithms](/202606/14/2606.10951v1-dynamic-inverse-problems-single-loop-online-algorithms)  
+   evidence：物理信息神经网络用于边界层输运问题
+5. [A fast and consistent sharp-interface immersed boundary method for moving bodies of arbitrary thickness](/202606/15/2606.09799v2-a-fast-and-consistent-sharp-interface-immersed-boundary-method-for-moving-bodies-of-arbitrary-thickness)  
    标签：评分：8.0/10、query:flow-field
-   evidence：从稀疏EIT数据重建流场
-5. [First-Order Trajectory Matching: Fast Ensemble Predictions of Chaotic, Turbulent, Stochastic Systems](/202606/14/2606.11138v1-first-order-trajectory-matching-fast-ensemble-predictions-of-chaotic-turbulent-stochastic-systems)  
-   标签：评分：8.0/10、query:flow-field
-   evidence：随机系统的降阶建模
-6. [Graph Mamba Operator: A Latent Simulator for Interacting Particle Systems](/202606/14/2606.09432v1-graph-mamba-operator-a-latent-simulator-for-interacting-particle-systems)  
-   标签：评分：7.0/10、query:pclso
-   evidence：利用状态空间模型的交互动力系统潜在空间模拟器
-7. [Flow-based generative models for amortized Bayesian inference in regression and inverse PDE problems](/202606/14/2606.10370v1-flow-based-generative-models-for-amortized-bayesian-inference-in-regression-and-inverse-pde-problems)  
+   evidence：浸没边界法用于流场模拟
+6. [Physics-Guided Dual Decoding and Spectral Supervision for Global 3D Hydrometeor Prediction](/202606/15/2606.08563v1-physics-guided-dual-decoding-and-spectral-supervision-for-global-3d-hydrometeor-prediction)  
    标签：评分：7.0/10、query:flow-field
-   evidence：基于流的生成模型用于逆PDE问题，可应用于流场预测
-8. [Data assimilation for subsurface flow using latent diffusion model parameterization: performance of ensemble-Kalman and Monte Carlo techniques](/202606/14/2606.11140v1-data-assimilation-for-subsurface-flow-using-latent-diffusion-model-parameterization-performance-of-ensemble-kalman-and-monte-carlo-techniques)  
+   evidence：物理引导的双解码用于全球3D水凝物预测
+7. [Low-Variance Randomised Numerical Linear Algebra for Finite Element Simulation](/202606/15/2606.08817v1-low-variance-randomised-numerical-linear-algebra-for-finite-element-simulation)  
    标签：评分：7.0/10、query:flow-field
-   evidence：用潜在扩散模型从稀疏数据重建地下流动
-9. [COGENT: Continuous Graph Emulators with Neural Ordinary Differential Equations for Long-Term Physical Forecasting](/202606/14/2606.11162v1-cogent-continuous-graph-emulators-with-neural-ordinary-differential-equations-for-long-term-physical-forecasting)  
+   evidence：用于参数化PDE降阶FEM仿真的随机NLA方法
+8. [Operator learning for solving Fokker-Planck equations with various initial conditions](/202606/15/2606.09434v1-operator-learning-for-solving-fokker-planck-equations-with-various-initial-conditions)  
    标签：评分：7.0/10、query:flow-field
-   evidence：网格上物理预测的连续潜在ODE方法
-10. [Benchmarking Sequential Feedback Optimization for Wind Farm Power Maximization](/202606/14/2606.08315v1-benchmarking-sequential-feedback-optimization-for-wind-farm-power-maximization)  
+   evidence：用于算子学习的物理信息神经网络
+9. [Learning Where to Simulate: Generative Active Sampling for Online PDE Surrogate Training](/202606/15/2606.09949v1-learning-where-to-simulate-generative-active-sampling-for-online-pde-surrogate-training)  
+   标签：评分：7.0/10、query:flow-field
+   evidence：生成式主动采样用于PDE代理模型训练
+10. [Semi-local transformation for compressible wall turbulence via elliptic equations](/202606/15/2606.09322v1-semi-local-transformation-for-compressible-wall-turbulence-via-elliptic-equations)  
    标签：评分：6.0/10、query:flow-field
-   evidence：风电场流动模型用于优化
-11. [Rise regimes of freely rising droplets with a moderate viscosity ratio](/202606/14/2606.08575v1-rise-regimes-of-freely-rising-droplets-with-a-moderate-viscosity-ratio)  
-   标签：评分：6.0/10、query:flow-field
-   evidence：使用直接数值模拟研究液滴上升状态
-12. [Learning to Solve Generative ODEs Beyond the Linear Span](/202606/14/2606.08672v1-learning-to-solve-generative-odes-beyond-the-linear-span)  
+   evidence：通过椭圆方程对可压缩壁湍流进行半局部变换
+11. [Accelerating SAV-based optimization via randomized low-rank Hessian approximation](/202606/15/2606.10562v1-accelerating-sav-based-optimization-via-randomized-low-rank-hessian-approximation)  
    标签：评分：6.0/10、query:pclso
-   evidence：学习潜在动力学求解常微分方程
-13. [Unstructured Mesh Tools for Fusion Energy System Design](/202606/14/2606.08822v1-unstructured-mesh-tools-for-fusion-energy-system-design)  
+   evidence：针对PINN加速的优化方法，保持物理约束
+12. [Least-Action-Guided Diffusion for Physical Extrapolation](/202606/15/2606.11277v1-least-action-guided-diffusion-for-physical-extrapolation)  
    标签：评分：6.0/10、query:flow-field
-   evidence：用于聚变模拟的网格生成工具，支持流场预测
+   evidence：物理信息扩散用于外推
+13. [How Low Can You Go? Active Learning for Sparse Model Discovery in the Ultra-Low-Data Limit](/202606/15/2606.12182v1-how-low-can-you-go-active-learning-for-sparse-model-discovery-in-the-ultra-low-data-limit)  
+   标签：评分：6.0/10、query:flow-field
+   evidence：主动学习用于动力系统稀疏模型发现
 

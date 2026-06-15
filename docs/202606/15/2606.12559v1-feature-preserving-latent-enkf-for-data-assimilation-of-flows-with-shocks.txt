@@ -1,0 +1,479 @@
+Title: Feature-preserving Latent-EnKF for Data Assimilation of Flows with Shocks
+
+URL Source: https://arxiv.org/pdf/2606.12559v1
+
+Published Time: Fri, 12 Jun 2026 00:05:21 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Feature-preserving Latent-EnKF for Data Assimilation of Flows with Shocks 
+
+Hemanth Chandravamsi a, Hangchuan Hu a, Ponkrshnan Thiagarajan a, Tamer A. Zaki a, ∗
+
+> aDepartment of Mechanical Engineering, Johns Hopkins University, Baltimore, MD 21218, USA
+
+Abstract 
+
+The ensemble Kalman filter (EnKF) is widely adopted for sequential data assimilation, but fails for solutions with discontinuities, such as shocks in compressible flows. Uncertainty in shock location induces multimodal ensemble statistics that violate the Gaussian assumptions underlying the EnKF, producing large-scale spurious oscillations in the analysis state. We introduce a feature-preserving latent-EnKF that performs the ensemble update in a learned low-dimensional latent space, where shock and flow features admit a smooth manifold representation, thereby preserving sharp features during EnKF analysis. The updated latent state is mapped back to physical state through a shared decoder for all ensemble members. The algorithm eliminates the member-specific ordered training and positivity flooring used in prior approaches. Numerical experiments on a Sod shock tube and Mach 2 shock interaction with a 2D cylinder, using sparse and noisy observations, show accurate feature recovery of shocks and contact discontinuities without spurious oscillations. 
+
+Keywords: data assimilation, ensemble Kalman filter, latent-space, auto-decoder, shocks 
+
+1. Introduction 
+
+Sequential data assimilation (DA) combines a numerical forecast with noisy observations to produce a posterior estimate of the flow state. The ensemble Kalman filter (EnKF) [1] is its most widely used realization in fluid dynamics and the geosciences [2, 3, 4]. The EnKF is derivative-free and can be computationally tractable for high-dimensional systems when combined with covariance localization and inflation techniques. However, the EnKF relies on the forecast ensemble exhibiting Gaussian statistics, such that the posterior distribution is characterized by the ensemble mean and covariance. This assumption breaks down in compressible flows with shocks, where uncertainty in the shock location places ensemble members on opposite sides of the true discontinuity, producing multimodal state statistics near the shock rather than a unimodal Gaussian distribution [5, 6, 7]. Moreover, the linear EnKF analysis update constrains each analysis member to the affine subspace spanned by the forecast ensemble, such that the update acts through linear superposition in the physical state space. In shock-laden flows, where ensemble variability is governed primarily by discontinuity location, these operations generate non-physical intermediate states with spurious oscillations and multiple discontinuities instead of preserving coherent flow features. Fig. 1(a) illustrates this behavior in the limiting case of two ensemble members. Several approaches have been proposed to mitigate these issues, including positivity-preserving transforms [8], rank-based normal-score transforms [9, 10], and structurally informed covariances [11, 12]. These approaches generally fail to suppress the oscillations. A different route was recently proposed by Zhou et al. [7] where they move the analysis from physical state space to the parameter space of deep neural networks that parameterize individual ensemble members. This neural EnKF is effective, but requires sequential training of networks along a nearest-neighbor chain to maintain a coherent weight-space ensemble. A related machine learning based state transformation approach is representing the physical state in latent space [13, 14]. The latent-autoencoder based EnKF approach of Tong et al. [15] performs the analysis in an autoencoder latent space coupled with a learned linear latent dynamics, targeting strongly nonlinear (rather than shock-laden) systems. In this note we show that neither chain training [7] nor latent encoders [16, 17, 18] are required. We propose performing the EnKF analysis in the latent space of a coordinate-conditioned auto-decoder [19] (Fig. 1) that provides a continuous and fully-differentiable representation of the flow field. The decoder is queried at each spatial coordinate using a per-member latent code and coordinates as inputs. The decoder weights and latent codes are optimized jointly on the forecast in an auto-decoder formulation [19], placing the ensemble on a smooth, low-dimensional manifold parameterized by the latent codes. Sharp features in physical space, including shocks, contact discontinuities, and slip lines, are encoded as smooth variations along this manifold.  
+
+> ∗Corresponding author: t.zaki@jhu.edu
+
+1                
+
+> arXiv:2606.12559v1 [physics.comp-ph] 10 Jun 2026 (a)
+> (b) Figure 1: (a) Linear walk between two density field snapshots extracted at t= 0 .1 and 0 .6 of configuration-6 2-D Riemann problem [20]. Intermediate states are generated using the weighted blending operation s(α) = (1 −α)sA+αsB, where sndenotes either the physical state ρi(x, y ) or the latent state zi. The top row shows intermediate states obtained by blending ρiin physical space, which produces multiple shock structures. The bottom row shows states obtained through linear blending of latent codes associated with member A and B using an auto-decoder trained on three snapshots. The continuous evolution of discontinuous features illustrate that linear blending in latent space preserves coherent flow structures and yields smooth transport of discontinuities when mapped back to physical space. (b) Coordinate-conditioned auto-decoder adopted in the present Latent-EnKF [19], which defines the latent representation used to generate intermediate states shown in the second row of panel (a).
+
+The adopted architecture requires less training data than conventional encoder-decoder configurations [15]. Fig. 1(a), bottom row, illustrates that linearly interpolated states in a latent space learned from three ensemble members, corresponding to density snapshots at t = 0 .1, 0 .35, and 0 .6, preserve discontinuous flow features while avoiding the non-physical intermediate states produced by linear superposition in physical space (top row). This empirical result hints that the EnKF update in latent space, which is a superposition of latent ensemble states, is likely to be feature preserving unlike superposition in physical space where the ensemble statistics are strongly non-Gaussian. 
+
+2. Feature-preserving Latent-EnKF 
+
+Let q ∈ Rnq denote the discretized flow state formed by concatenating the density ρ, velocity components u
+
+and v, and pressure p. Given an initial analysis ensemble {qa, 0 
+
+> i
+
+}ne 
+
+> i=1
+
+at t = 0, each ensemble member is advanced over one observation interval ∆ t using the forecast model F∆t (governed by the equations of physics), yielding the forecast state qf,k i = F∆t(qa,k −1 
+
+> i
+
+) at the kth DA cycle. The observation operator H : Rnq → Rny maps the flow state to observation space. Noisy observations from truth are given by dk + ηi, where ηi ∼ N (0, Ri) and 
+
+Ri is diagonal. The corresponding predicted observations are yf,k i = H(qf,k i ). Each ensemble member of the forecast field is parameterized using a shared multilayer perceptron (MLP) decoder Dθ as qf,k i (x) ≈ D θ (zf,k i , x), as illustrated in Fig. 1(b). Here, zf,k i ∈ Rnz denotes the latent code associated with ensemble member qf,k i , with nz ≪ nq . The decoder weights θ and latent codes {zf,k i }ne 
+
+> i=1
+
+are jointly optimized on the forecast ensemble {qf,k i }ne 
+
+> i=1
+
+by minimizing 
+
+J (θ, {zi}) = 1
+
+neneX
+
+> i=1
+
+Dθ (zi, x) − qfi (x) 1
+
+| {z }
+
+> forecast reconstruction error
+
++ β1 || zi|| 2
+
+| {z }
+
+> latent-space regularization
+
++ mean 
+
+> i̸=j
+
+
+
+1 − zi
+
+|zi| · zj
+
+|zj |
+
+| {z }
+
+> latent vector cosine similarity
+
+, (1) extending the loss formulation by Park et al. [19] with an additional cosine similarity term. This term constrains the latent state vectors to remain geometrically aligned, effectively restricting the ensemble members and their 2latent mean to a one-dimensional affine space. Here, ∥ · ∥ 1 and ∥ · ∥ 2 denote the discrete L1 and L2 norms, respectively. Prior to training, the input coordinates and flow variables are independently normalized to [0 , 1]. The decoder weights θ are initialized using PyTorch’s default Kaiming-uniform initialization, while the latent codes {zi} are initialized from N (0, σ 2 
+
+> z
+
+I) with σz = 0 .01. The regularization term in Eqn. (1) acts as a negative log-prior, with β = 10 −4 used in all experiments. The optimized forecast latent ensemble is denoted {zfi }ne
+
+> i=1
+
+.The EnKF analysis is then performed directly in the latent space. Define the ensemble means ¯ zf = n−1
+
+> e
+
+P 
+
+> i
+
+zfi
+
+and ¯ yf = n−1
+
+> e
+
+P 
+
+> i
+
+yfi , and the normalized perturbation matrices 
+
+Z = 1
+
+√ne − 1
+
+zfi − ¯zf  
+
+> i
+
+∈ Rnz ×ne , Y = 1
+
+√ne − 1
+
+yfi − ¯yf  
+
+> i
+
+∈ Rny ×ne . (2) The latent codes are updated according to 
+
+zai = zfi + ZY ⊤ YY ⊤ + Rk
+
+−1 dk + ηi − yfi
+
+, ηi ∼ N (0, Rk). (3) The analysis state in physical space is recovered by decoding the updated latent code, qa,k i = Dθ (zai , x). Since all ensemble members share the same decoder parameters θ, variability in {zfi } directly represents variability in the underlying physical states. We emphasize that the EnKF analysis modifies only the latent codes in Eqn. (3); the decoder weights θ remain fixed during the analysis step. At the next DA cycle, the decoder is re-trained on the updated forecast ensemble by warm-starting from the previously learned weights. Algorithm 1 summarizes series of steps in one DA cycle. 
+
+Algorithm 1 Feature-space ensemble Kalman filter (one DA cycle).  
+
+> 1:
+
+Obtain forecast and predicted observations at kth DA cycle: qfi ← F ∆t(qa,k −1 
+
+> i
+
+), yfi ← H (qfi ) 
+
+> 2:
+
+Fit the auto-decoder Dθ and latent codes zfi to forecast state {eqfi } by minimizing Eqn. (1)  
+
+> 3:
+
+Update forecast latent codes zfi via the EnKF analysis in Eqn. (3) to obtain zai 
+
+> 4:
+
+Decode the posterior latent code to obtain the analysis state for the next forecast: qa,k i ← D θ (zai , x).  
+
+> 5:
+
+return analysis ensemble {qa,k i }ne
+
+> i=1
+
+3. Numerical experiments 
+
+The proposed feature-preserving EnKF is demonstrated on two test cases. The first is a Sod shock tube with sparse, noisy pressure observations. The second is a Mach 2 shock interacting with a two-dimensional cylinder with sparse, noisy observations proportional to |∇ ρ|. To our knowledge, this is the first time that noisy density-gradient (schlieren-like) observations have been assimilated through the EnKF for shock-laden flows. All experiments presented in this work employ a decoder architecture, Dθ , consisting of five hidden layers of width 256 with ReLU activations. A skip connection is introduced by concatenating the inputs [ zi, xi] to the third hidden layer. Each ensemble member is represented by a 16-dimensional latent code zi, and no significant sensitivity is observed for latent dimensions larger than 16. At each DA cycle, a fresh decoder is trained on the forecast ensemble using Adam for 10,000 epochs with a learning rate of 10 −3, mini-batches of 5,000 coordinates. No multiplicative or additive inflation is applied to the posterior latent ensemble. 
+
+3.1. Sod shock tube 
+
+We consider the Sod shock tube problem governed by the one-dimensional compressible Euler equations with specific-heat ratio γ = 1 .4. The canonical initial state ( ρL, u L, p L) = (1 .0, 0, 1.0) and ( ρR, u R, p R) = (0 .125 , 0, 0.1) on x ∈ [0 , 1] is separated by a diaphragm at xd = 0 .5. Zero-gradient outflow boundary conditions are imposed at domain boundaries. The Euler equations are discretized on a uniform grid of 400 cells using a WENO-5 reconstruction [21] with HLLC approximate Riemann solver for fluxes [22, 23]. The solution is advanced in time by a third-order SSP Runge-Kutta scheme [24] to a final time T = 0 .2. The initial-condition uncertainty is represented by an ensemble of ne = 40 members. The diaphragm location and the left/right primitive states are sampled independently from Gaussian distributions whose means are deliberately offset from the truth by 10% for the left/right primitive states and 25% for the diaphragm position, so that the prior is biased rather than centered on the truth: xd ∼ N (0 .625 , 0.20 2), ρL ∼ N (0 .9, 0.10 2), ρR ∼N (0 .1375 , 0.01 2), pL ∼ N (0 .9, 0.10 2), and pR ∼ N (0 .11 , 0.01 2), with the corresponding truth values 0 .5, 1 .0, 0.125, 1 .0, and 0 .10. Synthetic pressure observations are obtained by sampling the truth at 10 uniformly spaced probes. The observation-noise covariance is heteroscedastic with an additive floor, Ri = diag (0 .05 |ytrue  
+
+> i,ℓ
+
+| +0.001) 2
+
+> ℓ
+
+. The analysis is performed at eight DA cycles equi-spaced over t ∈ [0 .025 , 0.2] with ∆ tobs = 0 .025. Fig. 2 compares the forecast and analysis ensembles at the first DA cycle. The physical-space EnKF produces strong oscillations near the shock, contact discontinuity, and rarefaction in all primitive variables. Several 30.0 
+
+0.5 
+
+1.0 
+
+> Pressure,  p
+
+Forecast Analysis in physical space  
+
+> psample
+> Truth
+> Obs.
+
+Analysis in latent space 
+
+> Ens. mean in
+> physical space
+> Ens. mean of latent
+> codes (decoded)
+
+0.0 
+
+0.5 
+
+1.0  
+
+> Density,  ρ ρsample
+
+0.0 0.5 1.0 
+
+x
+
+0.0 
+
+0.5 
+
+1.0 
+
+> Velocity,  u
+
+0.0 0.5 1.0 
+
+x 
+
+> usample
+
+0.0 0.5 1.0 
+
+xFigure 2: Sod shock tube at the first DA cycle, t = 0 .025, with p, ρ, u in the three rows. Left: forecast ensemble. Middle: analysis from the standard EnKF in physical space. Right: analysis from the feature-space Latent-EnKF. The physical-space update produces oscillations near the shock, contact, and rarefaction, whereas the feature-space update contracts the ensemble onto the truth while preserving the sharp features. 
+
+ensemble members also develop negative density and pressure values after analysis, which are clipped to a positive floor of 10 −3 in Fig. 2 (middle column) to maintain thermodynamic admissibility. In contrast, the feature-space EnKF preserves sharp flow features while progressively aligning the ensemble toward the true solution. The space-time evolution in Fig. 3 further shows that the forward trajectory initialized from the decoded post-analysis latent mean closely follows the analytical solution throughout the assimilation window, 0.00       
+
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> Pressure,  p
+> t
+> Truth D(z,x)Decoded latent mean
+> 0.10
+> 0.55
+> 1.00
+> Absolute difference
+> 0.0
+> 0.1
+> 0.2
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> Density,  ρ
+> t
+> 0.12
+> 0.56
+> 1.00
+> 0.0
+> 0.1
+> 0.2
+> 0.0 0.5 1.0
+
+x  
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> Velocity,  u
+> t
+> 0.0 0.5 1.0
+
+x  
+
+> 0.00
+> 0.50
+> 1.00
+> 0.0 0.5 1.0
+
+x
+
+> 0.0
+> 0.1
+> 0.2
+
+Figure 3: Space-time evolution of the Sod shock tube under Latent-EnKF assimilation. Rows correspond to p, ρ, u.Left: analytical solution. Middle: forecast trajectory initialized from the decoded post-analysis latent mean Dθ (¯ za,k , x) at each DA cycle and advanced between observation times using the numerical solver. Right: absolute error relative to the truth 1 3 6 8
+
+> No. of DA cycles
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> RMSE / Spread
+
+Pressure, p   
+
+> RMSE at forecast
+> RMSE after analysis
+> Spread at forecast
+> Spread after analysis
+> 1368
+> No. of DA cycles
+
+Density, ρ   
+
+> 1368
+> No. of DA cycles
+
+Velocity, u
+
+Figure 4: Per-cycle RMSE (red squares) and ensemble spread (blue circles) for p, ρ, u on the Sod test, evaluated at the forecast (open markers) and after the analysis (filled markers). Both metrics drop sharply at the first DA cycle and remain low thereafter. 
+
+4with residuals localized near propagating discontinuities. The slower density contraction observed in the per-cycle RMSE and ensemble spread (Fig. 4) is consistent with the weak sensitivity of pressure observations to the contact discontinuity [25, 7]. 
+
+3.2. Mach 2 shock-cylinder interaction 
+
+The second test case is the diffraction of a planar Mach-2 shock by a circular cylinder, governed by the two-dimensional compressible Euler equations with γ = 1 .4 on Ω = [0 , L ]2 with L = 6. The pre-shock quiescent state is ( ρ, u, v, p )1 = (1 , 0, 0, 1/γ ). The initial planar shock is located at xs = L/ 4 = 1 .5 and propagates rightward at Mach M = 2, with the post-shock state set by the Rankine-Hugoniot relations. A circular cylinder of diameter D = 1 is centred at ( L/ 2, L/ 2) and represented by a sharp-interface immersed boundary with slip-wall ghost cells [26]; zero-gradient (extrapolation) conditions are applied at all four domain boundaries. The spatial discretization and time integration are the same as in the Sod case, on a uniform 256 × 256 grid at CFL 0 .55 to a final time T = 2 .5. The truth is obtained employing the aforementioned nominal initial conditions. Uncertainty in the Initial-condition is represented by an ensemble of ne = 40 members generated from Gaussian perturbations of three control parameters: the shock position xs, shock Mach number M , and shock tilt angle δ. The inflow is rotated by the same δ to retain the flow normal to the shock. The ensemble members are generate with a biased mean, that is 10% away from the truth in each control, with xs ∼ N (1 .65 , 0.40 2), 
+
+M ∼ N (2 .20 , 0.20 2), and δ ∼ N (0 , 0.20 2). The truth corresponds to [ xs, M, δ ] = [1 .5, 2.0, 0]. Synthetic observations are derived from the time-cumulative density-gradient magnitude over each DA in-terval, dk(x) = R tk 
+
+> tk−1
+
+|∇ ρ| dt, which mimics a finite-time exposure in optical measurements. This integral is evaluated as a discrete sum with nsub = 10 accumulator sub-steps per DA cycle. The accumulated field is block-averaged onto a 32 × 32 coarse sensor grid, obtained with a sparse factor of 8 along each axis on the 
+
+Nx = Ny = 256 simulation grid. Sensors falling inside the cylinder are discarded, leaving 1000 fluid sensors per cycle. The block-averaged field is then min-max normalized to [0 , 1] over the union of the ensemble forecast and the truth, which preserves relative magnitude information across members. The associated observation is denoted dk + ηi, where ηi ∼ N (0 , Ri) and Ri is heteroscedastic with Ri = diag (0 .12 |yi,ℓ | + 0 .06) 2
+
+> ℓ
+
+. Five DA cycles equispaced over t ∈ [0 , 2.5] are used, with ∆ tobs = 0 .5. Truth  
+
+> t= 0
+> Initial
+
+ρ
+
+|∇ ρ|     
+
+> t= 0 .50
+> Forecast
+> t= 0 .50
+> Analysis
+> t= 1 .00
+> Analysis
+> t= 1 .50
+> Analysis
+> t= 2 .50
+> Analysis
+> Observations
+
+dk + i
+
+> Farthest member
+
+ρ
+
+> Ensemble mean
+
+[D (¯ zi)] ρ
+
+ρi                  
+
+> 0.3
+> 2.5
+> 4.5
+> ρ
+> 0
+> 5
+> 10
+> |∇ ρ|
+> 0
+> 0.5
+> 1
+> dk+i
+> 0.3
+> 2.5
+> 4.5
+> ρ
+> 0.3
+> 2.5
+> 4.5
+> ρ
+> Figure 5: Shock-cylinder interaction under feature-space Latent-EnKF. Columns show the initial state, forecast, and analyses over successive DA cycles. Row 1: truth, with density ρ(top half) and instantaneous |∇ ρ|(bottom half). Row 2: observations dk+ηi, given by noisy, time-integrated |∇ ρ|on a 32 ×32 sensor grid. Row 3: farthest ensemble member from the mean at various stages of DA, illustrating ensemble spread. Row 4: Comparison between the ensemble mean obtained by decoding the mean latent code (top half) and the ensemble mean computed directly in the physical space (bottom half).
+
+5Pressure p Density ρ x-velocity, u y-velocity, v   
+
+> |∆p|/p max |∆ρ|/ρ max |∆u|/u max |∆v|/v max
+> 0.21
+> 3.4
+> 6.5
+> 0.36
+> 2.4
+> 4.4
+> -1.2
+> 0.51
+> 2.2
+> -1.4
+> 0.0055
+> 1.4
+> 0
+> 0.17
+> 0.33
+> 0
+> 0.17
+> 0.33
+> 0
+> 0.17
+> 0.33
+> 0
+> 0.17
+> 0.33
+
+Figure 6: -time ( t = 2 .5) assimilated flow field for the cylinder case. Top row: decoded ensemble-mean primitive fields 
+
+p, ρ, u, and v. Bottom row: absolute error relative to the truth, normalized by the maximum of each corresponding field, with a common color scale for direct comparison. Errors are localized near the bow shock, slip lines, and wake. The corresponding RMSE values are RMSE( p) ≈ 0.054., RMSE( ρ) ≈ 0.037, RMSE( u) ≈ 0.012, and RMSE( v) ≈ 0.014. 1 2 3 4 5           
+
+> No. of DA cycles
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> RMSE / Spread
+> Pressure, p
+> RMSE at forecast
+> RMSE after analysis
+> Spread at forecast
+> Spread after analysis
+> 12345
+> No. of DA cycles
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Density, ρ
+> 12345
+> No. of DA cycles
+> 0.0
+> 0.1
+> 0.2
+> Velocity, [u, v ]
+
+Figure 7: RMSE and ensemble spread across DA cycles for the cylinder case with a 10% biased prior. Results are shown for p, ρ,and velocity magnitude |υ|. Open markers denote forecast values, while filled markers denote post-analysis values. Both RMSE and spread decrease monotonically over five DA cycles, with the analysis spread closely following the RMSE. 
+
+Fig. 5 tracks the forecast ensemble at various DA cycles as the noisy, schlieren-like observations (row 2) extracted from truth (row 1) are assimilated. Row 3 follows the farthest forecast member, defined as the member with maximum |qfi − ¯qf ∥2 value, where ¯ qf = n−1
+
+> e
+
+P 
+
+> i
+
+qfi is the primitive variable ensemble mean. The farthest member begins with a misplaced shock structure far from the truth, then progressively realigns with it as assimilation proceeds. Row 4 shows the decoded ensemble mean converging onto the truth, with the bow shock, Mach stem, and slip lines recovered cleanly. The full primitive state at t = 2 .5 (Fig. 6) is reconstructed in physical space without spurious oscillations across the bow shock. The EnKF update in latent space reconstructs a consistent shock and flowfield, rather than a blend of misaligned shocks that would arise in physical-space EnKF (see Fig. 2). The largest residuals appear near the bow shock and the shock-cylinder interaction, consistent with the observation operator integrating |∇ ρ| over time which provides limited information about transient post-interactions. Fig. 7 shows that RMSE and ensemble spread decrease monotonically over five DA cycles for all primitive variables, indicating that the latent-space update remains stable and informative. 
+
+4. Conclusion 
+
+A latent-space EnKF has been developed for data assimilation of shock-laden compressible flows. The approach addresses the central failure mode of the standard EnKF, namely that the linear analysis update acts on fore-cast perturbations in physical space, which for ensembles with displaced discontinuities produces non-physical intermediate states and spurious oscillations. By performing the analysis on a learned low-dimensional latent manifold, the proposed method instead enables coherent displacement of shocks, contact discontinuities, and slip lines through the update. Numerical experiments on a Sod shock tube and a Mach-2 shock interaction with a cylinder demonstrated stable and accurate assimilation from sparse and noisy observations, including schlieren-like cumulative density-gradient measurements, while preserving sharp flow structures throughout the analysis cycles. The results indicate that latent representations provide an effective geometric framework for extending ensemble Kalman filtering to discontinuous flows. The framework is solver-agnostic and extends naturally to three-dimensional configurations and other physical systems featuring discontinuities. 6Acknowledgments 
+
+This work was supported by the AFOSR/AFRL Center of Excellence in Assimilation of Flow Features in Compressible Reacting Flows under award number FA9550-25-1-0011, monitored by Dr. Chiping Li. 
+
+Code availability 
+
+Data and codes are available upon request. 
+
+References 
+
+[1] G. Evensen, Data assimilation: the ensemble Kalman filter, Springer, 2009. [2] T. A. Zaki, M. Wang, Data assimilation and flow estimation, in: Data Driven Analysis and Modeling of Turbulent Flows, Elsevier, 2025, pp. 129–181. [3] T. A. Zaki, Turbulence from an observer perspective, Annual Review of Fluid Mechanics 57 (Volume 57, 2025) (2025) 311–334. [4] M. Asch, M. Bocquet, M. Nodet, Data Assimilation: Methods, Algorithms, and Applications, SIAM, 2016. [5] T. Houba, A. Edoh, R. Munipalli, M. E. Harvazinski, Sequential data assimilation in flows with shocks, in: AIAA SCITECH 2024 Forum, 2024, paper 0587. [6] M. Morzfeld, D. Hodyss, Gaussian approximations in filters and smoothers for data assimilation, Tellus A: Dynamic Meteorology and Oceanography 71 (2019) 1600344. [7] X.-H. Zhou, L. Beronilla, M. K. Sleeman, H. Hu, M. Morzfeld, A. M. Stuart, T. A. Zaki, Neural ensemble kalman filter: Data assimilation for compressible flows with shocks, arXiv preprint arXiv:2602.23461 (2026). [8] A. Edoh, T. Houba, R. Munipalli, M. E. Harvazinski, Sequential ensemble Kalman filtering of compressible flows with shocks: enforcing positivity, in: AIAA SCITECH 2025 Forum, 2025, paper 0918. [9] J. J. Hansen, D. Brouzet, M. Ihme, A normal-score ensemble Kalman filter for 1D shock waves, in: AIAA SCITECH 2024 Forum, 2024, paper 1022. [10] H. Zhou, J. J. Gomez-Hernandez, H.-J. H. Franssen, L. Li, An approach to handling non-Gaussianity of parameters and state variables in ensemble Kalman filtering, Advances in Water Resources 34 (2011) 844–864. [11] T. Li, A. Gelb, Y. Lee, A structurally informed data assimilation approach for nonlinear partial differential equations, Journal of Computational Physics 519 (2024) 113396. [12] T. Li, A. Gelb, Y. Lee, Structurally informed data assimilation in two dimensions, arXiv preprint arXiv:2510.06369 (2025). [13] H. Fan, L. Bai, B. Fei, Y. Xiao, K. Chen, Y. Liu, Y. Qu, F. Ling, P. Gentine, Physically consistent global atmospheric data assimilation with machine learning in latent space, Science Advances 12 (1) (2026) eaea4248. [14] Y. Chen, D. Sanz-Alonso, R. Willett, Reduced-order autodifferentiable ensemble kalman filters, Inverse Problems 39 (12) (2023) 124001. [15] X. T. Tong, Y. Wang, L. Yan, Latent autoencoder ensemble Kalman filter for nonlinear data assimilation, arXiv preprint arXiv:2603.06752 (2026). [16] Z. Chen, H. Zhang, Learning implicit fields for generative shape modeling, in: Proc. IEEE/CVF Conf. on Computer Vision and Pattern Recognition (CVPR), 2019, pp. 5939–5948. [17] H. Fan, Y. Liu, Z. Huo, Y. Liu, Y. Shi, Y. Li, A novel latent space data assimilation framework with autoencoder-observation to latent space (ae-o2l) network. part i: The observation-only analysis method, Monthly Weather Review 153 (8) (2025) 1335–1348. [18] I. Pasmans, Y. Chen, T. Sebastian Finn, M. Bocquet, A. Carrassi, Ensemble kalman filter in latent space using a variational autoencoder pair, Quarterly Journal of the Royal Meteorological Society 152 (775) (2026) e70070. 7[19] J. J. Park, P. Florence, J. Straub, R. Newcombe, S. Lovegrove, DeepSDF: learning continuous signed distance functions for shape representation, in: Proc. IEEE/CVF Conf. on Computer Vision and Pattern Recognition (CVPR), 2019, pp. 165–174. [20] P. D. Lax, X.-D. Liu, Solution of two-dimensional riemann problems of gas dynamics by positive schemes, SIAM Journal on Scientific Computing 19 (2) (1998) 319–340. [21] G.-S. Jiang, C.-W. Shu, Efficient implementation of weighted eno schemes, Journal of computational physics 126 (1) (1996) 202–228. [22] E. F. Toro, M. Spruce, W. Speares, Restoration of the contact surface in the hll-riemann solver, Shock waves 4 (1) (1994) 25–34. [23] H. Chandravamsi, A. S. Chamarthi, N. Hoffmann, S. H. Frankel, On the application of gradient based reconstruction for flow simulations on generalized curvilinear and dynamic mesh domains, Computers & Fluids 258 (2023) 105859. [24] S. Gottlieb, C.-W. Shu, E. Tadmor, Strong stability-preserving high-order time discretization methods, SIAM review 43 (1) (2001) 89–112. [25] G. Ke, S. J. Grauer, T. A. Zaki, Observability of initial states in one-dimensional inviscid flows with shocks, in: AIAA SCITECH 2026 Forum, 2026, paper 0493. [26] A. Chaudhuri, A. Hadjadj, A. Chinnayya, On the use of immersed boundary methods for shock/obstacle interactions, Journal of Computational Physics 230 (5) (2011) 1731–1748. 8
