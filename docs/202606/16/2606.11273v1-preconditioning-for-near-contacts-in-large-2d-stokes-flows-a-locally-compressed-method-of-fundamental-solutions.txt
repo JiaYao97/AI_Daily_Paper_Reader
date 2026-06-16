@@ -1,0 +1,2582 @@
+Title: Preconditioning for near-contacts in large 2D Stokes flows: a locally compressed method of fundamental solutions
+
+URL Source: https://arxiv.org/pdf/2606.11273v1
+
+Published Time: Thu, 11 Jun 2026 00:05:13 GMT
+
+Number of Pages: 32
+
+Markdown Content:
+# Preconditioning for near-contacts in large 2D Stokes flows: a locally compressed method of fundamental solutions 
+
+## Anna Broms ∗,1) , Anna-Karin Tornberg 2) , and Alex H. Barnett 3) 1) Department of Mathematics, Imperial College London, UK  
+
+> 2)
+
+## Department of Mathematics, KTH Royal Institute of Technology, Stockholm, Sweden  
+
+> 3)
+
+## Center for Computational Mathematics, Flatiron Institute, New York, USA 
+
+> ∗
+
+## e-mail: a.broms@imperial.ac.uk June 11, 2026 
+
+Abstract 
+
+We tackle two key difficulties in the simulation of the viscous hydrodynamics of a large dense collection of rigid particles: (i) the poor convergence rate of an iterative solution of the discretized linear system as particle gaps shrink, and (ii) the large number of unknowns needed to accurately discretize the resulting lubrication-driven flows. Our focus is the 2D Stokes resistance and mobility boundary value problems for nearly-touching disks. To address both challenges, we introduce a general two-body preconditioning strategy, and implement it with the method of fundamental solutions. For each close particle pair, the hard-to-resolve interaction is represented in a basis precomputed by solving a local boundary value prob-lem on a fine grid. In an iterative solve, the resulting flow field corrects that obtained from a coarse representation of all particles. The local fine-grid correction can even be compressed so that all particles except the pair itself are affected by an equivalent set of coarse sources. Numerical experiments demon-strate rapid GMRES convergence in challenging multi-particle settings, with iteration counts remaining low even in densely packed suspensions. For example, the mobility problem is solved for a random close packing with area fraction ϕ = 0 .65, P = 10000 monodisperse disks, and minimum separation 10 −3, in just 47 GMRES iterations, achieving five digits of accuracy with 72 vector unknowns per body. 
+
+Key words: Elliptic PDE; Stokes flow; mobility; preconditioning; near-contact; potential theory 
+
+# 1 Introduction 
+
+The Stokes equations—a set of linear elliptic PDEs—describe fluid flow in regimes where viscous forces dominate over inertia. This regime is typical for suspensions of small particles, from nanometer to micrometer in size, moving through a viscous fluid. At such scales, Stokes flow governs the motion of rigid bodies [13, 6, 22], drops [71, 64, 53], vesicles [58, 9], flexible fibers and filaments [63, 51], and even swimming microorganisms [67, 69]. We focus on the exterior Stokes boundary value problem (BVP) in two dimensions, where the fluid domain is the unbounded region outside a collection of P rigid circular particles. Denoting the particles by Ω(i) ⊂ R2, with boundaries ∂Ω(i), i = 1 , . . . , P , the union of all particles is Ω = SPi=1 Ω(i), and the fluid domain is R2 \ Ω. Many questions of physical interest can be addressed in this framework—for instance, 
+
+how do the suspended particles affect the effective viscosity of the suspension? Or, more generally, how do hydrodynamic interactions between nearby particles influence their collective motion? 
+
+In 2D Stokes problems, of both resistance and mobility flavours, with a fluid of constant dynamic viscosity 1
+
+> arXiv:2606.11273v1 [math.NA] 9 Jun 2026
+
+μ, we have 
+
+−μ∆u + ∇p = 0, in R2 \ Ω,
+
+∇ · u = 0 , in R2 \ Ω,
+
+u = g(i), on ∂Ω(i),
+
+u(x) = Σ
+
+4πμ log 1
+
+r + O(1) , as r := ∥x∥ → ∞ ,
+
+(1) where u is the velocity field and p the pressure. The logarithmically unbounded term has been scaled so that 
+
+Σ is the total force on the fluid. There are no-slip conditions on the rigid particle boundaries. For particle i,the boundary velocity is given by 
+
+g(i)(x) = v(i) + ω(i)(x − c(i))⊥, x ∈ ∂Ω(i), (2) where v(i) ∈ R2 is a translational velocity, ω(i) ∈ R an angular velocity, and c(i) the center of particle i.The perpendicular map ( x1, x 2)⊥ := ( −x2, x 1) rotates a vector 90 ◦ counterclockwise and represents the 2D analog of the 3D cross product between e3 and a vector in the plane. For each particle, the hydrodynamic force and torque exerted by the fluid are given by integrals of the traction σn over the boundary: 
+
+f (i) =
+
+Z
+
+> ∂Ω(i)
+
+σn ds, t(i) =
+
+Z
+
+> ∂Ω(i)
+
+(x − c(i))⊥ · σn ds, 
+
+(3) where σ := −pI + μ(∇u + ( ∇u)T ) is the Cauchy stress tensor, and n is the unit normal pointing outward from each particle. We solve both the resistance problem and its inverse, the mobility problem (see Remark 2 below for certain details). In the resistance problem, the translational and angular velocities ( v(i), ω (i)) of each rigid particle are prescribed, which fixes the boundary velocity Dirichlet data (2). Once the exterior Dirichlet BVP (1) is solved, the desired hydrodynamic forces and torques ( f (i), t (i)) are extracted via (3) in post-processing. Applications of the resistance problem include porous media and microfluidic devices. In the mobility case the roles are reversed: the net forces and torques are specified, and one seeks the resulting rigid particle velocities and angular velocities. Thus the given forces and torques enter as constraints that must be enforced alongside (1) and (2) (see Sec. 4 for the numerical approach). Applications of the mobility problem include sedimentation, rheology, motile swimmers and active fluids. 
+
+Computational challenges. When rigid particles undergo relative motion at close separations, their hydrodynamic interactions become especially challenging to determine, both in the resistance and mobility settings [44, 42, p. 175]. Two distinct difficulties appear: 
+
+• Lubrication-driven fine scales. In narrow inter-particle gaps, the fluid velocity develops steep gradients. Accurate capture of these gradients requires very high spatial resolution: volume-based methods, such as finite elements, must deploy extremely fine meshes [44]. Potential based methods, such as boundary integral equations (BIEs) or the method of fundamental solutions (MFS), avoid the need for volume discretization, but not the demand for local refinement. Relative motion drives sharp peaks in the surface force density. For two disks, this peak scales like O(√δ) with gap width δ [9, 62], reflecting the rapid amplification of lubrication forces between the particles. If the density peaks are under-resolved, the error in computed hydrodynamic quantities—forces and torques in a resistance problem, or velocities in a mobility problem—can be substantial. Moreover, refinement in close-to-touching regions significantly increases computational cost because elliptic kernels are globally coupled: locally introduced fine-scale degrees of freedom must interact with the entire suspension. 
+
+• Ill-conditioning. Regardless of discretization, the resulting linear system inherits the singular nature of the physics. As δ → 0, or as the number of particles grows, the conditioning deteriorates [9, 60]. When using an iterative solver such as GMRES, the number of iterations needed to reach fixed accuracy rises without limit as δ → 0 [47]; for instance in the 3D resistance setting [13] this was empirically found to be O(δ−1/2). The problem is therefore not merely one of accuracy, but also of efficiency. 2Related work. We briefly overview numerical methods for Stokes flows with near-contacts, focusing on PDE-based approaches. We first note the long tradition of using far-field approximations of the hydrodynamic interactions between bodies (usually spheres in 3D), such as in Stokesian dynamics [10], with lubrication corrections added in a pair-wise manner [62, 44]. Regularized effective particle interactions are also popular, as in the rigid multiblob [7, 15], force coupling [66] or regularized Stokeslets [21] methods. While useful, neither method is convergent , in the sense that the error in solving the BVP (1) may be reduced as close to zero as desired by adjusting numerical parameters. PDE-based approaches—which in contrast do converge to the true Stokes solution—either discretize the fluid volume (leading to finite difference or finite element methods), exploit potential theory and linearity to discretize only the boundaries (as in BIE and MFS), or combine both (as in immersed boundary methods). Despite recent advances in accurate quadrature for BIEs [36, 12, 9, 1], resolving the layer density—which closely mirrors the physical force density—remains challenging. In near-contact situations, the density devel-ops sharp peaks that demand refinement, for example via dyadic (exponential) clustering of quadrature nodes near points of closest approach. One way to curb the resulting growth in degrees of freedom is recursively compressed inverse preconditioning (RCIP), introduced for corners by Helsing & Ojala [35], demonstrated for close-to-touching bodies in [34] and extended to Stokes flow in [17, 5]. Starting from a dyadic local refinement in a neighborhood of the singularity, RCIP uses a sequence of small dense direct linear solves to compress the refined system to a much smaller effective one. For static geometries, this is highly effective, but in dynamic problems where the geometry changes at every time step this can be expensive. A further major limitation is that RCIP has not been generalized to 3D. The MFS (also known as the method of auxiliary sources or the charge simulation method [3, 25, 8, 2, 45, 41, 4]) moves the potential sources off the boundary, removing the need for singular quadratures that complicates BIE. An exterior solution is represented as a linear combination of Stokeslets placed inside each particle. For instance, for the unit disk, a standard choice is to place “proxy” sources uniformly on an interior curve of radius Rp < 1, enforcing boundary conditions in a least-squares sense at collocation points. The resulting rectangular matrix becomes exponentially ill-conditioned in the high-accuracy regime, so that a backward-stable solve—typically via dense singular value decomposition (SVD)—is essential. In near-contact situations, simply increasing the number of proxy sources to resolve lubrication forces becomes prohibitive. For Stokes spheres in 3D [13], we enhanced the basic MFS setup for every pair of particles by adding various types of sources clustered toward image accumulation points . We also stabilized the multi-particle solve via right-preconditioning using the particle self-interaction matrix blocks (“one-body” or rectangular block-Jacobi preconditioning) [45, 65]. This enabled accurate resolution of lubrication effects with a modest number of degrees of freedom for all gaps larger than 10 −3R, covering what we argued to be all physically relevant separations for Stokes flow. For the mobility problem we introduced a “recompleted” formulation in [14] in which force/torque constraints are automatically satisfied, allowing an unconstrained least-squares solve. Combined with one-body preconditioning and fast multipole acceleration, this yielded a robust linear-complexity scheme for general smooth shapes, demonstrated on clusters of 10 4 ellipsoids. There are other PDE-based approaches that share with MFS the idea of least-squares collocation. Exam-ples include Crowdy et al.’s conformal mapping method for Laplace problems exterior to close cylinders [23] and the Stokes lightning method of Trefethen and collaborators [16, 72]. These exploit complex analysis to express the solution in terms of analytic Goursat functions (for Stokes) or Laurent series (for Laplace). The expansions in [23] even include terms centered at image accumulation points, similar to our MFS enhance-ment. While accurate, they are difficult to accelerate with fast summation techniques and, to our knowledge, have not been applied to close-to-touching rigid bodies in Stokes flow. Such complex analytic methods are also intrinsically tied to 2D. We know of no existing convergent method that combines the flexibility of the MFS with a preconditioning strategy able to resolve lubrication effects at physically relevant small gaps, while avoiding a global fine discretization—crucial for simulations with very large numbers of particles. Here, we present one. 
+
+## 1.1 Summary of contributions 
+
+The paper presents a two-body preconditioner that mitigates both the severe ill-conditioning, and growth in the number of unknowns, that usually occur when seeking accurate Stokes solutions with close rigid particles in relative motion. It is a hybrid of direct and iterative methods: it directly solves a set of local finely-discretized 3(a) Dilute case (b) Global fine grid import  
+
+> 1
+> Ägg
+> är
+> THREATS (c) Proposed two-body basis idea
+
+Figure 1: Sketch of the two-body preconditioner idea. Large blue dots indicate coarse surface discretiza-tion (MFS collocation nodes; source points are not shown). Small red dots indicate a more expensive fine discretization. (a) In dilute suspensions, a coarse discretization of each particle suffices to resolve all inter-actions, and a (one-body) basis for the flow field is obtained by using MFS to solve each body in isolation (inset). (b) In denser systems, any particle undergoing a near contact demands a fine discretization to cap-ture local hydrodynamics. (c) The proposed scheme constructs a basis in which such fine discretizations are used only at the level of isolated pairs (inset), with each such interaction compressed to an equivalent coarse representation in the global solve. Fine grids are retained only locally for resolving near-field interactions and post-processing. In each panel and each inset, light blue indicates the fluid domain for the BVP solved. BVPs—each involving only two nearly-touching particles—in order to construct a (preconditioned) coarse discretized global system involving far fewer unknowns. The global system is then solved iteratively using fast multipole (FMM) acceleration. The idea generalizes the pairwise Laplace image-sum basis functions of Cheng & Greengard [20, 19] to “two-body basis functions” which may be precomputed with any convenient BVP solver. We use MFS for this task in the present work, due to its excellent performance for large scale Stokes flows [13, 14]. An overview of the scheme is given in Figure 1. Our contribution has two main elements, each targeting one of the above-mentioned challenges: 1. Stabilizing the ill-conditioned global system. The preconditioner is built by solving directly for pairwise corrections to the one-body basis for each particle in the suspension as necessary, with each correction capturing the near-field interaction with a close neighbor. The result is a two-body basis representation that can approximate all possible near-contact interactions. The unknown coefficients of these basis functions are then solved for iteratively, using an FMM-accelerated global matrix-vector product. The use of two-body bases greatly reduces GMRES iteration counts, even for gaps as small as 10 −3R, in both resistance and mobility problems. 2. Capturing lubrication-driven fine scales locally. Each pairwise correction is obtained by solving a small but high-resolution BVP with only two particles (Figure 1(c), inset), fully resolving the steep surface-force peaks induced by lubrication. This is achieved using an image-enhanced MFS—a 2D version of that of [13]—which also uses a hairpin curve to give high accuracy with only a single source type (Stokeslets). We apply near-contact MFS image enhancement to the mobility problem for the first time. A subsequent compression step replaces the fine pair representation with an equivalent coarse set of sources (Figure 1(c), background), so that the global discretization remains coarse. This addresses the local resolution requirements without increasing the global degrees of freedom (passed to the FMM) in the iterative solve. 
+
+Remark 1 (Connection to hybrid PDE solvers) . This “hybrid” of direct solution operators for local problems, compressing them to reduce their effective number of unknowns, and then solving the remaining global problem iteratively (block-diagonal preconditioning) recurs in diverse settings. These include: 
+
+• RCIP [35] and other BIE corner-compressions schemes for elliptic PDE [11, 39, 38] use essentially this idea, where the refined panel geometry at a single corner determines which fine unknowns are 4compressed. Other local preconditioners can be advantageous with BIE [59]. 
+
+• The two-body basis functions of Cheng–Greengard [20, 19] (mentioned above) fit into this framework, where the fine-scale “solve” is instead a direct image sum, and no acceleration of the global matrix-vector multiply was used. 
+
+• The scattering matrix of a single body is a certain set of one-body basis functions (in our terminology). After such a direct one-body solution is built, it is commonly compressed using proxy and/or collocation points, and again used in a global iterative solve; this is sometimes called fast multi-particle scattering 
+
+[27]. See [45, 18] for MFS versions for well-separated bodies. 
+
+• Fast direct solvers (FDS) [50] use this idea hierarchically, where the grouping of fine unknowns is often done via a quad- or oct-tree [30, 49]. Sometimes the coarse nodes are a subset of the fine; this is known as skeletonization . A low-accuracy or incomplete FDS may also be used as a successful preconditioner, resulting in a hybrid scheme. For porosity problems without relative body motion, Quaife et al. [60] presented a hybrid solver of this type. A notable recent volumetric hybrid solver is due to Lorca et al. [46]. Our proposal is a pairwise extension of a hybrid 1-level FDS (iterative solution of [50, Eq. (13.14)]). In each of these settings, both the number of unknowns and the iteration count is reduced compared to a global solution using the fine-scale discretization. In contrast to almost all of the above, our proposal requires 
+
+rectangular least-squares rather than square solves because of the nature of the MFS; this complicates the linear algebra but simplifies the quadrature schemes. Together, these components yield a fast, accurate, and robust MFS framework for dense suspensions. Numerical experiments confirm stable performance in challenging multi-particle configurations. As a motiva-tional example, the mobility problem is solved for a system of 10,000 unit circles (packing fraction ϕ = 0 .65) in Figure 2. Despite minimum particle separations as small as 10 −3, with 9920 close pairs requiring lo-cal resolution, the interaction is resolved to a relative surface residual uniformly below 10 −5. Convergence is achieved in 47 iterations, with a parallel solve time of 36 s on a single compute node (see Remark 12). Although demonstrated in 2D, the ideas are readily applicable in 3D. 
+
+Paper overview. Section 2 sets the stage by introducing the two-body preconditioning idea in a general BVP framework. We then specialize to the resistance problem for geometries of circular bodies using the MFS in Section 3, where the construction proceeds in three steps: (1) identify one-body basis functions using the preconditioned MFS of [45, 14, 13]; (2) introduce two-body corrections to the one-body basis using fine sources; and (3) apply “peanut compression” by matching, on a peanut-shaped separation surface, the flow field from the fine sources of a particle pair to that of a set of coarse proxy sources. The resulting linear system involves only coarse unknowns. The same construction is then applied to the mobility problem in Section 4. The choice of source points for the fine pairwise representation is discussed in Section 5, while numerical experiments in Section 6 validate the accuracy and efficiency of the method for both resistance and mobility problems. Finally, Section 7 concludes and outlines directions for future work. 
+
+Remark 2 (Details on uniqueness and translational reference frame) . Unlike in 3D where a constant flow is always a valid limit as r → ∞ , in 2D an exterior flow u as in (1) with nonzero total force Σ grows without bound, leading to the so-called Stokes paradox [37] [57, §6.14] [28, §5.1]. It is easy (e.g. by expanding the exterior Green’s representation [40, (2.3.20)]) to show that the last line of (1) is equivalent to 
+
+u(x) = 14πμ 
+
+
+
+log 1
+
+r + xx T
+
+r2
+
+
+
+Σ + w + o(1) , r := ∥x∥ → ∞ . (4) In the mobility problem Σ = P 
+
+> i
+
+f (i) is specified, but also for uniqueness the constant w must be specified [61, §3] (physically the latter is needed to select a specific Galilean reference frame). In our mobility tests we always set Σ = 0 and w = 0, the latter being enforced numerically by our pure-Stokeslet MFS representation. Turning to resistance, its standard BVP with Dirichlet data and Σ specified always has a unique solution [40, 
+
+§2.3], from which w could be extracted via (4). In this work our representation in fact solves a nonstandard resistance problem where Dirichlet data and w = 0 are specified (this avoids the complication of an additional 50 6.5   
+
+> max boundary speed
+> -6.1 -5.2
+> max rel boundary res (log 10 )
+> -6.1 -5.2
+> max rbm velocity err (log 10 )
+
+Figure 2: Mobility solution for a random close packing of 10 ,000 unit circles (packing density ϕ = 0 .65, minimum separation 10 −3), with each particle driven by a unit torque. The global iterative solve uses 72 vector unknowns per body and converges in 47 GMRES iterations and 36 s on a single compute node. From left to right, a third of the particles is colored by velocity magnitude, followed by maximum relative boundary residual, and relative rigid body motion error, as defined in (62),(61) and (63). The velocity field shows slower motion in the interior of the cluster. The boundary residual is measured with respect to the boundary data, and the velocity error is computed relative to a finer reference solution. constant in the flow representation [3]). This nonstandard BVP is uniquely solvable except for a set of zero measure geometries (e.g., one disk of radius √e), but these can easily be bypassed by rescaling space. 6Moreover the standard resistance solution could be recovered by solving cases with u|∂Ω ≡ (1 , 0) and (1 , 0) then inverting the resulting 2 × 2 linear map between w and Σ. For simplicity—and since most applications involve mobility and/or 3D—we do not dwell on this further. 
+
+# 2 General framework for two-body basis construction 
+
+We construct an efficient basis for the flow field due to P particles in three steps: 1. Solve one-body BVPs for particle i in isolation (see inset in Figure 1(a)) to obtain the one-body basis functions associated with particle i.2. For each close neighbor of particle i, add a correction to this basis involving BVPs for the pair comprising 
+
+i and the neighbor (see inset in Figure 1(c)). 3. Represent the flow due to all P particles as a superposition of such pair-corrected basis functions. In this section we outline these steps separately for the resistance and mobility problems, in a deliberately high-level manner. We assume only the existence of a local BVP solver (for one or two particles) whose input is discretized surface data. The reader is reassured that the abstraction will be made concrete in Section 3 and the sequel, where we specialize to the MFS as the local BVP solver and to disks as the particles. 
+
+## 2.1 The resistance (Dirichlet) problem 
+
+Consider the ith body, and let {x(i) 
+
+> j
+
+}Mj=1 be its set of coarse boundary nodes, sufficient for accurate dis-cretization of ∂Ω(i) in isolation. We discretize boundary velocity data on these nodes to give the vector 
+
+μ(i) = {μ(i)1 , . . . , μ(i) 
+
+> M
+
+}. Smooth boundary functions may then be accurately interpolated from these nodes. Let ϕ(i) denote the velocity solution operator for the ith body in isolation, meaning that it maps μ(i) to the resulting flow field u(x) = ϕ(i)[μ(i)]( x) which solves the Stokes BVP (1) in the exterior of Ω (i) alone, with Dirichlet data μ(i). (Recall Remark 2 for the condition at infinity.) This means that for any vector μ(i)
+
+the reproducing property holds: ϕ(i)[μ(i)]( x(i) 
+
+> j
+
+) = μ(i) 
+
+> j
+
+, j = 1 , . . . , M . Note that here and beyond we use “representation” notation ϕ(i)[μ(i)], similar to that used in potential theory. By linearity, one may view ϕ(i) as a set of one-body basis functions {ϕ(i) 
+
+> j
+
+}2Mj=1 , where ϕ(i) 
+
+> j
+
+is the flow solution u when the data vector μ(i) is set to the jth unit vector in R2M . For the full system of P particles, the flow field can be expressed as a superposition of fields generated by each body, 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+ϕ(i)[μ(i)]( x), x ∈ R2 \ Ω (one-body representation). (5) The full resistance problem (1) may now be solved by treating (5) as an ansatz with {μ(i)}Pi=1 as unknowns ,and using collocation to impose that u match the given velocity data {g(i)}Pi=1 at all coarse nodes. The resulting linear system has a 2 P M × 2P M system matrix with identity blocks along the diagonal, because of the one-body solution property. In practice, one never forms the matrix, but applies it to vectors using a fast algorithm and block-diagonal corrections [45, 65, 13]. 
+
+Remark 3. In the context of boundary-based PDE solvers (BIE, MFS, etc) the above method is known as one-body (block diagonal) preconditioning, and transforms the unknowns from densities (or source strengths) to surface data. In the MFS case we recap this in Section 3.1. However, when two particles become close (forming a near contact ), two problems arise: i) the boundary functions become nonsmooth, thus cannot be accurately discretized or interpolated with the coarse nodes, and ii) the conditioning of the above linear system deteriorates. One solution to problem i) is simply to use a finer set of one-body boundary nodes (larger M ); however, this would slow down each matrix-vector apply, while doing nothing to address ii). This motivates a two-body preconditioning method. This uses pairwise 7BVPs discretized on fine nodes to modify the above coarse one-body bases ϕ(i) to two-body bases denoted by ψ(i), giving the global representation for the flow field 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+ψ(i)[μ(i)]( x), x ∈ R2 \ Ω (two-body representation). (6) The coefficients μ(i) are then still determined by collocation at the coarse boundary nodes, so that the linear system remains of size 2 P M × 2P M .For each body (without loss of generality we describe this for body i = 1), its set of 2 M two-body basis functions are constructed as follows. If body 1 has no near contacts, we simply set ψ(1) = ϕ(1) . If it has a single near contact, with body 2 (say), we define ψ(1) = ϕ(1) + η(1 ,2) . Here η(1 ,2) denotes a correction basis 
+
+that solves the exterior Stokes BVP for the pair ∂Ω(1) ∪ ∂Ω(2) with Dirichlet velocity data 
+
+η(1 ,2) [μ(1) ]( x) = 
+
+(
+
+0, x ∈ ∂Ω(1) 
+
+−ϕ(1) [μ(1) ]( x), x ∈ ∂Ω(2) (correction data), (7) which is solved numerically using a fine discretization of both particle boundaries. In particular, the jth correction function, η(1 ,2)  
+
+> j
+
+, is found by solving the pair BVP using boundary data given by evaluating minus the jth one-body basis ϕ(1)  
+
+> j
+
+on body 2, and zero data on body 1. The correction thus cancels the one-body Dirichlet data on body 2. Thus if bodies 1 and 2 have no other close neighbors, performing the analogous correction for body 2 completes a pair of two-body bases ψ(1) , ψ(2) that completely solves the pairwise Dirichlet BVP , obeying the reproducing property 
+
+ψ(1) [μ(1) ]( x(k) 
+
+> j
+
+) = 
+
+(
+
+μ(1)  
+
+> j
+
+, k = 1 ,
+
+0, k = 2 , ψ(2) [μ(2) ]( x(k) 
+
+> j
+
+) = 
+
+(
+
+0, k = 1 ,
+
+μ(2)  
+
+> j
+
+, k = 2 , j = 1 , . . . , M. (8) In this case the system matrix would now have a 4 M × 4M identity block on the diagonal (for the unknowns of both bodies 1 and 2). This bypasses any accuracy loss and ill-conditioning associated with the one-body representation of the near contact, at the cost of solving 4 M finely-discretized local BVPs. If body 1 has multiple near contacts, their pairwise corrections are simply summed: 
+
+ψ(1) = ϕ(1) + X
+
+> k∈C (1)
+
+η(1 ,k ) (two-body basis for body 1), (9) with C(1) the set of neighbor indices of body 1. This is repeated for the rest of the bodies i = 2 , . . . , P . The resulting multi-contact construction of two-body bases for P = 5 particles is illustrated in Figure 3. This idea avoids the large system sizes associated with fully coupled multi-body treatments for near contacts, while maintaining low GMRES iteration counts, which we demonstrate in Section 6. 
+
+Remark 4. The above generalizes a method of Cheng & Greengard for the iterative solution of Laplace Dirichlet BVPs with multiple disks [20] or spheres [19]; they used an analytic multipole image sum for the pairwise basis, giving a slow matrix-vector apply. Our generalization is to arbitrary boundary-based linear PDE solvers in multi-body geometries, given only a black-box pairwise solver, and allows for accelerated matrix-vector applies. We refer to [20] for a discussion of why pairwise bases are sufficient even in the case of multiple clusters, such as a triangle of three near-touching disks. 
+
+## 2.2 The mobility problem 
+
+For mobility, the one-body flow field representation is 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+ϕ(i)[μ(i)]( x) + 
+
+> P
+
+X
+
+> i=1
+
+C(i) h
+
+f (i), t (i)i
+
+(x), x ∈ R2 \ Ω (mobility one-body representation). (10) The first term is a sum of mobility-specific one-body basis functions, each producing zero net force and torque, while C(i) is a known completion flow [55, 56, 6, 47, 14], that is, an explicit exterior Stokes solution 81
+
+> 2
+> 3
+> 4
+> 5
+
+(a) u = 0  
+
+> i
+> j
+> η(i,j )
+> u=−ϕ(i)
+
+(b) ψ(1) =1                     
+
+> ψ(2) =2
+> ψ(3) =3
+> ψ(4) =4
+> ψ(5) =5
+> ϕ(1) 1
+> ϕ(2) 2
+> ϕ(3) 3
+> ϕ(4) 4
+> ϕ(5) 5
+> 3
+> 2+
+> 2
+> 3
+> η(2 ,3)
+> 2
+> 4
+> 5
+> 3+
+> 3
+> 2
+> η(3 ,2) +3
+> 4η(3 ,4) +
+> 3
+> 5
+> η(3 ,5)
+> 3
+> 5
+> 4+4
+> 3
+> η(4 ,3) +4
+> 5
+> η(4 ,5)
+> 3
+> 4
+> 5+
+> 5
+> 3
+> η(5 ,3) +5
+> 4
+> η(5 ,4)
+
+(c) 
+
+Figure 3: For the five particles shown in panel (a), the construction of their two-body bases ψ(1) , . . . , ψ(5) 
+
+is diagrammed in panel (c). For bodies in near contact, the one-body basis is augmented with pairwise corrections η(i,j ), each computed by solving a BVP with a single neighbor as in panel (b), using a fine discretization (red). For well-separated particles, no correction is needed: the one-body basis alone suffices, and the coarse discretization (blue) resolves all interactions. carrying (in the sense of (3)) the prescribed force and torque for body i, but in general not a rigid body motion on any body. The construction of each above one-body function differs from the resistance setting. Rather than the plain reproducing property, we have a rank-3 perturbation of it: for any surface velocity vector μ(i) on body i,
+
+ϕ(i)[μ(i)]( x(i) 
+
+> j
+
+) = μ(i) 
+
+> j
+
++ ( R(i)μ(i))j , j = 1 , . . . , M, (11) where R(i) is a 2 M × 2M matrix of rank 3 whose range is the subspace of rigid body velocity data, namely 
+
+{v + ω(x(i) 
+
+> j
+
+− c(i))⊥}Mj=1 for all v ∈ R2, ω ∈ R. In practice, R(i) is fixed by an ansatz made for the specific local BVP solver used, that couples rigid body motions to unknowns (e.g. for BIE see [47, Eq. (38)], while for MFS see [14, §3.2]). To solve the full mobility problem, one treats the one-body coefficients {μ(i)}Pi=1 
+
+as unknown, and uses collocation to enforce that the representation (10) equals the ansatz R(k)μ(k) at the coarse nodes of the kth body, for all k = 1 , . . . , P . As with the resistance problem, the resulting system matrix has size 2 P M × 2P M , with identity blocks along the diagonal, and enables an accelerated apply. However, now the right-hand side becomes minus the surface data of the completion flow from (10). Full details are given in Section 4. Applying pair-corrections to the mobility one-body basis functions we similarly get 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+ψ(i)[μ(i)]( x) + 
+
+> P
+
+X
+
+> i=1
+
+C(i) h
+
+f (i), t (i)i
+
+(x), (mobility two-body representation). (12) 9with ψ(i) again a two-body basis constructed with additive corrections to the one-body basis ϕ(i) as in (9), but now with the additional constraints on the corrections η(i,k ) that they produce no net force or torque on the bodies within the pair. With body 1 and body 2 sufficiently far away from any other neighbors, the pair corrected basis functions for the two bodies satisfy 
+
+ψ(1) [μ(1) ]( x(k) 
+
+> j
+
+) = 
+
+(
+
+μ(1)  
+
+> j
+
++ ( R(1) μ(1) )j , k = 1 ,
+
+0, k = 2 ,
+
+ψ(2) [μ(2) ]( x(k) 
+
+> j
+
+) = 
+
+(
+
+0, k = 1 ,
+
+μ(2)  
+
+> j
+
++ ( R(2) μ(2) )j , k = 2 ,j = 1 , . . . , M. (13) Details on how these local mobility problems are solved using MFS are given in Section 4. A summary of the functions used to represent the flow field in both the resistance and mobility settings is given in Table 1. 
+
+Function Description 
+
+ϕ(i)(x) One-body velocity solution operator for particle i.
+
+ϕ(i)[μ(i)]( x) One-body basis representation for body i with coefficient vector μ(i).For MFS-specific expressions, see: (22) for resistance and (43) for mobility. 
+
+η(i,k )[μ(i)]( x) Pair-correction to one-body basis. For MFS-specific expressions, see: (25) for resistance and (49) for mobility, where the function is evaluated using fine sources 
+
+β(i,k ), that in turn depend on μ(i). For efficiency, η(i,k ) is “peanut compressed” together with η(k,i ) and evaluated using the coarse correction vector ˜λ(i-k).For expressions, see (30) for resistance and (56) for mobility. 
+
+ψ(i)[μ(i)]( x) Two-body basis for particle i: ψ(i) = ϕ(i) + X
+
+> k∈C (i)
+
+η(i,k ).
+
+C(i) h
+
+f (i), t (i)
+
+i
+
+(x) Completion flow supplying the ith body force and torque f (i), t (i).Table 1: Functions appearing in the flow field representations. The same notation is used to describe functions in both the resistance and mobility problems, although their construction is based on different boundary value problems. Here, C(i) denotes the set of indices of bodies in near contact with body i.
+
+# 3 Solving the resistance problem via MFS 
+
+We now apply the MFS to the approach outlined in Section 2.1, specializing to the case where Ω (i) are unit-radius (monodisperse) disks. We start with the MFS itself, followed by one-body preconditioning (recapping prior work). Recasting the latter in the new basis-function framework then provides a natural route to the new two-body algorithm. The fundamental solution to the Stokes equations—the 2D Stokeslet —describes the velocity field induced by a point force. It is given by the 2 × 2 matrix-valued kernel 
+
+S(x, y) = 14πμ 
+
+
+
+− log ∥x − y∥I2 + (x − y)( x − y)T
+
+∥x − y∥2
+
+
+
+, (14) with I2 the 2 × 2 identity matrix. A general velocity field u solving the Stokes equations in the multiply-connected exterior can be approximated as a linear superposition of Stokeslets: 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+> N
+
+X
+
+> j=1
+
+S(x, y(i) 
+
+> j
+
+)λ(i) 
+
+> j
+
+, x ∈ R2 \ Ω, (15) where y(i) 
+
+> j
+
+, j = 1 , . . . , N , are source points inside disk i, and the associated vector source strengths λ(i) 
+
+> j
+
+∈ R2
+
+are to be determined. For well-separated disks, source points may be chosen equispaced on the concentric 10 circle of radius Rc < 1, with typically 0 .6 ≤ Rc ≤ 0.8. However, for lubrication driven problems with near-touching disks, more elaborate choices are needed (as in Section 5). For ease of notation, let Y (i) = {y(i) 
+
+> j
+
+}Nj=1 and λ(i) = {λ(i) 
+
+> j
+
+}Nj=1 denote the stacked source points and strengths. We can then write the representation (15) compactly as 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+S(x, Y (i))λ(i). (16) The source strengths vectors λ(i), i = 1 , . . . , P , are determined by enforcing boundary conditions in the least-squares sense at all sets of target coarse collocation points X(i) := {x(i) 
+
+> j
+
+}Mj=1 on the ith particle boundary. It has been found that setting M slightly larger than N increases MFS accuracy [8]. Letting 
+
+g again denote the stacked boundary data at all such coarse collocation nodes, and λ the stacked source coefficients, we obtain an overdetermined least-squares linear system 
+
+Sλ = g, (17) where S is a dense 2 M P × 2N P matrix whose blocks are given by evaluating S(x, y) between all pairs of target and source points. As already alluded to, the matrix S is exponentially ill-conditioned. In addition, it is typically too large for a dense backward-stable solve if P ≫ 1. Hence, efficient preconditioning is needed to transform (17) into a well-conditioned square system amenable for an iterative solve. 
+
+## 3.1 One-body preconditioning 
+
+We first review the one-body preconditioning approach of [45, 13, 14], and then formulate it in the general framework of one-body basis functions of Section 2. We will sometimes refer to the point sets {X(i)}Pi=1 ,
+
+{Y (i)}Pi=1 respectively as the coarse collocation and source points. We will use the bar notation ¯λ to indicate the vector λ obtained via one-body preconditioning alone. 
+
+3.1.1 Standard formulation 
+
+The global target-from-source MFS matrix S ∈ R2M P ×2N P has the block structure, 
+
+S =
+
+
+
+S(11) S(12) · · · S(1 P )
+
+S(21) S(22) · · · · · · 
+
+... ... . . . ...
+
+S(P 1) · · · · · · S(P P )
+
+ , (18) with the block 
+
+S(ik ) 
+
+> mn
+
+= S(x(i) 
+
+> m
+
+, y(k) 
+
+> n
+
+), m = 1 , . . . , M, n = 1 , . . . , N (19) mapping source points on particle k to target points on particle i.Following [45, 13, 14], we precondition the ill-conditioned overdetermined system S ¯λ = g from the right using a block-diagonal matrix with entries S(ii )+
+
+, the pseudoinverses of the one-body self-interaction blocks. Since all particles are identically shaped and sized, the self-interaction block S(ii ) is shared across bodies, so we denote it simply by P . For each particle, define the preconditioned unknown vector μ(i) = P ¯λ(i) ∈ R2M ,so that ¯λ(i) = P +μ(i). The pseudoinverse P + is determined e.g. using the SVD, P = U ΣV T , where Σ is the diagonal matrix containing the singular values σ(i)1 ≥ σ(i)2 ≥ . . . σ (i) 
+
+> N
+
+. To ensure numerical stability, one has to apply the pseudoinverse in a backward-stable fashion [68, 43, 48, 65, 54], so that ¯λ(i) = V Σ+ 
+
+U T μ(i)
+
+, i = 1 , . . . , P, (20) where Σ+ denotes the truncated pseudoinverse of Σ; its diagonal entries are set to 1 /σ (i) 
+
+> j
+
+when σ(i) 
+
+> j
+
+>σ(i)1 ϵtrunc , or zero otherwise. The truncation level ϵtrunc is typically set smaller than the desired error, but somewhat larger than machine precision. 11 Since N < M , each diagonal block P P + of the resulting preconditioned target-from-source matrix has a nontrivial nullspace: it annihilates some (2 M −2N )-dimensional subspace of inputs. Thus, a well-conditioned matrix can only be achieved by replacing the diagonal blocks by I, which P P + approximates for vectors smooth on each body. The preconditioned system is now square and of size 2 M P × 2M P :
+
+
+
+I S(12) P + · · · S(1 P )P +
+
+S(21) P + I · · · · · · 
+
+... ... . . . ...
+
+S(P 1) P + · · · · · · I
+
+
+
+μ(1) 
+
+μ(2) 
+
+...
+
+μ(P )
+
+ =
+
+
+
+g(1) 
+
+g(2) 
+
+...
+
+g(P )
+
+ . (21) Once this has been solved iteratively for μ := {μ(i)}Pi=1 , the MFS strengths are recovered via (20). 
+
+Remark 5 (New unknowns) . One-body preconditioning reformulates the problem so that the unknowns, μ,are collocation velocity values at the boundaries rather than interior source strengths. Although this increases the number of unknowns slightly (typically, for the coarse grid, we choose M = 1 .2N ), the resulting system is square and much better conditioned, at least for sufficiently well-separated particles. For close-to-touching configurations, however, both N and M must be increased substantially, often with M ≫ N , leading to much larger linear systems. This provides another indication that one-body preconditioning alone is insufficient for large-scale simulations of dense suspensions. By contrast, the two-body basis will resolve the near-contact interactions locally while retaining a coarse global discretization. The resulting reduction in the number of unknowns is quantified in Section 6.1. 
+
+3.1.2 One-body basis reformulation and accelerated matrix-vector product 
+
+We now recast (21) in terms of one-body basis functions. It is easy to check that if we define the MFS-solved one-body basis function for the ith body as 
+
+ϕ(i)[μ(i)]( x) := 
+
+> M
+
+X
+
+> j=1
+
+μ(i) 
+
+> j
+
+ϕ(i) 
+
+> j
+
+(x) = 
+
+(
+
+μ(i) 
+
+> m
+
+, x = x(i) 
+
+> m
+
+,
+
+PNn=1 S(x, y(i) 
+
+> n
+
+)( P +μ(i))n, otherwise, (22) then the one-body basis collocation procedure described at the beginning of Section 2.1 gives precisely the preconditioned MFS linear system (21). Recall that for numerical stability, P + must be applied as in (20). Converting the resulting solution vector μ to λ using (20), the MFS evaluation of the flow u at new targets using (15) is identical to the one-body basis sum (5). In short, one-body (block-diagonal) preconditioning is equivalent to using one-body basis functions that solve isolated-particle BVPs .A practical aspect is to apply the huge matrix in (21) using a fast algorithm. This matrix-vector apply follows the general algorithm outlined in Algorithm 1. We will refer back to this basic algorithm later, when two-body corrections are added. 
+
+Algorithm 1 General matrix-vector apply for a Stokes BVP using a basis representation of the flow field 
+
+function matvec (μ)
+
+Input: Stacked velocity data vector μ = {μ(i)}Pi=1 at all coarse collocation nodes {X(i)}Pi=1 
+
+Output: Stacked surface velocity vector u = {u(i)}Pi=1 at these same nodes {X(i)}Pi=1 
+
+▷ Step 1: Map collocation data to source strengths internal to the basis 
+
+▷ Step 2: Evaluate velocity field at coarse collocation points using basis representation: 
+
+▷ a. Compute global sum of all internal sources at all coarse collocation nodes via fast summation 
+
+▷ b. Correct locally to account for diagonal blocks 
+
+return u
+
+Specifically, the linear-scaling matrix-vector apply in the one-body basis case is [14, Alg. 1]: 1. Apply the self-interaction pseudoinverse backward-stably to each particle as in (20): ¯λ(i) = P +μ(i).12 2a. Evaluate the total velocity field from all sources at all collocation points (via, e.g., a Stokes FMM): 
+
+uAll =
+
+> P
+
+X
+
+> i=1
+
+S
+
+
+
+X(i), Y (i) ¯λ(i). (23) 2b. Subtract the self-interaction field and add the identity correction for each particle: 
+
+u(i) = u(i)All − P ¯λ(i) + μ(i), i = 1 , . . . , P. (24) This enforces the diagonal identity action in (21) (and the equivalent interpolation case in (22)). Once GMRES has converged, the final source coefficients ¯λ(i) are recovered from μ(i), i = 1 , . . . , P , using the pseudoinverse relation in (20). The solution field can then be evaluated via the representation in (15), using λ = ¯λ.
+
+## 3.2 Two-body preconditioning 
+
+We now introduce pairwise corrections to the MFS one-body representation. Pair interactions are resolved locally per pair on a fine grid of Nf source points and Mf collocation points per particle (their precise location choices are deferred to Section 5). We use superscripts ( i, k ) to denote quantities associated with η(i,k ), the basis correction to particle i due to near contact with particle k, but ( i-k) to denote quantities needed jointly 
+
+for η(i,k ) and η(k,i ). The stacked vector of all 2 Nf fine source points for the ( i-k) pair is denoted by Y(i-k),and the corresponding 2 Mf collocation points by X (i-k). To distinguish fine and coarse discretizations, let 
+
+Nc and Mc now denote the number of coarse source and collocation points per particle. Our goal is to use the fine MFS to derive formulae for the pair correction basis η(1 ,2) (for concreteness we pick i = 1, k = 2). This requires two ingredients: an algorithm to evaluate η(1 ,2) [μ(1) ]( x), and a procedure to compute the associated internal fine source strengths for the pair, denoted by β(1 ,2) := {β(1 ,2)  
+
+> q
+
+}2Nf 
+
+> q=1
+
+. The detailed steps outlined here are specific to the resistance problem, but the corresponding corrections to the one-body basis functions appearing in the mobility problem (see Section 4.3) follow the same structure. The first ingredient is simple: once β(1 ,2) is known, we define η(1 ,2) via a “fine” sum of Stokeslets: 
+
+η(1 ,2) [μ(1) ]( x) = 
+
+> 2Nf
+
+X
+
+> q=1
+
+S(x, Y(1-2)  
+
+> q
+
+)β(1 ,2)  
+
+> q
+
+, (25) with β(1 ,2) some linear function of μ(1) . With β(1 ,2) known, the global representation (6) can be evaluated with an FMM that includes the fine source points Y(1-2) and strengths β(1 ,2) .It remains to define the second ingredient: the linear map from μ(1) to β(1 ,2) . For this we use the fine MFS with strength vector β(1 ,2) to solve the near-contact pairwise BVP as in (7). Enforcing its boundary data at the fine collocation nodes X (1 ,2) gives the overdetermined least-squares 4 Mf × 4Nf system (again recalling the Stokes vector character where each β(1 ,2)  
+
+> q
+
+is a 2-vector), 
+
+> 2Nf
+
+X
+
+> q=1
+
+S(X (1-2)  
+
+> ℓ
+
+, Y(1-2)  
+
+> q
+
+)β(1 ,2)  
+
+> q
+
+=
+
+ 0, ℓ = 1 , . . . , M f (on body 1) 
+
+−ϕ(1) [μ(1) ]( X (1-2)  
+
+> ℓ
+
+), ℓ = Mf + 1 , . . . , 2Mf (on body 2) ,
+
+where we assume indexing of the fine collocation points for the pair, X (1-2)  
+
+> ℓ
+
+, such that the first Mf lie on 
+
+∂Ω(1) and the rest on ∂Ω(2) . Compactly, we write this as 
+
+F (1-2) β(1 ,2) =
+
+ 0
+
+−H(1 ,2) 
+
+
+
+μ(1) , (26) where H(1 ,2) is a 2 Mf × 2Mc one-body basis evaluation matrix from the “active” body 1 to its neighbor. Via the definition of the one-body basis in (22), H(1 ,2) has its own factorization as H(1 ,2) = Q(1 ,2) P +, where 13 Coarse sources      
+
+> Finesources
+> Coarsecollocationnodes
+> Finecollocationnodes
+> Activeparticle
+
+Coarse sources
+
+Fine sources
+
+Coarse collocation nodes
+
+Fine collocation nodes
+
+Active particleCoarse sources      
+
+> Finesources
+> Coarsecollocationnodes
+> Finecollocationnodes
+> Activeparticle
+
+H(1 ,2) 
+
+P
+
+P +
+
+F (1-2) +
+
+Q(1 ,2) 1 2
+
+u = −ϕ(1) [μ(1) ]
+
+u = 0
+
+3Figure 4: Illustration of the linear maps used to construct the correction η(1 ,2) to the basis of particle 1 (here called the active particle) due to near-contacting particle 2, as in Section 3.2. 
+
+Q(1 ,2)  
+
+> ℓn
+
+:= S(X (1-2)  
+
+> l+Mf
+
+, y(1)  
+
+> n
+
+), l = 1 , . . . , M f , n = 1 , . . . , N c. The actions of the four matrices F (1-2) +
+
+, H(1 ,2) ,
+
+Q(1 ,2) and P + are illustrated in Figure 4. In practice the stable solution of the ill-conditioned linear system (26) has two stages: in a precomputation the matrices are filled, densely factorized via F (1-2) = U ΣV T , and the factors V Σ+ and U T [0; −H(1 ,2) ]stored, noting that 
+
+β(1 ,2) = F (1-2) +
+
+[0; −H(1 ,2) ]μ(1) = V Σ+ 
+
+(U T [0; −H(1 ,2) ]) μ(1) 
+
+. (27) In subsequent “apply” stages (in each GMRES iteration), one uses the final above expression as a pair of dense matrix-vector multiplies. This is simply a “fine” analog of (20). This completes the recipe to map μ(1) 
+
+to β(1 ,2) . To evaluate the correction basis η(1 ,2) , the resulting β(1 ,2) is inserted into (25). Now equipped with the two-body basis, we evaluate the two-body flow field (6) in the framework of Algorithm 1: Step 1 maps the coefficients μ to both the coarse source strengths ¯λ and the fine correction sources β, Step 2a inputs all fine and coarse source points to, e.g., a Stokes FMM. The final step, 2b, proceeds exactly as in the one-body case (see (24)), since the two-body basis is constructed as an additive correction to the former. 
+
+Remark 6 (Symmetrizing pairs) . It is faster to solve for η(i,k ) and η(k,i ) simultaneously, since both involve the same system matrix F (i-k). For example, to compute β(2 ,1) needed to evaluate η(2 ,1) , the right-hand side in (26) becomes [ −H(2 ,1) ; 0]μ(2) . The factorization of F (1-2) from computing β(1 ,2) can thus be reused, effectively halving the setup time. One then computes the total fine strength vector for the pair β(1-2) := 
+
+β(2 ,1) + β(1 ,2) in the apply stage. A schematic of this apply stage is then, using arrows to denote linear maps: 
+
+Fine sources 
+
+β(1-2) F (1-2) +
+
+←−−−−−−− 
+
+> R4Nf×4Mf
+
+Fine collocation velocity    
+
+> −
+> 0Q(2 ,1)
+> Q(1 ,2) 0
+> 
+
+←−−−−−−− 
+
+> R4Mf×4Nc
+
+Coarse sources 
+
+¯λ(1) ; ¯λ(2) −     
+
+> P+00P+
+> 
+
+←−−−−−−−
+
+> R4Nc ×4Mc
+
+Coarse collocation data 
+
+μ(1) ; μ(2) 
+
+## 3.3 Peanut compression 
+
+The above two-body representation uses finely resolved MFS source points for each contact pair. To accelerate evaluation of the correction bases in the far field, we now introduce a recompression step that replaces these fine sources with effective strengths back at the original coarse source points. Fine sources are only retained for evaluations in the vicinity of the particle pair. Consider again the (1-2) pair. To evaluate η(1 ,2) [μ(1) ] in (25) away from the pair, we replace the fine source set Y(1-2) , with strengths β(1 ,2) ∈ R4Nf , by equivalent strengths at the original coarse source points 
+
+Y (1) and Y (2) , whose union we denote by Y (1-2) . These equivalent strengths ˜λ(1 ,2) are added to the source 14 Point set Description 
+
+Y (i) = {y(i) 
+
+> j
+
+}Nc 
+
+> j=1
+
+Set of coarse source points for particle i
+
+X(i) = {x(i) 
+
+> q
+
+}Mc 
+
+> q=1
+
+Set of coarse collocation points for particle i
+
+Z(i-k) = Z(i) [ Z(k) Union of point sets for particles i and k, where Z can be Y , X
+
+Y(i-k) Set of fine source points for particles i and k in near contact 
+
+X (i-k) Set of fine collocation points for particle i and k in near contact Table 2: The four different point sets defined on each particle. We also denote {X(i)}Pi=1 as the full set of coarse source points for all P particles, and similarly for the coarse collocation points. The number of fine source and collocation points used to set up a pair-correction will depend on the particle distance within each pair, see Section 5. 
+
+Quantity Description 
+
+λ(i) ∈ R2Nc Coarse source strengths associated with Y (i)
+
+μ(i) ∈ R2Mc Transformed coefficient vector associated with X(i)
+
+¯λ(i) ∈ R2Nc Obtained from P +μ(i), applied as in (20), associated with Y (i)
+
+β(i-k) ∈ R4Nf Fine source strengths for pair-correction, associated with Y(i-k)
+
+˜λ(i-k) ∈ R4Nc Correction vector to [ λ(i); λ(k)] on Y (i-k)
+
+→ see (30) for resistance and (56) for mobility Table 3: Coefficient vectors in solution procedures. strengths ¯λ(1) and ¯λ(2) stemming from the one-body basis, leaving an FMM cost no more than that of the one-body basis. As above, it is convenient to combine the source corrections from η(1 ,2) and η(2 ,1) into ˜λ(1-2) := ˜λ(1 ,2) + ˜λ(2 ,1) ,
+
+which will be obtained by applying a precomputed pair correction matrix A(1-2) of size 4 Nc × 4Nc, so that ˜λ(1-2) = A(1-2) 
+
+"¯λ(1) 
+
+¯λ(2) 
+
+#
+
+. (28) The one-body coarse source vector ¯λ(1) for particle 1 is then corrected to give 
+
+λ(1)  
+
+> j
+
+= ¯λ(1)  
+
+> j
+
++ X
+
+> k∈C (1)
+
+˜λ(1-k) 
+
+> j
+
+, j = 1 , . . . , N c. (29) Once all coarse strength vectors have been corrected in this manner, the two-body representation (6) is evaluated simply by plain coarse summation (15). The rest of the subsection is devoted to assembling the “coarse-to-coarse” correction matrix A(1-2) via a sequence of precomputed linear maps during the setup stage. This matrix accurately compresses all of the near-contact lubrication BVP solution information, and is thus analogous to a scattering matrix in the FMPS or FDS frameworks (Remark 1). As a reminder for the rest of the paper, all point sets and source types are collected in Tables 2 and 3. The idea of the replacement is to ensure that the coarse sources reproduce the same velocity field as the fine ones on (and therefore exterior to) a special “peanut” proxy surface. This is the separation boundary formed by rolling a unit circle around the fixed pair, comprising four arcs, which defines the minimal clearance from any third body; see Figure 5. Let z(1-2)  
+
+> p
+
+, p = 1 , . . . , M p be peanut collocation nodes, uniformly sampled in arc length. As usual with the MFS (or other proxy point applications), we solve for the effective strengths 15 Peanut collocation nodes
+
+Coarse sources
+
+Fine sources
+
+Particle interiorD(1-2) 
+
+1 2
+
+C(1-2) +
+
+A(1-2) 
+
+4Figure 5: The peanut (magenta) forms a separation or proxy surface; no other disk can get closer to the (1-2) contacting pair. In Section 3.3 this is used, along with matrices C(1-2) and D(1-2) , to fill A(1-2) (black arrows), the coarse-to-coarse matrix that compresses the true near-contact pairwise lubrication interaction. via least-squares velocity collocation at the peanut nodes. That is, given fine strengths β(1-2) , we solve for ˜λ(1-2) such that 
+
+> 2Nc
+
+X
+
+> j=1
+
+S(z(1-2)  
+
+> p
+
+, Y (1-2)  
+
+> j
+
+)˜λ(1-2)  
+
+> j
+
+=
+
+> 2Nf
+
+X
+
+> q=1
+
+S(z(1-2)  
+
+> p
+
+, Y(1-2)  
+
+> q
+
+)β(1-2)  
+
+> q
+
+, p = 1 , . . . , M p (peanut compression) , (30) where, as before, we suppress the 2-vector nature of each component for notational convenience. Compactly, this is summarized as C(1-2) ˜λ(1-2) = D(1-2) β(1-2) , with the linear maps illustrated in Figure 5. If the residual of this linear solve is small for any data β(1-2) , then the far-field flow generated by the fine sources is faithfully captured by the smaller number of coarse Stokeslets. To this end, one precomputes C(1-2) = U ΣV T , then stores the factors V Σ+ and U T D(1-2) , so that ˜λ(1-2) = C(1-2) +
+
+D(1-2) β(1-2) is performed via ˜λ(1-2) = V Σ+ 
+
+U T D(1-2) β(1-2) 
+
+. We then combine this factor-ization with the two-body strength factorization (27) to give (at a high level, without breaking pseudoinverses into their stable application recipes), ˜λ(1-2) = C(1-2) +
+
+D(1-2) β(1-2) = C(1-2) +
+
+D(1-2) F (1-2) +
+
+[−H(2 ,1) μ(2) ; −H(1 ,2) μ(1) ] = = C(1-2) +
+
+D(1-2) F (1-2) +
+
+[−Q(2 ,1) P +μ(2) ; −Q(1 ,2) P +μ(1) ] = = C(1-2) +
+
+D(1-2) F (1-2) +
+
+[−Q(2 ,1) ¯λ(2) ; −Q(1 ,2) ¯λ(1) ].
+
+This serves as the correction vector to [ λ(1) ; λ(2) ] due to η(1 ,2) and η(2 ,1) , to be added to [ ¯λ(1) ; ¯λ(2) ] as per (29). Its correction matrix stack extends the stack used to determine β(1-2) (presented at the end of Section 3.2) and has the interpretation (going right-to-left): 
+
+Coarse source pair correction 
+
+˜λ(1-2) C(1-2) +
+
+←−−−−−−−
+
+> R4Nc ×2Mp
+
+Peanut collocation velocity D(1-2) 
+
+←−−−−−−−
+
+> R2Mp ×4Nf
+
+Fine sources 
+
+β(1-2) F (1-2) +
+
+←−−−−−−− 
+
+> R4Nf×4Mf
+
+Fine collocation velocity    
+
+> −
+> 0Q(2 ,1)
+> Q(1 ,2) 0
+> 
+
+←−−−−−−− 
+
+> R4Mf×4Nc
+
+Coarse sources 
+
+¯λ(1) ; ¯λ(2) 
+
+The above stack of matrices gives the coarse-to-coarse correction matrix formula 
+
+A(1-2) = −C(1-2) +
+
+D(1-2) F (1-2) +  0 Q(2 ,1) 
+
+Q(1 ,2) 0
+
+
+
+. (31) 16 As expected, its form resembles a block Schur complement when eliminating the fine source degrees of freedom. Since A(1-2) is well-conditioned, once is has been filled (using backward-stable applications of pseudoinverses along the stack), the intermediate matrices may be discarded, avoiding excessive storage. We have now described how the corrections are done for a single contact pair. In the global matrix-vector apply, it remains to loop over all contacts to correct the entire source vector and store the result in λ; see (29). There are two clear benefits of peanut compression, compared to doing pair corrections as in Section 3.2: the number of sources to be fed in to an FMM is smaller and the required amount of storage is reduced. We will in Section 3.5 describe how the compressions are handled within the resistance solve. 
+
+Remark 7 (Proxy compression) . Compression using collocation points that hug a particle pair has indepen-dently been developed in work to appear by Martinez Aguilar, Malhotra & Fortunato on solving elliptic PDEs in the exterior of close-to-touching disks. The idea of compressing numerous unknowns to fewer equivalent proxy sources is common to fast direct solvers [49, 50] and kernel-independent FMMs [48]. 
+
+## 3.4 Extracting forces and torques 
+
+In a resistance problem, the final output is particle net forces and torques, {f (i), t (i)}Pi=1 . Following Gauss’ law for Stokes, all Stokeslet sources in the interior of a particle contribute to these quantities. For particle 1, the force and torque pair ( f (1) , t (1) ) can be determined from the computed coarse sources ¯λ(1) stemming from the one-body basis, together with the fine sources β(1 ,k ) associated with all close neighbors k of particle 1: 
+
+f (1) =
+
+> Nc
+
+X
+
+> i=1
+
+¯λ(1)  
+
+> i
+
++ X
+
+> k∈C (1)
+> Nf
+
+X
+
+> i=1
+
+β(1 ,k ) 
+
+> i
+
+, t(1) =
+
+> Nc
+
+X
+
+> i=1
+
+¯λ(1)  
+
+> i
+
+· (y(1)  
+
+> i
+
+− c(1) )⊥ + X
+
+> k∈C (1)
+> Nf
+
+X
+
+> i=1
+
+β(1 ,k ) 
+
+> i
+
+· (Y(1-k) 
+
+> i
+
+− c(1) )⊥. (32) With more compact notation, (32) can be written as 
+
+h
+
+f (1) T
+
+, t (1) iT
+
+= KT ¯λ(1) + X
+
+> k∈C (1)
+
+K(1 ,k )T
+
+β(1 ,k ), (33) with the rigid body matrices 
+
+K =
+
+
+
+I2 (y(1) 1 − c(1) )⊥
+
+I2 (y(1) 2 − c(1) )⊥
+
+... ...
+
+I2 (y(1)  
+
+> Nc
+
+− c(1) )⊥
+
+ ∈ R2Nc×3 and K(1 ,k ) =
+
+
+
+I2 (Y(1-k)1 − c(1) )⊥
+
+I2 (Y(1-k)2 − c(1) )⊥
+
+... ...
+
+I2 (Y(1-k) 
+
+> Nf
+
+− c(1) )⊥
+
+ ∈ R2Nf ×3. (34) The second term in (33) can be viewed as a correction to the net forcing due to all near contacts. We assume that the coarse matrix K is equal for every disk, and hence add no superscript. The fine matrices K(1 ,k )
+
+however depend on Y(1-k), k ∈ C (1) . To avoid storing the submatrices needed to stably reconstruct the fine sources β(1 ,k ), k ∈ C (1) , we instead store the much smaller matrices E(1 ,k ) 
+
+> f t
+
+∈ R6×4Nc that for the (1-k) pair extracts the correction to the net forces and torques, given the coarse one-body sources only. This means for the (1-2) near contact with no other close neighbors that 
+
+
+
+f (1) 
+
+t(1) 
+
+f (2) 
+
+t(2) 
+
+ =
+
+K 00 K
+
+ "¯λ(1) 
+
+¯λ(2) 
+
+#
+
++ E(1-2) 
+
+> f t
+
+"¯λ(1) 
+
+¯λ(2) 
+
+#
+
+, (35) with 
+
+E(1-2)  
+
+> f t
+
+=
+
+K(1 ,2) 00 K(2 ,1) 
+
+
+
+F (1-2) +  0 Q(2 ,1) 
+
+Q(1 ,2) 0
+
+
+
+. (36) 17 Remark 8 (Fine sources are needed) . It is not possible to recover the net forces and torques on the individual particles from the coarse sources computed via peanut compression. Although these sources reproduce the same far-field flow and the same total force for the pair, they do not in general preserve the forcing on each particle separately .
+
+## 3.5 The full resistance algorithm 
+
+Pseudocode summarizing the full resistance solve is given in Algorithm 2. It assumes a uniform discretization of coarse proxy and collocation point sets per body, takes as input the stacked vector of rigid body velocities evaluated at all coarse collocation nodes, and returns net forces and torques on all bodies. More specifically, we solve the two-body collocation system 
+
+> P
+
+X
+
+> i=1
+
+ψ(i)[μ(i)]( x) = g(x), x ∈ { X(i)}Pi=1 , (37) and use internal one-body coarse sources to recover forces and torques (via the force/torque correction matrix for each close pair). In the pseudocode, a boolean flag flowEval indicates whether the full sets of coarse and fine sources, (λ, ¯λ, {β(i-k), k ∈ C (i), i = 1 , . . . , P }), (38) are returned, to enable flow field evaluations both far from and near to the particles in a separate routine. Returning the triplet in (38) instead of merely μ enables direct flow field evaluations, e.g. via the FMM. The detailed matrix–vector apply, needed in each GMRES iteration, is outlined separately in Algorithm 3. In each call, the flow field due to the corrected sources is evaluated globally via the FMM, and then modified locally on a per-pair basis, following the general structure of Algorithm 1. For the ( i-k) pair, the coarse source correction ˜λ(i-k) cannot replace the fine sources when evaluating the field on the pair itself. Hence, the contribution from ˜λ(i-k) should in principle be subtracted off and the flow field due to the fine sources 
+
+β(i-k) added back in. This would however mean that fine sources would need to be retrieved, at extra cost. We can avoid this by replacing the flow field due to fine sources by the evaluation of the one-body basis on the neighboring particle, which is precisely the quantity that the fine sources are constructed to match; see (7) and Step 2b of Algorithm 3. For a reminder of the action of the matrices H(i,k ) and P , see Figure 4. As a last step, the one-body blocks must be corrected, as with the one-body basis. This procedure ensures that the 4 Nc × 4Nc two-body system matrix obtained for an isolated contact pair is approximately the identity. This completes the interpretation of the peanut-compressed two-body MFS scheme as a 1-level fast direct solver coupled to an iterative solver for the coarse unknowns. 
+
+Remark 9 (Fast pair corrections) . In practice, the loop over close pairs in Algorithm 3 can be replaced by two applications of precomputed sparse matrices, with nonzero entries only for coarse sources associated with close pairs. The first matrix maps one-body coarse source strengths ¯λ to corrected coarse source strengths 
+
+λ, replacing the loop over pairs in Step 1b. The second matrix determines the corresponding correction to the flow field, ensuring block-diagonal identity contributions for each pair, and replaces the loop over pairs in Step 2b. 
+
+# 4 Solving the mobility problem via MFS 
+
+We now show how the same type of basis representation can be used to efficiently solve a mobility problem. As a reminder, the forces and torques, {f (i), t (i)}Pi=1 , are prescribed and particle velocities, {v(i), ω (i)}Pi=1 , are unknown in this setting. The coarse and fine point sets and their respective sources follow the conventions introduced in Tables 2 and Table 3. 
+
+## 4.1 One-body representation 
+
+We begin with a dilute suspension, where a set of coarse sources per body suffices to resolve all interactions, and specify the representation in (10). In Section 4.2, we will see that also the mobility one-body basis 18 Algorithm 2 Fast resistance solve with two-body preconditioning and peanut compression 
+
+Global data: Proxy point sets {X(i)}Pi=1 , collocation point sets {Y (i)}Pi=1 , boolean flag flowEval 
+
+function solve (g)
+
+Input: Stacked right-hand side surface velocity data vector g,
+
+Output: Particle net forces and torques {f (i), t (i)}Pi=1 , if flowEval then stacked coarse source strengths (force density) vectors λ, ¯λ, fine source strengths {β(i-k)}, fine source points {Y(i-k)}, k ∈ C (i),
+
+i = 1 , . . . , P ▷ Precomputations: Identify all C contacts (particle pairs with interparticle distance < δ c). 
+
+for c = 1 to C do 
+
+Get particles i, k in contact c, set fine discretization X (i-k), Y(i-k) and peanut nodes {z(i-k) 
+
+> q
+
+}Mp
+
+> q=1
+
+Compute correction matrices and store: 
+
+if flowEval then 
+
+Coarse-to-fine mapping via SVD of F (i-k): V (i-k)Σ(i-k)+
+
+and U (i-k)T  0 Q(k,i )
+
+Q(i,k ) 0
+
+
+
+, 
+
+> ▷for local post-processing; see eqn. (27)
+
+Coarse-to-forcing correction matrices E(i-k)  
+
+> f t ▷see eqn. (36)
+
+Coarse-to-coarse correction matrices A(i-k) ▷ peanut compression; see eqn. (31) 
+
+▷ Solve for stacked surface values μ using matrix-vector multiply function defined in Algorithm 3, which gets access to all local variables 
+
+μ ← GMRES( MATVEC , b)
+
+▷ Postprocessing: Determine net forces and torques and if flowEval then prepare flow field evaluation: Recover coarse strengths for each body via local pseudoinverse and determine forcing contribution: 
+
+for i = 1 to P do 
+
+¯λ(i) ← P +μ(i) ▷ Apply pseudoinverse backward-stably as in eqn. (20) 
+
+f (i)
+
+t(i)
+
+
+
+← KT ¯λ(i) ▷ see first term in eqn. (35) 
+
+Determine fine force/torque correction for each contact and if flowEval then recover fine source vectors 
+
+for c = 1 to C do 
+
+Get particle indices i, k for contact c
+
+h
+
+f (i)T
+
+t(i) f (k)T
+
+t(k)
+
+iT
+
+←
+
+h
+
+f (i)T
+
+t(i) f (k)T
+
+t(k)
+
+iT
+
++ E(i-k)
+
+> f t
+
+" ¯λ(i)
+
+¯λ(k)
+
+# 
+
+> ▷see second term in eqn. (35)
+
+if flowEval then 
+
+β(i-k) = V (i-k)Σ(i-k)+
+
+U (i-k)T  0 Q(k,i )
+
+Q(i,k ) 0
+
+ " ¯λ(i)
+
+¯λ(k)
+
+#!  
+
+> ▷see eqn. (27)
+
+if flowEval then 
+
+Call MATVEC (μ) in Algorithm 3 to recover λ
+
+return {f (i), t (i)}Pi=1 , if flowEval then λ, ¯λ, {β(i-k)}, {Y(i-k)}, k ∈ C (i), i = 1 , . . . , P 
+
+19 Algorithm 3 Matrix-vector apply for use in the fast resistance solve of Algorithm 2 
+
+function matvec (μ)
+
+Input: Stacked coarse collocation data vector μ = {μ(i)}Pi=1 , coarse-to-coarse correction matrices 
+
+{A(i-k)} for all C close pairs of particles ( i-k)
+
+Output: Stacked surface velocity vector u = {u(i)}Pi=1 
+
+▷ Step 1a: Recover proxy source strengths for each body via local pseudoinverse apply and add to total: 
+
+for i = 1 to P do 
+
+¯λ(i) ← P +μ(i)
+
+λ(i) ← ¯λ(i)
+
+▷ Step 1b: Apply two-body corrections for all close pairs: 
+
+for c = 1 to C do 
+
+˜λ(i-k) ← A(i-k)
+
+" ¯λ(i)
+
+¯λ(k)
+
+#
+
+,
+
+"
+
+λ(i)
+
+λ(k)
+
+#
+
+←
+
+"
+
+λ(i)
+
+λ(k)
+
+#
+
++ ˜λ(i-k), for particles i, k in contact c ▷ see eqn. (28) 
+
+▷ Step 2a: Fast potential evaluation at all P M targets from all P N sources: 
+
+u ← FMM evaluate ({X(i)}Pi=1 , {Y (i)}Pi=1 , {λ(i)}Pi=1 ) ▷ applies bare MFS matrix in (18) 
+
+▷ Step 2b: Locally correct to convert two-body-to-two-body blocks to the identity: 
+
+for c = 1 to C do u(i)
+
+u(k)
+
+
+
+←
+
+u(i)
+
+u(k)
+
+
+
+−
+
+ P S(ik )
+
+S(ki ) P
+
+
+
+˜λ(i-k) −
+
+ 0 H(k,i )
+
+H(i,k ) 0
+
+  μ(i)
+
+μ(k)
+
+ 
+
+> ▷subtract local pair-contribution from compressed coarse sources and add back right hand side from local BVPs
+
+for i = 1 to P do 
+
+u(i) ← u(i) − P ¯λ(i) + μ(i) ▷ Correct one body identities; see eqn. (24) 
+
+return u
+
+functions lead to a system equal to that stemming from one-body preconditioning, as was the case for the one-body basis functions used for resistance. We first focus on particle i and construct the corresponding one-body basis function. The slip boundary condition (11) will by design be satisfied exactly at the collocation nodes. We therefore now first determine 
+
+ϕ(i)[μ(i)]( x), x /∈ X(i) and soon return to the case x ∈ X(i). The discretized slip boundary condition of (11) can in the one-body problem be written as s(i) = B
+
+v(i)
+
+ω(i)
+
+
+
++ μ(i). Here, the matrix B maps rigid body velocities to boundary velocity. It is defined analogously to K in (34), but has size 2 Mc × 3, and is formed by replacing y(1)  
+
+> j
+
+, j = 1 , . . . , N c, with x(1)  
+
+> j
+
+, j = 1 , . . . , M c. Using the representation in (15) with P = 1, we formulate the constrained least-squares problem S ˆλ = s subject to f (i) = 0, t(i) = 0. To avoid enforcing these constraints explicitly, we use a “recompleted” formulation as in [14]. The idea is to construct ϕ(i) so that the constraints are automatically satisfied. The force and torque constraints then read KT ˆλ(i)
+
+= 0.This is satisfied by choosing ˆλ(i)
+
+= ( I − L)¯λ(i), where L = K(KT K)−1KT ∈ R2Nc×2Nc projects onto rigid body motions and where ¯λ emphasizes that these are the one-body source strengths, as in the resistance setting. We thus represent ϕ(i) as 
+
+ϕ(i)(x) = S(x, Y (i)) ( I − L) ¯λ(i), x /∈ X(i). (39) An unused subspace can be exploited as an ansatz for the unknown rigid body velocities, allowing us to express them as v(i)
+
+ω(i)
+
+
+
+= −KT ¯λ(i). (40) The unknown boundary data at the collocation nodes can then be written as 
+
+s(i) = −BK T ¯λ(i) + μ(i). (41) 20 One solves for ¯λ(i) by evaluating (39) at X(i) and matching the result with (41) such that ¯λ(i) = S+ 
+
+> L
+
+μ(i), (42) where SL = P (I − L) + BK T . At the collocation nodes, we express the unknown rigid body velocity pair (v(i), ω (i)) as linear functionals of μ(i) via (40) and (42). Hence, ϕ(i) can be expressed as 
+
+ϕ(i) := ϕ(i)[μ(i)]( x) := 
+
+> Mc
+
+X
+
+> j=1
+
+μ(i) 
+
+> j
+
+ϕ(i) 
+
+> j
+
+(x) = 
+
+
+
+μ(i) 
+
+> m
+
+−
+
+
+
+BK T S+ 
+
+> L
+
+μ(i)
+
+
+
+> m
+
+, x = x(i) 
+
+> m
+
+,
+
+> Nc
+
+P
+
+> n=1
+
+S(x, y(i) 
+
+> n
+
+) (I − L) ( S+ 
+
+> L
+
+μ(i)) 
+
+> n
+
+, otherwise. (43) This specifies the rigid-body matrices in (11) as R(i) = −BK T S+ 
+
+> L
+
+, for all i.By construction, ϕ(i) carries zero net force and torque on particle i. To represent flows with non-zero prescribed force and torque, we add a known completion flow to the sum of one-body basis functions, as in (10). In the present MFS setting, we construct it using Stokeslet sources at the coarse source points, 
+
+C(i) h
+
+f (i), t (i)i
+
+(x) = S(x, Y (i))λ(i)0 , i = 1 , . . . , P. (44) Its source strengths λ(i)0 are set per particle to sum exactly to the prescribed force and torques: KT λ(i)0 = F
+
+(compare (33)), determined via the ansatz λ0 = Ka , for some rigid body velocity components stacked in 
+
+a ∈ R3. This completes the description of the representation in (10). 
+
+## 4.2 Equivalence with one-body preconditioning 
+
+This subsection explains the equivalence of the above to our prior one-body preconditioning method for mo-bility [14], and connects it to the general formulation of Section 2.2. Written in terms of internal proxy source strengths {¯λ(i)}Pi=1 instead of boundary unknowns {μ(i)}Pi=1 , the representation in (10) may be expressed as 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+S(x, Y (i))
+
+h
+
+(I − L) ¯λ(i) + λ(i)0
+
+i
+
+. (45) This was the representation of the flow field in [14], upon a split of the source vector into one component in the null-space of the constraint matrix K and one component that sums to the net force and torque on each particle. Evaluating (45) at the collocation nodes {X(i)}Pi=1 , expressing the boundary data as 
+
+g(i) = −BK T ¯λ(i), i = 1 , . . . , P , and reordering terms, the system to solve for the mobility problem takes the form 
+
+
+
+S(11) (I − L) + BK T S(12) (I − L) . . . S(1 P ) (I − L)
+
+S(21) (I − L) S(22) (I − L) + BK T . . . . . . 
+
+... ... . . . ...
+
+S(P 1) (I − L) . . . . . . S(P P ) (I − L) + BK T
+
+
+
+¯λ(1) 
+
+¯λ(2) 
+
+...¯λ(P )
+
+ =
+
+
+
+−u(1) 0
+
+−u(2) 0
+
+...
+
+−u(P )0
+
+ , (46) with the completion flow surface velocity data 
+
+u(i)0 =
+
+> P
+
+X
+
+> k=1
+
+S(X(i), Y (k))λ(k)0 . (47) This large unconstrained least-squares problem can be solved by applying the same type of one-body pre-conditioning from the right as was applied for the resistance problem in Section 3.1.1. The result is 
+
+
+
+I S(12) (I − L) S+ 
+
+> L
+
+. . . S(1 P ) (I − L) S+
+
+> L
+
+S(21) (I − L) S+ 
+
+> L
+
+I . . . . . . 
+
+... ... . . . ...
+
+S(P 1) (I − L) S+ 
+
+> L
+
+. . . . . . I
+
+
+
+μ(1) 
+
+μ(2) 
+
+...
+
+μ(P )
+
+ =
+
+
+
+−u(1) 0
+
+−u(2) 0
+
+...
+
+−u(P )0
+
+ , (48) 21 where the diagonal blocks have been replaced by I to regularize the system, as in the resistance setting. The above linear system is precisely the one described in Section 2.2 when using one-body basis functions that obey (11), recalling the above definition of R(i).
+
+## 4.3 Two-body preconditioning 
+
+The two-body correction η(1 ,2) is constructed so that its internal sources exert no net force or torque on either body 1 or 2. As in the one-body case (43), this is achieved by a projection—now applied to the fine source strengths on both particles in the pair. The correction basis takes the form 
+
+η(1 ,2) [μ(1) ]( x) = 
+
+> 2Nf
+
+X
+
+> q=1
+
+S(x, Y(1-2)  
+
+> q
+
+)
+
+h
+
+(I − L(1-2) )β(1 ,2) i
+
+> q
+
+, (49) with the fine pair projection matrix 
+
+L(1-2) =
+
+L(1 ,2) 00 L(2 ,1) 
+
+
+
+, where L(i,k ) := K(i,k ) 
+
+K(i,k )T
+
+K(i,k )−1
+
+K(i,k )T
+
+(50) and K(i,k ) is the fine rigid body matrix of (34). Equation (49) leaves an unused image space of K(1 ,2) T
+
+and K(2 ,1) T
+
+, which we now exploit to close the system—together with the corresponding image space of KT from the one-body basis. For the contact pair (1-2), assumed to be isolated from other particles, we make the ansatz 
+
+
+
+v(1) 
+
+ω(1) 
+
+v(2) 
+
+ω(2) 
+
+ = −
+
+"
+
+K(1 ,2) T
+
+00 K(2 ,1) T
+
+# 
+
+β(1 ,2) + β(2 ,1) 
+
+−
+
+KT 00 KT
+
+ "¯λ(1) 
+
+¯λ(2) 
+
+#
+
+(51) for the unknown rigid body velocities. At the particle boundaries, the no-slip velocity field at the coarse collocation nodes is, as before, expressed as 
+
+g(1) = B
+
+v(1) 
+
+ω(1) 
+
+
+
+, g(2) = B
+
+v(2) 
+
+ω(2) 
+
+
+
+,
+
+which gives the combined form: 
+
+g(1) 
+
+g(2) 
+
+
+
+= −
+
+"
+
+BK(1 ,2) T
+
+00 BK(2 ,1) T
+
+# 
+
+β(1 ,2) + β(2 ,1) 
+
+−
+
+BK T S+ 
+
+> L
+
+00 BK T S+
+
+> L
+
+  μ(1) 
+
+μ(2) 
+
+
+
+. (52) We now match the velocity field produced by (12) with P = 2 to the unknown no-slip boundary data in (52). After reordering terms, the resulting equation to be satisfied at the coarse collocation nodes X(1-2) 
+
+becomes: 
+
+> 2
+
+X
+
+> i=1
+
+ϕ(i)[μ(i)]
+
+
+
+X(1-2) 
+
+> m
+
+
+
++
+
+> Mc
+
+X
+
+> j=1
+
+BK T S+ 
+
+> L
+
+00 BK T S+
+
+> L
+
+
+
+> mj
+
+μ(1) 
+
+μ(2) 
+
+
+
+> j
+
++
+
+> 2Nf
+
+X
+
+> n=1
+
+
+
+> 2Nf
+
+X
+
+> j=1
+
+S(X(1-2)  
+
+> m
+
+, Y(1-2)  
+
+> j
+
+)( I − L(1-2) )jn +
+
+"
+
+BK(1 ,2) T
+
+00 BK(2 ,1) T
+
+#
+
+> mn
+
+ β(1 ,2) 
+
+> n
+
++
+
+> 2Nf
+
+X
+
+> n=1
+
+
+
+> 2Nf
+
+X
+
+> j=1
+
+S(X(1-2)  
+
+> m
+
+, Y(1-2)  
+
+> j
+
+)( I − L(1-2) )jn +
+
+"
+
+BK(1 ,2) T
+
+00 BK(2 ,1) T
+
+#
+
+> mn
+
+ β(2 ,1)  
+
+> n
+
+== −
+
+> 2
+
+X
+
+> i=1
+
+C(i) h
+
+f (i), t (i)i
+
+(X(1-2)  
+
+> m
+
+), m = 1 , . . . , 2Mc.
+
+(53) 22 The block-diagonal matrix appearing in the second term cancels the same-body contribution BK T S+ 
+
+> L
+
+μ(i)
+
+appearing in ϕ(i)[μ(i)]; see (43). Terms three and four represent the two-body correction bases η(1 ,2) and η(2 ,1) 
+
+and their associated contributions to the no-slip boundary velocity. It remains to express β(1 ,2) and β(2 ,1) as the solutions to least-squares problems involving μ(1) and μ(2) . We do so for the sum β(1-2) := β(2 ,1) + β(1 ,2) 
+
+jointly by thinking about the two-body system in (53) in the form 
+
+T (1-2) 
+
+μ(1) 
+
+μ(2) 
+
+
+
+=
+
+"
+
+−u(1) 0
+
+−u(2) 0
+
+#
+
+, (54) with u(k)0 = P2 
+
+> i=1
+
+C(i) h
+
+f (i), t (i)
+
+i
+
+(X(k)). To ensure that the system matrix fulfills T (1-2) ≈ I—so that the system for more than two particles is efficiently preconditioned—the one-body contributions on the neighboring particle have to be cancelled out by the two-body corrections, mirroring the approach taken for the resistance problem. Hence, the sum β(1-2) is chosen to satisfy 
+
+> 2Nf
+
+X
+
+> n=1
+
+
+
+> 2Nf
+
+X
+
+> j=1
+
+S(X (1-2)  
+
+> m
+
+, Y(1-2)  
+
+> j
+
+)( I − L(1-2) )jn +
+
+"
+
+BK (1 ,2) T
+
+00 BK (2 ,1) T
+
+#
+
+> mn
+
+ β(1-2)  
+
+> n
+
+==
+
+(
+
+−ϕ(2) [μ(2) ]( X (1-2)  
+
+> m
+
+), m = 1 , . . . , M f (on body 1) 
+
+−ϕ(1) [μ(1) ]( X (1-2)  
+
+> m
+
+), m = Mf + 1 , . . . , 2Mf (on body 2) .
+
+(55) The second term on the left-hand side is a correction to the no-slip boundary velocities, where B is the fine counterpart of B, constructed using fine collocation points. With this relation for β(1-2) , the two-body basis functions ψ(1) and ψ(2) solve (13). 
+
+## 4.4 Peanut compression 
+
+It remains to express the correction fields η(1 ,2) and η(2 ,1) using only coarse sources. As in the resistance case (30), the fine source strengths for a near-contact pair are replaced by an equivalent coarse representation obtained through a least-squares match of the fine and coarse velocity fields on the peanut separation surface, now with both representations constrained to produce zero total force and torque on the pair. Specifically, we solve 
+
+> 2Nc
+
+X
+
+> j=1
+
+S(z(1-2)  
+
+> p
+
+, ˜Y (1-2)  
+
+> j
+
+)
+
+h I − Lpair  ˜λ(1-2) i
+
+> j
+
+=
+
+> 2Nf
+
+X
+
+> q=1
+
+S(z(1-2)  
+
+> p
+
+, Y(1-2)  
+
+> q
+
+)
+
+h
+
+(I − L(1-2) )β(1-2) i
+
+> q
+
+, p = 1 , . . . , M p, (56) where Lpair is block-diagonal with two copies of L on the diagonal. The full source vector is formed as in (29) and the flow evaluated in the far field as (compare (45)) 
+
+u(x) = 
+
+> P
+
+X
+
+> i=1
+
+S(x, Y (i))
+
+h
+
+(I − L) λ(i) + λ(i)0
+
+i
+
+. (57) The solve procedure mirrors that of the resistance problem (Algorithms 2–3), with the following key differences: 
+
+• The input right-hand side is a surface velocity field representing the completion flow −u(i)0 on particle 
+
+i, i = 1 , . . . , P .
+
+• The output consists of translational and angular velocities {v(i), ω (i)}Pi=1 instead of net forces and torques, which are returned alongside the source strengths used for flow evaluation. The velocities are computed in a post-processing step using a procedure closely resembling that used to determine the net forcing (compare (51) and (35)). 23 • The linear maps H(1 ,2) , Q(1 ,2) , F (1-2) , C(1-2) , D(1-2) and A(1-2) illustrated in Figures 4 and 5 are defined via projected evaluations: 
+
+Q(1 ,2)  
+
+> mn
+
+:= 
+
+> Nc
+
+X
+
+> j=1
+
+S(X (1-2)  
+
+> m+Mf
+
+, y(1)  
+
+> j
+
+)( I − L)jn , ∈ R2Mf ×2Nc ,
+
+H(1 ,2) := Q(1 ,2) S+ 
+
+> L
+
+, ∈ R2Mf ×2Mc ,
+
+F (1-2)  
+
+> mn
+
+:= 
+
+
+
+> 4Nf
+
+X
+
+> j=1
+
+S(X (1-2)  
+
+> m
+
+, Y(1-2)  
+
+> j
+
+)
+
+
+
+I − L(1-2) 
+
+> jn
+
+
+
++
+
+"
+
+BK(1 ,2) T
+
+00 BK(2 ,1) T
+
+#
+
+> mn
+
+, ∈ R4Mf ×4Nf ,
+
+C(1-2)  
+
+> pn
+
+:= 
+
+> 2Nc
+
+X
+
+> j=1
+
+S(z(1-2)  
+
+> p
+
+, ˜Y (1-2)  
+
+> j
+
+)( I − Lpair )jn , ∈ R2Mp×4Nc ,
+
+D(1-2)  
+
+> pn
+
+:= 
+
+> 4Nf
+
+X
+
+> j=1
+
+S(z(1-2)  
+
+> p
+
+, Y(1-2)  
+
+> j
+
+)( I − L(1-2) )jn , ∈ R2Mp×4Nf ,
+
+A(1-2) := −C(1-2) +
+
+D(1-2) F (1-2) +  0 Q(2 ,1) 
+
+Q(1 ,2) 0
+
+
+
+, ∈ R4Nc×4Nc .
+
+(58) 
+
+# 5 The fine MFS representation for near-contact pairs 
+
+Recall that the Nc coarse MFS sources are equispaced on the concentric circle of radius Rc; the Mc coarse collocation nodes are equispaced on the disk boundary, and we will fix Mc = 1 .2Nc in this paper. The rest of this subsection describes the MFS sources and collocation nodes used for the local fine pairwise BVPs. This is inspired by the method of images of Cheng & Greengard [20] and extends our earlier 3D approach for spheres [13] to 2D disks. The pairwise fine source sets Y(i-k) include a fixed set of Nf p fine “proxy” points per disk, equispaced on the concentric circle of radius Rf . Close enough pairs additionally carry sources adapted to the pair contact separation δ, lying on two arcs designed to enclose known singularities in the analytic continuation of the exterior BVP solution into the disk interiors. See Figure 6. These singularities arise from successive image reflections of the centers through the disk boundaries (in the Laplace case see, e.g., [20]), giving an infinite series along the line connecting the two centers, that accumulates at radius 
+
+Racc (δ) = 1 + δ/ 2 − pδ + δ2/4. (59) The formula is the same for 2D and 3D. In the Stokes case (see [13]) it is expected that the entire line from center to radius Racc is singular. In [13], to handle this singularity we distributed a mixture of fundamental solution types along the outer pieces of the lines, clustered toward the accumulation points. Instead here we present a scheme based solely on Stokeslets: for pairs close enough that Racc (δ) > R f , the additional Stokeslets lie on elliptical arcs that “shield” the line singularities. The shielding property is necessary for strengths to remain of bounded magnitude as the MFS solution converges [24, Thm 2.4, Ch. 4] (also see [8, Conj. 11]), required for numerical stability. The shielding elliptical arcs are shown in Figure 6, where both centers lie on the x-axis. In body-local coordinates, the ellipse associated with particle 1 has foci at x = 0 and x = a, while its rightmost point is located at x = a + γ(1 − a), where 0 < γ < 1 is a tunable parameter. In complex notation centered at the center of disk 1, the ellipse is parametrized by 
+
+z(θ) = a
+
+2 [1 + cos( θ + iα )] , where α = arcosh 
+
+
+
+1 + 2γ(1 − a)
+
+a
+
+
+
+.
+
+We sample the ellipse on the half-shifted angular grid 
+
+θj = (j + 1 /2) πNell 
+
+, j = 0 , . . . , 2Nell − 1,
+
+24 Fine source points    
+
+> Discardedellipsepoints
+> Imageaccumulationpoints
+
+Fine source points
+
+Discarded ellipse points
+
+Image accumulation pointsδ
+
+1
+
+a = Racc (δ)
+
+c(1) 
+
+c(2) 
+
+Y(1-2) Rf
+
+8Figure 6: The proxy source points used for the local fine BVPs are enhanced with sources on ellipse segments that shield singularities located up to a distance Racc (δ) from each particle’s center. which clusters nodes toward the tips of the ellipse. We then retain only the nodes satisfying |z(θj )| > R f .This gives an ellipse segment lying outside the fine proxy circle with a high density of nodes in a neighborhood of the image accumulation points. If Racc (δ) ≤ Rf , we do not add any enhancing nodes, since singularities are already shielded by the existing fine proxy circle. For the pair (1 , 2) with unit center–center direction eiφ , the enhancing source sets in complex notation are 
+
+Y(1 ,2) enh =
+
+
+
+c(1) +
+
+ℜ{ eiφ z(θj )}ℑ{ eiφ z(θj )}
+
+
+
+: |z(θj )| > R f
+
+
+
+, Y(2 ,1) enh =
+
+
+
+c(2) −
+
+ℜ{ eiφ z(θj )}ℑ{ eiφ z(θj )}
+
+
+
+: |z(θj )| > R f
+
+
+
+.
+
+This pair’s full fine source set is then 
+
+Y(1-2) =
+
+(
+
+c(1) + Rf
+
+cos( ti)sin( ti)
+
+Nf p 
+
+> i=1
+
+)
+
+∪ Y(1 ,2) enh ∪
+
+(
+
+c(2) + Rf
+
+cos( ti)sin( ti)
+
+Nf p 
+
+> i=1
+
+)
+
+∪ Y(2 ,1) enh .
+
+Since at most 2 Nell ellipse nodes are sampled, one always has Nf ≤ Nf p + 2 Nell . In practice, Rf is chosen so that Nf ≤ Nf p + Nell . Based on empirical performance, we set γ = 0 .3. The local two-body MFS solve requires a set of 2 Mf boundary collocation nodes, X (i-k). For this, we first place Mf = ⌈af Nf p ⌉ equispaced nodes on each disk boundary. This grid is then augmented by additional pair-adapted collocation nodes obtained through a fixed M¨ obius angle map. Specifically, we sample Mell = aell Nell 
+
+angles θj uniformly and reparameterize them according to ˜θj = π + arg 
+
+ eiθ j +r
+
+> 1+ re iθ j
+
+
+
+. This concentrates nodes where the boundary data vary most rapidly, without refining the entire geometry. Throughout the paper, we use af = 1 .2, r = 0 .6 and aell = 5. The above fine MFS parameters were chosen via convergence studies, that, since they are not directly relevant to the proposed compressed two-body preconditioning method, will be reported elsewhere. Recall that in this method, the fine MFS matrices are used only in precomputations; the main iterative solution involves only coarse surface unknowns (2 Mc unknowns per body). 
+
+Remark 10 (Unknowns when one-body preconditioning) . With one-body preconditioning for geometries with near-contacts, the number of unknowns per body must include the full fine boundary discretization for all pairs, leading to very large systems (as in our prior work on spheres [13]). 
+
+Remark 11 (Combining fine sources) . In the evaluation of the flow field, where the fine grid is needed, we combine the fine proxy source strengths together from multiple contacts to speed up the computations. This is easy since the fine proxy grids do not rotate; they will be coincident. The fine grid from ellipse segments, however, cannot be combined. 
+
+# 6 Numerical results 
+
+We now demonstrate numerically that the proposed peanut-compressed two-body preconditioner dramatically accelerates and stabilizes the solve even for gaps on the order of δ = 10 −3, for unit-radius disks. 25 Two bodies i and j are considered a near contact if ∥c(i) − c(j)∥ ≤ 2 + δc, where we make the choice 
+
+δc = 0 .21. The coarse sources are sampled uniformly on a circle of radius Rc, with Rc = 1 − (1 /N c) log( ϵ−1)[65, Alg. 1], with ϵ = 10 −12 . The fine proxy radius Rf is set analogously, with Nf p replacing Nc. For fast flow evaluation, we use the Stokes FMM in the FMM2D library [26] with tolerance set to 10 −9.
+
+Remark 12 (Code availability and hardware) . MATLAB code implementing the proposed methods is avail-able at https://github.com/annabroms/StokesMFS2D . All timed examples were performed on a single AMD Genoa node of the Rusty cluster at the Flatiron Institute, using up to 96 CPU cores. 
+
+## 6.1 Resistance and mobility: two-body vs. one-body preconditioning 
+
+We compare the proposed scheme—peanut-compressed two-body preconditioning—against the one-body pre-conditioner, for geometries where small inter-particle distances can be controlled systematically. With one-body preconditioning, to resolve all near-contacts the source and collocation points are formed by taking the union of the fine discretizations associated with all near contact pairs. We generate random clusters so that each disk has separation exactly δ to at least one neighbor, and vary δ while fixing P (the number of disks). For the resistance problem, we take P = 20, while for mobility, P = 50. The solves use input quantities (forces/torques or translational/angular velocities) sampled from a standard normal distribution, with forces subsequently shifted so that the total force in the system vanishes at infinity for mobility. To assess the accuracy of the solution, we define the pointwise residual 
+
+ϵres (x) := ∥u(x) − g(i)(x)∥2, x ∈ ∂Ω(i). (60) For a mobility problem, this measures the local discrepancy between the computed boundary velocity u(x)and the no-slip boundary data g(i)(x) determined by the computed velocity pair v(i), ω (i). We primarily report the relative boundary residual , defined as 
+
+ϵmax res := max  
+
+> x∈∂Ω
+
+ϵres (x)/
+
+
+
+max  
+
+> i=1 ,...,P
+
+∥g(i)(x)∥ x∈∂Ω(i)
+
+
+
+. (61) With one-body preconditioning, the iteration count grows rapidly as δ decreases in both settings, whereas it remains low with the two-body basis; see Figure 7(a) for the resistance results and 7(c) for mobility. Resistance is harder to resolve, and we use Nc = 150, Nf p = 120 and Nell = 100. In this setting, the proposed two-body solver achieves up to 4 digits more accuracy than the one-body solver; see Figure 7(b). For the mobility solves, we keep Nell = 100, but use Nc = 80 and Nf p = 60, obtaining relative boundary residuals below 10 −6; see Figure 7(d). Two-body preconditioning leads to a substantial reduction in the number of unknowns: at small δ, the proposed two-body mobility solver achieves an average reduction by a factor of 12.5. This combines with the iteration count reduction to give a speed-up in solve time of a factor of 30. For the resistance case, the speed-up for δ = 10 −3 is a factor of 65. We have also investigated the two-way error, where the output of, for example, the resistance problem is used as input to the mobility problem, and the result is compared with the original resistance input. As in earlier work [14], we found that the error is small and proportional to the relative boundary residual; we do not discuss it further. 
+
+Remark 13 (Increasing Nc). The underlying recompression assumption is that the two-body correction 
+
+η(i,k )[μ(i)]( x) is smooth enough outside of the peanut for the i-k pair to be accurately represented there by the union of the coarse sources for the contacting pair. Resistance problems require an increase in coarse nodes to get the residuals small in the two least-squares problems (26) and (30), explaining the larger Nc.
+
+## 6.2 Mobility for random disk packings 
+
+We next demonstrate the proposed peanut-compressed two-body preconditioned mobility solver on large random disk packings, experiments that would be infeasible using one-body preconditioned MFS or standard boundary-based iterative methods. We will study the effect of area fraction upon iteration count.       
+
+> 1The peanut self-intersects for separation D≥ √3−1; and δcshould therefore be chosen certainly closer than that.
+
+26 10!3 10!2 10!1
+
+> /
+> 500
+> 1000
+> 1500
+> GMRES iterations
+
+(a) Resistance iterations 10!3 10!2 10!1 
+
+> /
+> 10!6
+> 10!4
+> 10!2
+> Relative boundary residual
+
+(b) Resistance accuracy 10!3 10!2 10!1 
+
+> /
+> 100
+> 200
+> 300
+> 400
+> 500
+> 600
+> 700
+> GMRES iterations
+
+(c) Mobility iterations 10!3 10!2 10!1 
+
+> /
+> 10!7
+> 10!6
+> Relative boundary residual
+
+(d) Mobility accuracy 
+
+Figure 7: Comparison of proposed peanut-compressed two-body preconditioning method (red circles), against one-body preconditioning (blue + signs), for resistance and mobility BVPs. The geometries are random clusters of unit disks with each disk having separation δ from at least one neighbor. Curves show the mean (and shaded color the range) over five randomized runs at each δ.We use a geometry generation method inspired by [29], based on [31, 52]. To generate the particle configuration, we first place P unit disks in a square domain whose side length is chosen to match the prescribed area fraction ϕ. The initial configuration is taken to be a square lattice satisfying the non-overlap constraint. We then randomize this configuration by performing several sweeps over the particles. In each sweep, the disks are visited sequentially; for each disk, a random trial displacement is proposed and accepted only if the resulting configuration remains admissible, i.e., the disk stays within the domain and maintains the prescribed minimum separation from all other disks. Repeating these accept/reject moves produces a disordered packing at the desired area fraction while preserving a controlled minimum inter-particle distance. We first discuss the large-scale P = 10 ,000 experiment shown in Figure 2: the solve using a single core takes 9.6 min, is 95.7% FMM-dominated, and requires 72.4 GiB of RAM (120 GiB if fine factorizations are kept for near-particle flow evaluation). Using all 96 cores, the solve time drops to 36 s, with a precomputation time of 2.9 min. Here, parallel solve-time speed-up is limited by the use of MATLAB’s single-threaded sparse matrix-vector multiply. In the first panel of Figure 2, particles are colored by a measure of overall boundary speed, 
+
+s(i) := ∥v(i)∥2 + |ω(i)|, (62) where v(i) and ω(i) denote the computed translational and angular velocity of particle i, obtained with 
+
+Nc = 60. The second panel shows the maximum relative residual for each body, as defined in (60)–(61). The rightmost panel shows the relative rigid-body error, computed against a reference solution obtained on a finer coarse grid with Nc = 120. Specifically, the absolute error for body i is defined by 
+
+e(i) = v(i) − v(i)ref 2
+
++ ω(i) − ω(i)ref ,
+
+with corresponding relative error 
+
+E(i) = e(i)/ max  
+
+> j=1 ,...,P
+
+s(j)ref . (63) Next, in Figure 8, we solve the same problem for varying P and ϕ, with force and torque entries sampled from a standard normal distribution. We first fix P = 500 and vary the packing density ϕ, reporting the iteration count in panel 8(a) and the average number of close neighbors per body in panel 8(b). As ϕ increases, so does the iteration count. We then fix ϕ and vary P in Figures 8(c) and 8(d): they suggest that the iteration count depends primarily on the number of near neighbors per body and remains essentially independent of 
+
+P . All panels display the mean, minimum, and maximum over ten runs for each ( P, ϕ ) combination. In every case, the relative residual evaluated at newly sampled boundary nodes remains below 10 −5.For these computations, the pair problems were solved using Nf p = 150, Nell = 80 and Mp = 200. Truncation levels for the SVDs were set to 10 −14 (10 −11 when solving for fine sources) and in the global problem, the GMRES tolerance was 10 −7.27 ?                   
+
+> 0.40.50.60.70.8
+> Number of iterations
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120(a) ?
+> 0.40.50.60.70.8
+> Near neighbors per body
+> 0.5
+> 1
+> 1.5
+> 2(b) P
+> 2004006008001000
+> Number of iterations
+> 50
+> 55
+> 60
+> 65
+> 70
+> 75(c) P
+> 2004006008001000
+> Near neighbors per body
+> 1
+> 1.05
+> 1.1
+> 1.15
+> 1.2
+> 1.25
+> 1.3(d)
+
+Figure 8: The mobility problem is solved for a random packing of P particles at packing density ϕ. In panels (a) and (b), P = 500 is fixed while ϕ is varied; in panels (c) and (d), ϕ = 0 .65 is fixed while P is varied. 
+
+Remark 14 (Clustering) . We observe iteration counts independent of P provided particles do not form tightly clustered configurations with multiple simultaneous near contacts. When close triangles occur, with all pairwise separations small, the iteration count increases by approximately O(1) per triangle. This mech-anism explains the growth in iteration count observed in Figure 7(c) for the smallest values of δ, as well as in Figure 8(a). Eigenvalue analysis of the preconditioned system matrices shows that each such triangle introduces O(1) eigenvalues near zero. 
+
+# 7 Conclusions 
+
+We introduce a two-body preconditioned method of fundamental solutions for the 2D Stokes resistance and mobility problems in close-to-touching suspensions of circular particles. Starting from a local basis constructed for each particle in isolation, a new two-body basis is built that incorporates corrections obtained from local high-resolution two-body boundary value problems. These corrections resolve the lubrication-driven fine scales that arise near close contacts while simultaneously regularizing the ill-conditioning caused by shrinking particle gaps. A central feature of the scheme is the compression of the local fine-grid pair representation into an equivalent coarse representation on a geometrically natural “peanut” separation surface. The geometry of the particles therefore directly dictates the compression of the fine grid into a coarse one, allowing the global discretization to remain uniformly coarse while still resolving particle separations down to a thousandth of the radius. As a result, the solve is dominated by all-to-all evaluation of coarse sources at coarse collocation points, accelerated in our implementation by a linearly scaling fast multipole method. Compared to standard block-diagonal right preconditioning, the two-body preconditioner not only dra-matically reduces the GMRES iteration count, but also stabilizes the solve sufficiently to achieve higher accuracy at significantly lower computational cost. For the mobility problem, we observe iteration counts essentially independent of the number of bodies, P , depending primarily on the local near-neighbor count per particle. Although not shown explicitly in Section 6, the iteration count for resistance grows with P ,consistent with earlier observations in [70, 60, 14]. An important direction for future work is therefore to couple the present approach with long-range preconditioning strategies [32, 33] that address ill-conditioning arising from far-field effects. Our framework is not specific to Stokes flow or to the method of fundamental solutions. We believe that the idea of local pair corrections extends naturally to other elliptic PDEs and to other boundary-based solvers, provided an accurate technique is available for solving the local two-body boundary value problems. Precomputing corrections for all near-contact pairs is currently the dominant cost of the scheme, and an important direction for future work is the development of strategies to reduce or amortize this setup cost. Future directions also include extending the method to more general geometries, such as non-circular particles and polydisperse suspensions, as well as to three-dimensional problems, building on our earlier work for spheres [13, 14]. Since the global solve remains coarse while all singular near-contact interactions are resolved locally, the proposed scheme is fast, accurate, and robust, providing a scalable and flexible 28 foundation for large-scale simulations of dense suspensions. 
+
+# Acknowledgments 
+
+Broms and Tornberg acknowledge support from the Swedish Research Council: grant no. 2023-04269. The Flatiron Institute is a division of the Simons Foundation. Broms gratefully acknowledges support from the Flatiron Institute through two research visits to the Center for Computational Mathematics during this work. All authors participated in the Fall 2025 program Interfaces and Unfitted Discretization Methods at Institut Mittag-Leffler. We also benefited greatly from discussions with Daan Huybrechs, Daniel Fortunato, Dhairya Malhotra, and Leslie Greengard. 
+
+# References 
+
+[1] L. af Klinteberg and A.-K. Tornberg. A fast integral equation method for solid particles in viscous flow using quadrature by expansion. J. Comput. Phys , 326:420–445, 2016. [2] C. J. Alves. On the choice of source points in the method of fundamental solutions. 
+
+Eng. Anal. Bound. Elem. , 33:1348–1361, 12 2009. [3] C. J. Alves and A. L. Silvestre. Density results using stokeslets and a method of fundamental solutions for the Stokes equations. Eng. Anal. Bound. Elem. , 28:1245–1252, 2004. [4] P. R. Antunes. A well-conditioned method of fundamental solutions for Laplace equation. Numer. Al-gorithms , 91:1381–1405, 11 2022. [5] T. Askham, M. Rachh, M. O’Neil, J. Hoskins, D. Fortunato, S. Jiang, F. Fryklund, T. Goodwill, H. Y. Wang, and H. Zhu. chunkIE: a MATLAB integral equation toolbox. https://github.com/ fastalgorithms/chunkie , 2024. [6] J. Bagge and A. K. Tornberg. Highly accurate special quadrature methods for Stokesian particle sus-pensions in confined geometries. Int. J. Numer. Methods Fluids , 93(7):2175–2224, 2021. [7] F. Balboa Usabiaga, B. Delmotte, and A. Donev. Brownian dynamics of confined suspensions of active microrollers. J. Chem. Phys , 146(13), 2017. [8] A. H. Barnett and T. Betcke. Stability and convergence of the method of fundamental solutions for Helmholtz problems on analytic domains. J. Comput. Phys , 227:7003–7026, 7 2008. [9] A. H. Barnett, B. Wu, and S. Veerapaneni. Spectrally accurate quadratures for evaluation of layer potentials close to the boundary for the 2D Stokes and Laplace equations. SIAM J. Sci. Comput. ,37(4):B519–B542, 2015. [10] J. Brady and G. Bossis. Stokesian Dynamics. Annu. Rev. Fluid Mech. , 20(1):111–157, 1988. [11] J. Bremer. A fast direct solver for the integral equations of scattering theory on planar curves with corners. J. Comput. Phys. , 231(4):1879–1899, 2012. [12] J. Bremer, Z. Gimbutas, and V. Rokhlin. A nonlinear optimization procedure for generalized Gaussian quadratures. SIAM J. Sci. Comput. , 32(4):1761–1788, 2010. [13] A. Broms, A. H. Barnett, and A.-K. Tornberg. Accurate close interactions of Stokes spheres using lubrication-adapted image systems. J. Comput. Phys , 523:113636, 2025. [14] A. Broms, A. H. Barnett, and A.-K. Tornberg. A method of fundamental solutions for large-scale 3D elastance and mobility problems. Adv. Comput. Math. , 51(5):45–, 2025. [15] A. Broms, M. Sandberg, and A.-K. Tornberg. A locally corrected multiblob method with hydrodynam-ically matched grids for the Stokes mobility problem. J. Comput. Phys , 487:112172–, 2023. 29 [16] P. D. Brubeck and L. N. Trefethen. Lightning Stokes solver. SIAM J. Sci. Comput. , 44(3):A1205–A1226, 2022. [17] L. Bystricky, S. P˚ alsson, and A.-K. Tornberg. An accurate integral equation method for Stokes flow with piecewise smooth boundaries. BIT Numer. Math , 61:309–335, 2021. [18] Y. Cai, J. Bagge, and P.-G. Martinsson. A stable and fast method for solving multibody scattering problems via the method of fundamental solutions, 2026. arXiv preprint, math.NA:2603.19113. [19] H. Cheng. On the method of images for systems of closely spaced conducting spheres. SIAM J. Appl. Math , 61(4):1324–1337, 2000. [20] H. Cheng and L. Greengard. A method of images for the evaluation of electrostatic fields in systems of closely spaced conducting cylinders. SIAM J. Appl. Math , 58(1):122–141, 1998. [21] R. Cortez. The method of regularized stokeslets. SIAM J. Sci. Comput. , 23(4):1204–1225, 2001. [22] L. Crowder, T. Li, E. Corona, and S. Veerapaneni. Boundary integral equation analysis for spheroidal suspensions, 2025. arXiv preprint, math.NA:2506.20809. [23] D. G. Crowdy, S. Tanveer, and T. Delillo. Hybrid basis scheme for computing electrostatic fields exterior to close-to-touching discs. IMA J. Numer. Anal. , 36(2):743–769, 2016. [24] A. Doicu, Y. Eremin, and T. Wriedt. Acoustic and electromagnetic scattering analysis using discrete sources . Academic Press, London, 2000. [25] G. Fairweather, A. Karageorghis, Y.-S. Smyrlis, Z. Wu, and B. Y. C. Hon. A matrix decomposition MFS algorithm for axisymmetric biharmonic problems. Adv. Comput. Math. , 23:55–71, 2005. [26] Flatiron Institute. FMM2D: Fast multipole method libraries in 2D. https://github.com/flatironinstitute/fmm2d, 2023. [27] Z. Gimbutas and L. Greengard. Fast multi-particle scattering: A hybrid solver for the Maxwell equations in microstructured materials. J. Comput. Phys. , 232(1):22–32, 2013. [28] M. Graham. Microhydrodynamics, Brownian Motion, and Complex Fluids (Cambridge Texts in Applied Mathematics) . Cambridge: Cambridge University Press., 2018. [29] L. Greengard and J. Helsing. A numerical study of the ζ2 parameter for random suspensions of disks. 
+
+J. Appl. Phys. , 77(5):2015–2019, 1995. [30] W. Hackbusch. A sparse matrix arithmetic based on H-matrices; Part I: Introduction to H-matrices. 
+
+Computing , 62:89–108, 1999. [31] J.-P. Hansen and I. R. McDonald. Theory of simple liquids . Academic Press, London, 2nd ed., ch. 3.5 edition, 1986. [32] J. Helsing. The effective conductivity of arrays of squares: Large random unit cells and extreme contrast ratios. J. Comput. Phys , 230(20):7533–7547, 2011. [33] J. Helsing. The effective conductivity of random checkerboards. J. Comput. Phys , 230(4):1171–1181, 2011. [34] J. Helsing. Solving integral equations on piecewise smooth boundaries using the rcip method: a tutorial, 2022. arXiv:1207.6737v10 [physics.comp-ph]. [35] J. Helsing and R. Ojala. Corner singularities for elliptic problems: Integral equations, graded meshes, quadrature, and compressed inverse preconditioning. J. Comput. Phys , 227(20):8820–8840, 2008. [36] J. Helsing and R. Ojala. On the evaluation of layer potentials close to their sources. J. Comput. Phys ,227(5):2899–2921, 2008. 30 [37] J. G. Heywood. On some paradoxes concerning two-dimensional Stokes flow past an obstacle. Indiana U. Math. J. , 24(5), 1974. [38] J. Hoskins and M. Rachh. On the discretization of Laplace’s equation with Neumann boundary conditions on polygonal domains. J. Comput. Phys.: X , 8:100072–, 2020. [39] J. G. Hoskins, V. Rokhlin, and K. Serkh. On the numerical solution of elliptic partial differential equations on polygonal domains. SIAM J. Sci. Comput. , 41(4):A2552–A2578, 2019. [40] G. C. Hsiao and W. L. Wendland. Boundary Integral Equations , volume 164 of Applied Mathematical Sciences . Springer Berlin / Heidelberg, Berlin, Heidelberg, 1 edition, 2008. [41] A. Karageorghis and D. Lesnic. The method of fundamental solutions for the oseen steady-state viscous flow past obstacles of known or unknown shapes. Numer. Methods Partial Differ. Equ. , 35:2103–2119, 11 2019. [42] S. Kim and S. J. Karrila. Microhydrodynamics: Principles and Selected Applications . Butterworth-Heinemann, 1991. [43] J. Lai, M. Kobayashi, and A. Barnett. A fast and robust solver for the scattering from a layered periodic structure containing multi-particle inclusions. J. Comput. Phys , 298:194–208, 10 2015. [44] A. Lefebvre-Lepot, B. Merlet, and T. N. Nguyen. An accurate method to include lubrication forces in numerical simulations of dense Stokesian suspensions. J. Fluid Mech. , 769:369–386, 2015. [45] Y. Liu and A. H. Barnett. Efficient numerical solution of acoustic scattering from doubly-periodic arrays of axisymmetric objects. J. Comput. Phys , 324:226–245, 2016. [46] J. P. Lucero Lorca, N. Beams, D. Beecroft, and A. Gillman. An iterative solver for the HPS discretization applied to three dimensional Helmholtz problems. SIAM J. Sci. Comput. , 46(1):A80–A104, 2024. [47] D. Malhotra and A. Barnett. Efficient convergent boundary integral methods for slender bodies. J. Com-put. Phys , 503:112855, 2024. [48] D. Malhotra and G. Biros. PVFMM: A parallel kernel independent FMM for particle and volume potentials. Commun. Comput. Phys. , 18:808–830, 9 2015. [49] P. Martinsson and V. Rokhlin. A fast direct solver for boundary integral equations in two dimensions. 
+
+J. Comput. Phys , 205(1):1–23, 2005. [50] P.-G. Martinsson. Fast direct solvers for elliptic PDEs . CBMS-NSF regional conference series in applied mathematics ; 96. Society for Industrial and Applied Mathematics SIAM, Philadelphia, Pennsylvania, 2019. [51] O. Maxian, A. Donev, and A. Mogilner. Interplay between Brownian motion and cross-linking controls bundling dynamics in actin networks. Biophys. J. , 121(7):1230–1245, apr 2022. [52] N. Metropolis, A. W. Rosenbluth, M. N. Rosenbluth, A. H. Teller, and E. Teller. Equation of state calculations by fast computing machines. J. Chem. Phys , 21(6):1087–1092, 1953. [53] S. P˚ alsson and A. K. Tornberg. An integral equation method for closely interacting surfactant-covered droplets in wall-confined Stokes flow. Int. J. Numer. Methods Fluids , 92(12):1975–2008, 2020. [54] E. Parolin, D. Huybrechs, and A. Moiola. Stable approximation of Helmholtz solutions in the disk by evanescent plane waves. ESAIM: M2AN , 57(6):3499–3536, 2023. [55] H. Power and G. Miranda. Second kind integral equation formulation of Stokes flows past a particle of arbitrary shape. SIAM J. Appl. Math , 47:689–698, 1987. [56] C. C. Pozrikidis. Boundary integral and singularity methods for linearized viscous flow . Cambridge texts in applied mathematics 8. Cambridge Univ. Press, Cambridge, 1992. 31 [57] C. C. Pozrikidis. Introduction to theoretical and computational fluid dynamics . Oxford University Press, New York, 2nd ed. edition, 2011. [58] B. Quaife and G. Biros. High-volume fraction simulations of two-dimensional vesicle suspensions. J. Com-put. Phys , 274:245–267, 2014. [59] B. Quaife and G. Biros. On preconditioners for the Laplace double-layer in 2D. Numer. Linear Algebra Appl. , 22:101–122, 2015. [60] B. Quaife, P. Coulier, and E. Darve. An efficient preconditioner for the fast simulation of a 2D Stokes flow in porous media. Int. J. Numer. Meth. Eng. , 113(4):561–580, 2018. [61] M. Rachh and L. Greengard. Integral equation methods for elastance and mobility problems in two dimensions. SIAM J. Numer. Anal. , 54:2889–2909, 2016. [62] A. S. Sangani and G. Mo. Inclusion of lubrication forces in dynamic simulations. Phys. Fluids. , 6:1653– 1662, 1994. [63] S. F. Schoeller, A. K. Townsend, T. A. Westwood, and E. E. Keaveny. Methods for suspensions of passive and active filaments. J. Comput. Phys , 424:109846, 2021. [64] C. Sorgentone and A. K. Tornberg. A highly accurate boundary integral equation method for surfactant-laden drops in 3D. J. Comput. Phys , 360:167–191, 2018. [65] D. B. Stein and A. H. Barnett. Quadrature by fundamental solutions: kernel-independent layer potential evaluation for large collections of simple objects. Adv. Comput. Math. , 48:60, 10 2022. [66] H. Su and E. E. Keaveny. Accelerating the force-coupling method for hydrodynamic interactions in periodic domains. J. Comput. Phys , 510:113060–, 2024. [67] J. W. Swan, J. F. Brady, and R. S. Moore. Modeling hydrodynamic self-propulsion with Stokesian Dynamics. Or teaching Stokesian Dynamics to swim. Phys. Fluids. , 23(071901), 2011. [68] L. N. Trefethen and D. Bau. Numerical linear algebra . Society for Industrial and Applied Mathematics, Philadelphia, 1997. [69] F. B. Usabiaga and B. Delmotte. A numerical method for suspensions of articulated bodies in viscous flows. J. Comput. Phys , 464, 9 2022. [70] F. B. Usabiaga, B. Kallemov, B. Delmotte, A. P. S. Bhalla, A. Donev, and B. E. Griffith. Hydrodynamics of suspensions of passive and active rigid particles: a rigid multiblob approach. Comm. App. Math. Comp. Sci. , 11(2), 2016. [71] J. K. Wrobel, M. R. Booty, M. Siegel, and Q. Wang. Simulation of surfactant-mediated tipstreaming in a flow-focusing geometry. Phys. Rev. Fluids , 3(11), 2018. [72] Y. Xue, S. L. Waters, and L. N. Trefethen. Computation of two-dimensional Stokes flows via lightning and AAA rational approximation. SIAM J. Sci. Comput. , 46(2):A1214–A1234, 2024. 32

@@ -1,0 +1,890 @@
+Title: A field-equation semi-local transformation for compressible wall turbulence
+
+URL Source: https://arxiv.org/pdf/2606.09322v2
+
+Published Time: Tue, 16 Jun 2026 01:49:22 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+> Under consideration for publication in J. Fluid Mech.
+
+1Banner appropriate to article type will appear here in typeset article 
+
+# A field-equation semi-local transformation for compressible wall turbulence 
+
+Zifei Yin 1†, Jing Wang 1
+
+> 1
+
+School of Aeronautics and Astronautics, Shanghai Jiao Tong University (Received xx; revised xx; accepted xx) 
+
+Compressibility and wall heat transfer change the inner scaling of wall turbulence through the mean density and viscosity fields. Most semi-local transformations are applied after a wall-normal profile has been selected. Here the transformed coordinate and transformed velocity are defined by wall-anchored field equations before any profile is extracted. Wall density and friction velocity enter as boundary data for auxiliary field equations; the resulting reference density and friction velocity, together with the local density and viscosity, set the viscous scaling in the wall layer. The local logarithmic density contrast is introduced as a bounded correction to the coordinate-stretching factor. For weak density variation the corrected stretch follows the local inverse kinematic-viscosity variation, while the bounded form limits the influence of finite density contrasts. The transformed coordinate 𝑌 + and transformed velocity 
+
+U + are obtained from field equations using the corrected stretching and the mean viscous shear. In the constant-property limit the density contrast vanishes, 𝑌 + reduces to the ordinary wall coordinate and each transformed velocity component reduces to the conventional mean velocity component in wall units. For channel flows, the field equations are solved with wall boundary data and the extracted profiles retain their own wall origins. A cooled shock/boundary-layer interaction examines the response when the wall density and friction velocity vary in the streamwise direction. Across the cooled high-speed boundary layers considered here, the bounded density correction narrows the inner- and buffer-layer profile spread; symmetric isothermal channels provide the channel comparison with symmetric wall states, whereas mixed thermal-wall channels and the shock interaction expose the residual dependence on unequal wall states and non-equilibrium wall-shear history. 
+
+Key words: compressible turbulence, turbulent boundary layers, wall turbulence 
+
+1. Introduction 
+
+In high-speed wall turbulence, wall cooling and wall heating produce strong wall-normal variation of the mean density and viscosity across the inner layer (Bradshaw 1977; Zhang 
+
+et al. 2018). The wall units and the mean velocity gradient then depend on Mach number and thermal condition, so incompressible wall units mix property variation with changes in the mean turbulent profile. The scaling question is how much of this profile variation is 
+
+† Email address for correspondence: yinzifei@sjtu.edu.cn 
+
+# Abstract must not spill onto p.2 
+
+> arXiv:2606.09322v2 [physics.flu-dyn] 15 Jun 2026
+
+2 Yin and Wang 
+
+removed by ordinary semi-local variables based on local density and viscosity, and what residual inner-layer mismatch remains. Semi-local transformations address this question by asking whether the compressible mean profile can be measured in a coordinate that accounts for local density and viscosity. For attached cases with comparable inner-layer state, a successful scaling reduces the spread of the inner and buffer-layer profiles over the Mach numbers and wall temperatures being compared, while any remaining spread identifies physics not carried by the chosen variables. The transformation is both a probe of the inner momentum scaling and a practical normalisation. The buffer layer is the most sensitive region, because viscous scaling, property variation and the onset of turbulent transport all act over the same wall-normal range. Early transformations acted mainly on velocity. The Van Driest transformation introduced a density-weighted velocity for compressible turbulent boundary layers (Van Driest 1951). Later semi-local scalings used local density and viscosity to define a wall coordinate that changes with the material properties of the mean flow (Huang et al. 1995; Patel 
+
+et al. 2015, 2016). The Trettel-Larsson (TL) transformation then gave a coordinate-and-velocity transformation for wall turbulence with heat transfer (Trettel & Larsson 2016). The progression is from a velocity correction toward a correction of the wall-normal stretching implied by local material properties. Mean-stress-balance transformations add another ingredient. Griffin-Fu-Moin (GFM) used the mean-stress balance to reduce profile spread across compressible boundary layers and channels (Griffin et al. 2021); the inverse use of such transformations has also entered near-wall modelling for compressible boundary layers (Griffin et al. 2023). Independent assessments show where the residual mismatch remains: discrepancies often appear in the buffer layer, and the wall thermal condition controls the sign and magnitude of the mismatch after ordinary semi-local scaling based on local density and viscosity (Danis & Durbin 2024). Data-driven transformations have made this residual mismatch more explicit. Volpiani et al. 
+
+(2020) combined near-wall constraints with DNS-fitted power laws for density and viscosity to form a data-driven compressibility transformation. More recently, Zhang et al. (2026) used physics-informed symbolic regression to construct hybrid velocity and temperature transformations, with different effective mappings in different wall-layer regions. These studies show that the buffer-layer discrepancy contains useful information rather than only scatter between datasets. The remaining modelling question is what information, beyond local density and viscosity scaling, sets the transformed inner coordinate before the profile is chosen. The gap addressed here is not another algebraic remapping of a chosen profile, but the definition of the transformed variables before the profile is chosen. In non-parallel or multi-wall mean flows, the transformed coordinate and velocity are naturally treated as wall-attached field quantities before any station profile is sampled. The density and viscosity fields set the local viscous length point by point, while the remaining buffer-layer mismatch is represented by a bounded density-induced correction to the coordinate-stretching factor. Harmonic equations for the density and friction-velocity references, together with Poisson equations for coordinate and velocity, provide the wall anchoring before profiles are extracted, which matters in non-parallel mean flows and in multi-wall flows with unequal thermal boundary conditions. The field-equation formulation solves harmonic equations for the density and friction-velocity references and Poisson equations for 𝑌 + and U + before station profiles are sampled. The wall fixes the origin, and the wall-distance normal sets the direction in which the coordinate grows. Differential wall-distance methods show how wall geometry can be encoded by a field equation with explicit boundary conditions (Tucker 2003). Once the reference fields have been defined, the density contrast supplies a local logarithmic correction Field-equation semi-local transformation 3to coordinate stretching. In the uniform-wall limit, ordinary semi-local stretching contains one half-density factor, and the density correction supplies the other half-density factor required to approach a local inverse kinematic-viscosity scale. The formulation below constructs logarithmic reference fields for density and friction velocity, uses them to set the local viscous scale, and applies a bounded local correction based on the logarithmic density contrast. The corrected stretching defines 𝑌 + and, together with the mean viscous shear, defines U +. On a wall-normal station, the streamwise or wall-tangential component reduces to the profile quantity used for comparison with the Trettel-Larsson and Griffin-Fu-Moin transformations below. The DNS profiles are thus traces of the field variables or their one-dimensional reductions. Section 2 gives the field-equation formulation and its one-dimensional recovery. Section 3 summarises the DNS cases and profile comparisons. The results then examine attached boundary layers, a shock-interaction field and compressible channel flows. The discussion returns to the range of use and the observed limits of the transformation. 
+
+2. Field-equation formulation 
+
+2.1. Physical idea, notation and required fields 
+
+In a compressible wall layer, the mean density and viscosity first change the local viscous length. Ordinary semi-local scaling contains this local material-property effect through a factor proportional to √𝜌 /𝜇 . The remaining buffer-layer mismatch is treated here as a bounded density-induced change in wall-normal coordinate stretching. The correction is tied to the coordinate-stretching factor and leaves the viscous origin fixed at the no-slip wall. The notation separates ordinary wall variables from transformed variables. The mean velocity vector is u(x). The ordinary wall coordinate and mean velocity in wall units are denoted by 𝑦 + and u+; here u+ is not a fluctuating velocity. The transformed coordinate is 
+
+𝑌 +, and the transformed velocity obtained from the mean viscous shear is denoted by U +,with components 𝑈 + 
+
+> 𝑖
+
+. Thus ordinary profiles are plotted as (𝑦 +, 𝑢 +), whereas transformed profiles are plotted as (𝑌 +, 𝑈 +) for the corresponding wall-tangential component. The formulation uses the mean fields u, 𝜌 (x) and 𝜇 (x) in a selected near-wall region, together with the wall boundary, wall distance, wall-normal direction, any non-wall boundary of the selected region, and the wall density and friction velocity prescribed on the wall. Reference fields for density and friction velocity set the local viscous scaling and the density contrast. The density contrast then supplies the logarithmic correction 𝜒 to coordinate stretching. The corrected stretching gives 𝑌 +; the same stretching with the mean viscous shear gives U +.2.2. Reference fields and local viscous scaling 
+
+The field equations are written in physical coordinates on a selected wall-layer mean-flow domain Ω with wall boundary Γ𝑤 . In one-dimensional profile reductions Ω is the sampled wall-normal interval. In the two-dimensional boundary-layer and shock-interaction examples it is the wall-layer patch on which the transformed fields are defined and sampled. In the mixed-channel case Ω is the full channel and Γ𝑤 contains both walls. For a single-wall region, the remaining boundary is Γ𝑜 = 𝜕 Ω \ Γ𝑤 , with outward unit normal m, and is placed outside the near-wall interval over which profiles are compared. For a domain closed by two wall boundaries, the corresponding non-wall boundary conditions are absent in the wall-normal direction; any additional open boundary or wall-region interface is treated as part of Γ𝑜 .Let x be position, and let ∇, ∇· and ∇2 = ∇ · ∇ denote the corresponding gradient, divergence and Laplacian. The wall boundary fixes the coordinate origin, and the wall-4 Yin and Wang 
+
+distance normal fixes the direction in which the transformed coordinate grows. On Γ𝑤 ,
+
+𝜌 𝑤 > 0 denotes the wall density and 𝜏 𝑤 > 0 denotes the wall-shear-stress magnitude. The wall friction velocity is 
+
+𝑢 𝜏,𝑤 = (𝜏 𝑤 /𝜌 𝑤 )1/2 . (2.1) The wall quantities enter the interior through auxiliary reference fields. Let 𝑎 𝜌 and 𝑎 𝑢 be logarithmic auxiliary fields for the density and friction-velocity references. These logarithms are obtained from boundary-value problems so that the reconstructed references remain positive: 
+
+∇2𝑎 𝜌 = 0, 𝑎 𝜌 = log (𝜌 𝑤 /𝜌 0) on Γ𝑤 , ∇𝑎 𝜌 · m = 0 on Γ𝑜 ,
+
+∇2𝑎 𝑢 = 0, 𝑎 𝑢 = log (𝑢 𝜏,𝑤 /𝑢 𝜏, 0) on Γ𝑤 , ∇𝑎 𝑢 · m = 0 on Γ𝑜 , (2.2) The constants 𝜌 0 > 0 and 𝑢 𝜏, 0 > 0 are arbitrary positive reference constants introduced to make the logarithms dimensionless. The physical reference fields are 
+
+𝜌 𝑟 = 𝜌 0 exp (𝑎 𝜌 ), 𝑢 𝜏,𝑟 = 𝑢 𝜏, 0 exp (𝑎 𝑢 ), 𝜏 𝑟 = 𝜌 𝑟 𝑢 2 
+
+> 𝜏,𝑟
+
+. (2.3) The constants 𝜌 0 and 𝑢 𝜏, 0 set gauges for 𝑎 𝜌 and 𝑎 𝑢 : changing them shifts the logarithmic fields by constants but leaves 𝜌 𝑟 , 𝑢 𝜏,𝑟 , 𝜏 𝑟 and the transformation unchanged. The physical wall information is the Dirichlet data in (2.2); after these boundary-value problems are solved, the interior scaling uses the local values of 𝜌 𝑟 and 𝑢 𝜏,𝑟 .The inverse local viscous length used in the field equations is 
+
+𝐺 =
+
+√𝜌 𝜌 𝑟 𝑢 𝜏,𝑟 
+
+𝜇 , (2.4) where 𝜌 and 𝜇 are the mean density and dynamic viscosity. Equivalently, 𝐺 = √𝜌 𝜏 𝑟 /𝜇 
+
+because 𝜏 𝑟 = 𝜌 𝑟 𝑢 2 
+
+> 𝜏,𝑟
+
+. Thus 𝐺 combines local material properties with the solved density and friction-velocity references. For the wall-specific coordinate being constructed, let 𝑑 𝑤 (x) be the distance to that wall and 
+
+n = ∇𝑑 𝑤 
+
+|∇ 𝑑 𝑤 | (2.5) the unit wall-distance normal, directed away from that wall. Thus n is the local direction of wall-normal coordinate growth for the chosen wall, whereas m is the outward normal on any non-wall boundary used to close the selected region. The density contrast used in the coordinate-stretch correction is measured relative to the density reference field, 
+
+𝑆 𝜌 = log (𝜌 /𝜌 𝑟 ). (2.6) The factor 12 𝑆 𝜌 is the local logarithmic density term after the reference field has been defined. The viscosity part is already contained in the baseline factor 𝐺 and is not repeated in the density term below. For a uniform-wall case this gives 𝑆 𝜌 = log (𝜌 /𝜌 𝑤 ); for a channel with unequal wall data, 𝜌 𝑟 is the full-channel reference field obtained from the two wall boundary values. 2.3. Density-induced coordinate correction 
+
+The logarithmic density term entering the coordinate-stretch correction is 
+
+𝑞 = 𝑆 𝜌 
+
+2 . (2.7) 
+
+# Focus on Fluids articles must not exceed this page length Field-equation semi-local transformation 5The bounded density correction is 
+
+𝜒 = 𝐶 (𝑞 ) = 𝑞 0 tanh (𝑞 /𝑞 0), 𝑞 0 = 0.20 . (2.8) Thus 𝑞 is the local half-density logarithm relative to the solved reference density, and 𝜒 is the finite-amplitude correction applied to the coordinate-stretching factor. The bounded response leaves weak density changes essentially linear, since 𝐶 (𝑞 ) = 𝑞 + 𝑂 (𝑞 3), but prevents very large density contrasts from dominating the stretching. It does not alter the density field or introduce wall values into interior points. The corrected inverse viscous length used by the coordinate and velocity equations is 
+
+𝐺 𝑌 = 𝐺 exp 𝜒. (2.9) For a single-wall or uniform-wall case, the unbounded weak-density form has a direct interpretation: 
+
+𝐺 exp 𝑞 =
+
+√𝜌 𝜌 𝑟 𝑢 𝜏,𝑟 
+
+𝜇 
+
+ 𝜌 𝜌 𝑟 
+
+1/2
+
+= 𝜌𝑢 𝜏,𝑟 
+
+𝜇 = 𝑢 𝜏,𝑟 
+
+𝜈 . (2.10) The density correction therefore supplies the half-density exponent that is absent from the baseline semi-local factor 𝐺 , moving the coordinate stretching toward a local inverse kinematic-viscosity scale. Equation (2.8) keeps this mechanism linear for weak density variation and bounded for finite density contrasts. The weak-property-gradient limit makes the role of the density term explicit. For uniform wall reference data, let 
+
+𝜌 = 𝜌 𝑤 (1 + 𝜖 𝜌 1), 𝜇 = 𝜇 𝑤 (1 + 𝜖 𝜇 1), 𝜖 ≪ 1.
+
+Then 
+
+𝐺 =
+
+√𝜌 𝑤 𝜏 𝑤 
+
+𝜇 𝑤 
+
+h
+
+1 + 𝜖 
+
+ 12 𝜌 1 − 𝜇 1
+
+i 
+
++ 𝑂 (𝜖 2), 𝜒 = 𝑞 + 𝑂 (𝜖 3) = 𝜖 12 𝜌 1 + 𝑂 (𝜖 2),
+
+and therefore 
+
+𝐺 𝑌 =
+
+√𝜌 𝑤 𝜏 𝑤 
+
+𝜇 𝑤 
+
+[1 + 𝜖 (𝜌 1 − 𝜇 1)] + 𝑂 (𝜖 2). (2.11) To leading order the corrected stretching follows the local inverse kinematic-viscosity variation. The wall origin is still fixed by the boundary condition for 𝑌 +, not by imposing a separate condition on 𝜒 .2.4. Coordinate and velocity fields 
+
+The transformed coordinate is obtained as a field whose normal derivative is tied to the corrected stretching: 
+
+∇2𝑌 + = ∇ · ( 𝐺 𝑌 n) , 𝑌 + = 0 on the wall . (2.12) Since ∇ is taken with respect to dimensional physical coordinates, 𝐺 𝑌 is an inverse length. The wall condition applies to the wall whose coordinate is being defined; in a multi-wall domain, each wall-specific coordinate has its own wall origin and wall-distance normal. The Poisson form lets neighbouring wall-normal lines share a compatible multidimensional coordinate before any station profile is extracted. At any non-wall outer boundary or interface with a neighbouring wall region, the normal component of ∇𝑌 + is matched to the corrected coordinate gradient: ∇𝑌 + − 𝐺 𝑌 n · m = 0. (2.13) 6 Yin and Wang 
+
+In a single-wall region the reference fields, 𝜒 , 𝑌 + and U + are defined on the same wall layer. In a multi-wall region, the reference fields may be solved on the larger domain, while the transformed coordinate and velocity remain wall-specific: for each wall 𝑘 , 𝑌 + 
+
+> 𝑘
+
+= 0 on that wall and the growth direction is set by its wall-distance normal. In component equations, 𝑥 𝑗 is the 𝑗 th physical coordinate, 𝜕 𝑗 = 𝜕 /𝜕𝑥 𝑗 , and repeated Roman indices imply summation. The mean viscous-shear vector used to define the transformed velocity is 
+
+𝜏 † 
+
+> 𝑣,𝑖
+
+= 𝜇𝑛 𝑗 𝜕 𝑗 𝑢 𝑖 
+
+𝜏 𝑟 
+
+, (2.14) where 𝑢 𝑖 is the 𝑖 th mean velocity component. The vector τ † 
+
+> 𝑣
+
+is the wall-normal viscous derivative of the mean velocity vector scaled by the shear reference 𝜏 𝑟 = 𝜌 𝑟 𝑢 2 
+
+> 𝜏,𝑟
+
+. The transformed velocity field is then defined component by component: 
+
+∇2𝑈 + 
+
+> 𝑖
+
+= 𝜕 𝜕𝑥 𝑗 
+
+h
+
+𝐺 𝑌 𝑛 𝑗 𝜏 †
+
+> 𝑣,𝑖
+
+i
+
+, 𝑈 + 
+
+> 𝑖
+
+= 0 on the wall . (2.15) The corresponding condition on any non-wall outer boundary or interface is 
+
+ 𝜕𝑈 +
+
+> 𝑖
+
+𝜕𝑥 𝑗 
+
+− 𝐺 𝑌 𝑛 𝑗 𝜏 †
+
+> 𝑣,𝑖
+
+
+
+𝑚 𝑗 = 0. (2.16) The component form in (2.15) states the divergence convention used for the transformed velocity field. In a multi-wall region the same corrected stretching can therefore be used to form several velocity profiles, each defined with respect to its own wall origin and shear scale. In the canonical profile comparisons, the scalar shear reduces to the streamwise or wall-tangential viscous shear normalised by the wall shear in the uniform-wall limit. The one-dimensional profile reduction of these field equations is given in §2.5. For comparison with wall-turbulence inner laws, the wall-parallel velocity component is obtained from 
+
+u𝑡 = P u , P = I − nn , (2.17) where u𝑡 is the wall-tangential part of the mean velocity, P is the tangent-plane projector and 
+
+I is the identity tensor. The dyadic product nn removes the wall-normal velocity component. The wall origin and coordinate direction are set by the boundary conditions for 𝑌 + and the wall-distance normal; the interior scaling is evaluated from the reference fields and the local density correction. 2.5. One-dimensional recovery 
+
+For a one-dimensional profile with a fixed wall footpoint, let 𝑦 be the dimensional wall-normal coordinate. Equation (2.12) reduces to d𝑌 +
+
+d𝑦 = 𝐺 𝑌 = 𝐺 exp 𝜒. (2.18) The transformed coordinate and velocity are anchored by 𝑌 + = 0 and 𝑈 + = 0 at the wall. In deriving (2.18), the integration constant is zero because the one-dimensional form of the outer or interface condition (2.13) imposes the same normal derivative there. Thus the field equation recovers ordinary profile integration when a single wall-normal line has already been selected. For uniform wall data on the selected wall region, the reference-field equations have the exact constant solution 𝜌 𝑟 = 𝜌 𝑤 and 𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 . In that special case 
+
+𝜌 𝑟 = 𝜌 𝑤 , 𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 , 𝜏 𝑟 = 𝜏 𝑤 , 𝐺 = 𝑠 𝛿 𝜈,𝑤 
+
+, 𝑆 𝜌 = log (𝜌 /𝜌 𝑤 ), (2.19) Field-equation semi-local transformation 7where 𝜌 + = 𝜌 /𝜌 𝑤 , 𝜇 + = 𝜇 /𝜇 𝑤 , 𝑠 = √𝜌 +/𝜇 +, 𝑢 𝜏,𝑤 = (𝜏 𝑤 /𝜌 𝑤 )1/2, 𝜈 𝑤 = 𝜇 𝑤 /𝜌 𝑤 and 
+
+𝛿 𝜈,𝑤 = 𝜈 𝑤 /𝑢 𝜏,𝑤 = 𝜇 𝑤 /√𝜌 𝑤 𝜏 𝑤 . Equivalently, log 𝐺 = log (1/𝛿 𝜈,𝑤 ) + 12 log (𝜌 /𝜌 𝑤 ) − log (𝜇 /𝜇 𝑤 ). (2.20) Equations (2.19) and (2.20) apply when the reference-field equations have constant wall solutions. With 𝑦 𝑤 as the wall location and 𝑦 + = (𝑦 − 𝑦 𝑤 )/ 𝛿 𝜈,𝑤 , the coordinate equation becomes d𝑌 +
+
+d𝑦 + = 𝑠 exp 𝜒. (2.21) The wall-tangential velocity component used in the profile figures follows from the same corrected stretching. In one dimension, (2.15) gives d𝑈 +
+
+d𝑦 = 𝜏 † 
+
+> 𝑣
+
+𝐺 exp 𝜒, d𝑈 +
+
+d𝑌 + = 𝜏 † 
+
+> 𝑣
+
+, (2.22) where 𝜏 † 
+
+> 𝑣
+
+is the wall-normal viscous shear scaled by 𝜏 𝑟 . In the uniform-wall profile notation, 
+
+𝜏 † 
+
+> 𝑣
+
+= 𝜏 + 
+
+> 𝑣
+
+, with 𝜏 + 
+
+> 𝑣
+
+= 𝜇 d𝑢 𝑡 /d𝑦 / 𝜏 𝑤 for the chosen wall-tangential component, and therefore d𝑈 +
+
+d𝑌 + = 𝜏 + 
+
+> 𝑣
+
+. (2.23) The velocity equation integrates the measured mean viscous shear along the transformed wall coordinate supplied by the coordinate equation. These are the one-dimensional traces of the field equations. The constant-property limit is the identity transformation. If 𝜌 = 𝜌 𝑤 , 𝜇 = 𝜇 𝑤 and 𝜏 𝑤 is constant, the reference-field equations give constant 𝜌 𝑟 = 𝜌 𝑤 , 𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 and 𝜏 𝑟 = 𝜏 𝑤 .Then 𝐺 = 1/𝛿 𝜈,𝑤 , 𝑆 𝜌 = 0, 𝑞 = 0, 𝜒 = 0 and 𝑌 + = 𝑦 +. Equation (2.22) integrates the viscous shear in wall units. For a velocity component with zero wall value, the transformed profile is identical to the velocity profile in wall units. This one-dimensional reduction also clarifies the distinction from standard profile trans-formations. TL uses the local density and viscosity variation along the sampled wall-normal line to define the semi-local coordinate and velocity correction. GFM instead uses the mean-stress balance to set the transformed inner shear. In the present reduction the shear relation is d 𝑈 +/d𝑌 + = 𝜏 + 
+
+> 𝑣
+
+, while the coordinate-stretching factor is 𝑠 exp 𝜒 ; the additional factor 𝜒 is the bounded density correction associated with the logarithmic density contrast. Figure 1 follows this one-dimensional reduction for two cooled Zhang-Duan-Choudhari profiles (Zhang et al. 2018). These uniform-wall profiles use the constant reference-field solution, so the density contrast reduces to the usual wall-normalised form and 𝐺 = 𝑠 /𝛿 𝜈,𝑤 .The panels show how the ordinary semi-local stretch, the logarithmic input 𝑞 = 𝑆 𝜌 /2, the bounded correction 𝜒 = 𝐶 (𝑞 ), and the mean viscous shear combine to give the transformed profiles. 2.6. Mean fields and wall boundary data 
+
+The transformation is specified by the mean velocity, density and viscosity in the selected near-wall region; the wall boundary, wall distance and wall-normal direction; the non-wall boundary or wall-region interface; and the wall density and friction velocity used as boundary data for the reference-field equations. Together these quantities define the reference fields 𝜌 𝑟 
+
+and 𝑢 𝜏,𝑟 , the derived shear scale 𝜏 𝑟 , the inverse viscous length 𝐺 , the density contrast 𝑆 𝜌 , the logarithmic density term 𝑞 , the bounded correction 𝜒 = 𝐶 (𝑞 ), the transformed coordinate 
+
+𝑌 + and the transformed velocity U +.8 Yin and Wang 10 0 10 1 10 2                        
+
+> wall coordinate y+
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> ρ + , μ +
+> (a) density and viscosity stratification
+> M∞= 5.86 ,Tw/Tr= 0.76
+> M∞= 7.87 ,Tw/Tr= 0.48
+> 10 010 110 2
+> wall coordinate y+
+> −0.1
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> q = Sρ/2,  χ = C(q)
+> (b) bounded density correction
+> q=Sρ/2
+> χ=C(q)
+> 10 010 110 2
+> wall coordinate y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> mean velocity  u +
+> (c) ordinary wall-unit profile
+> 10 010 110 2
+> transformed coordinate Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> transformed velocity  U +
+> (d) transformed velocity profile
+
+Figure 1: Density-stratified coordinate transformation for two cooled Zhang-Duan-Choudhari flat plates (Zhang et al. 2018). These are uniform-wall cases, so the reference-field equations have the constant solution 𝜌 𝑟 = 𝜌 𝑤 , 𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 , 𝜏 𝑟 = 𝜏 𝑤 
+
+and 𝐺 = 𝑠 /𝛿 𝜈,𝑤 . (a) Wall-normal profiles of 𝜌 + = 𝜌 /𝜌 𝑤 and 𝜇 + = 𝜇 /𝜇 𝑤 that form the ordinary semi-local stretch 𝑠 = √𝜌 +/𝜇 +; solid curves denote 𝜌 + and dashed curves denote 
+
+𝜇 +. (b) Logarithmic density term 𝑞 = 𝑆 𝜌 /2 (dotted) and bounded correction 𝜒 = 𝐶 (𝑞 )
+
+(solid). (c) Mean velocity profiles in ordinary wall units (𝑦 +, 𝑢 +). (d) Transformed velocity profiles obtained from the mean viscous shear, plotted as (𝑌 +, 𝑈 +). Dashed and dotted black curves denote the viscous law and log law. 
+
+For the attached boundary-layer profiles considered here, the wall data are uniform on the selected wall region and the reference-field equations reduce to constant 𝜌 𝑟 = 𝜌 𝑤 ,
+
+𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 and 𝜏 𝑟 = 𝜏 𝑤 . When published DNS statistics are available only in station-based wall units, the corresponding uniform-wall representation is 
+
+𝑆 𝜌 (𝑥, 𝑦 ) = log 𝜌 + (𝑥, 𝑦 ), 𝐺 (𝑥, 𝑦 ) = 𝛼 (𝑥 )√︁ 𝜌 + (𝑥, 𝑦 )
+
+𝜇 + (𝑥, 𝑦 ) , 𝛼 (𝑥 ) = 𝜕𝑦 +
+
+𝜕𝑦 = 1
+
+𝛿 𝜈,𝑤 (𝑥 ) ,
+
+(2.24) where 𝜌 + and 𝜇 + are normalised by the uniform wall values for that station and 𝛼 is the inverse wall viscous length in the published statistics. This representation is the uniform-wall reduction of (2.4) and (2.6). For cases with wall data varying along the surface, such as the shock-interaction field below, the reference fields are obtained from (2.2) using the wall-surface data as boundary conditions. The transformed velocity is obtained from the mean viscous shear supplied by the mean velocity and viscosity fields, and the plotted profiles are sampled from the resulting transformed coordinate and velocity fields. Field-equation semi-local transformation 9
+
+3. DNS cases and profile comparisons 
+
+All profile comparisons use the logarithmic density term introduced in §2.3. The constant 
+
+𝑞 0 = 0.20 is kept fixed for all cases, with 𝑞 = 𝑆 𝜌 /2 and 𝜒 = 𝐶 (𝑞 ) = 𝑞 0 tanh (𝑞 /𝑞 0). The DNS cases, wall boundary data and boundary-layer spread measure are summarised in this section. The two cooled zero-pressure-gradient (ZPG) flat plates from Zhang et al. (2018) shown in figure 1, at 𝑀 ∞ = 5.86, 𝑇 𝑤 /𝑇 𝑟 = 0.76 and 𝑀 ∞ = 7.87, 𝑇 𝑤 /𝑇 𝑟 = 0.48, illustrate the one-dimensional uniform-wall reduction. Here 𝑀 ∞ is the free-stream Mach number, 𝑇 𝑤 is the wall temperature and 𝑇 𝑟 is the recovery temperature. These external boundary layers are uniform-wall special cases, so the reference-field equations have constant solutions and 
+
+𝑆 𝜌 = log (𝜌 /𝜌 𝑤 ). Their strong cold-wall density and viscosity stratification exposes the action of 𝜒 = 𝐶 (𝑞 ) in figure 1(b,d). The remaining cases cover attached boundary layers, internal flows and a non-equilibrium interaction. The rest of the Zhang-Duan-Choudhari profiles sample the same high-Mach cold-wall family, the Volpiani-Bernardini-Larsson Mach 2.28 ZPG data (Volpiani et al. 
+
+2018, 2023) give station-resolved boundary-layer development at fixed Mach number, and the Cogo profiles (Cogo et al. 2023 a,b) extend the attached-boundary-layer evidence to a wider heat-transfer range at higher Reynolds number. The Huang-Coleman-Bradshaw and Gerolymos-Vallet data (Huang et al. 1995; Gerolymos & Vallet 2023, 2024) examine symmetric isothermal channel flows. The Lusher-Coleman mixed thermal-wall channels impose unequal thermal wall states, so the density and friction-velocity reference fields are solved on the full channel with two different wall boundary conditions. The Hirai-Kawai shock-interaction field (Hirai & Kawai 2023) introduces streamwise-varying wall data in a cooled-wall SBLI. The DNS flow conditions are summarised in table 1. The selected mean fields and wall boundary data supply the wall-shear and material-property information for the transforma-tion. The boundary-layer cases span 𝑀 ∞ = 2.0-13 .64, include the cooled and nearly adiabatic flat plates of Zhang et al. (2018), and add the Cogo high-speed boundary layers (Cogo et al. 
+
+2023 a,b). In the table, 𝑇 ∞ is the free-stream temperature, 𝑅𝑒 𝜃 is the momentum-thickness Reynolds number and 𝑅𝑒 𝜏 is the friction Reynolds number. The Volpiani-Bernardini-Larsson Mach 2.28 data contain 121 developing ZPG profiles, with 𝑥 /𝛿 𝑖 denoting streamwise distance normalised by the inlet boundary-layer thickness 𝛿 𝑖 . For the shock-interaction case, 𝑥 𝑠ℎ is the nominal shock-impingement location and 𝐿 𝑖𝑛𝑡 is the interaction length defined by Hirai & Kawai (2023). The profile comparisons use Trettel-Larsson and GFM as baselines, evaluated on the same DNS profiles as the present transformation. The viscous line and the classical logarithmic law, 𝑈 + = 𝜅 −1 log 𝑌 + + 5.2, provide reference curves. For the boundary-layer profile sets, the spread is reported as Δbuf , the mean envelope width of the plotted profiles over 5 ⩽ 𝑌 + ⩽ 70 after interpolation to a common 𝑌 + grid. The values for figures 4 and 5 are collected in table 2. 
+
+4. Boundary-layer transformations and shock-interaction recovery 
+
+4.1. Boundary-layer collapse and transformed coordinates 
+
+Figure 2 compares the profile collapse for the Zhang-Duan-Choudhari flat plates. In ordinary wall units, changes in Mach number and wall temperature produce a broad family of mean profiles. Trettel-Larsson and GFM reduce part of this spread. For the cases shown, the present transformation gives a narrower inner- and buffer-layer band, while the outer part of the profiles retains case dependence. 10 Yin and Wang 
+
+DNS study Flow configuration Thermal state Range Wall-layer feature Zhang et al. (2018) Attached high-speed ZPG boundary layers Cooled to nearly adiabatic walls, 
+
+𝑇 𝑤 /𝑇 𝑟 = 0.18-1.00 
+
+𝑀 ∞ = 2.5-13 .64; 
+
+𝑅𝑒 𝜃 = 2.1 × 10 3-1.44 × 10 4
+
+Cold-wall density stratification Cogo et al. (2023 a,b) Isothermal-wall ZPG boundary layers 
+
+𝑇 𝑤 /𝑇 ∞ = 1.18-7.45 
+
+𝑀 ∞ = 2.0-6 .0; 
+
+𝑅𝑒 𝜏 ≃ 443-1947 Extended heat-transfer range Volpiani-Bernardini-Larsson Mach 2.28 station-resolved data (Volpiani et al. 2018, 2023) Developing ZPG boundary layers 
+
+𝑇 𝑤 /𝑇 𝑟 =
+
+1.00 , 1.90 
+
+𝑥 /𝛿 𝑖 ≃ 20-60; 121 stations Streamwise field variation Huang et al. (1995); Gerolymos & Vallet (2023, 2024) Symmetric isothermal channels Isothermal walls Centreline Mach number 0.32-3 .0; 
+
+𝑅𝑒 𝜏 ≃ 107-1479 Symmetric isothermal walls Lusher & Coleman (2023) Mixed thermal-wall channels Isothermal and adiabatic walls Friction-scaled Mach number 0 .0955-0 .20; friction Reynolds number 193 .9-3937 .5Mixed thermal walls Hirai & Kawai (2023) Cooled-wall shock/boundary-layer interaction 
+
+𝑇 𝑤 /𝑇 𝑟 = 0.5 𝑀 ∞ = 2.28; 
+
+(𝑥 − 𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 = −3.44-4.31 Wall-shear recovery Table 1: DNS flow conditions for the transformation comparisons. Reynolds and Mach numbers follow the notation of the original DNS studies; 𝛿 𝑖 , 𝑥 𝑠ℎ and 𝐿 𝑖𝑛𝑡 are defined in the text. The final column lists the wall-layer variation or channel configuration represented by each DNS set. 
+
+Figure 3 shows the uniform-wall reduction on a two-dimensional Mach 2.28 ZPG mean field from the Volpiani-Bernardini-Larsson data. The density varies weakly in the streamwise direction but strongly across the inner layer. The local bounded correction 
+
+𝜒 = 𝐶 (𝑞 ) changes the coordinate-stretching factor; the transformed coordinate contours and transformed velocity are then obtained on the wall-layer field before station profiles are sampled. 4.2. Boundary-layer transformation comparison 
+
+Figure 4 compares the three transformations for the Zhang-Duan-Choudhari flat plates and the station-resolved Mach 2.28 ZPG boundary layers from the Volpiani-Bernardini-Larsson data. In the Zhang-Duan-Choudhari row, the present transformation gives the smallest buffer-layer envelope among the three transformations in table 2. Trettel-Larsson and GFM still reduce the wall-unit spread, but leave larger cold-wall buffer-layer offsets in this set. In the lower row of figure 4, the Mach 2.28 station sequence is a developing boundary layer with weaker property stratification. GFM and the present transformation give comparable buffer-layer envelopes in this set. The difference between them is small because the density-induced correction to the coordinate-stretching factor is a modest addition to the ordinary semi-local stretching. The three columns separate the mean-field quantities used by the 
+
+# Rapids articles must not exceed this page length Field-equation semi-local transformation 11 10 0 10 1 10 2
+
+wall coordinate y +
+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> mean velocity  u +
+
+(a) ordinary wall units                
+
+> M∞= 13.64 ,Tw/Tr= 0.18
+> M∞= 2.5 , near adiabatic
+> M∞= 5.84 ,Tw/Tr= 0.25
+> M∞= 5.86 ,Tw/Tr= 0.76
+> M∞= 7.87 ,Tw/Tr= 0.48
+> 10 010 110 2
+
+transformed wall coordinate Y +
+
+> transformed velocity  U +
+
+(b) TL and GFM   
+
+> Trettel-Larsson
+> GFM
+> 10 010 110 2
+
+transformed wall coordinate Y +
+
+> transformed velocity  U +
+
+(c) present 
+
+> viscous line
+> log law
+
+Figure 2: Mean-profile collapse for the Zhang-Duan-Choudhari smooth high-speed ZPG flat plates (Zhang et al. 2018). (a) Mean velocity profiles in ordinary wall units (𝑦 +, 𝑢 +).(b) The same profiles after Trettel-Larsson and GFM transformations, plotted as transformed velocity 𝑈 + versus transformed coordinate 𝑌 +; dashed and solid coloured curves denote Trettel-Larsson and GFM, respectively. (c) Profiles after the present transformation, plotted as (𝑌 +, 𝑈 +). Colours in all panels identify Mach number and wall thermal condition. Dashed and dotted black curves denote the viscous law and log law. 25 30 35 40 
+
+station x/δi
+
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120
+> y +
+
+(a) DNS density field    
+
+> 25 30 35 40
+
+station x/δi
+
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120
+> y +
+
+(b) bounded density correction    
+
+> 25 30 35 40
+
+station x/δi
+
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120
+> y +
+
+(c) transformed coordinate    
+
+> 25
+> 50
+> 75
+> 100
+> 150
+> 25 30 35 40
+
+station x/δi
+
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 120
+> y +
+
+(d) transformed velocity 
+
+> 1.000
+> 1.075
+> 1.150
+> 1.225
+> 1.300
+> 1.375
+> 1.450
+> ρ +
+> 0.000
+> 0.016
+> 0.032
+> 0.048
+> 0.064
+> 0.080
+> 0.096
+> 0.112
+> 0.128
+> 0.144
+> χ = C(q)
+> 0
+> 30
+> 60
+> 90
+> 120
+> 150
+> 180
+> Y +
+> 0.0
+> 2.4
+> 4.8
+> 7.2
+> 9.6
+> 12.0
+> 14.4
+> 16.8
+> transformed velocity  U +
+
+Figure 3: Two-dimensional boundary-layer fields for the Mach 2.28 ZPG mean field from the Volpiani-Bernardini-Larsson data (Volpiani et al. 2018, 2023), plotted against streamwise station 𝑥 /𝛿 𝑖 and wall-normal distance 𝑦 +. Here 𝛿 𝑖 is the inlet boundary-layer thickness of the DNS, 𝑦 + is the ordinary wall coordinate, and 𝜌 + = 𝜌 /𝜌 𝑤 . (a) Mean density field 𝜌 +. (b) Bounded density correction 𝜒 = 𝐶 (𝑞 ). (c) Transformed coordinate 
+
+𝑌 + with selected coordinate contours. (d) Transformed streamwise velocity 𝑈 +. The lower boundary is the wall; the wall condition, wall-distance normal and outer-boundary flux conditions define the transformed coordinate and velocity from which station profiles are sampled. 12 Yin and Wang transformed wall coordinate Y +                                   
+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> transformed velocity  U +
+> (a) TL, flat plates
+> M∞= 13.64 ,Tw/Tr= 0.18
+> M∞= 2.5 , near adiabatic
+> M∞= 5.84 ,Tw/Tr= 0.25
+> M∞= 5.86 ,Tw/Tr= 0.76
+> M∞= 7.87 ,Tw/Tr= 0.48
+> transformed wall coordinate Y+
+> (b) GFM, flat plates
+> transformed wall coordinate Y+
+> (c) present, flat plates
+> 10 010 110 2
+> transformed wall coordinate Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> transformed velocity  U +
+> (d) TL, M2.28 stations
+> M∞= 2.28 ,Tw/Tr= 1.00
+> M∞= 2.28 ,Tw/Tr= 1.90
+> 10 010 110 2
+> transformed wall coordinate Y+
+> (e) GFM, M2.28 stations
+> 10 010 110 2
+> transformed wall coordinate Y+
+> (f) present, M2.28 stations
+
+Figure 4: Boundary-layer transformation comparison. The columns correspond to Trettel-Larsson, GFM and the present transformation. (a-c) Attached high-speed ZPG flat-plate profiles from Zhang et al. (2018). (d-f) Station-resolved Mach 2.28 ZPG boundary-layer profiles from the Volpiani-Bernardini-Larsson data (Volpiani et al. 2018, 2023). Profiles are plotted as transformed velocity versus transformed coordinate. Colours identify the Mach number and wall thermal condition of the Zhang-Duan-Choudhari cases in the upper row; in the lower row grey and pink curves denote the 𝑇 𝑤 /𝑇 𝑟 = 1.00 and 
+
+𝑇 𝑤 /𝑇 𝑟 = 1.90 station groups, respectively. Dashed and dotted black curves denote the viscous law and log law. 
+
+transformations: TL follows the local density and viscosity, GFM follows the mean-stress balance and the present transformation changes the coordinate stretching through the bounded density contrast. 4.3. Independent high-speed boundary layers 
+
+The Cogo DNS profiles of Cogo et al. (2023 a,b) provide a second attached-boundary-layer data set. These profiles cover a wider heat-transfer range at 𝑀 ∞ = 2-6 and come from a DNS family independent of the Zhang-Duan-Choudhari flat plates used above. Across the Cogo profiles in figure 5, the present transformation gives the smallest buffer-layer envelopes among the three plotted transformations, while the outer portions retain stronger case dependence. The corresponding values in table 2 show that Δbuf is smallest for the present transformation in both Cogo groups, with clearer separation in the 𝑀 ∞ = 2-4 group. 4.4. Shock-interaction departure and recovery 
+
+After the attached ZPG cases, the cooled-wall shock/boundary-layer-interaction (SBLI) DNS of Hirai & Kawai (2023) introduces a non-equilibrium wall layer with streamwise-varying wall data. The wall-surface data give 𝜌 𝑤 (𝑥 ) and the skin-friction coefficient 𝐶 𝑓 (𝑥 ). The Field-equation semi-local transformation 13 10 0 10 1 10 2 10 3           
+
+> transformed wall coordinate Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> transformed velocity  U +
+> (a) Cogo profiles, M∞= 2 -4
+> Trettel-Larsson
+> GFM
+> present
+> 10 010 110 210 3
+> transformed wall coordinate Y+
+> (b) Cogo profiles, M∞≃ 5.86 -6
+> Trettel-Larsson
+> GFM
+> present
+
+Figure 5: Cogo high-speed ZPG boundary-layer comparison (Cogo et al. 2023 a,b). (a) 
+
+𝑀 ∞ = 2-4 cases. (b) 𝑀 ∞ ≃ 5.86-6 cases. Each panel compares Trettel-Larsson (green dashed), GFM (blue solid) and the present transformation (orange solid), with thin curves denoting individual Cogo profiles within each Mach-number group. Profiles are plotted as transformed velocity versus transformed coordinate. Dashed and dotted black curves denote the viscous law and log law. Profile set Trettel-Larsson GFM Present Fig. 4(a-c), Zhang-Duan-Choudhari flat plates 0.75 0.90 0.44 Fig. 4(d-f), Mach 2.28 station sequence 1.25 0.99 1.06 Fig. 5(a), Cogo 𝑀 ∞ = 2-4 0.48 0.72 0.35 Fig. 5(b), Cogo 𝑀 ∞ ≃ 5.86-6 0.26 0.85 0.23 Table 2: Buffer-layer envelope width Δbuf for the boundary-layer profile sets in figures 4 and 5. Values are the mean difference between the upper and lower envelopes of the plotted profiles over 5 ⩽ 𝑌 + ⩽ 70, after interpolation to a common 𝑌 + grid. Smaller values denote tighter profile collapse within each plotted set. 
+
+positive wall-shear magnitude used to define the wall friction velocity is 
+
+𝜏 𝑤 (𝑥 ) = max  |𝐶 𝑓 (𝑥 )|/ 2, 𝜏 min 
+
+ , 𝑢 𝜏,𝑤 (𝑥 ) = [𝜏 𝑤 (𝑥 )/ 𝜌 𝑤 (𝑥 )] 1/2 , (4.1) Here the nondimensionalisation of Hirai & Kawai (2023) is used, and 𝜏 min = 10 −10 . Among the selected station profiles the smallest |𝐶 𝑓 |/ 2 is approximately 7 × 10 −5, so the lower bound does not affect the plotted stations; it only specifies the limiting value of the reference friction velocity as the wall shear approaches zero. The sign of 𝐶 𝑓 is retained when the wall-shear history and possible separation are interpreted, but the positive magnitude in (4.1) is used to form 𝑢 𝜏,𝑤 . The boundary data for the reference-field equations are 𝑎 𝜌 = log (𝜌 𝑤 /𝜌 0)
+
+and 𝑎 𝑢 = log (𝑢 𝜏,𝑤 /𝑢 𝜏, 0) along the wall. The shock produces an upstream pressure-gradient influence, a rapid change of wall scaling and a downstream recovery of wall shear, so the transformed profiles depart from attached-flow behaviour through the interaction and recover downstream. Figure 6 shows the two-dimensional density field and near-wall correction over (𝑥 −
+
+𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 ≃ − 3.5 to 4 .3. The density field identifies the cooled-wall interaction, with vertical 14 Yin and Wang −2 0 2 4                 
+
+> (x−xsh )/ Lint
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> y/δ0
+> (a) density field over the sampled streamwise range
+> −2 024
+> (x−xsh )/ Lint
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 0.08
+> 0.10
+> y/δ0
+> (b) near-wall bounded density correction
+> 10 010 110 210 3
+> wall coordinate y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> mean velocity  u +
+> (c) ordinary wall units
+> viscous line
+> log law
+> 10 010 110 210 3
+> transformed coordinate Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> transformed velocity  U +
+> (d) transformed variables
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> 1.1
+> 1.2
+> 1.3
+> 1.4
+> ρ/ρw
+> −0.16
+> −0.14
+> −0.12
+> −0.10
+> −0.08
+> −0.06
+> −0.04
+> −0.02
+> χ = C(q)
+> −3
+> −2
+> −1
+> 0
+> 1
+> 2
+> 3
+> 4
+> station  (x − xsh )/ Lint
+
+Figure 6: Reference-field transformation through the cooled-wall shock/boundary-layer interaction of Hirai & Kawai (2023). (a) Mean density normalised by the local wall value, 
+
+𝜌 /𝜌 𝑤 (𝑥 ), over (𝑥 − 𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 ≃ − 3.5 to 4 .3, where 𝑥 𝑠ℎ is the nominal shock-impingement location and 𝐿 𝑖𝑛𝑡 is the interaction length used by Hirai & Kawai (2023); the vertical dashed bounds bracket the interaction and early recovery region, and the dash-dotted line marks shock impingement. (b) Near-wall bounded density correction 𝜒 = 𝐶 (𝑞 ) over the same streamwise range and 0 ⩽ 𝑦 /𝛿 0 ⩽ 0.10, with the colour scale shown in the panel. The wall values of density and friction velocity supply the Dirichlet data for 𝑎 𝜌 and 𝑎 𝑢 .Triangular markers in (a,b) denote the station profiles shown in (c,d). (c) Mean velocity profiles in ordinary wall units (𝑦 +, 𝑢 +). (d) Transformed profiles (𝑌 +, 𝑈 +). The colour of each profile matches its station marker and the station colour bar in (d), moving from upstream influence through the interaction and recovery region in increasing 
+
+(𝑥 − 𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 .
+
+dashed bounds bracketing the interaction and early recovery around shock impingement. The bounded correction 𝜒 = 𝐶 (𝑞 ) remains concentrated near the wall because it follows the local density contrast relative to the solved reference density. The profiles in panels (c,d) are sampled from the solved 𝑌 + and 𝑈 + fields. In figure 6(c,d), the selected stations cover the upstream pressure-gradient influence, the interaction region and the downstream recovery. In ordinary wall units, the profiles first leave the far-upstream inner-layer scaling as the adverse-pressure-gradient influence reaches the wall. The upstream mismatch in the transformed variables reflects adverse-pressure-gradient and wall-shear-history effects in addition to local density and viscosity stretching. The interaction stations remain displaced, consistent with a separated or near-separated non-equilibrium layer. Downstream of the interaction, the profiles for (𝑥 − 𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 ≳ 1.5 return toward a narrower transformed inner-layer band and toward the log law. The station near 
+
+(𝑥 − 𝑥 𝑠ℎ )/ 𝐿 𝑖𝑛𝑡 ≃ − 0.55, where |𝐶 𝑓 | is smallest among the selected profiles, lies in the interaction range and is the station most affected by the wall-shear normalisation in (4.1). Field-equation semi-local transformation 15 10 0 10 1 10 2         
+
+> Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> U +
+> (a) Huang-Coleman-Bradshaw channels
+> Trettel-Larsson
+> GFM
+> present
+> U+=Y+
+> log law
+> 10 010 110 210 3
+> Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> (b) Gerolymos-Vallet channels
+
+Figure 7: Symmetric isothermal channel comparison. (a) Huang-Coleman-Bradshaw channel profiles (Huang et al. 1995). (b) Gerolymos-Vallet channel profiles (Gerolymos & Vallet 2023, 2024). Trettel-Larsson (green dashed), GFM (blue solid) and the present transformation (orange solid) are plotted as transformed velocity versus transformed coordinate. The black dashed and dotted curves denote the viscous law and logarithmic law. The comparison tests the density correction in symmetric isothermal channel flows. 
+
+5. Compressible channel flows 
+
+5.1. Symmetric isothermal channels 
+
+Channels with equal isothermal walls provide a two-wall comparison in which the wall boundary data on both sides coincide. For the symmetric isothermal channels of Huang et al. 
+
+(1995) and Gerolymos & Vallet (2023, 2024), the reference-field equations reduce to 
+
+𝜌 𝑟 = 𝜌 𝑤 , 𝑢 𝜏,𝑟 = 𝑢 𝜏,𝑤 , 𝑆 𝜌 = log (𝜌 /𝜌 𝑤 ),
+
+with the same logarithmic density term 𝑞 = 𝑆 𝜌 /2 and bounded correction 𝜒 = 𝐶 (𝑞 ) used in the boundary-layer figures. The two channel halves are statistically equivalent, so the plotted profiles are referenced to one wall. Figure 7 compares the Huang-Coleman-Bradshaw and Gerolymos-Vallet profiles with Trettel-Larsson, GFM and the present transformation. In both data families the present profiles remain in a compact inner-layer band and follow the logarithmic trend through the plotted overlap region. Trettel-Larsson remains tighter in parts of the Gerolymos-Vallet set, consistent with the symmetric channel setting in which it was developed. The figure shows how the present density correction behaves in symmetric isothermal channel data, while retaining Trettel-Larsson as the tighter comparator for this particular channel family. 5.2. Mixed thermal-wall channels 
+
+The Lusher-Coleman channels depart from this symmetric isothermal configuration by imposing an isothermal wall on one side and an adiabatic wall on the other (Lusher & Coleman 2023). For these cases the reference fields are solved across the full channel, so that both wall boundary values enter before wall-referenced profiles are extracted. Let 𝑦 𝑙 and 
+
+𝑦 𝑢 denote the lower and upper wall positions, and let ℎ denote the channel half-height. The 16 Yin and Wang 10 0 10 1 10 2 10 3         
+
+> Y+
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> U +
+> (a) isothermal-wall side
+> Trettel-Larsson
+> GFM
+> present
+> U+=Y+
+> log law
+> 10 010 110 210 3
+> Y+
+> 0
+> 25
+> 50
+> 75
+> 100
+> 125
+> 150
+> 175
+> 200
+> U +
+> (b) adiabatic-wall side
+
+Figure 8: Mixed thermal-wall channel comparison for the Lusher-Coleman cases (Lusher & Coleman 2023). (a) Profiles referenced to the isothermal wall. (b) Profiles referenced to the adiabatic wall, shown over the full plotted range to expose the outer displacement. Trettel-Larsson (green dashed), GFM (blue solid) and the present transformation (orange solid) are plotted as transformed velocity versus transformed coordinate. For the present curves, the full-channel reference fields are obtained from (5.1) and the density contrast is 
+
+𝑆 𝜌 = log (𝜌 /𝜌 𝑟 ), with 𝑞 = 𝑆 𝜌 /2 and 𝜒 = 𝐶 (𝑞 ). The black dashed and dotted curves denote the viscous law and logarithmic law. 
+
+logarithmic reference fields satisfy d2𝑎 𝜌 
+
+d𝑦 2 = 0, 𝑎 𝜌 (𝑦 𝑙 ) = log (𝜌 𝑤,𝑙 /𝜌 0), 𝑎 𝜌 (𝑦 𝑢 ) = log (𝜌 𝑤,𝑢 /𝜌 0),
+
+d2𝑎 𝑢 
+
+d𝑦 2 = 0, 𝑎 𝑢 (𝑦 𝑙 ) = log (𝑢 𝜏,𝑙 /𝑢 𝜏, 0), 𝑎 𝑢 (𝑦 𝑢 ) = log (𝑢 𝜏,𝑢 /𝑢 𝜏, 0),
+
+(5.1) where 𝜌 𝑤,𝑙 , 𝜌 𝑤,𝑢 , 𝜏 𝑤,𝑙 and 𝜏 𝑤,𝑢 are the lower- and upper-wall density and wall-shear-stress magnitudes, with 𝑢 𝜏,𝑙 = (𝜏 𝑤,𝑙 /𝜌 𝑤,𝑙 )1/2 and 𝑢 𝜏,𝑢 = (𝜏 𝑤,𝑢 /𝜌 𝑤,𝑢 )1/2. The physical reference fields, shear scale and inverse viscous length are then given by (2.3) and (2.4). Since the two walls generally impose different values, the channel fields retain the two wall states before either wall profile is extracted. The density contrast remains tied to the solved density reference, 
+
+𝑆 𝜌 (𝑦 ) = log [𝜌 (𝑦 )/ 𝜌 𝑟 (𝑦 )] , (5.2) so 𝜌 𝑟 , 𝑢 𝜏,𝑟 , 𝜏 𝑟 , 𝐺 and 𝐺 𝑌 = 𝐺 exp 𝜒 are channel fields defined by the two wall boundary values and the local density field. The plotted lower- and upper-wall profiles are then extracted from the same corrected stretching and mean viscous shear, but each profile is referenced to its own wall. The wall-tangential viscous shear is taken positive in the wall-normal direction away from the corresponding wall and is scaled by 𝜏 𝑟 = 𝜌 𝑟 𝑢 2 
+
+> 𝜏,𝑟
+
+. Thus the channel fields 𝜌 𝑟 , 𝑢 𝜏,𝑟 , 𝜏 𝑟 , 𝜒 , 𝐺 
+
+and 𝐺 𝑌 are common to the two-wall problem, while the plotted pairs (𝑌 + 
+
+> 𝑙
+
+, 𝑈 + 
+
+> 𝑙
+
+) and (𝑌 + 
+
+> 𝑢
+
+, 𝑈 + 
+
+> 𝑢
+
+)
+
+retain their own wall origins and outward wall-normal directions; the wall friction velocities enter through the boundary data for 𝑢 𝜏,𝑟 .Figure 8 compares the resulting present profiles with Trettel-Larsson and GFM for the same mixed-channel cases. On the isothermal-wall side the three transformations remain close through the inner and buffer layers. On the adiabatic-wall side they all retain a large outer displacement, showing the side-dependent residual left by unequal wall thermal states. Field-equation semi-local transformation 17 
+
+6. Discussion and range of use 
+
+The uniform-wall boundary layers isolate the density correction from the reference-field part of the formulation. In these cases the reference fields reduce to the wall values, and ordinary semi-local scaling already supplies the leading viscous-length change. The remaining action is the bounded half-density correction in (2.10). Figures 2 and 4, together with table 2, show that this correction is most visible in the cooled Zhang-Duan-Choudhari cases, where the density increase is strong and concentrated in the inner layer. In the developing Mach 2.28 set, GFM and the present transformation have comparable envelopes because the density correction is a modest addition to the ordinary semi-local stretching. In the Cogo set, the present transformation still gives the smallest envelopes in table 2, but the separation is limited in the high-Mach group where Trettel-Larsson is already compact. Figures 3 and 6 show how the field formulation enters the sampled profiles. In the Mach 2.28 boundary-layer patch, 𝑌 + and 𝑈 + are defined over the wall-layer domain and station profiles are sections through those fields. In the shock-interaction case, the wall density and friction velocity vary along the surface and enter the reference fields as boundary data. The transformed profiles record both the departure from the attached-flow band under adverse pressure gradient and the downstream recovery as the wall shear increases again. The station with the smallest selected |𝐶 𝑓 | remains a limit case for any friction-scaled transformation, as indicated in figure 6. The channel cases distinguish symmetric isothermal walls from mixed thermal wall conditions. Figure 7 gives the symmetric isothermal comparison: the present transformation gives a compact family, but Trettel-Larsson is still tighter for part of the Gerolymos-Vallet set. Figure 8 then introduces unequal thermal wall states. The isothermal-wall profiles remain close among the three transformations, whereas the adiabatic-wall profiles retain a larger outer displacement. This residual is consistent with two wall layers that do not share a single thermal state or friction scale; a single local coordinate stretching cannot make both sides behave as the same canonical inner layer. The DNS comparisons point to the flow conditions in which the correction is most visible. The favourable case is an attached or recovering wall layer with strong near-wall density and viscosity variation, especially under wall cooling. Weak property variation, late hot-wall development and separated or nearly separated regions leave smaller or less reliable gains. Mixed thermal-wall channels mark a boundary of the profile collapse: the full-channel reference fields retain both wall boundary conditions, but the extracted wall profiles still reflect the unequal thermal states. Strongly three-dimensional wall temperature, blowing, ablation, reacting walls and more complicated multi-wall configurations remain outside the evidence considered here. 
+
+7. Conclusions 
+
+We formulate a semi-local transformation in which the transformed coordinate and velocity are defined by wall-anchored field equations before profiles are sampled. The wall density and friction velocity enter through boundary conditions for auxiliary field equations, rather than through an algebraic assignment of wall values to interior points. The resulting fields 
+
+𝜌 𝑟 and 𝑢 𝜏,𝑟 set the inverse viscous length 𝐺 = √𝜌 𝜌 𝑟 𝑢 𝜏,𝑟 /𝜇 , while the local density contrast 
+
+𝑆 𝜌 = log (𝜌 /𝜌 𝑟 ) gives 𝑞 = 𝑆 𝜌 /2, the bounded correction 𝜒 = 𝐶 (𝑞 ), and the corrected stretching 𝐺 𝑌 = 𝐺 exp 𝜒 . The transformed coordinate and velocity are then obtained from this corrected stretching and the mean viscous shear. In the constant-property limit the construction reduces to the usual wall coordinate and velocity in wall units. The clearest effect in the DNS comparisons occurs in cooled high-speed boundary layers, 18 Yin and Wang 
+
+where the density contrast is large and concentrated in the inner layer. For the Zhang-Duan-Choudhari profiles shown here, the transformation reduces the buffer-layer spread relative to ordinary wall scaling and to the Trettel-Larsson and GFM transformations. The developing Mach 2.28 and Cogo boundary-layer cases apply the field-equation formulation outside the initial cooled flat-plate examples: the Mach 2.28 set gives a small distinction between GFM and the present transformation, while the Cogo set retains the smallest envelope for the present transformation with limited separation in the high-Mach group. In symmetric isothermal channels, the same density correction gives a compact profile family, although Trettel-Larsson remains tighter for this particular channel set. The mixed thermal-wall channels give a different outcome. The reference fields can be solved across the full channel with both wall boundary values, but the extracted isothermal- and adiabatic-wall profiles retain a marked side dependence, especially on the adiabatic-wall side. The shock/boundary-layer-interaction case illustrates the field-equation construction when wall density and friction velocity vary along the wall. The transformed profiles move away from the attached-flow inner-layer band under the adverse-pressure-gradient and interaction influence, and move back toward it as the wall shear recovers downstream. Stations with very small |𝐶 𝑓 | remain sensitive to wall-shear normalisation and should not be interpreted as attached-flow collapse through the separated part of the interaction. Strongly three-dimensional wall temperature, blowing, ablation, reacting walls and multiple interacting walls remain open cases beyond the present evidence. 
+
+Acknowledgements. Zifei Yin thanks Prof. Guowei He and Prof. Paul Durbin for their support and encouragement in exploring statistical theory and modelling of turbulent flows throughout the years. 
+
+Funding. This work was supported by the National Natural Science Foundation of China (No. 12472226 and 92052203). 
+
+Declaration of interests. The authors report no conflict of interest. 
+
+Data availability statement. The DNS datasets used in this manuscript are available from the public archives cited in §3. The flat-plate cases labelled by 𝑀 ∞ and wall-temperature ratio are the Zhang-Duan-Choudhari DNS statistics, including cases where the same statistics appear in more than one public archive. 
+
+Use of AI tools. AI tools were used for limited assistance with language editing, bibliographic review and locating cited public DNS datasets. The authors remain responsible for all scientific content, data analysis, and conclusions. 
+
+REFERENCES Bradshaw, P. 1977 Compressible turbulent shear layers. Annual Review of Fluid Mechanics 9, 33-52. 
+
+Cogo, M., Ba ` u, U., Chinappi, M., Bernardini, M. & Picano, F. 2023 a Assessment of heat transfer and mach number effects on high-speed turbulent boundary layers. Journal of Fluid Mechanics 974 , A10. 
+
+Cogo, M., Salvadore, F., Picano, F. & Bernardini, M. 2023 b Direct numerical simulation of supersonic and hypersonic turbulent boundary layers at moderate-high reynolds numbers and isothermal wall condition. Journal of Fluid Mechanics 945 , A30. 
+
+Danis, M. E. & Durbin, P. A. 2024 On the accuracy of compressibility transformations. Physics of Fluids 
+
+36 (12), 126119. 
+
+Gerolymos, G. A. & Vallet, I. 2023 Scaling of pressure fluctuations in compressible turbulent plane channel flow. Journal of Fluid Mechanics 958 , A19. 
+
+Gerolymos, G. A. & Vallet, I. 2024 Total and static temperature statistics in compressible turbulent plane channel flow. Journal of Fluid Mechanics 978 , A25. 
+
+Griffin, K. P., Fu, L. & Moin, P. 2021 Velocity transformation for compressible wall-bounded turbulent flows with and without heat transfer. Proceedings of the National Academy of Sciences 118 (34), e2111144118. 
+
+Griffin, K. P., Fu, L. & Moin, P. 2023 Near-wall model for compressible turbulent boundary layers based on an inverse velocity transformation. Journal of Fluid Mechanics 970 , A36. Field-equation semi-local transformation 19 
+
+Hirai, Ryo & Kawai, Soshi 2023 Wall pressure fluctuations in wall heated and cooled shock wave and turbulent boundary layer interactions. International Journal of Heat and Fluid Flow 103 , 109205. 
+
+Huang, P. G., Coleman, G. N. & Bradshaw, P. 1995 Compressible turbulent channel flows: DNS results and modelling. Journal of Fluid Mechanics 305 , 185-218. 
+
+Lusher, D. J. & Coleman, G. N. 2023 Numerical study of compressible wall-bounded turbulence - the effect of thermal wall conditions on the turbulent Prandtl number in the low-supersonic regime. 
+
+International Journal of Computational Fluid Dynamics 36 (9), 797-815. 
+
+Patel, A., Boersma, B. J. & Pecnik, R. 2016 The influence of near-wall density and viscosity gradients on turbulence in channel flows. Physical Review Fluids 1, 084401. 
+
+Patel, A., Peeters, J. W. R., Boersma, B. J. & Pecnik, R. 2015 Semi-local scaling and turbulence modulation in variable property turbulent channel flows. Physics of Fluids 27 (9), 095101. 
+
+Trettel, A. & Larsson, J. 2016 Mean velocity scaling for compressible wall turbulence with heat transfer. 
+
+Physics of Fluids 28 , 026102. 
+
+Tucker, P. G. 2003 Differential equation-based wall distance computation for des and rans. Journal of Computational Physics 190 (1), 229-248. 
+
+Van Driest, E. R. 1951 Turbulent boundary layer in compressible fluids. Journal of the Aeronautical Sciences 18 (3), 145-160. 
+
+Volpiani, P. S., Bernardini, M. & Larsson, J. 2018 Effects of a nonadiabatic wall on supersonic shock/boundary-layer interactions. Physical Review Fluids 3 (8), 083401. 
+
+Volpiani, P. S., Bernardini, M. & Larsson, J. 2023 Database generated to analyze the effects of a nonadiabatic wall on supersonic shock/boundary-layer interactions. https://zenodo.org/ records/8307822 .
+
+Volpiani, P. S., Iyer, P. S., Pirozzoli, S. & Larsson, J. 2020 Data-driven compressibility transformation for turbulent wall layers. Physical Review Fluids 5 (5), 052602. 
+
+Zhang, C., Duan, L. & Choudhari, M. 2018 Direct numerical simulation database for supersonic and hypersonic turbulent boundary layers. AIAA Journal .
+
+Zhang, Xiang, Chen, Yuntian, Liao, Zi-Mo, Zhao, Zhiye, Xie, Chenyue, Liu, Nan-Sheng & Lu, Xi-Yun 2026 Transformations of velocity and temperature for compressible turbulent boundary layers from subsonic to hypersonic regimes. Journal of Fluid Mechanics 1029 , A12.
