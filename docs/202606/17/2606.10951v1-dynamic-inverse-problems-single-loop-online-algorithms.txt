@@ -1,0 +1,4411 @@
+Title: Dynamic inverse problems: Single-loop online algorithms
+
+URL Source: https://arxiv.org/pdf/2606.10951v1
+
+Published Time: Wed, 10 Jun 2026 01:25:26 GMT
+
+Number of Pages: 35
+
+Markdown Content:
+Manuscript date: 2026-06-10 page 1 of 35 
+
+# dynamic inverse problems: single-loop online algorithms 
+
+Jyrki Jauhiainen ∗ Yassine Nabou † Tuomo Valkonen ‡
+
+Abstract We study efficient online methods for dynamic inverse problems with infinite time horizon. We concentrate, in particular, on problems whose forward model arises from a PDE. Our motivating application is flow monitoring with Electrical Impedance Tomography (EIT). The idea of such online methods is to take single steps of of standard optimisation algorithms, on each time index; each data frame. A predictor, based on problem dynamics, is used to transfer iterates one from time index to the next one. If we monitor a fast flow with a correspondingly fast measurement modality, such as EIT, basic methods are unable to solve the PDE before new data arrives. Our idea, then, is to not solve it, and instead, on each iteration, each time index, take single or few steps of standard iterative solvers towards the solution of both the PDE and an adjoint PDE. This is what “single loop” refers to. To the overall problem, we apply standard online optimisation methods, at the outside developed for exact gradients ∇𝐸 𝑘 (𝑥 𝑘 ) of the iteration-dependent data fidelity 𝐸 𝑘 that incorporates the PDE. We replace the gradient by a single-loop estimate g∇𝐸 𝑘 (𝑥 𝑘 ) that satisfies standard smoothness properties with summable errors. This allows standard regret proofs to go through. Our numerical experiments on dynamic EIT validate the theoretical predictions and highlight the potential of the proposed approach for the real-time solution of PDE-constrained dynamic inverse problems. 
+
+# 1 introduction and motivation 
+
+Electrical Impedance Tomography (EIT) is a non-invasive imaging modality in which the internal electrical conductivity of a body is reconstructed from boundary voltage–current measurements. Due to its low cost, portability, and absence of ionising radiation, EIT has found applications in medical imaging (e.g. lung ventilation monitoring), geophysics, and industrial process monitoring. In many of these applications, the conductivity distribution evolves over time, for instance due to physiological dynamics, transport processes, or changing environmental conditions. As a consequence, measurements are acquired sequentially and reconstructions must be updated in real time, giving rise to online or 
+
+dynamic inverse problems [22, 12, 13, 21, 5, 1, 11]. If we wish to solve the dynamic EIT problem, or other challenging dynamic inverse problem, in real-time, as the data progresses, we need very fast algorithms. If we want a high resolution solution, we may not have time to wait for partial differential equations (PDE) governing the problem to be solved; new data will arrive faster. In fact, we will usually also need to solve an adjoint PDE, adding to 
+
+This research has been supported by the Academy of Finland grant 345486. This research was funded in whole or in part by the Austrian Science Fund (FWF) 10.55776/F100800. 
+
+> ∗
+
+Department of Mathematics and Scientific Computing, University of Graz, Austria. jyrki.jauhiainen@uni-graz.at ,
+
+orcid: 0000-0001-6711-6997 
+
+> †
+
+Department of Mathematics and Statistics, University of Helsinki, Finland. yassine.nabou@helsinki.fi , orcid: 0009-0004-9805-8039 
+
+> ‡
+
+MODEMAT Research Center in Mathematical Modeling and Optimization, Quito, Ecuador and Department of Mathe-matics and Statistics, University of Helsinki, Finland. tuomo.valkonen@iki.fi, orcid: 0000-0001-6683-3572  
+
+> arXiv:2606.10951v1 [math.OC] 9 Jun 2026 Manuscript, 2026-06-10 page 2 of 35
+
+the computational cost. In this work, based on the idea of single-loop online differential estimation , we will develop algorithms that are able to provide real-time solutions—by never solving the PDEs. 
+
+Mathematical model of EIT At time step 𝑘 , the forward problem of dynamic EIT is governed by the Complete Electrode Model (CEM). Given a conductivity distribution 𝜎 𝑘 : Ω → ℝ, the electric potential 
+
+𝑢 𝑗,𝑘 : Ω → 𝑅 corresponding to the 𝑗 th current injection ( 𝑗 = 1, . . . , 𝑁 inj ) satisfies 
+
+∇ · ( 𝜎 𝑘 ∇𝑢 𝑗,𝑘 ) = 0 in Ω,(1.1a) 
+
+𝑢 𝑗,𝑘 + 𝜁 𝑖 𝜎 𝑘 ∇𝑢 𝑗,𝑘 · 𝜈 = 𝑈 𝑗,𝑘 𝑖 on 𝜕 Ω𝑒 𝑖 ,(1.1b) 
+
+𝜎 𝑘 ∇𝑢 𝑗,𝑘 · 𝜈 = 0 on 𝜕 Ω \ ∪ 𝑖 𝜕 Ω𝑒 𝑖 ,(1.1c) ∫
+
+> 𝜕 Ω𝑒 𝑖
+
+𝜎 𝑘 ∇𝑢 𝑗,𝑘 · 𝜈 𝑑𝑆 = −𝐼 𝑗,𝑘 𝑖 for 𝑖 = 1, . . . , 𝑁 elec .(1.1d) Here Ω ⊂ ℝ𝑑 denotes the imaging domain, 𝜕 Ω𝑒 𝑖 are the electrode surfaces, 𝜁 𝑖 > 0 are contact impedances, and 𝜈 is the outward unit normal. The electrode potentials 𝑈 𝑗,𝑘 𝑖 for electrodes 𝑖 = 1, . . . , 𝑁 elec 
+
+are prescribed, while the resulting electrode currents 𝐼 𝑗,𝑘 𝑖 are determined by the model. We adopt a potential-to-current formulation of the CEM, in which the electrode potentials 𝑈 𝑗,𝑘 are prescribed and the corresponding electrode currents 𝐼 𝑗,𝑘 = 𝐼 (𝜎 𝑘 , 𝑈 𝑗,𝑘 ) are computed. This reflects modern EIT mea-surement devices [ 15 ]. Here ℐ𝑗,𝑘 denotes noisy measurements of the electrode currents corresponding to the applied electrode potentials 𝑈 𝑗,𝑘 . The inverse problem consists in recovering 𝜎 𝑘 from noisy boundary measurements ℐ𝑗,𝑘 . Applying total variation regularisation, this is commonly formulated the optimisation problem 
+
+min  
+
+> 𝜎
+
+𝐸 𝑘 (𝜎 ) + 𝐹 𝑘 (𝜎 ) + 𝐺 𝑘 (𝐾 𝑘 𝜎 )(1.2) for 𝐾 𝑘 a (discretised) gradient operator, 
+
+𝐸 𝑘 (𝜎 ) := 12
+
+> 𝑁 inj
+
+∑︁ 
+
+> 𝑗 =1
+
+∥Σ−1/2 (𝐼 (𝜎, 𝑈 𝑗,𝑘 ) − ℐ𝑗,𝑘 )∥ 22, 𝐹 𝑘 (𝜎 ) := 𝛿 [𝜎 𝑚 ,𝜎 𝑀 ] (𝜎 ), and 𝐺 𝑘 (𝑦 ) := 𝛼 ∥𝑦 ∥2,1,(1.3) where 0 < 𝜎 𝑚 < 𝜎 𝑀 enforce physical bounds, Σ−1/2 is a data precision matrix, and 𝛼 > 0 a regularisation parameter. Similar formulations have been studied in [24, 25, 18]. 
+
+General online optimisation framework Motivated by online EIT and related applications, we consider the general infinite time horizon optimisation problem (1.4) min   
+
+> (𝑥 0,𝑥 1,... ) ∈ ¯𝒳
+> ∞
+
+∑︁ 
+
+> 𝑘 =0
+
+𝑉 𝑘 (𝑥 𝑘 ), for 𝑉 𝑘 (𝑥 ) := 𝐸 𝑘 (𝑥 ) + 𝐺 𝑘 (𝐾 𝑘 𝑥 ) + 𝐹 𝑘 (𝑥 ) and ¯𝒳 ⊂
+
+> ∞
+
+Ö
+
+> 𝑘 =0
+
+𝑋 𝑘 ,
+
+where 𝐸 𝑘 : 𝑋 𝑘 → ℝ is smooth but possibly nonconvex, 𝐾 𝑘 ∈ 𝕃 (𝑋 𝑘 ; 𝑌 𝑘 ), 𝐺 𝑘 : 𝑌 𝑘 → ℝ and 𝐹 𝑘 : 𝑋 𝑘 → ℝ
+
+are convex and possibly nonsmooth. 𝑋 𝑘 , 𝑌 𝑘 are normed spaces. The set ¯𝒳 encodes the dynamics of the problem. The data fidelity term is of the composite form (1.5) 𝐸 𝑘 (𝑥 ) = 𝐽 𝑘 (𝑆 𝑘,𝑢 (𝑥 )) , 0 = 𝑇 𝑘 (𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ),
+
+and 𝑆 𝑘,𝑢 : 𝑋 𝑘 → 𝑈 𝐾 denotes the solution operator for the PDE constraint 𝑇 𝑘 (𝑢, 𝑥 ) = 0. Here, the subscript 𝑢 is symbolic, indicating that the operator maps into the space 𝑈 𝑘 (to distinguish it from the adjoint solution map 𝑆 𝑘,𝑤 defined later). That is, for each 𝑥 , the state 𝑢 = 𝑆 𝑘,𝑢 (𝑥 ) ∈ 𝑈 𝑘 satisfies the underlying (possibly nonlinear) PDE. This formulation encompasses EIT as well as a broad class of dynamic inverse and control problems.   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 3 of 35
+
+Contributions With the goal of developing efficient online methods for the problem (1.4) , in Sections 3 and 4, we develop single-loop estimates f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) of differentials 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) of composite functions 
+
+𝐸 𝑘 = 𝐽 𝑘 ◦ 𝑆 𝑘,𝑢 , where 𝑆 𝑘,𝑢 denotes the solution mapping of the inner PDE constraint. The idea is that on each data frame or outer iteration 𝑘 , we only make few very simple operations to update our estimate 
+
+f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) into f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1). Here ˘𝑥 𝑘 is a prediction of 𝑥 𝑘 , based on the dynamics of the problem. The latter is formed by a correction step performed by the optimisation method. This prediction is essential, as, in a dynamic problem, 𝑥 𝑘 −1 may no longer be valid or good starting point for the optimisation problem, the data of the problem having changed. This fact is also modelled by the time-indexed spaces 𝑋 𝑘 .The differential estimates lift standard iterative algorithms, such as Gauss–Seidel splitting, for estimating 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ), as well as an adjoint equation that defines 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) = 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 ). However, on a single outer iteration or data frame 𝑘 , we never iterate these inner and adjoint algorithms to completion: our goal is to—justifiably—only take a single step or a small number of step of these algorithms. This is what single-loop refers to. The core idea, rigorously developed in Section 3, is that all the complexity of the analysis single-loop methods reduces to the estimates f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) of 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) satisfying standard smoothness properties with controlled error. Rather than recomputing inner and adjoint solutions from scratch on each time step, the key to this working, is to recursively exploit already computed information from previous data frames, and to track and control the propagation of errors. In Section 4 we show that the steps of standard splitting algorithms are capable of this, when combined with appropriate predictors to account for the dynamic nature of the problem. These new online differential estimates can directly be used in the (outer) online primal-dual method of [ 5], which we recall in Section 2. We also previously applied to method to dynamic EIT, however using intermittent PDE solutions from a background thread to obtain real-time performance. We demonstrate numerically in Section 5 that the new single-loop differential estimates can provide much more stable solutions without thread synchronisation difficulties and—as follows from Sections 2 and 3—with less analytical complexity. Our approach to generating the estimates extends the static theories of [ 19 , 6, 23 ]. Alternative real-time algorithms for dynamic EIT include the multi-threaded approach of [ 1], based on the D-bar method. Our companion paper [ 17 ] studies relevant dynamic regularisation theory: how do the algorithmic solutions behave as the noise level 𝛿 
+
+→ 0, the corresponding regularisation parameter 𝛼 𝛿 
+
+→ 0, and the frame 𝑘 
+
+→∞.
+
+Notation and elementary results We denote the extended reals by ℝ := [−∞ , ∞] . We write 𝐻 : 𝑋 ⇒ 𝑌 
+
+when 𝐻 is a set-valued map from the space 𝑋 to 𝑌 . We write 𝕃 (𝑋 ; 𝑌 ) for the space of bounded linear operators between the normed spaces 𝑋 and 𝑌 . For Fréchet differentiable 𝐹 : 𝑋 → 𝑅 , we write 
+
+𝐹 ′ (𝑥 ) ∈ 𝑋 ∗ for the Fréchet derivative at 𝑥 ∈ 𝑋 . Here 𝑋 ∗ is the dual space to 𝑋 . For a convex function 
+
+𝐹 : 𝑋 → ℝ, we write 𝜕𝐹 : 𝑋 ⇒ 𝑋 ∗ for its subdifferential map. On a normed space 𝑋 , for a point 
+
+𝑥 ∈ 𝑋 and a set 𝑈 ⊂ 𝑋 , we write dist (𝑥, 𝑈 ) := inf 𝑥 ′ ∈𝑈 ∥𝑥 − 𝑥 ′ ∥𝑋 , where ∥ · ∥𝑋 is the norm on 𝑋 .We also write dist 2 (𝑥, 𝑈 ) := dist (𝑥, 𝑈 )2. We write ⟨𝑥, 𝑥 ′⟩ for the inner product between two elements 
+
+𝑥 and 𝑥 ′ of a Hilbert space 𝑋 , and ⟨𝑥 ∗ |𝑥 ⟩ := 𝑥 ∗ (𝑥 ) for the dual product or dual pairing in a Banach space. We only work with real Hilbert spaces. We write Id : 𝑋 → 𝑋 for the identity operator on 𝑋 and 
+
+𝛿 𝐴 : 𝑋 → ℝ for the {0, ∞} -valued indicator function of a set 𝐴 ⊂ 𝑋 .For 𝑋 a Hilbert space, we will frequently use Pythagoras’ three-point identity (1.6) ⟨𝑥 − 𝑦, 𝑥 − 𝑧 ⟩𝑋 = 12 ∥𝑥 − 𝑦 ∥2 
+
+> 𝑋
+
+− 12 ∥𝑦 − 𝑧 ∥2 
+
+> 𝑋
+
++ 12 ∥𝑥 − 𝑧 ∥2 
+
+> 𝑋
+
+(𝑥, 𝑦, 𝑧 ∈ 𝑋 )
+
+and (inner product) Young’s inequality (1.7) ⟨𝑥, 𝑦 ⟩ ≤ ∥ 𝑥 ∥𝑋 ∥𝑦 ∥𝑋 ≤ 12𝛼 ∥𝑥 ∥2 
+
+> 𝑋
+
++ 𝛼 
+
+2 ∥𝑦 ∥2 
+
+> 𝑋
+
+(𝑥, 𝑦 ∈ 𝑋, 𝛼 > 0).  
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 4 of 35
+
+Finally, given a set 𝒳 ⊂ Î∞ 
+
+> 𝑘 =0
+
+𝑋 𝑘 , we define for 𝑛 ≤ 𝑚 the slices 𝒳 𝑛 :𝑚 := {𝑥 𝑛 :𝑚 |, (𝑥 0, 𝑥 1, . . . ) ∈ 𝒳 },where 𝑥 𝑛 :𝑚 := (𝑥 𝑛 , . . . 𝑥 𝑚 ). We may use superscripts instead of subscripts in the case of iterates of algorithms. 
+
+# 2 an inexact online primal-dual method 
+
+Recall the infinite-horizon optimisation problem (1.4), (2.1) min   
+
+> (𝑥 0,𝑥 1,... ) ∈ ¯𝒳
+> ∞
+
+∑︁ 
+
+> 𝑘 =0
+
+𝑉 𝑘 (𝑥 𝑘 ), for 𝑉 𝑘 (𝑥 ) := 𝐸 𝑘 (𝑥 ) + 𝐺 𝑘 (𝐾 𝑘 𝑥 ) + 𝐹 𝑘 (𝑥 ),
+
+where 𝐸 𝑘 is a possibly nonconvex but finite-valued function, 𝐹 𝑘 and 𝐺 𝑘 are convex, proper, lower semicontinuous functions, and 𝐾 𝑘 is a linear operator. The set ¯𝒳 ⊂ Î∞ 
+
+> 𝑘 =0
+
+𝑋 𝑘 encodes the primal dynamics. Note that, due to the Hilbert-space nature of Algorithm 2.1, in this section we talk about gradients ∇𝐸 𝑘 ( ˘𝑥 𝑘 ) ∈ 𝑋 𝑘 and their estimates, while in most of the rest of the manuscript we talk about differentials 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) ∈ 𝑋 ∗ 
+
+> 𝑘
+
+and their estimates in general normed spaces. The former is the Riesz representation of the latter. Often, even in Hilbert spaces, it is more convenient to not work with the presentation. For the online solution of (2.1), in this section, we recall the primal-dual method of [ 5], presented in Algorithm 2.1, and its assumptions and regret theory. Regret is replacement in online optimisation of the concept of convergence in static optimisation. The rough idea is to bound the regret of past decisions (steps taken by the optimisation algorithm) subject to new information. In practise, mathematically, regret results are analogous to convergence results, but often weaker. Algorithm 2.1 consists of three main steps: 1. Predict the primal and dual variables ˘𝑢 𝑘 +1 = ( ˘𝑥 𝑘 +1, ˘𝑦 𝑘 +1) for frame 𝑘 + 1, from the iterate 𝑢 𝑘 =
+
+(𝑥 𝑘 , 𝑦 𝑘 ) of frame 𝑘 (and earlier frames). This should use appropriate dynamical models; in the EIT experiments of [5] and Section 5, the transport equation (optical flow) is used. 2. Form the gradient estimate f∇𝐸 𝑘 +1 ( ˘𝑥 𝑘 +1). Typically 𝐸 𝑘 +1 is the data term, and in our EIT application of interest, computing ∇𝐸 𝑘 +1 ( ˘𝑥 𝑘 +1) exactly would involve solving a PDE and an adjoint PDE. We want to avoid this. In the present paper, to do this, we will use single or few inner and adjoint 
+
+steps that arise from standard algorithms. This is the topic of Section 4. 3. Correct the primal and dual variables to 𝑢 𝑘 +1 = (𝑥 𝑘 +1, 𝑦 𝑘 +1) using a standard primal-dual proximal splitting step based on the predicted iterate, and employing the differential estimate. This algorithm was, thus, already designed with differential estimates in mind. As we will see in this section, these estimates only need to satisfy simple smoothness-type properties with controlled error. We will in the next Section 3 represent a rigorous theory of single-loop online differential estimation for forming estimates that satisfy those properties. 
+
+2.1 assumptions and basic setup 
+
+We need to make several assumptions. Compared to [ 5], for simplicity, we choose step length parameters and growth and smoothness factors to be independent of the frame number 𝑘 . To allow evolving data to be located anywhere in the problem, all the functions and operators in (2.1) , and spaces, however, remain dependent on the frame index 𝑘 . We refer to [5] for the full theory. The first assumption formally introduces the relevant functions, predictors, and comparison sets. 
+
+Assumption 2.1 (Basic structural assumptions [ 5, Assumption 2.1]). Let 𝑁 ∈ ℕ. On real Hilbert spaces 
+
+𝑋 𝑘 and 𝑌 𝑘 for 0 ≤ 𝑘 ≤ 𝑁 , we are given:   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 5 of 35
+
+Algorithm 2.1 Nonconvex predictive online primal-dual proximal splitting (POPD-N) 
+
+Require: For all 𝑘 ∈ ℕ, on real Hilbert spaces 𝑋 𝑘 and 𝑌 𝑘 : convex, proper, lower semicontinuous 
+
+𝐸 𝑘 +1 : 𝑋 𝑘 +1 → ℝ, 𝐹 𝑘 +1 : 𝑋 𝑘 +1 → ℝ, and 𝐺 ∗ 
+
+> 𝑘 +1
+
+: 𝑌 𝑘 +1 → ℝ; a primal-dual predictor 𝑃 𝑘 : 𝑋 𝑘 × 𝑌 𝑘 →
+
+𝑋 𝑘 +1 ×𝑌 𝑘 +1; and an operator 𝐾 𝑘 +1 ∈ 𝕃 (𝑋 𝑘 +1; 𝑌 𝑘 +1). Estimates f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) of the gradients 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1).Step length parameters 𝜏, 𝜎 > 0. 
+
+> 1:
+
+Pick initial iterates 𝑥 0 ∈ 𝑋 0 and 𝑦 0 ∈ 𝑌 0. 
+
+> 2:
+
+for 𝑘 ∈ ℕ do  
+
+> 3:
+
+( ˘𝑥 𝑘 +1, ˘𝑦 𝑘 +1) := 𝑃 𝑘 (𝑥 𝑘 , 𝑦 𝑘 ) ⊲ prediction step  
+
+> 4:
+
+𝑥 𝑘 +1 := prox 𝜏𝐹 𝑘 +1
+
+  ˘𝑥 𝑘 +1 − 𝜏 f∇𝐸 𝑘 +1 ( ˘𝑥 𝑘 +1) − 𝜏𝐾 ∗ 
+
+> 𝑘 +1
+
+˘𝑦 𝑘 +1 ⊲ primal step  
+
+> 5:
+
+𝑦 𝑘 +1 := prox 𝜎𝐺 ∗
+
+> 𝑘 +1
+
+  ˘𝑦 𝑘 +1 + 𝜎𝐾 𝑘 +1 (2𝑥 𝑘 +1 − ˘𝑥 𝑘 +1) ⊲ dual step  
+
+> 6:
+
+end for 
+
+(i) Convex, proper, lower semicontinuous functions 𝐹 𝑘 : 𝑋 𝑘 → ℝ and 𝐺 ∗ 
+
+> 𝑘
+
+: 𝑌 𝑘 → ℝ, with uniform strong convexity factors 𝛾 ≥ 0 and 𝜌 ≥ 0, respectively; operators 𝐾 𝑘 ∈ 𝕃 (𝑋 𝑘 ; 𝑌 𝑘 ); and a possibly nonconvex but finite-valued function 𝐸 𝑘 : 𝑋 𝑘 → ℝ.(ii) A bounded set 𝒰 ⊂ 𝑈 of primal-dual comparison sequences. Here 
+
+𝑈 := (𝑋 0 × 𝑌 0) × ( 𝑋 1 × 𝑌 1) × ( 𝑋 2 × 𝑌 2) · · · .
+
+(iii) Primal-dual predictors 𝑃 𝑘 : 𝑋 𝑘 × 𝑌 𝑘 → 𝑋 𝑘 +1 × 𝑌 𝑘 +1 that produce ˘𝑢 𝑘 +1 = 𝑃 𝑘 (𝑢 𝑘 ).The predictor 𝑃 𝑘 is merely a notational convenience. Unlike the notation suggests, we allow 
+
+( ˘𝑥 𝑘 +1, ˘𝑦 𝑘 +1) = 𝑃 𝑘 (𝑥 𝑘 , 𝑦 𝑘 ) to depend on the entire history, not merely (𝑥 𝑘 , 𝑦 𝑘 ).From the point of view of the satisfaction of our remaining assumptions, we would ideally be able to take 𝒰 as the whole space. However, our main regret result does not allow this. Another practical option would be the set of solutions to (2.1) , without observing the dynamic constraint ¯𝒳 . However, intuitively, both (2.2) 𝒳 := { ¯𝑥 0: ∞ ∈ 𝑋 0: ∞ |( ¯𝑥 0: ∞, ¯𝑦 0: ∞) ∈ 𝒰 }
+
+and the predictors 𝑃 𝑘 should approximate the original primal dynamics ¯𝒳 .Our second assumption formalises the requirement of a “smooth estimate” f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) of each ∇𝐸 𝑘 ( ˘𝑥 𝑘 ).The monotonicity-like conditions in (i) and (ii) are superficially similar, but have slight differences: the first one is supposed to hold globally for any 𝑥 , the second one, only locally with better factors. The regret bound proofs in [ 5] use the global version to derive an a priori estimate that ensures that the iterates stay in the neighbourhood where the second a posteriori estimate holds. Verifying this assumption for single-loop estimates generated by standard inner and adjoint algorithms, is the main content of this paper in the following Section 4. In [ 5] a background solver was used to generate these estimates. Moreover, [ 5 ] also formalises corresponding fully global assumption. For simplicity, we concentrate here on the local version, only. 
+
+Assumption 2.2 (Local smoothness and growth, and step length bounds [ 5 , Assumption 2.3]). 1 Let 
+
+( ˘𝑥 𝑘 , ˘𝑦 𝑘 ) = 𝑃 𝑘 −1 (𝑢 𝑘 −1). Given 𝑁 ∈ ℕ, Assumption 2.1 holds, and (i) Global a priori smoothness and growth: For all 1 ≤ 𝑘 ≤ 𝑁 , 𝐸 𝑘 satisfies for some growth and smoothness factors ¯𝛾 𝐸 ∈ ℝ, ¯𝜆 𝐸 ≥ 0, and errors ¯𝑒 𝑘 ≥ 0, for all ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0), and for all 
+
+𝑥 𝑘 ∈ 𝑋 𝑘 the “erroneous” three-point monotonicity-like property 
+
+⟨ f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) − ∇ 𝐸 𝑘 ( ˆ𝑥 𝑘 ), 𝑥 𝑘 − ˆ𝑥 𝑘 ⟩ ≥ ¯𝛾 𝐸 ∥𝑥 𝑘 − ˆ𝑥 𝑘 ∥2 − ¯𝜆 𝐸 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 − ¯𝑒 𝑘 . 
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 6 of 35 
+
+(ii) Local a posteriori smoothness and growth: For every comparison sequence ¯𝑥 1: 𝑁 ∈ 𝒳 1: 𝑁 ∩
+
+Î𝑁 𝑖 =1 𝐵 ( ˘𝑥 𝑖 , 𝛿 ), for all 1 ≤ 𝑘 ≤ 𝑁 , 𝐸 𝑘 satisfies for some smoothness and growth factors 𝜆 𝐸 ≥ 0 and 
+
+ˆ𝛾 𝐸 ≥ 𝛾 𝐸 ≥ 0, errors 𝑒 𝑘 , ˆ𝑒 𝑘 ≥ 0, and a radius 𝛿 > 0, for all 𝑥 𝑘 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ), the inequality 
+
+⟨ f∇𝐸 𝑘 ( ˘𝑥 𝑘 ), 𝑥 𝑘 − ¯𝑥 𝑘 ⟩ ≥ 𝐸 𝑘 (𝑥 𝑘 ) − 𝐸 𝑘 ( ¯𝑥 𝑘 ) + 𝛾 𝐸 
+
+2 ∥𝑥 𝑘 − ¯𝑥 𝑘 ∥2 − 𝜆 𝐸 
+
+2 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 − 𝑒 𝑘 ,
+
+as well as, for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0) ∩ 𝐵 ( ˘𝑥 𝑘 , 𝛿 ) × 𝑌 𝑘 and 𝑥 𝑘 ∈ 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ) that 
+
+⟨ f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) − ∇ 𝐸 𝑘 ( ˆ𝑥 𝑘 ), 𝑥 𝑘 − ˆ𝑥 𝑘 ⟩ ≥ ˆ𝛾 𝐸 ∥𝑥 𝑘 − ˆ𝑥 𝑘 ∥2 − ˆ𝜆 𝐸 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 − ˆ𝑒 𝑘 .
+
+Here the predicted primal variable ˘𝑥 𝑘 is given by Assumption 2.1. (iii) Step length factors: The step length parameters 𝜏, 𝜎 > 0 along with a 𝜅 ∈ ( 0, 1), satisfy 
+
+1 ≥ max 
+
+n
+
+𝜆 𝐸 , −2(𝛾 + ¯𝛾 𝐸 ), 21−𝜅 ¯𝜆 𝐸 , 21−𝜅 ˆ𝜆 𝐸 
+
+o
+
+𝜏 + 𝜏𝜎 ∥𝐾 𝑘 ∥2.(2.3) Our final assumption relates the comparison set to the set of critical points of 𝐻 , and sets bounds on step lengths. To state the assumption, we need to introduce additional notation. First of all, the first-order optimality conditions for the static problem min 𝐹 𝑘 + 𝐸 𝑘 + 𝐺 𝑘 ◦ 𝐾 𝑘 for a single frame 𝑘 in (2.1), can be expressed with the general notation 𝑢 = (𝑥, 𝑦 ) as [2] (2.4) 0 ∈ 𝐻 𝑘 ( ˆ𝑢 𝑘 ) for 𝐻 𝑘 (𝑢 ) :=
+
+𝜕𝐹 𝑘 (𝑥 ) + ∇ 𝐸 𝑘 (𝑥 ) + 𝐾 ∗ 
+
+> 𝑘
+
+𝑦 𝜕𝐺 ∗ 
+
+> 𝑘
+
+(𝑦 ) − 𝐾 𝑘 𝑥 
+
+
+
+.
+
+We also write 
+
+𝐻 𝑛 :𝑚 (𝑢 𝑛 :𝑚 ) := 𝐻 𝑛 (𝑢 𝑛 ) × · · · × 𝐻 𝑚 (𝑢 𝑚 ) ⊂ 𝑈 𝑛 :𝑚 .
+
+Algorithm 2.1 may then be written in implicit form as the iterative solution of 𝑢 𝑘 from 
+
+0 ∈ e𝐻 𝑘 (𝑢 𝑘 ) + 𝑀 𝑘 (𝑢 𝑘 − ˘𝑢 𝑘 ), ˘𝑢 𝑘 := 𝑃 𝑘 (𝑢 𝑘 ),
+
+where 
+
+e𝐻 𝑘 (𝑢 ) :=
+
+𝜕𝐹 𝑘 (𝑥 ) + f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) + 𝐾 ∗ 
+
+> 𝑘
+
+𝑦 𝜕𝐺 ∗ 
+
+> 𝑘
+
+(𝑦 ) − 𝐾 𝑘 𝑥 
+
+
+
+and 𝑀 𝑘 =
+
+𝜏 −1 Id −𝐾 ∗
+
+> 𝑘
+
+−𝐾 𝑘 𝜎 −1 Id 
+
+
+
+.
+
+> 1
+
+Compared to [5, Assumption 2.3], this fixes the testing parameters 𝜑 𝑘 ≡ 1, 𝜂 𝑘 ≡ 𝜏 , and 𝜓 𝑘 ≡ 𝜏 /𝜎 .Moreover, we use a slightly weaker version of the smoothness and growth assumptions. In [ 5 ], the corresponding estimates are formulated for arbitrary test points in the indicated neighbourhoods and arbitrary framewise comparison points. In the present paper, we only require them at the specific primal iterate 𝑥 𝑘 generated by the algorithm, and only for the 𝑘 th component ¯𝑥 𝑘 of the comparison sequence under consideration. This restriction is sufficient for the arguments used for [ 5, Theorem 2.12]. Indeed, in the theorem, the relevant estimates are only applied at the current iterate. Likewise, the comparison point is not used as an arbitrary isolated element of the framewise slice 𝒳 𝑘 , but as the 𝑘 th component of a fixed comparison sequence ¯𝑥 1: 𝑁 ∈ 𝒳 1: 𝑁 . More precisely, in the proof of [5 , Theorem 2.12], ¯𝑥 𝑘 is the primal component of the 𝑘 th component of the fixed comparison sequence ¯𝑢 1: 𝑁 ∈ U 1: 𝑁 . This is the reason for formulating the present assumption for comparison sequences ¯𝑥 1: 𝑁 ∈ 𝒳 1: 𝑁 rather than for arbitrary framewise comparison points. Once such a sequence is fixed, the proof only uses its 𝑘 th 𝑥 component at time 𝑘 . Further, [ 5,Assumption 2.5(i)] is applied in [ 5 , Lemma 2.10, before equation (17)] with 𝑥 = 𝑥 𝑘 . The second estimate in [ 5, Assumption 2.5(ii)] is applied in [ 5 , Lemma 2.11, before equation (24)], again with 𝑥 = 𝑥 𝑘 . The first estimate in [ 5, Assumption 2.5(ii)] is applied in [5, Theorem 2.12, equation (29)], also with 𝑥 = 𝑥 𝑘 .The remaining use of these constants is indirect. In [ 5 , Lemma 2.9], they are used to prove positive definiteness of the testing operators, in particular of ˆΓ𝑘 . For this step, it is enough to retain the coefficient ordering ˆ𝛾 𝐸,𝑘 ≥ 𝛾 𝐸,𝑘 ; the estimates themselves are not applied to arbitrary additional test points. This positive definiteness estimate is later used in [5, Lemma 2.11] for the term 𝑢 𝑘 − ¯𝑢 𝑘 .Hence, for the present verification, it is enough to prove the smoothness and growth inequalities at the realized algorithmic point 𝑥 𝑘 . The neighbourhood assumptions are still needed to ensure that the predictor, comparison point, and reference point lie in the region where the local estimates are valid. 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 7 of 35 
+
+This formulation facilitates convergence and regret analysis. We also define the growth operator 
+
+Γ := diag  (𝛾 + 𝛾 𝐸 ) Id , 𝜌 Id .
+
+Recalling that ˘𝑢 𝑘 +1 := 𝑃 𝑘 (𝑢 𝑘 ), we then define for 2 ⟦𝑥 ⟧2 
+
+> 𝐴
+
+:= ⟨𝐴𝑥, 𝑥 ⟩ the prediction errors 
+
+(2.5) 𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ¯𝑢 𝑘 :𝑘 +1) := 12 ⟦ ˘𝑢 𝑘 +1 − ¯𝑢 𝑘 +1⟧2 
+
+> 𝜏𝑀 𝑘 +1
+
+− 12 ⟦𝑢 𝑘 − ¯𝑢 𝑘 ⟧2   
+
+> 𝜏 (𝑀 𝑘 +Γ)
+
+for all ¯𝑢 𝑘 :𝑘 +1 ∈ 𝒰 𝑘 :𝑘 +1.
+
+They measure the difference of deviation from a chosen comparison sequence between the current iterate and its prediction. When 𝑢 𝑘 and ¯𝑢 𝑘 :𝑘 +1 are clear from the context, we abbreviate 𝜀 † 
+
+> 𝑘 +1
+
+:=
+
+𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ¯𝑢 𝑘 :𝑘 +1).
+
+Assumption 2.3 (Critical point proximity [ 5, Assumption 2.6]). Let 𝑁 ∈ ℕ and suppose Assumption 2.2 holds. Then: (i) For constants ˆ𝑟 𝑘 > 0 (1 ≤ 𝑘 ≤ 𝑁 ), the primal-dual comparison set 𝒰 1: 𝑁 stays close to the critical points of 𝐻 1: 𝑁 in the sense that 
+
+𝒰 1: 𝑁 ⊂
+
+n
+
+¯𝑢 1: 𝑁 ∈ 𝑈 1: 𝑁 inf    
+
+> ˆ𝑢 1: 𝑁 ∈𝐻 −11: 𝑁 (0)
+
+∥ ¯𝑢 𝑘 − ˆ𝑢 𝑘 ∥𝑀 𝑘 + ˆΓ𝑘 ≤ ˆ𝑟 𝑘 for 1 ≤ 𝑘 ≤ 𝑁 
+
+o
+
+.
+
+(ii) Let 𝜃 𝑘 := 1 + 2𝜏 min {𝛾 + ¯𝛾 𝐸 , ¯𝜆 𝐸 } − 𝜏𝜎 ∥𝐾 𝑘 ∥2 > 0, where positivity follows from (2.3) . Then for some 𝜉 𝑘 , Δ > 0, ˜𝛿 ∈ ( 0, 𝛿 ), and for all ¯𝑢 0: 𝑁 ∈ 𝒰 0: 𝑁 , we have 3
+
+0 < 𝑑 𝑁 ( ¯𝑢 0: 𝑁 ) := inf  
+
+> 0≤𝑛 ≤𝑁 −1
+
+𝜃 𝑛 +1 (𝛿 − ˜𝛿 )2
+
+𝜉 𝑛 +1
+
+− 1 + Δ
+
+𝜉 𝑛 +1
+
+𝜏 ˆ𝑟 2 
+
+> 𝑛 +1
+
+− 2𝜀 † 
+
+> 𝑛 +1
+
+(𝑢 𝑛 , ¯𝑢 𝑛 :𝑛 +1)−
+
+> 𝑛
+
+∑︁ 
+
+> 𝑘 =1
+
+ 1 + Δ
+
+2𝜅 𝜏 ˆ𝑟 2 
+
+> 𝑘
+
++ 𝜀 † 
+
+> 𝑘
+
+(𝑢 𝑘 −1, ¯𝑢 𝑘 −1: 𝑘 ) + 𝜏 ˆ𝑒 𝑘 
+
+ 
+
+and 
+
+(2 − 𝜅 )( 𝜉 −1 
+
+> 𝑘
+
++ 1)( 𝛿 − ˜𝛿 )2 + 2𝜃 −1 
+
+> 𝑘
+
+𝜏 ¯𝑒 𝑘 ≤ ˜𝛿 2.
+
+Here 𝜅 arises from Assumption 2.2 (iii). The first part of the assumption ensures that the comparison set, affected by problem dynamics, does not stray too far from the sequences of static solutions. It holds for some ˆ𝑟 𝑛 +1 > 0 subject to boundedness assumptions on 𝐻 −11: 𝑁 (0). If we can choose 𝒰 1: 𝑁 to include 𝐻 −11: 𝑁 (0), then also ˆ𝑟 𝑛 +1 = 0. This, however, affects the prediction errors (2.5) . If the prediction errors, as well as the smoothness errors 
+
+𝜏 ˆ𝑒 𝑘 and ¯𝑒 𝑘 from Assumption 2.2 are small (compared to 𝜏 ) and with a bounded sum, the second part can also be made to hold for some choices of 𝜏 , 𝜎 , ˜𝛿 , 𝜉 𝑘 , and Δ. (Note that definition of the prediction error 𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ¯𝑢 𝑘 :𝑘 +1) also includes multiplication by 𝜏 .) 
+
+2.2 regret 
+
+Our main regret results talks about “temporal sub-infimal convolutions” of the original objective, and the dual dynamics of the problem. To state the result, besides the primal projection (2.2) of the set of comparison sequences, also define the dual projection 
+
+𝒴 :=  ¯𝑦 0: ∞ ∈ 𝑌 0: ∞ ( ¯𝑥 0: ∞, ¯𝑦 0: ∞) ∈ 𝒰 .                               
+
+> 2We use this notation when 𝐴 might not be positive semi-definite of self-adjoint, and therefore not define a (semi-)norm
+> 3The infimum here is over 0≤𝑛 ≤𝑁 −1, while in [ 5] it is over 0≤𝑛 ≤𝑁 . The former is sufficient, as [ 5, (23) or (2.19) in arXiv version, in the proof of Lemma 2.11] only has to hold for 1≤𝑛 ≤𝑁 , and avoids an inconvenient indexing of ¯𝑢 0: 𝑁 in this definition when 𝑛 =𝑁 . In either case, passing to the limit 𝑁
+> →∞, the same final bounds will be assumed.
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 8 of 35 
+
+Then define 
+
+˚𝐺 1: 𝑁 (𝑧 1: 𝑁 ) := sup  
+
+> ˜𝑦 1: 𝑁 ∈𝒴 1: 𝑁
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =1
+
+⟨𝑧 𝑘 , ˜𝑦 𝑘 ⟩ − 𝜏𝐺 ∗ 
+
+> 𝑘
+
+( ˜𝑦 𝑘 ), and 𝑄 1: 𝑁 (𝑥 1: 𝑁 ) :=
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =1
+
+𝜏 [𝐹 𝑘 + 𝐸 𝑘 ] ( 𝑥 𝑘 ).
+
+Also let 4
+
+𝐾 1: 𝑁 𝑥 1: 𝑁 := (𝜏 1𝐾 1𝑥 1, . . . , 𝜏 𝑁 𝐾 𝑁 𝑥 𝑁 ) and 𝐺 1: 𝑁 (𝑧 1: 𝑁 ) :=
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =1
+
+[𝜏𝐺 ∗ 
+
+> 𝑘
+
+]∗ (𝑧 𝑘 ) =
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =1
+
+𝜏𝐺 𝑘 (𝑧 𝑘 /𝜏 ).
+
+We have ˚𝐺 1: 𝑁 ≤ 𝐺 1: 𝑁 □ 𝛿 ∗ 
+
+> 𝒴 1: 𝑁
+
+. Thus ˚𝐺 1: 𝑁 behaves as a “sub-infimal convolution” of 𝐺 1: 𝑁 with the dual temporal dynamics. In our companion paper [17], we show that, actually, 
+
+˚𝐺 1: 𝑁 = 𝐺 1: 𝑁 □ 𝛿 ∗  
+
+> cl conv 𝒴 1: 𝑁
+
+,
+
+where □ denotes the infimal convolution, and 𝛿 cl conv 𝒴 1: 𝑁 the indicator function of the closed convex hull of 𝒴 1: 𝑁 . Its conjugate is the so-called support function of this set. 
+
+Example 2.4. Take 𝐺 𝑘 = 𝛼 ∥ · ∥2,1, and 𝐾 𝑘 = ∇ in a suitable finite element space. Thus 𝐺 𝑘 ◦𝐾 𝑘 models a frame-wise total variation regulariser for the regularisation parameter 𝛼 . Then ˚𝐺 1: 𝑁 (𝐾 1: 𝑁 · ) becomes a spatiotemporal regulariser that bridges between the frame-wise total variation regularisers, and the dual dynamics encoded in cl conv 𝒴 1: 𝑁 .We may now state the main regret result for Algorithm 2.1. Until each index 𝑁 , it bounds the values of a modified primal objective function that, compared to an initial segment of (1.4) , replaces 𝐺 1: 𝑁 +𝛿 ¯𝒳 1: 𝑁 
+
+by ˚𝐺 1: 𝑁 .
+
+Corollary 2.5 ([ 5 , Corollary 2.13]). Let 𝑁 ≥ 1, and suppose Assumptions 2.1 to 2.3 holds for 𝑢 𝑁 = (𝑥 𝑁 , 𝑦 𝑁 )
+
+generated by Algorithm 2.1, with initialisation 𝑢 0 ∈ 𝑋 0 × 𝑌 0. If 
+
+(2.6) 12 ∥𝑢 0 − ˆ𝑢 0 ∥2   
+
+> 𝜏 (𝑀 0+Γ0)
+
+≤ 𝑑 𝑁 ( ˆ𝑢 0: 𝑁 ),
+
+then 
+
+𝑄 1: 𝑁 (𝑥 1: 𝑁 ) + ˚𝐺 1: 𝑁 (𝐾 1: 𝑁 𝑥 1: 𝑁 ) ≤ sup  
+
+> ˆ𝑥 1: 𝑁 ∈𝒳 1: 𝑁
+
+𝑄 1: 𝑁 ( ˆ𝑥 1: 𝑁 ) + ˚𝐺 1: 𝑁 (𝐾 1: 𝑁 ˆ𝑥 1: 𝑁 )
+
++ sup  
+
+> ˆ𝑢 0: 𝑁 ∈𝒰 0: 𝑁
+
+ 12 ∥𝑢 0 − ˆ𝑢 0 ∥2 
+
+> 𝜏𝑀 0+Γ0
+
++ 𝑐 𝑁 ( ˆ𝑥 1: 𝑁 , 𝑦 1: 𝑁 ) + 𝑒 Σ 
+
+> 𝑁
+
+(𝑢 0: 𝑁 −1, ˆ𝑢 0: 𝑁 )
+
+
+
+,
+
+where the cumulative prediction and gradient error 
+
+𝑒 Σ 
+
+> 𝑁
+
+(𝑢 0: 𝑁 −1, ˆ𝑢 0: 𝑁 ) := 
+
+> 𝑁 −1
+
+∑︁ 
+
+> 𝑘 =0
+
+
+
+𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ˆ𝑢 𝑘 :𝑘 +1) + 𝜏𝑒 𝑘 +1
+
+
+
+.
+
+and the comparison set solution discrepancy 
+
+𝑐 𝑁 ( ˆ𝑥 1: 𝑁 , 𝑦 1: 𝑁 ) := inf  
+
+> ˜𝑦 1: 𝑁 ∈𝒴 1: 𝑁
+
+⟨𝐾 1: 𝑁 ˆ𝑥 1: 𝑁 , 𝑦 1: 𝑁 − ˜𝑦 1: 𝑁 ⟩ + 𝐺 ∗ 
+
+> 1: 𝑁
+
+( ˜𝑦 1: 𝑁 ) − 𝐺 ∗ 
+
+> 1: 𝑁
+
+(𝑦 1: 𝑁 ).
+
+Remark 2.6 (Comparison set solution discrepancy [ 3, Remark 2.7 and Section 3]). We have 𝑐 𝑁 ≤ 0
+
+when 𝐺 𝑘 ◦ 𝐾 𝑘 = 𝛼 ∥∇ · ∥2,1 is the total variation regulariser, the dual initialisation achieves the total variation in the sense that ⟨𝑦 0, 𝑥 0⟩ = 𝛼 ∥∇ 𝑥 0 ∥2,1 with ∥𝑦 0 ∥2,∞ ≤ 𝛼 , and the dual predictor is total variation preserving. Examples of such predictors are found in [3]. 
+
+> 4
+
+In [ 5], incorrectly, 𝐺 1: 𝑁 (𝑧 1: 𝑁 ) := Í𝑁 𝑘 =1 𝜏𝐺 𝑘 (𝑧 𝑘 ), however, same as here, 𝐺 1: 𝑁 is only ever used in discussions. With the definitions here, 𝐺 1: 𝑁 (𝐾𝑥 1: 𝑁 ) = Í𝑁 𝑘 =1 [𝜏𝐺 ∗ 
+
+> 𝑘
+
+]∗ (𝑥 𝑘 ) = Í𝑁 𝑘 =1 𝜏𝐺 𝑘 (𝐾 𝑘 𝑥 𝑘 ), consistently with 𝑄 1: 𝑁 .
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 9 of 35 
+
+# 3 online differential estimation 
+
+Our idea for a low-cost estimate of 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) = 𝐽 ′ (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 ) is grounded in the work of [ 19 , 6] for static problems: on each iteration of the outer Algorithm 2.1 for the solution of (1.4) —for each new data frame as it arrives—we take only a single step or few steps of standard solvers, such as Gauss–Seidel splitting, towards the solution of (1.1) and its corresponding adjoint equation. As we do this on each iteration, if the data does not change too abrubtly between frames, we expect to still get convergence, or, in case of online optimisation, bounded regret. We start by deriving the general scheme of approximation from adjoint equations in Section 3.1. Then in Section 3.2 we formulate an online tracking assumption that specific algorithms for the construction of the estimates have to satisfy. In Section 3.3 we use the tracking assumption to prove smoothness properties of the estimates f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) of 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ), in particular, to prove Assumption 2.2. Finally, we study quadratic 𝐸 𝑘 in detail in Section 3.4. In the next Section 4 we will prove the tracking assumption for specific inner and adjoint algorithms. To ensure the applicability of our results to a broad class of problems—including PDE-constrained and dynamic inverse problems—we work in abstract normed spaces. Our theory is also aplicable to online bilevel optimisation. 
+
+3.1 adjoint equations and the general approach 
+
+Let 𝐽 𝑘 : 𝑈 𝑘 → ℝ and 𝑆 𝑘,𝑢 : 𝑋 𝑘 → 𝑈 𝑘 , for 𝑘 ∈ { 1, . . . , 𝑛 }, be Fréchet differentiable mappings on normed spaces 𝑋 𝑘 and 𝑈 𝑘 . We estimate (3.1) 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) = 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 )
+
+by approximating 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ) with a computable state 𝑢 𝑘 ∈ 𝑈 𝑘 and its derivative 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 ) by a 𝑝 𝑘 ∈
+
+𝕃 (𝑋 𝑘 ; 𝑈 𝑘 ). However, as 𝑝 𝑘 ≈ 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 ) ∈ 𝕃 (𝑋 𝑘 ; 𝑈 𝑘 ) can be very high-dimensional, we want to avoid constructing it directly. Instead, we seek to only construct the necessary projections 𝑤 𝑘 . This is illustrated by the next lemma, where 𝑇 𝑘 can model, e.g., a PDE or the first-order optimality conditions of the inner optimisation problem (1.5) (in which case 𝑇 𝑘 = 𝐸 ′ 
+
+> 𝑘
+
+), both parametrised by 𝑥 . The proof follows standard techniques for deriving reduced adjoint equations of PDEs; see, e.g., [10, §1.6.2]. 
+
+Lemma 3.1 (Reduced adjoint). Let 𝑘 ∈ ℕ and 𝑇 𝑘 : 𝑈 𝑘 × 𝑋 𝑘 → 𝑊 ∗ 
+
+> 𝑘
+
+be Fréchet differentiable, and suppose that 𝑆 𝑘,𝑢 (𝑥 ) arises from the satisfaction of (1.5) . If 𝑆 𝑘,𝑢 is Fréchet differentiable in a neighbourhood of 𝑥 ,then 
+
+𝐸 ′ 
+
+> 𝑘
+
+(𝑥 ) = 𝑤𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ),
+
+where 𝑤 ∈ 𝑊 𝑘 ↩→ 𝑊 ∗∗  
+
+> 𝑘
+
+(assuming sufficient regularity that a solution in 𝑊 𝑘 exists) is a solution of the 
+
+reduced adjoint (3.2) 𝑤𝑇 (𝑢 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ) + 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) = 0.
+
+Proof. By implicit differentiation and (1.5) holding for 𝑥 in neighbourhood of 𝑥 , we get the basic adjoint (3.3) 0 = 𝑇 (𝑢 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 )𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 ) + 𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ),
+
+where 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 ) ∈ 𝕃 (𝑋 𝑘 ; 𝑈 𝑘 ), 𝑇 (𝑢 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ) ∈ 𝕃 (𝑈 𝑘 ;𝑊 ∗ 
+
+> 𝑘
+
+), and 𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ) ∈ 𝕃 (𝑋 𝑘 ;𝑊 ∗ 
+
+> 𝑘
+
+). Applying 
+
+𝑤 from the left to (3.3) , and 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 ) from the right to (3.2) , we deduce that 𝐸 ′ 
+
+> 𝑘
+
+(𝑥 ) = 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 ) =
+
+𝑤𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ), 𝑥 ). □
+
+In practice, we will take 𝑤 𝑘 ∈ 𝑊 𝑘 as an approximate operator splitting solution of (3.2) , instantiated at 𝑢 𝑘 ≈ 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ) in place of 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ), and then set 
+
+f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) := 𝑤 𝑘 𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑢 𝑘 , ˘𝑥 𝑘 ) ≈ 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) 𝑆 ′ 
+
+> 𝑘,𝑢
+
+( ˘𝑥 𝑘 ) = 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ).  
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 10 of 35
+
+When 𝑋 𝑘 is a real Hilbert space (such as ℝ𝑛 ), we write f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) for the Riesz representation of f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ).
+
+This is our recursively constructed differential estimate , which we wish to use in Algorithm 2.1. We just need to show that it satisfies Assumption 2.2. We do this in Section 3.3, given tracking estimates 
+
+for 𝑢 𝑘 and 𝑤 𝑘 , derived from the contractivity of splitting methods as in [ 19 , 23 ]. We state those tracking estimates in Section 3.2, and provide examples of their satisfaction in Section 4. 
+
+Example 3.2. We apply Lemma 3.1 to the EIT problem discussed in Section 1. Let 𝜎 ∈ 𝐿 ∞ (Ω)
+
+and 𝑈 𝑘 ∈ ℝ𝑁 elec be fixed, and for simplicity assume 𝑁 inj = 1. Define the mixed state space 𝑌 :=
+
+𝐻 1 (Ω) × ℝ𝑁 elec , 𝑦 = (𝑢, 𝐼 ) ∈ 𝑌 . Introduce the constraint operator 
+
+𝑇 𝑘 : 𝑌 × 𝐿 ∞ (Ω) → 𝑌 ∗ ⟨𝑇 𝑘 (𝑦, 𝜎 ), 𝑤 ⟩ := 𝐵 𝜎 (𝑦, 𝑤 ) − 𝐿 𝑈 𝑘 (𝑤 ),
+
+where 𝐵 𝜎 : (𝐻 1 (Ω) × ℝ𝑁 elec ) × ( 𝐻 1 (Ω) × ℝ𝑁 elec ) → ℝ for 𝑤 = (𝑣, 𝐽 ) ∈ 𝐻 1 (Ω) × ℝ𝑁 elec is given by 
+
+𝐵 𝜎 (( 𝑢, 𝐼 ), (𝑣, 𝐽 )) :=
+
+∫
+
+> Ω
+
+𝜎 ∇𝑢 · ∇ 𝑣𝑑𝑥 +
+
+> 𝑁 elec
+
+∑︁ 
+
+> 𝑖 =1
+
+1
+
+𝜁 𝑖 
+
+∫
+
+> 𝑒 𝑖
+
+𝑢𝑣𝑑𝑠 −
+
+> 𝑁 elec
+
+∑︁ 
+
+> 𝑖 =1
+
+𝐽 𝑖 
+
+𝜁 𝑖 
+
+∫
+
+> 𝑒 𝑖
+
+𝑢𝑑𝑠 +
+
+> 𝑁 elec
+
+∑︁ 
+
+> 𝑖 =1
+
+𝐽 𝑖 𝐼 𝑖 
+
+and 𝐿 𝑈 𝑘 : 𝐻 1 (Ω) × ℝ𝑁 elec → ℝ by (3.4) 𝐿 𝑈 𝑘 (𝑣, 𝐽 ) :=
+
+> 𝑁 elec
+
+∑︁ 
+
+> 𝑖 =1
+
+1
+
+𝜁 𝑖 
+
+∫
+
+> 𝑒 𝑖
+
+𝑈 𝑖 (𝑣 − 𝐽 𝑖 )𝑑𝑠. 
+
+The weak solution of (1.1) , i.e. the forward state 𝑆 𝑘,𝑢 (𝜎 ) = 𝑦 (𝜎, 𝑈 𝑘 ), satisfies 𝑇 𝑘 (𝑆 𝑘,𝑢 (𝜎 ), 𝜎 ) = 0.Moreover ⟨𝜕 𝑦 𝑇 𝑘 (𝑦, 𝜎 ) [ ℎ𝑦 ], 𝑤 ⟩ = 𝐵 𝜎 (ℎ𝑦 , 𝑤 ) and ⟨𝜕 𝜎 𝑇 𝑘 𝑘 (𝑦, 𝜎 ) [ ℎ𝜎 ], 𝑤 ⟩ = ∫ 
+
+> Ω
+
+ℎ𝜎 ∇𝑢 · ∇ 𝑣𝑑𝑥 to all directions ℎ𝑦 ∈ 𝑌 and ℎ𝜎 ∈ 𝐿 ∞ (Ω). Taking 𝐸 𝑘 (𝜎 ) = 𝐽 𝑘 (𝑆 𝑘,𝑢 (𝜎 )) with 𝐽 𝑘 (𝑦 ) = 12 ∥Σ−1/2 (𝐼 − ℐ𝑘 )∥ 22
+
+gives the data misfit term of (1.3) . For this term, Lemma 3.1 yields an adjoint state 𝑤 (𝜎, 𝑈 𝑘 ) =
+
+(𝑣, 𝑉 ) ∈ 𝑌 solving 
+
+𝐵 𝜎 ( ˜𝑦, 𝑤 ) = −𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝜎 )) [ ˜𝑦 ] = ˜𝐼 ⊤Σ−1 (ℐ𝑘 − 𝐼 (𝜎, 𝑈 𝑘 )) , for all ˜𝑦 = ( ˜𝑢, ˜𝐼 ) ∈ 𝑌 . 
+
+The differential is then 𝐸 ′ 
+
+> 𝑘
+
+(𝜎 ) = ∇𝑣 · ∇ 𝑢 .
+
+3.2 basic constructions and assumptions 
+
+Recall that our goal is, at each time and iteration index 𝑘 , to construct (𝑢 𝑘 , 𝑤 𝑘 ) ≈  𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ), 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 ),since the latter may be computationally infeasible or expensive to compute. Indeed, 𝑆 𝑘,𝑢 is defined as the solution of an inner problem, such as a PDE or an optimization problem, and solving it exactly at every iteration can be expensive. Therefore, in practice, we work with approximate solutions (𝑢 𝑘 , 𝑤 𝑘 ).This naturally introduces approximation errors, whose behavior must be controlled in order to ensure stability and convergence of the overall method. The following principal assumption formalises this requirement in the online setting, and can be seen as a counterpart of the corresponding offline assumptions in [23, 6]. 
+
+Assumption 3.3. For all 𝑘 ∈ ℕ, let the normed space 𝑋 𝑘 be equipped with a semi-norm ∥ · ∥ 𝑘, ◦, and 𝑋 ∗
+
+> 𝑘
+
+with the corresponding support function (see [6, Section 2]) 
+
+∥𝑥 ∗ ∥𝑘, ∗ := sup {⟨ 𝑥 ∗ |𝑥 ⟩𝑋 ∗,𝑋 | 𝑥 ∈ 𝑋, ∥𝑥 ∥𝑘, ◦ ≤ 1}.
+
+Also let the abstract spaces 𝑈 𝑘 , and 𝑊 𝑘 be equipped with the distance functions 𝑑 𝑈 𝑘 : 𝑈 𝑘 ×𝑈 𝑘 → [ 0, ∞] ,and 𝑑 𝑊 𝑘 : 𝑊 𝑘 ×𝑊 𝑘 → [ 0, ∞] . Let Ω𝑘 ⊂ 𝑋 𝑘 , and let 𝑆 𝑘,𝑢 : 𝑋 𝑘 → 𝑈 𝑘 and 𝑆 𝑘,𝑤 : 𝑋 𝑘 → 𝑊 𝑘 denote the inner   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 11 of 35
+
+and adjoint solution maps, respectively. Then, on each iteration 𝑘 ∈ ℕ, given (( 𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 , 𝑤 𝑛 )) 𝑘 𝑛 =0 ∈
+
+Î𝑘 𝑛 =0 Ω𝑛 × Ω𝑛 × 𝑈 𝑛 × 𝑊 𝑛 and the prediction ˘𝑥 𝑘 +1 ∈ Ω𝑘 +1:(i) An inner algorithm produces 𝑢 𝑘 +1 ∈ 𝑈 𝑘 +1 satisfying, for some 𝜋 𝑢 > 0, 𝜅 𝑢 > 1, 𝜀 𝑢,𝑘 ≥ 0, when 
+
+𝑘 ≥ 1, the inner tracking inequality 
+
+𝜅 𝑢 𝑑 𝑈 𝑘 +1 (𝑢 𝑘 +1, 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) ≤ 𝑑 𝑈 𝑘 (𝑢 𝑘 , 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) + 𝜋 𝑢 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥𝑘, ◦ + 𝜀 𝑢,𝑘 .
+
+(ii) An adjoint algorithm produces 𝑤 𝑘 +1 ∈ 𝑊 𝑘 +1 satisfying for some 𝜇 𝑢 , 𝜋 𝑤 > 0, 𝜅 𝑤 > 1, 𝜀 𝑤,𝑘 ≥ 0,
+
+when 𝑘 ≥ 1, the adjoint tracking inequality 
+
+𝜅 𝑤 𝑑 𝑊 𝑘 +1 (𝑤 𝑘 +1, 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)) ≤ 𝑑 𝑊 𝑘 (𝑤 𝑘 , 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) + 𝜇 𝑢 𝑑 𝑈 𝑘 +1 (𝑢 𝑘 +1, 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) + 𝜋 𝑤 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥𝑘, ◦ + 𝜀 𝑤,𝑘 .
+
+(iii) A differential transformation , (𝑢 𝑘 +1, 𝑤 𝑘 +1) ∈ 𝑈 𝑘 +1 × 𝑊 𝑘 +1, given produces f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) ∈ 𝑋 ∗ 
+
+> 𝑘 +1
+
+that satisfies for some 𝛼 𝑢 , 𝛼 𝑤 ≥ 0, ˜𝜀 𝑘 ≥ 0 the bound 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ 𝑘 +1,∗ ≤ 𝛼 𝑢 𝑑 𝑈 𝑘 +1 (𝑢 𝑘 +1, 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) + 𝛼 𝑤 𝑑 𝑊 𝑘 +1 (𝑤 𝑘 +1, 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)) + ˜𝜀 𝑘 .
+
+Remark 3.4. We observe regarding Assumption 3.3: 1. If ∥ · ∥𝑘, ◦ is a norm, then ∥ · ∥𝑘, ∗ is the dual norm. 2. The inner and adjoint tracking conditions (i) and (ii) are parameter change aware contractivity conditions for the inner and adjoint algorithms: if ˘𝑥 𝑘 = 𝑥 𝑘 and 𝑆 𝑘 +1,𝑢 = 𝑆 𝑘,𝑢 (i.e., there is no data updates between frames), the former reduces to a standard contractivity condition. The differential transformation condition (iii) bounds the construction error of f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) in terms of the tracking errors of the iterates relative to the corresponding solution maps. 3. The distance functions 𝑑 𝑈 𝑘 , 𝑑 𝑊 𝑘 will in the simplest case be given by norms or semi-norms. More generally, they may be problem-adapted measures of discrepancy between iterates and solution maps. Their exact form plays no role in the theory of this section. 4. The spaces 𝑋 𝑘 and 𝑈 𝑘 that depend on the time and iteration index 𝑘 allow our framework to accommodate dynamic online optimisation [9, 4, 5] with growing data sets. 5. For the inner and adjoint variables, the tracking inequalities are formulated starting from 𝑘 ≥ 1,and thus do not explicitly involve the initial iterates. At each iteration, the approximate inner and adjoint variables are computed using the prediction ˘𝑥 𝑘 and compared against the corresponding exact solution maps 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ) and 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 ). The role of the prediction is to provide a consistent reference point across iterations, allowing the tracking errors to be propagated even when the underlying spaces vary with 𝑘 . The initial discrepancies at the first iteration enter the final estimates, but can be controlled by computing the first step with sufficiently high accuracy. For contractive algorithms, these initial errors are naturally reduced relative to the initialisation. 
+
+3.3 smoothness of differential estimates 
+
+In this section, we derive descent and Lipschitz type inequalities for the differential estimates f𝐸 ′ 
+
+> 𝑘
+
+,given the tracking estimates. These results are straightforward consequences of the scalar tracking estimates of Appendix a. We recall that if 𝐸 ′ is 𝐿 -Lipschitz, then it satisfies the three point inequality [2, Corollary 7.2] (3.5) ⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 ) − 𝐿 
+
+2 ∥𝑥 − ˘𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+, for all 𝑥, ˘𝑥 𝑘 , ¯𝑥 ∈ 𝑋 𝑘 , 𝑘 ≥ 0, 
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 12 of 35 
+
+Our goal is to derive similar estimates for f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ). Indeed, such an estimate arises by summing the claim of the next lemma with (3.5) 
+
+Lemma 3.5. Suppose that Assumption 3.3 holds, and that (( 𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 , 𝑤 𝑛 )) 𝑘 𝑛 =0 ∈ Î𝑘 𝑛 =0 Ω𝑛 × Ω𝑛 ×𝑈 𝑛 ×𝑊 𝑛 
+
+as well as ˘𝑥 𝑘 +1 ∈ Ω𝑘 +1 for some 𝑘 ∈ ℕ. Then, for any ˜𝛾 > 0, and 𝑥, ¯𝑥 ∈ 𝑋 𝑘 +1, we have 
+
+⟨f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)| 𝑥 − ¯𝑥 ⟩𝑋 ∗ 
+
+> 𝑘 +1,𝑋 𝑘 +1
+
+≥ − ˜𝛾 
+
+2 ∥𝑥 − ¯𝑥 ∥2 
+
+> 𝑘 +1,◦
+
+− 54 ˜ 𝛾 𝜍 21 ∥ ˘𝑥 𝑘 +1 − 𝑥 𝑘 +1 ∥2 
+
+> 𝑘 +1,◦
+
+− 12 ˜ 𝛾 ˚𝑒 𝑘 ,(3.6) 
+
+where 
+
+˚𝑒 𝑘 := 52𝜍 21
+
+
+
+max 
+
+ 1
+
+𝜋 𝑢 
+
+𝜀 𝑢,𝑘 , 1
+
+𝜋 𝑤 
+
+𝜀 𝑤,𝑘 
+
+ 2
+
++ 𝑒 1,𝑘 
+
+for some 𝑒 1,𝑘 ∈ ℝ and 𝜍 1 ≥ 0 that, with 𝜅 := min (𝜅 𝑢 , 𝜅 𝑤 ) and 𝜅 := max (𝜅 𝑢 , 𝜅 𝑤 ), satisfy 
+
+> 𝑘
+
+∑︁ 
+
+> 𝑛 =0
+
+𝑒 1,𝑛 ≤ Ψ1 := 54
+
+𝑑 1 
+
+> 𝑈 1
+
+(𝑢 1, 𝑆 1,𝑢 ( ˘𝑥 1)) 
+
+𝜋 𝑢 
+
+𝜍 1𝛼 𝑢 𝜅 𝜅 − 1 + 𝜍 1𝛼 𝑤 𝜇 𝑢 
+
+(𝜅 − 1)2
+
+
+
++ 𝑑 2 
+
+> 𝑊 1
+
+(𝑤 1, 𝑆 1,𝑤 ( ˘𝑥 1)) 
+
+𝜋 𝑤 
+
+𝜍 1𝛼 𝑤 𝜅 𝜅 − 1
+
+
+
++
+
+> 𝑘
+
+∑︁ 
+
+> 𝑛 =0
+
+˜𝜀 2
+
+> 𝑛
+
+!
+
+(3.7) 
+
+and 
+
+𝜍 1 ≤ (𝛼 𝑢 𝜋 𝑢 + 𝛼 𝑤 𝜋 𝑤 )𝜅𝜅 𝜅 − 1 + 𝛼 𝑤 𝜇 𝑢 𝜋 𝑢 𝜅 
+
+(𝜅 − 1)2 .(3.8) 
+
+Proof. By [ 6, Lemma 2.1 (iii)], we have ⟨𝑥 ∗ |𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≤ 12 ∥𝑥 ∗ ∥2 
+
+> 𝑘, ∗
+
++ 12 ∥𝑥 ∥2 
+
+> 𝑘, ◦
+
+for all 𝑥 ∈ 𝑋 𝑘 and 𝑥 ∗ ∈ 𝑋 ∗ 
+
+> 𝑘
+
+.Hence, (3.9) ⟨f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)| 𝑥 − ¯𝑥 ⟩𝑋 ∗ 
+
+> 𝑘 +1,𝑋 𝑘 +1
+
+≥ − 12 ˜ 𝛾 ∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ 2 
+
+> 𝑘 +1,∗
+
+− ˜𝛾 
+
+2 ∥𝑥 − ¯𝑥 ∥2
+
+> 𝑘 +1,◦
+
+.
+
+Let 
+
+𝑑 𝑢 𝑘 := 𝑑 𝑈 𝑘 (𝑢 𝑘 , 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) , 𝜚 𝑘 := ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑘, ◦, 𝜀 𝑘 := max  𝜀 𝑢,𝑘 /𝜋 𝑢 , 𝜀 𝑤,𝑘 /𝜋 𝑤 
+
+ ,𝑑 𝑤 𝑘 := 𝑑 𝑊 𝑘 (𝑤 𝑘 , 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) , and e𝑑 𝑘 := ∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ 𝑘 +1,∗.
+
+Then Assumption 3.3 and our assumptions (( 𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 , 𝑤 𝑛 )) 𝑘 𝑛 =0 ∈ Î𝑘 𝑛 =0 Ω𝑛 × Ω𝑛 × 𝑈 𝑛 × 𝑊 𝑛 as well as 
+
+˘𝑥 𝑘 +1 ∈ Ω𝑘 +1 imply Assumption a.1 for the same ˜𝜀 𝑘 . Thus, Lemma a.4 gives 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ 2 
+
+> 𝑘 +1,∗
+
+≤ 54𝜍 21 (𝜚 𝑘 +1 + 𝜀 𝑘 +1)2 + 𝑒 1,𝑘 
+
+≤ 52𝜍 21 𝜚 2 
+
+> 𝑘 +1
+
++ 52𝜍 21
+
+
+
+max 
+
+ 1
+
+𝜋 𝑢 
+
+𝜀 𝑢,𝑘 , 1
+
+𝜋 𝑤 
+
+𝜀 𝑤,𝑘 
+
+ 2
+
++ 𝑒 1,𝑘 
+
+= 52𝜍 21 ∥ ˘𝑥 𝑘 +1 − 𝑥 𝑘 +1 ∥2 
+
+> 𝑘 +1,◦
+
++ ˚𝑒 𝑘 .
+
+Combining this inequality with (3.9) proves (3.6) . The bounds (3.7) and (3.8) follow from Lemmas a.3 and a.4. □
+
+The next result, which verifies Assumption 2.2, relates the error ˚𝑒 𝑘 to the error expression in the regret Corollary 2.5 for the outer method. We will further develop the complete error expression in Remark 4.11. The result depends on the exact differential each 𝐸 𝑘 essentially satisfying Assumption 2.2. We will in the next Section 3.4 verify this for quadratic energies. 
+
+Theorem 3.6 (Verification of Assumption 2.2). Let 𝑘 ≥ 1. Suppose Assumption 3.3 holds and that 
+
+(( 𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 , 𝑤 𝑛 )) 𝑘 −1 
+
+> 𝑛 =0
+
+∈ Î𝑘 −1 
+
+> 𝑛 =0
+
+Ω𝑛 × Ω𝑛 × 𝑈 𝑛 ×𝑊 𝑛 as well as ˘𝑥 𝑘 ∈ Ω𝑘 for some 𝑘 ∈ ℕ. Further, suppose 𝐸 ′
+
+> 𝑘
+
+is 𝐿 ′ 
+
+> 𝑘
+
+-Lipschitz with respect to ∥ · ∥ 𝑘, ◦ in the sense that 
+
+∥𝐸 ′ 
+
+> 𝑘
+
+(𝑢 ) − 𝐸 ′ 
+
+> 𝑘
+
+(𝑣 )∥ 𝑘, ∗ ≤ 𝐿 ′ 
+
+> 𝑘
+
+∥𝑢 − 𝑣 ∥𝑘, ◦ for all 𝑢, 𝑣 ∈ 𝑋 𝑘 ,
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 13 of 35 
+
+and that for some constants 𝛾 1, 𝛾 2, 𝐿 1, 𝐿 2 > 0 and that for some 𝛿 > 0, every comparison sequence 
+
+¯𝑥 1: 𝑘 ∈ 𝒳 1: 𝑘 ∩ Î𝑘 𝑛 =1 𝐵 ( ˘𝑥 𝑛 , 𝛿 ) and all 𝑥 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ), we have 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 𝑘 ) + 𝛾 1 ∥𝑥 − ¯𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 1 ∥𝑥 − ˘𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+,(3.10) 
+
+and for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0) and all 𝑥 ∈ 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ) we have 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝛾 2 ∥𝑥 − ˆ𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 2 ∥𝑥 − ˘𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+.(3.11) 
+
+Let ˚𝑒 𝑘 −1 and 𝜍 1 be as in Lemma 3.5. Then the following is true (i) For any ˜𝛾 > 0, Assumption 2.2 (i) holds with 
+
+¯𝛾 𝐸 = −𝐿 ′ 
+
+> 𝑘
+
+− ˜𝛾 
+
+2 (𝐿 ′ 
+
+> 𝑘
+
++ 1), ¯𝜆 𝐸 = 𝐿 ′
+
+> 𝑘
+
+2 ˜ 𝛾 + 54 ˜ 𝛾 𝜍 21 , and ¯𝑒 𝑘 = 12 ˜ 𝛾 ˚𝑒 𝑘 −1,
+
+That is, for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0) and for all 𝑥 𝑘 ∈ 𝑋 𝑘 , we have 
+
+(3.12) ⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 𝑘 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ ¯𝛾 𝐸 ∥𝑥 𝑘 − ˆ𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− ¯𝜆 𝐸 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− ¯𝑒 𝑘 .
+
+(ii) For 0 < ˜𝛾 < 2 min {𝛾 1, 𝛾 2}, Assumption 2.2 (ii) holds with 
+
+ˆ𝛾 𝐸 := 𝛾 2 − ˜𝛾 
+
+2, 𝛾 𝐸 := min { ˆ𝛾 𝐸 , 2𝛾 1 − ˜𝛾 }, 𝜆 𝐸 := 2𝐿 1 + 5𝜍 21
+
+2 ˜ 𝛾 , ˆ𝜆 𝐸 := 𝐿 2 + 5𝜍 21
+
+4 ˜ 𝛾 , 𝑒 𝑘 := ˆ𝑒 𝑘 := 12 ˜ 𝛾 ˚𝑒 𝑘 −1.
+
+That is, for every ¯𝑥 1: 𝑘 ∈ 𝒳 1: 𝑘 ∩ Î𝑁 𝑛 =1 𝐵 ( ˘𝑥 𝑛 , 𝛿 ), and for all 𝑥 𝑘 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ), we have 
+
+⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 𝑘 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 𝑘 ) − 𝐸 𝑘 ( ¯𝑥 𝑘 ) + 𝛾 𝐸 
+
+2 ∥𝑥 𝑘 − ¯𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝜆 𝐸 
+
+2 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝑒 𝑘 .(3.13) 
+
+and, for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0) ∩ 𝐵 ( ˘𝑥 𝑘 , 𝛿 ) × 𝑌 𝑘 and 𝑥 𝑘 ∈ 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ),
+
+⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 𝑘 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ ˆ𝛾 𝐸 ∥𝑥 𝑘 − ˆ𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− ˆ𝜆 𝐸 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− ˆ𝑒 𝑘 .(3.14) 
+
+Proof. (i): Since Assumption 3.3 holds and (( 𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 , 𝑤 𝑛 )) 𝑘 −1 
+
+> 𝑛 =0
+
+∈ Î𝑘 −1 
+
+> 𝑛 =0
+
+Ω𝑛 × Ω𝑛 × 𝑈 𝑛 × 𝑊 𝑛 as well as 
+
+˘𝑥 𝑘 ∈ Ω𝑘 , Lemma 3.5 applied with index 𝑘 − 1 together with [ 6, Lemma 2.1 (iii)] yields that for any ˜𝛾 > 0,any 𝑥, 𝑧 ∈ 𝑋 𝑘 ,
+
+⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+= −
+
+D
+
+− ˜𝛾 −1/2  f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) ˜𝛾 1/2 (𝑥 − 𝑧 )
+
+E  
+
+> 𝑋 ∗
+> 𝑘 ,𝑋 𝑘
+
+≥ − 12 ˜ 𝛾 ∥ f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )∥ 2 
+
+> 𝑘, ∗
+
+− ˜𝛾 
+
+2 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+≥ − ˜𝛾 
+
+2 ∥𝑥 − 𝑧 ∥2 
+
+> 𝑘, ◦
+
+− 54 ˜ 𝛾 𝜍 21 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 12 ˜ 𝛾 ˚𝑒 𝑘 −1.
+
+(3.15) Since 𝐸 ′ 
+
+> 𝑘
+
+is 𝐿 ′ 
+
+> 𝑘
+
+-Lipschitz between the semi-norm ∥ · ∥ 𝑘, ◦ and support function ∥ · ∥ 𝑘, ∗, and the two satisfy a Cauchy–Schwarz inequality [6, §2], also applying the triangle and Young’s inequalities, we obtain 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+= −⟨ 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗ 
+
+> 𝑘 ,𝑋 𝑘
+
+≥ −∥ 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )∥ 𝑘, ∗ ∥𝑥 − ˆ𝑥 𝑘 ∥𝑘, ◦
+
+≥ − 𝐿 ′ 
+
+> 𝑘
+
+∥ ˘𝑥 𝑘 − ˆ𝑥 𝑘 ∥𝑘, ◦ ∥𝑥 − ˆ𝑥 𝑘 ∥𝑘, ◦
+
+≥ − 𝐿 ′
+
+> 𝑘
+
+
+
+∥𝑥 − ˘𝑥 𝑘 ∥𝑘, ◦ + ∥ 𝑥 − ˆ𝑥 𝑘 ∥𝑘, ◦
+
+
+
+∥𝑥 − ˆ𝑥 𝑘 ∥𝑘, ◦
+
+= −𝐿 ′
+
+> 𝑘
+
+2 ˜ 𝛾 ∥𝑥 − ˘𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′
+
+> 𝑘
+
+
+
+1 + ˜𝛾 
+
+2
+
+
+
+∥𝑥 − ˆ𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+.
+
+(3.16) 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 14 of 35 
+
+Hence, 
+
+⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+= ⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ ⟨ 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗ 
+
+> 𝑘 ,𝑋 𝑘
+
+≥ ⟨ f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗ 
+
+> 𝑘 ,𝑋 𝑘
+
+− 𝐿 ′
+
+> 𝑘
+
+2 ˜ 𝛾 ∥𝑥 − ˘𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′
+
+> 𝑘
+
+
+
+1 + ˜𝛾 
+
+2
+
+
+
+∥𝑥 − ˆ𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+.
+
+Combining this with (3.15) applied to 𝑥 = 𝑥 𝑘 and 𝑧 = ˆ𝑥 𝑘 gives (3.12) for the stated coefficients. (ii): To prove (3.13), let ¯𝑥 1: 𝑘 ∈ 𝒳 1: 𝑘 ∩ Î𝑁 𝑛 =1 𝐵 ( ˘𝑥 𝑛 , 𝛿 ), and 𝑥 𝑘 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ). Write ⟨f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 𝑘 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+=
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 𝑘 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ ⟨ f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 𝑘 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+, apply (3.15) with 𝑥 = 𝑥 𝑘 and 𝑧 = ¯𝑥 𝑘 and combine it with (3.10) . This gives (3.13) . Similarly, taking 𝑥 = 𝑥 𝑘 and 𝑧 = ˆ𝑥 𝑘 in (3.15) and combining it with (3.11) gives (3.14), finishing the proof. □
+
+3.4 quadratic energies 
+
+We prove (3.10) and (3.11) for 𝐸 𝑘 of the quadratic form (1.2) , relevant in applications with Gaussian noise. The arguments rely only on local bounds on the Hessian, combined with with global boundedness of 
+
+𝑆 𝑘 and a global Lipschitz bound on 𝑆 ′ 
+
+> 𝑘
+
+.
+
+Assumption 3.7 (Local strong convexity and smoothness). Fix 𝑘 ∈ ℕ. Let 𝑋 𝑘 , 𝑌 𝑘 be real Hilbert spaces, let ∥ · ∥ 𝑘, ◦ be a seminorm on 𝑋 𝑘 , and let ˆ𝑥 ∈ 𝑋 𝑘 and 𝑆 𝑘,𝑢 : 𝑋 𝑘 → 𝑌 𝑘 be 𝐶 2 on 𝐵 ( ˆ𝑥, 𝛿 ) for some 𝛿 > 0.Let 𝐵 𝑘 : 𝑌 𝑘 → 𝑌 𝑘 be bounded, self-adjoint, and positive semidefinite, and define 
+
+∥𝑦 ∥2  
+
+> 𝑌 𝑘 ,◦
+
+:= ⟨𝐵 𝑘 𝑦, 𝑦 ⟩𝑌 𝑘 for all 𝑦 ∈ 𝑌 𝑘 .
+
+Define 
+
+𝐸 𝑘 (𝑥 ) := 12 ∥𝑆 𝑘,𝑢 (𝑥 )∥ 2 
+
+> 𝑌 𝑘 ,◦
+
+.
+
+Assume that 𝑆 𝑘,𝑢 is Fréchet differentiable on 𝑋 𝑘 and that there exist constants ¯𝐿 𝑆,𝑘 ≥ 0, ¯𝑀 𝑘 ≥ 0, and 
+
+¯𝑟 𝑘 ≥ 0 such that 
+
+∥𝑆 𝑘,𝑢 (𝑥 )∥ 𝑌 𝑘 ,◦ ≤ ¯𝑟 𝑘 for all 𝑥 ∈ 𝑋 𝑘 ,
+
+∥𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ∥𝑌 𝑘 ,◦ ≤ ¯𝐿 𝑆,𝑘 ∥ℎ∥𝑘, ◦ for all 𝑥 ∈ 𝑋 𝑘 , ℎ ∈ 𝑋 𝑘 ,
+
+and 
+
+∥( 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑢 ) − 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑣 )) ℎ∥𝑌 𝑘 ,◦ ≤ ¯𝑀 𝑘 ∥𝑢 − 𝑣 ∥𝑘, ◦ ∥ℎ∥𝑘, ◦ for all 𝑢, 𝑣 ∈ 𝑋 𝑘 , ℎ ∈ 𝑋 𝑘 .
+
+Define 
+
+𝐿 ′ 
+
+> 𝑘
+
+:= ¯𝐿 2 
+
+> 𝑆,𝑘
+
++ ¯𝑀 𝑘 ¯𝑟 𝑘 .
+
+Assume there exist constants 𝜇 𝑘 > 0, 𝐿 𝑆,𝑘 ≥ 0, 𝑀 𝑘 ≥ 0, 𝑟 𝑘 ≥ 0 such that for all 𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ):
+
+∥𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ∥𝑌 𝑘 ,◦ ≥ 𝜇 𝑘 ∥ℎ∥𝑘, ◦ for all ℎ ∈ 𝑋 𝑘 ,(3.17a) 
+
+∥𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ∥𝑌 𝑘 ,◦ ≤ 𝐿 𝑆,𝑘 ∥ℎ∥𝑘, ◦ for all ℎ ∈ 𝑋 𝑘 ,(3.17b) 
+
+∥𝑆 𝑘,𝑢 (𝑥 )∥ 𝑌 𝑘 ,◦ ≤ 𝑟 𝑘 ,(3.17c) 
+
+∥𝑆 ′′  
+
+> 𝑘,𝑢
+
+(𝑥 ) [ ℎ1, ℎ 2] ∥ 𝑌 𝑘 ,◦ ≤ 𝑀 𝑘 ∥ℎ1 ∥𝑘, ◦ ∥ℎ2 ∥𝑘, ◦ for all ℎ1, ℎ 2 ∈ 𝑋 𝑘 .(3.17d) Define 
+
+𝑚 𝑘 := 𝜇 2 
+
+> 𝑘
+
+− 𝑀 𝑘 𝑟 𝑘 , 𝐿 ′′  
+
+> 𝑘
+
+:= 𝐿 2 
+
+> 𝑆,𝑘
+
++ 𝑀 𝑘 𝑟 𝑘 ,
+
+and suppose that 𝑚 𝑘 > 0.
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 15 of 35 
+
+Corollary 3.8 (Global Lipschitz continuity of 𝐸 ′ 
+
+> 𝑘
+
+). Suppose that Assumption 3.7 holds. Then 𝐸 𝑘 is Fréchet differentiable on 𝑋 𝑘 and 
+
+∥𝐸 ′ 
+
+> 𝑘
+
+(𝑢 ) − 𝐸 ′ 
+
+> 𝑘
+
+(𝑣 )∥ 𝑘, ∗ ≤ 𝐿 ′ 
+
+> 𝑘
+
+∥𝑢 − 𝑣 ∥𝑘, ◦ for all 𝑢, 𝑣 ∈ 𝑋 𝑘 .
+
+Proof. Since 𝑦 ↦ → 12 ⟨𝐵 𝑘 𝑦, 𝑦 ⟩𝑌 𝑘 is Fréchet differentiable and 𝑆 𝑘,𝑢 is Fréchet differentiable on 𝑋 𝑘 , the chain rule gives 
+
+𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )ℎ = ⟨𝐵 𝑘 𝑆 𝑘,𝑢 (𝑥 ), 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ⟩𝑌 𝑘 .
+
+Let 𝑢, 𝑣, ℎ ∈ 𝑋 𝑘 . By Assumption 3.7, 
+
+∥𝑆 𝑘,𝑢 (𝑢 ) − 𝑆 𝑘,𝑢 (𝑣 )∥ 𝑌 𝑘 ,◦ ≤ ¯𝐿 𝑆,𝑘 ∥𝑢 − 𝑣 ∥𝑘, ◦.
+
+Therefore 
+
+|( 𝐸 ′ 
+
+> 𝑘
+
+(𝑢 ) − 𝐸 ′ 
+
+> 𝑘
+
+(𝑣 )) ℎ| ≤ ∥ 𝑆 𝑘,𝑢 (𝑢 ) − 𝑆 𝑘,𝑢 (𝑣 )∥ 𝑌 𝑘 ,◦ ∥𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑢 )ℎ∥𝑌 𝑘 ,◦ + ∥ 𝑆 𝑘,𝑢 (𝑣 )∥ 𝑌 𝑘 ,◦ ∥( 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑢 ) − 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑣 )) ℎ∥𝑌 𝑘 ,◦
+
+≤
+
+ ¯𝐿 2 
+
+> 𝑆,𝑘
+
++ ¯𝑀 𝑘 ¯𝑟 𝑘 
+
+
+
+∥𝑢 − 𝑣 ∥𝑘, ◦ ∥ℎ∥𝑘, ◦ = 𝐿 ′ 
+
+> 𝑘
+
+∥𝑢 − 𝑣 ∥𝑘, ◦ ∥ℎ∥𝑘, ◦.
+
+Taking the supremum over ∥ℎ∥𝑘, ◦ ≤ 1 gives the claim. □
+
+Remark 3.9 (Twice continous differentiability of the EIT solution operator). The assumption that 𝑆 𝑘,𝑢 
+
+be 𝐶 2 from the Hilbert space 𝑋 𝑘 to 𝑌 𝑘 is somewhat strict. For 𝑆 𝑘,𝑢 = (𝐼 𝑗,𝑘 𝑖 )𝑖 =1,...,𝑁 elec ; 𝑗 =1,...,𝑁 inj the solution operator of the EIT problem (1.1) , with 𝑌 𝑘 = ℝ𝑁 inj 𝑁 elec , in [ 5 ] we prove that 𝑆 𝑘,𝑢 is 𝐶 2 on 𝐿 ∞. Hence, if 𝑋 𝑘 
+
+is chosen so that 𝑋 𝑘 ↩→ 𝐿 ∞ continuously, for instance 𝑋 𝑘 = 𝐻 𝑠 (Ω) with 𝑠 > 𝑑 /2, then the restriction of 
+
+𝑆 𝑘,𝑢 to 𝑋 𝑘 is Fréchet differentiable as a map from 𝑋 𝑘 to 𝑌 𝑘 . Moreover, the 𝐿 ∞-based derivative estimates imply corresponding 𝑋 𝑘 -based estimates through the embedding 𝑋 𝑘 ↩→ 𝐿 ∞. In particular, a uniform bound for the second derivative gives the Lipschitz estimate for 𝑆 ′ 
+
+> 𝑘,𝑢
+
+required above. The next lemma shows that local ∥ · ∥◦-strong convexity is induced by a uniform lower bound on the derivative 𝑆 ′ 
+
+> 𝑘,𝑢
+
+, provided the residual ∥𝑆 𝑘,𝑢 (𝑥 )∥ 𝑌 𝑘 ,◦ is sufficiently small, i.e. if 𝑚 𝑘 > 0. This smallness condition corresponds to working near a critical point with small misfit. 
+
+Lemma 3.10 (Local strong convexity and smoothness for quadratic 𝐸 𝑘 ). Suppose that Assumption 3.7 holds. Then for all 𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ) and ℎ ∈ 𝑋 𝑘 ,
+
+(3.18) 𝑚 𝑘 ∥ℎ∥2 
+
+> 𝑘, ◦
+
+≤ 𝐸 ′′  
+
+> 𝑘
+
+(𝑥 ) [ ℎ, ℎ ] ≤ 𝐿 ′′  
+
+> 𝑘
+
+∥ℎ∥2
+
+> 𝑘, ◦
+
+.
+
+Proof. Let 𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ). By the definition of 𝐸 𝑘 and the 𝐶 2-regularity of 𝑆 𝑘,𝑢 on 𝐵 ( ˆ𝑥, 𝛿 ), 𝐸 𝑘 is 𝐶 2 on 
+
+𝐵 ( ˆ𝑥, 𝛿 ) and 
+
+𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )ℎ = ⟨𝐵 𝑘 𝑆 𝑘,𝑢 (𝑥 ), 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ⟩𝑌 𝑘 , and 𝐸 ′′  
+
+> 𝑘
+
+(𝑥 ) [ ℎ, ℎ ] = ⟨𝐵 𝑘 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ, 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ⟩𝑌 𝑘 + 𝑅 𝑘 (𝑥 ) [ ℎ, ℎ ],
+
+where 𝑅 𝑘 (𝑥 ) [ ℎ, ℎ ] := ⟨𝐵 𝑘 𝑆 𝑘,𝑢 (𝑥 ), 𝑆 ′′  
+
+> 𝑘,𝑢
+
+(𝑥 ) [ ℎ, ℎ ]⟩ 𝑌 𝑘 . By the Cauchy–Schwarz inequality for the positive semidefinite bilinear form (𝑢, 𝑣 ) ↦ → ⟨ 𝐵 𝑘 𝑢, 𝑣 ⟩𝑌 𝑘 , together with (3.17c) and (3.17d), we have 
+
+|𝑅 𝑘 (𝑥 ) [ ℎ, ℎ ]| ≤ ∥ 𝑆 𝑘,𝑢 (𝑥 )∥ 𝑌 𝑘 ,◦ ∥𝑆 ′′  
+
+> 𝑘,𝑢
+
+(𝑥 ) [ ℎ, ℎ ] ∥ 𝑌 𝑘 ,◦ ≤ 𝑀 𝑘 𝑟 𝑘 ∥ℎ∥2
+
+> 𝑘, ◦
+
+.
+
+Also, by the definition of ∥ · ∥ 𝑌 𝑘 ,◦ and (3.17a)–(3.17b), 
+
+𝜇 2 
+
+> 𝑘
+
+∥ℎ∥2 
+
+> 𝑘, ◦
+
+≤ ∥ 𝑆 ′ 
+
+> 𝑘,𝑢
+
+(𝑥 )ℎ∥2  
+
+> 𝑌 𝑘 ,◦
+
+≤ 𝐿 2 
+
+> 𝑆,𝑘
+
+∥ℎ∥2
+
+> 𝑘, ◦
+
+.
+
+Summing yields the claim. □
+
+The following lemma provides the standard upper and lower quadratic models for 𝐸 𝑘 . These in-equalities form the basic building blocks for the three-point estimates.   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 16 of 35
+
+Lemma 3.11 (Descent and support inequalities). Suppose that Assumption 3.7 holds for some ˆ𝑥 ∈ 𝑋 𝑘 .Then for all 𝑥, 𝑧 ∈ 𝐵 ( ˆ𝑥, 𝛿 ) ⊂ 𝑋 𝑘 ,
+
+𝐸 𝑘 (𝑥 ) ≤ 𝐸 𝑘 (𝑧 ) + ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ 𝐿 ′′ 
+
+> 𝑘
+
+2 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+,(3.19) 
+
+𝐸 𝑘 (𝑥 ) ≥ 𝐸 𝑘 (𝑧 ) + ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ 𝑚 𝑘 
+
+2 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.(3.20) 
+
+Proof. Let 𝑥, 𝑧 ∈ 𝐵 ( ˆ𝑥, 𝛿 ) and set 𝜑 (𝑡 ) = 𝐸 𝑘 (𝑧 + 𝑡 (𝑥 − 𝑧 )) . Since 𝐵 ( ˆ𝑥, 𝛿 ) is convex, 𝑧 + 𝑡 (𝑥 − 𝑧 ) ∈ 𝐵 ( ˆ𝑥, 𝛿 )
+
+for all 𝑡 ∈ [ 0, 1] and thus, since Assumption 3.7 holds, by Lemma 3.10, 𝜑 (𝑡 ) is 𝐶 2 (0, 1), 𝜑 ′ (𝑡 ) = ⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 +
+
+𝑡 (𝑥 − 𝑧 ))| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+, and 𝜑 ′′ (𝑡 ) = 𝐸 ′′  
+
+> 𝑘
+
+(𝑧 + 𝑡 (𝑥 − 𝑧 )) [ 𝑥 − 𝑧, 𝑥 − 𝑧 ]. Moreover, (3.18) holds for every 𝑡 and gives 𝑚 𝑘 ∥𝑥 − 𝑧 ∥2 
+
+> 𝑘, ◦
+
+≤ 𝜑 ′′ (𝑡 ) ≤ 𝐿 ′′  
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+. Then 
+
+𝑚 𝑘 
+
+2 ∥𝑥 − 𝑧 ∥2 
+
+> 𝑘, ◦
+
+=
+
+∫ 10
+
+∫ 𝑠 
+
+> 0
+
+𝑚 𝑘 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+𝑑𝑡𝑑𝑠 ≤
+
+∫ 10
+
+∫ 𝑠 
+
+> 0
+
+𝜑 ′′ (𝑡 )𝑑𝑡𝑑𝑠 
+
+≤
+
+∫ 10
+
+∫ 𝑠 
+
+> 0
+
+𝐿 ′′  
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+𝑑𝑡𝑑𝑠 = 𝐿 ′′ 
+
+> 𝑘
+
+2 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+Since ∫ 10
+
+∫ 𝑠  
+
+> 0
+
+𝜑 ′′ (𝑡 )𝑑𝑡𝑑𝑠 = 𝜑 (1) − 𝜑 (0) − 𝜑 ′ (0) = 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 (𝑧 ) − ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+, (3.19) – (3.20) follow. □
+
+The following lemma shows that combining the local support inequalities with the global Lipschitz bound on 𝐸 ′ 
+
+> 𝑘
+
+yields a family of three-point inequalities. These inequalities quantify how well the linearization at a possibly nonlocal point 𝑧 approximates the energy difference between nearby points. The estimates allow for a trade-off between the curvature term and the error ∥𝑥 − 𝑧 ∥2 
+
+> 𝑘, ◦
+
+controlled by free parameters. 
+
+Lemma 3.12 (Three-point inequalities). Suppose that Assumption 3.7 holds for some ˆ𝑥 ∈ 𝑋 𝑘 . Then for all 
+
+𝑧, 𝑥 ∈ 𝑋 𝑘 ,
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ − 𝐿 ′ 
+
+> 𝑘
+
+∥𝑧 − ˆ𝑥 ∥𝑘, ◦ ∥𝑥 − 𝑧 ∥𝑘, ◦.
+
+Moreover, for all 𝑧 ∈ 𝑋 𝑘 , all 𝑥, ¯𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ), and any 𝜃 > 0,
+
+(3.21) ⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 ) + 𝑚 𝑘 
+
+2(1 + 𝜃 ) ∥𝑥 − ¯𝑥 ∥2 
+
+> 𝑘, ◦
+
+− (𝐿 ′ 
+
+> 𝑘
+
+)2 (1 + 𝜃 )
+
+2𝑚 𝑘 𝜃 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+Moreover, for all 𝑧 ∈ 𝑋 𝑘 , all 𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ), and any 𝜀 > 0 such that 𝜀𝐿 ′ 
+
+> 𝑘
+
+< 𝑚 𝑘 ,
+
+(3.22) ⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥  𝑚 𝑘 − 𝜀𝐿 ′
+
+> 𝑘
+
+ ∥𝑥 − ˆ𝑥 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′
+
+> 𝑘
+
+4𝜀 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+Proof. The first estimate follows from the definition of ∥ · ∥ 𝑘, ∗ and the global Lipschitz continuity of 
+
+𝐸 ′ 
+
+> 𝑘
+
+, and the Cauchy–Schwarz inequality between ∥ · ∥ 𝑘, ∗ and ∥ · ∥ 𝑘, ◦ (see [6, §2]) 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − 𝑧 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ −∥ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )∥ 𝑘, ∗ ∥𝑥 − 𝑧 ∥𝑘, ◦ ≥ − 𝐿 ′ 
+
+> 𝑘
+
+∥𝑧 − ˆ𝑥 ∥𝑘, ◦ ∥𝑥 − 𝑧 ∥𝑘, ◦.
+
+To prove (3.21), let 𝑧 ∈ 𝑋 𝑘 and 𝑥, ¯𝑥 ∈ 𝐵 ( ˆ𝑥, 𝛿 ). Applying (3.20) to ( ¯𝑥, 𝑥 ) gives 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 ) + 𝑚 𝑘 
+
+2 ∥𝑥 − ¯𝑥 ∥2
+
+> 𝑘, ◦
+
+.
+
+Hence, by the global Lipschitz continuity of 𝐸 ′ 
+
+> 𝑘
+
+proven in Corollary 3.8, 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+= ⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )| 𝑥 − ¯𝑥 ⟩𝑋 ∗ 
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 ) + 𝑚 𝑘 
+
+2 ∥𝑥 − ¯𝑥 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′ 
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥𝑘, ◦ ∥𝑥 − ¯𝑥 ∥𝑘, ◦.  
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 17 of 35
+
+For any 𝜃 > 0, Young’s inequality gives 
+
+𝐿 ′ 
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥𝑘, ◦ ∥𝑥 − ¯𝑥 ∥𝑘, ◦ ≤ 𝑚 𝑘 𝜃 
+
+2(1 + 𝜃 ) ∥𝑥 − ¯𝑥 ∥2 
+
+> 𝑘, ◦
+
++ (𝐿 ′ 
+
+> 𝑘
+
+)2 (1 + 𝜃 )
+
+2𝑚 𝑘 𝜃 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+Substituting this yields (3.21). To prove (3.22), apply (3.20) to (𝑥, ˆ𝑥 ) and to ( ˆ𝑥, 𝑥 ) to obtain 
+
+𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ˆ𝑥 ) − ⟨ 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝑚 𝑘 
+
+2 ∥𝑥 − ˆ𝑥 ∥2
+
+> 𝑘, ◦
+
+,𝐸 𝑘 ( ˆ𝑥 ) − 𝐸 𝑘 (𝑥 ) − ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )| ˆ𝑥 − 𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝑚 𝑘 
+
+2 ∥𝑥 − ˆ𝑥 ∥2
+
+> 𝑘, ◦
+
+.
+
+Summing these gives 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑥 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝑚 𝑘 ∥𝑥 − ˆ𝑥 ∥2
+
+> 𝑘, ◦
+
+.
+
+Therefore, by the global Lipschitz continuity of 𝐸 ′ 
+
+> 𝑘
+
+,
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+= ⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑥 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
++ ⟨ 𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+(𝑥 )| 𝑥 − ˆ𝑥 ⟩𝑋 ∗ 
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝑚 𝑘 ∥𝑥 − ˆ𝑥 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′ 
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥𝑘, ◦ ∥𝑥 − ˆ𝑥 ∥𝑘, ◦.
+
+Young’s inequality gives 
+
+𝐿 ′ 
+
+> 𝑘
+
+∥𝑥 − 𝑧 ∥𝑘, ◦ ∥𝑥 − ˆ𝑥 ∥𝑘, ◦ ≤ 𝜀𝐿 ′ 
+
+> 𝑘
+
+∥𝑥 − ˆ𝑥 ∥2 
+
+> 𝑘, ◦
+
++ 𝐿 ′
+
+> 𝑘
+
+4𝜀 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+Substituting this yields (3.22). □
+
+We conclude with a corollary that explicitly proves the assumptions of Theorem 3.6 regarding 𝐸 ′ 
+
+> 𝑘
+
+.Thus combined with Theorem 3.6 , the next result completes the verification of Assumption 2.2 for the estimates f𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ).
+
+Corollary 3.13 (Instantiation of three-point inequalities). Let 𝛿 > 0 and suppose that Assumption 3.7 holds with center ˆ𝑥 𝑘 for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0), and with center ¯𝑥 𝑘 for the 𝑘 th component ¯𝑥 𝑘 of every comparison sequence ¯𝑥 1: 𝑘 ∈ 𝒳 1: 𝑘 satisfying ¯𝑥 𝑘 ∈ 𝐵 ( ˘𝑥 𝑘 , 𝛿 ), with the same constants 𝑚 𝑘 and 𝐿 ′ 
+
+> 𝑘
+
+. Then 
+
+𝐸 ′ 
+
+> 𝑘
+
+is globally Lipschitz continuous and the three-point inequalities (3.10) and (3.11) from Theorem 3.6 hold on 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ) and on 𝐵 ( ¯𝑥 𝑘 , 𝛿 ) with the following explicit constants: (i) For any 𝜃 > 0, for every comparison sequence satisfying ¯𝑥 1: 𝑁 ∈ 𝒳 1: 𝑁 ∩ Î𝑁 𝑖 =1 𝐵 ( ˘𝑥 𝑖 , 𝛿 ), for all 
+
+𝑥 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ) and all 𝑧 ∈ 𝑋 𝑘 ,
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 )| 𝑥 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 ) − 𝐸 𝑘 ( ¯𝑥 𝑘 ) + 𝑚 𝑘 
+
+2(1 + 𝜃 ) ∥𝑥 − ¯𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− (𝐿 ′ 
+
+> 𝑘
+
+)2 (1 + 𝜃 )
+
+2𝑚 𝑘 𝜃 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+In particular, if 𝑥 𝑘 ∈ 𝐵 ( ¯𝑥 𝑘 , 𝛿 ), choosing 𝑥 = 𝑥 𝑘 and 𝑧 = ˘𝑥 𝑘 yields (3.10) with 
+
+(3.23) 𝛾 1 := 𝑚 𝑘 
+
+2(1 + 𝜃 ) , 𝐿 1 := (𝐿 ′ 
+
+> 𝑘
+
+)2 (1 + 𝜃 )
+
+2𝑚 𝑘 𝜃 ,
+
+i.e. 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 )| 𝑥 𝑘 − ¯𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝐸 𝑘 (𝑥 𝑘 ) − 𝐸 𝑘 ( ¯𝑥 𝑘 ) + 𝛾 1 ∥𝑥 𝑘 − ¯𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 1 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+.  
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 18 of 35
+
+(ii) Let 𝜀 > 0 satisfy 𝜀𝐿 ′ 
+
+> 𝑘
+
+< 𝑚 𝑘 . Then for any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 𝐻 −1 
+
+> 𝑘
+
+(0), for all 𝑥 ∈ 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ) and all 
+
+𝑧 ∈ 𝑋 𝑘 ,
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+(𝑧 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥  𝑚 𝑘 − 𝜀𝐿 ′
+
+> 𝑘
+
+ ∥𝑥 − ˆ𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 ′
+
+> 𝑘
+
+4𝜀 ∥𝑥 − 𝑧 ∥2
+
+> 𝑘, ◦
+
+.
+
+In particular, if 𝑥 𝑘 ∈ 𝐵 ( ˆ𝑥 𝑘 , 𝛿 ), choosing 𝑥 = 𝑥 𝑘 and 𝑧 = ˘𝑥 𝑘 yields (3.11) with 
+
+(3.24) 𝛾 2 := 𝑚 𝑘 − 𝜀𝐿 ′
+
+> 𝑘
+
+, 𝐿 2 := 𝐿 ′
+
+> 𝑘
+
+4𝜀 ,
+
+i.e. 
+
+⟨𝐸 ′ 
+
+> 𝑘
+
+( ˘𝑥 𝑘 ) − 𝐸 ′ 
+
+> 𝑘
+
+( ˆ𝑥 𝑘 )| 𝑥 𝑘 − ˆ𝑥 𝑘 ⟩𝑋 ∗  
+
+> 𝑘 ,𝑋 𝑘
+
+≥ 𝛾 2 ∥𝑥 𝑘 − ˆ𝑥 𝑘 ∥2 
+
+> 𝑘, ◦
+
+− 𝐿 2 ∥𝑥 𝑘 − ˘𝑥 𝑘 ∥2
+
+> 𝑘, ◦
+
+.
+
+Proof. The Lipschitz continuity is proven by Corollary 3.8. Next, apply Lemma 3.12. For (i), fix a comparison sequence ¯𝑥 1: 𝑘 ∈ 𝒳 1: 𝑘 whose 𝑘 th component ¯𝑥 𝑘 satisfies ¯𝑥 𝑘 ∈ 𝐵 ( ˘𝑥 𝑘 , 𝛿 ). Apply Lemma 3.12 with center ¯𝑥 𝑘 , take 𝑧 = ˘𝑥 𝑘 and ¯𝑥 = ¯𝑥 𝑘 , and read off 𝛾 1 and 𝐿 1 as in (3.23) . For (ii), fix any ˆ𝑢 𝑘 = ( ˆ𝑥 𝑘 , ˆ𝑦 𝑘 ) ∈ 
+
+𝐻 −1 
+
+> 𝑘
+
+(0). Apply Lemma 3.12 with center ˆ𝑥 𝑘 , take 𝑧 = ˘𝑥 𝑘 , and read off 𝛾 2 and 𝐿 2 as in (3.24). □
+
+# 4 construction of online inner and adjoint algorithms 
+
+In this section, we present inner and adjoint algorithms that satisfy Assumption 3.3. Let 𝑈 𝑘 and 𝑊 𝑘 be normed spaces, and let 
+
+𝑑 𝑈 𝑘 (𝑢, ˜𝑢 ) = ∥𝑢 − ˜𝑢 ∥𝑈 𝑘 and 𝑑 𝑊 𝑘 (𝑤, ˜𝑤 ) = ∥𝑤 − ˜𝑤 ∥𝑊 𝑘 .
+
+To prove Assumption 3.3 (i) and (ii), our strategy is to combine contractivity properties of the algorithms with stability properties of the predictors and solution mappings. More precisely, we use: 1. Non-parametric inner contractivity: The inner iterate 𝑢 𝑘 +1 is computed from 𝑢 𝑘 by single or multiple steps of a standard optimisation or linear system splitting algorithm. This algorithm satisfies, for some ¯𝜅 𝑢 > 1, the contractivity (4.1) ¯𝜅 𝑢 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 ≤ ∥ ˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 .
+
+This ensures that each inner iteration advances towards the inner solution 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1) for the parameter ˘𝑥 𝑘 +1, and the current data embedded in the inner objective. 2. Non-parametric adjoint contractivity: Similarly, the adjoint variable 𝑤 𝑘 +1 is computed from 
+
+𝑤 𝑘 by an algorithm. This algorithm satisfies for some ¯𝜅 𝑤 > 1 and 𝐿 𝑤 ≥ 0 the contractivity (4.2) ¯𝜅 𝑤 ∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ≤ ∥ ˘𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 + 𝐿 𝑤 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 .
+
+3. Bounded Lipschitz predictors: Introduce the outer primal-dual, inner, anad adjoint predictor mappings 
+
+𝑃 𝑘 : Ω𝑘 −1 → Ω𝑘 , 𝑄 𝑘 : 𝑈 𝑘 −1 → 𝑈 𝑘 , ˜𝑄 𝑘 : 𝑊 𝑘 −1 → 𝑊 𝑘 .
+
+Then 
+
+˘𝑥 𝑘 := 𝑃 𝑘 (𝑥 𝑘 −1), ˘𝑢 𝑘 := 𝑄 𝑘 (𝑢 𝑘 −1), ˘𝑤 𝑘 := ˜𝑄 𝑘 (𝑤 𝑘 −1).
+
+These predictors describe how iterates and auxiliary variables are transported between successive time steps and data frames. We will generally assume these predictors to be bounded and Lipschitz. More precisly, the predictor 𝑄 𝑘 is 𝐿 𝑄 -Lipschitz: (4.3) ∥𝑄 𝑘 (𝑢 ) − 𝑄 𝑘 (𝑣 )∥ 𝑈 𝑘 ≤ 𝐿 𝑄 ∥𝑢 − 𝑣 ∥𝑈 𝑘 −1 , for all 𝑢, 𝑣 ∈ 𝑈 𝑘 −1.
+
+Also the adjoint predictor ˜𝑄 𝑘 : 𝑊 𝑘 → 𝑊 𝑘 +1 be 𝐿 ˜𝑄 -Lipschitz, i.e., (4.4) ∥ ˜𝑄 𝑘 (𝑤 1) − ˜𝑄 𝑘 (𝑤 2)∥ 𝑊 𝑘 ≤ 𝐿 ˜𝑄 ∥𝑤 1 − 𝑤 2 ∥𝑊 𝑘 −1 for all 𝑤 1, 𝑤 2 ∈ 𝑊 𝑘 −1. 
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 19 of 35 
+
+4. Lipschitz solution mappings: The inner problem solution mapping 𝑆 𝑘,𝑢 is 𝐿 𝑆 𝑢 -Lipschitz on 
+
+Ω𝑘 , i.e., (4.5) ∥𝑆 𝑘,𝑢 (𝑥 ) − 𝑆 𝑘,𝑢 ( ˜𝑥 )∥ 𝑈 𝑘 ≤ 𝐿 𝑆 𝑢 ∥𝑥 − ˜𝑥 ∥𝑘, ◦, for all 𝑥, ˜𝑥 ∈ Ω𝑘 .
+
+Likewise, the adjoint solution mapping 𝑆 𝑘,𝑤 is 𝐿 𝑆 𝑤 -Lipschitz on Ω𝑘 , i.e., (4.6) ∥𝑆 𝑘,𝑤 (𝑥 ) − 𝑆 𝑘,𝑤 ( ˜𝑥 )∥ 𝑊 𝑘 ≤ 𝐿 𝑆 𝑤 ∥𝑥 − ˜𝑥 ∥𝑘, ◦ for all 𝑥, ˜𝑥 ∈ Ω𝑘 ,
+
+These conditions quantify the stability of the inner and adjoint solution maps with respect to perturbations in the parameter 𝑥 .We proceed with this plan by deriving general results in Sections 4.1 and 4.2, for inner and adjoint algorithms, respectively. In Section 4.3, we then treat the differential tarnsformation Assumption 3.3 (iii). Finally, in Section 4.4 we concentrate on the specific case linear system splitting methods for the inner and adjoint PDE, relevant to our EIT application. 
+
+4.1 composed estimates for inner algorithms 
+
+The following lemma proves Assumption 3.3 (i) subject to the errors 𝜀 𝑢,𝑘 still having an unquantified form, which will depend on properties of the predictor 𝑄 𝑘 that we analyse afterwards. 
+
+Lemma 4.1. For all 𝑘 ≥ 1, assume that (4.3) (Lipschitz inner predictor 𝑄 𝑘 ) and (4.5) (Lipschitz inner solution mapping 𝑆 𝑘,𝑢 ) hold. Also suppose we are given an inner algorithm that, given  (𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 )𝑘 𝑛 =0 ∈
+
+Î𝑘 𝑛 =0 Ω𝑛 × Ω𝑛 × 𝑈 𝑛 produces 𝑢 𝑘 +1 ∈ 𝑈 𝑘 +1 satisfying for a constant ¯𝜅 𝑢 > 1 the basic contractivity (4.1) .Then Assumption 3.3 (i) holds, more precisely 
+
+¯𝜅 𝑢 
+
+𝐿 𝑄 
+
+∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 ≤ ∥ 𝑢 𝑘 − 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )∥ 𝑈 𝑘 + 𝐿 𝑆 𝑢 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑘, ◦ + 𝜀 𝑢,𝑘 
+
+for 
+
+𝜀 𝑢,𝑘 := 𝐿 −1 
+
+> 𝑄
+
+∥𝑄 𝑘 +1 (𝑆 𝑘,𝑢 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 (𝑃 𝑘 +1 (𝑥 𝑘 ))∥ 𝑈 𝑘 +1 .
+
+Proof. Using the definition of ˘𝑢 𝑘 +1, we get 
+
+˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1) = [𝑄 𝑘 +1 (𝑢 𝑘 ) − 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ))] + [ 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)] .
+
+Then 
+
+∥ ˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 ≤ ∥ 𝑄 𝑘 +1 (𝑢 𝑘 ) − 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 ))∥ 𝑈 𝑘 +1
+
++ ∥ 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1
+
+≤ 𝐿 𝑄 ∥𝑢 𝑘 − 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )∥ 𝑈 𝑘 + ∥ 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )) − 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 (𝑥 𝑘 ))∥ 𝑈 𝑘 +1
+
++ ∥ 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1
+
+≤ 𝐿 𝑄 ∥𝑢 𝑘 − 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )∥ 𝑈 𝑘 + 𝐿 𝑄 𝐿 𝑆 𝑢 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑘, ◦
+
++ ∥ 𝑄 𝑘 +1 (𝑆 𝑘,𝑢 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 .
+
+(4.7) Combining (4.1) and (4.7), and using 𝑃 𝑘 +1 (𝑥 𝑘 ) = ˘𝑥 𝑘 +1, we obtain the claim. □
+
+Remark 4.2 (Inner algorithms). Several standard algorithms satisfy the contractivity assumption (4.1) under appropriate conditions. As our focus is on PDEs, we treat linear system splitting in Section 4.4. For inner optimisation problems, forward-backward splitting is treated in [6]. 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 20 of 35 
+
+Remark 4.3 (Remainder term). The error term 𝜀 𝑢,𝑘 is a commutativity error between the solution mappings and the predictions of the parameter and the solutions. For Corollary 2.5 we want this term to be at least bounded, preferrably with a bounded sum over 𝑘 ∈ ℕ. For identity predictions when 
+
+𝑋 𝑘 +1 = 𝑋 𝑘 and 𝑈 𝑘 +1 = 𝑈 𝑘 , 𝜀 𝑢,𝑘 = ∥𝑆 𝑘,𝑢 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑢 (𝑥 𝑘 )∥ 𝑈 𝑘 +1 , so the term depends on the continuity properties of the solution mapping with respect to the embedded data, encoded in the index 𝑘 .More generally, for a conservative estimate when 𝑋 𝑘 = 𝑋 𝑘 +1 and 𝑈 𝑘 = 𝑈 𝑘 +1, if 𝑆 𝑘,𝑢 is 𝐿 𝑆,𝑢 -Lipschitz for each 𝑘 , we have 
+
+𝜀 𝑢,𝑘 = 𝐿 −1 
+
+> 𝑄
+
+∥ [ 𝑄 𝑘 +1 − Id ] ( 𝑆 𝑘,𝑢 (𝑥 𝑘 )) + 𝑆 𝑘,𝑢 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑢 (𝑃 𝑘 +1 (𝑥 𝑘 ))∥ 𝑈 𝑘 +1
+
+≤ 𝐿 −1 
+
+> 𝑄
+
+∥ [ 𝑄 𝑘 +1 − Id ] ( 𝑆 𝑘,𝑢 (𝑥 𝑘 ))∥ 𝑈 𝑘 +1 + 𝐿 −1 
+
+> 𝑄
+
+∥𝑆 𝑘,𝑢 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑢 (𝑥 𝑘 )∥ 𝑈 𝑘 +1 + 𝐿 𝑆,𝑢 
+
+𝐿 𝑄 
+
+∥( 𝑃 𝑘 +1 − Id )( 𝑥 𝑘 )∥ 𝑘 +1,◦.
+
+The first and last term can be controlled and even made small if 𝑃 𝑘 +1 ≈ Id , 𝑄 𝑘 +1 ≈ Id , and the solution mappings and iterates are bounded. Regarding the middle term, for parametrised linear systems 
+
+𝑇 𝑘 (𝑥, 𝑢 ) = 𝐴 𝑘,𝑥 𝑢 − 𝑏 𝑘,𝑥 , we have 𝑆 𝑘,𝑢 (𝑥 ) = 𝐴 −1
+
+> 𝑘,𝑥
+
+𝑏 𝑘,𝑥 , so can further estimate 
+
+∥𝑆 𝑘,𝑢 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑢 (𝑥 𝑘 )∥ = ∥𝐴 −1 
+
+> 𝑘,𝑥 𝑘
+
+𝑏 𝑘,𝑥 𝑘 − 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+𝑏 𝑘 +1,𝑥 𝑘 ∥
+
+= ∥( 𝐴 −1 
+
+> 𝑘,𝑥 𝑘
+
+− 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+)𝑏 𝑘,𝑥 𝑘 − 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+(𝑏 𝑘 +1,𝑥 𝑘 − 𝑏 𝑘,𝑥 𝑘 ) ∥≤ ∥( 𝐴 −1 
+
+> 𝑘,𝑥 𝑘
+
+− 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+)∥∥ 𝑏 𝑘,𝑥 𝑘 ∥ + ∥ 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+∥∥ 𝑏 𝑘 +1,𝑥 𝑘 − 𝑏 𝑘,𝑥 𝑘 ∥.
+
+This can, again, be controlled if the dependence of 𝐴 −1 
+
+> 𝑘,𝑥 𝑘
+
+and 𝑏 𝑘,𝑥 𝑘 on the data (encoded in the index 𝑘 )is continuous. 
+
+4.2 composed estimates for adjoint algorithms 
+
+We now repeat the overall idea of the arguments of the previous subsection for Assumption 3.3 (ii). 
+
+Lemma 4.4. For all 𝑘 ≥ 1, assume (4.4) (Lipschitz adjoint predictor ˜𝑄 𝑘 ) and (4.6) (Lipschitz adjoint solution mapping 𝑆 𝑘,𝑤 ). Also suppose that we are given an adjoint algorithm that, given (𝑥 𝑛 , ˘𝑥 𝑛 , 𝑢 𝑛 )𝑘 𝑛 =0 ⊂
+
+Î𝑘 𝑛 =0 Ω𝑛 × Ω𝑛 × 𝑈 𝑛 and (𝑥 𝑘 +1, 𝑢 𝑘 +1) ∈ Ω𝑘 +1 × 𝑈 𝑘 +1, produces a 𝑤 𝑘 +1 ∈ 𝑊 𝑘 +1 that satisfies the basic adjoint contractivity condition (4.2) with constants ¯𝜅 𝑤 > 1 and 𝐿 𝑤 ≥ 0. Then Assumption 3.3 (ii) holds, more precisely 
+
+¯𝜅 𝑤 
+
+𝐿 ˜𝑄 
+
+∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ≤ ∥ 𝑤 𝑘 − 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )∥ 𝑊 𝑘 + 𝐿 𝑤 
+
+𝐿 ˜𝑄 
+
+∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1
+
++ 𝐿 𝑆 𝑤 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑋 𝑘 + 𝜀 𝑤,𝑘 
+
+for 
+
+𝜀 𝑤,𝑘 = 𝐿 −1˜𝑄 ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 .
+
+Proof. Using the definition of ˘𝑤 𝑘 +1, we get 
+
+˘𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1) = [ ˜𝑄 𝑘 +1 (𝑤 𝑘 ) − ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 ))] + [ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)] .
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 21 of 35 
+
+Using that ˜𝑄 𝑘 +1 is 𝐿 ˜𝑄 -Lipschitz, we obtain 
+
+∥ ˘𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ≤ ∥ ˜𝑄 𝑘 +1 (𝑤 𝑘 ) − ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 ))∥ 𝑊 𝑘 +1
+
++ ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1
+
+≤ 𝐿 ˜𝑄 ∥𝑤 𝑘 − 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )∥ 𝑊 𝑘 + ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1
+
+≤ 𝐿 ˜𝑄 ∥𝑤 𝑘 − 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )∥ 𝑊 𝑘 + ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )) − ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 (𝑥 𝑘 ))∥ 𝑊 𝑘 +1
+
++ ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1
+
+≤ 𝐿 ˜𝑄 ∥𝑤 𝑘 − 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )∥ 𝑊 𝑘 + 𝐿 ˜𝑄 𝐿 𝑆 𝑤 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑘, ◦
+
++ ∥ ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ,
+
+(4.8) where the third inequality follows by adding and subtracting the term ˜𝑄 𝑘 +1 (𝑆 𝑘,𝑤 (𝑥 𝑘 )) , the fourth inequality follows from the Lipschitz property of ˜𝑄 𝑘 +1 and 𝑆 𝑘,𝑤 . Combining (4.2) and (4.8) we obtain the claim. □
+
+Remark 4.5 (Remainder term). Similarly to Remark 4.3, the error term 𝜀 𝑤,𝑘 is a commutativity error between the adjoint solution mappings and the predictions of the parameter and the solutions. For Corollary 2.5, we want this term to be at least bounded, preferrably with a bounded sum over 𝑘 ∈ ℕ.For identity predictions when 𝑋 𝑘 +1 = 𝑋 𝑘 and 𝑈 𝑘 +1 = 𝑈 𝑘 , 𝜀 𝑤,𝑘 = ∥𝑆 𝑘,𝑤 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑤 (𝑥 𝑘 )∥ 𝑊 𝑘 +1 , so the term depends on the continuity properties of the solution mapping with respect to the embedded data, encoded in the index 𝑘 . More generally, for a conservative estimate when 𝑋 𝑘 = 𝑋 𝑘 +1 and 𝑈 𝑘 = 𝑈 𝑘 +1, if 
+
+𝑆 𝑘,𝑤 is 𝐿 𝑆,𝑤 -Lipschitz for each 𝑘 , we have 
+
+𝜀 𝑤,𝑘 = 𝐿 −1˜𝑄 ∥ [ ˜𝑄 𝑘 +1 − Id ] ( 𝑆 𝑘,𝑤 (𝑥 𝑘 )) + 𝑆 𝑘,𝑤 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑤 (𝑃 𝑘 +1 (𝑥 𝑘 ))∥ 𝑊 𝑘 +1
+
+≤ 𝐿 −1˜𝑄 ∥ [ ˜𝑄 𝑘 +1 − Id ] ( 𝑆 𝑘,𝑤 (𝑥 𝑘 ))∥ 𝑊 𝑘 +1 + 𝐿 −1˜𝑄 ∥𝑆 𝑘,𝑤 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑤 (𝑥 𝑘 )∥ 𝑊 𝑘 +1
+
++ 𝐿 −1˜𝑄 𝐿 𝑆,𝑤 ∥( 𝑃 𝑘 +1 − Id )( 𝑥 𝑘 )∥ 𝑘 +1,◦.
+
+The first and last term can be controlled and even made small if ˜𝑄 𝑘 +1 ≈ Id , 𝑃 𝑘 +1 ≈ Id , and the solution mappings and iterates are bounded. Regarding the middle term, for parametrised linear systems 
+
+𝑇 𝑘 (𝑥, 𝑢 ) = 𝐴 𝑘,𝑥 𝑢 − 𝑏 𝑘,𝑥 , we have 𝑆 𝑘,𝑤 (𝑥 ) = (𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) , so can further estimate 
+
+∥𝑆 𝑘,𝑤 (𝑥 𝑘 ) − 𝑆 𝑘 +1,𝑤 (𝑥 𝑘 )∥ = ∥( 𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) − ( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘 +1,𝑢 (𝑥 ))∥ 
+
+= ∥(( 𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 − ( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1)𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) − ( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1  𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘 +1,𝑢 (𝑥 )) − 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ))  ∥≤ ∥( 𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 − ( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1 ∥∥ 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ))∥ + ∥( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1 ∥∥ 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘 +1,𝑢 (𝑥 )) − 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 ))∥ .
+
+This can, again, be controlled if the dependence of (𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 and 𝐽 ′ 
+
+> 𝑘
+
+(𝑆 𝑘,𝑢 (𝑥 )) on the data (encoded in the index 𝑘 ) is continuous. 
+
+4.3 the differential transformation 
+
+Finally, we provide conditions for the differential transformation component of Assumption 3.3,(iii) to hold for the reduced adjoint. As before, we omit subscripts in the norm notation and understand ∥.∥ as the norm of the respective underlying space. 
+
+Lemma 4.6 (Differential transformation: reduced adjoint). Continuing from Lemma 3.1, take 𝑆 𝑘,𝑤 (𝑥 ) = 𝑤 
+
+as a solution of (3.2) . Suppose 𝑇 (𝑥 ) 
+
+> 𝑘
+
+( · , 𝑥 ) is 𝐿 𝑇 (𝑥 ) ;𝑢 -Lipshitz for all 𝑥 ∈ Ω𝑘 and 𝑘 ∈ ℕ; that 
+
+sup    
+
+> 𝑘, ∈ℕ, 𝑢 ∈𝑈 𝑘 , 𝑥 ∈Ω𝑘
+
+∥𝑇 (𝑥 ) 
+
+> 𝑘
+
+(𝑢, 𝑥 )∥ =: 𝑀 𝑇 (𝑥 ) < ∞
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 22 of 35 
+
+and that the adjoint solution mappings are bounded on Ω𝑘 , i.e., 
+
+𝑁 𝑆 𝑘,𝑤 := sup   
+
+> 𝑘 ∈ℕ, 𝑥 ∈Ω𝑘
+
+∥𝑆 𝑘,𝑤 (𝑥 )∥ < ∞.
+
+Also let 
+
+f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) := 𝑤 𝑘 +1𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1).
+
+Then the differential transformation Assumption 3.3 (iii) holds with 𝛼 𝑢 = 𝑁 𝑆 𝑘,𝑤 𝐿 𝑇 (𝑥 ) ;𝑢 , 𝛼 𝑤 = 𝑀 𝑇 (𝑥 ) , and 
+
+˜𝜀 𝑘 = 0.Proof. Write ˆ𝑤 𝑘 +1 := 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1). Since 
+
+𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) = 𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) 𝑆 ′ 
+
+> 𝑘 +1,𝑢
+
+( ˘𝑥 𝑘 +1) = ˆ𝑤 𝑘 +1𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1),
+
+it follows 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ = ∥𝑤 𝑘 +1𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1) − ˆ𝑤 𝑘 +1𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1)∥ 
+
+= ∥ [ 𝑤 𝑘 +1 − ˆ𝑤 𝑘 +1]𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1) − ˆ𝑤 𝑘 +1 [𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1) − 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)] ∥ ≤ ∥ 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)∥∥ 𝑤 𝑘 +1 − ˆ𝑤 𝑘 +1 ∥+ ∥ ˆ𝑤 𝑘 +1 ∥∥ 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1) − 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)∥ 
+
+Therefore, recalling that 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1) = ˆ𝑤 𝑘 +1, we prove Assumption 3.3 (iii): 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ ≤ 𝑁 𝑆 𝑘 +1,𝑤 𝐿 𝑇 (𝑥 ) ;𝑢 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ + 𝑀 𝑇 (𝑥 ) ∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ . □
+
+4.4 linear system splitting 
+
+We now cover specific algorithms for PDEs as the inner problems. For 𝑈 𝑘 , 𝑋 𝑘 , and 𝑊 ∗ 
+
+> 𝑘
+
+normed spaces, let both 𝐴 𝑘,𝑥 ∈ 𝕃 (𝑈 𝑘 ;𝑊 ∗ 
+
+> 𝑘
+
+), modelling a linear PDE parametrised 𝑥 , and the right hand side 𝑏 𝑘,𝑥 ∈ 𝑊 ∗
+
+> 𝑘
+
+be Lipschitz in 𝑥 ∈ 𝑋 𝑘 . Consider the inner constraint of 𝑢 = 𝑆 𝑘,𝑢 (𝑥 ) satisfying (4.9) 𝐴 𝑘,𝑥 𝑢 = 𝑏 𝑘,𝑥 .
+
+This is again an instance of (1.5) when we set 
+
+𝑇 𝑘 (𝑢, 𝑥 ) = 𝐴 𝑘,𝑥 𝑢 − 𝑏 𝑘,𝑥 .
+
+Two solve (4.9) inexactly and efficiently, we split 𝐴 𝑘,𝑥 into two components, as in standard Gauss–Seidel or Jacobi splittings. 
+
+Assumption 4.7 (Admissible splitting). Let 𝑋 𝑘 , 𝑈 𝑘 , and 𝑊 ∗ 
+
+> 𝑘
+
+be normed spaces.For all 𝑘 ≥ 0 and 𝑥 𝑘 ∈
+
+Ω ⊂ 𝑋 𝑘 , let 𝐴 𝑘,𝑥 𝑘 ∈ 𝕃 (𝑈 𝑘 ;𝑊 ∗ 
+
+> 𝑘
+
+). We assume to be given splittings 𝐴 𝑘, ˘𝑥 𝑘 = 𝑁 𝑘, ˘𝑥 𝑘 + 𝑀 𝑘, ˘𝑥 𝑘 , where 𝑁 𝑘, ˘𝑥 𝑘 is invertible and 
+
+𝜁 𝑢 ∥𝑁 −1  
+
+> 𝑘, ˘𝑥 𝑘
+
+𝑀 𝑘, ˘𝑥 𝑘 ∥ ≤ 1
+
+for some 𝜁 𝑢 > 1.
+
+Assumption 4.8 (Adjoint admissible splitting). Let 𝑋 𝑘 , 𝑈 𝑘 , and 𝑊 ∗ 
+
+> 𝑘
+
+be normed spaces.For all 𝑘 ≥ 0 and 
+
+𝑥 𝑘 ∈ Ω ⊂ 𝑋 𝑘 , let 𝐴 𝑢,𝑘, ˘𝑥 𝑘 ∈ 𝕃 (𝑊 𝑘 ; 𝑈 ∗ 
+
+> 𝑘
+
+). We assume to be given splittings 𝐴 𝑢,𝑘, ˘𝑥 𝑘 = 𝑁 𝑢,𝑘, ˘𝑥 𝑘 + 𝑀 𝑢,𝑘, ˘𝑥 𝑘 ,where 𝑁 𝑘, ˘𝑥 𝑘 is invertible and 
+
+𝜁 𝑤 ∥𝑁 −1  
+
+> 𝑢,𝑘, ˘𝑥 𝑘
+
+𝑀 𝑢,𝑘, ˘𝑥 𝑘 ∥ ≤ 1
+
+for some 𝜁 𝑤 > 1, and that ∥𝑁 −1  
+
+> 𝑢,𝑘, ˘𝑥 𝑘
+
+∥ ≤ 𝛾 for some 𝛾 ≥ 0.
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 23 of 35 
+
+Example 4.9 (Gauss–Seidel splitting [ 23 , Example 4.4]). Let 𝐴 𝑘,𝑥 𝑘 ∈ ℝ𝑛 ×𝑛 , and take 𝑁 𝑘,𝑥 𝑘 as the upper triangle and diagonal of 𝐴 𝑘,𝑥 𝑘 . We have ∥𝑁 −1 
+
+> 𝑘,𝑥 𝑘
+
+𝑀 𝑘,𝑥 𝑘 ∥ ≤ 𝜁 for some 𝜁 ∈ [ 0, 1) when 𝐴 𝑘,𝑥 𝑘 is either strictly diagonally dominant or symmetric and positive definite [ 7 , §10.1], thus Assumption 4.7 holds. We also have ∥𝑁 −1 
+
+> 𝑘,𝑥 𝑘
+
+∥ ≤ 𝛾 for some 𝛾 ≥ 0 when 𝑁 𝑘,𝑥 𝑘 is invertible, i.e., has no zero on the main diagonal. 
+
+Theorem 4.10. The following hold: (i) Suppose Assumption 4.7 holds for 𝐴 𝑘, ˘𝑥 𝑘 = 𝑁 𝑘, ˘𝑥 𝑘 +𝑀 𝑘, ˘𝑥 𝑘 , and that 𝑆 𝑘,𝑢 (𝑥 ) = 𝐴 −1
+
+> 𝑘,𝑥
+
+𝑏 𝑘,𝑥 is 𝐿 𝑆 𝑢 -Lipschitz in Ω for all 𝑘 ≥ 0. Assume that 𝑄 𝑘 is 𝐿 𝑄 -Lipschitz for all 𝑘 ≥ 0. Then, the inner updates 
+
+𝑢 𝑘 +1 = 𝑁 −1  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+(𝑏 𝑘 +1, ˘𝑥 𝑘 +1 − 𝑀 𝑘 +1, ˘𝑥 𝑘 +1 ˘𝑢 𝑘 +1)
+
+satisfy the contractivity condition (4.1) . In particular, Assumption 3.3 (i) holds, i.e., 
+
+𝐿 −1 
+
+> 𝑄
+
+𝜁 𝑢 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ ≤ ∥ 𝑢 𝑘 − 𝑆 𝑘,𝑢 ( ˘𝑥 𝑘 )∥ + 𝐿 𝑆 𝑢 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥ + 𝜀 𝑢,𝑘 
+
+for 
+
+𝜀 𝑢,𝑘 := 𝐿 −1 
+
+> 𝑄
+
+∥𝑄 𝑘 (𝑆 𝑘,𝑢 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 .
+
+(ii) Suppose Assumption 4.8 holds for 𝐴 ∗ 
+
+> 𝑘,𝑥
+
+= 𝑁 ∗,𝑘, ˘𝑥 𝑘 + 𝑀 ∗,𝑘, ˘𝑥 𝑘 . Assume that, for all 𝑘 ≥ 0, ˜𝑄 𝑘 is 
+
+𝐿 ˜𝑄 -Lipschitz, 𝑆 𝑘,𝑤 is 𝐿 𝑆 𝑤 -Lipschitz, and 𝐽 ′ 
+
+> 𝑘 +1
+
+is 𝐿 𝐽 -Lipschitz. Then, the adoint updates 
+
+𝑤 𝑘 +1 = −𝑁 −1 
+
+> ∗,𝑘, ˘𝑥 𝑘 +1
+
+
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) + 𝑀 ∗,𝑘 +1, ˘𝑤 𝑘 +1 ˘𝑤 𝑘 +1
+
+satisfy the contractivity condition (4.2) . In particular, Assumption 3.3 (ii) holds, i.e., 
+
+1
+
+𝐿 ˜𝑄 𝛾𝐿 𝐽 
+
+∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ≤ ∥ 𝑤 𝑘 − 𝑆 𝑘,𝑤 ( ˘𝑥 𝑘 )∥ 𝑊 𝑘 + 1
+
+𝐿 ˜𝑄 𝐿 𝐽 𝛾𝜁 𝑤 
+
+∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1
+
++ 𝐿 𝑆 𝑤 ∥ ˘𝑥 𝑘 − 𝑥 𝑘 ∥𝑋 𝑘 + 𝜀 𝑤,𝑘 
+
+for 
+
+𝜀 𝑤,𝑘 = 𝐿 −1˜𝑄 ∥ ˜𝑄 𝑘 (𝑆 𝑘,𝑤 (𝑥 𝑘 )) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 .
+
+(iii) Assume that 𝑢 ↦ → 𝐴 (𝑥 ) 
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+𝑢 − 𝑏 (𝑥 )  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+is 𝐿 𝑇 ,𝑢 -Lipschitz, and ∥𝐴 (𝑥 ) 
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+𝑢 𝑘 +1 − 𝑏 (𝑥 )  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+∥ ≤ 𝑀 𝑇 (𝑥 ) .Then, Assumption 3.3 (iii) holds: 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ ≤ 𝑀 𝑇 (𝑥 ) ∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ + 𝐿 𝑇 ,𝑢 ∥ ˆ𝑤 𝑘 +1 ∥∥ 𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ .
+
+Proof. (i): We have 
+
+𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1) = 𝑁 −1  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+(𝑏 𝑘 +1, ˘𝑥 𝑘 +1 − 𝑀 𝑘 +1, ˘𝑥 𝑘 +1 ˘𝑢 𝑘 +1)− 𝑁 −1  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+(𝑏 𝑘 +1, ˘𝑥 𝑘 +1 − 𝑀 𝑘 +1, ˘𝑥 𝑘 +1 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) 
+
+= −𝑁 −1  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+𝑀 𝑘 +1, ˘𝑥 𝑘 +1 ( ˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) .
+
+Hence, 
+
+𝜁 𝑢 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ ≤ 𝜁 𝑢 ∥𝑁 −1  
+
+> 𝑘 +1,˘𝑥 𝑘 +1
+
+𝑀 𝑘 +1, ˘𝑥 𝑘 +1 ∥∥ ˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ ≤ ∥ ˘𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ .
+
+Thus, using Lemma 4.1, Assumption 3.3 (i) holds. 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 24 of 35 
+
+(ii): For brevity, set 𝑣 𝑘 = (∗ , 𝑘, ˘𝑥 𝑘 ). Hence, using the definition of 𝑤 𝑘 +1, and the fact that 
+
+(𝑀 𝑣 𝑘 +1 + 𝑁 𝑣 𝑘 +1 )𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1) = −𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1),
+
+we obtain 
+
+𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1) = −𝑁 −1
+
+> 𝑣 𝑘 +1
+
+
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) + 𝑀 𝑣 𝑘 +1 ˘𝑤 𝑘 +1
+
+− 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)
+
+= −𝑁 −1
+
+> 𝑣 𝑘 +1
+
+
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) − 𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1)
+
+
+
+− 𝑁 −1 
+
+> 𝑣 𝑘 +1
+
+𝑀 𝑣 𝑘 +1 ˘𝑤 𝑘 +1
+
+− 𝑁 −1 
+
+> 𝑣 𝑘 +1
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)
+
+= −𝑁 −1
+
+> 𝑣 𝑘 +1
+
+
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) − 𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1)
+
+
+
+− 𝑁 −1 
+
+> 𝑣 𝑘 +1
+
+𝑀 𝑣 𝑘 +1 ˘𝑤 𝑘 +1
+
++ 𝑁 −1
+
+> 𝑣 𝑘 +1
+
+
+
+(𝑀 𝑣 𝑘 +1 + 𝑁 𝑣 𝑘 +1 )𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)
+
+
+
+− 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)
+
+= −𝑁 −1
+
+> 𝑣 𝑘 +1
+
+
+
+𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)) − 𝐽 ′ 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1)
+
+
+
++ 𝑁 −1 
+
+> 𝑣 𝑘 +1
+
+𝑀 𝑣 𝑘 +1
+
+
+
+𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1) − ˘𝑤 𝑘 +1
+
+.
+
+Thus, using the Lipschitz properties of 𝐽 ′ 
+
+> 𝑘 +1
+
+and Assumption 4.8, we obtain 
+
+∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 ≤ 𝛾𝐿 𝐽 ∥𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ 𝑈 𝑘 +1 + 1
+
+𝜁 𝑤 
+
+∥ ˘𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ 𝑊 𝑘 +1 .
+
+This proves our contractivity condition (4.2) with ¯𝜅 𝑤 = 1  
+
+> 𝐿 𝐽 𝛾
+
+and 𝐿 𝑤 = 1  
+
+> 𝐿 𝐽 𝛾𝜁 𝑤
+
+. Thus, using Lemma 4.4, Assumption 3.3 (ii) holds. (iii): Finally, we have 
+
+∥ f𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1) − 𝐸 ′ 
+
+> 𝑘 +1
+
+( ˘𝑥 𝑘 +1)∥ = ∥𝑤 𝑘 +1𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1) − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1)∥ 
+
+= ∥ [ 𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)] 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1) − ˆ𝑤 𝑘 +1 [𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1) − 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)] ∥ ≤ ∥ 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)∥∥ 𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ + ∥ ˆ𝑤 𝑘 +1 ∥∥ 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1), ˘𝑥 𝑘 +1) − 𝑇 (𝑥 ) 
+
+> 𝑘 +1
+
+(𝑢 𝑘 +1, ˘𝑥 𝑘 +1)∥ ≤ 𝑀 𝑇 (𝑥 ) ∥𝑤 𝑘 +1 − 𝑆 𝑘 +1,𝑤 ( ˘𝑥 𝑘 +1)∥ + 𝐿 𝑇 ,𝑢 ∥ ˆ𝑤 𝑘 +1 ∥∥ 𝑢 𝑘 +1 − 𝑆 𝑘 +1,𝑢 ( ˘𝑥 𝑘 +1)∥ .
+
+Thus, Assumption 3.3 (iii) holds. □
+
+Remark 4.11 (Full error expression). In the present setting, we can bound the error 
+
+𝑒 Σ 
+
+> 𝑁
+
+(𝑢 0: 𝑁 −1, ˆ𝑢 0: 𝑁 ) = 
+
+> 𝑁 −1
+
+∑︁ 
+
+> 𝑘 =0
+
+
+
+𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ˆ𝑢 𝑘 :𝑘 +1) + 𝜏𝑒 𝑘 +1
+
+
+
+.
+
+given in Corollary 2.5, where the predicgtion error 𝜀 † 
+
+> 𝑘 +1
+
+(𝑢 𝑘 , ¯𝑢 𝑘 :𝑘 +1), defined in (2.5), depends on the predictors use, and is discussed in more detail in [ 4, 5]. From Theorem 3.6 (ii), the algorithm error satisfies 𝑒 𝑘 +1 = 12 ˜ 𝛾 ˚𝑒 𝑘 , where ˚𝑒 𝑘 is defined in Lemma 3.5. Moreover, ˚𝑒 𝑘 can be bounded as 
+
+12 ˜ 𝛾 
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =0
+
+˚𝑒 𝑘 := 12 ˜ 𝛾 
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =0
+
+52𝜍 21
+
+
+
+max 
+
+ 1
+
+𝜋 𝑢 
+
+𝜀 𝑢,𝑘 , 1
+
+𝜋 𝑤 
+
+𝜀 𝑤,𝑘 
+
+ 2
+
++ 𝑒 1,𝑘 
+
+!
+
+≤ 12 ˜ 𝛾 
+
+> 𝑁
+
+∑︁ 
+
+> 𝑘 =0
+
+52𝜍 21
+
+
+
+max 
+
+ 1
+
+𝜋 𝑢 
+
+𝜀 𝑢,𝑘 , 1
+
+𝜋 𝑤 
+
+𝜀 𝑤,𝑘 
+
+ 2!
+
++ 12 ˜ 𝛾 Ψ1,
+
+where Ψ1 and 𝜍 1 are bounded in (3.7) and (3.8) based on the first-step errors and the coefficients 𝛼 𝑢 = 𝐿 𝑇 ,𝑢 ,
+
+𝛼 𝑤 = 𝑀 𝑇 (𝑥 ) , 𝜋 𝑢 = 𝐿 𝑆 𝑢 , and 𝜋 𝑤 = 𝐿 𝑆 𝑤 .
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 25 of 35 
+
+When 𝑄 𝑘 = Id and ˜𝑄 𝑘 = Id , as in our numerical experiments of Section 5, we obtain from Remarks 4.3 and 4.5 that 
+
+𝜀 𝑢,𝑘 ≤ ∥( 𝐴 −1 
+
+> 𝑘,𝑥 𝑘
+
+− 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+)∥∥ 𝑏 𝑘,𝑥 𝑘 ∥ + ∥ 𝐴 −1 
+
+> 𝑘 +1,𝑥 𝑘
+
+∥∥ 𝑏 𝑘 +1,𝑥 𝑘 − 𝑏 𝑘,𝑥 𝑘 ∥ + 𝐿 𝑆,𝑢 ∥( 𝑃 𝑘 − Id )( 𝑥 𝑘 )∥ ,𝜀 𝑤,𝑘 ≤ ∥( 𝐴 ∗ 
+
+> 𝑘,𝑥
+
+)−1 − ( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1 ∥∥ 𝐽 ′ 
+
+> 𝑘
+
+(𝐴 −1
+
+> 𝑘,𝑥
+
+𝑏 𝑘,𝑥 )∥ + ∥( 𝐴 ∗ 
+
+> 𝑘 +1,𝑥
+
+)−1 ∥∥ 𝐽 ′ 
+
+> 𝑘
+
+(𝐴 −1
+
+> 𝑘 +1,𝑥
+
+𝑏 𝑘 +1,𝑥 ) − 𝐽 ′ 
+
+> 𝑘
+
+(𝐴 −1
+
+> 𝑘,𝑥
+
+𝑏 𝑘,𝑥 )∥ + 𝐿 𝑆,𝑤 ∥( 𝑃 𝑘 − Id )( 𝑥 𝑘 )∥ .
+
+These errors can be further bounded through the specific apperance of the frame-dependent data in 
+
+𝐴 𝑘,𝑥 , 𝑏 𝑘,𝑥 , and 𝐽 𝑘 , as well as the difference of the primal predictor 𝑃 𝑘 from the identity. 
+
+# 5 numerical experiments 
+
+In this section, in the context of application of the online Algorithm 2.1 to the dynamical electrical impedance tomography (EIT) problem, we compare the single-loop differential estimates of Sections 3 and 4 against the background solver of [ 5] for construting the gradient estimates f∇𝐸 𝑘 ( ˘𝑥 𝑘 ) for the EIT data term from (1.3) (Section 5.3). In the dynamical EIT problem, the goal is to reconstruct a time-varying conductivity distribution containing moving inclusions. The evolution of the inclusions is governed by a transport equation corresponding to incompressible flow with constant density. In addition to this nominal setting, we deliberately consider scenarios that violate the modelling assumptions in order to assess the robustness of the method. The numerical experiments, including the EIT forward model, data generation, discretisation choices, and noise model, closely follow the setup introduced in [ 5]. We therefore only summarise the key ingredients here and refer the reader to that work for full details. Our computations were performed on a 2020 MacBook Air M1 with 16GB memory. Our Julia implementation of the experiments and algorithms is available on Zenodo [14]. 
+
+5.1 test scenarios 
+
+All experiments are performed on synthetic data in a disk-shaped domain Ω equipped with 𝑁 elec = 16 
+
+equally spaced boundary electrodes. The data fidelity term 𝐸 𝑘 defined in (1.3) is evaluated using a finite element approximation of the electrode potentials and the conductivity, both represented with piecewise linear basis functions. To avoid the inverse crime [ 20 ], the mesh used for the inverse problem is coarser (2917 nodes) than that used for data generation (5039 nodes). All remaining modelling and discretisation choices follow [5]. For each time instance, current injection is applied sequentially at a single electrode while all remaining electrodes are grounded, resulting in 𝑁 inj = 16 excitation patterns. As is standard in EIT, the current measured at the excited electrode is excluded from the data, yielding (𝑁 elec − 1)𝑁 inj = 240 
+
+measurements per frame. We consider the following four scenarios: 
+
+Constant Motion In this baseline experiment, a single inclusion moves with constant velocity in a homogeneous background. This serves as a reference case. 
+
+Circular Motion A single inclusion follows a circular trajectory, violating the constant-velocity assumption. 
+
+Halting Motion A single inclusion stops completely at frames 1000 and 2000, further challenging the prediction model.   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 26 of 35
+
+Disappearing Inclusions Two inclusions move along circular paths. One inclusion disappears at frame 500 and the other at frame 1000; both reappear at frame 1500. This scenario violates the incompressibility assumption. The Constant Motion experiment consists of 400 frames, while the remaining experiments contain 2000 frames. The background conductivity is fixed at 𝑥 bg = 1 S , and all inclusions are resistive with conductivity 𝑥 incl = 10 −4 S. Measurement data are simulated using a finite element approximation of the complete electrode model (1.1) , with additive Gaussian noise at a relative level of 10 −4. Further details on the forward solver and derivative computations can be found in [16]. Unless stated otherwise, all experiments use identical algorithmic parameters. These are chosen in accordance with the guidelines of [5]. 
+
+5.2 algorithms and their parameters 
+
+We compare the numerical performance of the following instances of Algorithm 2.1. The difference between the instances is how f∇𝐸 𝑘 +1 ( ˘𝑥 𝑘 +1) is formed. All methods are based on the reduced adjoint equation of Lemma 3.1 (or, more precisely, a version with a change-of-basis as described in [ 6]), but differ in how the inner iterates 𝑢 𝑘 +1 and adjoint iterates 𝑤 𝑘 +1 are calculated. 
+
+Gauss–Seidel 7 + 1 This is our proposed single-loop primal-dual method, taking on each iteration of the outer optimisation method, 7 Gauss–Seidel iterations towards the solution the EIT forward PDE to form 𝑢 𝑘 +1 from 𝑢 𝑘 , and 1 Gauss–Seidel iteration towards the solution of the reduced adjoint PDE to form 𝑤 𝑘 +1 from 𝑤 𝑘 . This follows Theorem 4.10 and Example 4.9. The errors for Corollary 2.5 are expanded in Remark 4.11. 
+
+Exact In this variant of our method, we solve the PDE and its reduced adjoint exactly, taking (up to numerical precision) f∇𝐸 𝑘 +1 ( ˘𝑥 𝑘 +1) = ∇𝐸 𝑘 ( ˘𝑥 𝑘 +1), 𝑢 𝑘 +1 = 𝑆 𝑢 (𝑥 𝑘 ), and 𝑤 𝑘 +1 = 𝑆 𝑤 (𝑥 𝑘 ).
+
+Background This is the method of [ 5 ] with the same step length parameters as we used with the above two methods. This method solves the PDE and the adjoint PDE in a background computational thread. While waiting for the solution to become available, the main thread proceeds with the iterations of the optimisation method with new data frames, using the modified data term 
+
+ˇ𝐸 (𝑥 ) := 12 ∥𝐼 ( ˇ𝑥 ) + ∇ 𝐼 ( ˇ𝑥 )∗ (𝑥 − ˇ𝑥 ) − 𝑏 ∥2
+
+> Σ−1
+
+that linearises the solution operator 𝐼 at a past iterate (linearisation point) ˇ𝑥 . This model ne-cessitates the full basic adjoint, instead of the reduced adjoint. Once the new solution becomes available, it updates the linearisation point, and asks the background solver to solve the PDE at its own current iterate. 
+
+Background, original step lengths This is the method used in the numerical experiments of [ 5], in which we take 𝜏 = 0.85 / ˇ𝐿 2 and 𝜎 = 1, where ˇ𝑥 is the current linearisation point of the background solver, and ˇ𝐿 := ∥∇ 2 ˇ𝐸 (𝑥 )∥ = ∥Σ−1/2∇𝐼 ( ˇ𝑥 )∥ .The step length parameters for the three first algorithms are fixed 𝜏 = 0.005 . 𝜎 = 6.0. The scheme of [ 5] cannot be justified anymore, as we no longer linearise the solution operator. For ˇ𝐸 , ˇ𝐿 above gives a valid step length for the convex PDPS. Without the linearisation, we could, in a heuristic fashion, adaptively updated the step lengths based on 𝐿 𝑘 := max 𝑗 ≤𝑘 ∥∇ 2 ˜𝐸 (𝑥 𝑗 )∥ , however, due to the lack of linearisation, this would significantly increase the computational by demanding ∇2𝐼 (𝑥 𝑗 ).Also, although we use the method and parametrisation of [ 5] to benchmark our own methods, the performance we obtain from the method is not exactly the same as in [ 5 ], as we significantly optimised   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 27 of 35
+
+the code. Due to its interleaved, threaded structure, the method is very sensitive to underlying hardware, other operating system events, and code performance. Although we have also optimised the PDE solver, especially the main computational thread is much faster than it was in [ 5], which causes much more frames to be processed while waiting for the PDE solution. This results in additional instability that we observe, in particular, in the Halting Motion and Disappearing Inclusions experiments. Slowing down the method—further limiting how far in history the linearisation point can be—could reduce the instability at additional computational cost. 
+
+5.3 results 
+
+The Baseline experiment features an inclusion moving at constant speed. Figures 5.1 to 5.4 and Table 5.1 show the relative objective values and iterate errors The Constant Motion experiment features an inclusion moving at constant speed. Figures 5.1 to 5.4 and Table 5.1 show the relative objective values and iterate errors 
+
+𝐽 𝑘  
+
+> rel
+
+:= 𝐽 𝑘 (𝑥 𝑘 )
+
+𝐽 𝑘 (𝑥 0) and 𝑒 𝑘  
+
+> rel
+
+:= ∥𝑥 𝑘 − 𝑥 𝑘  
+
+> true
+
+∥∥𝑥 𝑘  
+
+> true
+
+∥ ,(5.1) where 𝑥 𝑘  
+
+> true
+
+denotes the ground truth at iteration 𝑘 , for the tested predictor configurations. We illustrate the behaviour of the algorithm in terms of function values Figures 5.1 and 5.3 for no prediction and for the best-performing outer primal-dual predictor 𝑃 𝑘 from [ 5, 4]: optical flow for the primal variable 𝑥 , and a scaling dual predictor for 𝑦 . For the inner and adjoint predictor of the variables 𝑢 and 𝑤 we set, for simplicity, 𝑄 𝑘 = Id and ˜𝑄 𝑘 = Id . Our numerical results could possibly be improved slightly by developing more fine-tuned predictors for these variables. Then the error terms of the regret Corollary 2.5 are given by Remark 4.11. The corresponding plots of relative error to the ground truth are in Figures 5.2 and 5.4. To summarise the information shown in the graphs and tables, our proposed single-loop Gauss–Seidel approach is clearly superior to the alternatives. It has a 5-6 times lower CPU footprint than the approach with an exact PDE solver, and shaves off a third of the CPU footprint of the old background solver of [ 5]. While the latter might be an acceptable trade-off if the old approach were otherwise better, it, however, becomes very unstable in the Halting/Disappearing test scenarios well: the linearised model is not updated at a sufficient frequency compared to the nature of data evoluation. More frequent updates could be imposed at a higher computational cost, comparable to our proposed single-loop solvers that have a simpler and more reliable computational architecture that does not depend on synchronisation between computational threads. That being said, based on additional experiments, also the Gauss–Seidel approach becomes unstable if the number of adjoint steps is reduced from the 7 steps used here to 6 or less. The background solver also heavily depends on the specific adaptive step length estimation scheme of [ 5 ]; it does not perform well with the simple fixed step sizes that we use with the other approaches. 
+
+# appendix a technical tracking estimates 
+
+Following the structure of [ 6, Appendix A], we prove here a simple scalar online tracking results, which are used to establish the results of Sections 3 and 4. The following assumption is a scalar variant of Assumption 3.3, and differs from [5, Assumption A.1] through the inclusion of the errors 𝜀 𝑘 , ˜𝜀 𝑘 .
+
+Assumption a.1. For a given 𝑘 ≥ 0 and scalars 𝑑 𝑢  
+
+> 0
+
+, . . . , 𝑑 𝑢 𝑘 +1, 𝑑 𝑤  
+
+> 0
+
+, . . . , 𝑑 𝑤 𝑘 +1, 𝜚 1, . . . , 𝜚 𝑘 ≥ 0, and e𝑑 0, . . . , e𝑑 𝑘 +1 ∈ 
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 28 of 35 
+
+Background; orig. step lengths Background Exact Gauss–Seidel / 7+1 0 100 200 300 400 
+
+> 10 −2
+> 10 −1
+
+ConstantMotion 0 500 1 000 1 500 2 000 
+
+> 10 −1
+
+HaltingMotion 0 500 1 000 1 500 2 000 
+
+> 10 −1
+
+TurningMotion 0 500 1 000 1 500 2 000 
+
+> 10 −2
+> 10 −1
+> 10 0
+
+DisappearingMotion 
+
+Figure 5.1: Relative function value for the Greedy predictor. The horizontal axis indicates the iteration, and the vertical axis the relative function value (5.1). Background; orig step lengths Background Exact Gauss–Seidel / 7+1 0 100 200 300 400 
+
+> 0.08
+> 0.1
+> 0.12
+> 0.14
+
+ConstantMotion 0 500 1 000 1 500 2 000 
+
+> 0.08
+> 0.1
+> 0.12
+> 0.14
+> 0.16
+
+HaltingMotion 0 500 1 000 1 500 2 000 
+
+> 0.1
+> 0.12
+> 0.14
+> 0.16
+
+TurningMotion 0 500 1 000 1 500 2 000 
+
+> 0
+> 0.1
+> 0.2
+
+DisappearingMotion 
+
+Figure 5.2: Ground truth relative error for the Greedy predictor. The horizontal axis indicates the iteration, and the vertical axis the error the relative error to the ground truth (5.1). 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 29 of 35 
+
+Background; orig. step lengths Background Exact Gauss–Seidel / 7+1 0 100 200 300 400 
+
+> 10 −2
+> 10 −1
+
+ConstantMotion 0 500 1 000 1 500 2 000 
+
+> 10 −1
+
+HaltingMotion 0 500 1 000 1 500 2 000 
+
+> 10 −1
+
+TurningMotion 0 500 1 000 1 500 2 000 
+
+> 10 −2
+> 10 −1
+> 10 0
+
+DisappearingMotion 
+
+Figure 5.3: Relative function value for the Affine predictor. The horizontal axis indicates the iteration, and the vertical axis the relative function value (5.1). Background; orig step lengths Background Exact Gauss–Seidel / 7+1 0 100 200 300 400 
+
+> 0.08
+> 0.1
+> 0.12
+> 0.14
+
+ConstantMotion 0 500 1 000 1 500 2 000 
+
+> 0.08
+> 0.1
+> 0.12
+> 0.14
+> 0.16
+
+HaltingMotion 0 500 1 000 1 500 2 000 
+
+> 0.1
+> 0.15
+
+TurningMotion 0 500 1 000 1 500 2 000 
+
+> 0
+> 0.1
+> 0.2
+
+DisappearingMotion 
+
+Figure 5.4: Ground truth relative error for the Affine predictor. The horizontal axis indicates the iteration, and the vertical axis the error the relative error to the ground truth (5.1). 
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 30 of 35 
+
+Alg. / Frame 1 400 800 1200 1600 2000 True 
+
+Bg. orig. 
+
+Background 
+
+Exact 
+
+Gauss–Seidel 7+1 
+
+Figure 5.5: Reconstructions for the HaltingMotion experiment with the Affine predictor. Alg. / Frame 1 400 800 1200 1600 2000 True 
+
+Bg. orig. 
+
+Background 
+
+Exact 
+
+Gauss–Seidel 7+1 
+
+Figure 5.6: Reconstructions for the TurningMotion experiment with the Affine predictor.   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 31 of 35
+
+Table 5.1: Summary statistics of all experiments. The experiments (Exp.), predictors (Pred.:Af = Affine; Gr = Greedy), and the algorithm (Alg.: GS = Gauss–Seidel 7 + 1d, Bg. = Background, new step lengths, Orig. = Background, original step lengths). Statistics marked with an asterisk ∗
+
+begin after the first 50 frames (Constant Motion) or 200 frames (other experiments). Mean, standard deviation (Std), and the 95% confidence interval (CI) are for the relative function value error 𝐽 𝑘 
+
+> rel
+
+, and the “GT” variants for the relative error to the ground truth, 𝑒 𝑘 
+
+> rel
+
+, both defined in (5.1) . The average real and CPU times spent processing each data frame, are in seconds. Function value error ∗ Ground truth error ∗ Frame time Exp. Pred. Alg. Mean Std CI Mean Std CI Real CPU Const. Gr GS 4.33 0.95 [4.23 , 4.43 ] 0.099 0.009 [0.098 , 0.1] 0.0055 0.0128 
+
+Const. Gr Exact 4.23 0.97 [4.13 , 4.33 ] 0.095 0.013 [0.094 , 0.097 ] 0.0153 0.0612 
+
+Const. Gr Bg. 5.54 1.03 [5.43 , 5.65 ] 0.110 0.012 [0.108 , 0.111 ] 0.0032 0.0154 
+
+Const. Gr Orig. 4.83 1.30 [4.7, 4.97 ] 0.105 0.013 [0.104 , 0.107 ] 0.0035 0.0169 
+
+Const. Af GS 4.26 1.00 [4.15 , 4.36 ] 0.091 0.009 [0.091 , 0.092 ] 0.0055 0.0129 
+
+Const. Af Exact 3.53 0.44 [3.49 , 3.58 ] 0.082 0.006 [0.081 , 0.082 ] 0.0156 0.0621 
+
+Const. Af Bg. 5.37 0.58 [5.31 , 5.43 ] 0.104 0.007 [0.103 , 0.104 ] 0.0032 0.0155 
+
+Const. Af Orig. 4.05 0.37 [4.02 , 4.09 ] 0.087 0.004 [0.087 , 0.088 ] 0.0036 0.0172 
+
+Turn. Gr GS 3.76 0.13 [3.75 , 3.76 ] 0.093 0.001 [0.093 , 0.093 ] 0.0053 0.0110 
+
+Turn. Gr Exact 3.92 0.21 [3.91 , 3.93 ] 0.094 0.001 [0.094 , 0.094 ] 0.0154 0.0616 
+
+Turn. Gr Bg. 4.47 0.45 [4.45 , 4.49 ] 0.101 0.003 [0.101 , 0.101 ] 0.0038 0.0172 
+
+Turn. Gr Orig. 3.89 0.45 [3.87 , 3.91 ] 0.095 0.004 [0.095 , 0.095 ] 0.0038 0.0180 
+
+Turn. Af GS 3.45 0.21 [3.44 , 3.46 ] 0.079 0.003 [0.079 , 0.079 ] 0.0054 0.0111 
+
+Turn. Af Exact 3.18 0.11 [3.17 , 3.18 ] 0.078 0.002 [0.078 , 0.078 ] 0.0154 0.0617 
+
+Turn. Af Bg. 3.68 0.72 [3.64 , 3.71 ] 0.080 0.008 [0.079 , 0.08 ] 0.0035 0.0169 
+
+Turn. Af Orig. 3.68 0.61 [3.65 , 3.71 ] 0.078 0.007 [0.077 , 0.078 ] 0.0038 0.0181 
+
+Halt. Gr GS 4.16 0.47 [4.14 , 4.19 ] 0.101 0.008 [0.1, 0.101 ] 0.0053 0.0110 
+
+Halt. Gr Exact 4.68 0.71 [4.65 , 4.71 ] 0.106 0.009 [0.105 , 0.106 ] 0.0154 0.0615 
+
+Halt. Gr Bg. 5.47 0.97 [5.43 , 5.52 ] 0.115 0.012 [0.115 , 0.116 ] 0.0035 0.0168 
+
+Halt. Gr Orig. 4.25 0.60 [4.23 , 4.28 ] 0.102 0.009 [0.102 , 0.103 ] 0.0038 0.0180 
+
+Halt. Af GS 3.41 0.30 [3.4, 3.43 ] 0.080 0.005 [0.08 , 0.08 ] 0.0054 0.0111 
+
+Halt. Af Exact 3.39 0.23 [3.38 , 3.4] 0.081 0.004 [0.08 , 0.081 ] 0.0155 0.0620 
+
+Halt. Af Bg. 4.59 0.89 [4.54 , 4.63 ] 0.096 0.013 [0.096 , 0.097 ] 0.0037 0.0175 
+
+Halt. Af Orig. 3.99 0.79 [3.95 , 4.02 ] 0.086 0.012 [0.086 , 0.087 ] 0.0040 0.0188 
+
+Dis. Gr GS 7.59 14 .54 [6.92 , 8.26 ] 0.100 0.046 [0.098 , 0.102 ] 0.0053 0.0110 
+
+Dis. Gr Exact 8.16 14 .99 [7.47 , 8.85 ] 0.104 0.046 [0.101 , 0.106 ] 0.0154 0.0616 
+
+Dis. Gr Bg. 9.28 15 .49 [8.56 , 10 ] 0.110 0.051 [0.108 , 0.113 ] 0.0036 0.0172 
+
+Dis. Gr Orig. 7.72 13 .20 [7.11 , 8.33 ] 0.102 0.049 [0.1, 0.104 ] 0.0038 0.0182 
+
+Dis. Af GS 7.09 14 .37 [6.43 , 7.76 ] 0.091 0.042 [0.089 , 0.093 ] 0.0054 0.0111 
+
+Dis. Af Exact 7.21 14 .87 [6.52 , 7.9] 0.090 0.042 [0.088 , 0.092 ] 0.0155 0.0621 
+
+Dis. Af Bg. 8.62 15 .70 [7.9, 9.35 ] 0.097 0.048 [0.095 , 0.1] 0.0036 0.0173 
+
+Dis. Af Orig. 7.73 13 .37 [7.11 , 8.35 ] 0.094 0.042 [0.092 , 0.096 ] 0.0040 0.0188   
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 32 of 35
+
+Alg. / Frame 1 400 800 1200 1600 2000 True 
+
+Bg. orig. 
+
+Background 
+
+Exact 
+
+Gauss–Seidel 7+1 
+
+Figure 5.7: Reconstructions for the DisappearingMotion experiment with the Affine predictor. 
+
+ℝ, there exist 𝜋 𝑢 , 𝜋 𝑤 , 𝜇 𝑢 𝛼 𝑤 , 𝛼 𝑢 > 0, and some errors 𝜀 𝑘 , ˜𝜀 𝑘 ≥ 0, such that 
+
+𝜅 𝑢 𝑑 𝑢 𝑗 +1 ≤ 𝑑 𝑢 𝑗 + 𝜋 𝑢 (𝜚 𝑗 + 𝜀 𝑗 ) for all 𝑗 = 1, . . . , 𝑘, (i) 
+
+𝜅 𝑤 𝑑 𝑤 𝑗 +1 ≤ 𝑑 𝑤 𝑗 + 𝜇 𝑢 𝑑 𝑢 𝑗 +1 + 𝜋 𝑤 (𝜚 𝑗 + 𝜀 𝑗 ) for all 𝑗 = 1, . . . , 𝑘, and (ii) 
+
+e𝑑 𝑗 +1 ≤ 𝛼 𝑢 𝑑 𝑢 𝑗 +1 + 𝛼 𝑤 𝑑 𝑤 𝑗 +1 + ˜𝜀 𝑗 for all 𝑗 = 0, . . . , 𝑘. (iii) Based on this recursive assumption, we aim to establish simple non-recursive bounds on e𝑑 𝑘 +1. Note that we could at the level of the assumption combine 𝜚 𝑗 and 𝜀 𝑗 into the single variable 
+
+ˇ𝜚 𝑗 := 𝜚 𝑗 + 𝜀 𝑗 ,
+
+however, due to their different purposes, do not do this. This combination is, however, allows us use [6] to deduce the next lemma that unrolls the recursion of (i) and (ii). 
+
+Lemma a.2 ([ 6, Lemma A.2]). Let Assumption a.1 (i) and (ii) hold for a 𝑘 ≥ 0. Then, letting 𝜄 𝑘 :=
+
+Í𝑘 𝑚 =1 𝜅 −𝑚 𝑢 𝜅 − ( 𝑘 +1−𝑚 ) 
+
+> 𝑤
+
+(understanding that 𝜄 0 = 0), we have 
+
+(a.1) 𝑅 𝑘 +1 := 𝛼 𝑢 𝑑 𝑢 𝑘 +1 + 𝛼 𝑤 𝑑 𝑤 𝑘 +1
+
+≤ ( 𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 )𝑑 𝑢  
+
+> 1
+
++ 𝛼 𝑤 𝜅 −𝑘 𝑤 𝑑 𝑤 
+
+> 1
+
++ 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+ 𝛼 𝑢 𝜅 − ( 𝑘 − 𝑗 ) 
+
+> 𝑢
+
+𝜋 𝑢 + 𝛼 𝑤 [𝜄 𝑘 − 𝑗 𝜇 𝑢 𝜋 𝑢 + 𝜅 − ( 𝑘 − 𝑗 ) 
+
+> 𝑤
+
+𝜋 𝑤 ] ˇ𝜚 𝑗 +1.
+
+The next two lemmas form our core estimates. They extend the corresponding lemmas of [ 6] to 
+
+𝑘 -dependent functions, with the corresponding additional errors from Assumption a.1. To obtain the estimates, recalling that 𝜅 𝑢 , 𝜅 𝑤 > 1, we observe that (a.2) 𝑝 𝑘 𝜄 𝑘 ≤ 𝑝 −1𝑘 (𝜅 /𝑝 )− ( 𝑘 +1) for 𝜅 := min (𝜅 𝑢 , 𝜅 𝑤 ) > 1 and any 𝑝 ∈ ( 0, 𝜅 ). 
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms
+
+Manuscript, 2026-06-10 page 33 of 35 
+
+Thus, by sum formulae for arithmetic-geometric progressions [8, formula 0.113], (a.3) 
+
+> 𝑛 −1
+
+∑︁ 
+
+> 𝑘 =0
+
+𝑝 𝑘 𝜄 𝑘 ≤
+
+> ∞
+
+∑︁ 
+
+> 𝑘 =0
+
+𝑝 𝑘 𝜄 𝑘 ≤ 𝑝 −1 (𝜅 /𝑝 − 1)−2 = 𝑝 (𝜅 − 𝑝 )−2 for all 𝑛 ∈ ℕ.
+
+Lemma a.3. Suppose Assumption a.1 holds for a 𝑘 ≥ 0. Then for any 𝑝 ∈ ( 0, 𝜅 ), we have 
+
+(a.4) ˜𝑑 2 
+
+> 𝑘 +1
+
+≤ ( 𝛼 𝑢 𝑑 𝑢 𝑘 +1 + 𝛼 𝑤 𝑑 𝑤 𝑘 +1 + ˜𝜀 𝑘 )2 ≤ ˇ𝑒 𝑝,𝑘 .
+
+where, for 𝜓 𝑗 := 𝛼 𝑢 𝜅 − 𝑗 𝑢 𝜋 𝑢 + 𝛼 𝑤 [𝜄 𝑗 𝜇 𝑢 𝜋 𝑢 + 𝜅 − 𝑗 𝑤 𝜋 𝑤 ], and 𝜅 := max {𝜅 𝑢 , 𝜅 𝑤 }, we set 
+
+𝜍 𝑝 := 𝜅 𝑝 
+
+> ∞
+
+∑︁ 
+
+> 𝑗 =0
+
+𝑝 𝑗 𝜓 𝑗 ≤ (𝛼 𝑢 𝜋 𝑢 + 𝛼 𝑤 𝜋 𝑤 )𝜅𝜅 𝑝 (𝜅 − 𝑝 ) + 𝛼 𝑤 𝜇 𝑢 𝜋 𝑢 𝜅 𝑝 2 (𝜅 − 𝑝 )2 and (a.5) 
+
+ˇ𝑒 𝑝,𝑘 := 54
+
+𝜍 𝑝 (𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 )
+
+𝜋 𝑢 𝑝 𝑘 (𝑑 𝑢  
+
+> 1
+
+)2 + 𝜍 𝑝 𝛼 𝑤 𝜅 −𝑘 𝑤 
+
+𝜋 𝑤 𝑝 𝑘 (𝑑 𝑤  
+
+> 1
+
+)2 + 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜍 𝑝 𝜓 2  
+
+> 𝑘 −𝑗
+
+𝑝 𝑘 − 𝑗 ˇ𝜚 2 
+
+> 𝑗 +1
+
++ 4 ˜ 𝜀 2
+
+> 𝑘
+
+!
+
+.(a.6) 
+
+Proof. Invoking the inner and adjoint tracking Assumption a.1 (i) and (ii) and Lemma a.2, we obtain 
+
+𝑅 𝑘 +1 := 𝛼 𝑢 𝑑 𝑢 𝑘 +1 + 𝛼 𝑤 𝑑 𝑤 𝑘 +1 ≤ ( 𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 )𝑑 𝑢  
+
+> 1
+
++ 𝛼 𝑤 𝜅 −𝑘 𝑤 𝑑 𝑤  
+
+> 1
+
++ 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜓 𝑘 − 𝑗 ˇ𝜚 𝑗 +1.
+
+Thus, using Young’s inequality several times, we deduce for any 𝜃 𝑢 𝑘 , 𝜃 𝑤 𝑘 , 𝜃 𝑘,𝑗 , 𝑠 > 0 that (a.7) 4𝑠𝑅 𝑘 +1 ≤ (𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 )2
+
+4𝜃 𝑢 𝑘 
+
+(𝑑 𝑢  
+
+> 1
+
+)2 + (𝛼 𝑤 𝜅 −𝑘 𝑤 )2
+
+4𝜃 𝑤 𝑘 
+
+(𝑑 𝑤  
+
+> 1
+
+)2
+
++ 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜓 2  
+
+> 𝑘 −𝑗
+
+𝜃 𝑘,𝑗 
+
+ˇ𝜚 2 
+
+> 𝑗 +1
+
++ 4 𝜃 𝑢 𝑘 + 𝜃 𝑤 𝑘 + 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜃 𝑘,𝑗 
+
+!
+
+𝑠 2.
+
+Take 𝜃 𝑢 𝑘 = 𝑝 𝑘 𝜍 −1 
+
+> 𝑝
+
+𝜋 𝑢 (𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 ), 𝜃 𝑤 𝑘 = 𝑝 𝑘 𝜍 −1 
+
+> 𝑝
+
+𝜋 𝑤 𝛼 𝑤 𝜅 −𝑘 𝑤 , and 𝜃 𝑘,𝑗 = 𝜍 −1 
+
+> 𝑝
+
+𝑝 𝑘 − 𝑗 𝜓 𝑘 − 𝑗 . Obseve that 𝜄 𝑘 ≤
+
+𝜅 𝑤 𝜄 𝑘 +1 [ 6, proof of Lemma A.2]. Hence, we get 𝑝 𝑘 𝜄 𝑘 ≤ ( 𝜅 𝑤 /𝑝 )𝑝 𝑘 +1𝜄 𝑘 +1, and thus 𝑝 𝑘 𝜓 𝑘 ≤ ( ¯𝜅 /𝑝 )𝑝 𝑘 +1𝜓 𝑘 +1,where ¯𝜅 /𝑝 > 1. Then we have 
+
+𝜃 𝑢 𝑘 + 𝜃 𝑤 𝑘 + 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜃 𝑘,𝑗 = 1
+
+𝜍 𝑝 
+
+𝑝 𝑘 𝜓 𝑘 +
+
+> 𝑘
+
+∑︁ 
+
+> 𝑗 =1
+
+𝑝 𝑗 𝜓 𝑗 
+
+!
+
+≤ ¯𝜅 𝑝𝜍 𝑝 𝑘 +1∑︁ 
+
+> 𝑗 =0
+
+𝑝 𝑗 𝜓 𝑗 ≤ 1.
+
+By combining ( a.7) with the previous bound and rearranging terms establishes 
+
+4𝑠𝑅 𝑘 +1 − 4𝑠 2 ≤ 𝜍 𝑝 (𝛼 𝑢 𝜅 −𝑘 𝑢 + 𝛼 𝑤 𝜄 𝑘 𝜇 𝑢 )
+
+𝜋 𝑢 𝑝 𝑘 (𝑑 𝑢  
+
+> 1
+
+)2 + 𝜍 𝑝 𝛼 𝑤 𝜅 −𝑘 𝑤 
+
+𝜋 𝑤 𝑝 𝑘 (𝑑 𝑤  
+
+> 1
+
+)2 + 
+
+> 𝑘 −1
+
+∑︁ 
+
+> 𝑗 =0
+
+𝜍 𝑝 𝜓 2  
+
+> 𝑘 −𝑗
+
+𝑝 𝑘 − 𝑗 ˇ𝜚 2
+
+> 𝑗 +1
+
+.
+
+We have 4𝑠 ˜𝜀 𝑘 ≤ 𝑠 2 + 4 ˜ 𝜀 2 
+
+> 𝑘
+
+, so it follows 4𝑠 (𝑅 𝑘 +1 + ˜𝜀 𝑘 ) − 5𝑠 2 ≤ 45 ˇ𝑒 𝑝,𝑘 . The left hand side is maximised by 𝑠 = 25 (𝑅 𝑘 +1 + ˜𝜀 𝑘 ). This gives (𝑅 𝑘 +1 + ˜𝜀 𝑘 )2 ≤ ˇ𝑒 𝑝,𝑘 By Assumption a.1 (iii), e𝑑 𝑘 +1 ≤ 𝑅 𝑘 +1 + ˜𝜀 𝑘 , so (a.4) follows. Finally, the bound in ( a.5) on 𝜍 𝑝 follows from ( a.3) and Í∞ 
+
+> 𝑗 =0
+
+(𝑝 /𝑘 ) 𝑗 = 1/( 1 − 𝑝 /𝑘 ) = 𝜅 /( 𝜅 − 𝑝 ). □
+
+Lemma a.4. Suppose Assumption a.1 holds for a 𝑘 ≥ 0. Then, for any 𝑝 ∈ [ 1, 𝜅 ), we have 
+
+(a.8) e𝑑 2 
+
+> 𝑘 +1
+
+≤ 54𝜍 2 
+
+> 𝑝
+
+ˇ𝜚 2 
+
+> 𝑘 +1
+
++ 𝑒 𝑝,𝑘 ,
+
+J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 34 of 35 
+
+where, for ˇ𝑒 𝑝,𝑘 defined in (a.6) ,
+
+(a.9) 𝑒 𝑝,𝑘 := ˇ𝑒 𝑝,𝑘 − 54𝜍 2 
+
+> 𝑝
+
+ˇ𝜚 2
+
+> 𝑘 +1
+
+satisfies 
+
+> 𝑘
+
+∑︁ 
+
+> 𝑛 =0
+
+𝑝 𝑛 𝑒 𝑝,𝑛 ≤ Ψ𝑝 := 54
+
+(𝑑 𝑢  
+
+> 1
+
+)2
+
+𝜋 𝑢 
+
+𝜍 𝑝 𝛼 𝑢 𝜅 𝜅 − 1 + 𝜍 𝑝 𝛼 𝑤 𝜇 𝑢 
+
+(𝜅 − 1)2
+
+
+
++ (𝑑 𝑤  
+
+> 1
+
+)2
+
+𝜋 𝑤 
+
+𝜍 𝑝 𝛼 𝑤 𝜅 𝜅 − 1
+
+
+
++
+
+> 𝑘
+
+∑︁ 
+
+> 𝑛 =0
+
+𝑝 𝑛 ˜𝜀 2
+
+> 𝑛
+
+!
+
+.
+
+Proof. The proof is analogous to that of [6, Lemma A.4]. □
+
+Finally we have the following result similar to [6, Lemma A.5]. 
+
+Lemma a.5. Suppose Assumption a.1 holds for a 𝑘 ∈ ℕ. Then, for ˘𝑒 1,𝑛 given in (a.6) , we have Í𝑘 −1 
+
+> 𝑛 =0
+
+˘𝑒 1,𝑛 ≤
+
+Ψ1 + 54 𝜍 21
+
+Í𝑘 −1 
+
+> 𝑛 =0
+
+ˇ𝜚 2
+
+> 𝑛 +1
+
+.
+
+Proof. We have ˘𝑒 1,𝑛 = 𝑒 1,𝑛 + 54 𝜍 21 ˇ𝜚 2
+
+> 𝑛 +1
+
+, where ( a.5) bounds Í𝑘 −1 
+
+> 𝑛 =0
+
+𝑒 1,𝑛 ≤ Ψ1. □
+
+# references 
+
+[1] M. Alsaker, J. L. Mueller, and A. Stahel, A multithreaded real-time solution for 2D EIT recon-struction with the D-bar algorithm, Journal of Computational Science 67 (2023), 101967, doi: 10.1016/j.jocs.2023.101967 .[2] C. Clason and T. Valkonen, Introduction to Nonsmooth Analysis and Optimization , MOS-SIAM Series on Optimization, SIAM, 2026, doi:10.1137/1.9781611978995 .[3] N. D. Dizon, J. Jauhiainen, and T. Valkonen, Prediction Techniques for Dynamic Imaging with Online Primal–Dual Methods, Journal of Mathematical Imaging and Vision 66 (2024), 1109–1134. [4] N. Dizon, J. Jauhiainen, and T. Valkonen, Prediction techniques for dynamic imaging with online primal-dual methods, 2024, doi:10.1007/s10851-024-01214-w , arXiv:2405.02497 .[5] N. Dizon, J. Jauhiainen, and T. Valkonen, Online optimisation for dynamic electrical impedance tomography, 2025, doi:10.1088/1361-6420/adcb66 , arXiv:2412.12944 .[6] N. Dizon and T. Valkonen, Differential estimates for fast first-order multilevel nonconvex optimi-sation, 2024, arXiv:2412.01481 . submitted. [7] G. H. Golub and C. F. Van Loan, Matrix computations. Johns Hopkins studies in the mathematical sciences, 1996. [8] I. Gradshteyn and I. Ryzhik, Table of integrals, series, and products , Academic press, 2014. [9] E. Hall and R. Willett, Dynamical models and tracking regret in online convex programming, in Proceedings of the 30th International Conference on Machine Learning , S. Dasgupta and D. McAllester (eds.), volume 28 of Proceedings of Machine Learning Research, PMLR, Atlanta, Georgia, USA, 2013, 579–587, http://proceedings.mlr.press/v28/hall13.html .[10] M. Hinze, R. Pinnau, M. Ulbrich, and S. Ulbrich, Optimization with PDE Constraints , number 23 in Mathematical Modelling: Theory and Applications, Springer Netherlands, 2009, doi:10.1007/ 978-1-4020-8839-1 .  
+
+> J. Jauhiainen, Y. Nabou, T. Valkonen Dynamic inverse problems: Single-loop online algorithms Manuscript, 2026-06-10 page 35 of 35
+
+[11] D. Holder and K. Aristovich, Electrical impedance tomography, in The Physics of Medical Imaging ,CRC press, 2026, 381–391. [12] D. J. Holland, D. M. Malioutov, A. Blake, A. J. Sederman, and L. F. Gladden, Reducing data acqui-sition times in phase-encoded velocity imaging u sing compressed sensing, Journal of Magnetic Resonance 203 (2010), 236–46. [13] A. Hunt, Weighing without touching: applying electrical capacitance tomography to mass flowrate measurement in multiphase flows, Measurement and Control 47 (2014), 19–25, doi: 10.1177/0020294013517445 .[14] J. Jauhiainen, N. Dizon, T. Valkonen, and Y. Nabou, Online optimisation codes for dynamic elec-trical impedance tomography, 2026, doi:10.5281/zenodo.19154746 . Software. [15] J. Jauhiainen, P. Kuusela, A. Seppanen, and T. Valkonen, Relaxed Gauss–Newton methods with applications to electrical impedance tomography, SIAM Journal on Imaging Sciences 13 (2020), 1415–1445. [16] J. Jauhiainen, P. Kuusela, A. Seppänen, and T. Valkonen, Relaxed Gauss–Newton Methods with Applications to Electrical Impedance Tomography, SIAM Journal on Imaging Sciences 13 (2020), 1415–1445. [17] J. Jauhiainen, Y. Nabou, and T. Valkonen, Dynamic inverse problems: Online regularisation theory, 2026, arXiv:2605.26022 . submitted. [18] J. Jauhiainen, M. Pour-Ghaz, T. Valkonen, and A. Seppänen, Nonplanar sensing skins for struc-tural health monitoring based on electrical resistance tomography, Computer-Aided Civil and Infrastructure Engineering 36 (2021), 1488–1507. [19] B. Jensen and T. Valkonen, A nonsmooth primal-dual method with interwoven PDE con-straint solver, Computational Optimization and Applications 89 (2024), 115–149, doi:10.1007/ s10589-024-00587-3 , arXiv:2211.04807 .[20] J. P. Kaipio, V. Kolehmainen, E. Somersalo, and M. Vauhkonen, Statistical inversion and Monte Carlo sampling methods in electrical impedance tomography, Inverse Problems 16 (2000), 1487. [21] A. Lipponen, A. Seppänen, and J. P. Kaipio, Nonstationary approximation error approach to imag-ing of three-dimensional pipe flow: experimental evaluation, Measurement Science and Technology 
+
+22 (2011), 104013, doi:10.1088/0957-0233/22/10/104013 .[22] T. Schuster, B. Hahn, and M. Burger, Dynamic inverse problems: mod-elling—regularization—numerics, Inverse Problems 34 (2018), 040301, doi:10.1088/1361-6420/aab0f5 .Preface to special issue. [23] E. Suonperä and T. Valkonen, General single-loop methods for bilevel parameter learning, 2024, 
+
+arXiv:2408.08123 . submitted. [24] A. Voss, N. Hänninen, M. Pour-Ghaz, M. Vauhkonen, and A. Seppänen, Imaging of two-dimensional unsaturated moisture flows in uncracked and cracked cement-based materials using electrical capacitance tomography, Materials and Structures 51 (2018), 68. [25] A. Voss, P. Hosseini, M. Pour-Ghaz, M. Vauhkonen, and A. Seppänen, Three-dimensional electri-cal capacitance tomography–A tool for characterizing moisture transport properties of cement-based materials, Materials & Design 181 (2019), 107967.

@@ -1,0 +1,341 @@
+Title: Sparsity-Driven Source Localization in Tomographic Sensing Applications
+
+URL Source: https://arxiv.org/pdf/2606.11840v1
+
+Published Time: Thu, 11 Jun 2026 00:56:16 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# SPARSITY -D RIVEN SOURCE LOCALIZATION IN TOMOGRAPHIC 
+
+# SENSING APPLICATIONS 
+
+Marco Mattuschka 1,∗ Noah An der Lan 1 Stefanie Schröder 2
+
+Arne Ficks 2 Max von Danwitz 1 Alexander Popp 1, 31 German Aerospace Center (DLR), Institute for the Protection of Terrestrial Infrastructures, 53757 Sankt Augustin, Germany  
+
+> 2
+
+Bundeswehr Research Institute for Protective Technologies and CBRN Protection (WIS), 29633 Munster, Germany  
+
+> 3
+
+University of the Bundeswehr Munich, Institute for Mathematics and Computer-Based Simulation (IMCS), 85577 Neubiberg, Germany 
+
+# ABSTRACT 
+
+Hyperspectral standoff detection systems such as Focal Plane Array (FPA) Fourier Transform In-frared (FTIR) spectrometers provide high spatial resolution in detecting airborne chemical contam-inants that are invisible to the human eye but potentially hazardous[1]. When two such systems are operated simultaneously with a suitable opening angle, they enable tomographic reconstruction of contaminant plumes with improved spatial and temporal accuracy[2]. This work presents a mathe-matical model of these measurement capabilities and an algorithm to identify, localize, and quantify contaminant release sources. The objective is to develop a a tool that reconstructs release locations and predict the future plume evolution from standoff measurement data, thereby supporting early warning and situational awareness in hazardous material release scenarios. The transport of con-taminants is modeled by an advection-diffusion equation, and the corresponding inverse problem for source identification is formulated accordingly. Owing to the severe ill-posedness and underde-termination of the problem, a sparsity-promoting regularization approach is employed together with a high-performance optimization algorithm[3]. To incorporate the tomographic measurement data into the discrete formulation, a level-set description of a threshold concentration is used, allowing the measurements to be represented independently of the computational mesh and avoiding costly remeshing procedures. 
+
+Keywords Large-scale inverse problems ⋅ Airborne contaminant transport ⋅ Advection-diffusion equation ⋅ Source detection ⋅ Tomographic Sensing 
+
+# 1 Introduction 
+
+The threat posed by airborne chemical hazards, such as chemical warfare agents (CWAs) or toxic industrial chemicals (TICs), is a growing concern in both civilian and military contexts. Substances releases may occur accidentally through industrial leaks or spills, or may be caused intentionally by acts of sabotage or terrorism. The resulting highly toxic gas clouds may be invisible to the human eye, yet can rapidly expand to threaten large areas. Releases of hazardous chemical substances can inflict mass casualties and create widespread disruption in targeted societies. The rapid and accurate identification of the contaminant source and spread is crucial for an effective response and mitigation of the threat. In emergency situations, decision-makers require reliable and timely information about the current state of contamination in order to initiate appropriate countermeasures[4]. Situational awareness can be achieved by combining sensor data with physics-based models and suitable inference algorithms. The detection, identification and monitoring of hazardous airborne chemicals has been an active research area for decades, primarily driven by Chemical, Biological, Radiological and Nuclear (CBRN) defense requirements[5]. 
+
+> ∗
+
+Corresponding author e-mail: marco.mattuschka@dlr.de 
+
+> arXiv:2606.11840v1 [math.NA] 10 Jun 2026
+
+Algorithmic Identification of Moving Contaminant Sources 
+
+Figure 1: Modeled measurement setup with two FPA-FTIR measuring stations (green-yellow dots, left), FPA-FTIR hyperspectral imaging measurement device in another campaign [2](top middle), synthetic signal (extracted contour) representing gas tomography result in the modeled setup (right) Standoff hyperspectral imaging detectors are particularly suited for monitoring a large area within their line of sight[6], while remotely controlled point detectors may be used to survey specific areas of strategic interest from a safe dis-tance.[2, 7]. A favorable spatial and temporal detection resolution is achieved by using FPA-FTIR-spectrometers[8]. Early work on passive standoff detection technologies established the viability of FPA-FTIR-based sensing for toxic industrial chemicals and chemical warfare agents at operationally relevant distances[1]. Operating two FPA-FTIR-based hyperspectral imaging systems in a tomography setup enables both early warning and a spatial reconstruction of the cloud in the field of view (see Figure 1(top left) and [9, 2] for further details of the measurement system operation). Physics-based models and suitable inference algorithms have the potential to extend the mapping of a threat zone beyond the field of view of the sensor systems. Various approaches for solving the inverse problem of identifying an initial contaminant release from (partial) measurements of the current state have been proposed in the literature. A Bayesian Markov chain Monte Carlo (MCMC) framework is presented in[10]. From a Bayesian perspective, chal-lenges arise in the computation of maximum-a-posteriori estimators, where the specific choice of data misfit and regularization terms is closely related to the assumed noise model and the prior distribution of the unknown source, respectively[11, 12]. In contrast, we formulate the source identification problem as a PDE-constrained optimization problem, where the advection-diffusion equation acts as the governing constraint and the scarcity of measurement data are compensated by suitable regularization techniques[13, 14, 15]. In this context, Tikhonov regularization with weighted 𝐿 2-type penalty terms leads to quadratic minimization problems that can be solved efficiently using Newton-type methods[16, 17, 15, 18, 19, 20, 21, 22]. However, in realistic scenarios, contaminant sources are often highly localized, i.e., concentrated around a finite num-ber of release locations, while the available measurements are typically sparse in space, for example in the form of time series recorded by a small number of fixed point sensors. Due to the smoothing properties of the advection-diffusion equation, weighted 𝐿 2-type regularization is generally not well suited to capture such sparse structures. To address this issue, we model the unknown contaminant source as a superposition of finitely many atoms of pre-scribed shape and subsequently relax this representation to parameters described by integrals of a shape function with respect to an unknown positive Radon measure. The resulting identification problem is treated within a varia-tional regularization framework, leading to a convex optimization problem. For its numerical solution, we employ the Primal-Dual Active Point (PDAP) strategy introduced in[23, 3], which efficiently approximates sparse minimizers by alternating between greedy updates of source locations and optimization of the corresponding source intensities. The present work addresses a gap at the intersection of two established research lines. While sparse regularization methods for advection-diffusion source identification have been developed and validated on synthetic point sensor configurations, and while standoff FPA-FTIR tomography has been demonstrated as a capable sensing architecture for airborne contaminant detection in field conditions, no prior work has combined these two paradigms into a unified framework for real-time source localization. Specifically, the scientific novelty of this work is twofold. First, we adapt the Primal-Dual-Active-Point strategy of [3] to the tomographic measurement setup of dual FPA-FTIR standoff sensing systems. Therefore, we replace the point sensor observation model with a level-set description of a threshold concentration which corresponds to the information that can be obtained from the measurement system. Second, we demonstrate numerically that the resulting sparse inverse problem remains tractable. Together, these contributions establish sparsity-driven tomographic source localization as a computationally feasible approach. The remainder of this paper is organized as follows. Section 2 provides a mathematical framework for the problem, outlining the equations that we use to model the behavior of airborne hazardous substances. In Section 3, we specialize 2Algorithmic Identification of Moving Contaminant Sources Ω
+
+Γ0 Γ+
+
+Γ0
+
+Γ−
+
+Γ0
+
+m
+
+Figure 2: Shows the test area Ω (left) and the estimated wind field (right) 
+
+Figure 3: Numerical simulation of contamination dispersion at the beginning of the release ( 𝑡 = 0 .0 s , top left), at the measurement time ( 𝑡 = 5 .0 s , top right) , after 𝑡 = 40 .0 s (bottom left) and at the final simulation time ( 𝑡 = 100 .0 s ,bottom right). the Primal-Dual Active Point (PDAP) algorithm for source identification based on level-set information. Numerical results obtained with the proposed method are presented in Section 4, where we demonstrate the feasibility of the approach in a numerical experiment. Finally, in Section 5, we summarize the main findings and provide an outlook on further developments and field trials to validate the method. 
+
+# 2 Mathematical Framework 
+
+The underlying transport process is described by the advection-diffusion equation with diffusion coefficient 𝜅 and wind velocity field 𝒗 . The boundary 𝜕 Ω is decomposed into the inflow boundary Γ−, the free-slip boundary Γ0, and the outflow boundary Γ+. These boundaries are characterized by the sign of the normal component of the velocity 3Algorithmic Identification of Moving Contaminant Sources field: 
+
+𝒗 ⋅ 𝒏 < 0 on Γ−, 𝒗 ⋅ 𝒏 = 0 on Γ0, 𝒗 ⋅ 𝒏 > 0 on Γ+,
+
+where 𝒏 denotes the outward-pointing unit normal vector on 𝜕 Ω, cf.[24]. A schematic illustration of this setting is shown in Figure 2. The resulting advection-diffusion problem with corresponding boundary conditions is given by 
+
+𝑢 𝑡 − 𝜅 Δ𝑢 + 𝒗 ⋅ ∇𝑢 = 0 in (0 , 𝑇 ) × Ω ,𝜅 ∇𝑢 ⋅ 𝒏 = 0 in (0 , 𝑇 ) × Γ +,𝑢 = 0 in (0 , 𝑇 ) × (Γ − ∪ Γ 0),𝑢 (0 , ⋅) = 𝑚 in Ω.
+
+( )The abstract space of admissible parameters will be denoted by D and will be specified later. An illustration of the corresponding forward simulation is shown in Figure 3. In the following, we present the extension of the approach introduced in [3]. To this end, for a given real physical contaminant field 𝑢 true , measured at a height of 2 m above the ground, Equation  is assumed to be satisfied, and the FPA-FTIR hyperspectral imaging device, cf. Figure 1(top right), is able to determine a level set at concentration value 
+
+𝑐 at time 𝑡 obs ∈ (0 , 𝑇 ], i.e., 
+
+Γ𝑡 obs [𝑢 true ] ∶= { 𝑥 ∈ Ω ∣ 𝑢 true (𝑡 obs , 𝑥 ) = 𝑐 }.
+
+For simplicity of notation, we write Γ𝑡 obs ∶= Γ 𝑡 obs [𝑢 true ], although the set depends on the unknown true solution 
+
+𝑢 true and assume that Γ𝑡 obs is smooth embedded. Neglecting sensor noise, the observation operator at time 𝑡 obs is defined by 𝑡 obs (𝑢 ) ∶= 𝑢 (𝑡 obs , ⋅)|||Γ𝑡 obs 
+
+, which is well-defined due to the regularity of the solution. Our data assimilation step consists of reconstructing the initial condition 𝑚 such that the simulated concentration matches the measured concentration values along the observed level sets. This leads to the minimization problem 
+
+min   
+
+> 𝑚 admissible
+
+∫Γ𝑡 obs 
+
+(𝑢 (𝑡 obs , 𝑧 ) − 𝑐 )2 d𝑠 (𝑧 ), (1) subject to 𝑢 solving Equation  . Accordingly, we define the linear and continuous parameter-to-state operator 
+
+ ∶ D → 𝐶 0([ 𝑡 obs , 𝑇 ] × ̄ Ω) , defined by (𝑚 ) = 𝑢, 
+
+where 𝑢 solves Equation  . The corresponding parameter-to-observable operator is given by 
+
+ ∶ D → 𝐶 0(Γ 𝑡 obs ),  (𝑚 ) = 𝑡 obs ◦(𝑚 ).
+
+Given a smooth misfit 𝑦 ∈ 𝐶 0(Γ 𝑡 obs ), e.g., 𝑦 = 𝑡 obs (𝑢 ) − 𝑐 , the associated misfit-to-adjoint map is given by (𝑦 ) = 𝑞 ,where 𝑞 is the solution to the final value problem 
+
+−𝑞 𝑡 − 𝜅 Δ𝑞 − div( 𝑞 𝒗 ) = 𝛿 Γ𝑡 obs [𝑦 ] in (0 , 𝑇 ) × Ω ,
+
+(𝒗 𝑞 + 𝜅 ∇𝑞 ) ⋅ 𝒏 = 0 on (0 , 𝑇 ) × (Γ − ∪ Γ 0),𝑞 = 0 on (0 , 𝑇 ) × Γ +,𝑞 (𝑇 , ⋅) = 0 in Ω.
+
+()The line delta distribution can be expressed informal as 
+
+𝛿 Γ𝑡 obs [𝑦 ]( 𝑥 ) ∶= ∫Γ𝑡 obs 
+
+𝑦 (𝑧 ) 𝛿 (𝑥 − 𝑧 ) d 𝑠 (𝑧 ) for 𝑥 ∈ Ω ,
+
+where 𝛿 denotes the Dirac delta distribution, cf. [25]. More precisely, 𝛿 Γ𝑡 obs [𝑦 ] is defined by the identity 
+
+∫Ω
+
+𝛿 Γ𝑡 obs [𝑦 ]( 𝑥 ) 𝑓 (𝑥 ) d 𝑥 = ∫Γ𝑡 obs 
+
+𝑦 (𝑧 )𝑓 (𝑧 ) d 𝑠 (𝑧 ) for every test function 𝑓 ∈ 𝐶 ∞ 
+
+> 𝑐
+
+(Ω) .
+
+# 3 Method: Source identification based on level-set information 
+
+If we consider Equation 1, the resulting inverse problem is highly underdetermined, since the initial condition is represented by a sufficiently regular parameter field 𝑚 . To reduce the dimensionality of the problem, we follow the approach proposed in[23, 3] and assume that the qualitative structure of the initial condition is known a priori, 4Algorithmic Identification of Moving Contaminant Sources 
+
+Figure 4: Shows the contaminant after 5.0 s seconds and the contour Γ5.0 s = { 𝑥 ∈ Ω |𝑢 true (𝑡, 𝑥 ) = 10 −3 } captured by the measurement system (yellow ellipse, left) and the solution q of the adjoint problem ( ) for 𝑐 = 10 −3 at 𝑡 = 𝑡 obs ,computed using the inverted wind field (right). while only the source locations and amplitudes remain unknown. More precisely, for a prescribed shape function 
+
+ ∶ Ω × Ω → ℝ, we consider the optimization problem 
+
+min 
+
+> 𝑥 ∈Ω , 𝜆 ∈ℝ≥0
+
+12 ∫Γ𝑡 obs 
+
+( (𝜆 (𝑥, ⋅))( 𝑡 obs , 𝑧 ) − 𝑐 )2 d𝑠 (𝑧 ),
+
+which results in a highly nonlinear parameter identification problem. To overcome this difficulty, we assume that the initial condition can be represented as a conic combination of Dirac delta functionals, 
+
+𝑚 = ∫̄ Ω
+
+(𝑧, ⋅) d 𝜇 (𝑧 ), where 𝜇 =
+
+> 𝑁
+
+∑
+
+> 𝑖 =1
+
+𝜆 𝑖 𝛿 𝑥 𝑖 . (2) We then extend this representation to the space of Radon measures by defining 
+
+𝑚 (𝜇 ) = ∫̄Ω
+
+(𝑧, ⋅) d 𝜇 (𝑧 ) and ̂  (𝜇 ) ∶=  (𝑚 (𝜇 )) for a positive Radon measure 𝜇. (3) Then, the inverse problem can be formulated as the following well-posed optimization problem over the space of positive Radon measures +(̄ Ω) :
+
+min 
+
+> 𝜇 ∈+(̄Ω)
+
+𝐽 (𝜇 ) ∶= 12 ‖̂ (𝜇 ) − 𝑐 ‖2  
+
+> 𝐿 2(Γ 𝑡 obs )
+
++ 𝛼 𝜇 (̄Ω) , ()where 𝛼 > 0 denotes a regularization parameter. For the existence and regularity of a minimizer, the SUPG-stabilized finite element discretization, as well as the numerical determination by the PDAP algorithm, we refer to [3, 26, 27] and restrict ourselves here to the discretization of the adjoint problem ( ) or, more specifically, to the discretization of the distribution 𝛿 Γ𝑡 obs [𝑦 ], which appears as source term on the right-hand side of the equation. We use continuous Lagrange nodal basis functions defined by ℎ = span{ 𝜙 1, … , 𝜙 𝑛 dof } associated with the nodes {𝑝 1, … , 𝑝 𝑛 dof }. The mass matrix in Ω is given by 
+
+𝑀 Ω 
+
+> 𝑖𝑗
+
+∶= ∫Ω
+
+𝜙 𝑖 (𝑥 ) 𝜙 𝑗 (𝑥 ) dΩ( 𝑥 ).
+
+An identification between functions in 𝐿 2(Ω) and their finite element coefficient vectors is required. For this pur-pose, let the map I ∶ ℝ𝑛 dof → ℎ be defined by I( 𝒖 ) = ∑𝑛 dof  
+
+> 𝑖 =1
+
+𝑢 𝑖 𝜙 𝑖 . Together with the scalar product ⟨𝒂 , 𝒃 ⟩𝑀 Ω ∶= 
+
+⟨𝑀 Ω𝒂 , 𝒃 ⟩ℝ𝑛 dof , the map I becomes an isometry, i.e., ⟨I( 𝒖 ), I( 𝒗 )⟩𝐿 2(Ω) = ⟨𝒖 , 𝒗 ⟩𝑀 Ω . Next, consider a discrete represen-tation of the embedded curve 
+
+Γ𝑡 obs = { 𝛾 1, … , 𝛾 𝑚 dof },
+
+together with a continuous piecewise linear nodal basis {𝜓 1, … , 𝜓 𝑚 dof } defined on the corresponding one-dimensional mesh of the curve. Let 𝑀 Γ𝑡 obs ∈ ℝ𝑚 dof ×𝑚 dof denote the associated mass matrix on Γ𝑡 obs . For simplicity and improved 5Algorithmic Identification of Moving Contaminant Sources 
+
+Figure 5: Predicted raw sources 𝜆 𝑖 𝛿 𝑥 𝑖 (left) and derived source 𝜇 post (red dot) near ground truth source center (black cross, right) numerical robustness, each point 𝛾 𝑗 is assumed to lie at the barycenter 𝛾 𝑗 ≈ 13 (𝑝 𝑗 0 + 𝑝 𝑗 1 + 𝑝 𝑗 2 ) of a finite element 
+
+𝐾 𝑗 = conv{ 𝑝 𝑗 0 , 𝑝 𝑗 1 , 𝑝 𝑗 2 } ⊂ Ω. Since linear finite elements are employed, the basis functions satisfy 
+
+𝐶 𝑗𝑖 ∶= 𝜙 𝑖 (𝛾 𝑗 ) = 
+
+{ 13 , 𝑖 ∈ { 𝑗 0, 𝑗 1, 𝑗 2},
+
+0, otherwise , (4) which defines the sparse trace matrix 𝐶 ∈ ℝ𝑚 dof ×𝑛 dof . The discrete trace operator is therefore given by 𝑡 obs (I( 𝒖 )) = 
+
+∑𝑚 dof 
+
+> 𝑗 =1
+
+∑𝑛 dof  
+
+> 𝑖 =1
+
+𝐶 𝑗𝑖 𝑢 𝑖 𝜓 𝑗 . Consequently, the discrete representation of the singular source term appearing on the right-hand side of the adjoint problem ( ) is obtained from 
+
+⟨
+
+𝛿 Γ𝑡 obs [I( 𝒚 )] , 𝜙 𝑙 
+
+⟩
+
+=
+
+> 𝑚 dof
+
+∑ 
+
+> 𝑘 =1
+
+∫Γ𝑡 obs 
+
+𝜓 𝑘 𝑡 obs (𝜙 𝑙 ) d 𝑠 𝑦 𝑘 .
+
+Using the matrix representation of the trace operator, this becomes 
+
+> 𝑚 dof
+
+∑
+
+> 𝑗 =1
+> 𝑚 dof
+
+∑
+
+> 𝑘 =1
+
+𝐶 𝑗𝑙 𝑀 Γ𝑡 obs  
+
+> 𝑗𝑘
+
+𝑦 𝑘 = (𝐶 ⊤𝑀 Γ𝑡 obs 𝒚 ) 
+
+> 𝑙
+
+.
+
+Hence, the discrete contour source term is represented by 𝐶 ⊤𝑀 Γ𝑡 obs 𝒚 , whose spatial distribution is illustrated in Figure 4. 
+
+# 4 Numerical Results 
+
+To demonstrate the capabilities of the proposed method, we employ an automated computational pipeline that imports building footprints directly from OpenStreetMap (OSM) and incorporates them as obstacles into the computational domain; see Figure 2. Based on this geometry, locally refined triangular meshes are generated to ensure stable and accurate numerical solutions of both the forward problem (  ) and the adjoint problem ( ). The implementation is based on the software framework FEniCs [28]; see also[29] for details of the mesh generation procedure. As a proof of concept, we consider a synthetic test case with artificially generated wind and measurement data. The resulting wind field for a kinematic viscosity of 𝜈 = 0 .25 m 2 s−1 is shown in Figure 2. A constant inflow velocity of 1 m s −1 
+
+is prescribed at the southern boundary, while free-slip boundary conditions are imposed elsewhere, cf. [30]. The corresponding forward simulation is illustrated in Figure 3. Synthetic measurements are extracted at time 𝑡 obs = 5 s .To mimic imaging-based sensing techniques, we assume that the measurement device becomes sensitive only for concentrations exceeding the threshold value 𝑐 = 10 −3 . The corresponding contour is depicted in Figure 4. For the transport problem (  ), we choose a diffusion coefficient of 𝜅 = 2 .0 m 2 s−1 . The source term is parameterized by the shape function 
+
+(𝑥 𝑠 , 𝑧 ) = min 
+
+{
+
+0.5, exp 
+
+(
+
+ln( 𝜖 ) ‖‖𝑧 − 𝑥 𝑠 ‖‖22 ∕𝑟 2 )} 
+
+, (5) 6Algorithmic Identification of Moving Contaminant Sources 
+
+Figure 6: Reconstruction of the contaminant concentration at measurement time 5.0 s ; compare to Figure 4 and the absolute difference 𝑢 true (5 .0 s , ⋅) − ̂ 𝐹 (𝜇 )(5 .0 s , ⋅)
+
+Figure 7: Reconstruction of the contaminant concentration at measurement time 100 .0 s ; compare to Figure 3 and the absolute difference 𝑢 true (100 .0 s , ⋅) − ̂ 𝐹 (𝜇 )(5 .0 s , ⋅)
+
+with radius 𝑟 = 1 m , center 𝑥 𝑠 = [−241 , −41] , and threshold parameter 𝜖 = 10 −3 . With this setup, the proposed method is able to reconstruct the source location efficiently and with high accuracy. The resulting six Dirac delta distributions (𝜆 1𝛿 𝑥 1 , … , 𝜆 6𝛿 𝑥 6 ), computed by the PDAP algorithm together with the post-processed source 𝜇 post =
+
+𝜆 post 𝛿 𝑥 post , where 𝜆 post = ∑6 
+
+> 𝑖 =1
+
+𝜆 𝑖 and 𝑥 post = ∑6 
+
+> 𝑖 =1
+
+𝜆 𝑖 𝑥 𝑖 ∕𝜆 post , are reported in Table 1. These results were obtained after only sixteen iterations of the PDAP algorithm, requiring a total of sixteen solutions of the forward and adjoint problems Equation  and Equation , respectively. Since both the source location and the source intensity are reconstructed with high accuracy, the complete contaminant distribution at the measurement time can be recovered reliably, enabling subsequent predictions of the future dispersion dynamics. For the synthetic test case considered here, the reconstruction error exhibits a spatial distribution similar to that of the concentration field and remains below 
+
+1% throughout the domain. This behavior is illustrated in Figure 6 and Figure 7. 
+
+# 5 Summary and Further Application 
+
+This paper extends a novel and computationally efficient framework for the real-time localization of contaminant sources in complex environments using tomographic standoff detection. In particular, the proposed approach can in-corporate high-resolution hyperspectral imaging data acquired by an FPA-FTIR system (so far simulated) to localize and quantify airborne contaminant releases. A key advantage of the presented imaging technique is its mobile appli-cability combined with its ability to provide high spatial data density. A real (physical) measurement of a contaminant cloud captured with two FPA-FTIR hyperspectral imaging systems is shown in Figure 8. Compared to isolated point 7Algorithmic Identification of Moving Contaminant Sources Source location Reconstruction 𝑥 ‖‖𝑥 − 𝑥 𝑠 ‖‖Ω Estimated intensity 𝜆 
+
+x y [m] (truth 1.0) 
+
+𝑥 post , 𝜆 post −241 .2 −40 .9 0.26 1.02 
+
+𝑥 1, 𝜆 1 −241 .30 −40 .86 0.33 0.9981 
+
+𝑥 2, 𝜆 2 −237 .87 −43 .90 4.27 0.0134 
+
+𝑥 3, 𝜆 3 −237 .95 −39 .54 3.39 0.0110 
+
+𝑥 4, 𝜆 4 −240 .61 −46 .01 5.03 0.0042 
+
+𝑥 5, 𝜆 5 −241 .99 −35 .71 5.38 0.0006 
+
+𝑥 6, 𝜆 6 −247 .40 −44 .30 7.20 0.0007 Table 1: Reconstruction of the source location 𝑥 𝑠 = [−241 , −41] at the test site, cf. Figure 5 
+
+Figure 8: Shows the recorded values (black dots) of two FPA-FTIR hyperspectral imaging devices (green-yellow dots) and the extracted contour (pink) in a three-dimensional environment (left) and a synthetic signal representing the information gained from a lidar measurement in the modeled setup (right) measurements, FPA-FTIR hyperspectral FPA-FTIR hyperspectral imaging systems provide significantly more infor-mation about the spatial distribution of the contaminant field. These properties are particularly important for early warning and rapid emergency response in hazardous substance release scenarios. The computational efficiency of the present formulation enables the identification of sources on large spatial scales. Even for high-resolution measurement data, the proposed approach requires only a comparatively small number of PDE solves. This efficiency is essential for extending the approach to real measurement data in complex three-dimensional environments. To further accelerate the computations, a reduced-order modeling approach for the advection-diffusion problem was investigated in[31]. Using singular value decomposition (SVD), a reduced-order model can be constructed that enables highly efficient evaluation of both the forward and adjoint problems and may additionally be exploited for tasks such as optimal sensor placement. In a comparable setting, the reduced model re-quired only 6.25 ms per forward or adjoint solve. However, such a reduction approach cannot be transferred directly to the present application in a meaningful way, since the boundary curve Γ𝑡 obs [𝑢 true ] depends on the current measurement and therefore cannot be precomputed offline. Consequently, alternative strategies, e.g., machine learning, are required to achieve real-time capabilities for the proposed method. Technical measurement systems of this type are inherently affected by systematic noise. In the present work, sen-sor noise has not yet been incorporated into the inverse problem. A possible formulation based on noisy level-set observations is given by 
+
+Γobs = { 𝑥 ∣ 𝑢 (𝑥 ) + 𝜂 (𝑥 ) = 𝑐 } , 𝜂 (𝑥 ) ∼  (0 , 𝜎 2).
+
+To calibrate and validate such a noise model, data from existing measurement campaigns may be analyzed. In addition, future work will focus on combining multiple measurement systems in order to obtain reliable data under realistic environmental conditions. In practical applications, not only the initial condition but also additional unknown model parameters must be identified through data assimilation. Since detailed flow simulations are often infeasible due to limited data availability and the complexity of the environment, additional parameters related to turbulence modeling must be estimated, which may require a simultaneous calibration of the overall system. This leads to the fact that 8Algorithmic Identification of Moving Contaminant Sources data fusion of different types of measurements, e.g., combining standoff FPA-FTIR and portable polarization lidar (light imaging, detection and ranging) system [32], allows for a significant gain in information and thus lead to more precise physically grounded statements for real-time situational awareness in hazardous substance release scenarios. An extracted synthetic example of the received power signal from the portable polarization lidar system (Figure 1, left, white line) is shown in Figure 8, where attenuation effects, i.e., the attenuation of the emitted and backscattered laser signal within the plume due to absorption and scattering, are neglected. Future work will focus on incorporating these effects in a physically consistent manner, including an adequate noise model. 
+
+# 6 Acknowledgements 
+
+AP gratefully acknowledges the funding by dtec.bw - Digitalization and Technology Research Center of the Bun-deswehr (project RISK.twin). dtec.bw is funded by the European Union - NextGenerationEU. 
+
+# References 
+
+[1] F. Wilsenack et al. “Dissemination monitoring by LWIR hyperspectral imaging”. In: Chemical, Biological, Radiological, Nuclear, and Explosives (CBRNE) Sensing XX . Ed. by Jason A. Guicheteau and Chris R. Howle. International Society for Optics and Photonics. SPIE, 2019, p. 1101007. DOI : 10.1117/12.2518834 . URL :
+
+https://doi.org/10.1117/12.2518834 .[2] Frank Wilsenack et al. “Combining standoff tomography with point detection: a game changer for the identifi-cation of airborne toxic chemicals”. In: Proc. SPIE . SPIE, 2024. DOI : 10.1117/12.3013427 .[3] Marco Mattuschka et al. “Sparse source identification in transient advection-diffusion problems with a primal-dual-active-point strategy”. In: Computer Methods in Applied Mechanics and Engineering 454 (2026), p. 118854. ISSN : 0045-7825. DOI : 10.1016/j.cma.2026.118854 .[4] Zhehao Zhang et al. “Current status of research on chemical warfare agent detection technology”. In: TrAC Trends in Analytical Chemistry 193 (2025), p. 118474. ISSN : 0165-9936. DOI : https://doi.org/10.1016 /j.trac.2025.118474 . URL : https://www.sciencedirect.com/science/article/pii/S016599362 5003425 .[5] R. Sferopoulos. “A Review of Chemical Warfare Agent (CWA) Detector Technologies and Commercial-Off-The-Shelf Items.” In: Science and Technology Organisation Technical Report (2009). URL : https://www.sc iencedirect.com/science/article/pii/S0165993625003425 .[6] Roland Harig and Gerhard Matz. “Toxic cloud imaging by infrared spectrometry: A scanning FTIR system for identification and visualization”. In: Field Analytical Chemistry & Technology 5.1-2 (2001), pp. 75–90. DOI :
+
+https://doi.org/10.1002/fact.1008 . eprint: https://onlinelibrary.wiley.com/doi/pdf/10.10 02/fact.1008 . URL : https://onlinelibrary.wiley.com/doi/abs/10.1002/fact.1008 .[7] Maria Allers et al. “Real-Time Remote Detection of Airborne Chemical Hazards—An Unmanned Aerial Vehi-cle (UAV) Carrying an Ion Mobility Spectrometer”. In: IEEE Sensors Journal 23.15 (2023), pp. 16562–16570. 
+
+> DOI
+
+: 10.1109/JSEN.2023.3287448 .[8] Roland Harig et al. “Remote detection of gases and liquids by imaging Fourier transform spectrometry using a focal plane array detector: first results”. In: Chemical and Biological Sensors for Industrial and Environmental Monitoring II . Ed. by Steven D. Christesen et al. International Society for Optics and Photonics. SPIE, 2006, p. 637816. DOI : 10.1117/12.692922 .[9] Frank Wilsenack et al. “Detection and 3D characterization of short-time chemical exposures with a dual setup of IR focal plane arrays”. In: Chemical, Biological, Radiological, Nuclear, and Explosives (CBRNE) Sensing XXIV . Ed. by Jason A. Guicheteau and Christopher R. Howle. International Society for Optics and Photonics. SPIE, 2023, p. 1254102. DOI : 10.1117/12.2663155 . URL : https://doi.org/10.1117/12.2663155 .[10] Roseane A. S. Albani et al. “Uncertainty quantification and atmospheric source estimation with a discrepancy-based and a state-dependent adaptative MCMC”. In: Environmental Pollution 290 (2021), p. 118039. DOI :
+
+10.1016/j.envpol.2021.118039 .[11] A. M. Stuart. “Inverse problems: A Bayesian perspective”. In: Acta Numerica 19 (2010), pp. 451–559. DOI :
+
+10.1017/S0962492910000061 .[12] Jonas Nitzler et al. “A generalized probabilistic learning approach for multi-fidelity uncertainty quantification in complex physical simulations”. In: Computer Methods in Applied Mechanics and Engineering 400 (2022), p. 115600. ISSN : 0045-7825. DOI : 10.1016/j.cma.2022.115600 .9Algorithmic Identification of Moving Contaminant Sources [13] Steven M. Gorelick, Barbara Evans, and Irwin Remson. “Identifying sources of groundwater pollution: An optimization approach”. In: Water Resources Research 19.3 (1983), pp. 779–790. DOI : 10.1029/WR019i003p 00779 .[14] Richard Tsai, Stanley Osher, and Yingying Li. “Heat source identification based on 𝑙 1 constrained minimiza-tion”. In: Inverse Problems and Imaging 8.1 (2014), pp. 199–221. DOI : 10.3934/ipi.2014.8.199 .[15] Umberto Villa, Noemi Petra, and Omar Ghattas. “hIPPYlib”. In: ACM Transactions on Mathematical Software 
+
+47.2 (2021), pp. 1–34. DOI : 10.1145/3428447 .[16] Thomas Wiedemann et al. “Domain Knowledge Assisted Gas Tomography”. In: 2024 IEEE International Sym-posium on Olfaction and Electronic Nose (ISOEN) . IEEE, 2024, pp. 1–3. ISBN : 979-8-3503-4865-1. DOI : 10.1 109/ISOEN61239.2024.10556226 .[17] Noei Petra and Georg Stadler. Model Variational Inverse Problems Governed by Partial Differential Equations .
+
+https://math.nyu.edu/~stadler/papers/PetraStadler11.pdf . The University of Texas, 2011. [18] Keyi Wu, Peng Chen, and Omar Ghattas. “An Offline-Online Decomposition Method for Efficient Linear Bayesian Goal-Oriented Optimal Experimental Design: Application to Optimal Sensor Placement”. In: SIAM Journal on Scientific Computing 45.1 (2023), B57–B77. ISSN : 1064-8275. DOI : 10.1137/21M1466542 .[19] Alen Alexanderian et al. “A-Optimal Design of Experiments for Infinite-Dimensional Bayesian Linear Inverse Problems with Regularized 𝓁 0-Sparsification”. In: SIAM Journal on Scientific Computing 36.5 (2014), A2122– A2148. ISSN : 1064-8275. DOI : 10.1137/130933381 .[20] Alen Alexanderian and Arvind K. Saibaba. “Efficient D-Optimal Design of Experiments for Infinite-Dimensional Bayesian Linear Inverse Problems”. In: SIAM Journal on Scientific Computing 40.5 (2018), A2956–A2985. ISSN : 1064-8275. DOI : 10.1137/17M115712X .[21] Ahmed Attia, Alen Alexanderian, and Arvind K. Saibaba. “Goal-oriented optimal design of experiments for large-scale Bayesian linear inverse problems”. In: Inverse Problems 34.9 (2018), p. 095009. DOI : 10.1088/13 61-6420/aad210 .[22] Sonja Wogrin et al. “From Data to Decisions: A Real-Time Measurement–Inversion–Prediction–Steering Framework for Hazardous Events and Health Monitoring”. In: Handbook of Dynamic Data Driven Applica-tions Systems . Ed. by Frederica Darema et al. Cham: Springer International Publishing, 2023, pp. 195–227. 
+
+> ISBN
+
+: 978-3-031-27985-0. DOI : 10.1007/978-3-031-27986-7_8 .[23] Konstantin Pieper and Daniel Walter. “Linear convergence of accelerated conditional gradient algorithms in spaces of measures”. In: ESAIM: Control, Optimisation and Calculus of Variations 27 (2021), p. 38. ISSN :1292-8119. DOI : 10.1051/cocv/2021042 .[24] Howard C. Elman and Tengfei Su. “A low-rank solver for the stochastic unsteady Navier–Stokes problem”. In: Computer Methods in Applied Mechanics and Engineering 364 (2020), p. 112948. ISSN : 0045-7825. DOI :
+
+10.1016/j.cma.2020.112948 .[25] Charles S Peskin. “Flow patterns around heart valves: A numerical method”. In: Journal of Computational Physics 10.2 (1972), pp. 252–271. ISSN : 0021-9991. DOI : https://doi.org/10.1016/0021-9991(72)90 065-4 . URL : https://www.sciencedirect.com/science/article/pii/0021999172900654 .[26] Max von Danwitz et al. “Time–continuous and time–discontinuous space–time finite elements for advection– diffusion problems”. In: International Journal for Numerical Methods in Engineering 124.14 (2023), pp. 3117– 3144. DOI : 10.1002/nme.7241 .[27] Alexander N. Brooks and Thomas J.R. Hughes. “Streamline upwind/Petrov-Galerkin formulations for convec-tion dominated flows with particular emphasis on the incompressible Navier-Stokes equations”. In: Computer Methods in Applied Mechanics and Engineering 32.1-3 (1982), pp. 199–259. DOI : 10.1016/0045-7825(82 )90071-8 .[28] Igor A. Baratta et al. DOLFINx: The next generation FEniCS problem solving environment . 2023. DOI : 10.52 81/zenodo.10447666 .[29] Jacopo Bonari et al. “Towards Real-Time Urban Physics Simulations with Digital Twins”. In: 2024 28th Inter-national Symposium on Distributed Simulation and Real Time Applications (DS-RT) . IEEE, 2024, pp. 18–25. 
+
+> ISBN
+
+: 979-8-3315-2721-1. DOI : 10.1109/DS-RT62209.2024.00013 .[30] Ingeborg Gjerde and L. Scott. “Nitsche’s method for Navier–Stokes equations with slip boundary conditions”. In: Mathematics of Computation 91.334 (2022), pp. 597–622. DOI : 10.1090/mcom/3682 .[31] Marco Mattuschka et al. “Goal-oriented optimal sensor placement for PDE-constrained inverse problems in crisis management”. In: Computer Assisted Methods in Engineering and Science (Feb. 2026). DOI : 10.24423 /cames.2026.1887 .10 Algorithmic Identification of Moving Contaminant Sources [32] Sebastian Zajonz et al. “Compact polarization lidar system at a 1550 nm wavelength for aerosol anomaly de-tection”. In: Applied Optics 65.7 (2026), pp. 2229–2235. DOI : 10.1364/AO.581511 . URL : https://opg.op tica.org/ao/fulltext.cfm?uri=ao-65-7-2229 .11
