@@ -1,0 +1,1985 @@
+Title: Embedded Trefftz DG method for steady Navier-Stokes flow. Part II: Nonlinear problem
+
+URL Source: https://arxiv.org/pdf/2606.13219v1
+
+Published Time: Fri, 12 Jun 2026 00:50:26 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# Embedded Trefftz DG method for steady Navier–Stokes flow 
+
+## Part II: Nonlinear problem Paul Stocker ∗ Igor Voulis † Christoph Lehrenfeld † Philip L. Lederer ‡
+
+Abstract 
+
+We develop and analyze an embedded Trefftz-DG method for the steady incompressible Navier–Stokes equations, based on the reduced Oseen discretization from Part I. The main difficulty is that the reduced Trefftz space depends on the convection field, so successive Picard iterates live in different discrete spaces. We address this by constructing projections between convection-dependent Trefftz spaces and using them to control the reduced Oseen solution map. Under suitable resolution and small-data assumptions, we prove existence of discrete solutions, uniqueness, and convergence of the Picard iteration. We also derive an a priori error analysis by relating the method to the underlying DG discretization, thereby inheriting convergence properties from compatible DG Navier–Stokes analyses. Numerical experiments on standard incompressible-flow benchmarks illustrate the theory. 
+
+Keywords : nonlinear Trefftz, embedded Trefftz methods, discontinuous Galerkin methods, Navier–Stokes equations 
+
+MSC2020 : 65N30, 65N12, 65N15, 76D05, 76M10 
+
+# 1 Introduction 
+
+This paper is the second part of a two-part study on embedded Trefftz discontinuous Galerkin methods for incompressible flow problems. While Part I develops the linear theory for the steady Oseen problem, the present paper addresses the steady incompressible Navier–Stokes equations. Our main goal is to show that the embedded Trefftz framework can be extended to the nonlinear setting and to establish existence, uniqueness, and convergence results for the resulting discrete problem. A detailed comparison with standard DG methods in terms of computational cost was given in [8] for the Stokes problem; the same local elimination mechanism underlies the Navier–Stokes method considered here. Trefftz methods, dating back to Trefftz [24], use approximation spaces adapted to the kernel of the underlying differential operator and can thereby achieve high approximation quality with significantly fewer degrees of freedom than standard polynomial discretizations. Nonlinear prob-lems, variable coefficients, and nonzero right-hand sides are, however, well known to be major obstacles for classical Trefftz constructions. The embedded Trefftz-DG approach, introduced in [9, 11], provides a way around this ob-struction for linear problems and has been applied to a range of model equations; see, for ex-ample, [4–6,12,16,18,21]. For a detailed comparison with related methods on general meshes, we 
+
+> ∗
+
+Faculty of Mathematics, University of Vienna, Oskar-Morgenstern-Platz 1, 1090 Vienna, Austria. 
+
+> †
+
+Institute for Numerical and Applied Mathematics, University of Göttingen, Lotzestr. 16–18, 37083 Göttingen, Germany. 
+
+> ‡
+
+Department of Mathematics, University of Hamburg, Bundesstraße 55, 20146 Hamburg, Germany. 
+
+1
+
+> arXiv:2606.13219v1 [math.NA] 11 Jun 2026
+
+refer to [10]. The key idea is to replace the explicit construction of Trefftz basis functions by local projection constraints imposed on an underlying polynomial DG space. The direct lineage of the present work is the embedded Trefftz method for Stokes developed in [8] and its extension from Stokes to the variable-coefficient Oseen operator in Part I [22]. There, the higher-order pressure components are locally tied to the velocity, leading to a reduced velocity formulation for the Oseen problem, and stability is established through a local-global splitting argument combined with a convection-resolution smallness condition. These linear results provide the foundation for the nonlinear analysis carried out here. A first attempt to extend Trefftz-type ideas to nonlinear elliptic problems was made in the numerical study [25]. A related Taylor-polynomial construction for linear elliptic problems with smooth coefficients, including a convergence analysis, is given in [7]. The approach is based on explicit Taylor expansions of the nonlinear differential operator in order to construct local approximation functions. In particular, it relies on pointwise Taylor data and repeated local series evaluations. The resulting bases are typically poorly conditioned, and the available analysis is restricted to smooth settings in which the required pointwise information is meaningful. This is conceptually distinct from the present embedded approach, where the Trefftz constraint is imposed by local projections inside an ambient DG space and conditioning is inherited from the underlying polynomial space due to orthogonality properties of the projection. For DG discretizations of the incompressible Navier–Stokes equations, see the framework and analysis in [2, 3]. In [1] an analysis of a LDG method is given, which is based on a re-duced Oseen formulation obtained by eliminating the pressure locally, an approach we also use here. Divergence-free DG methods provide another important comparison point, see for ex-ample [13, 14], however, their reduction mechanism is of a different nature and is substantially weaker than the embedded Trefftz reduction considered here. In particular, enforcing element-wise divergence-free constraints removes only the pressure-divergence part of the local algebraic structure, whereas the embedded Trefftz constraint incorporates the projected Oseen operator and ties the higher-order pressure components locally to the velocity. This leads to a significantly stronger local elimination, but also to a much more delicate stability theory. 
+
+Contributions. The present paper provides, to the best of our knowledge, the first embedded Trefftz-DG method for a nonlinear problem and full analysis thereof. The main difficulty is not only the nonlinear convection term itself, but the fact that the reduced Trefftz space depends on the convection field. Hence different Picard iterates belong to different discrete spaces. As a consequence, the nonlinear analysis cannot be obtained by a direct adaptation of the standard DG Navier–Stokes theory, nor by applying the linear Oseen theory from Part I separately at each step. A new mechanism is needed to compare reduced Trefftz spaces generated by different convection fields. The main contribution of this paper is a nonlinear stability and convergence theory for the embedded Trefftz-DG discretization of the steady incompressible Navier–Stokes equations, built on the reduced Oseen theory developed in Part I. The key new ingredients are as follows: 
+
+• We formulate the nonlinear embedded Trefftz-DG method through a Picard map based on the Oseen solver from Part I. This rewrites the discrete Navier–Stokes problem as a fixed-point problem in convection-dependent reduced Trefftz spaces. 
+
+• We prove existence of discrete Navier–Stokes solutions by Brouwer’s fixed-point theorem under a resolution condition ensuring that all Oseen iterates remain in a uniform regime of Trefftz stability. 
+
+• We prove uniqueness of the discrete solution and convergence of the Picard iteration by 2Banach’s fixed-point theorem under an additional smallness assumption on the data. In this regime, the reduced Oseen solution map is contractive. 
+
+• We derive an a priori convergence analysis by relating the embedded Trefftz discretization to the underlying DG method. In particular, the error estimates inherit the approximation properties of any DG Navier–Stokes analysis whose discrete trilinear form satisfies our abstract assumptions. This includes, in particular, the LDG formulation and the DG formulation of [1–3]. 
+
+Outline. The discrete DG and embedded Trefftz-DG formulations for the Navier–Stokes prob-lem are presented in Section 2. For the reader’s convenience, the reduced Oseen formulation and the key linear results from Part I that enter the nonlinear analysis are summarized in Section 3. The main nonlinear analysis is carried out in Section 4, where we prove existence by Brouwer’s theorem, uniqueness by Banach’s theorem, and convergence of the Picard iteration. The a priori error analysis is given in Section 4.3; it shows how the embedded Trefftz method inherits con-vergence estimates from the corresponding underlying DG discretization, provided the chosen trilinear form satisfies the abstract continuity and stability assumptions used in the analysis. Numerical results, including Kovasznay flow, Reynolds-number studies, and the Schäfer–Turek benchmark, are reported in Section 5. 
+
+## 1.1 The steady Navier–Stokes problem 
+
+Consider an open bounded Lipschitz domain Ω ⊂ Rd with d = 2 , 3. The steady Navier–Stokes flow problem reads as follows: Find velocity u : Ω → Rd and pressure p : Ω → R such that 
+
+−ν∆u + ( u · ∇ )u + ∇p = f, in Ω,
+
+div u = 0 , in Ω,u = 0 , on ∂Ω,
+
+(1) where f : Ω → Rd is the external body force and ν > 0 is the dynamic viscosity. For the ease of presentation we only consider homogeneous Dirichlet boundary conditions. The weak formulation of the problem (1) is then given by: Find (u, p ) ∈ [H10 (Ω)] d × L20(Ω) such that 
+
+∫
+
+> Ω
+
+ν ∇u : ∇v dx +
+
+∫
+
+> Ω
+
+(u · ∇ )u · v dx −
+
+∫
+
+> Ω
+
+div v p dx =
+
+∫
+
+> Ω
+
+f ·v dx ∀v ∈ [H10 (Ω)] d,
+
+−
+
+∫
+
+> Ω
+
+div u q dx = 0 ∀q ∈ L20(Ω) ,
+
+(2) For simplicity we only consider homogeneous Dirichlet boundary conditions. The central building block of our approach is the Oseen problem , obtained by linearizing (1) around a given convection field w ∈ [W 1,∞(Ω)] d: Find velocity u : Ω → Rd and pressure 
+
+p : Ω → R such that 
+
+−ν∆u + ( w · ∇ )u + ∇p = f, in Ω,
+
+div u = 0 , in Ω,u = 0 , on ∂Ω.
+
+(3) The Navier–Stokes problem (1) is equivalent to the fixed-point problem u = S(u), where S(w)
+
+denotes the solution operator of (3). The Picard iteration u(n+1) = S(u(n)) therefore reduces each step to solving an Oseen problem with convection field w = u(n). For d = 2 and under a smallness assumption on the data, the Oseen problems are well-posed and the Picard iteration converges to a solution of the Navier–Stokes problem. 32 DG and Trefftz-DG discretization 
+
+For the steady Navier–Stokes discretization, the basic linear building block is the Oseen problem from Part I. The nonlinear Navier–Stokes method is obtained by replacing the frozen convection field wh by the discrete velocity itself. We first introduce the Trefftz-DG method for the Oseen problem by recalling the necessary spaces and operators from Part I. 
+
+## 2.1 Meshes and DG notation 
+
+We consider a shape-regular simplicial mesh Th of Ω, and denote by Fh = Fi 
+
+> h
+
+∪ F b 
+
+> h
+
+the set of all interior and boundary facets. On F ∈ F i 
+
+> h
+
+we use the standard average and jump operators {{·} }
+
+and [[ ·]] , while on F ∈ F b 
+
+> h
+
+we set {{ϕ}} = ϕ and [[ ϕ]] = ϕ. With the same convention as in Part I, we write h both for the global mesh size h := max T ∈T h hT and for the local piecewise constant mesh-size functions on Th, Fh, and ∂Th. Thus h|T = hT on elements, h|F = hF := diam( F ) on facets, and on element-boundary contributions F ⊂ ∂T we may take h|F = hT . Shape regularity gives hF ≃ hT for F ⊂ ∂T . We write (·, ·)Th := ∑  
+
+> T∈T h
+
+(·, ·)T .As in Part I, the DG space is 
+
+X = [ Pk]d(Th) × Pk−1(Th)/R. (X)
+
+## 2.2 Local operator and Trefftz space 
+
+We set Xreg := [ H2(Th)] d × H1(Th) and recall the local Oseen operator as 
+
+⟨KT,w ξ, σ h⟩T := hν − 12
+
+(−ν∆u + w · ∇ u + ∇p, r h
+
+) 
+
+> T
+
++ ν 12
+
+(− div u, s h
+
+) 
+
+> T
+
+, (KT,w )with the local test space 
+
+Q(T ) := [ Pk−2(T )] d × Pk−1(T ), Q := ∏ 
+
+> T∈T h
+
+Q(T ). (Q)for ξ = ( u, p ) ∈ Xreg (T ) and σh = ( rh, s h) ∈ Q(T ). Its global counterpart Kw : Xreg → Q′ is defined by summation over the mesh. The corresponding Trefftz space is 
+
+Tw := {ξh ∈ X : ⟨Kwξh, σ h⟩T = 0 ∀ σh ∈ Q(T ), ∀ T ∈ T h
+
+}. (Tw)
+
+## 2.3 Embedded Trefftz-DG discretization of the Oseen problem 
+
+As in Part I, we write ξh = ( uh, p h) and ηh = ( vh, q h), and define the standard SIPDG diffusion and pressure–velocity coupling forms by 
+
+ad
+
+> h
+
+(uh, v h) := ( ν∇uh, ∇vh)Th − ({{ν∂ nuh}}, [[ vh]]) Fh − ({{ν∂ nvh}}, [[ uh]]) Fh + λν h ([[ uh]] , [[ vh]]) Fh ,
+
+(4a) 
+
+bh(vh, p h) := −(div vh, p h)Th + ([[ vh · n]] , {{ph}})Fh . (4b) Here λ > 0 denotes the interior penalty parameter, chosen sufficiently large, and ac 
+
+> h,w
+
+denotes a trilinear form discretizing the convective term (w · ∇ )u, for which we make abstract assumptions in Assumption 3.2. Suitable choices are discussed in [22, Appendix A]. The Oseen bilinear form is then given by 
+
+kh,w (ξh, η h) := ad
+
+> h
+
+(uh, v h) + bh(uh, q h) + bh(vh, p h) + ac
+
+> h,w
+
+(uh, v h). (kh,w )4Combining the global Trefftz equation with the local residual equation and the product test space 
+
+Zw := Tw × Q,
+
+leads to the coupled Trefftz bilinear form 
+
+ch,w (ξh, ζ h) := kh,w (ξh, η h) + ⟨Kwξh, σ h⟩Th , ζh = ( ηh, σ h) ∈ Zw, (ch,w )and the corresponding right-hand side 
+
+F (ζh) := ( f, v h)Th + ( hν − 12 f, r h)Th . (F )With this notation, the Oseen Trefftz-DG problem can be written compactly as: find ξh ∈ X
+
+such that 
+
+ch,w h (ξh, ζ h) = F (ζh) ∀ ζh ∈ Zwh . (5) 
+
+## 2.4 Embedded Trefftz-DG discretization of the Navier–Stokes problem 
+
+Using our notion from the linear Oseen problem, we can now introduce the embedded Trefftz-DG method for the steady Navier–Stokes problem. The Trefftz-DG method to (2) is simply given by replacing the convective velocity w in the Oseen problem by the velocity solution u itself, which leads to the following nonlinear problem: Find ξh = ( uh, p h) ∈ X such that 
+
+ch,u h (ξh, ζ h) = F (ζh) ∀ζh ∈ Zuh . (6) To solve the steady Navier–Stokes problem (1), we employ Picard’s method, a standard fixed-point iteration scheme. Here the first part of the nonlinear term (u · ∇ )u is frozen from one iteration to the next, which leads to solving a sequence of Oseen problems. For that we employ the Trefftz-DG method for the Oseen problem stated in Section 2.3. The scheme reads as follows: Initialize u0 = 0 .
+
+for ℓ = 0 , 1, 2, . . . do 
+
+Solve the Oseen problem (5) with w = uℓ to obtain (uℓ+1 , p ℓ+1 ).
+
+if ∥uℓ+1 − uℓ∥ < TOL then 
+
+Stop and return (uℓ+1 , p ℓ+1 ).Algorithm 1: Picard iteration for Trefftz-DG method for steady Navier–Stokes. In the algorithm Algorithm 1, we initialize the iteration with u0 = 0 , which is a common choice for the initial guess in Picard iterations for Navier–Stokes. The TOL is a user-defined tolerance for convergence, and the norm ∥ · ∥ can be chosen appropriately, for example as the 
+
+L2-norm. The analysis of the convergence of the above iteration scheme relies on the analysis of the Oseen problem, which is the subject of the next section. 
+
+# 3 Recap: Oseen Trefftz-DG results from Part I 
+
+In this section we recall, in compact form, the Oseen Trefftz-DG results from Part I that are used below. Since the Navier-Stokes analysis is carried out entirely in a fixed convection regime, we state these results directly in that uniform form. 53.1 Reduced formulation 
+
+We next recall the spaces and operators from the Oseen analysis in Part I in the form needed below; see in particular [22, Sections 3–4]. We first introduce the full local operator and Trefftz space, and then the reduced velocity formulation obtained by eliminating the higher-order pres-sure component. 
+
+Projected operators and pressure lifting. To eliminate the higher-order pressure compon-ent, we recall the pressure lifting which reconstructs a higher-order pressure from the velocity. We first define the L2 projection into the space Pk−1(T ) via gradients 
+
+Π∇,T : [ L2(T )] d → Pk−1(T )/R, v 7 → arg min  
+
+> qh∈Pk−1(T)/R
+
+∥∇ qh − v∥T , (Π∇,T )with Π∇ : L2(Th) → Pk−1/P0 defined accordingly s.t. (Π ∇·)|T = Π ∇,T · for all T ∈ T h. We can now define the pressure lifting Pw : [ H2(Th)] d → Pk−1/P0, as 
+
+Pwv = Π ∇(ν∆v − Πk−2(w · ∇ v)) . (Pw)Given a discrete velocity vh ∈ [Pk]d, the pressure lifting allows to construct (vh, Pwvh) ∈ Tw
+
+whenever a suitable pair exists, i.e. to lift a suitable velocity into the Trefftz space. More precisely, the map Pw is defined for all sufficiently regular velocities. However, the pair (vh, Pwvh) belongs to Tw only if the projected residual is a discrete gradient and the local divergence constraint is satisfied. 
+
+Reduced velocity formulation. We set 
+
+Xreg := [ H2(Th)] d,
+
+We define the reduced local test space as the kernel of the projection Π∇,T :
+
+Q(T ) := ker Π ∇,T , Q := ∏ 
+
+> T∈T h
+
+Q(T ). (Q)So Q(T ) is the L2(T )-orthogonal complement of the discrete gradient space inside [Pk−2(T )] d,giving the decomposition [Pk−2(T )] d = ∇Pk−1(T ) ⊕⊥ Q(T ).
+
+The reduced local operator is 
+
+⟨KT,w u, r h⟩T := hν − 12
+
+(−ν∆u + w · ∇ u, r h
+
+) 
+
+> T
+
+∀ u ∈ [H2(T )] d, r h ∈ Q(T ), (KT,w )with global version Kw : [ H2(Th)] d → Q′.The reduced divergence-free velocity space is 
+
+X := {uh ∈ [Pk]d : div uh|Th = 0 , b h(uh, q 0
+
+> h
+
+) = 0 ∀ q0 
+
+> h
+
+∈ P0}, (X)and the reduced Trefftz space is 
+
+Tw := {uh ∈ X : ⟨KT,w uh, r h⟩T = 0 ∀ rh ∈ Q(T ), ∀ T ∈ T h
+
+} (Tw)
+
+={uh ∈ Tuw : bh(uh, q 0
+
+> h
+
+) = 0 ∀ q0 
+
+> h
+
+∈ P0}.
+
+With Z := Tw × Q, the reduced Oseen problem reads: Find uh ∈ X such that 
+
+ch,w (uh, z h) = ℓh(zh) ∀ zh = ( vT, r h) ∈ Z, (7) 6where 
+
+ch,w (uh, z h) := kh,w (uh, v T) + ⟨Kwuh, r h⟩Th (ch,w )
+
+kh,w (u, v ) := kh,w 
+
+((u, Pwu), (v, Pwv)), (kh,w )and 
+
+ℓh(vT, r h) := ( f, v T)Th − bh(vT, Π∇f ) + ( f, hν − 12 rh)Th . (ℓh)Finally, we recall the equivalence result from Part I: 
+
+Theorem 3.1 (Equivalence of full and reduced Oseen formulations) . For every wh ∈ W¯γ , the full coupled Trefftz formulation and the reduced problem (7) are equivalent: any solution (uh, p h) ∈ X
+
+of the full Oseen Trefftz problem has uh ∈ X solving (7) , and conversely every solution uh ∈ X
+
+of (7) lifts to a solution (uh, p h) ∈ X of the full coupled formulation. 
+
+## 3.2 Norms 
+
+Norms on the full space. We denote by ∥·∥ Th the broken L2 norm, and by ∥·∥ Fh the L2 norm on the skeleton. For u ∈ [H1(Th)] d, v ∈ [H2(Th)] d, and p ∈ H1(Th), we use the mesh-dependent norms 
+
+∥u∥21,h := ∥∇ u∥2 
+
+> Th
+
++ ∥h− 12 [[ u]] ∥2 
+
+> Fh
+
+, ∥v∥21,h, ∗ := ∥v∥21,h + ∥h 12 ∂nv∥2 
+
+> ∂Th
+
++ ∥h∆v∥2 
+
+> Th
+
+,
+
+∥p∥20,h := ∥h∇p∥2 
+
+> Th
+
++ ∥h 12 [[Π 0p]] ∥2
+
+> Fi
+> h
+
+,
+
+and, for ξ = ( u, p ),
+
+∥ξ∥2 
+
+> X
+
+:= ν∥u∥21,h + ν−1∥p∥20,h , ∥ξ∥2 
+
+> X,∗
+
+:= ν∥u∥21,h, ∗ + ν−1∥p∥20,h .
+
+Throughout, ΠℓS denotes the L2-orthogonal projection onto Pℓ(S) for scalar functions, or onto 
+
+[Pℓ(S)] d for vector-valued functions; in particular, Π0 denotes the elementwise mean. For σh =(rh, s h) ∈ Q, we set 
+
+∥σh∥2 
+
+> Q
+
+:= ∥rh∥2 
+
+> Th
+
++ ∥sh∥2 
+
+> Th
+
+,
+
+and let ∥ · ∥ Q′ denote the induced dual norm. 
+
+Norms on the reduced space. We set 
+
+∥u∥X := ν 12 ∥u∥1,h , ∥u∥X,∗ := ν 12 ∥u∥1,h, ∗,
+
+We equip the reduced test spaces Q and Z = Tw × Q with the norms 
+
+∥rh∥Q := ∥rh∥Th , ∥(vT, r h)∥2 
+
+> Z
+
+:= ∥vT∥2 
+
+> X
+
++ ∥rh∥2
+
+> Q
+
+.
+
+## 3.3 Key analytical results from the Oseen analysis 
+
+We define the following quantity to measure the size of the convection field w in the discrete setting 
+
+|w|h,d := ν−1(
+
+max  
+
+> T∈T h
+
+C4∥h1− d 
+
+> 4
+
+w∥L4(T ) + max  
+
+> T∈T h
+
+CW, 4∥h2− d 
+
+> 4
+
+∇w∥L4(T ) + max  
+
+> F∈F h
+
+CJ, 4∥h 14 [[ w · n]] ∥L4(F )
+
+)
+
+,
+
+7with constants from local discrete embeddings defined in [22]. This norm is the same as the one used in Part I, but whenever the convection field is a polynomial, the second term is controlled by the first. The quantity |w|h,d is weaker than the discrete H1 norm by a factor h1− d 
+
+> 4
+
+:
+
+|w|h,d ≤ ν−1Cγ h1− d 
+
+> 4
+
+∥w∥1,h ∀w ∈ [Pk]d, (8) We restrict convection fields to the permissable set of W¯γ given by 
+
+W := [ Pk(Th)] d and W¯γ := {wh ∈ W : |wh|h,d ≤ ¯γ}, (9) where we assume the resolution condition 
+
+¯γ < αK 0 , (10) which is necessary for stability of the local problems, see Corollary 3.3 below. Here, αK 0 is the sta-bility constant in ∥KT, 0ξh∥T ≥ αK 0 ∥ξh∥X. Contrary to Part I, we already restrict the permissible convection to polynomials, this is sufficient for convection appearing in Picard iteration. We shall repeatedly use the following bound: for every w ∈ [L4(Th)] d and v ∈ [H1(Th)] d,
+
+∥hν − 12 Πk−2(w · ∇ v)∥Th ≤ ν 12 |w|h,d ∥∇ v∥Th ≤ ν 12 |w|h,d ∥v∥1,h . (11) by Hölder’s inequality and the local L4-inverse estimate on [Pk−2(T )] d, summed over the mesh. Since Q(T ) ⊂ [Pk−2(T )] d, this also implies the bound 
+
+∥(Kw1 − Kw2 )v∥Q′ ≤ | w1 − w2|h,d ∥v∥X ∀ v ∈ X, (12) The analysis of the method only relies on the following abstract assumptions on the trilinear form which are fulfilled for the standard choices. 
+
+Assumption 3.2 ((Conditions on ac
+
+> h,w
+
+)). There exists βa c > 0 (depending only on shape-regularity and k) such that for all w ∈ W, u ∈ [H2(Th)] d, and vh ∈ [Pk]d,
+
+|ac
+
+> h,w
+
+(u, v h)| ≤ βa c ∥w∥1,h ∥u∥1,h, ∗ ∥vh∥1,h . (13) 
+
+We additionally assume 
+
+ac
+
+> h,w
+
+(uh, u h) ≥ 0 ∀w ∈ W, ∀uh ∈ [Pk]d, (14) 
+
+and the mixed L4-estimate 
+
+|ac
+
+> h,w
+
+(uL, v T)| ≤ Ct, ∗ν|w|h,d ∥uL∥1,h, ∗∥vT∥1,h , ∀w ∈ W, ∀vT ∈ Tuw, ∀uL ∈ L. (15) To discretize the convective term (w · ∇ )u many choices are possible. For now, we keep the discretization of the convection term abstract, and denote it as trilinear form ac
+
+> h,w
+
+. Concrete choices for the trilinear forms can be found in [22, Appendix A]. We now recall continuity, local- and global-stablilty from Part I, cf. [22, Sections 3–5]. Con-stants are denoted with a ∗ to indicate that they are uniform on W¯γ , and depend only on k, the DG parameters, the shape-regularity, Ω, and ¯γ. Throughout Part II, we keep explicit only the stability constants αc ∗ and αc wh
+
+, as well as the constants CS ∗ , Λ∗, and the pointwise resolution constant Cres ,w h we introduce later on. The dependence on the convection field and the viscosity is made explicit only through ∥wh∥1,h /ν . All remaining structural constants are absorbed into a generic constant C > 0, except in the paragraph Remark 3.6. 8Corollary 3.3 (Uniform local stability) . There exist local spaces L ⊂ X and L ⊂ X that allow to decompose 
+
+X = Twh ⊕ L and X = Twh ⊕ L, ∀wh ∈ W¯γ .
+
+Furthermore, for every wh ∈ W¯γ , the local operator Kwh : Xreg → Q′ is continuous and its restriction Kwh : L → Q′ is invertible with 
+
+αK ∗ ∥ξh∥X ≤ ∥ Kwh ξh∥Q′ ∀ ξh ∈ L, ∥Kwh ξ∥Q′ ≤ βK ∗ ∥ξ∥X,∗ ∀ ξ ∈ Xreg , (16) 
+
+and similarly for the reduced local operator Kwh : L → Q′ we have that 
+
+αK ∗ ∥uL∥X ≤ ∥ Kwh uL∥Q′ ∀ uL ∈ L, ∥Kwh u∥Q′ ≤ βK ∗ ∥u∥X,∗ ∀ u ∈ Xreg . (17) 
+
+Lemma 3.4 (Continuity) . For every wh ∈ W¯γ , there hold 
+
+|kh,w h (ξ, η h)| ≤ βk wh
+
+∥ξ∥X,∗ ∥ηh∥X ∀ ξ ∈ Xreg , η h ∈ X, (18a) 
+
+|kh,w h (u, v h)| ≤ βk wh
+
+∥u∥X,∗ ∥vh∥X ∀ u ∈ Xreg , v h ∈ X, (18b) 
+
+|kh,w h (uL, v T)| ≤ β×∗ ∥uL∥X ∥vT∥X ∀ uL ∈ L, v T ∈ Twh . (18c) 
+
+Here βk wh
+
+and βk wh
+
+are the continuity constants from Part I, with explicit dependence on wh as recalled below; in particular they may depend on ∥wh∥1,h /ν , whereas β×∗ is uniform on W¯γ , since the cross bound depends on wh only through |wh|h,d .
+
+Theorem 3.5 (Uniform Oseen stability in the ¯γ-regime) . Assume that the penalty parameter λ
+
+is chosen sufficiently large, depending only on k, the DG parameters, the shape-regularity, and 
+
+¯γ. Then, for every wh ∈ W¯γ , the reduced and full Oseen Trefftz formulations from Part I are well posed. More precisely, there exist constants αc ∗ > 0 and CS ∗ > 0, depending only on k, the DG parameters, the shape-regularity, Ω, and ¯γ, such that 
+
+kh,w h (uT, u T) ≥ C ∥uT∥2 
+
+> X
+
+∀ uT ∈ Twh , (19a) 
+
+sup 
+
+> zh∈Z\{ 0}
+
+ch,w h (uh, z h)
+
+∥zh∥Z
+
+≥ αc ∗ ∥uh∥X ∀ uh ∈ X, (19b) 
+
+sup  
+
+> ζh∈Zwh\{ 0}
+
+ch,w h (ξh, ζ h)
+
+∥ζh∥Z
+
+≥ αc wh
+
+∥ξh∥X ∀ ξh ∈ X, (19c) 
+
+∥Sr (wh)∥X ≤ CS ∗ ν− 12 ∥f ∥Th . (19d) 
+
+The precise origin of these constants from the Part I analysis is recalled in the paragraph below. 
+
+Remark 3.6 (On the origin of the uniform constants) . For completeness, we briefly indicate how the constants used in Corollary 3.3, Lemma 3.4, and Theorem 3.5 are inherited from Part I. The uniform local constants are obtained from the prototype Stokes constants: 
+
+αK ∗ = αK 0 − ¯γ, βK ∗ = (2β2 
+
+> K0
+
++ 2¯ γ2)1/2,
+
+and 
+
+β×∗ := sup 
+
+> wh∈W¯γ
+
+β×wh
+
+.
+
+Here β×wh
+
+depends on wh only through |wh|h,d , and is therefore uniform on W¯γ . Moreover, once 
+
+λ is chosen sufficiently large, the coercivity constant on the reduced Trefftz part can be fixed uniformly, and one may take αk ∗ = 12 .
+
+9Accordingly, in the reduced inf-sup constant αc ∗ obtained in Part I the convection only enters through αk ∗ , β×∗ , and αK ∗ , and is therefore uniform on W¯γ . Likewise, the full inf-sup constant 
+
+αc wh
+
+from the full coupled inf-sup estimate in Part I is based on the piecewise-constant LBB constant α0 and the pointwise Oseen continuity constant βk wh
+
+.Finally, the only non-uniform dependence on the convection field enters through the pointwise continuity constants: 
+
+βk wh
+
+≲ 1 + ∥wh∥1,h 
+
+ν , βk wh
+
+≲ βk wh
+
+,
+
+up to structural multiplicative constants depending only on k, the DG parameters, and the shape-regularity. The constant βk wh
+
+appears multiplicative in the full inf-sup constant αc wh
+
+. Hence, the full continuity and full inf-sup constants remain dependent on wh until the Banach regime yields a uniform bound on ∥wh∥1,h /ν .
+
+# 4 Analysis of the Navier–Stokes Trefftz-DG method 
+
+In view of the reduced Oseen formulation from Section 3.1, we formulate the nonlinear fixed-point argument directly on the reduced velocity space X. For a given convection field wh ∈ X,let 
+
+Sr (wh) ∈ X
+
+denote the unique solution of the reduced Oseen problem (7) with convection field wh.
+
+## 4.1 Existence of a solution via Brouwer’s theorem 
+
+Theorem 4.1 (Existence for the reduced Navier–Stokes problem via Brouwer) . Fix ¯γ ∈ (0 , 1) 
+
+and assume that Eq. (10) hold uniformly for all wh ∈ W¯γ , with the penalty parameter chosen large enough. For each wh ∈ W¯γ , let Sr (wh) ∈ X denote the unique solution of the reduced Oseen problem (7) .Assume that the mesh resolves the data in the sense that 
+
+Cγ CS ∗ h1− d
+
+> 4
+
+∥f ∥Th
+
+ν2 ≤ ¯γ, (20) 
+
+where Cγ is the constant from (8) . Then there exists uh ∈ W¯γ such that 
+
+uh = Sr (uh).
+
+In particular, uh ∈ X solves the reduced Navier–Stokes problem, i.e. (7) with convection field 
+
+wh = uh.Moreover, by Theorem 3.1, there exists ph ∈ Pk−1(Th)/R such that (uh, p h) ∈ X solves the full embedded Trefftz–DG Navier–Stokes formulation (6) .Proof. We work on the finite-dimensional space W¯γ , equipped with the norm | · | h,d .
+
+Step 1: W¯γ is nonempty, convex, and compact. Clearly 0 ∈ W¯γ , hence W¯γ is nonempty. Since | · | h,d is a norm on the finite-dimensional space W, the set W¯γ is closed, bounded, and convex. Therefore it is compact. 
+
+Step 2: positivity of αc ∗ . By Corollary 3.3, for every wh ∈ W¯γ there holds αc wh
+
+> 0. Moreover, the map wh 7 → αc wh
+
+is continuous on W¯γ , since αc wh
+
+is given explicitly in terms of the constants 
+
+αK wh
+
+, βK wh
+
+, and βk wh
+
+, all of which depend continuously on wh. Since W¯γ is compact, the infimum is strictly positive 
+
+αc ∗ > 0.
+
+10 Step 3: invariance Sr (W¯γ ) ⊂ W¯γ . Let wh ∈ W¯γ . Using (8) and (19d) we obtain 
+
+|Sr (wh)|h,d ≤ ν−1Cγ h1− d 
+
+> 4
+
+∥Sr (wh)∥1,h ≤ Cγ CS ∗ h1− d
+
+> 4
+
+∥f ∥Th
+
+ν2 .
+
+Hence, by the resolution condition (20), 
+
+|Sr (wh)|h,d ≤ ¯γ, 
+
+that is, Sr (wh) ∈ W¯γ .
+
+Step 4: continuity of Sr on W¯γ . Since Kwh |L : L → Q′ is uniformly invertible for all wh ∈ W¯γ ,the projector 
+
+PL(wh) := K−1 
+
+> wh
+
+Kwh : X → L,
+
+is well-defined and depends continuously on wh; hence also PT(wh) := id −PL(wh) : X → Twh de-pends continuously on wh. Thus the reduced problem (7) is a continuously parameter-dependent family of linear systems on the fixed finite-dimensional space X, and Eq. (19b) implies uniform invertibility on W¯γ . Therefore Sr : W¯γ → X is continuous. 
+
+Step 5: apply Brouwer. By Steps 1–4, Sr is a continuous self-map on the nonempty convex compact set W¯γ . The finite-dimensional Brouwer fixed-point theorem [26, §2.3] therefore yields 
+
+uh ∈ W¯γ such that 
+
+uh = Sr (uh).
+
+By definition of Sr , this means exactly that uh ∈ X solves the reduced Navier–Stokes problem. Finally, Theorem 3.1 implies that there exists ph ∈ Pk−1(Th)/R such that (uh, p h) ∈ X solves the full formulation (6). 
+
+## 4.2 Uniqueness of the solution via Banach’s theorem 
+
+We now turn to uniqueness. In contrast to the Brouwer argument, this requires a genuine data smallness condition. We keep this separate from the resolution condition (20). A central difficulty is that the reduced Trefftz space Tw depends on the convecting velocity 
+
+w. Since we fixed the local complement space L independent of w, the space decomposition 
+
+X = Tw ⊕ L
+
+allows us to transfer functions between reduced Trefftz spaces by projecting along L.
+
+Lemma 4.2 (Stability of the projection between reduced Trefftz spaces) . Let w1, w 2 ∈ W¯γ and define 
+
+Πw1→w2 
+
+> T
+
+: Tw1 → Tw2 , Πw1→w2 
+
+> T
+
+(vh) := vh − K−1 
+
+> w2
+
+Kw2 vh.
+
+Then Πw1→w2 
+
+> T
+
+(vh) ∈ Tw2 for all vh ∈ Tw1 and 
+
+∥Πw1→w2 
+
+> T
+
+vh − vh∥X ≤ 1
+
+αK w2
+
+|w1 − w2|h,d ∥vh∥X. (21) 
+
+Proof. First, we recall that Kw2 maps from X (to Q′) while K−1 
+
+> w2
+
+= ( Kw2 |L)−1 maps (from Q′)to L so that K−1 
+
+> w2
+
+Kw2 : X → L. Hence, the definition of Πw1→w2 
+
+> T
+
+is meaningful, and 
+
+Πw1→w2 
+
+> T
+
+vh − vh = −K−1 
+
+> w2
+
+Kw2 vh ∈ L for all vh ∈ Tw1 ⊂ X. (∗)11 Moreover, Kw2 K−1 
+
+> w2
+
+= id Q′ so that Kw2 K−1 
+
+> w2
+
+Kw2 = Kw2 and hence Kw2 Πw1→w2 
+
+> T
+
+vh = Kw2 vh −
+
+Kw2 vh = 0 for all vh ∈ Tw1 . Hence Πw1→w2 
+
+> T
+
+vh ∈ X ∩ ker( Kw2 ) = Tw2 . For the stability bound, we use (∗) and the stability bound (17) to get for arbitrary vh ∈ Tw1
+
+αK w2
+
+∥Πw1→w2 
+
+> T
+
+vh − vh∥X ≤ ∥ Kw2 (Π w1→w2 
+
+> T
+
+vh − vh)∥Q′ = ∥ − Kw2 vh∥Q′ = ∥(Kw1 − Kw2 )vh∥Q′
+
+≤ | w1 − w2|h,d ∥vh∥X.
+
+where we made use of Kw2 Πw1→w2 
+
+> T
+
+vh = 0 and Kw1 vh = 0 and a local convection estimate for the convection difference as in (12). Dividing by αK w2 concludes the proof. 
+
+Lemma 4.3 (Lipschitz bound for the reduced Oseen map) . Assume that ac
+
+> h,w
+
+(·, ·) satisfies As-sumption 3.2. Let w1, w 2 ∈ W¯γ and set 
+
+ui := Sr (wi) ∈ X, i = 1 , 2.
+
+Then there holds 
+
+∥u1 − u2∥1,h ≤ ∥f ∥Th
+
+ν2
+
+(
+
+Λ∗ ∥w1 − w2∥1,h + Cres ,w 1 ν|w1 − w2|h,d 
+
+)
+
+(22a) 
+
+with Λ∗ := C βa c CS ∗ α−1 
+
+> c∗
+
+and Cres ,w 1 := Cα −1
+
+> c∗
+
+(
+
+α−1 
+
+> K∗
+
++ CS ∗ (1 + βk w1
+
+α−1 
+
+> K∗
+
+)
+
+)
+
+(22b) 
+
+for a generic constant C > 0 that depends only on k, the DG parameters and the shape-regularity. The estimate is pointwise in w1, w 2; in particular, the second named constant keeps the explicit dependence on βk w1
+
+.Proof. In the following we will bound the left hand side term by several parts that we will bound by factors of A := ν−2∥f ∥Th ∥w1 − w2∥1,h and B := ν−2∥f ∥Th ν|w1 − w2|h,d ,
+
+so that (22) reads ∥u1 − u2∥1,h ≤ Λ∗ · A + Cres ,w 1 · B . Set eh := u1 − u2 ∈ X. We apply the reduced inf-sup estimate (19b) with convection field w2
+
+αc ∗ ∥eh∥X ≤ αc w2
+
+∥eh∥X ≤ sup 
+
+> z2∈Z\{ 0}
+
+ch,w 2 (eh, z 2)
+
+∥z2∥Z
+
+,
+
+where Z = Tw2 × Q. Fix z2 = ( v2, r h) ∈ Z, and define the transferred Trefftz test 
+
+v1 := Π w2→w1 
+
+> T
+
+v2 ∈ Tw1 , z1 := ( v1, r h) ∈ Tw1 × Q.
+
+Since ui solves the reduced Oseen problem with convection field wi, we have ch,w 2 (u2, z 2) = 
+
+ℓh(v2, r h), and ch,w 1 (u1, z 1) = ℓh(v1, r h), and therefore 
+
+ch,w 2 (eh, z 2) = ℓh(v1, r h) − ℓh(v2, r h)
+
+︸ ︷︷ ︸
+
+> =: I
+
++
+
+(
+
+ch,w 2 (u1, z 2) − ch,w 1 (u1, z 1)
+
+)︸ ︷︷ ︸
+
+> =: II
+
+.
+
+Bound I. By definition of ℓh, cf. ( ℓh), we find I = ( f, v 1 − v2)Th − bh(v1 − v2, Π∇f ). Using the discrete Poincaré inequality, continuity of bh, and Lemma 4.2 and α−1
+
+> Kw1
+
+≤ α−1 
+
+> K∗
+
+as w1 ∈ W¯γ we obtain 
+
+|I| ≤ Cν − 12 ∥f ∥Th ∥v1 − v2∥X ≤ Cα −1 
+
+> K∗
+
+ν− 32 ∥f ∥Th ν|w1 − w2|h,d ∥v2∥X = Cα −1 
+
+> K∗
+
+ν 12 ∥v2∥X · B .
+
+12 Bound II. Adding and subtracting kh,w 1 (u1, v 2) we write 
+
+II = kh,w 2 (u1, v 2) − kh,w 1 (u1, v 2)
+
+︸ ︷︷ ︸
+
+> =: II a
+
++ kh,w 1 (u1, v 2 − v1)
+
+︸ ︷︷ ︸
+
+> =: II b
+
++ ⟨(Kw2 − Kw1 )u1, r h⟩Th
+
+︸ ︷︷ ︸
+
+> =: II c
+
+.
+
+For the local term, (12) together with (19d) gives 
+
+|II c| ≤ | w1 −w2|h,d ∥u1∥X∥rh∥Q ≤ CS ∗ ν− 12 ∥f ∥Th |w1 −w2|h,d ∥rh∥Q = CS ∗ ν 12 ∥rh∥Q · B .
+
+Then, v2 − v1 ∈ L, continuity of kh,w 1 , norm equivalence on the discrete space, Lemma 4.2 and (19d) imply 
+
+|II b| = kh,w 1 (u1, v 2 − v1) ≤ Cβk w1
+
+∥u1∥X∥v2 − v1∥X ≤ Cβk w1
+
+α−1
+
+> Kw1
+
+∥u1∥X|w1 − w2|h,d ∥v2∥X
+
+≤ CCS ∗ βk w1
+
+α−1 
+
+> K∗
+
+ν− 12 ∥f ∥Th |w1 − w2|h,d ∥v2∥X = CCS ∗ βk w1
+
+α−1 
+
+> K∗
+
+ν 12 ∥v2∥X · B .
+
+It remains to estimate II a. Using the stability of ∇Π∇ and (11), we obtain 
+
+∥P w2 v − P w1 v∥0,h = ∥hT ∇Π∇Πk−2((w2 − w1) · ∇ v)∥Th ≤ C ν 12 |w1 − w2|h,d ∥v∥X ∀v ∈ X.
+
+We now split II a into its convection difference ac 
+
+> h,w 2−w1
+
+(u1, v 2) and the two pressure-lifting mismatch terms 
+
+bh(u1, Pw2 v2 − P w1 v2), bh(v2, Pw2 u1 − P w1 u1).
+
+By the previous bound, (19d) and continuity of bh(·, ·), both mismatch terms satisfy 
+
+∣∣bh(u1, Pw2 v2 − P w1 v2)∣∣ + ∣∣bh(v2, Pw2 u1 − P w1 u1)∣∣ ≤ C |w1 − w2|h,d ∥u1∥X∥v2∥X
+
+≤ CCS ∗ ν− 12 ∥f ∥Th |w1 − w2|h,d ∥v2∥X = CCS ∗ ν 12 ∥v2∥X · B .
+
+For the convection difference use (13): 
+
+∣∣ac 
+
+> h,w 2−w1
+
+(u1, v 2)∣∣ ≤ βa c ∥w2 − w1∥1,h ∥u1∥1,h ∥v2∥1,h 
+
+≤ βa c CS ∗ ν− 32 ∥f ∥Th ∥w2 − w1∥1,h ∥v2∥X = βa c CS ∗ ν 12 ∥v2∥X · A .
+
+Hence, 
+
+II a ≤ βa c CS ∗ ν 12 ∥v2∥X · A + CCS ∗ ν 12 ∥v2∥X · B .
+
+Collecting all terms, and using the inf-sup estimate and ∥eh∥X = ν 12 ∥u1 − u2∥1,h and ∥w∥X =
+
+ν 12 ∥w∥1,h , dividing by ν 12 proves (22). 
+
+Theorem 4.4 (Existence, uniqueness, and Picard convergence via Banach) . Fix ¯γ ∈ (0 , 1) and consider the set W¯γ and the reduced Oseen solution map Sr from Theorem 4.1. Assume the hypotheses of Theorem 4.1 and Lemma 4.3. Assume moreover the data smallness condition 
+
+Λ∗
+
+∥f ∥Th
+
+ν2 ≤ 14 , (23a) 
+
+and assume that the mesh is fine enough so that the pointwise resolution condition 
+
+Cres ,w h Cγ h1− d
+
+> 4
+
+∥f ∥Th
+
+ν2 ≤ 14 (23b) 
+
+holds for every wh ∈ W¯γ satisfying ∥wh∥1,h  
+
+> ν
+
+≤ CS ∗  
+
+> ∥f∥Th
+> ν2
+
+. Here Λ∗ and the pointwise constant 
+
+Cres ,w h are the constants from (22) . Then Sr : W¯γ → W¯γ has a unique fixed point uh ∈ W¯γ
+
+which solves the reduced Navier–Stokes problem, i.e. (7) with convection field wh = uh. Moreover, by Theorem 3.1, there exists ph ∈ Pk−1(Th)/R such that (uh, p h) ∈ X solves the full embedded Trefftz–DG Navier–Stokes formulation (6) . For any initial guess w0 
+
+> h
+
+∈ W¯γ , the Picard iterates 
+
+wn+1  
+
+> h
+
+:= Sr (wnh ) converge in ∥·∥ 1,h to uh.
+
+13 Proof. Set 
+
+M := CS ∗
+
+∥f ∥Th
+
+ν2 , B¯γ,M := 
+
+{
+
+wh ∈ W¯γ : ∥wh∥1,h 
+
+ν ≤ M
+
+}
+
+.
+
+By Theorem 4.1, Sr (W¯γ ) ⊂ W¯γ . Moreover, the energy estimate (19d) gives, for every wh ∈ W¯γ ,
+
+∥Sr (wh)∥1,h 
+
+ν = ν− 12 ∥Sr (wh)∥X ≤ CS ∗
+
+∥f ∥Th
+
+ν2 = M. 
+
+Thus Sr (W¯γ ) ⊂ B¯γ,M and, in particular, Sr (B¯γ,M ) ⊂ B¯γ,M . Let w1, w 2 ∈ B¯γ,M . By (22a) and 
+
+ν|w|h,d ≤ Cγ h1− d 
+
+> 4
+
+∥w∥1,h , we obtain 
+
+∥Sr (w1) − Sr (w2)∥1,h ≤ ∥f ∥Th
+
+ν2
+
+(
+
+Λ∗ + Cres ,w 1 Cγ h1− d
+
+> 4
+
+)
+
+∥w1 − w2∥1,h .
+
+Since w1 ∈ B¯γ,M , condition (23b) applies to w1. Together with (23a), this shows that the whole Lipschitz prefactor is at most 1/2. Hence Sr is a contraction on B¯γ,M with respect to ∥·∥ 1,h .This set is closed in the finite-dimensional polynomial space W and therefore complete. Banach’s fixed-point theorem, cf. [26, §1.1], therefore yields a unique uh ∈ B¯γ,M such that 
+
+uh = Sr (uh).
+
+Every fixed point in W¯γ belongs to B¯γ,M , since any fixed point satisfies wh = Sr (wh). Hence the fixed point is unique in W¯γ . For any initial guess w0 
+
+> h
+
+∈ W¯γ , the iterate w1 
+
+> h
+
+= Sr (w0
+
+> h
+
+) lies in 
+
+B¯γ,M , and the remaining Picard iterates converge to uh in ∥·∥ 1,h . By definition of Sr , the fixed point uh ∈ X solves the reduced Navier–Stokes problem. Finally, Theorem 3.1 yields a pressure 
+
+ph ∈ Pk−1(Th)/R such that (uh, p h) ∈ X solves the full formulation (6). 
+
+## 4.3 Convergence analysis 
+
+To show convergence of the embedded Trefftz-DG solution to the exact Navier–Stokes solution, we will transfer the error control from the underlying DG problem to the Trefftz-DG problem. In contrast to the existence and uniqueness analysis above, we do not work on the reduced formulation here, since the reduced spaces associated with the standard DG scheme and the embedded Trefftz–DG scheme are not naturally the same. Instead, we compare both methods on the common space X.Accordingly, throughout this section we assume from the outset that both nonlinear fixed-point problems are well posed in their respective Banach regimes: the DG Navier-Stokes discret-ization admits a unique fixed point, and so does the embedded Trefftz-DG discretization. For a fixed convecting field wh ∈ W¯γ , both methods satisfy the same global Oseen equation; their difference is therefore entirely driven by the local equation enforcing the Trefftz constraint. This allows us to transfer error control from the local defect of the DG solution to the difference of the nonlinear fixed points. 
+
+Corollary 4.5 (Uniform lower bound for the full coupled Trefftz inf-sup constant in the Banach regime) . Assume the hypotheses of Theorem 4.4, and let wh ∈ W¯γ be the fixed point provided by Theorem 4.4. Then there exists a constants αc ∗ > 0, βk ∗,¯γ < ∞, depending only on k, the DG parameters, the shape-regularity, ¯γ, and the Banach regime constants, such that 
+
+βc wh
+
+≲ βc ∗ and αc wh
+
+≳ αc ∗ > 0. (24) 14 Proof. Since wh = Sr (wh), the reduced Oseen stability estimate (19d) gives 
+
+∥wh∥1,h 
+
+ν = ν−1/2∥wh∥X ≤ CS ∗
+
+∥f ∥Th
+
+ν2 .
+
+By the Banach smallness assumption (23a), the ratio ∥f ∥Th /ν 2 is uniformly bounded in terms of the Banach regime. By Lemma 3.4 and the discussion in Remark 3.6, it follows that the Oseen continuity constant is uniformly bounded, 
+
+βk wh
+
+≲ 1 + ∥wh∥1,h 
+
+ν ≲ βk ∗ ,
+
+Inserting the bound on βk wh
+
+into the Part I full coupled inf-sup formula yields αc wh
+
+≥ αc ∗ > 0,
+
+with the stated dependencies. 
+
+Theorem 4.6 (Transfer from DG fixed points to Trefftz fixed points) . Assume that the DG Navier–Stokes problem admits a solution ξDG  
+
+> h
+
+= ( uDG  
+
+> h
+
+, p DG  
+
+> h
+
+) ∈ X with uDG  
+
+> h
+
+∈ W¯γ , i.e. 
+
+kh,u DG 
+
+> h
+
+(ξDG  
+
+> h
+
+, η h) = ( f, v h)Th ∀ηh = ( vh, q h) ∈ X. (25) 
+
+Assume moreover that the embedded Trefftz–DG Navier–Stokes problem is well posed on W¯γ , and let uT 
+
+> h
+
+∈ W¯γ be the unique fixed point of the reduced Trefftz Oseen solution map Sr : W¯γ → W¯γ ,
+
+with contraction constant LT ∈ (0 , 1) in the norm ∥·∥ 1,h .For each wh ∈ W¯γ , let 
+
+ξT 
+
+> h
+
+(wh) = ( uT
+
+> h
+
+(wh), p T
+
+> h
+
+(wh)) ∈ X,
+
+denote the full embedded Trefftz Oseen solution corresponding to the reduced velocity solution 
+
+uT
+
+> h
+
+(wh) = Sr (wh), cf. Theorem 3.1. Define the local defect of the DG solution by Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+) ∈
+
+Q′ through 
+
+〈Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+), σ h
+
+〉
+
+> Th
+
+:= ⟨KuDG 
+
+> h
+
+ξDG  
+
+> h
+
+, σ h⟩Th − (hν − 12 f, r h)Th ∀σh = ( rh, s h) ∈ Q.
+
+Then 
+
+∥uT 
+
+> h
+
+− uDG  
+
+> h
+
+∥1,h ≤ 1(1 − LT)ν 12 αc uDG 
+
+> h
+
+∥∥Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+)∥∥Q′ . (26) 
+
+Proof. We first fix a convection field wh ∈ W¯γ and compare the two corresponding Oseen solu-tions ξT 
+
+> h
+
+(wh) ∈ X and ξDG  
+
+> h
+
+(wh) ∈ X, where ξDG  
+
+> h
+
+(wh) ∈ X denotes the ambient DG Oseen solution with frozen convector wh, i.e. 
+
+kh,w h (ξDG  
+
+> h
+
+(wh), η h) = ( f, v h)Th ∀ηh ∈ X.
+
+Since ξDG  
+
+> h
+
+(wh) satisfies the global Oseen equation on all of X, and in particular on the Trefftz test space Twh ⊂ X, subtracting the DG formulation from the Trefftz formulation (5) gives 
+
+ch,w h
+
+(ξT 
+
+> h
+
+(wh) − ξDG  
+
+> h
+
+(wh), (ηh, σ h)) = −〈Rloc 
+
+> h,w h
+
+(ξDG  
+
+> h
+
+(wh)), σ h
+
+〉
+
+> Th
+
+for all (ηh, σ h) ∈ Twh × Q. Applying the full inf-sup estimate for ch,w h yields 
+
+∥ξT 
+
+> h
+
+(wh) − ξDG  
+
+> h
+
+(wh)∥X ≤ 1
+
+αc wh
+
+∥∥Rloc 
+
+> h,w h
+
+(ξDG  
+
+> h
+
+(wh))∥ ∥Q′ , (27) and hence 
+
+∥uT
+
+> h
+
+(wh) − uDG  
+
+> h
+
+(wh)∥1,h ≤ 1
+
+ν 12 αc wh
+
+∥∥Rloc 
+
+> h,w h
+
+(ξDG  
+
+> h
+
+(wh))∥ ∥Q′ . (28) 15 We now pass to the nonlinear solutions. Since uT 
+
+> h
+
+is a fixed point of Sr , we have 
+
+∥uT 
+
+> h
+
+− uDG  
+
+> h
+
+∥1,h ≤ ∥ Sr (uT
+
+> h
+
+) − Sr (uDG  
+
+> h
+
+)∥1,h + ∥Sr (uDG  
+
+> h
+
+) − uDG  
+
+> h
+
+∥1,h 
+
+≤ LT∥uT 
+
+> h
+
+− uDG  
+
+> h
+
+∥1,h + ∥uT
+
+> h
+
+(uDG  
+
+> h
+
+) − uDG  
+
+> h
+
+∥1,h .
+
+Applying (28) with wh = uDG  
+
+> h
+
+gives 
+
+∥uT
+
+> h
+
+(uDG  
+
+> h
+
+) − uDG  
+
+> h
+
+∥1,h ≤ 1
+
+ν 12 αc uDG 
+
+> h
+
+∥∥Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+)∥∥Q′ .
+
+Therefore 
+
+(1 − LT)∥uT 
+
+> h
+
+− uDG  
+
+> h
+
+∥1,h ≤ 1
+
+ν 12 αc uDG 
+
+> h
+
+∥∥Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+)∥∥Q′ ,
+
+which proves (26). 
+
+Lemma 4.7 (Bound on the local defect of the DG solution) . Let ξ = ( u, p ) ∈ [H2(Ω)] d × H1(Ω) 
+
+be the exact solution of (1) , let ξDG  
+
+> h
+
+= ( uDG  
+
+> h
+
+, p DG  
+
+> h
+
+) ∈ X be a DG Navier–Stokes solution, and set 
+
+wh := uDG  
+
+> h
+
+. Then 
+
+∥∥Rloc  
+
+> h,w h
+
+(ξDG  
+
+> h
+
+)∥∥Q′ ≲ (1 + |wh|h,d )∥ξ − ξDG  
+
+> h
+
+∥X,∗ + Eloc  
+
+> h
+
+(ξ; wh) + hν − 12 ∥∇ u∥L4(Ω) ∥u − uDG  
+
+> h
+
+∥1,h , (29) 
+
+where 
+
+Eloc  
+
+> h
+
+(ξ; wh) := inf 
+
+> ηh=( vh,q h)∈X
+
+(
+
+∥ξ − ηh∥X,∗ + ν 12 ∥h∆( u − vh)∥Th + ν− 12 ∥h∇(p − qh)∥Th
+
++ ν 12 ∥div( u − vh)∥Th + ν 12 |wh|h,d ∥∇ (u − vh)∥Th
+
+)
+
+. (30) 
+
+Proof. Let ηh = ( vh, q h) ∈ X be arbitrary. Since the exact solution ξ = ( u, p ) of (1) satisfies 
+
+−ν∆u + ( u · ∇ )u + ∇p = f, div u = 0 ,
+
+we have 
+
+⟨Kuξ, σ h⟩Th = ( hν − 12 f, r h)Th ∀σh = ( rh, s h) ∈ Q.
+
+Hence 
+
+Rloc  
+
+> h,w h
+
+(ξDG  
+
+> h
+
+) = Kwh ξDG  
+
+> h
+
+− (hν − 12 f, 0) = Kwh (ξDG  
+
+> h
+
+− ηh) + Kwh (ηh − ξ) + ( Kwh − Ku)ξ. 
+
+For the first term, by continuity of the local operator we obtain 
+
+∥∥Kwh (ξDG  
+
+> h
+
+− ηh)∥∥Q′ ≤ βK wh
+
+∥ξDG  
+
+> h
+
+− ηh∥X,∗
+
+≤ βK wh
+
+(∥ξ − ξDG  
+
+> h
+
+∥X,∗ + ∥ξ − ηh∥X,∗
+
+).
+
+Since βK wh
+
+≲ 1 + |wh|h,d , this gives 
+
+∥∥Kwh (ξDG  
+
+> h
+
+− ηh)∥∥Q′ ≲ (1 + |wh|h,d )(∥ξ − ξDG  
+
+> h
+
+∥X,∗ + ∥ξ − ηh∥X,∗
+
+). (31) For the second term, by definition of Kwh , stability of the L2-projection, and (11), 
+
+∥∥Kwh (ηh − ξ)∥∥Q′ ≲ ν 12 ∥h∆( vh − u)∥Th + ν− 12 ∥h∇(qh − p)∥Th
+
++ ν 12 ∥div( vh − u)∥Th + ν 12 |wh|h,d ∥∇ (vh − u)∥Th . (32) 16 For the third term, only the convection part differs, and therefore 
+
+(Kwh − Ku)ξ = ( hν − 12 Πk−2((wh − u) · ∇ u), 0) .
+
+Thus, using the dual L4 estimate and Hölder’s inequality, 
+
+∥∥(Kwh − Ku)ξ∥∥Q′ ≲ ν− 12 ∥h(wh − u) · ∇ u∥L 43 (Ω) ≤ hν − 12 ∥∇ u∥L4(Ω) ∥wh − u∥L4(Ω) .
+
+Applying the broken L4 embedding to wh − u = uDG  
+
+> h
+
+− u gives 
+
+∥∥(Kwh − Ku)ξ∥∥Q′ ≲ hν − 12 ∥∇ u∥L4(Ω) ∥u − uDG  
+
+> h
+
+∥1,h . (33) Combining (31), (32), and (33), and then taking the infimum over ηh = ( vh, q h) ∈ X, yields (29). If wh ∈ W¯γ , then |wh|h,d ≤ ¯γ, so the hidden constant is uniform in wh.
+
+Corollary 4.8 (Trefftz–DG inherits the DG convergence behaviour) . Assume the Banach regime of Theorem 4.4, and let ξ = ( u, p ) be the exact Navier–Stokes solution. Let ξDG  
+
+> h
+
+= ( uDG  
+
+> h
+
+, p DG  
+
+> h
+
+) ∈ X
+
+be a DG fixed point satisfying 
+
+kh,u DG 
+
+> h
+
+(ξDG  
+
+> h
+
+, η h) = ( f, v h)Th ∀ηh = ( vh, q h) ∈ X,
+
+and assume, for some MDG < ∞ independent of h, that 
+
+uDG  
+
+> h
+
+∈ W¯γ , ∥uDG  
+
+> h
+
+∥1,h 
+
+ν ≤ MDG .
+
+Let uT 
+
+> h
+
+∈ W¯γ be the unique Trefftz fixed point. Then there exists a constant C > 0, depending only on k, the DG parameters, the shape-regularity, ¯γ, αc ∗ , MDG , and the Banach constants, but independent of h, such that 
+
+∥u − uT
+
+> h
+
+∥1,h ≤ ∥ u − uDG  
+
+> h
+
+∥1,h 
+
++ C
+
+(
+
+∥ξ − ξDG  
+
+> h
+
+∥X,∗ + Eloc  
+
+> h
+
+(ξ; uDG  
+
+> h
+
+) + hν − 12 ∥∇ u∥L4(Ω) ∥u − uDG  
+
+> h
+
+∥1,h 
+
+)
+
+. (34) 
+
+In particular, whenever the local defect is of the same order as the ambient DG error, the Trefftz– DG velocity converges with the same rate as the DG velocity. Proof. By the triangle inequality and Theorem 4.6, 
+
+∥u − uT
+
+> h
+
+∥1,h ≤ ∥ u − uDG  
+
+> h
+
+∥1,h + ∥uT 
+
+> h
+
+− uDG  
+
+> h
+
+∥1,h 
+
+≤ ∥ u − uDG  
+
+> h
+
+∥1,h + 1(1 − LT)ν 12 αc uDG 
+
+> h
+
+∥∥Rloc 
+
+> h,u DG
+> h
+
+(ξDG  
+
+> h
+
+)∥∥Q′ .
+
+Using the assumptions on uDG  
+
+> h
+
+we can find a uniform lower bound for αc uDG 
+
+> h
+
+, depending on ¯γ and 
+
+MDG . Applying Lemma 4.7 with wh = uDG  
+
+> h
+
+yields (34). This result allows one to transfer convergence results from any DG method of the form (25), provided its convection trilinear form satisfies Assumption 3.2. Two such results are available in the literature: 
+
+• A detailed analysis of the global DG discretization for the Navier–Stokes problem is given in [1] a trilinearform fitting our assumptions. Under a smallness assumption on the data, the authors prove optimal convergence rates. For simplicity, the presentation in [1] focuses on the case d = 2 , but the analysis extends to d = 3 as well. 17 • In [2, 3], two different, suitable, trilinearforms are established and convergence of the cor-responding DG approximations is established. A pressure estimate is not pursued further here. Once the piecewise-constant pressure part is controlled uniformly, the same transfer argument shows that the full Trefftz-DG pressure inherits the convergence behaviour of the DG pressure in the discrete norm ∥·∥ 0,h .
+
+# 5 Numerical results 
+
+In the numerical examples we choose the discrete trilinear form ac 
+
+> h,w
+
+as a discrete counterpart of Temam’s modification given by 
+
+ac
+
+> h,w
+
+(u, v ) := ( w · ∇ u, v )Ω − ({{w}} · nF [[ u]] , {{v}})
+
+> Fi
+> h
+
++ 12
+
+((∇ · w)u, v ) 
+
+> Ω
+
+− 12
+
+([[ w]] · nF , {{u · v}})
+
+> Fh
+
+.
+
+The choice is further discussed in [2, 3] and shown to satisfy our assumptions in Part I, [22]. For the implementation of the methods we are using NGSolve [19] and NGSTrefftz [20]. Replication data are available in [23]. 
+
+## 5.1 Kovasznay flow 
+
+We consider the exact solution known as Kovasznay flow, which is given by 
+
+u =
+
+( 1 − exp( κx ) cos(2 πy )
+
+κ/ (2 π) exp( κx ) sin(2 πy )
+
+)
+
+, p = −0.5 exp(2 κx ) + ¯ p (35) with κ = (2 ν)−1 − √(4 ν2)−1 + 4 π2 where ¯p is a constant chosen such that ∫ 
+
+> Ω
+
+p = 0 . The exact solution satisfies the Navier-Stokes equations with f = 0 and g = 0 . We enforce inhomogeneous Dirichlet boundary conditions matching the exact solution. In the experiments we choose the tolerance in the Picard iteration Algorithm 1 to be TOL =10 −10 . If not otherwise specified the penalty parameter is chosen as λ = 50 k2. The viscosity is set to ν = 1 .0. We compare the Trefftz method with T elements against the standard DG method with Pk elements for k = 2 , 3, 4, 5.Results for the convergence of the velocity and pressure in the L2-norm are shown in Fig. 1. The results for the Trefftz method are shown in solid lines, while the results for the standard finite element method are shown in dashed lines. Both methods show the expected convergence rates. Meshsize T3 P3 T4 P4 T5 P5
+
+1.0 0.30 (12 ) 0.33 (11 ) 0.43 (13 ) 0.53 (12 ) 1.01 (13 ) 0.87 (12 )
+
+2−1 1.13 (12 ) 0.92 (12 ) 1.00 (12 ) 1.85 (11 ) 1.66 (11 ) 3.67 (11 )
+
+2−2 2.16 (11 ) 3.65 (11 ) 3.18 (11 ) 8.98 (11 ) 4.84 (11 ) 19 .84 (11 )
+
+2−3 7.35 (11 ) 19 .20 (11 ) 11 .84 (11 ) 42 .08 (11 ) 17 .90 (11 ) 83 .69 (11 )
+
+2−4 32 .73 (11 ) 79 .94 (11 ) 57 .96 (11 ) 183 .19 (11 ) 89 .28 (11 ) 373 .29 (11 )Table 1: Total timings in seconds and iteration count for the Kovasznay flow problem on various mesh sizes and polynomial degrees. In Table 1 we show the total timings in seconds and the number of Picard iterations needed to reach the tolerance TOL = 10 −10 . Already on quite coarse meshes the Trefftz method is faster than the standard finite element method, especially for higher polynomial degrees. The number of Picard iterations is comparable for both methods. 18 10 −110 0         
+
+> 10 −10
+> 10 −8
+> 10 −6
+> 10 −4
+> 10 −2
+> 10 0
+> h
+> L2(Ω) -error
+> velocity
+> 10 −110 0
+> 10 −6
+> 10 −4
+> 10 −2
+> 10 0
+> 10 2
+> h
+> L2(Ω) -error
+> pressure
+> p= 2 p= 3 p= 4 p= 5 O(h−(p+1) )O(h−p)
+
+Figure 1: Convergence of the velocity and pressure in the L2-norm for the Kovasznay flow problem. The results for the Trefftz method are shown in solid lines, while the results for the standard finite element method are shown in dashed lines. The expected convergence rates are shown as solid and dashed lines black lines. 
+
+## 5.2 Sensitivity to the Reynolds number 
+
+We consider the same problem as in Section 5.1, but with varying viscosity ν. The goal is to investigate the sensitivity of the methods to the Reynolds number, and the dependence on the penalty parameter λ and mesh size h.In Fig. 2 we consider ν = 0 .25 i for i = 0 , . . . , 8, and λ = 2 j for j = 3 , . . . , 8 on three different mesh sizes h = 0 .5, 0.25 , 0.125 . We fix the polynomial degree to p = 4 and compare the Trefftz method with the standard DG method in terms of the number of Picard iterations needed to reach the tolerance TOL = 10 −8. If the method fails to converge within 100 iterations, we mark the point with a cross. For both methods, the number of iterations increases as ν decreases, and larger values of λ
+
+generally improve robustness. Moreover, refining the mesh enlarges the region in parameter space in which convergence is obtained. The standard DG method is consistently more robust with respect to decreasing ν: on each mesh it still converges for smaller viscosities and smaller penalty parameters than the Trefftz method. By contrast, whenever both methods converge, the observed Picard iteration counts are typically of comparable size. 
+
+## 5.3 The Schäfer–Turek benchmark 
+
+We consider the classical Schäfer–Turek DFG benchmark 2D-1 for steady flow past a cylinder, as introduced in [17]. The stationary incompressible Navier–Stokes equations are posed on 
+
+Ω = [0 , 2.2] × [0 , 0.41] \ B0.05 (0 .2, 0.2) ,
+
+19 10 1                          
+
+> 10 2
+> Penalty parameter  λ
+> 10 −510 −410 −310 −210 −110 0
+> 10 1
+> 10 2
+> Viscosity ν
+> Penalty parameter  λ
+> 10 −510 −410 −310 −210 −110 0
+> Viscosity ν
+> 10 −510 −410 −310 −210 −110 0
+> Viscosity ν
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Meshsize h= 0 .5Meshsize h= 0 .25 Meshsize h= 0 .125
+> Trefftz method Standard DG method
+
+Figure 2: Number of Picard iterations needed to reach the tolerance TOL = 10 −8 for varying viscosity ν and penalty parameter λ. From left to right, the columns correspond to increasing mesh refinement, h = 0 .5, 0.25 , 0.125 . The results for the Trefftz method are shown in the top row, while the results for the standard DG method are shown in the bottom row. with viscosity ν = 10 −3. We impose no-slip boundary conditions on the upper and lower channel walls as well as on the cylinder boundary, and prescribe the parabolic inflow profile 
+
+u(0 , y ) = 
+
+( 4Umax y(0 .41 − y)0.41 2 , 0
+
+)
+
+, Umax = 0 .3.
+
+The mean inflow velocity is therefore Umean = 23 Umax = 0 .2, and with cylinder diameter L = 0 .1
+
+this yields the Reynolds number Re = Umean Lν = 20 .
+
+The quantities measured in [17] are the drag and lift coefficients, the pressure difference. Let 
+
+η denote the outer unit normal of the cylinder boundary S (pointing into the fluid). Following the benchmark convention, we define the (non-symmetric) stress tensor σ(u, p ) = ν∇u − pI, and the drag/lift force vector by 
+
+(FD
+
+FL
+
+)
+
+:= 
+
+∫
+
+> S
+
+σ(u, p ) η ds. CD := 2
+
+U 2mean L FD , CL := 2
+
+U 2mean L FL,
+
+where CD and CL are the dimensionless drag and lift coefficients. Moreover, we consider the pressure difference 
+
+pdiff := p(a1) − p(a2), a1 = (0 .15 , 0.2) , a2 = (0 .25 , 0.2) .
+
+As reference values we use the computations reported in [15], 
+
+Cref  
+
+> D
+
+= 5 .57953523384 , Cref  
+
+> L
+
+= 0 .010618948146 , pref diff = 0 .11752016697 .
+
+20 In addition, the original benchmark paper gives the admissible intervals 
+
+CD ∈ [5 .5700 , 5.5900] , CL ∈ [0 .0104 , 0.0110] , pdiff ∈ [0 .1172 , 0.1176] .
+
+We solve the problem on the mesh with h = 0 .07 for polynomial degrees p = 3 , . . . , 8, and compare the Trefftz-DG and standard DG discretizations. The resulting values for CD , CL, and 
+
+pdiff , together with their absolute errors with respect to the reference values above, are reported in Table 2. method p CD |e(CD )| CL |e(CL)| ∆p |e(∆ p)|
+
+TDG 
+
+3 5.374163 2.05 · 10 −1 0.025328 1.47 · 10 −2 0.111354 6.17 · 10 −3
+
+4 5.586511 6.98 · 10 −3 0.024419 1.38 · 10 −2 0.112734 4.79 · 10 −3
+
+5 5.581096 1.56 · 10 −3 0.011743 1.12 · 10 −3 0.116297 1.22 · 10 −3
+
+6 5.579659 1.24 · 10 −4 0.010025 5.94 · 10 −4 0.117351 1.69 · 10 −4
+
+7 5.579641 1.06 · 10 −4 0.010224 3.95 · 10 −4 0.117614 9.38 · 10 −5
+
+8 5.579488 4.69 · 10 −5 0.010508 1.11 · 10 −4 0.117560 4.02 · 10 −5
+
+DG 
+
+3 5.467910 1.12 · 10 −1 −0.094281 1.05 · 10 −1 0.118187 6.67 · 10 −4
+
+4 5.540065 3.95 · 10 −2 −0.007953 1.86 · 10 −2 0.118424 9.04 · 10 −4
+
+5 5.574418 5.12 · 10 −3 0.010043 5.76 · 10 −4 0.117843 3.23 · 10 −4
+
+6 5.579412 1.23 · 10 −4 0.010374 2.45 · 10 −4 0.117599 7.90 · 10 −5
+
+7 5.579756 2.20 · 10 −4 0.010527 9.17 · 10 −5 0.117538 1.82 · 10 −5
+
+8 5.579700 1.65 · 10 −4 0.010611 7.78 · 10 −6 0.117524 3.35 · 10 −6
+
+Table 2: Drag/lift coefficients and pressure difference with errors. The results in Table 2 show that both methods capture the benchmark quantities with high accuracy. In particular, both discretizations approach the reference values rapidly as the polyno-mial degree increases, and from p = 6 onward the remaining errors are already very small. The comparison between Trefftz-DG and standard DG is mixed but overall balanced: Trefftz-DG tends to be slightly more accurate for the drag coefficient CD , while standard DG is consistently more accurate for the pressure difference pdiff . For the lift coefficient CL, Trefftz-DG has an advantage at lower polynomial degrees, whereas standard DG is more accurate at higher orders. Thus, for this benchmark the two discretizations perform very similarly overall. 
+
+Figure 3: Streamlines of the velocity field for the Schäfer–Turek benchmark problem computed with the Trefftz-DG method with polynomial degree k = 5 .A streamline plot of the computed flow is shown in Fig. 3; it exhibits the expected steady recirculation region downstream of the cylinder. 21 Acknowledgements 
+
+This research was funded in part by the Austrian Science Fund (FWF) 10.55776/ESP4389824. For open access purposes, the author has applied a CC BY public copyright license to any author-accepted manuscript version arising from this submission. 
+
+# References 
+
+[1] B. Cockburn, G. Kanschat, and D. Schötzau. A locally conservative LDG method for the incompressible Navier-Stokes equations. Math. Comput. , 74(251):1067–1095, 2005. doi: 10.1090/S0025-5718-04-01718-1 .[2] D. A. Di Pietro and A. Ern. Discrete functional analysis tools for discontinuous Galerkin methods with application to the incompressible Navier-Stokes equations. Math. Comput. ,79(271):1303–1330, 2010. doi:10.1090/S0025-5718-10-02333-1 .[3] D. A. Di Pietro and A. Ern. Mathematical aspects of discontinuous Galerkin meth-ods , volume 69. Springer Science & Business Media, Heidelberg, 2011. doi:10.1007/ 978-3-642-22980-0 .[4] S. Gómez, C. Perinati, and P. Stocker. Inf-sup stable space-time local discontinuous Galerkin method for the heat equation. Journal of Scientific Computing , 106(1):22, 2025. doi: 10.1007/s10915-025-03121-7 .[5] C. Heil. Space-time Trefftz DG methods for parabolic PDEs. GRO.data , 2024. doi: 10.25625/ZSA8UU .[6] F. Heimann, C. Lehrenfeld, P. Stocker, and H. von Wahl. Unfitted Trefftz discontinuous Galerkin methods for elliptic boundary value problems. ESAIM: M2AN , 2023. doi:10. 1051/m2an/2023064 .[7] L.-M. Imbert-Gérard, A. Moiola, C. Perinati, and P. Stocker. Polynomial quasi-Trefftz DG for PDEs with smooth coefficients: elliptic problems. IMA Journal of Numerical Analysis ,page drae094, 2025. doi:10.1093/imanum/drae094 .[8] P. L. Lederer, C. Lehrenfeld, and P. Stocker. Trefftz discontinuous Galerkin discretization for the Stokes problem. Numerische Mathematik , 2024. doi:10.1007/s00211-024-01404-z .[9] C. Lehrenfeld and P. Stocker. Embedded Trefftz discontinuous Galerkin methods. Int. J. Numer. Methods Eng. , 124(17):3637–3661, 2023. doi:10.1002/nme.7258 .[10] C. Lehrenfeld, P. Stocker, and M. Zienecker. Sparsity comparison of polytopal finite element methods. PAMM , 24(3):e202400150, 2024. doi:10.1002/pamm.202400150 .[11] A. Lozinski. A primal discontinuous Galerkin method with static condensation on very general meshes. Numer. Math. , 143(3):583–604, 2019. doi:10.1007/s00211-019-01067-1 .[12] J. C. Meyer, C. Lehrenfeld, and I. Voulis. On the conforming trefftz finite element method and applications. Zenodo , Oct. 2025. doi:10.5281/zenodo.17307511 .[13] A. Montlaur, S. Fernandez-Mendez, and A. Huerta. Discontinuous Galerkin methods for the Stokes equations using divergence-free approximations. International Journal for Numerical Methods in Fluids , 57(9):1071–1092, 2008. doi:10.1002/fld.1716 .22 [14] A. Montlaur, S. Fernandez-Mendez, J. Peraire, and A. Huerta. Discontinuous Galerkin methods for the Navier–Stokes equations using solenoidal approximations. International Journal for Numerical Methods in Fluids , 64(5):549–564, 2010. [15] G. Nabh. On higher order methods for the stationary incompressible Navier-Stokes equations .Heidelberg: Univ. Heidelberg, Naturwissenschaftlich-Mathematische Gesamtfakultät, 1998. [16] C. Perinati, L.-M. Imbert-Gérard, A. Moiola, and P. Stocker. A discontinuous Galerkin method for elliptic-hyperbolic equations. arXiv preprint arXiv:2604.06910 , 2026. URL: 
+
+https://arxiv.org/abs/2604.06910 , doi:10.48550/arXiv.2604.06910 .[17] M. Schäfer and S. Turek. Benchmark computations of laminar flow around a cylinder. (With support by F. Durst, E. Krause and R. Rannacher). In Flow simulation with high-performance computers II. DFG priority research programme results 1993 - 1995 , pages 547–566. Wiesbaden: Vieweg, 1996. [18] E. Schlesinger. Embedded Trefftz Trace DG Methods for PDEs on unfitted Surfaces. 
+
+GRO.data , 2023. doi:10.25625/QTOPWD .[19] J. Schöberl. C++ 11 implementation of finite elements in NGSolve. Institute for analysis and scientific computing, Vienna University of Technology , 30, 2014. [20] P. Stocker. NGSTrefftz: Add-on to NGSolve for Trefftz methods. J. Open Source Softw. ,7(71):4135, 2022. doi:10.21105/joss.04135 .[21] P. Stocker and I. Voulis. Embedded Trefftz DG method for the Helmholtz equation. arXiv preprint arXiv:2603.13034 , 2026. doi:10.48550/arXiv.2603.13034 .[22] P. Stocker, I. Voulis, P. L. Lederer, and C. Lehrenfeld. Embedded Trefftz DG method for steady Navier–Stokes flow. Part I: Oseen linearization. arXiv preprint , 2026. [23] P. Stocker, I. Voulis, C. Lehrenfeld, and P. L. Lederer. Replication Data for: Embed-ded Trefftz DG method for steady Navier–Stokes flow, June 2026. doi:10.5281/zenodo. 20490547 .[24] E. Trefftz. Ein Gegenstück zum Ritzschen Verfahren. Proc. 2nd Int. Cong. Appl. Mech., Zurich, 1926 , pages 131–137, 1926. [25] J. Yang, M. Potier-Ferry, K. Akpama, H. Hu, Y. Koutsawa, H. Tian, and D. S. Zézé. Trefftz methods and Taylor series. Arch. Comput. Methods Eng. , 27(3):673–690, 2020. [26] E. Zeidler. Nonlinear Functional Analysis and its Applications I: Fixed-Point Theorems .Springer, New York, 1986. 23
