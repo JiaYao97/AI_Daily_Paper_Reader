@@ -1,0 +1,2968 @@
+Title: Embedded Trefftz DG method for steady Navier-Stokes flow. Part I: Oseen linearization
+
+URL Source: https://arxiv.org/pdf/2606.13229v1
+
+Published Time: Fri, 12 Jun 2026 00:59:20 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+# Embedded Trefftz DG method for steady Navier–Stokes flow 
+
+## Part I: Oseen linearization Paul Stocker ∗ Igor Voulis † Christoph Lehrenfeld † Philip L. Lederer ‡
+
+Abstract 
+
+We develop an embedded Trefftz-DG method for the Oseen problem and prove a com-plete stability and quasi-optimality theory in standard DG norms. The key ingredient is a construction of a suitable local complement space to the Trefftz space, on which the Oseen operator is stably invertible. We also derive a reduced formulation of the method, the res-ulting system is posed in terms of the velocity unknown only, a crucial step in the analysis especially for the nonlinear Navier–Stokes problem in Part II. 
+
+Keywords : embedded Trefftz methods, discontinuous Galerkin methods, Oseen problem 
+
+MSC2020 : 65N30, 65N12, 65N15, 76D07, 76M10 
+
+# 1 Introduction 
+
+The present paper is the first part of a two-part work on embedded Trefftz discontinuous Galerkin methods for time-harmonic incompressible flow problems. In this first part we consider the steady Oseen problem, which forms the linear building block for the Navier–Stokes analysis developed in the second part. A very detailed comparison with other methods in terms of computational cost is given in [19] for the Stokes problem, and the exact same comparison applies to the Oseen setting as well. Trefftz methods, dating back to Trefftz [40], are based on approximation spaces contained in the kernel of the underlying differential operator. By building the PDE locally into the discrete space, they can deliver high approximation quality with substantially fewer degrees of freedom than standard polynomial methods, and are therefore particularly appealing in combination with discontinuous Galerkin (DG) discretizations. Trefftz-DG methods have by now been developed for a broad range of problems; see, for instance, [1,2,8–10,14–18,28,32]. For a detailed comparison to other methods on general meshes, see [23]. At the same time, classical Trefftz constructions remain most natural for homogeneous linear equations with piecewise-constant coefficients, while variable coefficients and nonzero right-hand sides are well known to be significantly more chal-lenging. The embedded Trefftz-DG approach introduced in [21, 26] avoids the explicit construction of local Trefftz bases. Instead, one starts from an underlying polynomial DG space and imposes the PDE only through local projection constraints, thereby selecting a PDE-adapted subspace inside the full DG space. This point of view makes Trefftz techniques accessible for variable-coefficient operators and inhomogeneous right-hand sides in a generic way. The approach has 
+
+> ∗Faculty of Mathematics, University of Vienna, Oskar-Morgenstern-Platz 1, 1090 Vienna, Austria.
+> †Institute for Numerical and Applied Mathematics, University of Göttingen, Lotzestr. 16–18, 37083 Göttingen, Germany.
+> ‡Department of Mathematics, University of Hamburg, Bundesstraße 55, 20146 Hamburg, Germany.
+
+1
+
+> arXiv:2606.13229v1 [math.NA] 11 Jun 2026
+
+already been investigated for a wide range of problems [11–13, 27, 31, 34, 37]. Most importantly for the present work is the study of the Stokes problem presented in [19], which is the direct predecessor of the present paper. There, higher-order pressure components are locally tied to the velocity unknowns, so that only piecewise-constant pressures remain globally coupled, and full stability and quasi-optimality were established. A unified abstract local-global framework for embedded Trefftz methods was subsequently formulated in [20]. The extension from Stokes to Oseen is, however, far from formal. The convection term introduces variable coefficients through the prescribed convection field, so the constant-coefficient arguments used in the Stokes analysis no longer apply directly. In particular, the approximation arguments in [19] rely on Taylor-polynomial constructions on affinely shifted Trefftz spaces, and these are tied to the constant-coefficient structure of the Stokes operator. For the Oseen operator, a different route is needed. The key idea of the present paper is therefore to exploit the abstract local-global splitting from [20] and to construct suitable local complement spaces on which the Oseen operator is stably invertible. This leads naturally to a reduced formulation for the velocity unknown, in which the higher-order pressure components are again locally determined by the velocity and only the piecewise-constant pressure component remains globally coupled. The resulting analysis removes the saddle-point structure at the critical local step and allows us to transfer coercivity from the Stokes setting to reduced Oseen-Trefftz spaces under a suitable smallness condition on the convection field. At the DG level, our construction is also connected to the discrete functional analysis frame-work of Di Pietro and Ern [6, 7], in particular to the treatment of convective terms and to energy-stable DG formulations for incompressible flow problems. More broadly, the Oseen prob-lem sits at the interface between classical DG discretizations of viscous incompressible flows and Trefftz-type model reduction ideas. While Trefftz techniques for Stokes problems do exist, they are much less developed than for wave propagation problems; see, for instance, the spectral-type constructions in [3, 33], the spectral method of [25], and the collocation Trefftz approach of [24]. As well as approximations via Solenoidal functions, i.e. element-wise divergence-free, a partial requirement of the PDE, in [29, 30]. Another important and complementary strategy for redu-cing globally coupled degrees of freedom is provided by hybridizable DG methods [4]. However, hybridization and Trefftz reduction act in rather different ways, and their benefits are to a large extent competing rather than cumulative. 
+
+Contributions. This paper extends the embedded Trefftz-DG methodology from the Stokes problem [19] to the steady Oseen equations and provides the linear foundation for the nonlinear Navier–Stokes analysis in Part II [38]. Compared with the Stokes predecessor, the present work contains three main new ingredients: 
+
+• We construct suitable local complement spaces L(T ) for the Oseen operator. In contrast to the Stokes case, where the construction relied on constant-coefficient Taylor-polynomial arguments, the convection term leads to a variable-coefficient local operator and requires a more delicate construction. 
+
+• We treat inhomogeneous right-hand sides through a local problem built directly into the formulation, rather than through a correction argument as in the Stokes analysis. This is better adapted to the Oseen setting and fits naturally into the abstract local-global splitting framework of [20]. 
+
+• We derive a reduced formulation for the velocity unknown and prove reduced inf–sup stabil-ity for the full Oseen operator. More precisely, after eliminating the higher-order pressure components locally, we establish stability of the reduced Oseen problem and transfer it to 2the full embedded Trefftz-DG discretization, leading to well-posedness and quasi-optimality in standard DG norms. These linear results provide the key analytical groundwork for the nonlinear Navier–Stokes theory developed in Part II, [38]. 
+
+Outline. In Section 1.1 we introduce the steady Oseen problem as the linearization of the Navier–Stokes equations. The embedded Trefftz-DG discretization and the local Trefftz con-straint are presented in Section 2, including the convection trilinear form. The local-global splitting framework and the construction of the complement spaces L(T ) are developed in Sec-tion 3. Based on this, Section 4 introduces the reduced formulation in which the higher-order pressure components are locally tied to the velocity unknown. The core stability and error ana-lysis of the Oseen Trefftz-DG method is carried out in Section 5. Numerical results, including Oseen–Kovasznay tests and parameter studies, are presented in Section 6. Finally, auxiliary discrete estimates and concrete choices of the convection form are collected in Sections A and B. 
+
+## 1.1 The Oseen problem 
+
+The Oseen problem is the canonical linearization of the steady incompressible Navier–Stokes equations around a given convection field. It is obtained by freezing the advecting velocity in the nonlinear term, replacing (u·∇ )u by (w·∇ )u for a prescribed field w. As such, the Oseen problem serves as the fundamental linear building block for Navier–Stokes theory and, in particular, for fixed-point and iterative linearization arguments. Consider an open bounded Lipschitz domain Ω ⊂ Rd with d = 2 , 3. The central model problem of this paper is the Oseen problem , obtained by linearizing the steady Navier–Stokes equations around a given convection field w ∈ [L4(Ω)] d: Find velocity u : Ω → Rd and pressure 
+
+p : Ω → R such that 
+
+−ν∆u + ( w · ∇ )u + ∇p = f, in Ω,
+
+div u = 0 , in Ω,u = 0 , on ∂Ω,
+
+(1) where f : Ω → Rd is the external body force and ν > 0 is the dynamic viscosity. For the ease of presentation we only consider homogeneous Dirichlet boundary conditions. The Navier–Stokes problem (obtained by setting w = u in (1)) is treated in Part II, [38]. 
+
+# 2 Embedded Trefftz-DG discretization 
+
+## 2.1 DG discretization of the Oseen problem 
+
+We consider a sequence of shape-regular simplicial meshes Th of a polygonal domain Ω. We introduce the underlying DG space given by 
+
+Xk(Th) = [ Pk]d(Th) × Pk−1(Th)/R (X)where Pk(Th) denotes the broken space of polynomials of degree at most k on each element 
+
+T ∈ T h. We adopt three notational conventions throughout this paper to keep the number of indices manageable (they will be plentiful enough regardless): 1. We drop the customary subscript h from discrete spaces, even though all spaces below are mesh-dependent. This departs from much of the FEM and DG literature. 32. All discrete spaces are element-wise defined on Th; when no mesh argument is written, the full mesh Th is understood. Thus Xk stands for Xk(Th), while Xk(T ) refers to the local space on a single element T ∈ T h. The same convention applies to all discrete spaces Tw, L, Q,
+
+Pk, W, . . . introduced below. 3. The superscript ·k indicating the polynomial degree is suppressed throughout, unless the specific degree is important in context, for instance X = Xk(= Xk(Th)) . For the plain polynomial spaces Pk, Pk−1, Pk−2 the superscript is always retained. Let Fh = Fi 
+
+> h
+
+∪ F b 
+
+> h
+
+be the set of all (interior and boundary, resp.) facets. On F ∈ F i 
+
+> h
+
+we use the usual definitions of averages {{·} } and jumps [[ ·]] across facets. On F ∈ F b 
+
+> h
+
+we set {{ϕ}} = ϕ and 
+
+[[ ϕ]] = ϕ. With abuse of notation, we write h both for the global mesh size h := max T ∈T h hT and for the corresponding piecewise constant mesh-size functions on Th, Fh, and ∂Th. Thus h|T = hT
+
+on elements, h|F = hF := diam( F ) on facets, and on element-boundaries F ⊂ ∂T we may take 
+
+h|F = hT . By shape regularity, these choices are uniformly equivalent, hF ≃ hT for F ⊂ ∂T .We define the standard interior penalty DG bilinear forms for the diffusion and pressure-velocity coupling as follows: 
+
+ad
+
+> h
+
+(uh, v h) := ( ν∇uh, ∇vh)Th −({{ν∂ nuh}}, [[ vh]]) Fh −({{ν∂ nvh}}, [[ uh]]) Fh + λν h ([[ uh]] , [[ vh]]) Fh , (2a) 
+
+bh(vh, p h) := −(div vh, p h)Th +([[ vh · n]] , {{ph}})Fh , (2b) where we used the notation (·, ·)Th := ∑  
+
+> T∈T h
+
+(·, ·)T . The interior penalty parameter λ = O(k2)
+
+is chosen sufficiently large (depending on k and shape regularity) and we used the notation 
+
+∂nw := ∇w · n where n is the unit normal to the facet. We are ready to introduce the bilinear form kh,w , writing ξh := ( uh, p h) and ηh := ( vh, q h), as 
+
+kh,w (ξh, η h) := ad
+
+> h
+
+(uh, v h) + bh(uh, q h) + bh(vh, p h) + ac
+
+> h,w
+
+(uh, v h), (kh,w )where ac 
+
+> h,w
+
+is an abstract trilinear form discretizing the convective term (w · ∇ )u; its precise assumptions and concrete choices are discussed below in Section 2.4. The corresponding DG method then reads as: Find ξh ∈ X, s.t. 
+
+kh,w (ξh, η h) = ( f, v h)Th ∀ηh ∈ X. (DG) 
+
+## 2.2 Local operator and Trefftz condition 
+
+We now introduce our Trefftz space as the local kernel of a relaxed PDE operator. Rather than requiring functions to lie in the kernel of the strong PDE operator—which may be trivial for 
+
+w̸ = 0 —we relax the condition by testing only against a suitable lower-order polynomial space. We therefore first introduce the test space 
+
+Q(T ) = [ Pk−2(T )] d × Pk−1(T ), Q = Q(Th) := ∏ 
+
+> T∈T h
+
+Q(T ), (Q)where we write elements as σh = ( rh, s h) ∈ Q(T ).With Xreg (T ) := [ H2(T )] d × H1(T ), we define the local PDE operator KT,w : Xreg (T ) →
+
+Q(T )′ directly via the duality pairing for σh = ( rh, s h) ∈ Q(T ) and ξ = ( u, p ) ∈ Xreg (T ):
+
+⟨KT,w ξ, σ h⟩T := hν − 12
+
+( − ν∆u + w · ∇ u + ∇p, r h
+
+) 
+
+> T
+
++ ν 12
+
+( − div u, s h
+
+) 
+
+> T
+
+. (KT,w )Accordingly, we set Kw : Xreg → Q′ via ⟨Kwξh, σ h⟩Th = ∑  
+
+> T∈T h
+
+⟨KT,w ξh, σ h⟩T . Here Xreg =
+
+Xreg (Th) = [ H2(Th)] d × H1(Th). The scaling factor hν − 12 in the first component balances the scaling with respect to our choice of norms, as we will see in the analysis. 4With this PDE operator defined, we set the Trefftz space as the subspace of X satisfying the Trefftz condition element-wise: 
+
+Tw := {ξh ∈ X | ⟨ Kwξh, σ h⟩T = 0 ∀σh ∈ Q(Th)}. (Tw)For w = 0 (the Stokes case), the residuals −ν∆uh + ∇ph and − div uh already lie in Q(T ) for any 
+
+ξh ∈ X(T ), T ∈ T h, so K0 coincides with the (element-wise) strong Stokes operator. For w̸ = 0 ,the pairing (w · ∇ uh, r h)Th implicitly involves only the L2-projection of w · ∇ uh into [Pk−2]d, i.e. functions in Tw fulfill the PDE only in a relaxed sense. 
+
+## 2.3 The embedded Trefftz-DG formulation 
+
+With the above definitions, we are ready to introduce the embedded Trefftz-DG method for the Oseen problem. The Trefftz-DG method to (1) then reads: Find ξh = ( uh, p h) ∈ X so that 
+
+kh,w (ξh, η h) = ( f, v h)Th ∀ηh = ( vh, q h) ∈ Tw (3a) 
+
+〈Kwξh, σ h
+
+〉
+
+> Th
+
+= (hν − 12 f, r h
+
+)
+
+> Th
+
+∀σh = ( rh, s h) ∈ Q. (3b) Eq. (3) is a coupled system for the unknown ξh in the ambient DG space X, where the first line corresponds to the (global) problem on the Trefftz space and the second line corresponds to local problems on each element. For compact notation of the coupled system (3), we introduce the product test space Zw := Tw × Q and introduce the bilinear and linear forms 
+
+ch,w (ξh, ζ h) := kh,w (ξh, η h) + ⟨KT,w ξh, σ h⟩Th , ξh ∈ X, (ch,w )
+
+F (ζh) := ( f, v h)Th + ( hν − 12 f, r h)Th , ζh = ( ηh, σ h) = (( vh, q h), (rh, s h)) ∈ Zw. (F )so that (3) also reads: Find ξh ∈ X, so that ch,w (ξh, ζ h) = F (ζh) for all ζh ∈ Zw.=    
+
+> uh
+> ph0
+> vh
+> qhkh,w (·,·)kh,w (·,·)
+> w
+> ξT
+> ξL
+> =
+> Tw
+> Q
+
+Figure 1: Schematic comparison between Standard DG formulation in velocity and pressure unknowns and equations (left) vs. Trefftz formulation as a block triangular system coupling Trefftz solution and local solution (right). This can be interpreted as a (upper) block triangular system where the lower right block is additionally block-diagonal with blocks given by the local operator Kw. This hence yields a different algebraic structure as the usual DG method, cf. Fig. 1 for a schematic comparison of the algebraic structure of the standard DG method and the embedded Trefftz-DG method. 5On the implementation. The system (3) is a coupled upper-triangular block system that can be solved by first solving the local problems on each element, possibly in parallel, cf. Fig. 1, which allows us to compute the Trefftz space via embedding in the same breath. And then solving the global problem on the much smaller Trefftz space. In this sense, the solution is split into a local part ξL = ( uL, p L) and a global part ξT = ( uT, p T) ∈ Tw, where the local part is given by the solution of the local problems and the global part is then solved for by 
+
+kh,w (ξT, η T) = ( f, v T)Th − kh,w (ξL, η T) ∀ηT = ( vT, q T) ∈ Tw.
+
+The local problems, can be solved on each element by computing a pseudo-inverse of the local operator KT,w : X(T ) → Q(T )′. Using an QR-decomposition or SVD of the matrix representation of KT,w , we can compute simultaneously an embedding for the Trefftz space Tw into the ambient 
+
+X space and the pseudo-inverse of KT,w . The implementation is discussed in more detail in [22]. We note that the Trefftz-DG method presented here yields a solution in X. Above, we defined the Trefftz subspace Tw, but not a complement space to X. We do not need to explicitly construct such a complementary space for the realization of the method. In contrast, for the analysis we will consider a specific complementary space L so that X = Tw ⊕ L.
+
+Norms and projections. Below, we use the mesh dependent DG norms for u ∈ [H1(Th)] d,
+
+v ∈ [H2(Th)] d:
+
+∥u∥21,h := ∥∇ u∥2 
+
+> Th
+
++∥h− 12 [[ u]] ∥2 
+
+> Fh
+
+, ∥v∥21,h, ∗ := ∥v∥21,h +∥h 12 ∂nv∥2 
+
+> ∂Th
+
++ ∥h∆v∥2 
+
+> Th
+
+, (∥ · ∥ 1,h (,∗))For uh ∈ [Pk]d, the inverse inequality (37), and a trace inequality shows that the two versions of the mesh-dependent norm are equivalent on [Pk]d.Let us also equip the spaces X and Zw with suitable norms. For (u, p ) ∈ Xreg and ζh =(ηh, σ h) ∈ Zw we introduce the following mesh-dependent norms: 
+
+∥p∥20,h := ∥h ∇ p∥2 
+
+> Th
+
++ ∥h 12 [[Π 0p]] ∥2
+
+> Fi
+> h
+
+, ∥(u, p )∥2 
+
+> X
+
+:= ν∥u∥21,h + ν−1∥p∥20,h ,
+
+∥(u, p )∥2 
+
+> X,∗
+
+:= ν∥u∥21,h, ∗ + ν−1∥p∥20,h , ∥ζh∥2 
+
+> Z
+
+:= ∥ηh∥2 
+
+> X
+
++ ∥σh∥2
+
+> Q
+
+,
+
+where for σh = ( rh, s h) ∈ Q we introduce the norm 
+
+∥σh∥2 
+
+> Q
+
+:= ∥rh∥2 
+
+> Th
+
++ ∥sh∥2 
+
+> Th
+
+.
+
+We let ∥·∥ Q′ be the induced dual norm; by the standard L2-identification we have ∥·∥ Q′ = ∥ΠQ ·∥ Q
+
+where ΠQ is the element-wise orthogonal projection from [L2(T )] d × L2(T ) to Q(T ).On the broken space W 1,4(Th) we introduce 
+
+|w|1,4,h := ∥w∥L4(Th) + ∥h∇w∥L4(Th) + ∥h 14 [[ w · n]] ∥L4(Fh). (| · | 1,4,h )Throughout, ΠℓS denotes the L2-orthogonal projection onto Pℓ(S) for scalar functions, or onto [Pℓ(S)] d for vector-valued functions (the dimension is clear from context). More generally, 
+
+Π with suitable super- and subscripts always denotes an L2-orthogonal projection; for instance 
+
+Π0 is the elementwise mean, and Πk−2 
+
+> T
+
+projects onto [Pk−2(T )] d.
+
+## 2.4 The convection trilinear form 
+
+To discretize the convective term (w · ∇ )u many choices are possible. For now, we keep the discretization of the convection term abstract, and denote it as trilinear form ac
+
+> h,w
+
+. We give 6concrete possible (and standard) choices for the trilinear forms in Section B. The analysis of the method only relies on some abstract assumptions on the trilinear form which are fulfilled for the standard choices. We define the subspace of admissible convection fields as 
+
+W := [ W 1,4(Th)] d. (W)We define the resolution quantity 
+
+|w|h,d := ν−1(
+
+max  
+
+> T∈T h
+
+C4∥h1− d 
+
+> 4
+
+w∥L4(T ) + max  
+
+> T∈T h
+
+CW, 4∥h2− d 
+
+> 4
+
+∇w∥L4(T ) + max  
+
+> F∈F h
+
+CJ, 4∥h 14 [[ w · n]] ∥L4(F )
+
+)
+
+,
+
+(| · | h,d )where C4 is the constant from the local discrete embedding (38) and CW, 4 is the facet trace constant from (42). Notice that for fixed w, the quantity |w|h,d goes to zero as h → 0; this is the basis for a resolution condition. For polynomial convection fields wh ∈ [Pk]d, the quantity |wh|h,d is weaker than the discrete 
+
+H1 norm by a factor h1− d 
+
+> 4
+
+:
+
+|wh|h,d ≤ ν−1Cγ h1− d 
+
+> 4
+
+∥wh∥1,h . (4) Indeed, the first term is controlled by the discrete Sobolev embedding (40), the second and third by inverse estimates and the polynomial trace inequality (41). 
+
+Assumption 2.1 (Conditions on ac
+
+> h,w
+
+). There exists βa c > 0 (depending only on shape-regularity and k) such that for all w ∈ W, u ∈ [H2(Th)] d, and vh ∈ [Pk]d,
+
+|ac
+
+> h,w
+
+(u, v h)| ≤ βa c |w|1,4,h ∥u∥1,h, ∗ ∥vh∥1,h . (5) 
+
+We additionally assume 
+
+ac
+
+> h,w
+
+(uh, u h) ≥ 0 ∀w ∈ W, ∀uh ∈ [Pk]d, (6) 
+
+and the mixed L4-estimate 
+
+|ac
+
+> h,w
+
+(z, v h)| ≤ Ct, ∗ν|w|h,d ∥z∥1,h, ∗∥vh∥1,h , ∀w ∈ W, ∀vh ∈ [Pk]d, ∀z ∈ Xps (Th), (7) 
+
+where Xps ⊂ [H2(Th)] d is a space that satisfies a Poincaré estimate, i.e. on all K ∈ T h and for all z in Xps there holds ∥z∥K ≤ Ch K ∥∇ z∥K .
+
+In the analysis below, Xps (Th) will be instantiated either by the local complement space Lu or by approximation-error classes u − vh satisfying the elementwise mean constraint Π0vh = Π 0u.Concrete choices of ac 
+
+> h,w
+
+satisfying Assumption 2.1 are given in Section B. In this work, we will further make the resolution assumption 
+
+w ∈ W and |w|h,d ≤ cγ , (A1) for some fixed cγ , depending only on k and the shape-regularity of the mesh elements. Note that this is not a smallness assumption on the data, but rather a resolution assumption, as |w|h,d → 0
+
+for h → 0. This resolution assumption will play a crucial role in the analysis of the validity of the Trefftz method, and the analysis of the Oseen problem. 
+
+# 3 Local-global splitting 
+
+Throughout, C > 0 denotes a generic constant depending only on k (and d), and may change from line to line. 73.1 Construction of L
+
+While an explicit construction of the complement space to the Trefftz space is not needed for the implementation of the method, a crucial aspect of the analysis is the choice of a proper local spaces L(T ) that complement X(T ), so that X(T ) = L(T ) ⊕ Tw(T ) for all T ∈ T h and hence 
+
+X(Th) = L(Th) ⊕ Tw(Th). The specific choice below enables the stability and well-posedness analysis of the coupled system. We define the local complement space component-by-component, i.e. we define the velocity and pressure components separately, and then combine them to get L(T ) = Lu(T ) × Lp(T ). Cor-respondingly, we have dim( L(T )) = dim( Lu(T ))+dim( Lp(T )) which needs to match dim( Q(T )) = dim( X(T )) − dim( Tkwh (T )) = d · dim( Pk−2(T )) + dim( Pk−1(T )) .
+
+3.1.1 Velocity component of the complement space 
+
+The construction of the velocity component Lu(T ) of L(T ) is done in three steps. On each element 
+
+T ∈ T h:1. We first consider polynomials of degree k that vanish on a ball BT associated to T .2. We further enrich by span {χ, n T, 1, . . . , n T,d } to get control over the facet mean fluxes 3. Finally, we constrain the mean flux on d (of d + 1 ) facets to be zero. For each element T ∈ T h, we denote by nT, 1, . . . , n T,d +1 the unit outward normals to the facets of T and by FT, 1, . . . , F T,d +1 the corresponding facets. We also denote by χ = x − xT the local coordinate vector centered at the barycenter xT of element T and define BT as the largest ball centered at xT contained in T , the radius of which we denote as hT , cf. Fig. 2. This gives the precise meaning of the mesh-size parameter hT used throughout the paper; it is equivalent to the element diameter up to a constant depending only on the shape-regularity of Th.
+
+xT 
+
+> xTχ1
+> χ2
+
+BT
+
+FT, 1
+
+FT, 2FT, 3
+
+T
+
+nT, 1
+
+nT, 2
+
+nT, 3              
+
+> (a) Geometry of element T.(b) Elevation plot of a bubble function (|χ|2−h2
+> T)·qon T; the ball boundary ∂B Tis highlighted in (dashed) red.
+
+Figure 2: Sketch of element geometry and an example bubble function as in Lu(T ).We define the space of vector-valued polynomials of degree at most k on T that vanish on 
+
+∂B T as 
+
+Bk 
+
+> 0
+
+(T ) := Pk(T ) ∩ H10 (BT ).
+
+This is the first part in the definition of each velocity component of Lu(T ). The construction of this space allows to relate the Laplacian appearing in KT,w to the H1-semi norm — at least on BT — through partial integration: (−∆uh, q h)BT = ( ∇uh, ∇qh)BT for all uh ∈ [Bk 
+
+> 0
+
+(T )] d
+
+8(and suitable qh). A ball as the domain for fixing zeros is chosen so that we can factor out the quadratic bubble (|χ|2 − h2 
+
+> T
+
+) and characterize 
+
+Bk 
+
+> 0
+
+(T ) = ( |χ|2 − h2 
+
+> T
+
+)Pk−2(T ) ⇒ dim([ Bk 
+
+> 0
+
+(T )] d) = d · dim( Pk−2(T )) .
+
+The next part in the construction of the velocity component Lu(T ) of L(T ) is designed to control the net fluxes on the element and the facets. Each element in span {χ} has constant divergence and is introduced to have an explicit degree of freedom — lying in the kernel of −ν∆ — to control the mean flux on the element. The additional d-dimensional space of constant vectors 
+
+span {nT, 1, . . . , n T,d }(= Rd) is introduced to similarly control the mean flux on the first d facets of the element while lying in the kernel of KT,w .In the final step, we make use of the added degrees of freedom in the second step to constrain the mean flux on the first d facets to zero. We hence define: 
+
+Lu(T ) := {uh ∈ [Bk 
+
+> 0
+
+(T )] d + span {χ, n T, 1, . . . , n T,d } :
+
+∫
+
+> FT ,i
+
+uh · nT,i = 0 , i = 1 , . . . , d }, (Lu)and find dim( Lu(T )) = dim([ Bk 
+
+> 0
+
+(T )] d) + d + 1 − d = dim([ Pk−2(T )] d) + 1 . Note that the remaining total facet flux on FT,d +1 compensates for the accumulated divergence on the element in the sense that ∫
+
+> T
+
+div uh =
+
+> d+1
+
+∑
+
+> i=1
+
+∫
+
+> FT ,i
+
+uh · nT,i =
+
+∫
+
+> FT ,d +1
+
+uh · nT,d +1 ∀uh ∈ Lu(T ), (8) The main motivation for the introduction of the constants span {nT, 1, . . . , n T,d } alongside the constraints flux constraints on the edge FT,i , i = 1 , .., d is the following simple observation due to (8): 
+
+Lemma 3.1. For all uh ∈ Lu with div uh|Th = 0 we have Π0 
+
+> F
+
+(uh · n) = 0 on all facets F ∈ F h.
+
+Remark 3.2. The space Lu(T ) contains no nonzero constant vectors, i.e. Lu(T )∩[P0(T )] d = {0}.
+
+Consequently, Lu(T ) satisfies a Poincaré estimate and in particular, it is an admissible choice for Xps (Th) in (7) .
+
+3.1.2 Pressure component of complement space 
+
+The pressure of the local problem appears only in terms of its gradient. Hence, we choose zero-mean polynomials of degree at most k − 1 for the pressure component of L(T ), i.e. we define: 
+
+Lp(T ) = {p ∈ Pk−1(T ) : 
+
+∫
+
+> T
+
+p = 0 }. (Lp)
+
+3.1.3 The velocity-pressure complement space 
+
+Putting both together we define 
+
+L(T ) = Lu(T ) × Lp(T ). (L)and find dim( L(T )) = dim( Pk−2(T ))+1+dim( Pk−1(T )) −1 = d·dim( Pk−2(T ))+dim( Pk−1(T )) = dim( Q(T )) , which matches the dimension of the test space for the local problem, as required for the invertibility of the local operator KT,w on L(T ). We then compose canonically, L = L(Th) = ∏  
+
+> T∈T h
+
+L(T ).93.2 Local operator 
+
+Having defined the complement space L(T ) in Section 3.1, we now establish that the local oper-ator KT,w : L(T ) → Q′(T ) is boundedly invertible. This is the key structural result that justifies the local-global splitting: invertibility of KT,w on L(T ) implies the direct-sum decomposition 
+
+X = Tw ⊕ L (cf. Corollary 3.8), so every discrete function in X can be uniquely split into a Trefftz component in Tw and a complement component in L, and within the Trefftz DG method the latter can be solved for (locally on each element independently). The analysis is carried out in two steps. We first treat the Stokes case w = 0 in Section 3.2.1. We then extend to the Oseen case Section 3.2.2 w̸ = 0 by treating the convection term as a perturbation and showing that invertibility is preserved whenever resolution is sufficient. 
+
+3.2.1 Stokes case w = 0 
+
+We start off with the following continuity result for the local Stokes operator KT, 0.
+
+Lemma 3.3 (Continuity of KT, 0). For all ξ = ( u, p ) ∈ Xreg there holds 
+
+∥K0ξ∥2 
+
+> Q′
+
+= ∑ 
+
+> T∈T h
+
+∥KT, 0ξ∥2  
+
+> Q(T)′
+
+≤ β2 
+
+> K0
+
+∥ξ∥2
+
+> X,∗
+
+, (9) 
+
+with βK 0 > 0 depending only on the shape-regularity of Th and on k.Proof. The L2 representation of K0ξ in Q is (hT ν− 12 Πk−2(−ν∆u + ∇p), −Πk−1 div u). With the continuity of the L2 projection we then have on each element T ∈ T h
+
+∥KT, 0ξ∥2  
+
+> Q(T)′
+
+≤ ∥ hT ν− 12 (−ν∆u + ∇p)∥2 
+
+> T
+
++ ν∥ div u∥2 
+
+> T
+
+,
+
+Using Cauchy-Schwarz inequality and ∥ div uh∥T ≤ ∥∇ uh∥T we bound 
+
+∥KT, 0ξh∥2  
+
+> Q(T)′
+
+≤ C
+
+(
+
+ν ∥∇ u∥2 
+
+> T
+
++ ν ∥hT ∆u∥2 
+
+> T
+
++ ν−1∥hT ∇ph∥2
+
+> T
+
+)
+
+.
+
+Summing over T ∈ T h gives (9). We now wish to verify that the local Stokes operator K0 is invertible on a suitable subspace of X. As a intermediate result, we use the following estimate for functions in the bubble space 
+
+[Bk 
+
+> 0
+
+(T )] d = [ Pk(T ) ∩ H10 (BT )] d enriched by span {χ}.
+
+Lemma 3.4 (Auxiliary estimate for a bubble space) . There exists a constant C > 0 depending only on k (and d) such that for all uh ∈ [Bk 
+
+> 0
+
+(T )] d ⊕ span {χ} and all ph ∈ Pk−1(T ) there holds 
+
+∥∇ uh∥2 
+
+> T
+
+≤ C
+
+( h2
+
+> T
+
+ν2 ∥ − ν∆uh + ∇ph∥2 
+
+> T
+
++ ∥ div uh∥2
+
+> T
+
+)
+
+. (10) 
+
+Proof. We will show (10) w.r.t. to the L2(BT )-norms, which is sufficient since the norms on T
+
+and BT are equivalent on the finite-dimensional space [Bk 
+
+> 0
+
+(T )] d ⊕ span {χ}. In the following we will derive a splitting uh = uℓ + u0 = uℓ + u⊥ + udiv for which the obvious estimate 
+
+∥∇ uh∥2 
+
+> BT
+
+≤ C(∥∇ u0∥2 
+
+> BT
+
++ ∥∇ uℓ∥2
+
+> BT
+
+) = C(∥∇ udiv ∥2 
+
+> BT
+
++ ∥∇ u⊥∥2 
+
+> BT
+
++ ∥∇ uℓ∥2
+
+> BT
+
+)
+
+holds. Subsequently, we will derive the splitting and a bound for each of these summands. 
+
+1. Split off the affine part. Set 
+
+uℓ := Π0(div uh)div( χ) χ = d−1Π0(div uh) χ ∈ span {χ}, u0 := uh − uℓ ∈ Bk 
+
+> 0
+
+,
+
+10 so that Π0 div uh = Π0 div uℓ and Π0 div u0 = 0 and with ∇χ = I we find ∥∇ uℓ∥BT ≤
+
+d− 12 ∥ div uh∥BT .
+
+2. H10 -orthogonal decomposition of u0 into udiv and u⊥. Let 
+
+Bdiv (T ) := {v ∈ Bk 
+
+> 0
+
+(T ) | div v = 0 },
+
+and let B⊥
+
+> div
+
+(T ) be its orthogonal complement in Bk 
+
+> 0
+
+(T ) with respect to (∇· , ∇· )BT . Then u0 =
+
+udiv + u⊥ with udiv ∈ Bdiv (T ), u⊥ ∈ B⊥
+
+> div
+
+(T ), and 
+
+∥∇ u0∥2 
+
+> BT
+
+= ∥∇ udiv ∥2 
+
+> BT
+
++ ∥∇ u⊥∥2 
+
+> BT
+
+, div u0 = div u⊥.
+
+Since v 7 → ∥ div v∥BT is a norm on the finite-dimensional space B⊥
+
+> div
+
+(T ), there exists c⊥ > 0
+
+depending only on k such that 
+
+∥∇ u⊥∥BT ≤ c⊥∥ div u⊥∥BT = c⊥∥ div u0∥BT ≤ ∥ div uh∥BT + ∥ div uℓ∥BT
+
+≤ ∥ div uh∥BT + ∥∇ uℓ∥BT ≤ (1 + d− 12 )∥ div uh∥BT .
+
+3. Stokes estimate on the divergence-free part. Since udiv ∈ [H10 (BT )] d and div udiv = 0 , we have (∇ph, u div )BT = 0 . Moreover uℓ is affine, hence ∆uh = ∆ u0. Thus, integrating by parts, Cauchy–Schwarz and Poincaré on BT
+
+ν∥∇ udiv ∥2 
+
+> BT
+
+= ( ν∇(u0 − u⊥), ∇udiv )BT = ( ν∇u0, ∇udiv )BT = ( −ν∆u0, u div )BT
+
+= ( −ν∆uh + ∇ph, u div )BT ≤ ∥ − ν∆uh + ∇ph∥BT ∥udiv ∥BT
+
+≤ C∥ − ν∆uh + ∇ph∥BT h ∥∇ udiv ∥BT .
+
+Hence, 
+
+∥∇ udiv ∥2 
+
+> BT
+
+≤ C2 h2
+
+ν2 ∥ − ν∆uh + ∇ph∥2 
+
+> BT
+
+.
+
+With the above estimate at hand, we can now show the following result for the local Stokes operator KT, 0 on L(T ).
+
+Theorem 3.5 (Stable invertibility of K0 on L). For T ∈ T h, the local Stokes operator KT, 0 :
+
+L(T ) → Q(T )′ is a bijection. Moreover, there exists αK 0 > 0, depending only on k and the shape-regularity of T (in particular through the constant in Lemma 3.4), such that for all ξh ∈ L(T )
+
+there holds 
+
+∥KT, 0ξh∥T ≥ αK 0
+
+(
+
+ν∥∇ uh∥2 
+
+> T
+
++ νh −1 
+
+> T
+
+∥uh∥2 
+
+> ∂T
+
++ ν−1∥hT ∇ph∥2
+
+> T
+
+) 12
+
+(11) 
+
+Hence, K0 : L → Q′ is also a bijection and ∥K0ξh∥Q′ ≥ αK 0 ∥ξh∥X for all ξh ∈ L.Proof. We set uh = ˜ uh − uc with ˜uh ∈ [Bk 
+
+> 0
+
+(T )] d + span {χ}, uc ∈ [P0(T )] d = span {nT, 1, . . . , n T,d }.Explicitly uc is the unique vector such that ∫ 
+
+> FT ,i
+
+˜uh · nT,i = |FT,i |uc · nT,i for i = 1 , . . . , d , which is well-defined by the linear independence of nT, 1, . . . , n T,d .The bounds for the three contributions ν∥∇ uh∥2 
+
+> T
+
+, νh −1 
+
+> T
+
+∥uh∥2 
+
+> ∂T
+
+and ν−1∥hT ∇ph∥2 
+
+> T
+
+are then shown one after another. 
+
+1. Control of ν∥∇ uh∥2 
+
+> T
+
+. Applying (10) yields 
+
+ν∥∇ uh∥2 
+
+> T
+
+= ν∥∇ ˜uh∥2 
+
+> T
+
+≤ C
+
+(
+
+∥hT ν− 12 (−ν∆uh + ∇ph)∥2 
+
+> T
+
++ ∥ν 12 div uh∥2
+
+> T
+
+)
+
+= C ∥KT, 0ξh∥2 
+
+> T
+
+.
+
+11 2. Control of the boundary term νh −1 
+
+> T
+
+∥uh∥2 
+
+> ∂T
+
+. Due to ∫ 
+
+> FT ,i
+
+˜uh·nT,i = |FT,i |uc·nT,i for i = 1 , . . . , d ,we have 
+
+∥uh∥∂T ≤ ∥ uc∥∂T + ∥˜uh∥∂T ≤ C∥˜uh∥∂T .
+
+It hence suffices to show the bound for ˜uh. By the trace inequality on T and a Poincaré estimate on [Bk 
+
+> 0
+
+(T )] d (exploiting that it does not contain constants), 
+
+νh −1∥˜uh∥2 
+
+> ∂T
+
+≤ Cν ∥∇ ˜uh∥2
+
+> T
+> (10)
+
+≤ C∥KT, 0ξh∥2 
+
+> T
+
+.
+
+3. Control of pressure contribution ν−1∥hT ∇ph∥2 
+
+> T
+
+. By the triangle inequality and the inverse bound hT ∥∆uh∥T ≤ C∥∇ uh∥T ,
+
+∥hT ∇ph∥T ≤ ∥ hT (−ν∆uh + ∇ph)∥T + ν ∥hT ∆uh∥T ≤ ∥ hT (−ν∆uh + ∇ph)∥T + C ν ∥∇ uh∥T .
+
+Multiplying by ν−1 and using step 1 yields 
+
+ν−1∥hT ∇ph∥2 
+
+> T
+
+≤ C ∥KT, 0ξh∥2 
+
+> T
+
+.
+
+4. Conclusion and bijectivity. Combining the above estimates, we obtain (11). In particular, 
+
+KT, 0ξh = 0 implies ξh = 0 , so KT, 0 is injective on L(T ). Since L(T ) and Q(T ) are finite-dimensional and have the same dimension (by construction), KT, 0 is bijective. 
+
+3.2.2 Oseen case w̸ = 0 
+
+Let us first analyze the role of the convective field w in the local operator Kw. To this end we consider the difference between Oseen and Stokes operators, Kw − K0 ∈ L (X, Q′) and denote its L2-representative (under the identification Q′ ∼= Q) in the velocity component as the local convection operator 
+
+Ac 
+
+> w
+
+: [ Pk]d → [Pk−2]d, uh 7 → Πk−2 
+
+> Th
+
+(w · ∇ uh), (Ac
+
+> w
+
+)with Ac
+
+> T,w
+
+· = ( Ac
+
+> w
+
+·)|T for all T ∈ T h, so that ⟨(KT,w −KT, 0)ξh, (rh, s h)⟩T = ( hT ν− 12 Ac
+
+> T,w
+
+uh, r h)T
+
+for all (rh, s h) ∈ Q(T ), where Πk−2 
+
+> T
+
+is the L2-orthogonal projection from [L2(T )] d to [Pk−2(T )] d.
+
+Lemma 3.6. The linear map Ac 
+
+> T, (·)
+
+: [ L4(T )] d → L ([ H1(T )] d, [Pk−2(T )] d), w 7 → Ac 
+
+> T,w
+
+is bounded with 
+
+∥hT ν− 12 Ac
+
+> T,w
+
+u∥T ≤ ν 12 |w|h,d ∥∇ u∥T , (12a) 
+
+for all uh ∈ [H1(T )] d, w ∈ [L4(Ω)] d, and T ∈ T h. With β2 
+
+> Kw
+
+= 2 β2 
+
+> K0
+
++ 2 |w|2 
+
+> h,d
+
+it follows 
+
+∥Kwξ∥Q′ ≤ βK w ∥ξ∥X,∗, ξ ∈ Xreg . (12b) 
+
+Proof. For any w ∈ [L4(T )] d, u ∈ [H1(T )] we have by the dual version of the L4-embedding (39) and Hölder’s inequality 
+
+∥hT ν− 12 Ac
+
+> T,w
+
+u∥T ≤ C4∥ν− 12 h1− d 
+
+> 4
+> T
+
+w · ∇ u∥L 43 (T ) ≤ C4ν− 12 ∥h1− d 
+
+> 4
+
+w∥L4(T )∥∇ u∥L2(T ). (13) Using the definition of |w|h,d , we have C4 ν− 12 ∥h1− d 
+
+> 4
+> T
+
+w∥L4(T ) ≤ ν 12 |w|h,d , which concludes the first part of the proof. Next, observe that 
+
+∥Kwξ∥Q′ ≤ ∥ K0ξ∥Q′ + ∥hν − 12 Ac
+
+> T,w
+
+u∥Th ,
+
+where the first term can be bounded by Lemma 3.3 and the second term by (12a). 12 Following the analysis in [20], we can derive invertibility and stability of the local operator 
+
+KT,w on L(T ) based on the invertibility of the prototype operator KT, 0 on L(T ) and the proximity of KT,w to KT, 0 provided that the convection field w is sufficiently small in the |w|h,d -norm. 
+
+Corollary 3.7 (Stable invertibility of Kw on L). Assume that (A1) holds with the resolution assumption 
+
+|w|h,d ≤ cγ < αK 0 , (A2) 
+
+where αK 0 is the constant from Theorem 3.5. Then the restriction Kw : L → Q′ is invertible and 
+
+∥Kwξh∥Q′ ≥ αK w ∥ξh∥X, ∀ξh ∈ L, (14) 
+
+with αK w := αK 0 − cγ .
+
+Proof. Using Lemma 3.6 we get for T ∈ T h
+
+∥(KT,w − KT, 0)ξh∥T = ∥hT ν− 12 Ac
+
+> T,w
+
+uh∥T ≤ ν 12 |w|h,d ∥∇ uh∥T ∀ξh = ( uh, p h) ∈ X(T ),
+
+and hence 
+
+∥(Kw − K0)ξh∥Q′ ≤ | w|h,d ∥ξh∥X ∀ξh ∈ X.
+
+Using Theorem 3.5 (i.e. ∥K0ξh∥Q′ ≥ αK 0 ∥ξh∥X for all ξh ∈ L) and the resolution assumption, we obtain the perturbation bound 
+
+∥(Kw − K0)ξh∥Q′ ≤ |w|h,d 
+
+αK 0
+
+∥K0ξh∥Q′ ≤ γ ∥K0ξh∥Q′ ∀ξh ∈ L,
+
+with γ := cγ
+
+> αK0
+
+< 1 by assumption. Now, using the Neumann series argument as in [20, Lemma 3.4] we obtain the result. 
+
+## 3.3 Space decomposition 
+
+Building on the local invertibility of KT,w |L established in Section 3.2 we obtain a global-local space decomposition. 
+
+Corollary 3.8. The local operator Kw : X → Q′ is bijective on L, i.e. for all σh ∈ Q there exists a unique ξh ∈ L such that Kwξh = σh in Q′. This implies the space decomposition property 
+
+X = Tw ⊕ L, (15) 
+
+i.e. for all ξh ∈ X there exist unique ξT ∈ Tw and ξL ∈ L such that ξh = ξT + ξL.Proof. Follows from Theorem 3.5 (Stokes case w = 0 ) and Corollary 3.7 (Oseen case w ∈ W). 
+
+Remark 3.9. The complement space L is defined independently of the convection field w. This is essential for the analysis of the nonlinear Navier–Stokes problem: the same local complement space is used for every iterate in the Picard iteration. 
+
+Remark 3.10 (The inverse K−1 
+
+> w
+
+: Q′ → L). The invertibility of Kw on L allows to define the (bounded) inverse operator K−1 
+
+> w
+
+: Q′ → L. Then, the splitting ξh = ξT + ξL can be explicitly characterized with ξL := K−1 
+
+> w
+
+Kwξh ∈ L and ξT := ξh − ξL ∈ T.
+
+13 4 The reduced formulation 
+
+This section draws two additional structural consequences. In Section 4.1 we project the splitting (15) onto the velocity component, yielding a direct-sum decomposition [Pk(Th)] d = Tuw ⊕ Lu with a proper velocity Trefftz space Tuw. In Section 4.2 we recall the reduced formulation from the DG case, setting up the reduced formulation for the Trefftz-DG formulation, which we present in Section 4.3. There, we further restrict both spaces to their discretely divergence-free parts, eliminating the saddle-point structure and producing a reduced space on which the problem is coercive — a key property exploited in the analyses of Section 5 and the Navier–Stokes case in [38]. 
+
+## 4.1 Decomposition of the velocity space 
+
+In the following, we will see that the decomposition (15) implies a decomposition on the velocity space. We define 
+
+Tuw := {uh ∈ [Pk]d | there exists puh ∈ Pk−1 such that (uh, p uh) ∈ Tw}. (Tuw)Let us introduce the L2-projected convection-diffusion operator 
+
+Acd  
+
+> w
+
+: [ Pk]d → [Pk−2]d, v h 7 → − ν∆vh + Π k−2(w · ∇ vh), (Acd  
+
+> w
+
+)and the L2 projection into the space Pk−1(T ) via gradients 
+
+Π∇,T : [ L2(T )] d → Pk−1(T )/R, v 7 → arg min  
+
+> qh∈Pk−1(T)/R
+
+∥∇ qh − v∥T , (Π∇,T )with Π∇ : [ L2(Th)] d → Pk−1/P0 defined accordingly s.t. (Π ∇·)|T = Π ∇,T · for all T ∈ T h.To express the dependency between pressures and velocities in the Trefftz space we define the higher-order pressure lifting 
+
+Pw : [ H2(Th)] d → Pk−1/P0, vh 7 → − Π∇Acd  
+
+> w
+
+vh. (Pw)By definition of Tuw we find that for uT ∈ Tuw there holds (Acd  
+
+> w
+
++ ∇P w)uT = 0 and hence 
+
+Kw(uT, PwuT) = 0 (as PwuT exactly maps to a pressure puh as in the definition ( Tuw) ). With these preparations we can now state the splitting of the velocity space. 
+
+Lemma 4.1. There holds 
+
+[Pk]d = Tuw ⊕ Lu, (16) 
+
+i.e. to every uh ∈ [Pk]d there exist unique uT ∈ Tuw and uL ∈ Lu such that uh = uT + uL. Further, the following characterizations hold 
+
+Tuw = {uh ∈ [Pk]d | (uh, Pwuh) ∈ Tw} (17a) 
+
+and the other way around: 
+
+Tw = {(uh, Pwuh + p0
+
+> h
+
+) for uh ∈ Tuw, p 0 
+
+> h
+
+∈ P0} = (id , Pw)Tuw ⊕ { 0} × P0. (17b) 
+
+Proof. For ξh ∈ X one easily checks that the following explicit characterization of the splitting 
+
+ξh = ξT + ξL holds: ξh∈X
+
+︷ ︸︸ ︷
+
+(uh, p h) = 
+
+> ξT∈T
+
+︷ ︸︸ ︷
+
+(uT, Π0ph + PwuT) + 
+
+> ξL∈L
+
+︷ ︸︸ ︷
+
+(uL, p h − Π0ph − P wuT) .
+
+We observe that the decomposition of uh into uT and uL is independent of the choice of ph and hence unique (as ξT and ξL are unique). The characterizations (17) follow immediately from the definition of Pw and the above explicit characterization of the splitting which concludes the proof. 14 = 
+
+> uh
+> ph0
+> vh
+> qh
+
+⇝=urhvrh
+
+Figure 3: Schematic of obtaining the reduced problem for the standard DG method. 
+
+## 4.2 Reduced DG formulation 
+
+For the analysis of the nonlinear Navier–Stokes problem, it will be crucial to consider the re-duced problem, i.e. the problem where a discrete divergence-constraint is implemented into the definition of a subspace of X(Th), cf. [5]. For the standard DG formulation, e.g. (DG), this would be the kernel of the discrete divergence operator bh(·, ·) resulting in the reduced DG formulation (for the Oseen problem) only for the velocity (on a subspace of [Pk]d): Find 
+
+uh ∈ { vh ∈ [Pk]d | bh(vh, q h) = 0 ∀qh ∈ Pk−1}, s.t. 
+
+ad
+
+> h
+
+(uh, v h) + ac
+
+> h,w
+
+(uh, v h) = ( f, v h)Th ∀vh ∈ { vh ∈ [Pk]d | bh(vh, q h) = 0 ∀qh ∈ Pk−1}.
+
+See Fig. 3 for a schematic of the algebraic structure. Similarly to the above notation, we will use an underline · to indicate reduced spaces in the following. 
+
+## 4.3 Reduced Trefftz-DG formulation 
+
+Formulating the reduced problem for the Trefftz-DG method is more subtle, as the discrete divergence constraint is part of the Trefftz problem as well as the local problems .
+
+Reduction of the local velocity space. We start with the local problem. The divergence constraint is simply the second component of the local operator KT,w , i.e. div uL = 0 for uL ∈ Lu.Hence, the reduced local velocity space is simply 
+
+L(T ) := {ur 
+
+> L
+
+∈ Lu(T ) : div ur 
+
+> L
+
+= 0 }, L = L(Th) = ∏ 
+
+> T∈T h
+
+L(T ). (L)with dim( L) = dim( Lu) − dim( Pk−1) as div |Th : Lu → (Pk−1)′ is surjective (implied by Corol-lary 3.7). A corresponding reduced local test space acting only on velocities and which renders (pressure) gradient fields ∇Pk−1(T ) invisible to the local operator is given by the L2 orthogonal complement to ∇Pk−1(T ) in [Pk−2]d. We define the reduced local test space as 
+
+Q(T ) := ker Π ∇,T Q = Q(Th) = ∏ 
+
+> T∈T h
+
+Q(T ), (Q)so that ⟨rh, ∇qh⟩Th = 0 for all rh ∈ Q, qh ∈ Pk−1. The norm is given by the velocity part of the 
+
+Q-norm, i.e. for rh ∈ Q we set 
+
+∥rh∥Q := ∥rh∥Th
+
+15 and the dual norm ∥·∥ Q′ is defined accordingly. The dimension of the reduced test space matches the reduced local velocity space, i.e. there holds dim( Q) = dim([ Pk−2]d)−dim( ∇Pk−1) = dim( L).We define the reduced local operator KT,w : [ H2(T )] d → Q(T )′ as 
+
+⟨KT,w uL, r h⟩T := ⟨hν − 12 (−ν∆uL + w · ∇ uL), r h⟩T ∀uL ∈ [H2(T )] d, r h ∈ Q(T ). (KT,w )Correspondingly, we define Kw : [ H2(Th)] d → Q′. Note that the difference between Acd  
+
+> w
+
+and Kw
+
+is in the treatment of arising gradient fields and the scaling. 
+
+Corollary 4.2 (Continuity and stability of Kw on L). Assume that (A1) holds with the res-olution assumption (A2) . Then Kw : L → Q′ is invertible. With αK w , βK w as in Lemma 3.3 and Corollary 3.7, for all uL ∈ L and u ∈ [H2(Th)] d there holds 
+
+αK w ν 12 ∥uL∥1,h ≤ ∥ KwuL∥Q′ , ∥Kwu∥Q′ ≤ βK w ν ∥u∥1,h, ∗. (18) 
+
+Proof. By stable invertibility of Kw, cf. Corollary 3.7, there is unique ξL = ( uL, p L) ∈ L so that 
+
+KwξL = ( KwuL, 0) . The corresponding full local solution has velocity component uL = uL, while the pressure component is the unique pL ∈ Lp such that 
+
+Kw(uL, p L) = ( KwuL, 0) in Q′.
+
+and hence 
+
+∥KwuL∥Q′ = ∥KwξL∥Q′ ≥ αK w ∥ξL∥X ≥ αK w ν 12 ∥uL∥1,h = αK w ν 12 ∥uL∥1,h .
+
+Similarly, we find 
+
+∥Kwu∥Q′ ≤ ∥ Kw(u, 0) ∥Q′ ,
+
+which concludes the proof after applying the continuity estimate (12b) to ξ = ( u, 0) .
+
+Reduction of the Trefftz velocity space We now carry out the analogous reduction for the Trefftz space. By (17b) from Section 4.1, the Trefftz space decomposes as 
+
+Tw = (id , Pw)Tuw ⊕ { 0} × P0.
+
+The form kh,w is coercive on the first component (id , Pw)Tuw [19], while it vanishes identically on the second component {0} × P0, since no coupling between pressure-only test and trial functions arises. The two components interact solely through bh, so the global problem has the standard saddle-point structure in which {0} × P0 serves as the Lagrange multiplier space enforcing the discrete divergence constraint; cf. Fig. 4. 
+
+Lemma 4.3 (LBB stability) . Assume (A1) and (A2) . There exists a constant α0 > 0, depending only on Ω, k, and the shape-regularity of Th, such that 
+
+sup  
+
+> uT∈Tuw\{ 0}
+
+bh(uT, p 0
+
+> h
+
+)
+
+∥uT∥1,h 
+
+≥ α0 ∥p0
+
+> h
+
+∥0,h ∀ p0 
+
+> h
+
+∈ P0. (19) 
+
+Proof. Following [19, Lemma 7], to p0 
+
+> h
+
+∈ P0 there is uph ∈ [P1]d ∩ { div uph|Th = 0 } s.t. bh(uph, p 0
+
+> h
+
+) = 
+
+∥p0
+
+> h
+
+∥20,h with ∥uph∥1,h ≤ C∥p0
+
+> h
+
+∥0,h . As uph ∈ [Pk]d, we can uniquely decompose it into uph = uT +uL
+
+with uT ∈ Tuw and uL ∈ Lu. As further div uT|Th = 0 we also have div uL|Th = 0 and with Lemma 3.1 we have bh(uL, p 0
+
+> h
+
+) = ([[ uL · n]] , {{p0
+
+> h
+
+}})Fh = 0 and hence bh(uT, p 0
+
+> h
+
+) = bh(uph, p 0
+
+> h
+
+) −
+
+bh(uL, p 0
+
+> h
+
+) = ∥p0
+
+> h
+
+∥20,h . Further, we have KwuT = 0 and hence KwuL = Kwuph which yields 
+
+∥uL∥1,h ≤ ∥ K−1 
+
+> w
+
+∥∥ Kw∥∥ uph∥1,h and hence 
+
+∥uT∥1,h ≤ ∥ uph∥1,h + ∥uL∥1,h ≤ (1 + βK w
+
+αK w
+
+)C∥p0
+
+> h
+
+∥0,h .
+
+16 According to this structure, we set the notation of discretely divergence-free functions as those functions uh ∈ [Pk]d that are element-wise divergence-free, i.e. div uh|T = 0 for all T ∈ T h, and satisfy the discrete divergence constraint against P0 pressure test functions, i.e. bh(uh, q 0
+
+> h
+
+) = 0 
+
+for all q0 
+
+> h
+
+∈ P0:
+
+X := {uh ∈ [Pk]d | bh(uh, q 0
+
+> h
+
+) = 0 ∀q0 
+
+> h
+
+∈ P0 and div |Th uh = 0 }. (X)In analogy to Xreg we introduce the notation Xreg := [ H2(Th)] d. The subspace of X of discretely divergence-free velocity Trefftz functions is then 
+
+Tw = {uT ∈ Tuw : bh(uT, q 0
+
+> h
+
+) = 0 ∀q0 
+
+> h
+
+∈ P0} ⊂ Tuw. (Tw)We obviously have L ⊆ X and Tw ⊆ X. Dimension counting shows that 
+
+dim( Tw) + dim( L) = dim( Tuw) − dim( P0) + dim( Lu) − dim( Pk−1)= dim([ Pk]d) − dim([ Pk−2]d) − 2 dim( P0) + dim([ Pk−2]d) + dim( P0) − dim( Pk−1) = dim( X),
+
+and hence we also have the space decomposition of the discretely divergence-free velocities into Trefftz velocities in Tw and complement L:
+
+Tw ⊕ L = X. (20) ([[ vh·n]] ,{{Π0ph}})Fh 
+
+> div ·| Th
+
+=
+
+> ξT
+> p0
+> h
+> ξL
+> 0
+> 0
+> (id , P)Tuw{0}× P0
+> [Pk−2]d × { 0}{0}× Pk−1
+
+⇝kh,w (·, ·) kh,w (·, ·)
+
+> w
+> uT
+> uL
+
+=
+
+> Tw
+> Q
+
+Figure 4: Algebraic structure before and after reformulation as a reduced problem on X.Next, we want to use this reduction to formulate a Trefftz-DG method on X that yields an equivalent velocity solution to the formulation (3). Find uh = uT + uL ∈ X such that for all zh = ( vT, r h) ∈ Z := Tw × Q there holds 
+
+ch,w (uh, z h) = ℓh(vT, r h), with ch,w (uh, z h) := kh,w (uh, v T) + ⟨Kwuh, r h⟩Th , (ch,w )where kh,w (u, v ) := kh,w (( u, Pwu), (v, Pwv)) (kh,w )and ℓh(v, r ) := ( f, v )Th − bh(v, Π∇f ) + ( f, hν − 12 r)Th . (ℓh)
+
+Theorem 4.4 (Equivalence of (3) and ( ch,w )) . Under the assumptions of Corollary 3.7, the two formulations are equivalent: any solution (uh, p h) ∈ X of (3) has uh ∈ X satisfying (ch,w ), and conversely, any solution uh ∈ X of (ch,w ) is the velocity component of a solution of (3) .Proof. Let ξh = ( uh, p h) ∈ X be solution to (3). We decompose ξh = ξT + ξL, i.e (uh, p h) = (uT, p T) + ( uL, p L) and have from the second equation of the local problem that div uh|Th = 0 .17 With the second Trefftz condition, we hence have div uh|Th = div uT|Th = div uL|Th = 0 . Further, testing (3) with (0 , q 0
+
+> h
+
+) for q0 
+
+> h
+
+∈ P0 we find – together with Lemma 3.1 – that we have bh(uh, q 0
+
+> h
+
+) = 
+
+bh(uT, q 0
+
+> h
+
+) = bh(uL, q 0
+
+> h
+
+) = 0 . Hence, uh, u L, u T ∈ X and ξT = ( uT, PwuT + p0
+
+> h
+
+), p0 
+
+> h
+
+∈ P0 so that 
+
+uT ∈ Tw and uL ∈ L. Writing out the first equation of the Trefftz condition we get 
+
+Acd  
+
+> w
+
+uh + ∇ph = Acd  
+
+> w
+
+uL + ∇pL = Π k−2f. 
+
+With uL ∈ L so that KwuL = hν − 12 f in Q′ and pL = Π ∇(f − Acd  
+
+> w
+
+uL) = Π ∇f + PwuL we found an expression for the unique solution ξL (uniqueness followed from Corollary 3.7). We conclude 
+
+ξT = ( uT, PwuT + p0
+
+> h
+
+) for uT ∈ Tw, p 0 
+
+> h
+
+∈ P0 and ξL = ( uL, PwuL) + (0 , Π∇f ) for uL ∈ L, hence 
+
+ξh = ( uh, Pwuh) + (0 , Π∇f + p0
+
+> h
+
+).Now, consider Trefftz test function ηT ∈ Tw with ηT = ( vT, PwvT) for vT ∈ Tw and plug these into (3): kh,w (ξh, η T) = ( f, v T)Th . Plugging in the previously obtained characterizations for ξL
+
+we find 
+
+kh,w (ξh, η T) = kh,w (( uh, Pwuh), (vT, PwvT)) + kh,w ((0 , Π∇f + p0
+
+> h
+
+), (vT, PwvT)) = kh,w (uh, v T) + bh(vT, Π∇f ) + bh(vT, p 0
+
+> h
+
+) = ( f, v T)Th ∀vT ∈ Tw. (21) As vT ∈ T we have bh(vT, p 0
+
+> h
+
+) = 0 and hence, the velocity solution of (3) also solves ( ch,w ). To go the other way around let uh = uT + uL ∈ X with uT ∈ Tw, uL ∈ L be the solution to ( ch,w ). From the considerations above we know already that ξL = ( uL, PwuL + Π ∇f ) solves the local problem of (3). For ξT we set ξT = ( uT, PwuT + p0
+
+> h
+
+), yielding ξh = ( uh, Pwuh + p0 
+
+> h
+
++ Π ∇f ) for an undetermined p0 
+
+> h
+
+∈ P0. Plugging in yields (21), but this time bh(vT, p 0
+
+> h
+
+) does not vanish as we only have vT ∈ Tuw and not vT ∈ Tw. However, due to the LBB condition Lemma 4.3 we know that there is a unique p0 
+
+> h
+
+∈ P0 so that (21) indeed holds. This concludes the proof. 
+
+4.3.1 Norm equivalence between velocity and lifted velocity-pressure pair 
+
+Let us define the scaled velocity norm ∥·∥ X := ν 12 ∥·∥ 1,h on [H1(Th)] d. and ∥·∥ X,∗ := ν 12 ∥·∥ 1,h, ∗
+
+on Xreg = [ H2(Th)] d. A key auxiliary fact, used throughout, is that the pressure lifting satisfies 
+
+Π0 
+
+> Th
+
+Pwu = 0 for any u ∈ [H2(Th)] d (since Pw maps into Pk−1/P0), and by (12b) for any u ∈ Xreg 
+
+∥u∥2 
+
+> X,∗
+
+≤ ∥ (u, Pwu)∥2 
+
+> X,∗
+
+= ∥u∥2 
+
+> X,∗
+
++ ν−1∥h∇P wu∥2 
+
+> Th
+
+≤ ∥ u∥2 
+
+> X,∗
+
++ ∥ν− 12 hA cd  
+
+> w
+
+u∥2
+
+> Th
+
+≤ ∥ u∥2 
+
+> X,∗
+
++ ∥Kw(u, 0) ∥2
+
+> Q′
+> (12b)
+
+≤ ∥u∥2 
+
+> X,∗
+
++ β2 
+
+> Kw
+
+∥(u, 0) ∥2 
+
+> X,∗
+
+≤ (1 + β2 
+
+> Kw
+
+)∥u∥2
+
+> X,∗
+
+. (22a) On the discrete space X we have by norm equivalence of ∥·∥ 1,h, ∗ and ∥·∥ 1,h (i.e. ∥·∥ X,∗ and ∥·∥ X)
+
+∥uh∥X ≤ ∥ (uh, Pwuh)∥X ≤ C(1 + β2 
+
+> Kw
+
+) 12 ∥uh∥X for all uh ∈ X. (22b) 
+
+# 5 Analysis of the Oseen Trefftz-DG method 
+
+We establish the three fundamental stability properties of the reduced bilinear form ch,w from (ch,w ): continuity, coercivity of the global part kh,w on the Trefftz subspace Tw, and an inf-sup condition. The last result yields well-posedness of ( ch,w ). We equip the test space Z = Tw × Q
+
+with the norm 
+
+∥(vT, r h)∥2 
+
+> Z
+
+:= ∥vT∥2 
+
+> X
+
++ ∥rh∥2
+
+> Q
+
+. (∥ · ∥ Z)18 5.1 Continuity 
+
+Lemma 5.1 (Continuity) . Assume (A1) . There holds 
+
+kh,w (ξ, η h) ≤ βk w ∥ξ∥X,∗∥ηh∥X, (u, p ) = ξ ∈ Xreg , (vh, p h) = ηh ∈ X, (23a) 
+
+ch,w (ξ, ζ h) ≤ βc w ∥ξ∥X,∗∥ζh∥Z, (u, p ) = ξ ∈ Xreg , (ηT, σ h) = ζh ∈ Zw, (23b) 
+
+kh,w (u, v h) ≤ βk w ∥u∥X,∗∥vh∥X, u ∈ Xreg , vh ∈ X, (23c) 
+
+ch,w (u, z h) ≤ βc w ∥u∥X,∗∥zh∥Z, u ∈ Xreg , (vT, r h) = zh ∈ Zw, (23d) 
+
+kh,w (uL, u T) ≤ β×w ∥uL∥X ∥uT∥X, uL ∈ L, uT ∈ Tw. (23e) 
+
+where the constants βk w , βc w , βk w , βc w , depend on the convection field through the ratio |w|1,4,h /ν .In contrast, β×w depends on the convection field only through the resolution quantity |w|h,d , and not through |w|1,4,h /ν .Proof. Bounding ad
+
+> h
+
+(u, v h) ≤ βa d ν∥u∥1,h, ∗∥vh∥1,h , ac
+
+> h,w
+
+(u, v h) ≤ βa c |w|1,4,h ∥u∥1,h, ∗∥vh∥1,h (using (5)), and bh(u, q h) ≤ βb ∥u∥1,h ∥qh∥0,h , bh(vh, q ) ≤ βb ∥vh∥1,h ∥q∥0,h , we obtain the first bound (23a) with βk w = C
+
+(
+
+βa d + βb + βa c
+
+> |w|1,4,h
+> ν
+
+)
+
+. The second bound (23b) then follows from (23a) and (12b) with βc w = βk w + βK w . For (23c) we find 
+
+kh,w (u, v h) = kh,w (( u, Pwu), (vh, Pwvh)) ≤ βk w ∥(u, Pwu)∥X,∗∥(vh, Pwvh)∥X ≤ βk w ∥u∥X,∗∥vh∥X
+
+with βk w = C(1 + β2 
+
+> Kw
+
+)βk w . Finally, for (23d) we gather (23c) and (18) so that βc w = βk w + βK w .Finally, since uL ∈ L ⊂ Lu and Lu is an admissible choice for Xps (Th) by Remark 3.2, the improved convection estimate (7) yields 
+
+|ac
+
+> h,w
+
+(uL, u T)| ≤ Ct, ∗ ν |w|h,d ∥uL∥1,h ∥uT∥1,h = Ct, ∗ |w|h,d ∥uL∥X ∥uT∥X,
+
+with β×w := C(βa d + βb βK w + Ct, ∗|w|h,d 
+
+).
+
+## 5.2 Stability of the reduced formulation 
+
+We first establish stability for the reduced velocity formulation. The stability proof reflects the space decomposition X = Tw ⊕ L. The Tw-component is controlled by coercivity of the reduced Oseen form kh,w , whereas the L-component is controlled by the local residual operator Kw. The interaction between the two components is bounded by the improved cross estimate (23e). The first result, Lemma 5.2, is therefore a coercivity statement on the reduced Trefftz kernel. The second result, Theorem 5.3, then combines this coercivity with the local stability on L and yields the inf-sup condition for the reduced coupled form ch,w on X × Z. Finally, Lemma 5.4, discusses the stability of the solution map, another crucial step in preparation for the analysis of the nonlinear problem in [38]. We begin with coercivity on Tw. The penalty parameter is chosen large enough to absorb the pressure-lifting contribution generated by Pw.
+
+Lemma 5.2 (Coercivity of kh,w on Tw). There exist λDG > 0 and C > 0, depending only on shape-regularity, k, such that for the IP parameter λ ≥ λDG + Cβ 2 
+
+> Kw
+
+in (2a) , there holds 
+
+kh,w (uT, u T) ≥ αk w ∥uT∥2 
+
+> X
+
+∀ uT ∈ Tw, with αk w = 12 . (24) 
+
+Proof. Let ξh := ( uT, PwuT) ∈ Tw. By Assumption 2.1, ac
+
+> h,w
+
+(uT, u T) ≥ 0, we have 
+
+kh,w (uT, u T) = kh,w (ξh, ξ h) ≥ ad
+
+> h
+
+(uT, u T) + 2 bh(uT, PwuT).
+
+19 The SIPG form satisfies ad
+
+> h
+
+(uT, u T) ≥ 34 ∥uT∥2 
+
+> X
+
++ ( λ − λDG )ν∥h− 12 [[ uT]] ∥2 
+
+> Fh
+
+for λ ≥ λDG . We will use the latter contribution to bound the bh(·, ·) contribution. Since div uT = 0 on each T ,
+
+2bh(uT, PwuT) = 2([[ uT · n]] , {{P wuT}})Fh ≤ ε−1ν∥h− 12 [[ uT]] ∥2 
+
+> Fh
+
++ εν −1∥h 12 {{P wuT}}∥ 2 
+
+> Fh
+
+,
+
+where we used Cauchy–Schwarz and Young with ε > 0. With the polynomial trace inequality, discrete norm equivalences and scaling arguments and the Trefftz identity as in (22a) we obtain 
+
+ν−1∥h 12 {{P wuT}}∥ 2 
+
+> Fh
+
+≤ Cν −1∥P wuT∥2 
+
+> Th
+
+≤ Cν −1∥h∇P wuT∥2
+
+> Th
+> (22a)
+
+≤ Cβ 2 
+
+> Kw
+
+∥uT∥2
+
+> X
+
+.
+
+With ε = (4 Cβ 2 
+
+> Kw
+
+)−1, the claim then follows with λ ≥ λDG + 4 Cβ 2 
+
+> Kw
+
+as 
+
+kh,w (uT, u T) ≥ 34 ∥uT∥2 
+
+> X
+
++ ( λ − λDG )ν∥h− 12 [[ uT]] ∥2 
+
+> Fh
+
+− 14 ∥uT∥2 
+
+> X
+
+− 4Cβ 2 
+
+> Kw
+
+ν∥h− 12 [[ uT]] ∥2 
+
+> Fh
+
+.
+
+We now extend the preceding coercivity estimate from Tw to the whole space X. The proof tests the Trefftz component by itself and the complement component by the Riesz representative of its local residual. 
+
+Theorem 5.3 (Inf-sup stability of ch,w ). Assume (A1) and (A2) , and let λ be as in Lemma 5.2. For all uh ∈ X, there holds 
+
+sup 
+
+> zh∈Z\{ 0}
+
+ch,w (uh, z h)
+
+∥zh∥Z
+
+≥ αc w ∥uh∥X, (25) 
+
+with δ := max 
+
+{
+
+1, α −1 
+
+> Kw
+
+, β2
+
+> ×w
+> αkw α2
+> Kw
+
+}
+
+, αc w := αkw  
+
+> 2√2δ
+
+, where αk w = 12 is the coercivity constant from Lemma 5.2 and β×w is the constant from (23e) . Again, αc w depends on the convection field only through the resolution quantity |w|h,d , and not through ∥w∥1,h /ν .Proof. Decompose uh = uT + uL ∈ X with uT ∈ Tw and uL ∈ L, and choose the test function 
+
+zh := (uT, δr h
+
+) ∈ Z.
+
+and where rh ∈ Q is the Riesz representative of KwuL ∈ Q′, i.e. 
+
+⟨KwuL, r h⟩Th = ∥KwuL∥2 
+
+> Q′
+
+= ∥rh∥2
+
+> Q
+
+.
+
+Since uT ∈ Tw, we have ⟨KwuT, r h⟩Th = 0 .Using coercivity of kh,w on Tw (Lemma 5.2), the cross-coupling bound (23e), the stability estimate from Corollary 4.2, and Young’s inequality, we obtain 
+
+ch,w (uh, z h) = kh,w (uT, u T) + kh,w (uL, u T) + δ⟨KwuL, r h⟩Th
+
+≥ αk w ∥uT∥2 
+
+> X
+
+− β×w ∥uL∥X∥uT∥X + δ∥KwuL∥2
+
+> Q′
+
+≥ αk w ∥uT∥2 
+
+> X
+
+− β×w
+
+αK w
+
+∥KwuL∥Q′ ∥uT∥X + δ∥KwuL∥2
+
+> Q′
+
+≥ αk w
+
+2 ∥uT∥2 
+
+> X
+
++
+
+(
+
+δ − β2
+
+> ×w
+
+2αk w α2
+
+> Kw
+
+)
+
+∥KwuL∥2
+
+> Q′
+
+≥ αk w
+
+2 ∥uT∥2 
+
+> X
+
++ δ
+
+2 ∥KwuL∥2 
+
+> Q′
+
+. = αk w
+
+2δ ∥zh∥2
+
+> Z
+
+.
+
+20 Moreover, since δαK w ≥ 1, the stability estimate from Corollary 4.2 gives 
+
+∥zh∥2 
+
+> Z
+
+= ∥uT∥2 
+
+> X
+
++ δ2∥KwuL∥2 
+
+> Q′
+
+≥ ∥ uT∥2 
+
+> X
+
++ ∥uL∥2 
+
+> X
+
+≥ 12 ∥uh∥2
+
+> X
+
+.
+
+Taking the supremum over zh ∈ Z \ { 0} proves (25). 
+
+Lemma 5.4 (Stability of the reduced Oseen solution map) . Let wh ∈ W and let (A1) and (A2) 
+
+hold, such that the reduced Oseen problem (ch,w ) admits a unique solution denoted by uh. Then 
+
+∥uh∥X ≤ CF
+
+αc wh
+
+ν− 12 ∥f ∥Th , (26) 
+
+where CF := 
+
+(
+
+(CΩ + βbh )2 + h2
+
+)1/2
+
+. In particular, the dependence on the convection field enters only through the reduced inf-sup constant αc wh
+
+.Proof. Let zh = ( vT, r h) ∈ Z = Twh × Q. The right-hand side of ( ch,w ) is 
+
+(f, v T)Th − bh(vT, Π∇f ) + ( f, hν − 12 rh)Th .
+
+We bound the three terms separately. For the first term, using discrete Poincaré inequality (36), 
+
+|(f, v T)Th | ≤ ∥ f ∥Th ∥vT∥Th ≤ CΩ∥f ∥Th ∥vT∥1,h = CΩν− 12 ∥f ∥Th ∥vT∥X.
+
+For the second term, by continuity of bh and since Π∇f ∈ Pk−1/P0 has elementwise mean zero, we get 
+
+∥Π∇f ∥0,h = ∥h∇Π∇f ∥Th .
+
+Moreover, ∇Π∇f is the L2-orthogonal projection of f onto the space of discrete gradients, hence 
+
+∥∇ Π∇f ∥Th ≤ ∥ f ∥Th , and therefore ∥Π∇f ∥0,h ≤ h∥f ∥Th ,
+
+and thus 
+
+|bh(vT, Π∇f )| ≤ βb ∥vT∥1,h ∥Π∇f ∥0,h ≤ βbhν − 12 ∥f ∥Th ∥vT∥X.
+
+For the local term there holds 
+
+|(f, hν − 12 rh)Th | ≤ hν − 12 ∥f ∥Th ∥rh∥Q.
+
+Collecting the three bounds gives 
+
+∣∣(f, v T)Th − bh(vT, Π∇f ) + ( f, hν − 12 rh)Th
+
+∣∣ ≤ ν− 12 ∥f ∥Th
+
+(
+
+(CΩ + βbh )∥vT∥X + h∥rh∥Q
+
+)
+
+,
+
+thus using Cauchy–Schwarz, 
+
+∣∣(f, v T)Th − bh(vT, Π∇f ) + ( f, hν − 12 rh)Th
+
+∣∣ ≤ CF ν− 12 ∥f ∥Th ∥zh∥Z.
+
+Now apply the reduced inf-sup estimate (25) from Theorem 5.3 to the solution uh of ( ch,w ): 
+
+αc wh
+
+∥uh∥X ≤ sup 
+
+> zh∈Z\{ 0}
+
+ch,w h (uh, z h)
+
+∥zh∥Z
+
+= sup 
+
+> zh∈Z\{ 0}
+
+(f, v T)Th − bh(vT, Π∇f ) + ( f, hν − 12 rh)Th
+
+∥zh∥Z
+
+Together with the preceding bound, this gives the claim. 21 5.3 Stability of the full formulation 
+
+We now pass from the reduced velocity formulation to the full velocity-pressure formulation. This requires two additional ingredients. First, the pressure modes which are not represented in the reduced velocity problem are controlled by the piecewise-constant LBB estimate, from Lemma 4.3. Second, the stability of the local operator on the full local complement L established in Corollary 3.7. The resulting argument has two levels. We first prove an inf-sup estimate for the full Oseen form on the Trefftz space Tw. This step combines the reduced velocity stability with the pressure control supplied by the LBB estimate. We then obtain the stability of the full coupled Trefftz formulation on X by adding the local residual equation and using the stability and continuity of 
+
+Kw on the complement. The final step is done by applying the framework of [20, §2.5] 
+
+Theorem 5.5 (Inf-sup stability of the full Oseen form on Tw). Assume (A1) and (A2) , and let 
+
+λ be chosen as in Lemma 5.2. Then there exists a constant αk w > 0 such that 
+
+sup  
+
+> ηT∈Tw\{ 0}
+
+kh,w (ξT, η T)
+
+∥ηT∥X
+
+≥ αk w ∥ξT∥X ∀ ξT ∈ Tw, (27) 
+
+with the constant 
+
+αk w = C min 
+
+{
+
+αk w , α20
+
+(1 + β2 
+
+> Kw
+
+)βk w
+
+}
+
+, (28) 
+
+where αk w is the coercivity constant from Lemma 5.2, α0 is the constant from Lemma 4.3, with 
+
+C > 0 a constant that depends only on the equivalence constant in (22b) .Proof. By (17b), every ξT ∈ Tw can be written uniquely as 
+
+ξT = ( uT, PwuT + p0
+
+> h
+
+), uT ∈ Tuw, p0 
+
+> h
+
+∈ P0.
+
+With this splitting, the Oseen form on Tw reads 
+
+kh,w (ξT, η T) = kh,w (uT, v T) + bh(vT, p 0
+
+> h
+
+) + bh(uT, q 0
+
+> h
+
+).
+
+Thus the full Oseen form on Tw has the standard saddle-point structure with velocity block kh,w 
+
+and coupling bh(·, ·) on P0.By (22b), the DG norm ∥·∥ X on Tw is equivalent to the natural product norm on Tuw ×P0. The continuity of the full form follows from Lemma 5.1, coercivity on the kernel is exactly Lemma 5.2, and the inf-sup condition for the piecewise-constant pressure part is Lemma 4.3. The classical Babuška–Brezzi theorem therefore yields (27). Inserting the corresponding continuity, coercivity, and inf-sup constants, and using the norm equivalence (22b), gives (28). 
+
+Theorem 5.6 (Inf-sup stability of the full coupled Trefftz form on X). Assume (A1) and (A2) ,and let λ be chosen as in Lemma 5.2. Then there exists a constant αc w > 0 such that 
+
+sup  
+
+> ζh∈Zw\{ 0}
+
+ch,w (ξh, ζ h)
+
+∥ζh∥Z
+
+≥ αc w ∥ξh∥X ∀ ξh ∈ X. (29) 
+
+Moreover, one may take 
+
+αc w := Cαk w
+
+(
+
+1 + βK w β2
+
+> kw
+
+α2 
+
+> Kw
+
+αk w
+
++ βK w
+
+αk w
+
+α2
+
+> Kw
+
+)−1
+
+. (30) 
+
+where αk w is the constant from Theorem 5.5, and C > 0 depends only on the norm-equivalence constants in (22b) and norm equicalence constant in ∥η∥X,∗ ≲ ∥η∥X for all η ∈ Xh.
+
+22 Proof. We apply the theory of coupled Trefftz problems from [20, §2.5] (and also [37] for explicit constants). We satisfy the assumptions of the theorem as follows by the results we have estab-lished so far: lower bound on the local operator Corollary 3.7, continuity of the local operator from Lemma 3.3, inf-sup stability of the global bilinear form Theorem 5.5, continuity of the global bilinear from Lemma 5.1. This proves (29). 
+
+## 5.4 A priori error estimates 
+
+To prove a Céa-type error estimate and a priori error estimates, we need to assume an improved consistency bound for the convection term. 
+
+Theorem 5.7 (A priori error estimate) . Assume (A1) , (A2) , and Assumption 2.1. Let (u, p ) be a smooth solution to the Oseen problem with u ∈ [Hk+1 (Th)] d and p ∈ Hℓ(Th), and let uh ∈ X
+
+be the solution of (ch,w ). Then for 1 ≤ ℓ ≤ k,
+
+∥u − uh∥X ≤
+
+(
+
+1 + Capp (w)
+
+αc w
+
+)
+
+inf 
+
+> vh∈X
+> Π0vh=Π 0u
+
+∥u − vh∥X,∗ + Cp
+
+αc w
+
+ν−1/2hℓ∥p∥Hℓ(Th), (31) 
+
+with 
+
+Capp (w) := βa d + (2 βb + 1) βK w + Ct, ∗|w|h,d , Cp := C(1 + βb ),
+
+where C > 0 depends only on k, d, and the shape-regularity. In particular for k ≥ 2, with the BDM interpolant vh = Π BDM  
+
+> k
+
+u ∈ X, we have that Π0(Π BDM  
+
+> k
+
+u) = Π 0u elementwise and therefore 
+
+∥u − uh∥X ≲ hℓ (
+
+ν 12 |u|Hℓ+1 (Th) + ν− 12 ∥p∥Hℓ(Th)
+
+)
+
+. (32) 
+
+Proof. Let vh ∈ X be such that eh := u − vh ∈ Xps (Th). By the triangle inequality and the inf-sup bound (25) applied to uh − vh,
+
+∥u − uh∥X ≤ ∥ u − vh∥X + ∥vh − uh∥X, αc w ∥vh − uh∥X ≤ sup  
+
+> zh̸=0
+
+ch,w (uh − vh, z h)
+
+∥zh∥Z
+
+.
+
+Writing zh = ( vT, r h) ∈ Z, we split 
+
+ch,w (uh − vh, z h) = kh,w (uh − vh, v T)
+
+︸ ︷︷ ︸
+
+> =: I
+
++ ⟨Kw(uh − vh), r h⟩Th
+
+︸ ︷︷ ︸
+
+> =: II
+
+.
+
+Bound for I. For all p0 
+
+> h
+
+∈ P0, by consistency of the DG bilinear form and ( ch,w ), 
+
+kh,w (( u, p − p0
+
+> h
+
+), (vT, PwvT)) = ( f, v T)Th = kh,w (( uh, Pwuh + Π ∇f ), (vT, PwvT)) ∀vT ∈ Tw.
+
+Setting ˜p := p − p0 
+
+> h
+
+− Π∇f with p0 
+
+> h
+
+= Π 0p (so Π0 ˜p = 0 ), 
+
+kh,w (( u − uh, ˜p − P wuh), (vT, PwvT)) = 0 ∀vT ∈ Tw. (∗)Applying ( ∗), we obtain 
+
+I = kh,w (( uh − vh, Pw(uh − vh)) , (vT, PwvT)) = kh,w (( eh, ˜p − P wvh), (vT, PwvT)) .
+
+Using the decomposition of kh,w , continuity of ad
+
+> h
+
+, Assumption 2.1, continuity of bh, and 
+
+ν− 12 ∥P wvT∥0,h ≤ βK w ∥vT∥X,
+
+23 we infer 
+
+|I| ≤ | ad
+
+> h
+
+(eh, v T)| + |ac
+
+> h,w
+
+(eh, v T)| + |bh(eh, PwvT)| + |bh(vT, ˜p − P wvh)|≤
+
+(
+
+βa d + Ct, ∗|w|h,d + βb βK w
+
+)
+
+∥eh∥X,∗ ∥vT∥X + |bh(vT, ˜p − P wvh)|.
+
+We bound the pressure term 
+
+ν− 12 ∥˜p − P wvh∥0,h = ν− 12 ∥h∇(˜ p − P wvh)∥Th ,
+
+by splitting at Pwu:
+
+ν− 12 ∥˜p − P wvh∥0,h ≤ ν− 12 ∥h∇(p − Π∇f − P wu)∥Th
+
+︸ ︷︷ ︸
+
+> =: Ia
+
++ ν− 12 ∥h∇P w(u − vh)∥Th
+
+︸ ︷︷ ︸
+
+> =: Ib
+
+.
+
+For Ib: since Pw = −Π∇Acd  
+
+> w
+
+(see ( Pw)), 
+
+Ib = ν− 12 ∥hΠ∇Acd  
+
+> w
+
+(u − vh)∥Th ≤ βK w ∥u − vh∥X,∗.
+
+For Ia: using Acd  
+
+> w
+
+u = Π k−2(f − ∇ p), ( Pw), and Π∇ ◦ Πk−2 = Π ∇, we find 
+
+Π∇f + Pwu = Π ∇f − Π∇Acd  
+
+> w
+
+u = Π ∇f − Π∇(f − ∇ p) = Π ∇(∇p).
+
+Hence 
+
+∇(p − Π∇f − P wu) = ∇p − Π∇(∇p),
+
+which gives 
+
+Ia ≲ ν− 12 ∥h(∇p − Π∇∇p)∥Th ≲ ν− 12 hℓ∥p∥Hℓ(Th),
+
+for 1 ≤ ℓ ≤ k by a standard Bramble–Hilbert argument. Therefore, 
+
+|bh(vT, ˜p − P wvh)| ≤ βb ∥vT∥X ν− 12 ∥˜p − P wvh∥0,h 
+
+≤ βb 
+
+(
+
+βK w ∥eh∥X,∗ + C ν − 12 hℓ∥p∥Hℓ(Th)
+
+)
+
+∥vT∥X,
+
+and hence, 
+
+|I| ≤ 
+
+([βa d + 2 βb βK w + Ct, ∗|w|h,d 
+
+]∥eh∥X,∗ + C βb ν − 12 hℓ∥p∥Hℓ(Th)
+
+)
+
+∥zh∥Z. (33) 
+
+Bound for II . The local equation (3b) and the PDE itself yield for rh ∈ Q:
+
+⟨Kwu, r h⟩Th = ⟨hν − 12 (−ν∆u + w · ∇ u), r h⟩Th = ⟨− hν − 12 ∇p, r h⟩Th + ⟨hν − 12 f, r h⟩Th
+
+> (3b)
+
+=⇒ ⟨ Kw(u − uh), r h⟩Th = ⟨− hν − 12 ∇p, r h⟩Th = ⟨hν − 12 ∇(qh − p), r h⟩Th ,
+
+for any qh ∈ Pk−1 where in the last step we exploited that Q is orthogonal to discrete gradients (rh ⊥ ∇ Pk−1(T )). Applying that result and continuity from (18) to II , we obtain: 
+
+II = ⟨Kw(uh − vh), r h⟩Th = ⟨Kw(u − vh), r h⟩Th + ⟨hν − 12 ∇(qh − p), r h⟩Th
+
+≤ ∥ Kw(u − vh)∥Q′ ∥rh∥Q + ν− 12 inf 
+
+> qh∈Pk−1
+
+∥hT (p − qh)∥H1(Th) ∥rh∥Q
+
+≤ βK w ∥u − vh∥X,∗ ∥zh∥Z + Cν − 12 hℓ∥p∥Hℓ(Th) ∥zh∥Z.
+
+24 Assembly. Combining (33) with the estimate for II , dividing by ∥zh∥Z, yields 
+
+αc w ∥vh − uh∥X ≤ Capp (w)∥u − vh∥X,∗ + Cp ν− 12 hℓ∥p∥Hℓ(Th).
+
+The triangle inequality gives 
+
+∥u − uh∥X ≤
+
+(
+
+1 + Capp (w)
+
+αc w
+
+)
+
+∥u − vh∥X,∗ + Cp
+
+αc w
+
+ν− 12 hℓ∥p∥Hℓ(Th).
+
+Taking the infimum over all vh ∈ X with u − vh ∈ Xps (Th) proves (31). For (32), the standard BDM estimate gives ΠBDM  
+
+> k
+
+u ∈ [Pk]d with Π0(Π BDM  
+
+> k
+
+u) = Π 0u element-wise for k ≥ 2, div Π BDM  
+
+> k
+
+u|Th = 0 (for div u = 0 ) and [[Π BDM  
+
+> k
+
+u · n]] = 0 on all F ∈ F h. Further, 
+
+∥u − ΠBDM  
+
+> k
+
+u∥X,∗ = ν 12 ∥u − ΠBDM  
+
+> k
+
+u∥1,h, ∗ ≲ ν 12 hk|u|Hk+1 (Th). Inserting this choice into (31) yields (32). 
+
+Lemma 5.8 (Pressure error bound) . Assume (A1) and (A2) , and in addition w ∈ [W ℓ2,∞(Th)] d
+
+for 1 ≤ ℓ2 ≤ k. Let (u, p ) be a Oseen solution with p ∈ Hℓ(Th) and let (uh, p h) ∈ X be the solution of (3) . Then for 0 ≤ ℓ1 ≤ k − 1,
+
+ν− 12 ∥p − ph∥0,h ≲ ∥u − uh∥X + ν− 12 hℓ1+1 ∥f ∥Hℓ1 (Th) (34) 
+
++
+
+(
+
+ν 12 + ν− 12 |w|W ℓ2,∞(Th)h
+
+)
+
+hℓ2 ∥u∥Hℓ2+1 (Th),
+
+where the hidden constant depends on βa d , βb , βK w , α0, and on Ct, ∗|w|h,d .Proof. Split p − ph = (˜ p − ˜ph) + ( p0 − p0
+
+> h
+
+) with p0 := Π 0p, ˜p := p − p0, and p0 
+
+> h
+
+= Π 0ph. With the local problem, we find ˜ph = Pwuh + Π ∇f . From the Trefftz property and the PDE we get 
+
+∇ph = Π k−2f − Πk−2Acd  
+
+> w
+
+uh, ∇p = f + ν∆u − w · ∇ u, 
+
+which implies 
+
+∥h∇(p − ph)∥Th
+
+≤ ∥ h(id −Πk−2)f ∥Th + ∥h(id −Πk−2)( −ν∆u + w · ∇ u)∥Th + ∥hA cd  
+
+> w
+
+(u − uh)∥Th
+
+≤ Ch ℓ1+1 ∥f ∥Hℓ1 (Th) + Cνh ℓ2 ∥u∥Hℓ2+1 (Th) + C|w|W ℓ2−1,∞(Th)hℓ2 ∥u∥Hℓ2 (Th) + βK w ν 12 ∥u − uh∥X,
+
+where we used the local approximation property of Πk−2 and 
+
+∥(id −Πk−2)( w · ∇ u)∥T ≲ hℓ2−1 
+
+> T
+
+|w · ∇ u|Hℓ2−1(T ) ≲ hℓ2−1 
+
+> T
+
+|w|W ℓ2−1,∞(T ) ∥u∥Hℓ2 (T ),
+
+for 0 ≤ ℓ1 ≤ k − 1, 1 ≤ ℓ2 ≤ k.It remains to bound the P0-contribution. By (19) we get 
+
+α0∥p0 
+
+> h
+
+− p0∥0,h ≤ sup  
+
+> vT∈Tuw\{ 0}
+
+bh(vT, p 0 
+
+> h
+
+− p0)
+
+∥vT∥1,h 
+
+.
+
+Moreover we have the splitting 
+
+bh(vT, p 0 
+
+> h
+
+− p0) = bh(vT, p h − p) + bh(vT, ˜p − ˜ph).
+
+The second term is bounded by 
+
+|bh(vT, ˜p − ˜ph)| ≤ βb ∥vT∥1,h ν− 12 ∥˜p − ˜ph∥0,h .
+
+25 For the first term, using the error identity for Trefftz test functions, together with the continuity of ad 
+
+> h
+
+and, if desired, Assumption 2.1 for the convection part, we obtain 
+
+|bh(vT, p h − p)| ≤ C
+
+(
+
+∥u − uh∥X,∗ + ν− 12 ∥˜p − ˜ph∥0,h 
+
+)
+
+∥vT∥1,h ,
+
+with C depending on βa d , βb , βK w , and, under Assumption 2.1, on Ct, ∗|w|h,d . Therefore, 
+
+∥p0 
+
+> h
+
+− p0∥0,h ≤ Cα −10
+
+(
+
+∥u − uh∥X,∗ + ν− 12 ∥˜p − ˜ph∥0,h 
+
+)
+
+.
+
+# 6 Numerical results 
+
+In the numerical examples we choose the discrete trilinear form ac 
+
+> h,w
+
+as a discrete counterpart of Temam’s modification given in (43). For the implementation of the methods we use NGSolve [35] and NGSTrefftz [36]. Replication data are available in [39]. 
+
+## 6.1 Prescribed Oseen–Kovasznay flow 
+
+As a first test we consider the Kovasznay flow, but now interpreted as an exact solution of the stationary Oseen problem with prescribed convection field . More precisely, we set 
+
+u =
+
+( 1 − exp( κx ) cos(2 πy )
+
+κ/ (2 π) exp( κx ) sin(2 πy )
+
+)
+
+, p = − 12 exp(2 κx ) + ¯ p, (35) with 
+
+κ = 12ν −
+
+√ 14ν2 + 4 π2,
+
+where ¯p is chosen such that ∫ 
+
+> Ω
+
+p = 0 . We then prescribe the convecting field as 
+
+w = u, 
+
+so that (u, p ) solves the Oseen problem with right-hand side f = 0 . As in the Navier–Stokes ex-periment, we impose inhomogeneous Dirichlet boundary conditions matching the exact velocity. The penalty parameter is chosen as λ = 50 k2.We choose the computational domain 
+
+Ω = [ −0.5, 1.5] × [0 , 2] ,
+
+set ν = 1 .0, and compare the Trefftz-DG method with Tw trial space against the standard DG method with Pk elements for k = 2 , 3, 4, 5.The results in Fig. 5 show that both discretizations recover the expected asymptotic con-vergence rates, namely O(hk+1 ) for the velocity and O(hk) for the pressure in the L2-norm. Compared at the same polynomial degree, the standard DG method yields slightly smaller error constants, whereas the Trefftz-DG method exhibits the same asymptotic slopes. In Fig. 6, we plot the same errors against the number of degrees of freedom (DoFs) instead of the mesh size h. This comparison shows that the Trefftz-DG method achieves a given error level with significantly fewer DoFs than the standard DG method, especially for higher polynomial degrees. 26 10 −1.510 −110 −0.5          
+
+> 10 −9
+> 10 −7
+> 10 −5
+> 10 −3
+> 10 −1
+> 10 1
+> h
+> L2(Ω) -error
+> velocity
+> 10 −1.510 −110 −0.5
+> 10 −6
+> 10 −4
+> 10 −2
+> 10 0
+> 10 2
+> h
+> L2(Ω) -error
+> pressure
+> k= 2 k= 3 k= 4 k= 5 O(hk+1 )O(hk)
+
+Figure 5: Convergence of the velocity and pressure in the L2-norm for the prescribed Oseen– Kovasznay problem. The Trefftz-DG results are shown in solid lines, while the standard DG results are shown in dashed lines. The expected convergence rates are indicated by the black reference lines.              
+
+> 10 310 410 510 6
+> 10 −9
+> 10 −7
+> 10 −5
+> 10 −3
+> 10 −1
+> 10 1
+> DoFs
+> L2(Ω) -error
+> velocity
+> 10 310 410 510 6
+> 10 −6
+> 10 −4
+> 10 −2
+> 10 0
+> 10 2
+> DoFs
+> L2(Ω) -error
+> pressure
+> k= 2 k= 3 k= 4 k= 5
+
+Figure 6: As in Fig. 5, but with the error plotted against the number of degrees of freedom (DoFs) instead of the mesh size h.Meshsize T3 P3 T4 P4 T5 P5
+
+1.0 0.02 0.03 0.03 0.06 0.07 0.09 2−1 0.05 0.11 0.08 0.20 0.15 0.42 2−2 0.18 0.43 0.29 0.80 0.45 1.85 2−3 0.72 1.63 1.00 3.55 1.73 8.18 2−4 2.74 7.95 5.22 15 .88 7.84 34 .06 
+
+Table 1: Total timings in seconds for the prescribed Oseen–Kovasznay problem. The timing results in Table 1 show a clear advantage of the Trefftz-DG discretization. While the standard DG method is slightly more accurate at fixed polynomial degree, the Trefftz-DG method is consistently faster, and this advantage becomes more pronounced on finer meshes and for higher orders. Thus, for this smooth Oseen test, the Trefftz reduction pays off primarily in 27 terms of computational cost rather than improved error constants. 
+
+## 6.2 Sensitivity with respect to viscosity and penalty parameter 
+
+We next consider the same Kovasznay Oseen problem as in Section 6.1, this time we vary both the viscosity ν and the penalty parameter λ. More precisely, we fix the polynomial degree to 
+
+k = 4 , choose ν = 0 .25 i, i = 1 , . . . , 7, for λ ∈ { 32 , 256 }, and consider the three mesh sizes 
+
+h ∈ { 0.25 , 0.125 , 0.0625 }.
+
+We compare the two discretizations directly through their L2 velocity errors. In Fig. 7 we show the errors as functions of the viscosity ν for the two representative penalty parameters 
+
+λ = 32 and λ = 256 . Solid lines correspond to the Trefftz-DG method, whereas dashed lines show the standard DG method.                           
+
+> 10 −410 −310 −210 −1
+> 10 −12
+> 10 −8
+> 10 −4
+> 10 0
+> 10 4
+> Viscosity ν
+> Velocity error
+> h= 0 .25
+> TDG, λ= 16 DG, λ= 16 TDG, λ= 256 DG, λ= 256
+> 10 −410 −310 −210 −1
+> Viscosity ν
+> h= 0 .125
+> 10 −410 −310 −210 −1
+> Viscosity ν
+> h= 0 .0625
+
+Figure 7: Velocity errors of the Trefftz-DG and standard DG discretizations as functions of the viscosity ν for two representative penalty parameters and three mesh sizes h. Solid lines show Trefftz-DG errors, whereas dashed lines show standard DG errors. For moderate viscosities, both discretizations show comparable qualitative behaviour, al-though the standard DG method gives smaller errors at fixed polynomial degree, as already observed in Fig. 5. For smaller viscosities the Trefftz-DG errors deteriorate earlier than the corresponding standard DG errors. This loss of accuracy is most pronounced for the smaller penalty parameter, while increasing the penalty from λ = 32 to λ = 256 delays the onset of the deterioration. Mesh refinement has a similar stabilizing effect, indicating that the loss of accuracy is tied to the resolution and conditioning of the local embedded Trefftz construction in the convection-dominated regime. Overall, the convection-dominated regime is clearly the most problematic for our approach, and improvements may be possible both at the level of the method itself and in the robustness of its implementation, for instance through more stable scaling strategies for the local Trefftz spaces. A thorough treatment of Trefftz-DG methods for singularly perturbed problems is beyond the scope of this work and remains an interesting direction for future research. 
+
+# Acknowledgements 
+
+This research was funded in part by the Austrian Science Fund (FWF) 10.55776/ESP4389824. For open access purposes, the author has applied a CC BY public copyright license to any author-accepted manuscript version arising from this submission. 28 A Auxiliary results 
+
+## A.1 Discrete inequalities 
+
+We collect the standard discrete inequalities used throughout the analysis. All constants below are independent of the mesh size; their precise dependence is indicated in each case. 
+
+Discrete Sobolev–Poincaré. There exists CΩ > 0, depending only on Ω and k, such that 
+
+∥vh∥Th ≤ CΩ∥vh∥1,h ∀vh ∈ Pk. (36) 
+
+Inverse inequality for the Laplacian. There exists C∆ > 0, depending only on shape-regularity and k, such that 
+
+∥hT ∆vh∥T ≤ C∆∥∇ vh∥T ∀vh ∈ Pk. (37) 
+
+Local L2–L4 embedding. There exists C4 > 0, depending only on shape-regularity and k, such that 
+
+∥vh∥L4(T ) ≤ C4h− d 
+
+> 4
+> T
+
+∥vh∥T ∀vh ∈ Pk. (38) We will often use the dual version of this estimate: for any v ∈ L 43 (T ),
+
+∥ΠkT v∥T = ∥v∥(Pk (T )) ′ ≤ C4h− d 
+
+> 4
+> T
+
+∥v∥L 43 (T ), (39) where the dual norm is defined with respect to the standard L2-scalar product. Indeed, by the definition of the dual norm and (38), 
+
+∥v∥(Pk (T )) ′ = sup   
+
+> r∈Pk(T)\{ 0}
+
+|(v, r )T |∥r∥T
+
+≤ C4h− d 
+
+> 4
+> T
+
+sup   
+
+> r∈Pk(T)\{ 0}
+
+|(v, r )T |∥r∥L4(T )
+
+≤ C4h− d 
+
+> 4
+> T
+
+∥v∥L 43 (T ).
+
+Discrete Sobolev embedding. By [7, Theorem 5.3], for q ≤ 6 there exists CS,q > 0, depending only on shape-regularity, Ω, k and q, such that 
+
+∥vh∥Lq (Ω) ≤ CS,q ∥vh∥1,h , ∀vh ∈ Pk. (40) 
+
+Polynomial L4 trace on facets. There exists Ctr, 4 > 0, depending only on shape-regularity and 
+
+k, such that for every facet F ⊂ ∂T and every zh ∈ [Pk(T )] d,
+
+∥zh∥L4(F ) ≤ Ctr, 4 h− 14 
+
+> T
+
+∥zh∥L4(T ). (41) 
+
+Broken W 1,4 trace on facets. There exists CW, 4 > 0, depending only on shape-regularity, such that for every facet F ⊂ ∂T and every w ∈ [W 1,4(T )] d,
+
+∥w∥L4(F ) ≤ CW, 4
+
+(
+
+h− 14 
+
+> T
+
+∥w∥L4(T ) + h 34 
+
+> T
+
+∥∇ w∥L4(T )
+
+)
+
+. (42) 
+
+# B Possible choices for ac
+
+h,w 
+
+The two conservative variants are only needed later in the polynomial case, so we keep their discussion in that setting. We record three standard DG realizations of the convective term. All of them fit into Assumption 2.1 (with possibly ac
+
+> h,w
+
+(uh, u h) = 0 or, after adding upwinding, 
+
+ac
+
+> h,w
+
+(uh, u h) ≥ 0), and they differ mainly in whether they are locally conservative and in how the kinetic-energy balance is enforced. 29 B.1 Temam-type (energy-stable) form 
+
+Following [6,7], a discrete counterpart of Temam’s modification is obtained by adding a divergence correction 
+
+ac
+
+> h,w
+
+(u, v ) := ( w · ∇ u, v )Ω − ({{w}} · nF [[ u]] , {{v}})
+
+> Fi
+> h
+
++ 12
+
+((∇ · w)u, v ) 
+
+> Ω
+
+− 12
+
+([[ w]] · nF , {{u · v}})
+
+> Fh
+
+. (43) This choice satisfies the exact cancellation ac 
+
+> h,v
+
+(v, v ) = 0 , but it is not locally conservative since it contains a source term proportional to ∇ · w.
+
+Lemma B.1. The Temam-type trilinear form (43) satisfies Assumption 2.1. Proof. We first prove (7). No Trefftz property of the second argument is used below. We use the skew-symmetry in the last two arguments and therefore bound 
+
+ac
+
+> h,w
+
+(vh, z ) = I + II + III + IV, 
+
+with the four terms corresponding to the four terms in (43). For the volume term, by Hölder’s inequality, (38), and the elementwise Poincaré inequality for z ∈ Xps (Th),
+
+|I| ≤ ∥ w∥L4(Th)∥∇ vh∥Th ∥z∥L4(Th) ≲ ν|w|h,d ∥vh∥1,h ∥z∥1,h .
+
+From the standard trace theorem from H1(̂T ) → H1/2(̂F ) on the reference element and scaling we have 
+
+∥z∥L2(F ) + h1/2 
+
+> T
+
+|z|H1/2(F ) ≲ h−1/2 
+
+> T
+
+∥z∥L2(T ) + h1/2 
+
+> T
+
+∥∇ z∥L2(T ) ∀ z ∈ H1(T ).
+
+Using the Sobolev embedding H1/2(F ) ↪→ L4(F ), valid for d = 2 , 3, with the corresponding scaling, we obtain 
+
+∥h1/4 
+
+> T
+
+z∥L4(F ) ≲ h−d/ 4 
+
+> T
+
+∥z∥L2(T ) + h1−d/ 4 
+
+> T
+
+∥∇ z∥L2(T ).
+
+Using the Poincaré, as z ∈ Xps (Th), we obtain 
+
+∥h 14 z∥L4(F ) ≤ Ch 1− d 
+
+> 4
+> T
+
+∥∇ z∥T . (44) Moreover, by (42) and finite overlap of elements 
+
+∥h 14 {{w}}∥ L4(Fi 
+
+> h)
+
+≲ ∥w∥L4(Th) + ∥h∇w∥L4(Th) ≲ ν|w|h,d .
+
+Hence, for the facet transport term, 
+
+|II | ≤ ∥ h 14 {{w}}∥ L4(Fi
+
+> h)
+
+∥h− 12 [[ vh]] ∥L2(Fi
+
+> h)
+
+∥h 14 {{z}}∥ L4(Fi 
+
+> h)
+
+≲ ν|w|h,d ∥vh∥1,h ∥z∥1,h .
+
+For the divergence term, using standard embedding ∥h1− d 
+
+> 4
+> T
+
+div w∥L2(T ) ≲ ∥h2− d 
+
+> 4
+> T
+
+∇w∥L4(T )
+
+together with (38) and the Poincaré inequality for z, we obtain 
+
+|III | ≤ ∥ div w∥Th ∥vh∥L4(Th)∥z∥L4(Th) ≲ ν|w|h,d ∥vh∥1,h ∥z∥1,h .
+
+30 Finally, using ∥{ {z · vh}}∥ L 43 (F ) ≲ ∥z∥L2(F )∥vh∥L4(F ), the trace inequality for z, (41) for vh,and the jump term in |w|h,d , we get 
+
+|IV | ≲ ∥[[ w]] · n∥L4(Fh)∥z∥L2(Fh)∥vh∥L4(Fh) ≲ (νh − 14 |w|h,d 
+
+)( h 12 ∥∇ z∥Th
+
+)( h− 14 ∥vh∥L4(Th)
+
+)
+
+≲ ν|w|h,d ∥z∥1,h ∥vh∥1,h .
+
+Combining the bounds for I, . . . , IV proves (7). The proof of (5) is the same. Decomposing into the four terms as above, following the same steps, but instead of elementwise Poincaré and (38) for z, use the discrete Sobolev embedding for z ∈ Pk, not gaining any powers of h.
+
+## B.2 Conservative form via a modified pressure 
+
+A locally conservative alternative in [6] is based on rewriting the momentum equation using a modified pressure so that the convective contribution is in divergence form. One discrete realization is 
+
+ac 
+
+> h,w h
+
+(uh, v h) := −(wh, (uh · ∇ )vh
+
+) 
+
+> Ω
+
++ ((nF · { {uh}}){{wh}}, [[ vh]] )
+
+> Fi
+> h
+
++ 12
+
+(vh, ∇(uh · wh)) 
+
+> Ω
+
+− 12
+
+(nF · { {vh}}, [[ uh · wh]] )
+
+> Fi
+> h
+
+. (45) The salient feature is local conservativity (in the standard DG flux sense), while still permitting an energy estimate through the same abstract assumptions on ac 
+
+> h,w
+
+used in [6]. Using similar arguments as for the Temam-type form, we can show that (45) also satisfies Assumption 2.1. 
+
+## B.3 Upwind conservative form with exactly solenoidal convecting field 
+
+In the LDG framework of [5], convection is discretized by an upwind numerical flux. In the mixed (primal) setting, the convective contribution can be written (for a given convecting field 
+
+w) as 
+
+ac
+
+> h,w
+
+(uh, v h) := −(( Pdiv wh · ∇ )uh, v h)Th + 〈(Pdiv wh · nF )uwh , [[ vh]] 〉
+
+> Fi
+> h
+
++ 〈(Pdiv wh · n) uwh , v h
+
+〉
+
+> Fb
+> h
+
+(46) where Pdiv is a suitable projection onto the space of H(div) -conforming element-wise divergence-free vector fields, for example the BDM-interpolation operator. And uwh is the standard upwind trace 
+
+uwh =
+
+{
+
+u+ 
+
+> h
+
+if Pdiv w · nF > 0,u− 
+
+> h
+
+if Pdiv w · nF < 0.
+
+A key observation in [5] is that local conservativity follows provided the convecting field is globally divergence-free (in H(div) ), and they enforce this by taking w = P u h where P is an element-wise post-processing/projection producing an exactly solenoidal field. Following the same approach as in the proof of Lemma B.1, we can show that the upwind form (46) also satisfies the abstract assumptions in Assumption 2.1. 
+
+Lemma B.2. Let ac 
+
+> h,w
+
+be given by (46) . Assume w ∈ W and set Pdiv wh ∈ H(div; Ω) ∩ [Pk]d
+
+with div ˜ wh|T = 0 for all T ∈ T h. Assume moreover that Pdiv is L4-stable in the sense that 
+
+∥P div wh∥L4(T ) ≤ Cdiv ∥wh∥L4(T ) ∀T ∈ T h.
+
+Then (7) holds. 
+
+31 References 
+
+[1] L. Banjai, E. H. Georgoulis, and O. Lijoka. A Trefftz polynomial space-time discontinuous Galerkin method for the second order wave equation. SIAM J. Numer. Anal. , 55(1):63–86, 2017. [2] H. Barucq, H. Calandra, J. Diaz, and E. Shishenina. Space–time Trefftz-DG approximation for elasto-acoustics. Appl. Anal. , 99(5):747–760, 2020. [3] M. Bouberbachene, C. Hochard, and A. Poitou. Domain optimisation using Trefftz functions - application to free boundaries. Computer Assisted Mechanics and Engineering Sciences ,4, 01 1997. [4] B. Cockburn, J. Gopalakrishnan, and R. Lazarov. Unified hybridization of discontinuous Galerkin, mixed, and continuous Galerkin methods for second order elliptic problems. SIAM J. Numer. Anal. , 47(2):1319–1365, 2009. [5] B. Cockburn, G. Kanschat, and D. Schötzau. A locally conservative LDG method for the incompressible Navier-Stokes equations. Math. Comput. , 74(251):1067–1095, 2005. [6] D. A. Di Pietro and A. Ern. Discrete functional analysis tools for discontinuous Galerkin methods with application to the incompressible Navier-Stokes equations. Math. Comput. ,79(271):1303–1330, 2010. [7] D. A. Di Pietro and A. Ern. Mathematical aspects of discontinuous Galerkin methods ,volume 69. Springer Science & Business Media, Heidelberg, 2011. [8] H. Egger, F. Kretzschmar, S. M. Schnepp, and T. Weiland. A space-time discontinuous Galerkin Trefftz method for time dependent Maxwell’s equations. SIAM J. Sci. Comput. ,37(5):B689–B711, 2015. [9] S. Gómez and A. Moiola. A space-time Trefftz discontinuous Galerkin method for the linear Schrödinger equation. SIAM Journal on Numerical Analysis , 60(2):688–714, 2022. [10] S. Gómez, A. Moiola, I. Perugia, and P. Stocker. On polynomial Trefftz spaces for the linear time-dependent Schrödinger equation. Applied Mathematics Letters , 146:108824, 2023. [11] S. Gómez, C. Perinati, and P. Stocker. Inf-sup stable space-time local discontinuous Galerkin method for the heat equation. Journal of Scientific Computing , 106(1):22, 2025. [12] C. Heil. Space-time Trefftz DG methods for parabolic PDEs. GRO.data , 2024. [13] F. Heimann, C. Lehrenfeld, P. Stocker, and H. von Wahl. Unfitted Trefftz discontinuous Galerkin methods for elliptic boundary value problems. ESAIM: M2AN , 2023. [14] R. Hiptmair, A. Moiola, and I. Perugia. A survey of Trefftz methods for the Helmholtz equa-tion. In Building Bridges: Connections and Challenges in Modern Approaches to Numerical PDEs , Lect. Notes Comput. Sci. Eng., pages 237–278, Cham., 2016. Springer. [15] R. Hiptmair, A. Moiola, I. Perugia, and C. Schwab. Approximation by harmonic polynomials in star-shaped domains and exponential convergence of Trefftz hp -dGFEM. ESAIM Math. Model. Num. Anal. , 48:727–752, 5 2014. [16] T. Huttunen, M. Malinen, and P. Monk. Solving Maxwell’s equations using the ultra weak variational formulation. Journal of Computational Physics , 223(2):731–758, 2007. 32 [17] F. Kretzschmar, A. Moiola, I. Perugia, and S. M. Schnepp. A priori error analysis of space-time Trefftz discontinuous Galerkin methods for wave problems. IMA J. Numer. Anal. ,36(4):1599–1635, 2016. [18] F. Kretzschmar, S. M. Schnepp, I. Tsukerman, and T. Weiland. Discontinuous Galerkin methods with Trefftz approximations. J. Comput. Appl. Math. , 270:211–222, 2014. [19] P. L. Lederer, C. Lehrenfeld, and P. Stocker. Trefftz discontinuous Galerkin discretization for the Stokes problem. Numerische Mathematik , 2024. [20] P. L. Lederer, C. Lehrenfeld, P. Stocker, and I. Voulis. A unified framework for Trefftz-like discretization methods. arXiv preprint arxiv:2412.00806 , 2024. [21] C. Lehrenfeld and J. Schöberl. High order exactly divergence-free hybrid discontinuous Galerkin methods for unsteady incompressible flows. Computer Methods in Applied Mech-anics and Engineering , 307:339 – 361, 2016. [22] C. Lehrenfeld and P. Stocker. Embedded Trefftz discontinuous Galerkin methods. Int. J. Numer. Methods Eng. , 124(17):3637–3661, 2023. [23] C. Lehrenfeld, P. Stocker, and M. Zienecker. Sparsity comparison of polytopal finite element methods. PAMM , 24(3):e202400150, 2024. [24] Z.-C. Li, M.-G. Lee, and J. Y. Chiang. Collocation Trefftz methods for the Stokes equations with singularity. Numerical Methods for Partial Differential Equations , 29(2):361–395, 2013. [25] S. A. Lifits, S. Y. Reutskiy, G. Pontrelli, and B. Tirozzi. Quasi Trefftz spectral method for Stokes problem. Mathematical Models and Methods in Applied Sciences , 07(08):1187–1212, 1997. [26] A. Lozinski. A primal discontinuous Galerkin method with static condensation on very general meshes. Numer. Math. , 143(3):583–604, 2019. [27] J. C. Meyer, C. Lehrenfeld, and I. Voulis. On the conforming trefftz finite element method and applications. Zenodo , Oct. 2025. [28] A. Moiola and I. Perugia. A space–time Trefftz discontinuous Galerkin method for the acoustic wave equation in first-order formulation. Numer. Math. , 138(2):389–435, 2018. [29] A. Montlaur, S. Fernandez-Mendez, and A. Huerta. Discontinuous Galerkin methods for the Stokes equations using divergence-free approximations. International Journal for Numerical Methods in Fluids , 57(9):1071–1092, 2008. [30] A. Montlaur, S. Fernandez-Mendez, J. Peraire, and A. Huerta. Discontinuous Galerkin methods for the Navier–Stokes equations using solenoidal approximations. International Journal for Numerical Methods in Fluids , 64(5):549–564, 2010. [31] C. Perinati, L.-M. Imbert-Gérard, A. Moiola, and P. Stocker. A discontinuous Galerkin method for elliptic-hyperbolic equations. arXiv preprint arXiv:2604.06910 , 2026. [32] I. Perugia, J. Schöberl, P. Stocker, and C. Wintersteiger. Tent pitching and Trefftz-DG method for the acoustic wave equation. Comput. Math. Appl. , 79(10):2987–3000, 2020. [33] A. Poitou, M. Bouberbachene, and C. Hochard. Resolution of three-dimensional Stokes fluid flows using a Trefftz method. Computer Methods in Applied Mechanics and Engineering ,190(5):561–578, 2000. 33 [34] E. Schlesinger. Embedded Trefftz Trace DG Methods for PDEs on unfitted Surfaces. 
+
+GRO.data , 2023. [35] J. Schöberl. C++ 11 implementation of finite elements in NGSolve. Institute for analysis and scientific computing, Vienna University of Technology , 30, 2014. [36] P. Stocker. NGSTrefftz: Add-on to NGSolve for Trefftz methods. J. Open Source Softw. ,7(71):4135, 2022. [37] P. Stocker and I. Voulis. Embedded Trefftz DG method for the Helmholtz equation. arXiv preprint arXiv:2603.13034 , 2026. [38] P. Stocker, I. Voulis, P. L. Lederer, and C. Lehrenfeld. Embedded Trefftz DG method for steady Navier–Stokes flow. Part II: Nonlinear problem. arXiv preprint , 2026. [39] P. Stocker, I. Voulis, C. Lehrenfeld, and P. L. Lederer. Replication Data for: Embedded Trefftz DG method for steady Navier–Stokes flow, June 2026. [40] E. Trefftz. Ein Gegenstück zum Ritzschen Verfahren. Proc. 2nd Int. Cong. Appl. Mech., Zurich, 1926 , pages 131–137, 1926. 34

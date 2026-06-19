@@ -1,0 +1,1020 @@
+Title: State estimation of Rayleigh-Bénard convection with reduced-order models
+
+URL Source: https://arxiv.org/pdf/2606.20511v1
+
+Published Time: Fri, 19 Jun 2026 01:17:34 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# State estimation of Rayleigh-B´ enard convection with reduced-order models 
+
+Enrique Flores-Montoya ∗
+
+Aerothermals deparment, ITP Aero, 28108 Alcobendas, Spain 
+
+Andr´ e F. C. da Silva † and Andr´ e V. G. Cavalieri ‡
+
+Divis˜ ao de Engenharia Aeroespacial, Instituto Tecnol´ ogico de Aeron´ autica, S˜ ao Jos´ e dos Campos, SP, Brazil 
+
+(Dated: June 19, 2026) In this work, we develop a state estimation framework for two-dimensional Rayleigh–B´ enard (RB) convection that combines a stable Galerkin reduced-order model (ROM) with an extended Kalman filter (EKF). The ROM, constructed from controllability modes of the linearised Boussinesq equa-tions, provides the nonlinear dynamical model for the filter prediction step. Direct numerical sim-ulations (DNS) are used to generate synthetic measurements for data assimilation. We assess filter performance across periodic, quasiperiodic, and chaotic regimes, demonstrating that the filter tracks the most energetic modes with high fidelity and achieves time-averaged reconstruction errors below 14% for velocity and 9% for temperature. We apply the ROM-based EKF to a hybrid simulation scenario where the system state is assimilated from coarse PIV-like velocity measurements. It is shown that velocity observations alone suffice to reconstruct the state, including the temperature field. Finally, we exploit the Kalman gain matrix to develop a greedy sensor placement strategy that progressively removes the least informative sensors. The algorithm reveals a clear hierarchy among sensor types and can be used to derive skeletal observation configurations. It also provides guidance on which measurement variables and spatial locations are most informative for state correction. The present framework is general, and may be applied to other quadratic Galerkin ROMs for state estimation. 
+
+I. INTRODUCTION 
+
+Closed-loop flow control has been a long-standing goal in fluid mechanics, with applications ranging from drag reduction and noise suppression to thermal management and mixing enhancement [1–3]. Active feedback control re-quires knowledge of the system state, which is generally unavailable through direct measurement in fluid systems since the state corresponds to spatially distributed fields [4]. Consequently, the closed-loop control problem is decomposed into two subproblems: state feedback and state estimation. The latter involves implementing state estimators that re-construct the system state from either sparse sensor measurements (e.g., pointwise velocity and pressure probes) [5, 6] or integral quantities such as aerodynamic forces [7]. The most direct approach to flow state estimation uses direct numerical simulations (DNS), applying data assimi-lation techniques to the discretized Navier-Stokes equations. A significant body of work has focused on the linearized Navier–Stokes equations, which admit rigorous application of classical linear estimation theory. This framework has been used to control transition to turbulence in wall-bounded flows, where linear dynamics provide a useful approx-imation during the early stages of transition [8, 9]. H¨ ogberg et al. [10] used Kalman filter-based estimators from wall measurements for transition control in plane channel flow, achieving substantial increases in transition thresh-olds. Hœpffner et al. [4] and Chevalier et al. [11] applied Kalman filter (KF) estimators to wall-bounded flows in a two-part study, covering perturbed laminar and fully turbulent regimes, respectively. The high-dimensionality of flow systems, where the state dimension can reach O(10 6), makes the application of standard KF implementations com-putationally demanding [1, 12, 13]. Ensemble methods avoid explicit covariance propagation, making them tractable for high-dimensional systems. Colburn et al. [14] applied ensemble Kalman filters (EnKF) to turbulent channel flow, extending earlier work on standard and extended Kalman filters (EKF) for state estimation in laminar and turbulent channel flows [4, 11]. Da Silva and Colonius [13] developed EnKF-based estimators for the 2D flow past a cylinder and an airfoil at high angle of attack and low Reynolds number. The high computational cost of full-order models has motivated the use of reduced-order models (ROMs) in closed-loop control applications [1, 15, 16]. In Galerkin ROMs, the governing partial differential equations are projected onto a set of spatial modes – typically obtained from proper orthogonal decomposition (POD) of simulation snapshots – reducing the problem to a system of ordinary differential equations for the modal amplitudes [15]. This approach comes    
+
+> ∗efloresm.ca@gmail.com
+> †andref@ita.br
+> ‡andre@ita.br
+> arXiv:2606.20511v1 [physics.flu-dyn] 18 Jun 2026
+
+2with some loss in model accuracy but achieves a large reduction of the problem dimension, from O(10 6) unknowns to O(10)– O(10 2). At this scale, classical control and estimation methods become tractable, with several successful applications reported in the literature [5–7, 17]. Moreover, the low computational cost of the ROMs enables real-time integration of the dynamical system, which is needed for practical implementation of control systems in experimental settings. These control applications share a common requirement: the feedback law is expressed in terms of modal amplitudes, which must be estimated from physical measurements in real time. Full flow field measurements are generally not available, and sensing is typically restricted to sparse observations with limited spatial coverage. State observers that combine the ROM dynamics with such sparse measurements are therefore required. Gerhard et al. [5] reconstructed a cylinder wake state from a single hot-wire signal using a dynamic observer that runs the Galerkin model in parallel with the flow, correcting the estimated modal coefficients based on the sensor discrepancy. Rowley and Juttijudata [18] constructed dynamic observers for cavity flow oscillations using a POD-Galerkin ROM. Comparing the flow state reconstructions from a single wall-pressure sensor they found that the KF outperforms the linear stochastic estimation method, especially for noisy sensor measurements. Aleksic et al. [7] used an EKF to estimate the mean-field modal amplitudes from the spatially averaged base pressure measured at the bluff body stern. Ahuja and Rowley [6] extended the approximate balanced truncation method to unstable linear systems and used the resulting ROM to design a KF that reconstructs the flow state from two near-wake velocity measurements, enabling stabilization of an unstable steady state of flow past a flat plate. John et al. [19] combined a second order KF with a POD-Galerkin ROM for the incompressible Navier–Stokes equations with a passive scalar field to estimate velocity and concentration from sparse point measurements. Kikuchi et al. [20] combined a POD-Galerkin ROM with ensemble-based data assimilation methods to estimate the unsteady flow past a cylinder from sparse velocity observations in the wake. They compared an EnKF and a particle filter (PF), finding that the PF produced lower error when the state distribution was non-Gaussian. Sommer et al. [21] combined a POD-Galerkin ROM with an EKF to reconstruct the velocity and pressure fields inside a centrifugal pump from velocity measurements at a small number of locations. A greedy algorithm is used to select measurement positions that minimise the condition number of the observability matrix, and the EKF is shown to provide stable estimates over long times even when the underlying ROM itself is unstable. Despite these remarkable examples, traditional POD-based Galerkin ROMs suffer from a major limitation [22]. They require closure models that introduce additional dissipation into the system to prevent numerical instability [23, 24]. An alternative methodology has recently emerged that addresses this limitation by constructing modal bases from the linearized equations rather than from snapshot data. Cavalieri and Nogueira [22] developed Galerkin ROMs for three-dimensional plane Couette flow using orthogonal bases obtained from the controllability Gramian of the linearized Navier–Stokes equations. The resulting ROMs remain numerically stable without closure models and were used in [25] to compute multi-scale invariant solutions and stable orbits of the system. This framework was extended to a 2D mixing layer in [26]. In a recent work, Maia and Cavalieri [27] demonstrated that these stable ROMs could be used to design control inputs that laminarize turbulent plane Couette flow. Beyond flow control, data assimilation techniques are also employed in hybrid simulations. These approaches com-bine experimental measurements with numerical simulations, typically DNS, to reconstruct flow quantities that are difficult to measure directly or to overcome the temporal and spatial resolution limitations of experimental tech-niques [28–32]. Rayleigh-B´ enard (RB) convection provides a particularly well-suited testbed for such approaches, owing to its rich dynamical behavior, well-characterized bifurcation structure, and relevance for technological ap-plications such as crystal growth [33–35]. In this setting, Bauer et al. [36] assimilated tomographic particle image velocimetry (PIV) measurements into a DNS via nudging, reconstructing fully resolved flow fields from measure-ments. Cornick et al. [37] applied the local ensemble transform Kalman filter (LETKF) to state estimation in chaotic RB convection, reconstructing the temperature and velocity fields from shadowgraph images in both numerical and laboratory experiments. Farhat et al. [38] established rigorous synchronization conditions for data assimilation from thermal measurements alone, proving that temperature observations at sufficiently fine spatial resolution guarantee convergence to the true state. Agasthya et al. [39] and Clark Di Leoni et al. [40] reconstructed velocity fields from temperature-only measurements in turbulent 2D RB convection using nudging and physics-informed neural networks, respectively. In our companion paper [41], we developed stable Galerkin ROMs for 2D RB convection using controllability modes of the linearised Boussinesq equations and validated them against DNS in terms of mean profiles, heat flux, flow structures, and dynamical regimes. Motivated by the need for computationally efficient state estimators capable of operating across different dynamical regimes, the present work demonstrates a practical application of these ROMs: their use as dynamical models within an EKF for real-time state estimation. Using DNS as synthetic measurements, the filter is evaluated across periodic, quasiperiodic, and chaotic regimes to systematically compare its performance and robustness ( §IV.1). Then, we consider a hybrid simulation scenario where the state is assimilated from coarse PIV-like velocity measurements ( §IV.2). The objective is to show that the present state estimation framework can be used to infer the temperature field without direct thermal observations. In §IV.3, we develop a greedy sensor 3placement strategy based on the Kalman gain matrix that progressively removes the least informative sensors and can be used to derive skeletal observation strategies, minimizing the number of sensors required for state estimation. Finally, in §IV.4, we estimate the noise covariances from DNS data and compare their performance with the isotropic, uncorrelated noise covariance matrices used throughout the rest of the study. The remainder of this paper is organized as follows. §II presents the governing equations, the Galerkin ROM formulation, and the EKF algorithm. §III describes the numerical methods for ROM generation, DNS, and filter implementation. Results are presented in §IV and conclusions are given in §V.  
+
+> II. THEORETICAL BACKGROUND
+
+We consider two-dimensional Rayleigh-B´ enard convection in a two dimensional domain periodic in the horizontal direction x and bounded by no-slip walls at y = 0 and y = 1. The non-dimensional governing equations for a Boussinesq fluid are the continuity, momentum, and energy conservation equations: 
+
+∇ · u = 0 , (1) 
+
+∂u
+
+∂t + u · ∇ u = −∇ p + P r θ ey + P r 
+
+√Ra ∇2u, (2) 
+
+∂θ ∂t + u · ∇θ = 1
+
+√Ra ∇2θ, (3) where u = u v T and θ are the dimensionless velocity and temperature fields, respectively, and p is the driven pressure. Bold symbols are used to denote vector variables and ey is the unit vector in the y direction. The Prandtl number P r = ν/κ represents the ratio between the viscous and thermal diffusion coefficients. The ratio between buoyancy forces and viscous dissipation is quantified through the Rayleigh number, Ra = σgh 3∆T / (νκ ), where σ
+
+is the fluid thermal expansion coefficient, g is the gravitational acceleration, h is the dimensional distance between the walls and ∆ T is the imposed temperature jump. In eqs. (1)–(3), velocity and temperature have been normalized using κ√Ra/h and ∆ T , respectively.  
+
+> II.1. Galerkin reduced-order model
+
+In the companion paper [41], coupled-basis ROMs are shown to outperform uncoupled-basis models in terms of total heat flux and turbulence statistics. For this reason, in the present work we adopt a coupled-basis approach following [24, 41–43]. For that, we define an extended state vector that groups the velocity and temperature fields: 
+
+X = u v θT . (4) The extended state is decomposed into a baseline steady solution, θ0(y), and a time-dependent perturbation expressed as a sum of orthonormal modes: 
+
+X (t, x) = 0 0 θ0(y)T +
+
+> n
+
+X
+
+> j=1
+
+cj (t) χj (x), (5) where, θ0(y) = 1 − y, is the conductive equilibrium temperature profile and χj (x) are coupled modes containing velocity and temperature components. Each mode χj can be written as: 
+
+χj (x) = Uj (x) Vj (x) Tj (x)T , (6) where Uj , Vj and Tj are the horizontal velocity, vertical velocity and temperature components of mode j, respectively. From this decomposition, the physical fields are reconstructed as: 
+
+u(t, x) = 
+
+> n
+
+X
+
+> j=1
+
+cj (t) Vj (x), θ(t, x) = θ0(y) + 
+
+> n
+
+X
+
+> j=1
+
+cj (t) Tj (x), (7) where Vj = Uj Vj
+
+T groups the velocity components of mode j. For the coupled formulation, a weighted inner product is introduced to balance the energy contributions from velocity and temperature fields: 
+
+⟨X i, Xj ⟩c = 1
+
+LxLy
+
+Z Lx
+
+> 0
+
+Z Ly
+
+> 0
+
+ uiuj + vivj + γ2θiθj
+
+ dy dx, (8) 4where γ2 is a weighting factor representing the ratio between the average kinetic and thermal perturbation energies. Following Flores-Montoya and Cavalieri [41], the weighting factor is set to γ2 = 1 .24, a value determined from a least-squares fit of DNS data. The coupled modes χj form an orthonormal basis under this inner product: 
+
+⟨χi, χj ⟩c = δij . (9) Substituting the modal decomposition from eq. (5) into the governing equations eqs. (2)–(3) and taking the inner product with χi yields the ROM ordinary differential equation: dci
+
+dt = P r 
+
+F0 
+
+> i
+
++ X
+
+> j
+
+F1 
+
+> ij
+
+cj
+
+ + P r 
+
+√Ra 
+
+X
+
+> j
+
+DV 
+
+> ij
+
+cj + 1
+
+√Ra 
+
+X
+
+> j
+
+DT 
+
+> ij
+
+cj − X
+
+> j
+
+Lij cj − X
+
+> j,k
+
+Nijk cj ck, (10) where the projected operators are defined as: 
+
+F0 
+
+> i
+
+= ⟨χi, θ 0(y) ev ⟩c, (11) 
+
+F1 
+
+> ij
+
+= ⟨χi, Tj ev ⟩c, (12) 
+
+DV 
+
+> ij
+
+= ⟨Vi, ∇2Vj ⟩, (13) 
+
+DT 
+
+> ij
+
+= γ2⟨T i, ∇2Tj ⟩, (14) 
+
+Lij = ⟨χi, (Vj · ∇ θ0) eθ ⟩c, (15) 
+
+Nijk = ⟨χi, Vk · ∇ χj ⟩c, (16) with ev = 0 1 0 T and eθ = 0 0 1T being unit vectors in the wall-normal velocity and temperature components, respectively. In eqs. (13)–(14), the inner product ⟨ϕ, ψ⟩ (without subscrip −c) is defined as: 
+
+⟨ϕ, ψ⟩ = 1
+
+LxLy
+
+Z Lx
+
+> 0
+
+Z Ly
+
+> 0
+
+ϕ · ψ dy dx (17) The ROM differential equation eq. (10) can be written in compact form as: dc
+
+dt = f (c; Ra, P r ), (18) where c = c1, c 2, . . . , cn
+
+T is the vector of modal amplitudes and f represents the right-hand side of eq. (10). To build a Galerkin ROM it is necessary to generate a modal basis satisfying the orthogonality condition expressed in eq. (9). Coupled orthonormal modal bases can be obtained as the eigenfunctions of the controllability Gramian of the linearized RB equations. The procedure to obtain compliant bases and the derivation details are thoroughly described in [41]. The quadratic nonlinearity of eq. (18) yields an analytical expression for the Jacobian of f with respect to c, which is exploited in §II.2 for the linearization required by the EKF prediction step and avoids the need for finite-difference approximations.  
+
+> II.2. Extended Kalman filter
+
+The objective is to estimate the modal amplitudes c(t) from sparse measurements of the physical fields obtained from direct numerical simulations. This is formulated as a state estimation problem where the ROM provides the dynamical model and the measurements constitute observations of the system. The ROM dynamics from eq. (18) are discretized in time to obtain a discrete-time state-space model: 
+
+ck = Φ(ck−1; Ra, P r, ∆tk) + wk−1, (19) where ck denotes the state at time tk, Φ represents the nonlinear state transition obtained by integrating eq. (18) from tk−1 to tk, and wk−1 ∼ N (0, Q ) is the process noise accounting for model uncertainty. Measurements are obtained at discrete spatial locations (probes) in the DNS domain. Let yk ∈ Rm denote the observation vector at time tk, containing measurements of velocity and temperature at the probe locations. The observation model relates the measurements to the modal amplitudes: 
+
+yk = H ck + vk, (20) 5where H ∈ Rm×n is the observation matrix and vk ∼ N (0, R ) represents measurement noise. The uncertainty in the measurements accounts for off-projection errors from the full order system on the reduced order modal basis. The standard KF formulation treats this noise as white in time, so that vk is uncorrelated between successive time steps. In the present setup, this does not strictly hold: the off-projection error is affected by the advection of unresolved flow structures past the probes, which evolves smoothly over consecutive snapshots rather than re-randomising at each step. Accounting for this properly would require a coloured-noise model which is out of the scope of this work. Here, we retain the white noise assumption for simplicity and leave the extension to autoregressive measurement models for future work. The observation matrix H is constructed from the modal basis evaluated at the probe locations. We consider nu
+
+horizontal velocity, nv wall-normal velocity and nθ temperature probes. Let xℓ, xp and xq denote the position of the 
+
+ℓ-th horizontal velocity, p-th vertical velocity and q-th temperature probes, respectively. The observation matrix has the block structure: 
+
+H = Hu Hv Hθ T , (21) where the sub-matrices are: 
+
+Huℓj = Uj (xℓ), Hvpj = Vj (xp), Hθqj = Tj (xq ). (22) The observation vector at each time step is assembled from the DNS fields as: 
+
+yk = [ u(x1, t k), . . . , u (xℓ, t k), . . . , u (xnu , t k), . . . , v (xp, t k), . . . , v (xnv , t k), . . . , θ ′(xq , t k), . . . , θ ′(xnθ , t k)] T , (23) where θ′ = θ − θ0 is the temperature perturbation. Due to the nonlinear dynamics of the ROM, the extended EKF is employed. The EKF linearizes the state transition about the current estimate and proceeds in two steps at each time instant: prediction and update.  
+
+> II.2.1. Prediction step
+
+Given the posterior estimate ˆ ck−1 and covariance Pk−1 at time tk−1, the predicted state at time tk is obtained by integrating the ROM: ˆc− 
+
+> k
+
+= Φ(ˆ ck−1; Ra, P r, ∆tk). (24) The predicted covariance is computed using the linearized dynamics: 
+
+P − 
+
+> k
+
+= Fk Pk−1 F Tk + Q, (25) where Q is the model error covariance matrix, which accounts for the uncertainty introduced at each prediction step by the unresolved dynamics in the ROM, and Fk is the state transition matrix obtained from the Jacobian of the ROM: 
+
+Fk = I + J(ˆ ck−1) ∆ tk, Jij = ∂f i
+
+∂c j
+
+. (26) The Jacobian of the ROM dynamics is: 
+
+J = P r F1 + P r 
+
+√Ra DV + 1
+
+√Ra DT − L − N c − N T c, (27) where ( N c)ij = P 
+
+> k
+
+Nijk ck and ( N T c)ij = P 
+
+> k
+
+Nikj ck. Here the ROM structure presents an advantage, as the Jacobian maitains moderate dimensions and is known analytically.  
+
+> II.2.2. Update step
+
+When a measurement, yk, becomes available, the innovation is computed: 
+
+zk = yk − H ˆc− 
+
+> k
+
+. (28) 6The innovation covariance is: 
+
+Sk = H P − 
+
+> k
+
+HT + R, (29) where R is the measurements covariance matrix. The Kalman gain determines the optimal weighting between the model prediction and the measurement: 
+
+Kk = P − 
+
+> k
+
+HT S−1 
+
+> k
+
+. (30) The posterior state estimate incorporates the measurement: ˆck = ˆ c− 
+
+> k
+
++ Kk zk. (31) The posterior covariance is updated using the Joseph form for numerical stability: 
+
+Pk = ( I − KkH) P − 
+
+> k
+
+(I − KkH)T + Kk R K Tk . (32) The performance of the EKF depends on the specification of the process noise covariance Q and measurement noise covariance R. The process noise Q accounts for model errors including unresolved dynamics arising from the truncation of the ROM. The measurement noise R represents sensor noise and uncertainty in the observations. The relative magnitude between Q and R controls the balance between trusting the model prediction and trusting the measurements. A larger Q relative to R results in higher Kalman gains, giving more weight to the measurements. The initial state covariance P0 is typically set to a diagonal matrix reflecting uncertainty in the initial state estimate.  
+
+> II.2.3. Error metrics
+
+The quality of the state estimation is quantified via the following instantaneous error metrics: 1. The normalized estimation error, ec = ∥ˆc − c∥/∥c∥, where c is the modal amplitude vector obtained by project-ing the DNS fields onto the modal basis and ˆ c is the filter estimate. 2. The normalized velocity error: 
+
+eu =
+
+ R 
+
+> Ω
+
+(u − ˆu)2dΩ1/2
+
+ R  
+
+> Ω
+
+u2dΩ1/2 , (33) where u is the DNS velocity field and ˆ u is the velocity field reconstructed from the filter estimates: ˆu(t, x) = 
+
+> n
+
+X
+
+> j=1
+
+ˆcj (t)Vj (x). (34) In eq. (33), R 
+
+> Ω
+
+· dΩ denotes integration over the fluid domain. 3. The normalized temperature error: 
+
+eθ =
+
+R
+
+> Ω
+
+(θ − ˆθ)2dΩ
+
+1/2
+
+ R  
+
+> Ω
+
+θ2dΩ1/2 , (35) where θ is the DNS temperature field and ˆθ is the temperature field reconstructed from the filter estimates: ˆθ(t, x) = 
+
+> n
+
+X
+
+> j=1
+
+ˆcj (t)Tj (x) (36) It is important to note that the velocity and temperature errors, eu and eθ , are bounded from below by the ROM truncation error. The projection of the DNS fields onto a finite number of coherent spatial structures necessarily dis-cards information contained in the unresolved modes. Consequently, even a perfect estimate of the modal amplitudes (ˆ c = c) would still yield nonzero values of eu and eθ . For each of the above-described error metrics, the total error is computed as: 
+
+E = 1
+
+T
+
+Z T
+
+> 0
+
+e(t′) d t′ (37) using the trapezoidal rule to integrate discrete signals sampled at tk.7                   
+
+> Basis type Nomenclature nαnβNnnxnyRa P r γ2
+> Coupled C96 616 96 96 22 64 111.24 C192 824 192 192 30 64
+
+TABLE I: Modal composition, generation parameters and mesh resolution of the different models evaluated.  
+
+> III. NUMERICAL METHODS
+
+A two-dimensional domain with Lx = 2 is considered. This aspect ratio allows perturbations with the critical wavenumber, kc, to develop; resulting in a critical Rayleigh number of Ra c = 1707 .8. The procedure for generating coupled orthonormal modal bases follows Flores-Montoya and Cavalieri [41]. Modes are obtained as the eigenfunctions of the Gramian of the linearized Rayleigh-B´ enard equations. The periodicity of the domain allows decomposing the flow into Fourier modes in the x direction, so that the problem reduces to a set of independent one-dimensional eigenvalue problems for each wavenumber kx = jα , where α = 2 π/L x and j = 0 , 1, . . . , n α − 1. The y direction is discretized using ny = 64 Chebyshev collocation points. For each wavenumber, a Sylvester equation is solved using LAPACK routines [44] to obtain the Gramian. The number of modes retained per wavenumber is nβ , yielding a total of n = nα × nβ modes, i.e., n degrees of freedom (DoF) in the ROM. The coupled bases are generated with 
+
+Ra = 1, P r = 1 and the energy-weighting factor γ2 = 1 .24, determined from a least-squares fit of DNS data as described in Flores-Montoya and Cavalieri [41]. The ROM coefficients F0 
+
+> i
+
+, F1 
+
+> ij
+
+, DV 
+
+> ij
+
+, DT 
+
+> ij
+
+, Lij and Nijk are computed by projecting the governing equations onto the two-dimensional modes. To prevent aliasing in the nonlinear terms, the number of grid points in x is set to 4( nα − 1) + 2. Table I lists the parameters of the ROMs used in this work. DNS are performed using the Dedalus spectral solver [45]. The domain is discretised with nx = 128 Fourier modes in x and ny = 64 Chebyshev collocation points in y, with a dealiasing factor of 3 /2 in both directions. The time integration of eqs. (1)–(3) is performed using a second-order semi-implicit backwards differentiation formula (SBDF2) [45]. Simulations are initialised from a randomly perturbed conductive state θ0 = 1 − y and integrated over a total time Tsim = 1500 P r −1/2, discarding the first third of each run to remove initial transients. The remaining interval, spanning for a simulation time of T = 1000 P r −1/2 ≈ 316, is used for filter assimilation. Flow snapshots are saved every ∆ t = 3 /(5 √P r ) ≈ 0.19 time units, yielding Ns = 1666 snapshots per simulation. The random seed 
+
+η controlling the initial perturbation is varied to generate independent realisations of the same flow configuration. Table II lists the DNS realizations and their parameters.                               
+
+> R=Ra/Ra cRa P r η⟨N u ⟩Re τy+
+> w
+> 40 68 310 10 14.15 11.2 0.015 80 136 621 14.84 15.0 0.020 120 204 931 15.13 17.2 0.023 25.15 17.2 0.023 35.13 17.1 0.023 45.13 17.2 0.023
+
+TABLE II: DNS realisations and their parameters. η denotes the random seed controlling the initial perturbation. The Nusselt number ⟨N u ⟩, friction Reynolds number Re τ , and wall-normal resolution in wall units y+ 
+
+> w
+
+are defined in Flores-Montoya and Cavalieri [41]. Measurements for the EKF are extracted from the DNS fields at discrete probe locations and assembled into the observation vector yk as described in §II.2. The DNS solution at each snapshot is projected onto the ROM modal basis to obtain reference coefficients ck. This projection is performed by evaluating the weighted inner product defined in eq. (8) between the DNS fields and each mode χj after upsampling the modes to the DNS resolution via zero padding: 
+
+cj,k = ⟨X DNS  
+
+> k
+
+, χj ⟩c, j = 1 , . . . , n, (38) where X DNS  
+
+> k
+
+= [ uk, v k, θ k − θ0]T is the extended DNS state at time tk. The integrals are computed using the trapezoidal rule in x and Clenshaw–Curtis quadrature in y.The EKF is initialized from ˆ c0 = ˆ c− 
+
+> 0
+
+= 0 and with an initial covariance P0 = α0In, where α0 = 10 −3 and In is the identity matrix with dimension n. The process noise covariance is set to Q = σ2
+
+> Q
+
+In and the measurement noise covariance to R = σ2
+
+> R
+
+Im, with the ratio β = σ2
+
+> Q
+
+/σ 2 
+
+> R
+
+controlling the balance between model and measurement trust. The sensitivity of the filter performance to these parameters is assessed in Appendix A. This isotropic, uncorrelated 8choice is relaxed in §IV.4, where Q and R are instead estimated directly from DNS data. At each assimilation step, the state transition Φ is computed by integrating the ROM equations (18) using a Runge-Kutta 5(4) scheme [46] with adaptive step size. The state transition matrix Fk is approximated via the first-order linearization in eq. (26), where the analytical Jacobian of the ROM is used. The availability of a closed-form Jacobian, a natural consequence of the polynomial structure of Galerkin ROMs, makes the EKF implementation computationally efficient compared to finite-difference approximations.  
+
+> IV. RESULTS
+
+The above-described state estimation framework is now applied to two-dimensional RB convection in different observation scenarios. If not stated otherwise, the ROM with n = 96 modes (C96) is used in the KF prediction step. In §IV.1, the filter performance is evaluated using a coarse grid of sensors across three dynamical regimes: periodic, quasiperiodic, and chaotic. It is then applied to PIV-like observations in §IV.2, a configuration representative of hybrid simulation methodologies. A greedy sensor placement algorithm is presented in §IV.3 to explore the optimisation of sensor locations and to identify which measurement types contribute most to the estimation quality. Finally, in §IV.4 we examine the effect of replacing the isotropic noise covariances by data-estimated ones.  
+
+> IV.1. Coarse grid sensing strategy
+
+Firstly, we apply the methodology to a simple sensing strategy consisting of a coarse grid of sensors. Figure 1a illustrates the sensor arrangement in the x, y plane, with the background showing an instantaneous temperature field from a DNS. A total of 16 probes arranged in a 4 × 4 grid are used. This grid is obtained by decimating the DNS mesh. Wall points are explicitly excluded since they carry no information due to the no-slip and imposed-temperature boundary conditions. Each probe measures the two velocity components and the temperature perturbation, θ′,yielding an observation space of dimension m = 48. In Fig. 1a, circles, squares, and crosses denote horizontal velocity, wall-normal velocity, and temperature sensors, respectively. The covariance matrices for the model and measurement noise are set to Q = βI n and R = Im, respectively, where β = 0 .01 is the model-to-measurement noise ratio. The sensitivity of the filter to β, the ROM dimension and the number of sensors is discussed in Appendix A. 0.0 0.5 1.0 1.5 2.0                
+
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00.20.40.60.81.0
+> θ
+> (a) Coarse grid sensing strategy used in §IV.1. Each probe measures u,v, and θ′.0.00.51.01.52.0
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00.20.40.60.81.0
+> θ
+> (b) Velocity-only sensing strategy used in §IV.2. Each probe measures uand v; no temperature sensors are included.
+
+FIG. 1: Sensor configurations in the fluid domain. Circles, squares, and crosses denote horizontal velocity, u,wall-normal velocity, v, and temperature, θ′, sensors, respectively. The background shows an instantaneous DNS temperature field at R = 120, P r = 10. The KF is run over the R = 40 and P r = 10 DNS. For this combination of model parameters, the system is periodic, describing a stable orbit around the attractor. Figure 2 shows the time evolution of the DNS coefficients, 
+
+ci,k (black lines and squares), and their corresponding estimates, ˆ ci,k (blue lines and circles). Only the six modes with the largest mean energy, ⟨c2 
+
+> j
+
+⟩, are shown. The x-axis has been broken into two time segments to show the filter initialization and the last oscillation cycles of the simulation. During the filter initialization, the estimate converges towards the state within approximately five characteristic times. The overall agreement between the filter estimate and the state is very good with both signals nearly overlapping across the entire run. 90.20        
+
+> 0.25
+> c3 ci
+> ˆci0.200
+> 0.225
+> c19
+> −0.12
+> −0.11
+> c18
+> −0.07
+> −0.06
+> c52
+> 05
+> −0.07
+> −0.06
+> c7
+> 290 300 310
+> t
+> 05
+> −0.07
+> −0.06
+> c16
+> 290 300 310
+> t
+
+Ra/Ra c = 40 P r = 10 
+
+FIG. 2: Time evolution of amplitude coefficients: comparison between DNS projection, ci, and KF estimates, ˆ ci for the six modes with the largest mean energy, ⟨c2 
+
+> j
+
+⟩.Figure 3 shows the evolution of the errors with time. After the initial transient, the filter error stabilizes around 8.9%, with small-amplitude oscillations around its mean value. The temperature error is the lowest at Eθ ≃ 5.4%, while the velocity field error is slightly higher at Eu ≃ 9.7%. 0 2 4       
+
+> 0.0
+> 0.2
+> e
+> 290 295 300 305 310 315
+> t
+> eceu.eθ.
+
+Ra/Ra c = 40 P r = 10 
+
+FIG. 3: Time evolution of estimation, ec, velocity, eu, and temperature, eθ , errors. We now assess the influence of the dynamical regime on the filter performance by varying the Rayleigh number. In fluids with P r = 10, RB convection transitions to chaos via quasiperiodicity in the range 40 < R < 120. In our companion paper, it is shown that the current Galerkin ROMs are capable of predicting this bifurcation path. Here, the purpose is to evaluate whether the dynamic behavior has some impact on the performance of the Kalman filter. As the Ra number is augmented, the scale separation grows, and the number of modes required to fully resolve the flow increases. Consequently, increasing Ra renders the ROM a progressively coarser approximation of the full-order dynamics. For R = 80 and P r = 10, the system is quasiperiodic. Figure 4 shows the evolution of the most energetic modes over time. Excellent agreement is also obtained for this R number with the filter estimates closely following the DNS signal. The Kalman filter successfully tracks the state in spite of the richer spectral content of the quasiperiodic attractor. For this R number, the instantaneous error signals (not shown here) display similar trends as in the periodic case though their mean values are slightly higher. As for R = 40, the temperature error is the lowest in magnitude with a mean value of approximately Eθ = 7 .7 % followed by the filter error, Ec = 11 .9%, and the velocity error, 
+
+Eu = 12 .9%. The moderate increase in all error metrics relative to the R = 40 case – roughly 3% in Ec and Eu,and 2% in Eθ – is attributable to two concurrent effects: the increased dynamical complexity of the quasiperiodic attractor, and the larger truncation error of the ROM. When the Rayleigh number is further increased to R = 120, the system becomes chaotic. In this regime, the existence of positive Lyapunov exponents in the attractor introduces a fundamental challenge for state estimation: any initial uncertainty in the state grows exponentially in time. Therefore, the filter must continuously correct the diverging trajectory using incoming sensor data. Figure 5 shows the modal coefficient evolution for R = 120. Despite the chaotic dynamics, there is a very good agreement between the DNS projection and the filter estimates. The filter successfully tracks the chaotic trajectory throughout the simulation window, with the estimates closely following the 10 0.20       
+
+> 0.25
+> c3 ci
+> ˆci
+> 0.20
+> 0.25
+> c19
+> −0.09
+> −0.08
+> −0.07
+> c7
+> −0.1
+> 0.0
+> 0.1
+> c35
+> 05
+> 0.04
+> 0.06
+> c18
+> 290 300 310
+> t
+> 05
+> −0.06
+> −0.05
+> c16
+> 290 300 310
+> t
+
+Ra/Ra c = 80 P r = 10 
+
+FIG. 4: Time evolution of amplitude coefficients: comparison between DNS projection, ci, and KF estimates, ˆ ci for the six modes with the largest mean energy, ⟨c2 
+
+> j
+
+⟩.DNS signal. 0.20            
+
+> 0.25
+> c3 ci
+> ˆci0.2
+> 0.3
+> c19
+> −0.100
+> −0.075
+> c7
+> 0.05
+> 0.10
+> c18
+> 05
+> −0.1
+> 0.0
+> 0.1
+> c35
+> 270 280 290 300 310
+> t
+> 05
+> −0.06
+> −0.04
+> c16
+> 270 280 290 300 310
+> t
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 5: Time evolution of amplitude coefficients: comparison between DNS projection, ci, and KF estimates, ˆ ci for the six modes with the largest mean energy, ⟨c2 
+
+> j
+
+⟩.The instantaneous error signals at R = 120 are not shown here but are analogous to those of Fig. 3 at R = 40, except for their chaotic character and higher mean values. A summary of the filter errors as a function of the dynamical regime is presented in Tab. III. The error metrics for the chaotic case confirm a progressive degradation of filter performance with increasing R. Nonetheless, the errors remain moderate even at R = 120, with Ec ≈ 13 .8% and 
+
+Eθ ≈ 8.7%. This progressive increase is consistent with the combined effects of growing dynamical complexity and increasing ROM truncation at higher R. Overall, these results demonstrate that the Kalman filter, combined with the Galerkin ROM, provides robust state estimation across all three dynamical regimes (periodic, quasiperiodic, and chaotic), despite relying on a fixed low-dimensional approximation and a sparse, suboptimal sensor configuration. These results can be placed in the context of related works that combine POD-Galerkin ROMs with data assimilation methods for flow estimation, such as Kikuchi et al. [20] for a cylinder wake and Sommer et al. [21] for a centrifugal pump. Although direct quantitative comparisons are not possible due to the different flow configurations, physical models, and error definitions, a common feature of these prior studies is that they operate in periodic regimes and rely on ROMs that require either stabilisation schemes or continuous EKF corrections to prevent divergence. In contrast, the present framework employs a controllability-mode ROM that remains stable without closure terms and is assessed across three dynamical regimes — periodic, quasiperiodic, and chaotic — demonstrating that the estimator remains 11                   
+
+> Rayleigh number Dynamical regime Filter error
+> Ec[%] Velocity error
+> Eu[%] Temperature error
+> Eθ[%]
+> R= 40 Periodic 8.88 9.75 5.38
+> R= 80 Quasiperiodic 11.87 12.92 7.70
+> R= 120 Chaotic 13.76 16.02 8.70
+
+TABLE III: Mean filter, velocity and temperature errors as a function of the dynamic regime. effective as the dynamics become progressively more complex.  
+
+> IV.2. State estimates from velocity measurements
+
+As discussed in §I, hybrid simulations combine experimental measurements with numerical solvers to reconstruct flow quantities that are difficult to measure directly [29–31, 36]. The simulation acts as a physics-informed interpolator that fills spatial and temporal gaps in the experimental data while enforcing dynamical consistency [28, 31, 32]. A par-ticularly attractive application in RB convection is the inference of the temperature field from velocity measurements. In experiments, velocity fields can be obtained non-intrusively from PIV measurements, which typically provides two-component velocity fields on a measurement plane. Conversely, temperature measurements require either intrusive probes such as thermocouples, which offer only pointwise information, or complex experimental techniques. The ability to reconstruct the temperature field from PIV data would reduce the need for temperature instrumentation. In this section, we use DNS results as synthetic observations and perform a dynamic state reconstruction from velocity measurements only, using the Kalman filter combined with the Galerkin ROM as estimator. The goal is to assess whether the filter can infer the system state, which includes the temperature field, from velocity data alone, and to explore the potential of this framework for hybrid simulation applications. To this end, the observation model is modified and reduced to velocity measurements only. A grid of 16 × 16 probes obtained by decimating the DNS mesh is distributed across the two-dimensional domain, yielding nu = nv = 256 measurement points. The sensor locations are shown in Fig. 1b together with an instantaneous temperature field. At each probe location, the horizontal and vertical velocity components are measured, so that the observation vector becomes: 
+
+yk = [ u(x1, t k), . . . , u (xnu , t k), v (x1, t k), . . . , v (xnv , t k)] T ∈ Rm, (39) with m = nu + nv = 512 and nθ = 0. The observation matrix reduces to: 
+
+H =
+
+h
+
+Hu Hv
+
+iT
+
+∈ Rm×n, (40) where Hu and Hv are the velocity sub-matrices defined in §II.2, and the temperature block Hθ is absent. All other filter parameters including the initial covariance and the process and measurement noise ratios are kept identical to the coarse grid configuration described in §IV.1. The filter is evaluated for the chaotic regime at R = 120 and 
+
+P r = 10 using the DNS with η = 1. Figure 6 shows the time evolution of the dominant modal amplitudes. The DNS projection coefficients and the filter estimates are in excellent agreement, with only mode c7 exhibiting minor discrepancies. These results indicate that velocity-only observations on a decimated grid are sufficient to track the system trajectory, even in the chaotic regime. The corresponding error signals are shown in Fig. 7. All three error metrics remain below 10%. In contrast to the previous examples, the temperature error eθ is now similar to both the velocity, eu, and filter errors, ec. This is attributed to the absence of a direct correction based on local temperature differences which results in a higher relative uncertainty in the reconstructed temperature. It is interesting to place these error levels in the context of related works. Bauer et al. [36] applied nudging to a 3D DNS using tomographic PIV data at Ra = 7 × 10 9 and P r = 18, with measured velocity fields at a resolution of 119 × 119 × 57. The spatial correlations between mean reconstructed and measured fields reached CT ˜T = 0 .84 for temperature and exceeded 0 .9 for velocity. Cornick et al. [37] applied a local ensemble transform Kalman filter (LETKF) to chaotic RB convection in a cylindrical domain at P r ≈ 1 and R = 2. They used dense shadowgraph observations ( ∼ 1.5 × 10 5 pixels) sampled at 3 Hz. In numerical experiment tests, their method achieved minimum temperature errors of 1–2% and mean-flow errors of 2–3%, propagating 18 ensemble members on a grid of ∼ 6 × 10 5
+
+unknowns. Agasthya et al. [39] applied nudging to 2D DNS at Ra = 7 .2×10 7–3 .6×10 8 and P r = 1, using temperature sensor grids ranging from 36 to 14 792 measurement points. Temperature synchronisation was achieved when the probe 12 0.20           
+
+> 0.25
+> c3 ci
+> ˆci
+> 0.20
+> 0.25
+> c19
+> −0.100
+> −0.075
+> c7
+> 0.05
+> 0.10
+> c18
+> 05
+> −0.1
+> 0.0
+> 0.1
+> c35
+> 270 280 290 300 310
+> t
+> 05
+> −0.06
+> −0.04
+> c16
+> 270 280 290 300 310
+> t
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 6: Time evolution of the dominant ROM coefficients for the velocity-only observation strategy at R = 120, 
+
+P r = 10: DNS projection ci (black) and KF estimates ˆ ci (blue). 0 2 4      
+
+> 0.0
+> 0.2
+> e
+> 270 280 290 300 310
+> t
+> eceu.eθ.
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 7: Time evolution of filter, velocity and temperature errors for the velocity-only observation strategy at 
+
+R = 120, P r = 10. spacing was reduced to a few Kolmogorov lengths, but the velocity reconstruction saturated at a global L2-error of approximately 40% at the higher Ra , even when the full temperature field was provided. Overall, the present results demonstrate that, in a 2D configuration at moderate Ra ≈ 2 × 10 5, low-resolution PIV-like measurements — with a spatial resolution significantly coarser than the DNS grid — are sufficient to reconstruct the instantaneous velocity and temperature fields within 10% error. The successful inference of the thermal state from velocity observations alone is enabled by the Galerkin ROM, which provides a sufficiently accurate representation of the coupled dynamics to compensate for the absence of direct temperature measurements. Extending this framework to three-dimensional configurations, higher Rayleigh numbers, and noisy experimental data remains an open and promising direction for future work.  
+
+> IV.3. Greedy probe removal for sensor placement
+
+In §IV.1, it has been shown that a coarse grid of measurement probes can provide accurate state estimates across different dynamical regimes. However, a natural question is whether all probes contribute equally to the estimation quality, or whether some can be removed without significant loss of accuracy. In this section, we present a sensor placement guidance strategy that exploits the Kalman gain matrix to progressively identify and remove the least informative measurement locations. The Kalman gain matrix Kk ∈ Rn×m computed during the update step provides a measure of the relevance of each measurement channel: it quantifies how much each observation influences the state correction at each time step. A large gain associated with a particular measurement indicates that the filter relies heavily on that observation to correct its prediction, while a gain near zero signals that the measurement is redundant given the model prediction and the other observations. This motivates the use of the Kalman gain to rank sensors and purge the least relevant. To assess the long-term relevance of each measurement channel, the time-averaged norm of the Kalman gain is computed. Given the gain matrices Kk for k = 1 , . . . , N it , the relevance score for the j-th measurement channel is 13 defined as: 
+
+Sj =
+
+vuut Nit X
+
+> k=1
+> n
+
+X
+
+> i=1
+
+K2 
+
+> k,ij
+
+, (41) where Kk,ij denotes the ( i, j )-th entry of the Kalman gain at time step k. This score aggregates the contribution of the j-th observation across all state components and all assimilation steps, providing a ranking of sensor importance. The sensor optimization proceeds iteratively. The algorithm starts from an initial distribution of measurements with nu horizontal velocity, nv vertical velocity, and nθ temperature sensors, yielding an initial output dimension 
+
+m = nu + nv + nθ . At each iteration, the following steps are performed: 1. Run the EKF. The EKF is run for Nit = 1666 assimilation steps using the current set of observations and the total filter error, Ec, is computed. At each time step, the Kalman gain Kk is recorded. 2. Remove the least relevant sensor . Compute measurement relevance scores using eq. (41) and remove the least relevant sensor from the active set, reducing the output dimension by one. 3. Update the observation matrix. The observation matrix H and the measurement noise covariance R are rebuilt to reflect the reduced probe configuration. This greedy procedure is repeated until either the total error or the output dimension reach a prescribed value (m = 12). At each iteration, the sensor configuration and the corresponding error, Ec, are stored. The algorithm produces a sequence of progressively sparser observation strategies, each associated with an estimation error. By ranking probes across all three physical variables, the algorithm balances the number of velocity and temperature measurements, allowing the filter to retain the most informative combination regardless of the variable type. It is worth noting that this algorithm does not guarantee a globally optimal sensor configuration. Nevertheless, it provides a physically interpretable approach that leverages the information already produced by the KF at no additional cost. This iterative procedure is made tractable by the low computational cost of the ROM-based EKF, which allows multiple successive filter runs in reasonable times. The greedy removal algorithm has been applied to the chaotic case ( R = 120 and P r = 10) using the simulation with random seed η = 1. The algorithm is initialized from a homogeneous 8 × 4 sensor grid obtained from the decimation of the DNS grid. As in §IV.1, each probe initially measures the two velocity components and the temperature perturbation, so that the initial output dimension is m = 96. During the removal process, the KF is evaluated using model C96 and β = 0 .01. The initialization of covariance matrix and filter estimates remains unchanged with respect to §IV.1. In Fig. 8a, the evolution of the total filter error, Ec, is shown on the left axis as a function of the observation dimension, m, while the right axis displays the number of sensors by type. As sensors are progressively removed, the total filter error first decreases slightly suggesting that some measurements are not only redundant but mildly detrimental to the estimate. Then, the error increases monotonically, reaching roughly 24% for m = 12. This increase remains moderate at first and accelerates as the observation dimension shrinks further. Interestingly, the algorithm preferentially removes temperature probes first, followed by vertical velocity sensors, retaining horizontal velocity measurements as the most informative channels. This hierarchy indicates that, for the configuration considered, horizontal velocity observations carry the greatest corrective weight in the Kalman update. The specific arrangement of the retained probes varies if the greedy algorithm is run using different filter parameters or DNS realizations. However, the overall ranking of variable types remains consistent across runs, with horizontal velocity measurements being systematically retained the longest. We now compare the sensor configuration resulting from the greedy algorithm with m = 12 against a coarse grid strategy of the same observation dimension. As in previous examples, the coarse grid is obtained by decimating the DNS grid into a 2 × 2 arrangement, measuring both velocity components and the temperature at each grid point. Fig. 8b shows the resulting probe layout for this coarse grid strategy, while Fig. 8c displays the configuration produced by the greedy algorithm. Note that in the latter, only horizontal velocity sensors have been retained. The spatial sensor distribution in the greedy algorithm does not seem to follow a clear geometric pattern, suggesting that the algorithm exploits flow-specific features. The comparison between the filter estimates and the DNS projection onto the most energetic modes is shown in Fig. 9 and Fig. 10 for the coarse grid and greedy observation strategies, respectively. Both strategies yield reasonable tracking of the dominant modes, with the filter estimates following the DNS projection. The most notable difference appears for mode c18 , where the greedy strategy clearly outperforms the regular grid. The improvement in performance obtained with the greedy algorithm is better reflected in the global error metrics: the coarse grid yields Eu = 84 .7%, 
+
+Eθ = 14 .6%, and Ec = 64 .0%, whereas the greedy arrangement reduces these to Eu = 26 .9%, Eθ = 11 .9%, and 14 0 20 40 60 80 
+
+m
+
+0.00 
+
+0.05 
+
+0.10 
+
+0.15 
+
+0.20 
+
+0.25 
+
+0.30 
+
+> Ec
+
+Ec
+
+0510 15 20 25 30 Number of probes 
+
+nu
+
+nv
+
+nθ
+
+(a) Total filter error Ec (left axis) and number of probes per variable (right axis) as a function of the output dimension m. Solid, dashed, and dotted lines indicate the number of horizontal velocity, u, wall-normal velocity, v, and temperature, θ, probes, respectively. 0.0 0.5 1.0 1.5 2.0  
+
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00.20.40.60.81.0
+> θ
+
+(b) Coarse grid sensor layout ( m = 12). 0.0 0.5 1.0 1.5 2.0  
+
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00.20.40.60.81.0
+> θ
+
+(c) Greedy sensor layout ( m = 12). 
+
+FIG. 8: Greedy sensor removal results at R = 120, P r = 10, η = 1. (a) Evolution of filter error and sensor count during the removal process. (b, c) Resulting probe configurations for the coarse grid and greedy strategies at 
+
+m = 12. Circles, squares, and crosses denote horizontal velocity, wall-normal velocity, and temperature sensors, respectively. The background shows an instantaneous DNS temperature field. 
+
+Ec = 24 .0%. The greedy strategy thus achieves a substantially lower total error despite using the same observation dimension, with the improvement being particularly pronounced for the velocity field. 0.20 
+
+0.25  
+
+> c3 ci
+> ˆci
+
+0.20 
+
+0.25 
+
+> c19
+
+−0.10 
+
+−0.05 
+
+> c7
+
+0.0
+
+0.1
+
+> c18
+
+0 5
+
+−0.1
+
+0.0
+
+0.1
+
+> c35
+
+270 280 290 300 310 
+
+t
+
+0 5
+
+−0.06 
+
+−0.04 
+
+> c16
+
+270 280 290 300 310 
+
+t
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 9: Coarse grid strategy with m = 12: time evolution of the six most energetic amplitude coefficients from DNS projection, ci, and KF estimates, ˆ ci.A natural question is whether the greedy observation strategy generalises beyond the specific DNS realisation used to derive it, or whether its performance gains are tied to the particular flow features of that run. To address this, the Kalman filter has been applied with using the greedy observation strategy with m = 12 to three additional DNS realisations with different random initial conditions. The results are presented in Fig. 11, where the three error metrics are displayed for each random seed η. The greedy strategy was derived using η = 1; the figure shows that comparable error levels are obtained across all four realisations, despite the coherent structures, temperature plumes, and flow vortices occupying different spatial locations in each simulation. To shed light on the preferential locations for sensor placement, Fig. 12 overlays the greedy sensor configuration at 15 0.2           
+
+> 0.3
+> c3 ci
+> ˆci0.2
+> 0.3
+> c19
+> −0.10
+> −0.05
+> c7
+> 0.05
+> 0.10
+> c18
+> 05
+> −0.1
+> 0.0
+> 0.1
+> c35
+> 270 280 290 300 310
+> t
+> 05
+> −0.050
+> −0.025
+> c16
+> 270 280 290 300 310
+> t
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 10: Greedy strategy with m = 12: time evolution of the six most energetic amplitude coefficients from DNS projection, ci, and KF estimates, ˆ ci.η = 1 η = 2 η = 3 η = 4 
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> E [%]
+
+Ra/Ra c = 120 P r = 10 m = 12   
+
+> EcEuEθ
+
+FIG. 11: Error metrics Eu, Eθ , and Ec for the greedy strategy ( m = 12) across four DNS realisations with different random seeds η. Error bars represent the mean standard deviation of the error signals. 
+
+m = 12 with the root-mean-square horizontal velocity field urms computed from four DNS realizations with different initial random seeds. The urms fields are characterized by moderate velocity fluctuation values close to the domain walls, right after the boundary layers. A significant part of the retained probes tend to cluster in these regions of high velocity fluctuations, suggesting that the greedy algorithm identifies dynamically active zones as the most informative measurement locations. Nonetheless, five of the twelve sensors are retained in the central region of the domain, indicating that measurements of the horizontal velocity away from the walls are also necessary to adequately correct the model estimates. The greedy sensor placement strategy presented here achieves substantially lower estimation errors than a coarse grid arrangement of the same observation dimension. It also reveals that horizontal velocity measurements carry the greatest corrective weight in the Kalman update. The retained sensors tend to cluster in regions of moderate-to-high velocity fluctuations near the walls, indicating that dynamically active zones are the most informative measurement locations. The low computational cost of the ROM-based EKF makes the iterative removal procedure tractable and enables a significant reduction of the observation dimension without excessive loss of accuracy. While the present greedy heuristic does not guarantee global optimality, it provides a physically interpretable baseline. Future work could explore more formal optimization techniques, such as convex relaxation or combinatorial search methods, to further refine sensor placement. 16 0.0 0.5 1.0 1.5 2.0                                              
+
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00 0.05 0.10 0.15
+> urms
+> (a) R= 120, P r = 10, η= 1. 0.00.51.01.52.0
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00 0.05 0.10
+> urms (b) R= 120, P r = 10, η= 2. 0.00.51.01.52.0
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00 0.05 0.10 0.15
+> urms
+> (c) R= 120, P r = 10, η= 3. 0.00.51.01.52.0
+> x
+> 0.00 0.25 0.50 0.75 1.00
+> y
+> uvθ′
+> 0.00 0.05 0.10 0.15
+> urms (d) R= 120, P r = 10, η= 4.
+
+FIG. 12: Greedy sensor configuration at m = 12 overlaid on the root-mean-square horizontal velocity urms for four DNS realizations with different initial conditions. Symbols indicate the retained probe locations.  
+
+> IV.4. Data-estimated noise covariances
+
+Throughout the preceding sections, the process and measurement noise covariances were taken as isotropic and uncorrelated, Q = βI n and R = Im. This is a common and convenient choice in many practical implementations of KF. However, this choice embeds two assumptions: that every mode/measurement channel has the same error (isotropy), and that the errors in different modes/channels are uncorrelated (a diagonal noise matrix). Neither of these assumptions necesarily holds in practice. Because we have DNS data available, both noise covariances can be estimated to evaluate the impact of this simplification. The model-error covariance, ˆQ, can be estimated from the one-step prediction discrepancy of the ROM. For each snapshot, the ROM is advanced a single step from the DNS-projected state ck, yielding ˜ ck+1 = Φ(ck; Ra, P r, ∆tk), and the residual εk = ck+1 − ˜ck+1 is recorded. Seeding the integration from the true (DNS-projected) state allows isolating the model error. The sample covariance over the Ns residuals in the assimilation window gives the model-error covariance: ˆQ = 1
+
+Ns − 1
+
+> Ns
+
+X
+
+> k=1
+
+(εk − ¯ε)( εk − ¯ε)T with ¯ε = 1
+
+NsNsX
+
+> k=1
+
+εk, (42) Analogously, the measurement-error covariance can be estimated from the off-projection residual at the probes, 
+
+rk = yk − Hck,ˆR = 1
+
+Ns − 1
+
+> Ns
+
+X
+
+> k=1
+
+(rk − ¯r)( rk − ¯r)T with ¯r = 1
+
+NsNsX
+
+> k=1
+
+rk. (43) We have computed the noise covariances from the DNS with R = 120, P r = 10 and η = 1, using the observation matrix, H, of the coarse grid strategy with m = 48 sensors described in §IV.1. The filter is then run for the three dynamical regimes with the estimated matrices, Q = ˆQ and R = ˆR, in place of the isotropic ones. We deliberately 17 reuse the chaotic-case covariances to evaluate the periodic and quasiperiodic regimes as well. This is done to test whether a single estimate transfers across dynamical regimes. The structure of the estimated noise matrices is analyzed in detail in Appendix B. 0.20                     
+
+> 0.25
+> c3
+> ciˆci,(Q=βI, R =I)ˆci,( ˆQ, ˆR)0.2
+> 0.3
+> c19
+> −0.100
+> −0.075
+> c7
+> 0.05
+> 0.10
+> c18
+> 05
+> −0.1
+> 0.0
+> 0.1
+> c35
+> 270 280 290 300 310
+> t
+> 05
+> −0.06
+> −0.04
+> c16
+> 270 280 290 300 310
+> t
+
+Ra/Ra c = 120 P r = 10 
+
+FIG. 13: Time evolution of the most energetic modes for the chaotic case ( R = 120, P r = 10, η = 1, m = 48): DNS projection ci (black solid lines), baseline isotropic filter with Q = βI , R = I (blue dashed lines), and filter with data-estimated covariances, ˆQ, ˆR (red dash-dot lines). Figure 13 shows the modal-amplitude tracking for the most energetic modes in the chaotic case ( R = 120, P r = 10, 
+
+η = 1) with the m = 48 coarse grid observation strategy. Blue dashed lines denote the filter estimates from the baseline isotropic covariances, and red dash-dot lines those from the data-estimated noise matrices. Both filters track the dominant modes, but the EKF with the estimated covariance matrices yields a closer fit. The improvement in performance is better reflected in the error metrics: the filter error decreases from 13.8% to 9.2%, the velocity error from 16.0% to 12.9% and the temperature error from 8.7% to 7.1%. Table IV reports the global error metrics across all three dynamical regimes. Using the estimated covariance matrices improves every error metric in every regime with the largest benefits in the chaotic regime, the case that was used to estimate the noise matrices. However, this requires access to data for the full state, which may not be possible in experimental applications for which simulation data is not available                                     
+
+> Ec[%] Eu[%] Eθ[%]
+> RRegime baseline ˆQ, ˆRbaseline ˆQ, ˆRbaseline ˆQ, ˆR
+> 40 Periodic 8.88 7.85 9.75 8.77 5.38 5.07 80 Quasiperiodic 11.87 8.37 12.92 10.87 7.70 6.31 120 Chaotic 13.76 9.21 16.02 12.90 8.70 7.10
+
+TABLE IV: Mean filter, Ec, velocity, Eu, and temperature, Eθ , errors across dynamical regimes, comparing the baseline isotropic covariances ( Q = βI n, R = Im) with the data-estimated covariances ( ˆQ, ˆR). P r = 10, m = 48.  
+
+> V. CONCLUSIONS
+
+In our companion paper [41], stable Galerkin ROMs for 2D RB convection were developed using controllability modes of the linearised Boussinesq equations and validated against DNS. The present work has demonstrated a practical application of these ROMs: their use as dynamical models within an EKF for state estimation from sparse measurements. In §IV.1, the filter performance has been evaluated using synthetic measurements extracted from DNS across periodic ( R = 40), quasiperiodic ( R = 80), and chaotic ( R = 120) regimes at P r = 10. With a coarse 4 × 4 sensor grid measuring both velocity components and temperature ( m = 48), the EKF tracks the most energetic modes with high fidelity. Time-averaged reconstruction errors remain below 14% for velocity and 9% for temperature in all cases. The error increases with the Rayleigh number, consistent with growing dynamical complexity and ROM truncation. 18 The complementary sensitivity analysis presented in Appendix A shows that the model-to-measurement noise ratio 
+
+β = 0 .01 is nearly optimal for the chaotic case and remains a reasonable choice across the other configurations tested. Increasing the observation density yields larger improvements in velocity reconstruction than increasing the ROM dimension, whereas the temperature field is more sensitive to the fidelity of the dynamical model. The best overall performance, with all mean errors below 5%, is obtained by combining a 192-mode ROM with m = 192 observations. In §IV.2, the ROM-based EKF has been applied to a hybrid simulation scenario where the state is assimilated from coarse PIV-like velocity measurements alone. Using a 16 × 16 grid of velocity probes and no temperature sensors, the filter achieves errors below 10% in the chaotic regime. These results are encouraging, although real experimental settings involve 3D flows, and noisy velocity measurements. Future extensions addressing these challenges may enable the reduction of temperature instrumentation in RB experiments. In §IV.3, a greedy sensor placement algorithm based on the time-averaged Kalman gain norm has been proposed. The algorithm reveals a clear hierarchy in sensor importance: temperature probes are eliminated first, followed by wall-normal velocity sensors, while horizontal velocity measurements are retained until last. The greedy strategy is robust across DNS realisations with different initial conditions and substantially outperforms uniform grids of the same observation dimension. The retained sensors tend to cluster in regions of moderate-to-high velocity fluctuations near the walls, indicating that these dynamically active zones are the most informative measurement locations. Finally, in §IV.4 we have relaxed the isotropic, uncorrelated assumption on the noise covariances by estimating Q
+
+and R directly from DNS data. Using data-estimated covariances reduces all error metrics across the three dynamical regimes, with filter and velocity errors decreasing by roughly 4 .5% and 3% in the chaotic case. Several directions for future work are envisioned. These include extension to three-dimensional configurations, coupling with state feedback laws for closed-loop control of thermal convection, application to experimental PIV data with noisy measurements, and refinement of the sensor placement strategy using more formal optimization techniques. A further direction is the treatment of temporally correlated measurement noise through coloured-noise models. Moreover, as the implementation of the present EKF is general, it can be readily be applied for other flows for which a quadratic Galerkin ROM is available. 
+
+> ACKNOWLEDGMENTS
+
+A.V.G.C. acknowledges support from CNPq through grant 314927/2023-9. 
+
+Data availability statement. The computational tools used in this study, including Python scripts for modal basis generation and ROM simulation, are made available as an open-source package at https://github.com/ kikeflores96/rayleigh_benard_rom.git . The rest of the data and codes used to generate the results of the present work can be provided upon reasonable request to the authors.  
+
+> Appendix A: Sensitivity analysis 1. Influence of noise ratio
+
+The performance of the Kalman filter depends on the choice of the noise covariance matrices Q and R, which balance the relative confidence placed in the dynamical model and the observations, respectively. This section analyses the sensitivity of the filter to the model-to-measurements noise ratio, β = σ2
+
+> Q
+
+/σ 2 
+
+> R
+
+in order to identify an optimal value that is representative across the configurations considered in this study. Figure 14a shows the variation of total errors with β. The analysis has been performed for the chaotic case ( P r = 10 and R = 120) using the coarse grid strategy presented in §IV.1. The results show that the errors are minimal at approximately β ≃ 0.01, and this value is therefore adopted throughout the paper. The sensitivity of the filter to β is asymmetric: errors increase more steeply for β > 0.01, where the filter over-trusts the measurements and the dynamical model is underweighted, than for β < 0.01, where the filter over-trusts the model at the expense of the observations. It is important to note that this trend in the influence of the model-to-measurement noise ratio is approximately preserved across different Rayleigh numbers and observation strategies. While we cannot guarantee that β = 0 .01 is strictly optimal in all configurations, it has been observed to consistently outperform both higher and lower values across a wide range of parameter settings, and is therefore retained as a fixed parameter throughout the study. 19 10 −3 10 −1 10 1
+
+> σ2
+> Q/σ 2
+> R
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> E
+> Ec
+> Eu
+> Eθ
+
+Ra/Ra c = 120 P r = 10              
+
+> (a) Total errors as a function of βin the coarse grid sensing strategy. n= 96 , m = 48 n= 192 , m = 48 n= 96 , m = 192 n= 192 , m = 192
+> 0
+> 5
+> 10
+> 15
+> 20
+> E [%]
+
+Ra/Ra c = 120 P r = 10     
+
+> EcEuEθ
+> (b) Error metrics for different ROM dimensions nand observation dimensions
+> m.
+
+FIG. 14: Sensitivity analysis for the chaotic case R = 120, P r = 10. (a) Influence of the model-to-measurement noise ratio β. (b) Influence of the ROM dimension n and the observation dimension m. Error bars represent the mean standard deviation of the error signals. 
+
+FIG. 15: Instantaneous temperature field, θ: (a) DNS, (b) Kalman filter reconstruction with n = 96 ROM modes and m = 48 observations, (c) Kalman filter reconstruction with n = 192 ROM modes and m = 192 observations. Results are shown for Ra/Ra c = 120 and P r = 10.  
+
+> 2. Influence of model and output dimensions.
+
+This section presents a sensitivity analysis of the Kalman filter to the ROM dimension, n, and observation space dimension, m. The goal is to assess whether accuracy gains are more effectively achieved by enriching the dynamical model or by increasing the density of the sensor grid. The analysis focuses on the total filter, temperature, and velocity errors, and the observation strategy consists of a decimation of the DNS grid. The results are presented for the chaotic case P r = 10 and R = 120 in Fig. 14b using a bar chart. In Fig. 14b error bars represent the mean standard deviation of the error signals. Increasing the model dimension from n = 96 to n = 192 yields a moderate reduction in all error metrics (∆ Ec = −1.3%, ∆ Eu = −1.9% and ∆ Eθ = −2.5%), indicating that the baseline ROM already captures the dominant dynamics and that further enrichment of the modal basis provides diminishing returns. In contrast, increasing the observation dimension from m = 48 to m = 192 – corresponding to a twofold increase in grid resolution in all directions – substantially improves both the filter and velocity errors (∆ Ec = −3.3% and ∆ Eu = −4.2%). However, the reduction in temperature error achieved by refining the observation grid (∆ Eθ = −1.7%) is smaller than that obtained by improving the model accuracy(∆ Eθ = −2.5%), suggesting that the reconstruction of the thermal field is more sensitive to the fidelity of the dynamical model than to the density of velocity observations. This behavior can be understood by considering the structure of the flow at the Ra numbers investigated here: the temperature field consists of thin vertical plumes driven by two counter-rotating vortices. These coherent structures are localised in space and contain relatively high wavenumber components, which require a sufficiently large number 20 of ROM modes to be accurately represented. Therefore, for large modal truncations, the temperature error is partly a consequence of the limited wavenumber content of the ROM basis rather than of insufficient observational coverage. In Fig. 15, the reconstructed instantaneous temperature field for the two extreme configurations has been represented together with the DNS reference. This illustrates the progressive recovery of the plume structure as both the ROM dimension and number of sensors are increased. Therefore, for the temperature field, increasing the observation density alone yields lower accuracy gains than improving the dynamical model, since denser observations cannot compensate for modes that are absent from the ROM basis, whereas enriching the latter directly addresses this deficiency. Finally, a combination of both improvements – setting n = m = 192 – yields the best overall performance, with all mean error metrics falling below 5%. These error levels are remarkably low given the computational efficiency of the ROM-based estimator. 
+
+> Appendix B: Structure of the estimated noise covariances
+
+This appendix examines the structure of the data-estimated covariances ˆQ and ˆR introduced in §IV.4, and relates their overall scale to the scalar noise ratio β used throughout the study. Covariance matrices quantify both the magnitude of the error in each component and their correlation. To isolate the latter, we normalise each matrix into a correlation matrix, ρQ = D−1/2 ˆQ D −1/2 (and analogously for ˆR), where D = ˆQii is the diagonal matrix of variances. This rescaling divides each entry by the standard deviations of the two components involved, setting the diagonal to unity and leaving the off-diagonal entries as correlation coefficients. The off-diagonal structure then reflects only the strength of the cross-correlations, independently of the large magnitude differences between components. 0 25 50 75 mode j
+
+> 020 40 60 80 mode  i
+
+(a) ρQ   
+
+> 020 40 channel j
+> 010 20 30 40 channel  i
+
+(b) ρR
+
+> −1.0
+> −0.50.00.51.0
+
+Ra/Ra c = 120 , P r = 10 , η = 1 
+
+FIG. 16: Correlation matrices of the estimated model-error, ˆQ, and measurement-error, ˆR, covariances, for the chaotic case R = 120, P r = 10, η = 1, with the m = 48 coarse grid. Figure 16 shows the two correlation matrices for the chaotic case R = 120, P r = 10, η = 1, with the m = 48 coarse grid observation strategy. The measurement channels in (b) are ordered as [ u, v, θ ′] probes. The model-error correlation in Fig. 16a is dominated by the diagonal but there are multiple non-negligible off-diagonal terms. This indicates that the model errors in different modes are not fully uncorrelated. The measurement-error correlation in Fig. 16b is far from being diagonal, exhibiting strong cross-correlations between channels. The horizontal velocity probes are highly correlated but there is also a remarkable correlation between some wall-normal velocity and temperature channels. Both matrices therefore deviate from the isotropic, uncorrelated assumption of the baseline filter, which explains the performance gains obtserved in §IV.4. It is worth relating these estimated matrices to the scalar ratio β used elsewhere in the study. It is possible to obtain a data-implied noise ratio, ˆβ, from the two covariances using the matrix Frobenius norm normalised by the square root of its dimension: ˆβ = ∥ ˆQ∥ / √n
+
+∥ ˆR∥ / √m = ∥ ˆQ∥∥ ˆR∥
+
+r mn . (B1) This definition recovers the noise ratio value in the isotropic uncorrelated limit. Equation (B1) applied to the estimated covariance matrices yields ˆβ ≈ 0.00945, in close agreement with the value β = 0 .01 identified by the sensitivity analysis of Appendix A. This consistency indicates that the hand-tuned ratio used throughout the paper is close to the balance 21 implied by the data. 
+
+[1] S. L. Brunton and B. R. Noack. Closed-loop turbulence control: Progress and challenges. Applied Mechanics Reviews , 67 (5):050801, 2015. [2] J. Kim and T. R. Bewley. A linear systems approach to flow control. Annu. Rev. Fluid Mech. , 39(1):383–417, 2007. [3] T. R. Bewley. Flow control: new challenges for a new renaissance. Progress in Aerospace sciences , 37(1):21–58, 2001. [4] J. Hœpffner, M. Chevalier, T. R. Bewley, and D. S. Henningson. State estimation in wall-bounded flow systems. Part 1. Perturbed laminar flows. J. Fluid Mech. , 534:263–294, 2005. [5] J. Gerhard, M. Pastoor, R. King, B. Noack, A. Dillmann, M. Morzynski, and G. Tadmor. Model-based control of vortex shedding using low-dimensional Galerkin models. In 33rd AIAA fluid dynamics conference and exhibit , page 4262, 2003. [6] S. Ahuja and C. W. Rowley. Feedback control of unstable steady states of flow past a flat plate using reduced-order estimators. Journal of fluid mechanics , 645:447–478, 2010. [7] K. Aleksic, M. Luchtenburg, R. King, B. Noack, and J. Pfeifer. Robust nonlinear control versus linear model predictive control of a bluff body wake. In 5th Flow Control Conference , page 4833, 2010. [8] S. Bagheri, D. S. Henningson, J. Hœpffner, and P. J. Schmid. Input-output analysis and control design applied to a linear model of spatially developing flows. Appl. Mech. Rev. , 62(2):020803, 2009. [9] M. R. Jovanovi´ c and B. Bamieh. Componentwise energy amplification in channel flows. J. Fluid Mech. , 534:145–183, 2005. [10] M. H¨ ogberg, T. R. Bewley, and D. S. Henningson. Linear feedback control and estimation of transition in plane channel flow. J. Fluid Mech. , 481:149–175, 2003. [11] M. Chevalier, J. Hœpffner, T. R. Bewley, and D. S. Henningson. State estimation in wall-bounded flow systems. Part 2. Turbulent flows. J. Fluid Mech. , 552:167–187, 2006. [12] A. F. da Silva. An EnKF-based flow state estimator for aerodynamic problems . California Institute of Technology, 2019. [13] A. F. Da Silva and T. Colonius. Ensemble-based state estimator for aerodynamic flows. AIAA Journal , 56(7):2568–2578, 2018. [14] C. H. Colburn, J. B. Cessna, and T. R. Bewley. State estimation in wall-bounded flow systems. Part 3. The ensemble Kalman filter. J. Fluid Mech. , 682:289–303, 2011. [15] C. W. Rowley and S. T. M. Dawson. Model reduction for flow analysis and control. Annu. Rev. Fluid Mech. , 49(1): 387–417, 2017. [16] S. L. Brunton and J. N. Kutz. Data-driven science and engineering: Machine learning, dynamical systems, and control .Cambridge University Press, 2022. [17] T. L. Flinois and A. S. Morgans. Feedback control of unstable flows: a direct modelling approach using the eigensystem realisation algorithm. J. Fluid Mech. , 793:41–78, 2016. [18] C. W. Rowley and V. Juttijudata. Model-based control and estimation of cavity flow oscillations. In Proceedings of the 44th IEEE Conference on Decision and Control , pages 512–517. IEEE, 2005. [19] T. John, M. Guay, N. Hariharan, and S. Naranayan. Pod-based observer for estimation in navier–stokes flow. Computers & chemical engineering , 34(6):965–975, 2010. [20] R. Kikuchi, T. Misaka, and S. Obayashi. Assessment of probability density function based on POD reduced-order model for ensemble-based data assimilation. Fluid Dynamics Research , 47(5):051403, 2015. [21] K. D. Sommer, L. Reineking, Y. P. Ravichandran, R. Skoda, and M. M¨ onnigmann. Estimating flow fields with reduced order models. Heliyon , 9(11), 2023. [22] A. V. G. Cavalieri and P. A. S. Nogueira. Reduced-order Galerkin models of plane Couette flow. Phys. Rev. Fluids , 7(10): L102601, 2022. [23] S. E. Ahmed, S. Pawar, O. San, A. Rasheed, T. Iliescu, and B. R. Noack. On closures for reduced order models—A spectrum of first-principle to machine-learned avenues. Phys. Fluids , 33(9), 2021. [24] L. Soucasse, B. Podvin, P. Rivi` ere, and A. Soufiani. Proper orthogonal decomposition analysis and modelling of large-scale flow reorientations in a cubic rayleigh–b´ enard cell. J. Fluid Mech. , 881:23–50, 2019. [25] M. McCormack, A. V. G. Cavalieri, and Y. Hwang. Multi-scale invariant solutions in plane Couette flow: a reduced-order model approach. J. Fluid Mech. , 983:A33, 2024. [26] A. V. G. Cavalieri. Non-linear Galerkin reduced-order models of a mixing layer. In AIAA AVIATION 2023 Forum , page 4483, 2023. [27] I. A. Maia and A. Cavalieri. Turbulence suppression in plane couette flow using reduced-order models. J. Fluid Mech. ,1014:A18, 2025. [28] K. Nisugi, T. Hayase, and A. Shirai. Fundamental study of hybrid wind tunnel integrating numerical simulation and experiment in analysis of flow field. JSME Int. J., Ser. B , 47(3):593–604, 2004. [29] T. Suzuki, H. Ji, and F. Yamamoto. Unsteady PTV velocity field past an airfoil solved with DNS: Part 1. Algorithm of hybrid simulation and hybrid velocity field at Re ≃ 103. Exp. Fluids , 47(6):957–976, 2009. [30] T. Suzuki, A. Sanse, T. Mizushima, and F. Yamamoto. Unsteady PTV velocity field past an airfoil solved with DNS: Part 2. Validation and application at Reynolds numbers up to Re ≤ 104. Exp. Fluids , 47(6):977–994, 2009. [31] T. Suzuki. Reduced-order Kalman-filtered hybrid simulation combining particle tracking velocimetry and direct numerical simulation. J. Fluid Mech. , 709:249–288, 2012. 22 
+
+[32] T. Hayase. A review of measurement-integrated simulation of complex real flows. J. Flow Control, Meas. Vis. , 3(2):51–66, 2015. [33] G. Muller. Convection and inhomogeneities in crystal growth from the melt. Crystals , 12:1–32, 1988. [34] Z. Alloui, Y. Alloui, and P. Vasseur. Control of Rayleigh-B´ enard convection in a fluid layer with internal heat generation. 
+
+Micrograv. Sci. Technol. , 30:885–897, 2018. [35] M. Gunzburger, E. Ozugurlu, J. Turner, and H. Zhang. Controlling transport phenomena in the Czochralski crystal growth process. J. Cryst. Growth , 234(1):47–62, 2002. [36] C. Bauer, D. Schiepel, and C. Wagner. Assimilation and extension of particle image velocimetry data of turbulent rayleigh– b´ enard convection using direct numerical simulations. Experiments in Fluids , 63(1):22, 2022. [37] M. Cornick, B. Hunt, E. Ott, H. Kurtuldu, and M. F. Schatz. State and parameter estimation of spatiotemporally chaotic systems illustrated by an application to Rayleigh–B´ enard convection. Chaos , 19(1):013108, 2009. [38] A. Farhat, N. E. Glatt-Holtz, V. R. Martinez, S. A. McQuarrie, and J. P. Whitehead. Data assimilation in large Prandtl Rayleigh–B´ enard convection from thermal measurements. SIAM J. Appl. Dyn. Syst. , 19(1):510–540, 2020. [39] L. Agasthya, P. Clark Di Leoni, and L. Biferale. Reconstructing Rayleigh–B´ enard flows out of temperature-only measure-ments using nudging. Phys. Fluids , 34(1):015128, 2022. [40] P. Clark Di Leoni, L. Agasthya, M. Buzzicotti, and L. Biferale. Reconstructing Rayleigh–B´ enard flows out of temperature-only measurements using Physics-Informed Neural Networks. Eur. Phys. J. E , 46(3):17, 2023. [41] E. Flores-Montoya and A. V. Cavalieri. Galerkin reduced order model for two-dimensional Rayleigh-B´ enard convection. 
+
+arXiv preprint arXiv:2504.02961 , 2025. [42] B. Podvin and P. Le Qu´ er´ e. Low-order models for the flow in a differentially heated cavity. Phys. Fluids , 13(11):3204–3214, 2001. [43] B. Podvin and A. Sergent. Proper orthogonal decomposition investigation of turbulent Rayleigh-B´ enard convection in a rectangular cavity. Phys. Fluids , 24(10), 2012. [44] E. Anderson, Z. Bai, C. Bischof, L. S. Blackford, J. Demmel, J. Dongarra, J. Du Croz, A. Greenbaum, S. Hammarling, A. McKenney, et al. LAPACK users’ guide . SIAM, 1999. [45] K. J. Burns, G. M. Vasil, J. S. Oishi, D. Lecoanet, and B. P. Brown. Dedalus: A flexible framework for numerical simulations with spectral methods. Phys. Rev. Res. , 2(2):023068, 2020. [46] J. R. Dormand and P. J. Prince. A family of embedded Runge-Kutta formulae. Journal of computational and applied mathematics , 6(1):19–26, 1980.

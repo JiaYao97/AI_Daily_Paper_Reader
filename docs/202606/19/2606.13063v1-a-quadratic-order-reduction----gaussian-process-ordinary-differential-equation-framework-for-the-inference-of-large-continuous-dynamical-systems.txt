@@ -1,0 +1,2301 @@
+Title: A Quadratic Order Reduction – Gaussian Process Ordinary Differential Equation framework for the inference of Large Continuous Dynamical Systems
+
+URL Source: https://arxiv.org/pdf/2606.13063v1
+
+Published Time: Fri, 12 Jun 2026 00:40:57 GMT
+
+Number of Pages: 49
+
+Markdown Content:
+# A Quadratic Order Reduction - Gaussian Process Ordinary Differential Equation framework for the inference of Large Continuous Dynamical Systems 
+
+## Guglielmo Padula ∗1, Michele Girfoglio †2, and Gianluigi Rozza ‡11mathLab, Mathematics Area, SISSA, via Bonomea 265, I-34136 Trieste, Italy 
+
+2Department of Engineering, University of Palermo, viale delle Scienze 7, I-90128 Palermo, Italy June 12, 2026 
+
+Abstract 
+
+Forecasting the evolution of complex dynamical systems remains a fundamentally chal-lenging task, primarily due to pronounced nonlinear interactions, high-dimensional state spaces, and the concomitant requirement for rigorous and reliable uncertainty quantifi-cation. Contemporary reduced-order modelling (ROM) frameworks frequently exhibit inherent trade-offs among predictive accuracy, numerical stability, and interpretability, and thus often fail to achieve an optimal balance among these competing objectives. To address these limitations, we propose a framework for forecasting complex dynamical sys-tems via a kernel autonomous ordinary differential equation approach based on Gaussian Processes and Quadratic Order Model Reduction. Our base method, the Gaussian Pro-cess Ordinary Differential Equations model, allows accurate short-term forecasting with uncertainty quantification, and it provably converges to the real autonomous equation in the smooth case. We integrate it with quadratic order reduced-order modelling and sphere projection for learning the latent dynamics efficiently while preserving stability. Numerical experiments demonstrate that our full model outperforms ROM forecasting methods such as Extended Dynamic Mode Decomposition, Bagging Optimised Dynamic Mode Decom-position and Linear and Nonlinear Disambiguation Optimisation in terms of accuracy or computational costs. These results demonstrate the potential of the framework as a ro-bust and stable tool for forecasting complex dynamical systems with rigorous uncertainty quantification. 
+
+> ∗
+
+gpadula@sissa.it 
+
+> †
+
+michele.girfoglio@unipa.it 
+
+> ‡
+
+grozza@sissa.it 
+
+1
+
+> arXiv:2606.13063v1 [math.NA] 11 Jun 2026
+
+# 1 Introduction 
+
+The goal of this paper is to provide a comprehensive and rigorous framework in theory and computation for the development of Digital Shadows [1] that will allow for efficient and reliable simulations of bounded large-scale dynamical systems. These systems often arise, for example, as solutions to partial differential equations (PDEs) or data-driven representations of complex physical systems such as ocean currents in the Mediterranean Sea or structural loading in engineering infrastructures. Accurate and high-fidelity models of such systems are necessary for preventive decision-making, as they allow for early detection and diagnosis of anomalies and design of proactive interventions. In this framework, Digital Shadows are defined as con-tinuously updated data-driven models that combine sensor data and computational models to provide near real-time forecasts. This capability is particularly critical in applications such as numerical weather prediction, where the provision of accurate and timely forecasts is essential for effective risk assessment and management [2, 3]. A key challenge in the construction of Digital Shadows lies in the modelling of the underlying dynamics, as it is necessary to balance computational tractability with sufficient expressive power to represent complex, nonlinear in-teractions in high-dimensional state spaces. Achieving this balance remains a central open problem in scientific computing and engineering across a broad range of engineering applica-tions. Reduced-order Modelling (ROM) techniques constitute a widely adopted class of methods for addressing this problem [4, 5, 6, 7, 8]. Approaches based on Proper Orthogonal Decom-position (POD) combined with Galerkin projection [8] have been successfully employed for short-term forecasting of large-scale dynamical systems, such as fluid flows and atmospheric processes, frequently in conjunction with machine learning methodologies [9, 10, 11, 12, 13, 14]. Within this class, Dynamic Mode Decomposition (DMD) and its variants provide notable com-putational benefits by approximating the system dynamics on a low-dimensional linear subspace [15, 16, 17, 18], with established theoretical convergence guarantees [19]. Nonetheless, ROMs can be adversely affected by stability deterioration and the accumulation of numerical errors, particularly when applied to nonlinear dynamical systems or in settings characterised by pro-nounced parametric variability [20, 21]. These limitations have motivated the development of alternative methodologies, such as Sparse Identification of Nonlinear Dynamics (SINDy) [20] and physics-informed modelling frameworks [22, 23], which aim to alleviate these issues by explicitly incorporating nonlinear effects and/or relevant physical prior knowledge. To better capture nonlinear dynamics, kernel-based methods have emerged as a promis-ing alternative [24, 25, 26, 27]. These approaches can implicitly represent complex functions through kernel expansions, enabling flexible modelling in high-dimensional settings. In the context of dynamical systems, kernel-based techniques such as the Linear and Nonlinear Dis-ambiguation Optimisation (LANDO) algorithm have demonstrated the ability to recover both linear and nonlinear components of the dynamics, thus improving robustness while maintaining interpretability [24]. More broadly, kernel methods enjoy strong theoretical properties: under suitable conditions, they possess universal approximation capabilities, both in the framework of Kernel Ridge Regression [28] and Gaussian Processes [29], with successful applications in forecasting and control [26, 28, 29, 30, 31, 32, 33]. These properties make them particularly well-suited for modelling nonlinear dynamical systems in a data-driven setting. 2Building on these ideas, we introduce the proposed Gaussian Process Ordinary Differential Equation (GPRODE) framework. The central idea is to approximate the drift term of an autonomous ordinary differential equation (ODE) using a Gaussian Process (GP) [34]. Under suitable conditions, the GP posterior mean converges to the true drift function while the poste-rior variance vanishes as the amount of data increases. As a consequence, the stochastic model converges to the underlying deterministic ODE in the infinite-data limit. Notably, the proposed approach performs inference directly on the drift term, without requiring the application of a numerical integration scheme during training, enabling the decoupling between the numerical schemes used in training and testing. The proposed methodology is related to several existing approaches. In particular, [26] also considers GP-based modelling of dynamical systems, but relies on numerical discretisation of the ODE, whereas our approach operates directly on the continuous-time drift. Similarly, [27] employs Gaussian Processes to learn the drift function using inducing-point approximations and variational inference, but does not incorporate spatial reduction. The strategy in [25] com-bines Gaussian Processes with latent-space modelling, but uses a linear reduction, whereas we adopt a quadratic reduced-order model. Moreover, in our setting, the derivatives must be es-timated from data, while in their framework they are directly available from the reduced model. Despite their flexibility, kernel-based autoregressive models may exhibit instability and of-ten require ad hoc regularisation strategies [35]. In the GPRODE setting, this instability arises from the unconstrained nature of the Gaussian Process posterior, which provides no guarantee that the learnt drift will generate bounded trajectories over long-time horizons. To address this issue, we propose an extension of the GPRODE framework. Specifically, we first construct a quadratic reduced-order model, in the spirit of [36], then project the resulting dynamics onto the unit sphere to enforce boundness, and finally apply the GPRODE formulation in the la-tent space. We refer to this approach as Quadratically Reduced Gaussian Process Ordinary Differential Equations (QGPRODE). We evaluate the proposed methods against several es-tablished baselines, including Extended Dynamic Mode Decomposition (EDMD) [15], Bagging Optimised Dynamic Mode Decomposition (BOPDMD) [16], and LANDO, showing improved accuracy or computational time. The remainder of the paper is organised as follows. Section 2 introduces the GPRODE and QGPRODE methodologies, while Section 3 presents numerical experiments, and Section 4 concludes the paper. Given the large number of variables employed throughout this paper, we provide here a notation table. Table 1: Summary of notation. 
+
+Symbol Description 
+
+Data and state 
+
+X(t) ∈ Rm State vector of the dynamical system at time tXtrain Training dataset {X(t1), . . . , X (tN )}
+
+m State space dimension 
+
+N Number of training samples 3Table 1 (continued) 
+
+Symbol Description 
+
+B Closure of the trajectory set; assumed compact in Rm
+
+U Bounded, convex, open set with B ⊂ UhB,B N Fill distance max x∈B min y∈BN ∥x − y∥2
+
+Dynamics and operators 
+
+f : Rm → Rm True drift function of the autonomous ODE ˙X = f (X)
+
+L Lipschitz constant of fM Prediction horizon Ψ Finite-difference operator approximating ˙X(ti)Φ Numerical time-stepping function (e.g. RK45, symplectic) ∆t Time step size for numerical integration 
+
+Gaussian process and kernel 
+
+K(x, y ) Mat´ ern kernel k(∥x − y∥2) = e−d(1 + d)RKHS( U ) Reproducing Kernel Hilbert Space on U induced by K;norm-equivalent to H(m+3) /2(U )
+
+μ(x) GP posterior mean function; approximates fσ(x) GP posterior standard deviation ˆσN sup x∈B σN (x); uniform bound on posterior std 
+
+b(x) Lipschitz-corrected diffusion coefficient derived from σ(x)˜f (x) ∼ N (μ(x), σ (x)2Im) GP surrogate for the drift function f
+
+GPRODE model quantities 
+
+E(t) Predicted mean trajectory Eω [X(t, ω )] 
+
+V (t) Scalar variance proxy; Σ( t) ≈ V (t)Im
+
+Σ( t) Approximate covariance matrix Cov ω (X(t, ω )) ¯V Threshold (saturation) variance 
+
+γ(x) Saturation function x/ (x + 0 .001) enforcing V ≤ ¯VA(t) Augmented state [ E(t)⊤, V (t)] ⊤
+
+g(A(t)) Right-hand side of the augmented ODE system 
+
+QGPRODE — reduction and latent space 
+
+k Latent (reduced) dimension 
+
+Z(t) ∈ Sk Latent state on the unit sphere 
+
+Ztrain Latent codes of the training data 
+
+R(t) Reduced coordinates before sphere projection 
+
+Q Matrix such that M ⋆ = Q⊤Q; used for sphere projection ¯Q Low-rank approximation of LW1 ∈ Rm×(k+1) Linear decoder matrix; W1 = HL +
+
+¯W1 Low-rank version of W1; ¯W1 = H ¯L+
+
+W2 ∈ Rm×(k+1) 2
+
+Quadratic decoder matrix 
+
+c Constant offset vector in the quadratic reconstruction 
+
+ϵ(t) Reconstruction residual; modelled as white noise with vari-ance σ2
+
+> ϵ
+
+v⊗2 Kronecker self-product v ⊗ vCij Reduced covariance matrix √qiqj X(ti) · X(tj )4Table 1 (continued) 
+
+Symbol Description 
+
+M ⋆ Optimal positive definite matrix from sphere-fitting opti-misation ¯E[F ] Discrete time-average quadrature approximation of ( tN −
+
+t1)−1 R F (t) dt qi Quadrature weights (e.g. Monte Carlo: qi = 1 /N )
+
+Moment equations (QGPRODE) 
+
+mk(t) k-th centred moment E[( ˜Z(t) − E[ ˜Z(t)]) k]
+
+m3(t) Third centred moment 
+
+m4(t) Fourth centred moment 
+
+# 2 Methodology 
+
+We are interested in developing a model that approximates the behaviour of a real-world dynamical system based on observed data 
+
+Xtrain = {X(t1), . . . , X (tN )}, with X(ti) ∈ Rm ∀i = 1 , . . . , N. (1) In particular, our scope is to estimate the future states of the system under investigation, namely X(t) for times t > t N . To achieve this objective, we develop two novel classes of ROMs. The proposed models aim to satisfy the following criteria: 
+
+• High computational efficiency and rapid inference; 
+
+• A priori guarantee on computational complexity during both training and testing phases; 
+
+• Uncertainty quantification associated with predictive outputs; 
+
+• Fast model update when new data is available. 
+
+## 2.1 GPRODE model 
+
+In this section, we introduce the definition of the GPRODE model. We consider a set of training observations Xtrain as in Eq. 1, in which the underlying dynamics are assumed to be governed by an ordinary differential equation of the form ˙X(t) = f (X(t)) (2) and we furthermore assume that X(t) is bounded. To construct the model, we require three key components: a kernel function (thus a symmetric positive definite function with two arguments) K : Rm × Rm → R, a finite-difference operator Ψ, and a time-stepping function Φ. Common choices for Ψ and Φ include the forward finite-difference operator and the forward Euler scheme, respectively. We begin by approximating the system dynamics by means of Ψ, obtaining ˙X(ti) ≈ Ψ( X(ti)) .
+
+5To simplify the notation, we adopt a vectorised formulation: for a collection of N vectors 
+
+a, each belonging to Rm, the expression f (a) denotes the application of the function f to each element of the set individually. For functions of two arguments, vectorisation is applied independently to each argument. Consequently, f (Xtrain ) yields an N × m matrix, while 
+
+K(Xtrain , X train ) produces an N × N matrix. With this notation in place, we construct a reduced basis approximation of f , denoted by ˜f , using Gaussian Process Regression [34], that is ˜f (x) ∼ N (μ(x), σ (x)2Im), (3) where 
+
+μ(x) = K(x, X train )K(Xtrain , X train )+Ψ( Xtrain ) ∈ Rm, (4) and 
+
+σ(x) = pK(x, x ) − K(x, X train )K(Xtrain , X train )+K(Xtrain , x ) ∈ R, (5) denote the mean and variance functions of the GP. We assume independent GPs for each component of Ψ, sharing the same kernel. The use of the pseudoinverse K(Xtrain , X train )+ is introduced to ensure that the resulting expression is well-defined, which may not occur in the presence of repeated inputs [37]. By plugging in ˜f in place of f , we obtain the Random Differential Equation ˙X(t, ω ) = ˜f (X(t, ω ), ω ). (6) However, the previous expression is expensive to simulate. In order to solve this issue, we linearize ˜f around E(t) = Eω [X(t, ω )] ∈ Rm (assuming fluctuations X(t) − E(t) are small), obtaining ˙X(t, ω ) = ˜f (E(t), ω ) + ∇x ˜f (E(t), ω )( X(t) − E(t)) . (7) Taking expectation and variance on both sides and assuming uncorrelation between ∇x ˜f (E(t)) with X(t) results in 
+
+( ˙E(t) = μ(E(t)) ,
+
+˙Σ( t) = ∇xμ(E(t))Σ( t) + Σ( t)∇xμ(E(t)) ⊤ + σ2(E(t)) Im, (8) where Σ( t) is an approximation of Cov ω (X(t, ω )). A further simplification, obtained by neglecting derivatives, leads to 
+
+( ˙E(t) = μ(E(t)) ,
+
+˙V = σ2(E(t)) (9) where V is a scalar such that Σ = V I m. We apply this additional assumption, as while the Gaussian posterior mean converges to the true function under suitable hypotheses (specified in Appendix A), this may not hold for its derivative. This additional approximation also lowers the memory required to store Σ( t) from m2 to 1, which is crucial since we are dealing with large-scale dynamical systems. We note that the above formulation can also be obtained by doing a 0th-order approximation around the mean of the Stochastic Differential Equation 
+
+(
+
+d ˜X = μ( ˜X(t)) dt + σ( ˜X(t)) ImdW t ∈ (tN , t N + M ],
+
+˜X(tN ) = X(tN ). (10) 6We note that while μ(x) is a Lipschitz function, σ(x) is not globally Lipschitz as a result of the presence of the square root term. However, since we intend to invoke the Lipschitz condition in order to ensure uniqueness of the solution to the SDE, we introduce a slightly modified equation in which the diffusion coefficient σ is replaced by a Lipschitz continuous approximation b ∈ C1(U ) defined by 
+
+b(x) = 
+
+
+
+σ(x), σ(x) ≥ 1,
+
+2σ(x)2
+
+1 + σ(x)2 , σ(x) < 1,
+
+which yields the stochastic differential equation 
+
+(
+
+d ˜X(t) = μ( ˜X(t)) dt + b( ˜X(t)) Im dW (t), t ∈ (tN , t N + M ],
+
+˜X(tN ) = X(tN ).
+
+Since b is strictly positive, the function V (t) is strictly increasing in time. Moreover, as the system under consideration is bounded, there exists a threshold variance ¯V ∈ R beyond which further increases in variance do not yield additional information. Consequently, we introduce the following modification to enforce the constraint V (t) ≤ ¯V :
+
+
+
+˙E(t) = μ(E(t)) , t ∈ (tN , t N + M ],
+
+˙V (t) = b(E(t)) 2 γ
+
+ ¯V − V (t)¯V
+
+
+
+, t ∈ (tN , t N + M ],E(tN ) = X(tN ),V (tN ) = 0 ,
+
+(11) where 
+
+γ(x) = xx + 0 .001 which enforces saturation as V → ¯V . A choice for the threshold variance can be the ergodic variance, provided the system is ergodic. The selection of γ is not restrictive and can be changed with any decreasing function depending only on V that has a zero in ¯V . Now we want to write the modified ODE system in a more readable form. Let us consider 
+
+A(t) = 
+
+ E(t)
+
+V (t)
+
+
+
+,A0 =
+
+ X(tN )0
+
+
+
+,g (A(t)) = 
+
+" μ (E(t)) 
+
+b2 (E(t)) γ
+
+ ¯V −V (t)¯V
+
+#
+
+.
+
+(12) This allows us to obtain the following expression 
+
+ A(tN ) = A0,
+
+˙A = g (A) .
+
+7In Appendix A, we prove that all equations considered converge to the underlying ODE under suitable assumptions on the data and on f . In particular, we assume that the data is infinitely dense, that f is smooth enough, and that the trajectory is bounded. To numerically solve the ODE above, we employ the time-stepping operator Φ with step size ∆ t. The resulting discrete formulation is 
+
+Ak = Φ ( Ak−1, g, ∆t) , (13) where Φ( Ak−1, g, ∆t) advances the solution by one time step from Ak−1, using g as the right-hand side of the ODE over the interval of length ∆ t.We summarise the procedure in Algorithm 1. 
+
+Algorithm 1 GPRODE Training and Prediction  
+
+> 1:
+
+Input: Training data {X(t1), . . . , X (tN )}, kernel K, prediction horizon M , target variance ¯V , time step ∆ t, finite-difference operator Ψ, time-stepping function Φ.  
+
+> 2:
+
+Output: Mean trajectory E(t), variance V (t) for t ∈ [tN , t N + M ]. 
+
+> 3:
+
+// Step 1: Train Gaussian process on approximated derivatives  
+
+> 4:
+
+Assemble the Gram Matrix ¯Kij = K(X(ti), X (tj ))  
+
+> 5:
+
+Define mean function: μ(x) = K(x, X train ) ¯K−1Ψ( Xtrain ) 
+
+> 6:
+
+Define variance function: σ2(x) = K(x, x ) − K(x, X train ) ¯K+K(Xtrain , x ) 
+
+> 7:
+
+Define corrected variance function b(x) = 
+
+(σ(x) σ(x) ≥ 1 
+
+> 2σ(x)2
+> 1+ σ(x)2
+
+σ(x) < 1 
+
+> 8:
+
+// Step 2: Propagate mean and variance forward  
+
+> 9:
+
+Initialize: E(tN ) = X(tN ), V (tN ) = 0  
+
+> 10:
+
+Assemble 
+
+A(t) = 
+
+ E(t)
+
+V (t)
+
+
+
+,A0 =
+
+ X(tN )0
+
+
+
+,g (A(t)) = 
+
+" μ (E(t)) 
+
+b2 (E(t)) γ
+
+ ¯V −V (t)¯V
+
+#
+
+,
+
+where γ(x) = xx+0 .001  
+
+> 11:
+
+Solve coupled ODEs using numerical integrator Φ:  
+
+> 12:
+
+for each i from 1 to ⌈ M 
+
+> ∆t
+
+⌉ do  
+
+> 13:
+
+Ai = Φ( Ai−1, g, ∆t) 
+
+> 14:
+
+end for  
+
+> 15:
+
+Extract Ei, V i from Ai 
+
+> 16:
+
+Return Ei, V i, i = 1 .. ⌈ M 
+
+> ∆t
+
+⌉
+
+In Appendix A, we demonstrate that this numerical method is convergent in the limit of infinite data. In the next section, we confirm these theoretical results through numerical experiments. In the context of Digital Shadows, when a new data point becomes available, the earliest element in the training set is removed so that the overall training size remains constant. In this setting, this framework respects the criteria given at the start of Section 2: 8• It is computationally efficient, as it scales linearly in the data dimensionality, 
+
+• An a priori bound on computational cost is mN 2 +N 3 during training and ⌈ M 
+
+> ∆t
+
+⌉N 2 during testing. 
+
+• The variance V represents the uncertainty of each prediction, 
+
+• Updating the model is fast, as it is sufficient to retrain it after each data update. Conversely, the principal limitation of this methodology, relative to other Gaussian Process–based ODE frameworks, is that the variance is designed to increase monotonically over time. As a consequence, the model frequently yields uncertainty bounds that are more conservative than warranted. This represents a necessary trade-off to enable high computational efficiency. 
+
+2.1.1 Numerical verification 
+
+We now examine the numerical convergence behaviour of the method. In practical appli-cations, the infinite-data regime is unattainable, since Gaussian Processes scale cubically with the number of data points due to the need to solve a dense linear system. As in the appendix, we assume that B = {X(t) | t > 0} is a compact subset of Rm, and that there exists a bounded, convex, open set U such that B ⊂ U and f ∈ H m+5 2 
+
+> 0
+
+(U, Rm). We denote by RKHS (U ) the Reproducing Kernel Hilbert Space [33] on U induced by the kernel K. Choosing K as 
+
+K(x, y ) = k(|| x − y|| 2), (14) where 
+
+k(d) = e−d(1 + d), (15) it can be proved that RKHS (U ) is norm equivalent to H 3+ m 
+
+> 2
+
+(U ) [33]. Regarding Ψ, we construct it as a continuous function, assuming that the training points correspond to X(0) , X ( 1√N ), ...X (√N )Ψ( x) := 
+
+y
+
+ 1√N , x 
+
+
+
+− x
+
+> 1√N
+
+, (16) where y(t, x ) is the flow of the ODE. This construction coincides with the forward difference approximation on the training data, while ensuring sufficient regularity for Ψ ∈ RKHS ([ a, b ]) for sufficiently large N , as it is a first order approximation of a function in f ∈ H m+5 2 
+
+> 0
+
+(U, Rm)(as formally proven in Appendix A). This definition only works because the time is equispaced with time step 1√N . In the case of non-uniform temporal discretisation, the construction of Ψ becomes highly nontrivial, since it must depend solely on x and, in addition, possess sufficient regularity to lie in the space H m+5 2 (U, Rm). An alternative approach is shown in Appendix A. As Φ we choose the explicit Euler method with ∆ t = 1√N .With these ingredients, it can be proven that the testing error decreases and satisfies the bound (as shown in Appendix A) 
+
+X(√N + T ) − E⌈√N T ⌉ 2
+
+≤
+
+eLT − 1
+
+L
+
+
+
+|| Ψ|| RKHS (U )
+
+
+
+1 − k
+
+ 1
+
+√N
+
+ 
+
++ ( L sup 
+
+> U
+
+|| f (x)|| 2)
+
+ 1
+
+√N
+
+ 
+
+,
+
+(17) 9where L = sup 
+
+> x∈U
+
+||∇ f (x)|| 2. Estimating the theoretical bound requires knowledge of || Ψ|| RKHS (U ),which cannot be computed analytically in the U bounded case. An exception is the case m = 1, for which U = [ a, b ] for certain a and b, and it holds [38] 
+
+|| Ψ|| 2 
+
+> RKHS ([ a,b ])
+
+= 14 ∥Ψ′′ ∥2 
+
+> L2([ a,b ])
+
++ 12 ∥Ψ′∥2
+
+> L2([ a,b ])
+
++ 14 ∥Ψ∥2 
+
+> L2([ a,b ])
+
++ 12
+
+ Ψ( a)2 − Ψ( a)Ψ ′(a) + Ψ ′(a)2
+
++ 12
+
+ Ψ( b)2 − Ψ( b)Ψ ′(b) + Ψ ′(b)2 .
+
+(18) Thus, for assessing the performance of the numerical method, we restrict to m = 1, and 
+
+U = [ a, b ].
+
+The kernel mean and variance functions are calculated using the Scikit-Learn library [39], which has ad-hoc adjustments to compute an accurate solution of the linear system, including adding a jitter. Xtrain is normalised before training the model. This approach for calculating the mean and variance functions will be used throughout the remainder of the paper. Since the kernel is parameter-free, no hyperparameter optimisation is performed, and this convention is likewise followed in the rest of the paper. We study the convergence of two different ODEs, and we compare them with the respective theoretical bounds: 
+
+• y′ = −y, y (0) = 12 ,
+
+• y′ = −y(1 − y), y (0) = 12 .Results are reported in Fig. 1. As can be observed, the numerical errors remain within the theoretical error bound in both cases, and the convergence is substantially faster than that predicted by the bound. 
+
+## 2.2 QGPRODE 
+
+In Appendix A, it is proved that the GPRODE model converges in the limit of infinite data. Nevertheless, we observe that, in general, the simulated trajectory may exhibit non-physical behaviour due to over-fitting (this is particularly relevant because N must remain small, given the O(N 3) scaling in the computation of μ). This issue can be addressed by constructing a reduced-order model in space. We will address this problem by projecting the equation onto a k-dimensional unit sphere and thus performing dimensionality reduction. Motivated by the work on Quadratic Model Order Reduction [36], our aim is to obtain a decomposition of the form 
+
+X(t) = c + W1Z(t) + W2 vec( Z(t) ⊗ Z(t)) + ϵ(t), (19) where Z(t) ∈ Sk is low-dimensional, W1 ∈ Rm×(k+1) and W2 ∈ Rm×(k+1) 2
+
+are matrices, c is a constant vector, and ϵ(t) is a residual. We first introduce ¯E[F ] : C([ t1, t n], Rk) → Rk
+
+10 0 200 400 600 800 1000 10 −11 
+
+10 −8
+
+10 −5
+
+10 −2
+
+> Error
+
+Test Error Theoretical Error Bound 0 200 400 600 800 1000 Number of training data points 10 −10 
+
+10 −7
+
+10 −4
+
+10 −1
+
+> Error
+
+Test Error Theoretical Error Bound Figure 1: Top: theoretical error bound and numerical error for y′ = −y. Bottom: theoretical error bound and numerical error for y′ = −y(1 −y). There is a cusp due to numerical instability caused by the growing condition number of the kernel Gram matrix. 11 by setting ¯E[F ] = 1
+
+tN − t1
+
+Ξ[ F (·), t 1, t N ], (20) where Ξ denotes a quadrature rule that has Xtrain as quadrature points, and is used to approx-imate Z tN
+
+> t1
+
+F (t)dt. (21) Then we can compute c1 = ¯E[X(·)] and 
+
+C1 = ¯E(X(·) − c1) ⊗ (X(·) − c1) ∈ Rm×m.
+
+Since C1 is symmetric and positive semidefinite, we can write C1 = HH T thanks to the Singular Value Decomposition (SVD). H is the product of the matrix with columns containing the eigenvectors by the square root of the corresponding eigenvalues, sorted in descending order. Next, we define R(t) as the vector consisting of the first k + 1 components of H+(X(t) − c1). The problem of this approach is that C1 cannot be stored in memory due to m being very large. So instead we compute the reduced matrix Cij = √qiqj X(ti) · X(tj ) and R(ti) is the i-th left eigenvector of C truncated at index k + 1 via randomised SVD. The qi are the quadrature weights of Ξ. We then solve the optimisation problem 
+
+M ⋆ = min  
+
+> M∈Rk+1 ×k+1 , M > 0
+
+¯E(R(·)T M R (·) − 1) 2 + a λmax (M ) − λmin (M ),
+
+where a is a regularisation parameter. Subsequently, we use the spectral decomposition to find Q such that M ⋆ = QT Q.The latent quantity QR (t) will then lie approximately in Sk; to enforce that it lies on Sk, we set 
+
+Z(t) = QR (t)
+
+∥QR (t)∥ . (22) We also store a low-rank approximation of Q, denoted by ¯Q. We then set W1 = HQ + and ¯W1 = H ¯Q+. Next, we obtain W2 by solving min 
+
+> W2
+
+¯E[ X(·) − W1Z(·) − W2
+
+ vec( Z(·)⊗2) 2]. (23) where 
+
+v⊗2 = v ⊗ v. (24) If k2 is large, Z(t) is truncated only in the quadratic term. We then define 
+
+c = ¯E[X(·)] − W1 ¯E[Z(·)] − W2 ¯E[vec( Z(·)⊗2)] . (25) This yields the representation 
+
+X(t) = c + W1Z(t) + W2
+
+ vec( Z(t)⊗2) + ϵ(t). (26) By construction, it holds that ¯E[ϵ(·)] = 0 . (27) 12 A natural choice to model ϵ(t) is as a white noise process of variance ¯E[ϵ(·)2]. During inference, ˜Z(t) is predicted using the methodology of the previous section: i.e., defining 
+
+μ(z) = K(z, Z train )K(Ztrain , Z train )+Ψ( Ztrain ), (28) 
+
+σ(z) = pK(z, z ) − K(z, Z train )( K(Ztrain , Z train )) +K(Ztrain , z ). (29) 
+
+b(z) = 
+
+(σ(z) σ(z) ≥ 1, 
+
+> 2σ(z)2
+> 1+ σ(z)2
+
+σ(z) < 1, (30) where Ztrain are the latent codes of Xtrain .The values E(t) = E[ ˜Z(t)] and V (t) = E[( ˜Z(t) − E[ ˜Z(t)]) 2] are computed with 
+
+
+
+˙E(t) = μ(E(t))( I − E(t)E(t)T
+
+> || E(t)|| 22
+
+) t ∈ (tN , t N + M ],
+
+˙V (t) = b(E(t)) 2γ
+
+ ¯V −V (t)¯V
+
+
+
+t ∈ (tN , t N + M ],E(tN ) = Z(tN ),V (tN ) = 0 .
+
+(31) With respect to Eq. 11, the equation for E(t) is modified in order to keep E(t) on the unit sphere, thus enforcing boundness. To guarantee that the numerical solution remains confined to the unit sphere, we additionally employ a symplectic integrator as the numerical integration scheme. The distribution of ˜X(t) is then computed using ˜X(t) = c + W1 ˜Z(t) + W2 vec( ˜Z(t)⊗2) + ϵ(t). (32) In order to obtain the mean and variance for the corresponding predictor of ˜X(t), due to the presence of ˜Z(t) ⊗ ˜Z(t), we also need the third and fourth centred moments of the random variable given by the equation 
+
+(
+
+d ˜X = μ( ˜X(t)) dt + b( ˜X(t)) ImdW t ∈ (tN , t N + M ],
+
+˜X(0) = ˜X(tN ). (33) By assuming a 0-order approximation for μN and σN around E[ ˜Z(t)], the moments can be approximated as dm 3
+
+dt = 3 V (t)μ(E(t)) , (34) 
+
+dm 4
+
+dt = 4 m3(t)μ(E(t)) + 6 V (t)b2(E(t)) , (35) where mk(t) = E[( ˜Z(t) − E[ ˜Z(t)]) k]. When computing the variance of ˜X(t), we use the low-rank version of W1, ¯W1, to avoid variance explosion due to the fact that L may have eigenvalues near 0, which could potentially cause numerical problems. We modify the equation to make sure that the fourth moment is non-negative and bounded in the following way 
+
+dm 4
+
+dt = (max(4 m3(t)μ(E(t)) , 0) + 6 V (t)b2(E(t))) ⊙ γ
+
+ ¯V 2 − m4
+
+¯V 2
+
+
+
+. (36) 13 As ¯V we adopt the ergodic variance ¯E[( Z(·) − ¯E[Z(·)]) 2]. (37) Then E[X(t)] can be computed as 
+
+E[ ˜X(t)] = c + W1E(t) + W2(vec( E(t)⊗2 + diag (V (t)))) (38) while 
+
+V ar [ ˜X(t)] = ¯W1diag (V (t)) ¯W T 
+
+> 1
+
++ W2E[((vec( ˜Z(t)⊗2 − E(t)⊗2)) ⊗2)] W T
+
+> 2
+
++σ2 
+
+> ϵ
+
+I. (39) Details on the computation of [((vec( ˜Z(t)⊗2 − E(t)⊗2)) ⊗2)] can be found in Appendix C. With respect to the GPRODE model, the QGPRODE model is more efficient, as it has to compute a randomised SVD at a cost of O  mn log( k) + ( m + N )k2, then O(N 2k) for assembling the Gram matrix and solving the linear system, O(k) for predicting, and then O(mk 2) for predict-ing, while the GPRODE costs O(mN 2). We summarise the methodology in Algorithm 2. A summary of the algorithm steps is shown in Fig. 2. 14 Algorithm 2 QGPRODE Training and Prediction  
+
+> 1:
+
+Input: Training data {X(t1), . . . , X (tN )}, kernel K, prediction horizon M , target variance ¯V , time step ∆ t, finite-difference operator Ψ, time-stepping symplectic function Φ, latent dimension k, regularization parameter a, quadratic truncation dimension kquad (optional). Quadrature weights q1... qN . 
+
+> 2:
+
+Output: Mean trajectory E[ ˜X(t)], variance Var[ ˜X(t)] for t ∈ [tN , t N + M ].  
+
+> 3:
+
+// Step 1: Compute quadratic reduced-order model  
+
+> 4:
+
+Define ¯E[f (·)] = Pni=1 qif (ti) 
+
+> 5:
+
+Compute mean: c1 = ¯E[( X(·)]  
+
+> 6:
+
+Compute the reduced matrix Cij = √qiqj X(ti) · X(tj ) 
+
+> 7:
+
+Compute reduced coordinates: R(ti) is the i-th left eigenvector of C truncated at index 
+
+k + 1 via Randomized SVD  
+
+> 8:
+
+Solve optimisation problem: 
+
+M ⋆ = arg min  
+
+> M∈Rk+1 ×k+1 ,M > 0
+
+¯E[( R(·)T M R (·) − 1) 2] + a(λmax (M ) − λmin (M ))  
+
+> 9:
+
+Compute: M ⋆ = QT Q (via spectral decomposition)  
+
+> 10:
+
+Compute latent codes: Z(ti) = LR (ti) 
+
+> ∥LR (ti)∥
+
+for i = 1 , . . . , N  
+
+> 11:
+
+Store: Ztrain = {Z(t1), . . . , Z (tN )} 
+
+> 12:
+
+// Step 2: Compute GPRODE on Z(t) 
+
+> 13:
+
+Compute low-rank version: ¯Q (truncated version of Q) 
+
+> 14:
+
+Define: W1 = HQ + and ¯W1 = H ¯Q+ 
+
+> 15:
+
+Compute W2 by minimizing: ¯E[∥X(·) − W1Z(·) − W2 vec( Z(·)⊗2)∥2] 
+
+> 16:
+
+(Optional: If k2 is large, truncate Z to dimension kquad for quadratic term)  
+
+> 17:
+
+Compute offset: c = ¯E[X(·)] − W1 ¯E[Z(·)] − W2 ¯E[vec( Z(·)⊗2)]  
+
+> 18:
+
+Compute noise variance: σ2 
+
+> ϵ
+
+= ¯E[∥X(·) − c − W1Z(·) − W2(vec( Z(·)⊗2)) ∥2] 
+
+> 19:
+
+Compute kernel matrix: ¯Kij = K(Z(ti), Z (tj )) for i, j = 1 , . . . , N  
+
+> 20:
+
+Define mean function: μ(z) = K(z, Z train ) ¯K+Ψ( Ztrain ) 
+
+> 21:
+
+Define variance function: σ2(z) = K(z, z ) − K(z, Z train ) ¯K+K(Ztrain , z ) 
+
+> 22:
+
+Define corrected variance: b(z) = 
+
+(σ(z) if σ(z) ≥ 1 
+
+> 2σ(z)2
+> 1+ σ(z)2
+
+if σ(z) < 115 23: Define γ(x) = xx+0 .001  
+
+> 24:
+
+Assemble augmented state and dynamics: 
+
+A(t) = [ E(t)T , V (t)T , m 3(t)T , m 4(t)T ]T
+
+A0 = [ Z(tN )T , 0, 0, 0] T
+
+g(A(t)) = 
+
+
+
+μ(E(t)) 
+
+
+
+I − E(t)E(t)T
+
+> ∥E(t)∥22
+
+
+
+b2(E(t)) γ
+
+ ¯V −V (t)¯V
+
+
+
+3V (t) ⊙ μ(E(t)) (max(4 m3(t) ⊙ μ(E(t)) , 0) + 6 V (t) ⊙ b2(E(t))) ⊙ γ
+
+ ¯V 2−m4(t)¯V 2
+
+
+
+where ⊙ denotes element-wise multiplication  
+
+> 25:
+
+for each i from 1 to ⌈ M 
+
+> ∆t
+
+⌉ do  
+
+> 26:
+
+Ai = Φ( Ai−1, g, ∆t) 
+
+> 27:
+
+Extract: Ei, Vi, m3,i , m4,i from Ai 
+
+> 28:
+
+end for  
+
+> 29: 30:
+
+for each i from 1 to ⌈ M 
+
+> ∆t
+
+⌉ do  
+
+> 31:
+
+Compute mean: E[ ˜X(tN + i∆t)] = c + W1Ei + W2 vec( E⊗2 
+
+> i
+
++ diag (Vi))  
+
+> 32:
+
+Compute variance using low-rank ¯W1:Var[ ˜X(tN + i∆t)] = ¯W1diag( Vi) ¯W T
+
+> 1
+
++ W2E[(vec( Z⊗2 − E⊗2 
+
+> i
+
+)) ⊗2]W T
+
+> 2
+
++ σ2 
+
+> ϵ
+
+I
+
+where E[(vec( Z⊗2 − E⊗2 
+
+> i
+
+)) ⊗2] is computed using Vi, m3,i , m4,i  
+
+> 33:
+
+end for  
+
+> 34:
+
+Return E[ ˜X(t)] and Var[ ˜X(t)] for t ∈ [tN , t N + M ]
+
+# 3 Applications 
+
+In this section, we provide numerical experiments to validate our methodology. All of them are performed on a machine with an Intel(R) Xeon(R) Platinum 8260 CPU @ 2.40GHz. Computational times reported are the average of 1000 runs. Before investigating more advanced test cases, we perform a sanity check for the GPRODE model by considering a Lorenz system, which reads as follows:  
+
+> du dt
+
+= −σ(u − v) t ∈ [0 , 20] , 
+
+> dv dt
+
+= ρu − v − uw t ∈ [0 , 20] , 
+
+> dw dt
+
+= −βw + uv t ∈ [0 , 20] ,u(0) = 110 ,v(0) = 0 ,w(0) = 0 ,
+
+(40) 16 Samples from the Latent 
+
+Autonomous System 
+
+1. Derivative Approximation 
+
+from samples 
+
+2. GPR Training of Derivatives 
+
+3. ODE Assembly 
+
+4. ODE Simulation 
+
+with Time Integrator 
+
+Latent Mean & Variance at 
+
+Future Times 
+
+Samples from an Autonomous 
+
+System 
+
+Quadratic ROM with spherical 
+
+projection 
+
+GPRODE on Latent Variable 
+
+DOF Reconstruction 
+
+Mean & 
+
+Variance at Future Times 
+
+Latent to DOF matrices Figure 2: The workflow of the QGPRODE algorithm. 17 with σ = 10, β = 83 , ρ = 13. With these parameters, the system converges to an equilibrium point, as shown in Fig. 3. As we can observe from Fig. 4, the GPRODE is able to reproduce the system dynamics. The database consists of 20001 time steps, of which the first 10000 are used for training. For derivative estimation (even if it is known in this case), we adopt the forward difference operator as Ψ. For simulation, we adopt an explicit RK45 scheme as Φ. We compare the GPRODE with LANDO, BOPDMD and EDMD from the library PyDMD [40, 41] with rank 3 and default parameters. We also measure the performance of QGPRODE (with rank 3) for completeness. To measure forecasting accuracy, we adopt the scaled L1 and relative L2 error. Let Y ∈ RN ×m the true values and ˜Y ∈ RN ×m the values as predicted by the model. We define the scaled L1 error as 1max  
+
+> i=1 ...N
+
+max  
+
+> j=1 ...m
+
+Yij − min  
+
+> i=1 ...N
+
+min  
+
+> j=1 ...m
+
+Yij 
+
+1
+
+mN 
+
+> N
+
+X
+
+> i=1
+> m
+
+X
+
+> j=1
+
+|Yij − ˜Yij |, (41) and the relative L2 error as s NP
+
+> i=1
+> m
+
+P
+
+> j=1
+
+(Yij − ˜Yij )2
+
+s NP
+
+> i=1
+> m
+
+P
+
+> j=1
+
+Y 2
+
+> ij
+
+. (42) As shown in Table 2, GPRODE is able to outperform existing methodologies, either in terms of accuracy or efficiency. With respect to LANDO, the required time is substantially shorter because LANDO must subsample the data to ensure stability, which is computationally expensive, whereas our approach achieves stability through the use of time integrators. EDMD is slower than our method as it must first compute two kernel matrices and then a Singular Value Decomposition for truncation. However, because it is trained on a relatively small number of samples, it tends to overfit the training data, which in turn leads to a high test error. BOPDMD, being a linear predictor, is less susceptible to overfitting than EDMD and is the fastest because no kernel matrix must be computed. Nevertheless, since the underlying system is nonlinear, it yields a higher error than both LANDO and GPRODE. Because there is no truncation, the latent system of QGPRODE differs from the GPRODE one by a stretch and a rotation; thus, QGPRODE is also exact in the infinite data limit and thus accurate as the hypotheses are satisfied. Type scaled L1 relative L2 Time (seconds) EDMD 1.21 1.29 211 BOPDMD 0.45 0.48 2
+
+GPRODE 2.22e-04 2.23e-04 39 QGPRODE 2.31e-04 3.39e-04 45 LANDO 2.29e-04 3.32e-04 314 Table 2: Lorentz dynamical system. Scaled L1 and relative L2 error between each predictor and the true value. 18 0 2 4 6 8 10 x 0246810 12 y0.02.55.07.510 .012 .515 .017 .520 .0z
+
+# Lorentz system trajectory Figure 3: Trajectory of the Lorentz system given by Eq. 40. 19 0 5 10 15 20 0246810 
+
+u(t) 
+
+Training samples Testing samples 0 5 10 15 20 0.02.55.07.510 .012 .5
+
+v(t) 
+
+Training samples Testing samples 0 5 10 15 20 0510 15 20 
+
+w(t) 
+
+Training samples Testing samples 0 5 10 15 20 0246810 Training samples Prediction 0 5 10 15 20 0.02.55.07.510 .012 .5 Training samples Prediction 0 5 10 15 20 0510 15 20 Training samples Prediction 10 12 14 16 18 20 10 −7
+
+10 −6
+
+10 −5
+
+10 −4
+
+10 −3
+
+Prediction L1 Error 10 12 14 16 18 20 10 −7
+
+10 −6
+
+10 −5
+
+10 −4
+
+10 −3
+
+Prediction L1 Error 10 12 14 16 18 20 10 −6
+
+10 −5
+
+10 −4
+
+10 −3
+
+Prediction L1 Error Simulation of a Lorentz system with σ = 10 , β = 8 /3, ρ = 13 Figure 4: Simulation of a Lorenz system. The error is computed with respect to the mean of the predictions. The bands represent the 95% confidence interval. 20 0.0 2.5 5.0
+
+−101
+
+u(t) 
+
+> Training Samples Testing Samples
+
+0.0 2.5 5.0
+
+−101
+
+v(t) 
+
+> Training Samples Testing Samples
+
+0.0 2.5 5.0
+
+−101
+
+w(t) 
+
+> Training Samples Testing Samples
+
+0.0 2.5 5.0
+
+−101
+
+> Reconstructed Samples Predictions
+
+0.0 2.5 5.0
+
+−101
+
+> Reconstructed Samples Predictions
+
+0.0 2.5 5.0
+
+−101
+
+> Reconstructed Samples Predictions
+
+0.0 2.5 5.010 −6
+
+10 −3
+
+> L1 Training Error L1 Testing Error
+
+0.0 2.5 5.010 −7
+
+10 −4
+
+10 −1 L1 Training Error L1 Testing Error 
+
+0.0 2.5 5.010 −7
+
+10 −4
+
+10 −1 L1 Training Error L1 Testing Error Figure 5: Simulation of Eq. 43. The error is computed with respect to the mean of the predictions. The bands represent the 95% confidence interval. As a sanity check for the QGPRODE, we try to learn the system 
+
+
+
+u(t)
+
+v(t)
+
+w(t)
+
+ =
+
+
+
+1 0.25 0.125 
+
+−1 0.5 01 0.25 −0.125 
+
+
+
+sin( t)cos( t)sin 2(t)
+
+ , (43) for time t ∈ [0 , 2π], which is of interest in our case, as it is quadratic in the latent variable that spans the maximum variable subspace, in alignment with the hypothesis of QGPRODE. We take 1000 time steps and use the first 700 for training. Again, the model is able to learn the trajectory of the system (Fig. 5). We compare the QGPRODE with LANDO, BOPDMD and EDMD, from the library PyDMD with truncation rank 2 and default parameters. We also measure the performance of GPRODE for completeness. As quadrature weights for QGPRODE, we adopt the Monte Carlo ones, so 
+
+qi = 1700 ∀i = 1 ... 700. This choice of the quadrature weights will also be adopted for the other test cases. As shown in Table 3, QGPRODE is able to outperform existing methodologies in precision. It is slower because the number of samples is small, and so time integration dominates. As the number of samples is low, both LANDO and EDMD overfit the training data, and LANDO 21 Type scaled L1 relative L2 Time (seconds) EDMD 0.40 1.77 0.2 
+
+BOPDMD 0.04 0.16 0.5 QGPRODE 0.02 0.08 1.5 GPRODE 0.07 0.29 0.3 LANDO 0.42 1.77 0.68 Table 3: Sin-cos-sin 2 system. Scaled L1 and relative L2 error between each predictor and the true value. is slower due to the data subsampling. EDMD is the fastest method as it requires neither time integration nor subsampling. However, because it is trained on a relatively small num-ber of samples, it tends to overfit the training data, which in turn leads to a high test error. BOPDMD, being a linear predictor, is less susceptible to overfitting than EDMD. Nevertheless, it is slower than EDMD because it is an ensemble method and, since the underlying system is near a linear system but not completely linear, it yields a higher error than QGPRODE, but still better than LANDO and EDMD. GPRODE has better results than LANDO and EDMD thanks to the advanced time integration. We have verified that the methodology correctly infers systems that satisfy the hypothesis needed for convergence. We now proceed to investigate the performance of systems in which these assumptions are not fulfilled. 
+
+## 3.1 BV −α model 
+
+First, we try to learn the dynamics of the stream ψ of the variant of the BV-α model introduced in [42]: 
+
+
+
+∂tq + ∇ · (( ∇ × ψ)q) − 1Re ∆q = F in Ω × (0 , 100) ,
+
+−α2∇ · (a(q)∇¯q) + ¯ q = q in Ω × (0 , 100) ,
+
+− Ro ∆ ψ + y = ¯ q in Ω × (0 , 100) ,
+
+(44) where q is the vorticity, ¯ q is the filtered vorticity, a is a regularisation function. We refer to [42] for details of the initial and boundary conditions. We test the QGPRODE and the GPRODE methodologies, and we compare them with LANDO, EDMD, and BOPDMD. Results are summarised in Tab. 4. Type scaled L1 relative L2 Time (seconds) EDMD 0.04 0.23 0.04 
+
+BOPDMD 0.03 0.24 0.24 GPRODE 0.06 0.37 0.12 LANDO 0.03 0.24 0.24 QGPRODE 0.02 0.13 0.79 Table 4: BV-α test case. Scaled L1 and relative L2 error between each predictor and the true value. 22 0 10 0510 15 20 25 30 
+
+Prediction  
+
+> 010 0510 15 20 25 30
+
+True  
+
+> 010 0510 15 20 25 30
+
+L1 diff 
+
+> −2
+> −1012
+> −2
+> −1012
+> 0.05 0.10 0.15 0.20 0.25
+
+Figure 6: BV-α test case. Prediction at time 100 of the QGPRODE with 95% confidence bounds and the true value. The temporal snapshots are saved each second, while the simulation is performed with ∆t = 2 .5 · 10 −4. The spatial discretisation is 16 × 32; the first 80 samples are used for training and the last 20 for testing. Derivatives are computed using a second-order centred difference scheme in the interior and a first-order difference scheme in the boundaries. EDMD, BOPDMD, LANDO and QGPRODE are truncated to the first 12 singular values. As shown in Table 4, QGPRODE achieves the lowest scaled L1 and relative L2 errors, while also maintaining short training and testing times (under 1 second). This is due to its projection onto a sphere and the use of a time integrator that enforces stability, even though the time integration itself makes it the slowest method computationally. GPRODE exhibits the largest error because of overfitting (no truncation is applied), whereas BOPDMD is less susceptible to overfitting due to its linear nature. EDMD and LANDO outperform GPRODE due to truncation, but they still overfit and ultimately perform worse than BOPDMD. Both LANDO and BOPDMD are slower than EDMD. In particular, in the case of LANDO, due to the subsampling step and in the case of BOPDMD, due to its ensembling procedure. In Figs. 6 and 7 the QGPRODE dynamic is compared with that of the true model. We remark that in Fig. 6, the bound is higher in which there is greater variance in the training data, and that the true variable is between the lower and upper bounds for every space point. The QGPRODE solution has less variability than the true solution due to the sphere projection, which is inherently dissipative in nature. In Fig. 7, we observe that the QGPRODE is able to get the distribution of the stream over the space. In Fig. 8, the temporal evolution of the L1 error is shown. GPRODE does not perform well because, differently from the other methods tested, there is no rank truncation, and the model overfits due to the model misspecification and low data availability. 23 0 10 010 20 30 
+
+# Prediction 
+
+# 0 10 010 20 30 
+
+# True 
+
+# 0 10 010 20 30 
+
+# Lower bound 
+
+# 0 10 010 20 30 
+
+# Upper bound 
+
+# −2
+
+# −1012
+
+# −2
+
+# −1012
+
+# −2
+
+# −1012
+
+# −2
+
+# −1012Figure 7: BV-α test case. Dynamics of the QGPRODE and of the true model, and the L1 error, averaged through time, with uncertainty bands. 24 0.0 2.5 5.0 7.5 10 .0 12 .5 15 .0 17 .50.02 0.04 0.06 0.08 0.10 0.12 0.14 0.16 
+
+Space Averaged L1 error Figure 8: BV-α test case. Space-Averaged Absolute Value Difference between the QGPRODE dynamics and the True dynamics. 25 3.2 Earth air temperature 
+
+As a final test case, we try to predict the Earth’s air temperature at different pressure levels in the period between 01-10-2025 and 31-12-2025 over the entire Earth. Training data is taken from the ERA5 dataset [43] and is composed of snapshots from 01-01-2025 to 30-09-2025 (1 sample per day). The data is downscaled to 2.5 degrees. We test the QGPRODE and the GPRODE methodology, and we compare it with LANDO, EDMD, and BOPDMD. Results are summarised in Tab. 5. Type scaled L1 relative L2 Time (seconds) EDMD 3.16 3.17 8BOPDMD 0.06 0.9 6
+
+GPRODE 0.7 0.4 23.40 LANDO 1.83 1.84 306 QGPRODE 0.05 0.08 9Table 5: ERA5 temperature test case. Scaled L1 and relative L2 error between each predictor and the true value. The spatial discretisation is 32( height ) × 140( latitude ) × 103( longitude ). Derivatives are computed using a second-order difference scheme in the interior and a first-order difference scheme in the boundaries. QGPRODE requires a few seconds for training and testing. Thus, the proposed method-ology accommodates the daily ingestion of newly available data for the generation of Digital Shadows. This feature is particularly advantageous, given that ERA5 is provided with a la-tency of approximately five days and does not supply forecast fields. EDMD, BOPDMD, LANDO and QGPRODE are truncated to the first 20 singular values. As reported in Table 5, QGPRODE outperforms existing methodologies in terms of accu-racy and remains competitive with respect to computational time. In contrast to EDMD and GPRODE, LANDO require computing the kernel matrix at every time step, which is compu-tationally demanding in high-dimensional state spaces. The runtime of LANDO is the slowest among these methods due to data subsampling, whereas GPRODE is slower than EDMD as a consequence of the additional time-integration step. EDMD, GPRODE, and LANDO exhibit overfitting, although GPRODE does so to a lesser extent because of the stabilising effect of time integration. BOPDMD achieves superior performance because it is a linear method that does not overfit and is computationally more efficient than the other algorithms, as it does not require kernel matrix evaluations and involves fewer large-scale matrix operations than QG-PRODE. In Figs. 9 and 10, the dynamics generated by QGPRODE are compared with the real dynamics. In Fig. 9, the predictive uncertainty bound is larger in regions where the variance of the training data is higher, and the true state variable remains within the lower and upper bounds in every spatial location. Visual comparisons are restricted to the surface layer of the simulations. Furthermore, in Fig. 9, QGPRODE accurately reproduces the spatial distribution of the stream. GPRODE does not perform well, as, unlike the other methods tested, there is no rank truncation, and the model overfits due to the model misspecification and low data. The upper and lower bounds are high because the variance is increasing in time, and the time interval is very large. In Fig. 11, the temporal evolution of the L1 error is shown. 26 Prediction True L1 diff 
+
+> 225 250 275
+> 225 250 275
+> 510
+
+Figure 9: ERA5 temperature test case. Prediction at time step 99 of the QGPRODE with confidence bounds and the true value. Prediction True 
+
+Lower bound Upper bound 
+
+> 220 240 260 280
+> 220 240 260 280
+> 220 240 260 280
+> 220 240 260 280
+
+Figure 10: ERA5 temperature test case. Dynamics of the QGPRODE and of the true model, and the L1 error, averaged through time, with uncertainty bands. 27 0 10 20 30 40 50 60 2.02.53.03.54.04.55.05.5
+
+Space Averaged L1 error Figure 11: ERA5 temperature test case. Space-Averaged Absolute Value Difference between the QGPRODE dynamics and the True dynamics. 28 4 Conclusion 
+
+In this work, we have introduced a novel framework for constructing Digital Shadows of complex dynamical systems by leveraging a combination of Gaussian Processes and Stochastic Differential Equations. The proposed GPRODE model integrates kernel-based regression with derivative approximation to infer continuous-time dynamics, while the QGPRODE extension further enforces stability through a quadratic manifold projection onto the unit sphere. We have rigorously established that, under mild regularity and sampling assumptions, GPRODE converges in the infinite-data limit. This convergence result also extends to cer-tain classes of Stochastic Differential Equations and Random Differential Equations. Through a series of numerical experiments—including the classical Lorenz system, a syn-thetic quadratic latent system, the BV-α geophysical flow model, and a real-world near-surface air temperature forecasting problem at the global scale—we have demonstrated that GPRODE and QGPRODE attain competitive short-term prediction accuracy with principled uncertainty quantification, outperforming classical reduced-order modelling (ROM) techniques. Both mod-els exhibit high computational efficiency, which facilitates rapid retraining upon the arrival of new data, a critical requirement for operational Digital Shadow implementations. Future research will focus on extending this methodology to multiple trajectories by incor-porating reduced-order models in the parameter space. Moreover, generalising the framework to controlled dynamical systems and real-time decision support constitutes a promising avenue for practical deployment in engineering applications and environmental monitoring. 
+
+# Acknowledgements 
+
+The authors acknowledge the support provided by the European Union NextGenerationEU, in the framework of the iNEST- Interconnected Nord-Est Innovation Ecosystem (iNEST ECS00000043 - CUP G93C22000610007) consortium. The authors acknowledge the financial support provided by the INdAM-GNCS. 
+
+# References 
+
+[1] Werner Kritzinger, Matthias Karner, Georg Traar, Jan Henjes, and Wilfried Sihn. Digital Twin in manufacturing: A categorical literature review and classification. IFAC-PapersOnLine, 51(11):1016–1022, 2018. [2] Jerald A. Brotzge, Don Berchoff, DaNa L. Carlis, Frederick H. Carr, Rachel Hogan Carr, Jordan J. Gerth, Brian D. Gross, Thomas M. Hamill, Sue Ellen Haupt, Neil Jacobs, Amy McGovern, David J. Stensrud, Gary Szatkowski, Istvan Szunyogh, and Xuguang Wang. Challenges and Opportunities in Numerical Weather Prediction. Bulletin of the American Meteorological Society, 104(3):E698–E705, March 2023. [3] Bruno Merz, Christian Kuhlicke, Michael Kunz, Massimiliano Pittore, Andrey Babeyko, David N. Bresch, Daniela I. V. Domeisen, Frauke Feser, Inga Koszalka, Heidi Kreibich, Florian Pantillon, Stefano Parolai, Joaquim G. Pinto, Heinz J¨ urgen Punge, Eleonora Ri-valta, Kai Schr¨ oter, Karen Strehlow, Ralf Weisse, and Andreas Wurpts. Impact Fore-casting to Support Emergency Management of Natural Hazards. Reviews of Geophysics, 58(4):e2020RG000704, December 2020. 29 [4] Lorenzo Tomada, Moaad Khamlich, Federico Pichi, and Gianluigi Rozza. Sparse Identifi-cation for bifurcating phenomena in Computational Fluid Dynamics. Computers & Fluids, 302:106841, November 2025. [5] Gabriele Codega, Anna Ivagnes, Nicola Demo, and Gianluigi Rozza. Machine Learning-based quadratic closures for non-intrusive Reduced Order Models, June 2025. arXiv:2506.09830 [math]. [6] Yuanhong Chen, Federico Pichi, Zhen Gao, and Gianluigi Rozza. Time Extrapolation with Graph Convolutional Autoencoder and Tensor Train Decomposition, 2025. Version Number: 1. [7] Petar Bevanda, Max Beier, Armin Lederer, Alexandre Capone, Stefan Sosnowski, and San-dra Hirche. Koopman-Equivariant Gaussian Processes, February 2025. arXiv:2502.06645 [cs]. [8] Fabrizio Gelsomino and Gianluigi Rozza. Comparison and combination of reduced-order modelling techniques in 3D parametrized heat transfer problems. Mathematical and Computer Modelling of Dynamical Systems, 17(4):371–394, August 2011. [9] Moaad Khamlich, Federico Pichi, Michele Girfoglio, Annalisa Quaini, and Gianluigi Rozza. Optimal transport-based displacement interpolation with data augmentation for reduced order modeling of nonlinear dynamical systems. Journal of Computational Physics, 531:113938, June 2025. [10] Carlos J. G. Rojas, Andreas Dengel, and Mateus Dias Ribeiro. Reduced-order Model for Fluid Flows via Neural Ordinary Differential Equations, 2021. Version Number: 2. [11] Xuping Xie, Guannan Zhang, and Clayton G. Webster. Non-Intrusive Inference Reduced Order Model for Fluids Using Deep Multistep Neural Network. Mathematics, 7(8):757, August 2019. [12] Nicola Farenga, Stefania Fresca, Simone Brivio, and Andrea Manzoni. On latent dynamics learning in nonlinear reduced order modeling. Neural Networks, 185:107146, May 2025. [13] Thomas Daniel, Fabien Casenave, Nissrine Akkari, and David Ryckelynck. Model order re-duction assisted by deep neural networks (ROM-net). Advanced Modeling and Simulation in Engineering Sciences, 7(1):16, December 2020. [14] Omer San, Romit Maulik, and Mansoor Ahmed. An artificial neural network framework for reduced order modeling of transient flows. Communications in Nonlinear Science and Numerical Simulation, 77:271–287, October 2019. [15] Matthew O. Williams, Ioannis G. Kevrekidis, and Clarence W. Rowley. A Data–Driven Approximation of the Koopman Operator: Extending Dynamic Mode Decomposition. Journal of Nonlinear Science, 25(6):1307–1346, December 2015. [16] Diya Sashidhar and J. Nathan Kutz. Bagging, optimized dynamic mode decompo-sition for robust, stable forecasting with spatial and temporal uncertainty quantifica-tion. Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences, 380(2229):20210199, August 2022. 30 [17] Peter J. Schmid. Dynamic mode decomposition of numerical and experimental data. Journal of Fluid Mechanics, 656:5–28, August 2010. [18] Francesco Andreuzzi, Nicola Demo, and Gianluigi Rozza. A Dynamic Mode Decomposition Extension for the Forecasting of Parametric Dynamical Systems. SIAM Journal on Applied Dynamical Systems, 22(3):2432–2458, September 2023. [19] Milan Korda and Igor Mezi´ c. On Convergence of Extended Dynamic Mode Decomposition to the Koopman Operator. Journal of Nonlinear Science, 28(2):687–710, April 2018. [20] Steven L. Brunton, Joshua L. Proctor, and J. Nathan Kutz. Discovering governing equa-tions from data by sparse identification of nonlinear dynamical systems. Proceedings of the National Academy of Sciences, 113(15):3932–3937, April 2016. [21] Sebastian Grimberg, Charbel Farhat, and Noah Youkilis. On the stability of projection-based model order reduction for convection-dominated laminar and turbulent flows. Journal of Computational Physics, 419:109681, October 2020. [22] Peter J. Baddoo, Benjamin Herrmann, Beverley J. McKeon, J. Nathan Kutz, and Steven L. Brunton. Physics-informed dynamic mode decomposition. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences, 479(2271):20220576, March 2023. [23] Alan A. Kaptanoglu, Jared L. Callaham, Aleksandr Aravkin, Christopher J. Hansen, and Steven L. Brunton. Promoting global stability in data-driven models of quadratic nonlinear dynamics. Physical Review Fluids, 6(9):094401, September 2021. [24] Peter J. Baddoo, Benjamin Herrmann, Beverley J. McKeon, and Steven L. Brunton. Ker-nel learning for robust dynamic mode decomposition: linear and nonlinear disambiguation optimization. Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences, 478(2260):20210830, April 2022. [25] Alessandro Della Pia, Dimitrios G. Patsatzis, Gianluigi Rozza, Lucia Russo, and Con-stantinos Siettos. Surrogate normal-forms for the numerical bifurcation and stability anal-ysis of navier-stokes flows via machine learning, September 2025. arXiv:2506.21275. [26] Katharina Ensinger, Nicholas Tagliapietra, Sebastian Ziesche, and Sebastian Trimpe. Ex-act Inference for Continuous-Time Gaussian Process Dynamics. Proceedings of the AAAI Conference on Artificial Intelligence, 38(11):11883–11891, March 2024. [27] Markus Heinonen, Cagatay Yildiz, Henrik Mannerstr¨ om, Jukka Intosalmi, and Harri L¨ ahdesm¨ aki. Learning unknown ODE models with Gaussian processes. In Proceedings of the 35th International Conference on Machine Learning, pages 1959–1968. PMLR, July 2018. [28] Emilio Tanowe Maddalena, Paul Scharnhorst, and Colin N. Jones. Deterministic er-ror bounds for kernel-based learning techniques under bounded noise. Automatica, 134:109896, December 2021. [29] Armin Lederer, Jonas Umlauft, and Sandra Hirche. Uniform Error and Posterior Vari-ance Bounds for Gaussian Process Regression with Application to Safe Control, 2021. arXiv:2101.05328. 31 [30] Alexandre Capone, Armin Lederer, and Sandra Hirche. Gaussian Process Uniform Error Bounds with Unknown Hyperparameters for Safety-Critical Applications. In Proceedings of the 39th International Conference on Machine Learning, pages 2609–2624. PMLR, June 2022. [31] Ingo Steinwart and Marian Anghel. Consistency of support vector machines for forecasting the evolution of an unknown ergodic dynamical system from observations with unknown noise. The Annals of Statistics, 37(2), April 2009. [32] Rui Tuo, Yan Wang, and C. F. Jeff Wu. On the Improved Rates of Convergence for Mat´ ern-Type Kernel Ridge Regression with Application to Calibration of Computer Mod-els. SIAM/ASA Journal on Uncertainty Quantification, 8(4):1522–1547, January 2020. [33] Holger Wendland. Scattered Data Approximation. Cambridge University Press, 1 edition, December 2004. [34] Carl Edward Rasmussen and Christopher K. I. Williams. Gaussian Processes for Machine Learning. The MIT Press, November 2005. [35] Wenxin Xiao, Armin Lederer, and Sandra Hirche. Learning Stable Nonparametric Dynam-ical Systems with Gaussian Process Regression. IFAC-PapersOnLine, 53(2):1194–1199, January 2020. [36] Rudy Geelen, Stephen Wright, and Karen Willcox. Operator inference for non-intrusive model reduction with quadratic manifolds. Computer Methods in Applied Mechanics and Engineering, 403:115717, January 2023. [37] Hossein Mohammadi, Rodolphe Le Riche, Nicolas Durrande, Eric Touboul, and Xavier Bay. An analytic comparison of regularization methods for Gaussian Processes, May 2017. arXiv:1602.00853. [38] Saiboh Saturo. Extension formulas and norm inequalities in Sobolev Hilbert spaces. Mathematical Inequalities & Applications, 27(2), 2024. [39] F. Pedregosa, G. Varoquaux, A. Gramfort, V. Michel, B. Thirion, O. Grisel, M. Blon-del, P. Prettenhofer, R. Weiss, V. Dubourg, J. Vanderplas, A. Passos, D. Cournapeau, M. Brucher, M. Perrot, and E. Duchesnay. Scikit-learn: Machine Learning in Python. Journal of Machine Learning Research, 12:2825–2830, 2011. [40] Nicola Demo, Marco Tezzele, and Gianluigi Rozza. PyDMD: Python Dynamic Mode Decomposition. The Journal of Open Source Software, 3(22):530, February 2018. [41] Sara M. Ichinaga, Francesco Andreuzzi, Nicola Demo, Marco Tezzele, Karl Lapo, Gianluigi Rozza, Steven L. Brunton, and J. Nathan Kutz. PyDMD: A Python Package for Robust Dynamic Mode Decomposition. Journal of Machine Learning Research, 25(417):1–9, 2024. [42] Michele Girfoglio, Annalisa Quaini, and Gianluigi Rozza. A novel Large Eddy Simula-tion model for the Quasi-Geostrophic equations in a Finite Volume setting. Journal of Computational and Applied Mathematics, 418:114656, January 2023. [43] Copernicus Climate Change Service, Climate Data Store. ERA5 hourly data on single levels from 1940 to present, 2018. 32 [44] Peter Koepernik and Florian Pfaff. Consistency of Gaussian Process Regression in Metric Spaces. Journal of Machine Learning Research, 22(244):1–27, 2021. [45] Stefano De Marchi, Martin D. Buhmann, and Gerlind Plonka-Hoch. Kernel Functions and Meshless Methods. Dolomites Research Notes on Approximation, 4(DRNA Volume 4.2):1–63, September 2011. [46] H. Inci, T. Kappeler, and P. Topalov. On the regularity of the composition of diffeomor-phisms. Memoirs of the American Mathematical Society, 226(1062):1, 2013. [47] A. Behzadan and M. Holst. Multiplication in Sobolev spaces, revisited. Arkiv f¨ or Matematik, 59(2):275–306, 2021. [48] Vittorino Pata. Fixed Point Theorems and Applications, volume 116 of UNITEXT. Springer International Publishing, Cham, 2019. [49] Charles A. Micchelli, Yuesheng Xu, and Haizhang Zhang. Universal Kernels. Journal of Machine Learning Research, 7:2651–2667, 2006. [50] S Kapoor and P M Vaidya. Fast algorithms for convex quadratic programming and mul-ticommodity flows. In Proceedings of the eighteenth annual ACM symposium on Theory of computing - STOC ’86, pages 147–159, Berkeley, California, United States, 1986. ACM Press. [51] Morris W. Hirsch. Differential Topology, volume 33. Springer New York, 1976. [52] John M. Lee. Introduction to Smooth Manifolds, volume 218 of Graduate Texts in Mathematics. Springer New York, New York, NY, 2012. 
+
+# A Theoretical Analysis of GPRODE 
+
+In this section, we analyse the convergence properties of the GPRODE methodology. The primary objective of GPRODE is to infer the unknown drift function f that governs a dynam-ical system, using observed trajectory data. Rather than estimating f via a parametric model, we employ a nonparametric formulation based on Gaussian processes. The central idea is to interpret the available data BN as (possibly noisy) observations of the underlying vector field and to construct a probabilistic surrogate model for the drift. Within this framework, the posterior mean function μN provides a point estimate of the drift, while the posterior variance function σN characterises the epistemic uncertainty associated with this estimate. This probabilistic representation enables both the reconstruction of the system’s dynamics and the quantification and propagation of uncertainty over time. As additional data are incorpo-rated into the model, the posterior distribution becomes increasingly concentrated, and the variance σN is expected to converge to zero under suitable regularity conditions, thereby yield-ing a deterministic approximation of the true dynamical system. We provide another notation table for the variables in the appendix. 33 Table 6: Summary of notation. 
+
+Symbol Description 
+
+Data and state 
+
+X(t) ∈ Rm State vector of the dynamical system at time tXtrain Training dataset {X(t1), . . . , X (tN )}
+
+m State space dimension 
+
+N Number of training samples 
+
+TN Set of training times {t1, . . . , t N }
+
+BN Set of training states {X(t) | t ∈ TN }
+
+B Closure {X(t) | t > 0}; assumed compact in Rm
+
+˜B Open trajectory set {X(t) | t > 0} before closure 
+
+U Bounded, convex, open set with B ⊂ UhB,B N Fill distance max x∈B min y∈BN ∥x − y∥2
+
+Dynamics and operators 
+
+f : Rm → Rm True drift function of the autonomous ODE ˙X = f (X)
+
+Lf Lipschitz constant of f
+
+¯L Uniform bound on the Lipschitz constants LN of μN
+
+M Prediction horizon 
+
+y(t, x ) Flow of the ODE from initial condition x at time t
+
+Ψ Finite-difference operator approximating ˙X(ti)ΨN Derivative approximator of order p; maps H(m+5) /2(U ) →
+
+Hs(U )Φ Numerical time-stepping function (e.g. RK45, symplectic) ∆t Time step size for numerical integration ∆tN Maximum time spacing sup i∈TN (ti − ti−1) in the training set ∆t Global upper bound on ∆ tN ; assumed < 2/L f
+
+Gaussian process and kernel 
+
+K(x, y ) Mat´ ern kernel k(∥x − y∥2) = e−d(1 + d)RKHS( U ) Reproducing Kernel Hilbert Space on U induced by K;norm-equivalent to H(m+3) /2(U )
+
+μN (x) GP posterior mean with exact derivatives: 
+
+K(x, B N )K(BN , B N )+f (BN )˜μN (x) GP posterior mean with approximate derivatives: 
+
+K(x, B N )K(BN , B N )+ΨN (BN )
+
+σN (x) GP posterior standard deviation ˆσN sup x∈B σN (x); uniform bound on posterior std 
+
+bN (x) Lipschitz-corrected diffusion coefficient derived from σN (x)
+
+fN ∼ N (μN , σ 2 
+
+> N
+
+) GP surrogate for the drift with exact derivatives ˜fN ∼ N (˜ μN , σ 2 
+
+> N
+
+) GP surrogate for the drift with approximate derivatives 
+
+CΨ(f ), C 2,Ψ(f ) Approximation constants of the derivative approximator ΨN
+
+¯CΨ(f ), ¯C2,Ψ(f ) Approximation constants in terms of ∆ tN (Assumption 4) 34 Table 1 (continued) 
+
+Symbol Description 
+
+GPRODE model quantities 
+
+˜EN (t) Mean trajectory obtained with approximate derivative ˜ μN
+
+˜VN (t) Variance of the trajectory Σ( t) Approximate covariance matrix Cov ω (X(t, ω )) ¯V Threshold (saturation) variance 
+
+γ(x) Saturation function x/ (x + 0 .001) enforcing V ≤ ¯VA(t) Augmented state [ E(t)⊤, V (t)] ⊤
+
+˜AN (t) Augmented state built from ˜EN and ˜VN
+
+g(A(t)) Right-hand side of the augmented ODE system ˜gN ( ˜AN (t)) Right-hand side using approximate mean ˜ μN and bN
+
+˜AΦ,k,N Numerical solution of the augmented ODE at step k via integrator Φ 
+
+KN Number of integration steps M/ ∆tN ∈ N
+
+DΦ(f, hk ) Local error functional of the IVP solver Φ of order p
+
+Function spaces 
+
+Hs(U ) Sobolev space of order s on UHs 
+
+> 0
+
+(U, Rm) Sobolev space with zero boundary trace 
+
+D(k+2+ m)/2(U, Rm) Set of diffeomorphisms in H(k+2+ m)/2(U, U )
+
+B Ball of diffeomorphisms {x ∈ H(k+2+ m)/2 : ∥x − id ∥ ≤ α < 
+
+1}
+
+F (y) Composition operator x 7 → f (y(x)); shown Lipschitz on B
+
+Non-equispaced derivative approximation 
+
+gϵ Best RKHS approximation of f within ϵ-tolerance; exists by universality of the Mat´ ern kernel 
+
+f N, ∆tN 
+
+> ϵ
+
+Solution of the constrained RKHS optimisation for non-equispaced data 
+
+ϵ Tolerance parameter in the constrained optimisation ( ϵ > 0if f / ∈ RKHS( U )) 
+
+βj Dual coefficients in the kernel expansion P 
+
+> j
+
+αj K(X(ti), X (tj )) 
+
+Theoretical Analysis of QGPRODE 
+
+¯E[F ] Discrete time-average quadrature approximation of ( tN −
+
+t1)−1 R F (t) dt ϕ Function that maps ˜B to Sk
+
+Eα[f ] Mean of f according to the ergodic measure α.
+
+## A.1 Proof of convergence: exact derivative 
+
+The convergence analysis of the GPRODE framework is structured in three main steps. First, we show that the Gaussian process regression converges uniformly to the true drift func-35 tion f as the number of observations increases. Second, we establish that the solutions of the approximate ordinary differential equations con-verge to the solution of the true dynamical system. Finally, we extend the analysis to stochastic differential equations, proving convergence in mean square. This decomposition allows us to isolate the different sources of approximation error and study them independently. First, we present two assumptions required to establish convergence. 
+
+Assumption 1. We assume that the data inflow follows 
+
+˙X(t) = f (X(t)) , (45) 
+
+where {X(t)|t > 0} = B is compact subset of Rm and exists U bounded, convex and open set such that B ⊂ U and f ∈ H m+5 2 
+
+> 0
+
+(U, Rm).
+
+The assumption of compactness holds true in certain real-world applications, such as oceano-graphic currents, which are governed by conservation laws. We will denote by Lf the Lipschitz constant of f . We define 
+
+TN = {t1, ..., t N }
+
+as the times of the training set, with ti < t i+1 ∀i = 1 . . . N .We define 
+
+BN = {X(t)|t ∈ TN }
+
+as the training set. Additionally, let 
+
+hB,B N = max  
+
+> x∈B
+
+min 
+
+> y∈BN
+
+|| x − y|| 2 (46) the fill distance. Consistently with [29], we assume that 
+
+Assumption 2. 
+
+lim  
+
+> n→+∞
+
+hB,B N = 0 . (47) The assumptions introduced in this section are classical in the study of nonparametric dynamical systems. The compactness of the trajectory ensures that the system evolves within a bounded subset of the state space, a property that is fundamental for establishing uniform convergence results. This requirement is fulfilled in a wide range of applications in which conservation laws or physical constraints restrict the evolution of the system. The fill distance assumption guarantees that the observations become dense in the domain as the sample size increases, a condition that is crucial for the statistical consistency of the Gaussian process estimator. The regularity assumption imposed on the drift function f ensures that it lies in the reproducing kernel Hilbert space associated with the chosen kernel, thereby enabling the application of kernel-based approximation theory. We are now prepared to present the methodology in a formal manner and to establish its convergence through rigorous proof. Our focus is on predicting the behaviour of the ODE within the interval ( tN , t N + M ], where M is independent of N .As we did in Section 2 
+
+K(x, y ) = k(|| x − y|| 2) (48) 36 where 
+
+k(d) = e−d(1 + d) (49) which corresponds to the Mat´ ern kernel. This choice of kernel is motivated by the fact that it has been proved in [32, 33] that 
+
+RKHS (U ) = H m   
+
+> 2+32
+
+(U ) (50) with equivalent norms. It follows that H m+5 2 
+
+> 0
+
+(U, Rm) ⊂ RKHS (U, Rm), and thus we can learn the drift function f in this space. Finally, before stating Theorem 1, we define the instantaneous mean function sequences 
+
+μN (x) = K(x, B N )K(BN , B N )+f (BN ), (51) the instantaneous variance function sequence 
+
+σN (x) = pK(x, x ) − K(x, B N )( K(BN , B N )) +K(BN , x ), (52) the modified variance function sequence 
+
+bN (x) = 
+
+(σN (x) σN (x) ≥ 1   
+
+> 2σN(x)2
+> 1+ σN(x)2
+
+σN (x) < 1, (53) and fN ∼ N (μN , σ 2 
+
+> N
+
+). The following Theorem can now be stated. 
+
+Theorem 1. It holds 1. b2 
+
+> N
+
+(x) ≤ σ2 
+
+> N
+
+(x)
+
+≤ 1 − k(dist( x, B N )) ≤ dist( x, B N )2 ∀x ∈ U. (54) 
+
+2. If assumption 2 holds, then if we define ˆσN = sup x∈B σN , we get 
+
+lim   
+
+> N→+∞
+
+ˆσN = 0 (55) 
+
+uniformly. 3. If assumption 1 holds, then 
+
+sup 
+
+> x∈B
+
+|| μN (x) − f (x)|| 2 ≤ 2|| f || RKHS (U, Rm)σN (x), ∀x ∈ U. (56) 
+
+4. If assumptions 1,2 hold, then sup x∈B || μN (x) − f (x)|| 2 → 0.Proof. 1. The inequality is found in [29, 44] if the inverse matrix is adopted of the pseu-doinverse, but the proof follows straightforwardly also for the pseudo-inverse case. 2. Follows from the previous point. 37 3. The scalar version with the inverse matrix instead of the pseudoinverse is found in [28, 45], but the proof follows straightforwardly also for the pseudo-inverse case. Our case follows by applying the scalar version to every component and by computing the ℓ2 norm. 4. Follows from assumptions and from points 2 and 3. Theorem 1 establishes the core approximation guarantees for the Gaussian process model. The first part shows that the posterior variance σN (x) can be bounded in terms of the distance to the training points, emphasising how the fill distance governs the level of uncertainty. The second part guarantees that the maximum variance converges uniformly to zero, indicating that the model becomes progressively more confident across the entire domain. The third and fourth parts show that the approximation error of the mean function μN is controlled by the variance and therefore also vanishes in the limit. In summary, the theorem formalises the intuition that dense coverage of the domain by data points simultaneously yields lower uncertainty and higher accuracy. In order to establish results about the convergence of ODEs, we define the systems 
+
+
+
+˙EN (t) = μN (EN (t)) t ∈ (tN , t N + M ],
+
+˙VN (t) = σN (EN (t)) 2 t ∈ (tN , t N + M ],EN (tN ) = Y (tN ),VN (tN ) = 0 ,
+
+(57) 
+
+
+
+˙EN (t) = μN (EN (t)) t ∈ (tN , t N + M ],
+
+˙VN (t) = bN (EN (t)) 2 t ∈ (tN , t N + M ],EN (tN ) = Y (tN ),VN (tN ) = 0 ,
+
+(58) 
+
+
+
+˙EN (t) = μN (EN (t)) t ∈ (tN , t N + M ],
+
+˙VN (t) = bN (EN (t)) 2γ
+
+ ¯VN −VN (t)¯VN
+
+
+
+t ∈ (tN , t N + M ]EN (tN ) = Y (tN ),VN (tN ) = 0 ,
+
+(59) and the SDE 
+
+(
+
+dY N = μ(YN (t)) dt + b(YN (t)) ImdW t ∈ (tN , t N + M ],YN (tN ) = Y (tN ). (60) The dynamical systems introduced in Equations (57)–(60) offer distinct mechanisms for propagating the learned dynamics. The deterministic ordinary differential equation driven by μN constitutes a direct approxima-tion of the underlying true dynamical system. The variance dynamics characterise the evolution of uncertainty along the trajectory. The modified variance term bN is introduced to enhance numerical stability, in particular in regimes where the variance attains small values. The stochastic differential equation formulation explicitly incorporates uncertainty via a diffu-sion term, thereby enabling a probabilistic description of the system’s temporal evolution. 38 Collectively, these formulations yield complementary viewpoints: a deterministic approxima-tion of the mean dynamics and an uncertainty-aware model capturing stochastic variability. We now proceed to show that these equations converge to the true underlying ODE. To estab-lish this result, we first present several general theorems concerning the convergence of normal random variables, ordinary differential equations (ODEs), and stochastic differential equations (SDEs). 
+
+Proposition 1. Let gN a sequence of random variables with E[gN ] = μN and V ar [gN ] = σ2
+
+> N
+
+such that 
+
+μN → μ (61) 
+
+and 
+
+σ2 
+
+> N
+
+→ 0. (62) 
+
+Then 
+
+E[|μ − gn|] → 0. (63) 
+
+Proof. We have E[|gn − μ|] ≤ E[|gn − μn|] + |μ − μn| ≤ E[|gn − μn|] + |μ − μn| ≤ σn + |μ − μn|
+
+due to Cauchy Schwartz, which converges to 0. For the convergence of ODEs and SDEs, we need stronger assumptions. 
+
+Proposition 2. Let fn : U → Rm a sequence of Lipschitz functions (with Lipschitz constant 
+
+LN on U) that converges uniformly to f on a subset B ⊂ U , with f Lipschitz and Lipschitz constant L, and with LN ≤ ¯L and yn a sequence that converges to y.Then, let Yn(t) be the solution of the ODE 
+
+( ˙YN = fN (YN ) t ∈ [tN , t N + M ],YN (tN ) = yN , (64) 
+
+and Y is the solution of ( ˙Y = f (Y ) t ∈ [0 , M ],Y (tN ) = yN . (65) 
+
+If Y (t) ⊂ B, we have 
+
+lim   
+
+> N→∞
+
+sup  
+
+> t∈[0 ,M ]
+
+|| YN (t + tN ) − Y (t + tN )|| 2 = 0 .
+
+Proof. We have (YN (t + tN ) − Y (t + tN )) = 
+
+Z t+tN
+
+> tN
+
+(fN (YN (s)) − f (Y (s))) ds (66) so 
+
+|| (YN (t + tN ) − Y (t + tN )) || 2 ≤
+
+Z t++ tN
+
+> tN
+
+|| (fN (YN (s)) − f (Y (s))) || 2ds (67) 
+
+≤
+
+Z t+tN
+
+> tN
+
+|| (fN (YN (s)) − fN (Y (s)) || 2 + || fN (Y (s)) − f (Y (s)) || 2ds (68) 39 ≤ ¯L
+
+Z t+tN
+
+> tN
+
+|| (YN (s)) − (Y (s)) || 2ds + t sup 
+
+> s∈[0 ,t ]
+
+|| fN (Y (s)) − f (Y (s)) || 2. (69) Let χN = sup s∈[tN ,t N +t] || fN (Y (s)) − f (Y (s)) || 2. Due to the Gr¨ onwall inequality, it holds that 
+
+|| (YN (t + tn) − Y (t + tn)) || 2 ≤ tχ neLt , (70) which converges to zero as χn goes to 0 due to the uniform convergence on B.
+
+Proposition 3. Let Y (t) : [0 , M ] → Rm a time series, σN : U → R+ a function that satisfies 
+
+σN (x) ≤ C dist( x, X N ), YN (t) such that || Y (t + tN )) − YN (t + tN )|| 2 ≤ C(t)gN with C(t)
+
+continuos and such that hN = dist( Y (t), X N ) and gN go to 0. Let also α non-negative function on R+ such that 
+
+G(y) = 
+
+Z y
+
+> 0
+
+yα(y) ,
+
+is continuos, monotone, well defined, satisfies G(y)y > 0 and G(0) = 0 .Then if VN (t) is the solution of the ODE 
+
+( ˙VN (t) = σ2 
+
+> N
+
+(YN (t)) α(VN (t)) t ∈ [tN , t N + M ],VN (tN ) = 0 ,
+
+it holds that VN (t + tN ) converges to 0 as N goes to +∞.Proof. We have 
+
+VN (t + tN ) = G−1(
+
+Z t+tN
+
+> tN
+
+σN (YN (s))) ds ) ≤ G−1(
+
+Z t+tN
+
+> tN
+
+C(s) dist( YN (s), X N )ds ) ≤
+
+G−1(
+
+Z t+tN
+
+> tN
+
+C dist( Y (s), X N )ds +
+
+Z t+tN
+
+> tN
+
+C|| Y (s) − YN (s)|| 2ds )which converges to 0 due to G−1 being continuos as G is continuous and monotone. 
+
+Proposition 4. Let fN , Y (t), f , σN as in propositions 2, 3. Furthermore, assume that σN
+
+Lipschitz. Then if Yn(t) is the solution of the Ito SDE 
+
+(
+
+dY N = fN (YN )dt + σN (YN )IdW t ∈ [tN , t N + M ],YN (tN ) = yN , (71) 
+
+then 
+
+lim   
+
+> N→∞
+
+sup  
+
+> t∈[0 ,M ]
+
+E[|| YN (t + tN ) − Y (t + tN )|| 22] = 0 .
+
+Proof. Let χn = sup x∈B || f (x) − fn(x)|| 22 and let ˆ σn = sup x∈B || σn|| 22 and The SDE in consideration is equivalent to 
+
+Yn(t + tN ) − Y (t + tN ) = 
+
+Z t+tN
+
+> tN
+
+(f (Yn(s)) − f (Y (s))) ds +
+
+Z t+tN
+
+> tN
+
+σN (Yn(s)) dW (s).
+
+40 By applying || · || 2 and computing the square we get 
+
+|| YN (t+tN )−Y (t+tN )|| 22 ≤ 2
+
+Z t+tN
+
+> tN
+
+|| (f (YN (s)) −f (Y (s))) || 22ds +2 m
+
+Z t+tN
+
+> tN
+
+σN (YN (s)) dW (s)
+
+2
+
+.
+
+By taking the expectation and applying the Ito isometry, we get 
+
+E[|| YN (t + tN ) − Y (t + tN )|| 22] ≤ 2
+
+Z t+tN
+
+> tN
+
+E[|| (fN (YN (s)) − f (Y (s))) || 22] + 2 mE[σ2 
+
+> N
+
+(YN (s))] ds. 
+
+To bound the right end side, note that 
+
+|| (fN (YN (s)) − f (Y (s))) || 22 ≤ 2 ¯L2|| YN (s) − Y (s)|| 22 + 2 χ2
+
+> n
+
+,
+
+and 
+
+σ2 
+
+> N
+
+(YN (s)) ≤ 2C2h2 
+
+> N
+
++ 2 C2|| YN (s) − Y (s)|| 22,
+
+so we get 
+
+E[|| YN (t + tN ) − Y (t + tN )|| 22] ≤ (4 ¯L2 + 4 mC 2)
+
+Z ttN
+
+E[|| YN (s) − Y (s)|| 22]ds + 4 mtCh 2 
+
+> N
+
++ 4 tχ 2
+
+> n
+
+.
+
+By Gr¨ onwall 
+
+E[|| YN (t + tN ) − Y (t + tN )|| 22] ≤ (4 mtCh n + 4 tχ n)e(4 ¯L+4 mC )t
+
+which converges to 0. We are now ready to prove the main theorem of this section. 
+
+Theorem 2. If assumptions 1, 2, hold, then 1. 
+
+lim   
+
+> N→+∞
+
+E[|fN − f |] = 0 . (72) 
+
+2. Let EN (t), VN the solutions of Eq. 58, or 59, 57. Then given the sequence of stochastic process YN (t + tN ) with mean EN (t) − X(t + tN ) and variance VN (t) if holds that the quantity sup t∈[0 ,M ] E[|| YN (t + tN ) − Y (t + tN )|| 2] converges when N → +∞ to 0, ∀t ∈
+
+[0 , M ].3. Let YN the solution of Eq. 60. Then E[|| Y (t + tN ) − YN (t + tN )|| 2] converges in mean square to 0 ∀t ∈ [0 , M ].Proof. 1. Follows from Theorem 1 and Proposition 1. 2. Follows from Theorem 1 and Propositions 2,3. 3. Follows from Theorem 1 and Propositions 4. 41 We have demonstrated that the GPRODE framework yields a mathematically consistent procedure for inferring dynamical systems from observational data. In particular, the Gaussian process–based estimator converges uniformly to the true drift func-tion, and the corresponding ODE and SDE models converge to the underlying system dynamics. Collectively, these results furnish a rigorous theoretical foundation for the application of GPRODE in settings that demand both accurate prediction and principled uncertainty quantification. 
+
+## A.2 Proof of convergence: numerical approximation 
+
+In practical applications, the time derivative ˙X(t) is typically not directly observable and must be approximated from discretely sampled data. Moreover, the resulting system of differ-ential equations must be solved using numerical integration schemes. These two steps introduce distinct sources of numerical error: one associated with the approximation of the derivative and another arising from the time-integration procedure. The analysis presented in this section demonstrates that, under appropriate regularity and sampling assumptions, both error contributions converge to zero as the sampling becomes suf-ficiently dense. Consequently, the numerical implementation is asymptotically consistent with the underlying theoretical model. 
+
+Assumption 3. Let 
+
+∆tN = sup 
+
+> i∈TN
+
+ti − ti−1, (73) 
+
+we assume 
+
+sup  
+
+> N∈N
+
+∆tN = ∆ t < 2
+
+Lf
+
+, (74) 
+
+and 
+
+lim   
+
+> N→+∞
+
+∆tN = 0 . (75) We now define a finite-difference method of order p.
+
+Definition 1. A family of derivative approximators of order p ≥ 1 is a sequence of operators 
+
+ΨN : H m+5 2 (U ) → Hs(U ) with s = 3+ m 
+
+> 2
+
+≤ s ≤ m+5 2 , such that 
+
+sup 
+
+> x∈U
+
+|| f (x) − ΨN [f ]( x)|| 2 ≤ CΨ(f ) 1
+
+N p , (76) 
+
+and 
+
+|| f (x) − ΨN [f ]|| Hs(U ) ≤ C2,Ψ(f ) 1
+
+N p ∀f ∈ H m+5 2 
+
+> 0
+
+(U ). (77) Examples include the forward difference operator 
+
+√N
+
+
+
+y
+
+ 1
+
+√N , x 
+
+
+
+− x
+
+
+
+, (78) where (
+
+˙y(t, x ) = f (y(t, x )) ,y(0 , x ) = x, (79) which has an order of convergence 0 .5, and has C1,Ψ,(f ) given by 12 sup 
+
+> x∈U
+
+||∇ xf (x)|| 2|| f (x)|| 2,which is finite to f being C1.42 We prove that it also respects the second requirement in Appendix A with s = m+3 2 . We note that Ψ N depends on f , which is unknown. We need to further assume that we can infer some information from the data only. 
+
+Assumption 4. We assume that the values of ΨN [f ]( ti), i = 1 ...N are computable knowing only TN and BN and that 
+
+sup 
+
+> x∈U
+
+|| f (x) − ΨN [f ]( x)|| 2 ≤ ¯CΨ(f )∆ tNq , (80) 
+
+and 
+
+|| f (x) − ΨN [f ]|| Hs(U ) ≤ ¯C2,Ψ(f )∆ tNq ∀f ∈ H m+5 2 
+
+> 0
+
+(U ), (81) 
+
+for a certain q > 0.
+
+The forward difference method satisfies this assumption in the case of equispaced data (the constants are the same as Definition 1). We need the assumption of s = 3+ m 
+
+> 2
+
+because we are working with a kernel with that regularity, but it can be changed assuming different hypotheses for f or by changing the kernel. We were unable to construct a general difference scheme for non-equispaced data that satisfies the assumption 4. We propose an alternative later in this Appendix. Let ˜μN (x) = K(x, B N )K(BN , B N )+ΨN (BN ), (82) 
+
+
+
+˙˜EN (t) = ˜ μN ( ˜EN (t)) t ∈ (tN , t N + M ],
+
+˙˜VN (t) = bN ( ˜EN (t)) 2γ
+
+ ¯VN − ˜VN (t)¯VN
+
+
+
+t ∈ (tN , t N + M ],
+
+˜EN (tN ) = Y (tN ),
+
+˜VN (tN ) = 0 ,
+
+(83) 
+
+(
+
+dY N = ˜ μ(YN (t)) dt + b(YN (t)) ImdW t ∈ (tN , t N + M ],YN (tN ) = Y (tN ). (84) We define ˜fN (x) as a sequence of random variables with mean ˜ μN (x) and variance σn(X). We are ready to state and prove the following Theorem. 
+
+Theorem 3. If the assumptions 1, 2, 3, 4 hold, then 1. ˜μN → f uniformly. 2. lim N →+∞ E[| ˜fN − f |] = 0 
+
+3. Let 
+
+YN (t) ∼ M N ( ˜EN (t), V N (t)) (85) 
+
+where ˜EN (t), ˜VN (t) are defined in Eq. 83. Then sup t∈[0 ,M ] E[|| YN (t + tN ) − Y (t + tN )|| 22]
+
+converges to 0.4. Let ˜YN (t) the solution of Eq. 84. The sup t∈[0 ,M ] E[|| YN (t + tN ) − Y (t + tN )|| 22] converges to 0.
+
+43 Proof. 1. We have 
+
+|| (˜ μN − f (x)) || 2 ≤|| (˜ μN − ΨN [f ]( x)) || 2 + || (f (x) − ΨN [f ]( x)) || 2
+
+≤ sup 
+
+> x∈B
+
+|| (˜ μN − ΨN (x)) || 2 + CΨN (f )(∆ tN )q .
+
+(86) As a consequence sup 
+
+> x∈B
+
+|| (˜ μN − f )|| ≤ 2|| ΨN (x)|| H m+3 2 (U )σN (x) + CΨN (f )(∆ tN )q , (87) due to the equivalence of norms. As || ΨN || H 3+ m   
+
+> 2(U)
+
+converges uniformly to || f || H 3+ m  
+
+> 2(U)
+
+because of its definition and assumption 4, everything converges to 0 because of Theorem 1 and assumption 3. 2. Follows from point 1 and Proposition 1. 3. Follows from point 1 and Proposition 2. 4. Follows from point 1 and 4. We have shown convergence of the ODE with derivatives estimated using a finite-difference scheme to the true ODE. 
+
+Definition 2. A functional Φ( X, f, h ) is an Initial Value Problem solver of order p if given the sequence XΦ, k ∈ N given by 
+
+(
+
+XΦ,0,f = X, XΦ,k +1 ,f = Φ( XΦ,k,f , f, h ), (88) 
+
+if it holds ∀k ∈ N
+
+|| XΦ,k,f − X(hk )|| 2 ≤ DΦ(f, hk )hp ∀f ∈ H 5+ m 
+
+> 2
+> 0
+
+(U ) (89) 
+
+where DΦ(f, hk ) is a continuous functional and increasing in the second term. 
+
+IVP solvers include both multistep methods (like Adams-Bashforth) and Runge-Kutta methods. Let 
+
+A(t) = 
+
+X(t)0
+
+
+
+, (90) ˜AN (t) = 
+
+ ˜EN (t)˜VN (t)
+
+
+
+, (91) ˜gN ( ˜AN (t)) = 
+
+" ˜μN ( ˜EN (t)) 
+
+b2 
+
+> N
+
+( ˜EN (t)) γ
+
+ ¯VN − ˜VN (t)¯VN
+
+#
+
+, (92) 44 we can rewrite the ODE system as 
+
+( ˜AN (0) = A(tN ),
+
+˙˜AN = ˜ gN ( ˜AN ). (93) For simulating the ODE 93, we use the same time stepping that is used for training, so ∆ tN .Then we discretise it as (
+
+AΦ,0,N = A(tN ),AΦ,k,N = Φ( AΦ,k −1,N , ˜gN , ¯∆tN ). (94) 
+
+Theorem 4. If assumptions 1, 2, 3, 4, hold and furthermore M
+
+> ∆tN
+
+= KN ∈ N∀N. Then 
+
+• lim   
+
+> N→+∞
+
+|| EΦ,K N ,N − X(tN + M )|| 2 = 0 and lim   
+
+> N→+∞
+
+|VΦ,K N ,N − 0| = 0 ..
+
+• Let XΦ,K N ,N ∼ M N (EΦ,K N ,N , V Φ,K N ,N ), then 
+
+E[|| XΦ,K N ,N − X(M )|| 2] → 0. (95) 
+
+Proof. •
+
+|| A(M ) − AΦ,K N ,N || 2 ≤ || A(M ) − AN (M )|| 2 + || AΦ,K N ,N − AN (M )|| 2 (96) 
+
+≤ || A(M ) − AN (M )|| 2 + ¯D(Φ N )∆ tNp, (97) which converges to zero because of Theorem 2 and assumption 3. 
+
+• Consequence of point 1 and Proposition 1. 
+
+## A.3 Proof regarding the forward difference scheme 
+
+In this section, we prove that the forward difference scheme is convergent in H k+m 
+
+> 2
+
+(U ). Let define D k+2+ m 
+
+> 2
+
+(U, Rm) the set of diffeomorphism which belongs H k+2+ m 
+
+> 2
+
+(U, U ). First, we need the following proposition: 
+
+Proposition 5. Let B = {x ∈ H k+2+ m 
+
+> 2
+
+(U, Rm) s.t. || x − id || ≤ α < 1}, k ≥ 3 then 1. The operator F : B → H k+m 
+
+> 2
+
+(U, Rm) given by F (y) = f (y(x)) is well defined and further-more Lipschitz. 2. it exists a time h0 such that X(h, x ) ∈ B, ∀h ≤ h0.
+
+Proof. 1. Let y ∈ B. As || Dy − I || ∞ ≤ || y − id || < 1 we have that y is invertible and B ⊂
+
+D k+2+ m 
+
+> 2
+
+(U, Rm) and a consequence F is well defined [46] . Now || F (y) − F (z)|| H k+m
+
+> 2
+
+=
+
+|| R 10 (∇f (y(x) + t(y(x) − z(x))) dt )T (y(x) − z(x)) || H k+m
+
+> 2
+
+, so as H k+m 
+
+> 2
+
+(U ) is an algebra [47] we can bound everything by 
+
+Z 10
+
+|| (∇f (y(x) + t(y(x) − z(x))) dt )|| H k+m
+
+> 2
+
+|| (y − z)|| H k+m
+
+> 2
+
+.
+
+45 As ( y(x) + t(y(x) − z(x))) ∈ B, everything is bounded by 
+
+||∇ f || H k+m
+
+> 2
+
+|| y − z|| H 3+ m 
+
+> 2
+
+.
+
+Thus, F is Lipschitz. 2. As F is Lipschitz, the thesis follows from the local uniqueness theorem of ODE in Banach Spaces [48]. We are now ready to prove the convergence of the Forward difference method. Lets consider 
+
+|| f (x) − X(h, x ) − xh || H 3+ m  
+
+> 2(U)
+
+. (98) By applying the definition of X(h, x ) and by changing variables, we arrive at 
+
+|| 
+
+Z 10
+
+(f (x) − f (X(hu, x ))) du || H 3+ m  
+
+> 2(U)
+
+. (99) As F is a Lipschitz operator, we can bound everything by 
+
+C
+
+Z 10
+
+|| (X(hu, x ) − x)|| H 3+ m  
+
+> 2(U)
+
+du ≤ C
+
+Z 10
+
+|| 
+
+Z hu 
+
+> 0
+
+f (X(s, x )) || H 3+ m  
+
+> 2(U)
+
+ds ≤ CC 1h (100) as X(s, x ) is a diffeomorphism. 
+
+## A.4 What to do if the training times are not equispaced 
+
+In this section, we study how we can modify our algorithm for accounting for non-equispaced times without assuming Assumption 4. We focus on the forward difference method for deriva-tive approximation, but it can be adapted to other differentiation algorithms. As additional requirements, we need a bound to know the constant M such that sup 
+
+> x∈B
+
+f (x), but we can relax the constraint of f ∈ RKHS (U ) to f continuous and Lipschitz with constant L. However the computational costs moves from N 3 to log( N )N 5.67 .Before stating the modified procedure, we remark that ∀ϵ > 0, the optimisation problem inf      
+
+> {g∈RKHS (U)|sup x∈U|| g(x)−f(x)|| 2≤ϵ}
+
+|| g|| RKHS (U ) (101) has at a least a solution gϵ ∈ RKHS (U ) due to the universality of the Mat´ ern kernel [49]. Now let ∆ tN = sup  
+
+> i∈1...N −1
+
+ti+1 −ti, As a consequence it holds || X(ti+1 )−X(ti) 
+
+> ti+1 −ti
+
+−f (X(ti)) || 2 ≤ 12 LM ∆tN ,where M = max x∈U || f || 2. Let us consider the optimisation problem inf        
+
+> {g∈RKHS (U)|sup i=1 ...N || g(X(ti)) −X(ti+1 )−X(ti)
+> ti+1 −ti|| 2≤ϵ+LM ∆tN}
+
+|| g|| RKHS (U ) (102) 46 and its solution f N, ∆tN 
+
+> ϵ
+
+. As gϵ is feasible, we have that || f N, ∆tN 
+
+> ϵ
+
+|| RKHS (U ) ≤ || gϵ|| RKHS (U ) and 
+
+|| f (x) − f N, ∆tN 
+
+> ϵ
+
+(x)|| 2 ≤ || f (x) − f (X(ti)) + f (X(ti)) − f N, ∆tN 
+
+> ϵ
+
+(X(ti)) +f N, ∆tN 
+
+> ϵ
+
+(X(ti)) − f N, ∆tN 
+
+> ϵ
+
+(x)|| 2 ≤ L|| x − X(ti)|| 2
+
++ϵ + LM ∆tN + || gϵ|| RKHS (U )
+
+p2 − 2K(x, X (ti)) ∀i ∈ 1 . . . N. 
+
+(103) Using the definition of fill distance, we arrive at sup 
+
+> x∈B
+
+|| f (x) − f N, ∆tN 
+
+> ϵ
+
+(x)|| 2
+
+≤ Lh B,B N + ϵ + LM ∆tN + || gϵ|| RKHS (U )
+
+q
+
+2 − 2k(hB,B N ).
+
+(104) Thus under Assumption 2 and 3 we have that lim   
+
+> N→+∞
+
+sup 
+
+> x∈B
+
+|| f (x) − f N, ∆tN 
+
+> ϵ
+
+(x)|| 2 ≤ ϵ. Thus 
+
+f N, ∆tN 
+
+> ϵ
+
+can be adopted instead of ˜ μN in the GPRODE and the QGPRODE algorithms. We remark that ϵ can be chosen to be zero only if f ∈ RKHS (U ), otherwise it can be anything strictly bigger than 0, keeping in mind that || gϵ|| RKHS (U ) is strictly decreasing in 
+
+ϵ, and || g0|| RKHS (U ) = + ∞ if f̸ ∈ RKHS (U ). It remains to explain how to solve the above optimisation problem. Exploiting the properties of reproducing kernel Hilbert spaces (RKHSs) [28], the problem is equivalent to solving inf   
+
+> β∈RN
+> sup
+> i=1 ,...,N
+> PNj=1 αjk
+
+ X(ti),X (tj )
+
+− X(ti+1 ) − X(ti)
+
+ti+1 − ti 2 
+
+> ≤ϵ+LM ∆tN
+> N
+
+X
+
+> i,j =1
+
+βj βiK X(ti), X (tj ), (105) which defines a convex quadratic programming problem. This optimisation problem can be solved with a time complexity of O(log( N )N 5.67 ) [50]. Consequently, it is computationally less efficient than the algorithm with time complexity O(N 3), which, however, requires the use of a differentiation method satisfying Assumption 4. Consequently, the selection of numerical methods exerts a substantial influence on computational efficiency. For equispaced data, finite-difference schemes enable numerically efficient implementations, ex-hibiting cubic computational complexity due to the inversion of the associated kernel matrix. In contrast, for non-equispaced data, more general optimisation-based strategies are required, which generally incur higher computational costs. This trade-off underscores the critical role of data structure in determining the practical feasi-bility and performance of numerical algorithms. 
+
+# B Theoretical analysis of the QGPRODE 
+
+The QGPRODE framework extends GPRODE by incorporating geometric structure in the data. The key idea is that the trajectory of the dynamical system often lies on a low-dimensional manifold embedded in a higher-dimensional space. By mapping this trajectory onto a sphere via a smooth embedding, we can exploit geometric regularity. This transformation allows us to construct reduced-order models that capture the essential 47 dynamics while reducing complexity. The use of Taylor expansions and quadratic approximations further enables efficient represen-tation of the system, connecting this approach with model order reduction techniques. Let ˜B = {X(t)|t > 0}, so that B is the closure of ˜B. We require ergodicity, in the sense that we assume that there exists a measure α : B :→ R such that lim  
+
+> T→+∞
+
+1
+
+T
+
+Z T
+
+> 0
+
+l(X(t)) dt := Eα[l] = 
+
+Z
+
+> B
+
+ldα ∀l ∈ C(B) (106) and we furthermore require that f ∈ C⌈ 5+ m  
+
+> 2⌉
+> 0
+
+(U ). In this specific case, as we are considering only one trajectory, ergodicity is equivalent to strong ergodicity. As a consequence, in the infinite-data limit, the operator ¯E[F (X(·))] converges to Eα[F ]. The assumptions of compact-ness and ergodicity are also used in proofs of similar techniques, like Extended DMD [19]. Note that not all dynamical systems that respect Assumption 1 are ergodic, for example 
+
+(
+
+˙x1 = cos(arctanh( x2)) e− arctanh( x2),
+
+˙x2 = (1 − x22)e− arctanh( x2), (107) which has the solution (
+
+x1(t) = sin(ln(1 + t)) ,x2(t) = tanh(ln(1 + t)) , (108) because lim inf  
+
+> T→+∞
+
+1
+
+T
+
+Z T
+
+> 0
+
+sin(ln(1 + t)) dt = −1, (109) and lim sup  
+
+> T→+∞
+
+1
+
+T
+
+Z T
+
+> 0
+
+sin(ln(1 + t)) dt = +1 . (110) Due to Whitney Theorem, ˜B is C⌈ m+5 2 ⌉ diffeomorphic to a subset of a k-dimensional sphere 
+
+Sk ∀k ≥ 3, and there exists ϕ ∈ C⌈ m+5 2 ⌉( ˜B, Sk) invertible such that ˜B = ϕ−1(ϕ( ˜B)) .
+
+Let Z(t) = ϕ(X(t)). It holds that ˙Z(t) = ∇ϕ(ϕ−1(Z(t))) · f (ϕ−1(Z(t))) . (111) As g is a C⌈ 5+ m  
+
+> 2⌉
+
+diffeomorphism, the right side is Lipschitz and the ODE is well defined. Note that the right side is C⌈ 3+ m 
+
+> 2⌉
+
+.Furthermore, as the right end side is defined on a C⌈ 3+ m  
+
+> 2⌉
+
+dimensional curve in Sk, there exists a tubular neighbourhood with projection being C⌈ m+3 2 ⌉ [51] and thus the right end side extends to the tubular neighbourhood as a function C⌈ 3+ m 
+
+> 2⌉
+
+. Then we can extend the right end side to the whole Sk by a smooth bump function that coincides with the identity in the curve and is supported on the tubular neighbourhood [52], in order to extend the right end side to Sk. By the same tubular neighbourhood trick and bump function trick, the right side can be extended (as a C⌈ m+3 2 ⌉ function) to Rk+1 , and so to a Dk+1 with a slightly larger radius, which is convex and compact. 48 We propose a technique to estimate it based on Taylor expansion. Then, if we compute a Taylor approximation around the vector 0, we get 
+
+X(t) = ϕ−1(0) + ∇ϕ−1(0) · Z(t) + H[ϕ−1](0) · (Z(t) ⊗ Z(t)) + ϵ(t). (112) We remark that the extension g−1 is, in general, not unique, and thus the idea is to determine the coefficients of the polynomial in a smart way, being inspired by the research line of Quadratic Model order reduction [36] as described in the QGPRODE section. We furthermore remark that Z(t) is ergodic with ergodic measure lim  
+
+> T→+∞
+
+1
+
+T
+
+Z T
+
+> 0
+
+l(Z(t)) dt := Eν [l] = 
+
+Z
+
+> D
+
+ldν ∀l ∈ C(D) (113) with D ⊂ Sk. We underline that in general, while ˜B is a manifold, B is not. For example, the closure of the trajectory of the above example is {(sin s, tanh s) : s ≥ 0} ∪ ([ −1, 1] × { 1}) which is not even a topological manifold. That’s why the analysis is performed on ˜B. The GPRODE is then applied to the closure of the embedding of ˜B in Sk.
+
+# C Computation of the distribution of ˜X(t) in the QG-PRODE 
+
+In this section we detail how we compute [((vec( ˜Z(t)⊗2 − E(t)⊗2)) ⊗2)]. Let 
+
+A := ZZ ⊤ − EE ⊤ ∈ Rk+1 ×k+1 , Y := vec( A) ∈ R(k+1) 2
+
+(114) We want to compute E Y ⊗2 = E Y Y ⊤ which belongs to R(k+1) 2×(k+1) 2
+
+. Using column-wise vectorisation 
+
+Y(a,b ) = Aab = ZaZb − EaEb, i, j = 1 , . . . , d. 
+
+Hence 
+
+E Y(a,b )Y(c,d )
+
+ = E [( ZaZb − EaEb) ( ZcZd − EcEd)] .
+
+Expanding, we get 
+
+E Y(a,b )Y(c,d )
+
+ = E [ZaZbZcZd] − EaEbE [ZcZd] − EcEdE [ZaZb] + EaEbEcEd.
+
+The term E [ZaZbZcZd] can be computed by exploiting independence and knowing that 
+
+E Z3
+
+> a
+
+ = μ3 
+
+> a
+
++ 3 μaVa (115) and 
+
+E Z4
+
+> a
+
+ = μ4 
+
+> a
+
++ 6 μ2
+
+> a
+
+Va + 3 V 2 
+
+> a
+
+. (116) 49
