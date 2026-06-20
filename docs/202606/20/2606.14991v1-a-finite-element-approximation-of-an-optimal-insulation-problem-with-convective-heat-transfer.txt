@@ -1,0 +1,3316 @@
+Title: A Finite Element Approximation of an Optimal Insulation Problem with Convective Heat Transfer
+
+URL Source: https://arxiv.org/pdf/2606.14991v1
+
+Published Time: Tue, 16 Jun 2026 00:17:56 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+# A Finite Element Approximation of an Optimal Insulation Problem with Convective Heat Transfer ∗
+
+## Harbir Antil †1, Alex Kaltenbach ‡2, and Keegan L. A. Kirk §31,2,3 Department of Mathematical Sciences and the Center for Mathematics and Artificial Intelligence (CMAI), George Mason University, Fairfax, VA 22030, USA. 
+
+> 2
+
+Institute of Mathematics, Technical University of Berlin, Straße des 17. Juni 135, 10623 Berlin 
+
+## June 16, 2026 
+
+Abstract 
+
+A finite element discretization of an optimal insulation problem with convective heat transfer is considered. The model is formulated as a non-smooth, two-variable convex minimization problem. It accounts for the temperature distribution in a thermally con-ducting body Ω ⊆ Rd, with d ∈ { 2, 3}, and the distribution of a given amount of insulation material on an insulated boundary part Γ I ⊆ ∂Ω. The surface integral over the insulated boundary Γ I is approximated by a mass-lumping quadrature that preserves the structure of the continuous setting and, in particular , yields discrete optimality conditions mirroring their continuous counterparts. Well-posedness, stability, and weak convergence of discrete solutions to the continuous ones are established. Furthermore, a block coordinate descent algorithm for the computation of the discrete solutions is formulated and its linear convergence is derived. Under suitable regularity assumptions, uniform L∞(Γ I )-bounds and a priori error estimates for both the temperature distribution and the distribution of a given amount of insulation material are obtained. Numerical experiments are carried out that confirm the predicted error decay rates and demonstrate the method in a qualitative three-dimensional test on a realistic spacecraft crew module capsule geometry with idealized reentry-heating Robin data. 
+
+Keywords: Optimal insulation; convective heat transfer; Robin boundary condition; finite element method; block coordinate descent; convergence analysis; a priori error analysis 
+
+AMS MSC (2020): 65N30; 65N15; 65N12; 49M05; 35J25; 80A19 
+
+1. Introduction 
+
+Thermal insulation is commonly used to regulate heat exchange between a thermally conducting body and its surrounding environment in applications ranging from buildings and electronic devices to air- and spacecraft. If only a limited amount of insulating material is available, e.g. , due to geometric, weight, or cost constraints, the question of its optimal distribution arises naturally and has attracted considerable attention in both theoretical and applied research ( cf . [13, 16]). While many classical models assume that heat transfer across the boundary of the thermally conducting body is governed by thermal conduction, numerous practical situations are dominated by convective heat transfer, which is commonly modeled by Robin-type boundary conditions . In this setting, we seek the ‘best’ distribution of a given amount of insulating material attached to parts of a thermally conducting body. To this end, we study a convex minimization problem proposed by Della Pietra et al. (cf . [ 15 ]): Let Ω ⊆ Rd, d ∈ { 2, 3}, be a bounded polyhedral Lipschitz domain representing the thermally conducting body , with (topological) boundary ∂Ω decomposed into an insulation part (i.e. , Γ I ) (to which the insulating material is attached) and a Neumann part ( i.e. , Γ N ). Moreover, let m > 0be a given amount of insulating material , f ∈ L2(Ω) a given heat source density , g ∈ (H 12 (Γ N )) ∗
+
+> ∗
+
+This work is partially supported by the Office of Naval Research (ONR) under Award NO: N00014-24-1-2147, NSF grant DMS-2408877, the Air Force Office of Scientific Research (AFOSR) under Award NO: FA9550-25-1-0231. 
+
+> †
+
+Email: hantil@gmu.edu 
+
+> ‡
+
+Email: kaltenbach@math.tu-berlin.de 
+
+> §
+
+Email: kkirk6@gmu.edu 
+
+> arXiv:2606.14991v1 [math.NA] 12 Jun 2026
+
+H. Antil, A. Kaltenbach, and K. L. A. Kirk 2a given heat flux , u∞ ∈ H1(Rd \ Ω ) a given ambient temperature , κ > 0 the thermal conductivity ,and β > 0 a given heat transfer coefficient .Then, we seek a temperature distribution u ∈ H1(Ω) and a distribution function (of the insula-tion material in direction of the normal vector field) ed ∈ H m, where 
+
+Hm := ¶η ∈ L2(Γ I ) | η ≥ 0 a.e. on Γ I , (η, 1) ΓI = m© ,
+
+that minimize the energy functional E : H1(Ω) ×H m → R, for every ( v, η ) ∈ H1(Ω) ×H m defined by 
+
+E(v, η ) := κ 
+
+> 2
+
+∥∇ v∥2Ω + β 
+
+> 2
+
+∥(1 + βη )− 12 (v − u∞)∥2ΓI − (f, v )Ω − ⟨ g, v ⟩ΓN + IHm (η) . (1.1) 
+
+1.1 Main contributions 
+
+The main contributions of the present paper can be summarized as follows: 
+
+1. A finite element discretization of the non-smooth convex minimization problem, given via the minimization of (1.1) , is introduced, in which the insulation boundary integral is approximated by means of a mass-lumping quadrature. This quadrature preserves the structure of the continu-ous problem and yields discrete optimality conditions that closely mirror the continuous setting ;
+
+2. Weak convergence of discrete solutions to a solution of the continuous problem is established by passing to the limit in the discrete optimality conditions; 
+
+3. A block coordinate descent algorithm for the computation of discrete solutions based on the dis-crete optimality system is formulated, and its well-posedness and linear convergence are proved; 
+
+4. Uniform L∞(Γ I )-bounds for both the continuous and discrete temperature distribution and the distribution function are derived using continuous and discrete Stampacchia truncation arguments, providing a key ingredient for the subsequent error analysis; 
+
+5. Under appropriate regularity assumptions, including fractional regularity, a priori error estimates for both the temperature distribution and the distribution function are established; 
+
+6. An H1(Γ I )-stable quasi-interpolation operator and a positivity- and mean-preserving projec-tion are constructed as technical tools required for the error analysis; 
+
+7. Numerical experiments are presented that confirm the optimality of the predicted error decay rates and illustrate the practical applicability of the proposed approach, including a three-dimensional capsule example with an idealized reentry-heating Robin datum. 
+
+1.2 Related contributions 
+
+The existing literature primarily addresses either the theoretical analysis of the minimization of (1.1) or the numerical analysis of related eigenvalue-type problems, typically in the setting 
+
+∂Ω ∈ C1,1 with Γ I = ∂Ω and predominantly for heat transfer governed by conduction: 
+
+• Theoretical analysis: There is a rich literature deriving energy functionals related to (1.1) under conductive heat transfer as asymptotic limits as the thickness of the insulating layer tends to zero (see, e.g. , [ 1] when ∂Ω ∈ C1,1, [ 4] when ∂Ω ∈ C0,1 is piece-wise flat, and [ 14 ] for a recent overview of the literature). The energy functional (1.1) itself was derived in [ 15 ] for ∂Ω ∈ C1,1
+
+and has recently been complemented by the case ∂Ω ∈ C0,1 with piece-wise flat boundary in [ 2]; 
+
+• Numerical analysis: Numerical analyses have been carried out for related eigenvalue problems in [ 6 , 8, 7] and for a related optimal insulation problem under conductive heat transfer in [ 3]. 
+
+2. Preliminaries 
+
+2.1 Classical function spaces 
+
+Let ω ⊆ Rd, d ∈ N, be a (Lebesgue) measurable set. Then, for (Lebesgue) measurable functions or vector fields v, w : ω → Rℓ, ℓ ∈ { 1, d }, we employ the inner product (v, w )ω := ´ 
+
+> ω
+
+v ⊙ w dx,whenever the right-hand side is well-defined, where ⊙ : Rℓ ×Rℓ → R either denotes scalar multipli-cation ( i.e. , v ⊙ w := v w ) or the Euclidean inner product ( i.e. , v ⊙ w := v · w). For p ∈ [1 , +∞], we employ the notation ∥ · ∥ p,ω := ( ´ 
+
+> ω
+
+| · | p dx) 1 
+
+> p
+
+if p ∈ [1 , +∞) and ∥ · ∥ ∞,ω := ess sup x∈ω |(·)( x)| else. Moreover, in the particular case p = 2, we employ the abbreviated notation ∥ · ∥ ω := ∥ · ∥ 2,ω .FE Approximation of an Optimal Insulation Problem 3For m ∈ N and an open set ω ⊆ Rd, d ∈ N, we define the Sobolev space 
+
+Hm(ω) := ¶v ∈ L2(ω) | Dαv ∈ L2(ω) for all α ∈ Nd 
+
+> 0
+
+with |α| ≤ m© ,
+
+where D α := ∂|α| 
+
+> ∂x α11·... ·∂x αdd
+
+and |α| := Pdi=1 αi for each multi-index α := ( α1, . . . , α d) ∈ Nd
+
+> 0
+
+, and the Sobolev semi-norm 
+
+| · | m,ω := X  
+
+> α∈Nd
+> 0:|α|=m
+
+∥Dα(·)∥2
+
+> ω
+
+! 12
+
+.
+
+For s ∈ (0 , ∞)\N and an open set ω ⊆ Rd, d ∈ N, the Sobolev–Slobodeckij semi-norm is defined by 
+
+| · | s,ω := X  
+
+> α∈Nd
+> 0:|α|=⌊s⌋
+
+ˆ
+
+> ω
+
+ˆ
+
+> ω
+
+|(D α(·))( x) − (D α(·))( y)|2
+
+|x − y|2( s−⌊ s⌋)+ d dx dy
+
+! 12
+
+.
+
+Then, for s ∈ (0 , ∞)\N and an open set ω ⊆ Rn, n ∈ N, the Sobolev–Slobodeckij space is defined by 
+
+Hs(ω) := ¶v ∈ H⌊s⌋(ω) | | v|s,ω < ∞© .
+
+If ω is replaced with a relatively open boundary part γ ⊆ ∂Ω, we still employ the above notation, with the Lebesgue measure d x replaced by the surface measure d s.
+
+2.2 Assumptions on the thermally conducting body and insulated boundary 
+
+Throughout the entire paper, we assume that the thermally conducting body Ω ⊆ Rd,
+
+d ∈ { 2, 3}, is a bounded polyhedral Lipschitz domain with (topological) boundary ∂Ω, which is disjointly split into a relatively open insulated boundary part ΓI ⊆ ∂Ω and a relatively open 
+
+Neumann part ΓN ⊆ ∂Ω; more precisely, we have that ∂Ω = Γ I ∪ΓN . In this connection, we always assume that Γ I̸ = ∅, which guarantees the validity of Friedrich’s inequality ( cf . [ 20 , Lem. 3.30]), which states that there exists a constant cF > 0 such that for every v ∈ H1(Ω), there holds 
+
+∥v∥2Ω ≤ cF(∥∇ v∥2Ω + ∥v∥21,ΓI ) . (2.1) The outward unit normal vector field to Ω is denoted by n : ∂Ω → Sd−1 := {x ∈ Rd | | x| = 1 }.
+
+2.3 Triangulations and finite element space 
+
+Throughout the entire paper, we denote by {T h}h> 0 a family of shape-regular triangulations of Ω (cf . [ 20 , Def. 22.21]). Here, the parameter h := max T ∈T h {hT := diam( T )} > 0 refers to the maximal mesh-size . The sets of nodes and sides of a triangulation Th are denoted by Nh and Sh, respectively .Moreover, we employ the following notation for sets of boundary nodes and facets, respectively: 
+
+N ∂h := {ν ∈ N h | ν ∈ ∂Ω} , N X 
+
+> h
+
+:= {ν ∈ N ∂h | ν ∈ ΓX} , X ∈ { I, N } ,
+
+S∂h := {S ∈ S h | S ⊆ ∂Ω} , SXh := {S ∈ S ∂h | S ⊆ ΓX} , X ∈ { I, N } .
+
+Here, we assume that {T h}h> 0, Γ I , and Γ N are chosen in such a way that S∂h = SIh ˙∪S Nh .For every T ∈ T h (and S ∈ S h), denoting by P1(T ) (and P1(S)) the space of affine functions in 
+
+T (on S), we define the spaces of globally continuous element-wise (and side-wise) affine functions 
+
+S1(Th) := {vh ∈ C0(Ω) | vh|T ∈ P1(T ) for all T ∈ T h} , (2.2) 
+
+S1(SX 
+
+> h
+
+) := {vh ∈ C0(Γ X) | vh|S ∈ P1(S) for all S ∈ S X 
+
+> h
+
+} , X ∈ { ∂, I, N } . (2.3) Restricting the heat loss functional (1.1) to the product space S1(Th)×S 1(SIh), the boundary term generally cannot be integrated exactly and, thus, must be approximated by a suitable quadrature. A natural choice is a node-based quadrature, analogous to the standard mass-lumping inner product ,obtained by integrating the nodal interpolation of the original integrand over Γ I .H. Antil, A. Kaltenbach, and K. L. A. Kirk 4More precisely, denoting by Ih : C0(Γ I ) → S 1(SIh), the nodal interpolation operator associated with SIh (cf . [18, Sec. 4]), for every v ∈ C0(Γ I ) defined by 
+
+Ihv := X 
+
+> ν∈N Ih
+
+v(ν)φν↾ΓI in Γ I ,
+
+where {φν }ν∈N h is the nodal basis of S1(Th), the mass-lumping inner product ( ·, ·)ΓI ,h : C0(Γ I ) ×
+
+C0(Γ I ) → R and the induced norm ∥ · ∥ ΓI ,h : C0(Γ I ) → R, for every v, w ∈ C0(Γ I ), are defined by (v, w )ΓI ,h := ( Ih{vw }, 1) ΓI , ∥v∥ΓI ,h := ∥Ih{v}∥ ΓI .
+
+Important approximation properties of the node-based quadrature on Γ I (applied to compo-sitions of Lipschitz functions with polynomial functions) are summarized in the following lemma. 
+
+Lemma 2.1 (Approximation properties of node-based quadrature on Γ I ). Let Φ ∈ C0,1(R × R),
+
+v ∈ H1(Ω) , and C ∈ R. Moreover, let vh ∈ S ℓ(Th), h > 0, where ℓ ∈ N, and {Ch}h> 0 ⊆ R be sequences such that 
+
+vh ⇀ v in H1(Ω) (h → 0+) , (2.4a) 
+
+Ch → C in R (h → 0+) . (2.4b) 
+
+Then, there holds 
+
+∥Ih{Φ( vh, Ch)} − Φ( vh, Ch)∥ΓI ≲ h 12 ∥∇ vh∥Ω , (2.5a) 
+
+Ih{Φ( vh, Ch)} → Φ( v, C) in L2(Γ I ) (h → 0+) . (2.5b) 
+
+Proof. Let S ∈ S Ih be fixed, but arbitrary with outward unit normal vector nS := n↾S ∈ Sd−1.Moreover, let PS := (Id − nS ⊗ nS ) ∈ Rd×d denote the projection onto ( RnS )⊥ and denote by 
+
+∇S := P S ∇ the tangential gradient on S. Then, since Φ ∈ C0,1(R×R), by the chain rule for Sobolev functions ( cf . [ 30 , Thm. 2.1.11]) and ∇S Ch = 0 on Γ I , we have that Φ( vh, Ch)|S ∈ W 1,∞(S) with 
+
+|∇ S Φ( vh, Ch)| ≤ Lip(Φ) |∇ S vh| a.e. on S . (2.6) By a local inverse estimate ( cf . [ 20 , Lem. 12.1]), the local interpolation estimate for Ih on S (cf .[20 , ineq. (11.17)]), again, (2.6) , a local inverse estimate ( cf . [ 20 , Lem. 12.1]), and the discrete trace inequality ( cf . [20, Lem. 12.8]), we have that 
+
+∥Ih{Φ( vh, Ch)} − Φ( vh, Ch)∥2 
+
+> S
+
+≲ |S|∥ Ih{Φ( vh, Ch)} − Φ( vh, Ch)∥2
+
+> ∞,S
+
+≲ |S|h2 
+
+> S
+
+∥∇ S Φ( vh, Ch)∥2
+
+> ∞,S
+
+≲ |S|h2 
+
+> S
+
+∥∇ S vh∥2
+
+> ∞,S
+
+≲ h2 
+
+> S
+
+∥∇ S vh∥2
+
+> S
+
+≲ hS ∥∇ vh∥2 
+
+> TS
+
+,
+
+(2.7) where TS ∈ T h is the unique element such that S ⊆ TS . Eventually, summing with respect to S ∈ S Ih,we conclude that the claimed error estimate (2.5a) applies, which, by the Lipschitz continuity of Φ : R × R → R, in turn, implies that the claimed convergence (2.5b) applies as well. The following lemma summarizes standard stability and approximation properties of the node-based quadrature on Γ I .
+
+Lemma 2.2 (Stability and approximation properties of node-based quadrature on Γ I ). For every vh, w h ∈ S 1(SIh), there holds 
+
+∥vh∥ΓI ≤ ∥ vh∥ΓI ,h ≤ (d + 1) ∥vh∥ΓI , (2.8a) 
+
+|(vh, w h)ΓI ,h − (vh, w h)ΓI | ≲ h2∥∇ Γvh∥ΓI ∥∇ Γwh∥ΓI , (2.8b) 
+
+where the tangential gradient is defined by ∇Γvh↾S := ∇S (vh↾S ) for all vh ∈ S 1(SIh) and S ∈ S Ih.Proof. See [5, Lem. 3.9]. FE Approximation of an Optimal Insulation Problem 5
+
+3. Mathematical modelling of an optimal insulation problem 
+
+Let f ∈ L2(Ω) be a given heat source density (located in the thermally conducting body Ω), 
+
+g ∈ (H 12 (Γ N )) ∗ a given heat flux (across the Neumann boundary Γ N ), jointly satisfying the 
+
+non-trivial net heat input condition (see [2, Sec. 3], for a short interpretation) (f, 1) Ω + ⟨g, 1⟩ΓN̸ = 0 , (3.1) 
+
+u∞ ∈ H1(Rd \ Ω) a given ambient temperature (of the surrounding medium in Rd \ Ω ), κ > 0 the material-specific thermal conductivity of the conducting body, β > 0 a given system-specific heat transfer coefficient , m > 0 a given amount of insulation material , and ed ∈ L∞(Γ I ) a non-negative 
+
+distribution function (of the insulation material in direction of the normal vector field) . Moreover, let ε > 0 be a fixed, but arbitrarily small number. Then, for a given Lipschitz continuous (globally) transversal vector field k ∈ (C0,1(Γ I )) d (cf . [ 2 , Sec. 2.4]), denoting by d := ( k·n)−1ed ∈ L∞(Γ I ) the distribution function in direction of the transversal vector field, we define the insulation boundary layer ΣεI ⊆ Rd, the interacting insulation boundary ΓεI , and the insulated body ΩεI , respectively, via ΣεI := Σ εI (d) := ¶s + tk (s) | s ∈ ΓI , t ∈ [0 , ε d(s)) © , (3.2a) ΓεI := Γ εI (d) := ¶s + εd(s)k(s) | s ∈ ΓI
+
+© , (3.2b) ΩεI := Ω εI (d) := Ω ∪ ΣεI . (3.2c) Then, we consider the heat loss functional Ed 
+
+> ε
+
+: H1(Ω εI ) → R, for every vε ∈ H1(Ω εI ) defined by 
+
+Ed
+
+> ε
+
+(vε) := κ 
+
+> 2
+
+∥∇ vε∥2Ω + ε 
+
+> 2
+
+∥∇ vε∥2ΣεI + β 
+
+> 2
+
+∥vε − u∞∥2ΓεI − (f, v ε)Ω − ⟨ g, v ε⟩ΓN . (3.3) Since the functional (3.3) is proper, strictly convex, weakly coercive, and lower semi-continuous, the direct method in the calculus of variations yields the existence of a unique minimizer ud 
+
+> ε
+
+∈ H1(Ω εI ),which formally satisfies the Euler–Lagrange equations 
+
+
+
+−κ∆ud 
+
+> ε
+
+= f a.e. in Ω ,κ∇ud 
+
+> ε
+
+· n = g a.e. on Γ N ,
+
+−ε∆ud 
+
+> ε
+
+= 0 a.e. in Σ εI ,ε∇ud 
+
+> ε
+
+· n + β(ud 
+
+> ε
+
+− u∞) = 0 a.e. on Γ εI ,κ∇(ud
+
+> ε
+
+)+ · n = ε∇(ud
+
+> ε
+
+)− · n a.e. on Γ I ,
+
+(3.4) where ( ud
+
+> ε
+
+)− and ( ud
+
+> ε
+
+)+ denote the traces of ud 
+
+> ε
+
+with respect to Ω and Σ εI , respectively. In the case d ∈ C0,1(Γ I ), if we pass to the limit (as ε → 0+) with a family of trivial extensions to 
+
+L2(Rd) of the heat loss functionals Ed 
+
+> ε
+
+: H1(Ω εI ) → R, ε > 0, in the sense of Γ( L2(Rd))-convergence (cf . [ 2, Thm. 5.1]), we arrive at the functional Ed(v) : H1(Ω) → R, for every v ∈ H1(Ω) defined by 
+
+Ed(v) := κ 
+
+> 2
+
+∥∇ v∥2Ω + β 
+
+> 2
+
+∥(1 + βed)− 12 (v − u∞)∥2ΓI − (f, v )Ω − ⟨ g, v ⟩ΓN . (3.5) Since the functional (3.5) is proper, strictly convex, weakly coercive, and lower semi-continuous, the direct method in the calculus of variations yields the existence of a unique minimizer ud ∈ H1(Ω) ,which formally satisfies 
+
+
+
+−κ∆ud = f a.e. in Ω ,
+
+(1 + βed)∇ud · n + β(ud − u∞) = 0 a.e. on Γ I ,
+
+∇ud · n = g a.e. on Γ N .
+
+(3.6) We are interested in determining the non-negative distribution function ed ∈ L2(Γ I ) that provides the ‘best’ insulating performance, once the total amount of insulation material m > 0 is fixed. We seek the distribution function ed ∈ L2(Γ I ) in the class 
+
+Hm := ¶η ∈ L2(Γ I ) | η ≥ 0 a.e. on Γ I , (η, 1) ΓI = m© .
+
+In summary, we are interested in the non-smooth double minimization problem min 
+
+> (v,η )∈H1(Ω) ×H m
+
+¶Eη (v)© . (3.7) H. Antil, A. Kaltenbach, and K. L. A. Kirk 6
+
+4. The continuous optimal insulation problem 
+
+Given a heat source density f ∈ L2(Ω), a heat flux g ∈ (H 12 (Γ N )) ∗, jointly satisfying (3.1) , an 
+
+ambient temperature u∞ ∈ H1(Rd \Ω ), a thermal conductivity coefficient κ > 0, a heat transfer co-efficient β > 0, and an amount of insulation material m > 0, we seek a pair (u, ed) ∈ H1(Ω) ×L2(Γ I )consisting of a temperature distribution and a distribution function (of the insulation material )
+
+that minimize the heat loss functional E : H1(Ω) × L2(Γ I ) → R ∪ { +∞} , for every ( v, η ) ∈
+
+H1(Ω) × L2(Γ I ) defined by 
+
+E(v, η ) := κ 
+
+> 2
+
+∥∇ v∥2Ω + β 
+
+> 2
+
+∥(1 + βη )− 12 (v − u∞)∥2ΓI − (f, v )Ω − ⟨ g, v ⟩ΓN + IHm (η) . (4.1) Here, we have invoked the abbreviated notation ⟨g, bv⟩ΓN := ⟨g, bv⟩H 12 (Γ N ) for all bv ∈ H 12 (Γ N ) and the indicator functional IHm : L2(Γ I ) → R ∪ { +∞} , for every bη ∈ L2(Γ I ), is defined by 
+
+IHm (bη) := 
+
+(
+
+0 if bη ∈ H m ,
+
++∞ else .
+
+4.1 Optimality conditions 
+
+The following proposition identifies optimality conditions that characterize a minimizing pair (u, ed) ∈ H1(Ω) × L2(Γ I ) of the heat loss functional (4.1). 
+
+Proposition 4.1 (Optimality conditions) . A pair (u, ed) ∈ H1(Ω) × H m is minimal for the heat loss functional (4.1) if and only if the following optimality conditions are satisfied: (i) There exists a constant Cu > 0 such that 1
+
+Cu = 1 
+
+> βm
+
+∥(|u − u∞| − Cu)+∥1,ΓI ; (4.2) 
+
+(ii) The distribution function ed ∈ H m satisfies 
+
+ed = 1 
+
+> βCu
+
+(|u − u∞| − Cu)+ a.e. on ΓI ; (4.3) 
+
+(iii) The pair (u, ed) ∈ H1(Ω) × H m, for every v ∈ H1(Ω) , satisfies 
+
+κ(∇u, ∇v)Ω + β((1 + βed)−1(u − u∞), v )ΓI = ( f, v )Ω + ⟨g, v ⟩ΓN . (4.4) 
+
+Remark 4.2 (Physical interpretation of the constant Cu). The constant Cu > 0 appearing in the optimality conditions (4.2) may be interpreted as a critical temperature difference on the insulated boundary. More precisely, the optimality condition (4.3) shows that insulating material is allocated only at boundary points, where the local temperature difference exceeds the threshold value Cu. In addition, Cu coincides with the Lagrange multiplier associated with the constraint on the total amount of insulation material. 
+
+The following lemma shows that the implicitly defined constant in (4.2) exists and is unique. 
+
+Lemma 4.3 (Existence and uniqueness of Cu). For every v ∈ L2(Γ I ), there exists a unique constant Cv ≥ 0 such that 
+
+Cv = 1 
+
+> βm
+
+∥(|v − u∞| − Cv )+∥1,ΓI .
+
+In addition, we have that Cv = 0 if and only if v = u∞ a.e. on ΓI .Proof. This follows along the lines of the proof of [15, Lem. 4.1] up to minor adjustments. The following lemma demonstrates that the implicitly defined constant in (4.2) is positive, which is needed for the well-posedness of the optimality condition (4.3). 
+
+Lemma 4.4 (Positivity of Cu). Let (u, ed) ∈ H1(Ω) × L2(Γ I ) be a pair such that the optimality condition (4.4) is satisfied. Then, the constant Cu ≥ 0 implicitly defined by (4.2) satisfies Cu > 0.      
+
+> 1Here, ( ·)+:= max {· ,0}:R→R≥0.
+
+FE Approximation of an Optimal Insulation Problem 7
+
+Proof. Suppose that Cu = 0. Then, (4.2) implies that u = u∞ a.e. on Γ I and, consequently, (4.4) ,for every v ∈ H1(Ω), reads 
+
+κ(∇u, ∇v)Ω = ( f, v )Ω + ⟨g, v ⟩ΓN . (4.5) For v = 1 ∈ H1(Ω) in (4.5) , we find that ( f, 1) Ω +⟨g, 1⟩ΓN = 0, which contradicts assumption (3.1) .As a result, we conclude that Cu > 0. 
+
+Proof (of Proposition 4.1). A pair ( u, ed) ∈ H1(Ω) × L2(Γ I ) is minimal for (4.1) if and only if 0L2(Γ I ) ∈ ∂2E(u, ed) , (4.6a) 0(H1(Ω)) ∗ = D 1E(u, ed) , (4.6b) where the identity (4.6b) is equivalent to (4.4), while the inclusion (4.6a) is equivalent to 
+
+ed ∈ argmin 
+
+> η∈H m
+
+{E(u, η )} . (4.7) Due to [ 15 , Prop. 4.1 & Lem. 4.1] (with v = u − u∞), the unique minimizer is given via (4.3) with Cu > 0 given via (4.2). 
+
+Remark 4.5 (on Proposition 4.1) . Since (4.7) is equivalent to −β(1+ βed)−2(u−u∞)2 ∈ ∂I Hm (ed),the optimality conditions (4.2) and (4.3) are jointly equivalent to the optimality condition 
+
+((1 + βed)−2(u − u∞)2, ed − η)ΓI ≥ 0 for all η ∈ H m . (4.8) 
+
+4.2 L∞-bounds on the insulated boundary 
+
+The a priori error analysis in Section 6 hinges on the assumption that both u, ed ∈ L∞(Γ I ). The following lemma affirms this assumption provided the heat source f ∈ L2(Ω) and heat flux 
+
+g ∈ (H 12 (Γ N )) ∗ are sufficiently integrable and the ambient temperature u∞ is essentially bounded. 
+
+Lemma 4.6. Let f ∈ Lr (Ω) with r > d 
+
+> 2
+
+, g ∈ Ls(Γ N ) with s > d − 1, and u∞ ∈ L∞(Γ I ). Then, there holds u ∈ L∞(Γ I ) and, thus, ed ∈ L∞(Γ I ).
+
+The proof of Lemma 4.6 proceeds using a classic argument by Stampacchia ( cf . [ 28 ]), which makes use of a truncation argument based on the truncation operator Tλ : W 1,1(Ω) → W 1,1(Ω) ∩
+
+L∞(Ω), λ > 0, for every v ∈ W 1,1(Ω) defined by 
+
+Tλv := sign( v)( |v| − λ)+ a.e. in Ω , (4.9) which is well-defined by the Lipschitz continuity of Φ := (( a, c ) 7 → sign (a)( |a| − c)+) : R × R → R
+
+and the chain rule for Sobolev functions ( cf . [ 30 , Thm. 2.1.11]), combined with the following lemma. 
+
+Lemma 4.7. Let λ0 ∈ R and let φ : [λ0, ∞) → [0 , ∞) be non-increasing. Moreover, assume that there exist constants K, a > 0 and b > 1 such that for every λ′ > λ ≥ λ0, there holds 
+
+φ(λ′) ≤ K(λ′ − λ)−a φ(λ)b .
+
+Then, for λ∗ := 2 bb−1 K 1 
+
+> a
+
+φ(λ0) b−1 
+
+> a
+
++ λ0, there holds φ(λ∗) = 0 .Proof. See [24, Lem. B.1]. 
+
+Proof (of Lemma 4.6). To begin with, we introduce the sets Γ>I := {s ∈ ΓI | | u(s) − u∞(s)| ≥ Cu} , Γ≤ 
+
+> I
+
+:= Γ I \ Γ>I ,
+
+and fix b ∈ (1 , 2). Then, depending on d = 3 or d = 2, we make the following definitions: 
+
+• Case 1: ( d = 3 ). We set p = 6, q = 4, ˜ r = 33−b , ˜ s = 22−b , implying p = 2 b˜r′ and q = 2 b˜s′;
+
+• Case 2: ( d = 2 ). We set p = 2 b˜r′ and q = 2 b˜s′ for fixed ˜ r, ˜s > 1. H. Antil, A. Kaltenbach, and K. L. A. Kirk 8Since Cu = 0 is excluded by Lemma 4.4 and since |Γ>I | = 0 is equivalent to |u−u∞| ≤ Cu a.e. in Γ I ,which implies that |u| ≤ Cu + |u∞| a.e. in Γ I and, due to (4.3) , that ed = 0 a.e. on Γ I , given the assumption that u∞ ∈ L∞(Γ I ), it remains to consider the case that both Cu > 0 and |Γ>I | > 0. Using the optimality conditions (4.2)–(4.4), for every v ∈ H1(Ω), we find that 
+
+κ(∇u, ∇v)Ω + Cuβ(sgn( u − u∞), v )Γ>I + β(u − u∞, v )Γ≤ 
+
+> I
+
+= ( f, v )Ω + ( g, v )ΓN . (4.10) Next, for every λ > λ 0 := ∥u∞∥∞,ΓI + Cu, we define the sets Ωλ := {x ∈ Ω | | u(x)| > λ } ,
+
+Γλ := {s ∈ ∂Ω | | u(s)| > λ } ,
+
+Γλ 
+
+> X
+
+:= Γ λ ∩ ΓX , X ∈ { I, N } .
+
+Then, by the definition of the truncation operator (4.9) and the chain rule for Sobolev functions (cf . [30, Thm. 2.1.11]), we have that 
+
+Tλu = 0 a.e. in Ω \ Ωλ and a.e. on ∂Ω \ Γλ , (4.11a) 
+
+∇Tλu = χΩλ ∇u a.e. in Ω , (4.11b) sgn( Tλu) = sgn( u) = sgn( u − u∞) a.e. on Γ λI ⊆ Γ>I , (4.11c) where we used in (4.11c) that λ > u ∞ + Cu a.e. on Γ I and −λ < u ∞ − Cu a.e. on Γ I and, thus, ΓλI ⊆ Γ>I for λ > λ 0. As a result, due to (4.11) , by choosing v = Tλu ∈ H1(Ω) in (4.10) , we obtain 
+
+κ∥∇ Tλu∥2Ω + Cuβ∥Tλu∥1,ΓλI = ( f, Tλu)Ωλ + ( g, Tλu)ΓλN . (4.12) Moreover, due to (4.11a) and (4.11c), we have that 
+
+Cu = 1 
+
+> βm
+
+∥| u − u∞| − Cu∥1,Γ>I ≥ 1 
+
+> βm
+
+∥Tλu∥1,ΓλI = 1 
+
+> βm
+
+∥Tλu∥1,ΓI . (4.13) Using Friedrich’s inequality ( cf . (2.1) ), (4.13) in (4.12) , H¨ older’s inequality together with (4.11a) ,the Sobolev and trace embedding H1(Ω) ,→ Lp(Ω) ∩ Lq (∂Ω) ,→ L2˜ r′
+
+(Ω) ∩ L2˜ s′
+
+(∂Ω), and the 
+
+ε-Young inequality, for every ε > 0, we find that 
+
+∥Tλu∥2Ω + ∥∇ Tλu∥2Ω ≲ κ∥∇ Tλu∥2Ω + 1 
+
+> m
+
+∥Tλu∥21,ΓI
+
+≤ (f, Tλu)Ωλ + ( g, Tλu)ΓλN
+
+≤ ∥ f ∥˜r, Ω|Ωλ| 12˜ r′ ∥Tλu∥2˜ r′,Ω + ∥g∥˜s, ΓN |ΓλN | 12˜ s′ ∥Tλu∥2˜ s′,ΓN
+
+≲ (|Ωλ| bp + |Γλ| bq )( ∥Tλu∥Ω + ∥∇ Tλu∥Ω)
+
+≲ 1 
+
+> ε
+
+(|Ωλ| 2 
+
+> p
+
++ |Γλ| 2 
+
+> q
+
+)b + ε(∥Tλu∥2Ω + ∥∇ Tλu∥2Ω) ,
+
+which, for ε > 0 sufficiently small, implies that 
+
+∥Tλu∥2Ω + ∥∇ Tλu∥2Ω ≲ (|Ωλ| 2 
+
+> p
+
++ |Γλ| 2 
+
+> q
+
+)b , (4.14) By the Sobolev and trace embedding H1(Ω) ,→ Lp(Ω) ∩ Lq (∂Ω) as well as |Tλu| = |u| − λ ≥ λ′ − λ
+
+a.e. in Ω λ′
+
+⊆ Ωλ and a.e. on Γ λ′
+
+⊆ Γλ, for every λ′ > λ , we have that 
+
+∥Tλu∥2Ω + ∥∇ Tλu∥2Ω ≳ ∥Tλu∥2 
+
+> p, Ωλ
+
++ ∥Tλu∥2 
+
+> q, Γλ
+
+≳ (λ′ − λ)2(|Ωλ′
+
+| 2 
+
+> p
+
++ |Γλ′
+
+| 2 
+
+> q
+
+) . (4.15) Putting (4.14) and (4.15) together, for every λ′ > λ , we find that 
+
+|Ωλ′
+
+| 2 
+
+> p
+
++ |Γλ′
+
+| 2 
+
+> q
+
+≲ (λ′ − λ)−2(|Ωλ| 2 
+
+> p
+
++ |Γλ| 2 
+
+> q
+
+)b, (4.16) and we conclude from Lemma 4.7 (where K > 0 is the hidden constant in ≲ from (4.16) , a = 2, b ∈
+
+(1 , 2) fixed as above, and φ : [λ0, +∞) → [0 , ∞), defined by φ(λ) := |Ωλ| 2 
+
+> p
+
++ |Γλ| 2 
+
+> q
+
+for all λ > λ 0)the existence of a constant λ∗ := 2 bb−1 K 1 
+
+> a
+
+φ(λ0) b−1 
+
+> a
+
++ λ0 ∈ [λ0, ∞) such that |Ωλ∗
+
+| 2 
+
+> p
+
++ |Γλ∗
+
+| 2 
+
+> q
+
+= 0 .In other words, we have that |u| ≤ λ∗ a.e. in Ω and a.e. on ∂Ω, i.e. , u ∈ L∞(Ω) ∩ L∞(∂Ω) and, due to (4.3), ed ∈ L∞(Γ I ). FE Approximation of an Optimal Insulation Problem 9
+
+5. The discrete insulation problem 
+
+Given a discrete heat source fh ∈ S 1(Th), a discrete heat flux gh ∈ S 1(SNh ), jointly satisfying the discrete non-trivial net heat input condition 
+
+(fh, 1) Ω + ( gh, 1) ΓN̸ = 0 , (5.1) and a discrete ambient temperature uh 
+
+> ∞
+
+∈ S 1(SIh), we seek a pair ( uh, edh) ∈ S 1(Th) × S 1(SIh), con-sisting of a discrete temperature distribution and a discrete distribution function (of the insulation material) that minimize the discrete heat loss functional Eh : S1(Th) × S 1(SIh) → R ∪ { +∞} , for every ( vh, η h) ∈ S 1(Th) × S 1(SIh) defined by 
+
+Eh(vh, η h) := κ 
+
+> 2
+
+∥∇ vh∥2Ω + β 
+
+> 2
+
+∥(1+ βη h)− 12 (vh −uh
+
+> ∞
+
+)∥2ΓI ,h −(fh, v h)Ω −(gh, v h)ΓN +IHhm (ηh) , (5.2) where 
+
+Hhm := ¶ηh ∈ S 1(SIh) | ηh ≥ 0 on Γ I , (ηh, 1) ΓI ,h = m© .
+
+Note that the discrete non-trivial net heat input condition (5.1) follows from its continuous counter-part (3.1) if, e.g. , fh ∈ S 1(Th) and gh ∈ S 1(SNh ) are global L2-projections of f ∈ L2(Ω) and g ∈
+
+(H 12 (Γ N )) ∗ onto S1(Th) and S1(SNh ), respectively , as ( fh, 1) Ω = ( f, 1) Ω and (gh, 1) ΓN = ⟨g, 1⟩ΓN .
+
+5.1 Optimality conditions 
+
+The following proposition identifies optimality conditions that characterize a minimizing pair (uh, edh) ∈ S 1(Th) × S 1(SIh) of the discrete heat loss functional (5.2). 
+
+Proposition 5.1 (Optimality conditions) . A pair (uh, edh) ∈ S 1(Th) × S 1(SIh) is minimal for the discrete heat loss functional (5.2) if and only if the following optimality conditions are satisfied: (i) There exists a constant Cuh > 0 such that 
+
+Cuh = 1 
+
+> βm
+
+∥Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+}∥ 1,ΓI ; (5.3) 
+
+(ii) The function edh ∈ S 1(SIh) satisfies 
+
+edh = 1
+
+> βCuh
+
+Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+} on ΓI ; (5.4) 
+
+(iii) The pair (uh, edh) ∈ S 1(Th) × S 1(SIh), for every vh ∈ S 1(Th), satisfies 
+
+κ(∇uh, ∇vh)Ω + β((1 + βedh)−1(uh − uh
+
+> ∞
+
+), v h)ΓI ,h = ( fh, v h)Ω + ( gh, v h)ΓN . (5.5) 
+
+Lemma 5.2 (Positivity of Cuh ). Let (uh, edh) ∈ S 1(Th) × S 1(SIh) be a pair such that the optimality condition (5.5) is satisfied. Then, the constant Cuh ≥ 0 implicitly defined by (5.3) satisfies Cuh > 0.Proof. Suppose that Cuh = 0. Then, (5.3) implies that uh = uh 
+
+> ∞
+
+a.e. on Γ I and, consequently , (5.5) ,for every vh ∈ S 1(Th), reads 
+
+κ(∇uh, ∇vh)Ω = ( fh, v h)Ω + ( gh, v h)ΓN . (5.6) For vh = 1 ∈ S 1(Th) in (5.6) , we find that ( fh, 1) Ω+( gh, 1) ΓN = 0, which contradicts assumption (5.1) .As a result, we conclude that Cuh > 0. 
+
+Proof (of Proposition 5.1). A pair ( uh, edh) ∈ S 1(Th) × S 1(SIh) is minimal for (5.2) if and only if 0(S1(SIh)) ∗ ∈ ∂2Eh(uh, edh) , (5.7a) 0(S1(Th)) ∗ = D 1Eh(uh, edh) , (5.7b) where the identity (5.7b) is equivalent to (5.5), while the inclusion (5.7a) is equivalent to 
+
+edh ∈ argmin 
+
+> ηh∈H hm
+
+{Eh(uh, η h)} . (5.8) Arguing as in the proof of [ 15 , Prop. 4.1 & Lem. 4.1], with modifications to fit the discrete setting, we find that the unique minimizer edh ∈ H hm is given via (5.4) with Cuh > 0 given via (5.3). H. Antil, A. Kaltenbach, and K. L. A. Kirk 10 
+
+Remark 5.3 (on Proposition 5.1) . Since (5.8) is equivalent to −βI h{(1 + βedh)−2(uh − uh
+
+> ∞
+
+)2} ∈ 
+
+Ih{∂I Hhm (edh)}, the optimality conditions (5.3) and (5.4) are jointly equivalent to the optimality condition 
+
+((1 + βedh)−2(uh − uh
+
+> ∞
+
+)2, edh − ηh)ΓI ,h ≥ 0 for all ηh ∈ H hm . (5.9) 
+
+5.2 L∞-bounds on the insulated boundary 
+
+The a priori error analysis in Section 6, in fact, does not only hinge on the assumption that both 
+
+u, ed ∈ L∞(Γ I ), but also the assumption of uniform L∞(Γ I )-bounds for uh ∈ S 1(Th) and edh ∈ H hm.The following lemma affirms this assumption provided the heat source f ∈ L2(Ω) and heat flux 
+
+g ∈ (H 12 (Γ N )) ∗ are sufficiently integrable, the ambient temperature u∞ is essentially bounded, and the following non-obtuseness condition is satisfied. 
+
+Assumption 5.4 (Non-obtuse insulation triangulation condition) . Suppose Th is non-obtuse in the sense of [17], i.e., for every ν, ν ′ ∈ N h with ν̸ = ν′, we have that 
+
+∇ϕν · ∇ ϕν′ ≤ 0 a.e. in Ω . (5.10) 
+
+Lemma 5.5. Let Assumption 5.4 be satisfied. Then, if there exist r > d 
+
+> 2
+
+and s > d − 1 such that 
+
+sup h> 0 {∥ fh∥r, Ω + ∥gh∥s, ΓN + ∥uh
+
+> ∞
+
+∥∞,ΓI } < +∞, then sup h> 0 {∥ uh∥∞,ΓI + ∥edh∥∞,ΓI } < +∞.
+
+The proof of Lemma 5.5 proceeds using a discrete version of a classic argument by Stampacchia (cf . [ 28 ]), which makes use of a truncation argument based on the discrete truncation operator 
+
+Thλ : W 1,1(Ω) → S 1(Th), λ > 0, for every v ∈ W 1,1(Ω) defined by 
+
+Thλv := Ih{Tλv} = Ih{sign( v)( |v| − λ)+} in Ω . (5.11) A key ingredient in the proof of the continuous counterpart ( cf . Lemma 4.6) of Lemma 5.5 is the gra-dient relation (4.11b) , which results from the chain rule for Sobolev functions ( cf . [ 30 , Thm. 2.1.11]). Owing to the application of the nodal interpolation operator to the truncation operator in (4.9) ,we cannot expect the latter to hold for the discrete truncation operator. Instead, we resort to the following substitute that applies on non-obtuse triangulations. 
+
+Lemma 5.6. Let Assumption 5.4 be satisfied. Then, for every vh ∈ S 1(Th), there holds 
+
+|∇ Thλvh|2 ≤ ∇ Thλvh · ∇ vh a.e. in Ω . (5.12) 
+
+Proof. Let T ∈ T h be fixed, but arbitrary and denote by Nh(T ) := Nh ∩ T the set of nodes in T .Then, there holds 
+
+∇Thλvh · ∇ vh = − X  
+
+> ν′,ν ∈N h(T)12
+
+(Tλvh(ν′) − Tλvh(ν))( vh(ν′) − vh(ν)) ∇φν′ · ∇ φν in T . (5.13) By [25, Lem. 4.8, eq. (4.28)], for every ν′, ν ∈ N h(T ) with ν′̸ = ν, there holds (Tλvh(ν′) − Tλvh(ν))( vh(ν′) − vh(ν)) ≥ | Tλvh(ν′) − Tλvh(ν)|2 , (5.14) Therefore, since ∇φν′ · ∇ φν ≤ 0 in T (cf . Assumption 5.4), from (5.14) in (5.13) , it follows that 
+
+∇Thλvh · ∇ vh ≥ − X  
+
+> ν′,ν ∈N h(T)12
+
+|Tλvh(ν′) − Tλvh(ν)|2∇φν′ · ∇ φν = |∇ Thλvh|2 in T . (5.15) Eventually, since T ∈ T h was chosen arbitrarily, from (5.15), we conclude the assertion. 
+
+Proof (of Lemma 5.5). To begin with, we introduce the nodal sets 
+
+N >h,I := {ν ∈ N Ih | | uh(ν) − uh
+
+> ∞
+
+(ν)| > Cuh } , N ≤ 
+
+> h,I
+
+:= N Ih \ N >h,I ,
+
+and fix b ∈ (1 , 2). Then, depending on d = 3 or d = 2, we make the following definitions: 
+
+• Case 1: ( d = 3 ). We set p = 6, q = 4, ˜ r = 33−b , ˜ s = 22−b , implying p = 2 b˜r′ and q = 2 b˜s′;
+
+• Case 2: ( d = 2 ). We set p = 2 b˜r′ and q = 2 b˜s′ for fixed ˜ r, ˜s > 1. FE Approximation of an Optimal Insulation Problem 11 Using the optimality conditions (5.3)–(5.5), for every vh ∈ S 1(Th), we find that 
+
+κ(∇uh, ∇vh)Ω + Cuh β(sgn( uh − uh
+
+> ∞
+
+)χN >h,I , v h)ΓI ,h 
+
++ β(( uh − uh
+
+> ∞
+
+)χN ≤ 
+
+> h,I
+
+, v h)ΓI ,h = ( fh, v h)Ω + ( gh, v h)ΓN . (5.16) Next, for every λ > λ 0 := sup h> 0 {∥ uh
+
+> ∞
+
+∥∞,ΓI + Cuh }, we introduce the (nodal) sets 
+
+N λh := {ν ∈ N h | | uh(ν)| > λ } ,
+
+N λh,∂ := {ν ∈ N ∂h | | uh(ν)| > λ } ,
+
+N λh, X := N λh ∩ N X 
+
+> h
+
+, X ∈ { I, N } .
+
+Then, by the definition of the discrete truncation operator (5.11) and Lemma 5.6, we have that 
+
+Thλuh = 0 in Nh \ N λh and on N ∂h \ N λh,∂ , (5.17a) 
+
+|∇ Thλuh|2 ≤ ∇ Thλuh · ∇ uh a.e. in Ω , (5.17b) sgn( Thλuh) = sgn( uh) = sgn( uh − uh
+
+> ∞
+
+) on N λh,I ⊆ N >h,I , (5.17c) where we used in (5.17c) that λ > u h 
+
+> ∞
+
++ Cuh a.e. on Γ I and −λ < u h 
+
+> ∞
+
+− Cuh a.e. on Γ I and, thus, 
+
+N λh,I ⊆ N >h,I for λ > λ 0. As a result, due to (5.17) , by choosing vh = Thλuh ∈ S 1(Th) in (5.16) , we obtain 
+
+κ∥∇ Thλuh∥2Ω + Cuh β∥Thλuh∥1,ΓI ≤ (fh, Thλuh)Ω + ( gh, Thλuh)ΓN . (5.18) Moreover, due to (5.17a) and (5.17c), we have that 
+
+Cuh = 1 
+
+> βm
+
+∥Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+}∥ 1,ΓI ≥ 1 
+
+> βm
+
+∥Thλuh∥1,ΓI . (5.19) Using Friedrich’s inequality ( cf . (2.1)), (5.19) in (5.18), H¨ older’s inequality, the notation 
+
+|N λh | := X 
+
+> ν∈N λh
+
+hdν ∼ χsupp Thλuh 
+
+> ss, Ω
+
+, |N λh,∂ | := X 
+
+> ν∈N λh,∂
+
+hd−1 
+
+> ν
+
+∼ χsupp Thλuh 
+
+> ss,∂ Ω
+
+, (5.20) where the implicit constants in the node-based norm equivalence ∼ depend only on the shape reg-ularity of {T h}h> 0 and s ∈ [1 , ∞) ( cf . [ 5, Lem. 3.4]), the Sobolev and trace embedding H1(Ω) ,→
+
+Lp(Ω) ∩ Lq (∂Ω) ,→ L2˜ r′
+
+(Ω) ∩ L2˜ s′
+
+(∂Ω), and the ε-Young inequality, for every ε > 0, we find that 
+
+∥Thλuh∥2Ω + ∥∇ Thλuh∥2Ω ≲ κ∥∇ Thλuh∥2Ω + 1 
+
+> m
+
+∥Thλuh∥21,ΓI
+
+≤ (fh, Thλuh)Ω + ( gh, Thλuh)ΓN
+
+≲ ∥fh∥˜r, Ω|N λh | 12˜ r′ ∥Thλuh∥2˜ r′,Ω + ∥gh∥˜s, ΓN |N λh,∂ | 12˜ s′ ∥Thλuh∥2˜ s′,ΓN
+
+≲ (|N λh | bp + |N λh,∂ | bq )( ∥Thλuh∥Ω + ∥∇ Thλuh∥Ω)
+
+≲ 1 
+
+> ε
+
+(|N λh | 2 
+
+> p
+
++ |N λh,∂ | 2 
+
+> q
+
+)b + ε(∥Tλuhh∥2Ω + ∥∇ Thλuh∥2Ω) ,
+
+which, for ε > 0 sufficiently small, implies that 
+
+∥Thλuh∥2Ω + ∥∇ Thλuh∥2Ω ≲ (|N λh | 2 
+
+> p
+
++ |N λh,∂ | 2 
+
+> q
+
+)b , (5.21) By the Sobolev and trace embedding H1(Ω) ,→ Lp(Ω) ∩Lq (∂Ω) as well as Thλuh ≥ | uh|− λ ≥ λ′ −λ
+
+in N λ′ 
+
+> h
+
+⊆ N λh and on N λ′ 
+
+> h,∂
+
+⊆ N λh,∂ together with (5.20), for every λ′ > λ , we have that 
+
+∥Thλuh∥2Ω + ∥∇ Thλuh∥2Ω ≳ ∥Thλuh∥2 
+
+> p, Ω
+
++ ∥Thλuh∥2 
+
+> q,∂ Ω
+
+≳ (λ′ − λ)2(|N λ′ 
+
+> h
+
+| 2 
+
+> p
+
++ |N λ′ 
+
+> h,∂
+
+| 2 
+
+> q
+
+) . (5.22) Putting (5.21) and (5.22) together, for every λ′ > λ , we find that 
+
+|N λ′ 
+
+> h
+
+| 2 
+
+> p
+
++ |N λ′ 
+
+> h,∂
+
+| 2 
+
+> q
+
+≲ (λ′ − λ)−2(|N λh | 2 
+
+> p
+
++ |N λh,∂ | 2 
+
+> q
+
+)b , (5.23) and we conclude from Lemma 4.7 (where K > 0 is the hidden constant in ≲ from (5.23) , a = 2, b ∈
+
+(1 , 2) fixed as above, and φh : [λ0, +∞) → [0 , ∞), defined by φh(λ) := |N λh | 2 
+
+> p
+
++|N λh,∂ | 2 
+
+> q
+
+for all λ > λ 0)the existence of a constant λ∗ 
+
+> h
+
+:= 2 bb−1 K 1 
+
+> a
+
+φh(λ0) b−1 
+
+> a
+
++λ0 ∈ [λ0, ∞) such that |N λ∗ 
+
+> h
+> h
+
+| 2 
+
+> p
+
++|N λ∗ 
+
+> h
+> h,∂
+
+| 2 
+
+> q
+
+= 0 .In other words, we have that |uh| ≤ λ∗ 
+
+> h
+
+a.e. in Ω and a.e. on ∂Ω. Since, due to (5.20) , we have that 
+
+|N λ0 
+
+> h
+
+|+|N λ0 
+
+> h,∂
+
+| ≲ |Ω|+|∂Ω|, there holds λ∗ 
+
+> h
+
+≲ 2 bb−1 K 1 
+
+> a
+
+(|Ω|+|∂Ω|) b−1 
+
+> a
+
++λ0 =: λ∗, so that, eventually, sup h> 0 {∥ uh∥∞,Ω + ∥uh∥∞,∂ Ω} < +∞ and, due to (5.4), sup h> 0 {∥ edh∥∞,ΓI } < +∞.H. Antil, A. Kaltenbach, and K. L. A. Kirk 12 
+
+5.3 Well-posedness, stability, and convergence 
+
+On the basis of the discrete optimality conditions (5.3) –(5.5) (and the continuous optimality conditions (4.2) – (4.4) ), we establish well-posedness, stability, and convergence of the discretization introduced in Section 5. 
+
+Theorem 5.7 (Well-posedness, stability, and convergence of (5.3)–(5.5)) . Assume that 
+
+fh ⇀ f in L2(Ω) (h → 0+) , (5.24a) 
+
+gh ⇀ g in H− 12 (Γ N ) (h → 0+) , (5.24b) 
+
+uh 
+
+> ∞
+
+→ u∞ in L2(Γ I ) (h → 0+) . (5.24c) 
+
+Then, the following statements apply: (i) Well-posedness: There exists a triple (uh, Cuh , edh) ∈ S 1(Th)×R>0×H hm satisfying (5.3) –(5.5) ;(ii) Stability: There exists a constant cstab > 0, which does not depend on h > 0, such that 
+
+Cuh + ∥edh∥2ΓI + ∥uh∥2Ω + ∥∇ uh∥2Ω ≤ cstab . (5.25) 
+
+(iii) Convergence: There holds 
+
+uh ⇀ u in H1(Ω) (h → 0+) , (5.26a) 
+
+edh → ed in L2(Γ I ) (h → 0+) , (5.26b) 
+
+Cuh → Cu in R (h → 0+) , (5.26c) 
+
+where (u, Cu, ed) ∈ H1(Ω) × R>0 × H m satisfies the optimality conditions (4.2) –(4.4) and, thus, (u, ed) ∈ H1(Ω) × H m is a minimizer of (4.1) .Proof. 1. Well-posedness: Since Eh : S1(Th) × S 1(SIh) → R ∪ { +∞} is proper, continuous, convex, and weakly coercive, since, e.g. , for every ( vh, η h) ∈ S 1(Th) × H hm, due to (2.8a) and ∥ · ∥ ∞,ΓI ≲
+
+h−d+1 ∥ · ∥ 1,ΓI = h−d+1 m on Hhm (cf . [5, Lem. 3.5]), there holds  
+
+> β
+> 2
+
+∥(1 + βη h)− 12 (vh − uh
+
+> ∞
+
+)∥2ΓI ,h ≥ β(d+1) 2(1+ β∥ηh∥∞,ΓI ) ∥vh − uh
+
+> ∞
+
+∥2ΓI ≳ ∥vh − uh
+
+> ∞
+
+∥2ΓI ,
+
+the existence of a triple ( uh, Cuh , edh) ∈ S 1(Th) × R>0 × H hm satisfying (5.3)–(5.5) follows from the direct method in the calculus of variations together with Proposition 5.1. 
+
+2. Stability: If we choose vh = uh ∈ S 1(Th) in the discrete optimality condition (5.5) , using the ε-Young inequality, for every ε > 0, we find that 
+
+κ∥∇ uh∥2Ω + β∥(1 + βedh)− 12 (uh − uh
+
+> ∞
+
+)∥2ΓI ,h = ( fh, u h)Ω + ( gh, u h)ΓN
+
+− β((1 + βedh)−1uh
+
+> ∞
+
+, u h)ΓI ,h 
+
+≤ 12ε ∥fh∥2Ω + ε 
+
+> 2
+
+∥uh∥2Ω
+
++ 12ε ∥gh∥2    
+
+> H−12(Γ N)
+
++ ε 
+
+> 2
+
+∥uh∥2   
+
+> H12(Γ N)
+
++ βÄ 12ε ∥(1 + βedh)− 12 uh
+
+> ∞
+
+∥2ΓI ,h 
+
++ ε 
+
+> 2
+
+∥(1 + βedh)− 12 uh∥2ΓI ,h 
+
+ä .
+
+(5.27) Due to the optimality condition (5.4) , setting Γ>h,I := {Ih{| uh − uh
+
+> ∞
+
+|} ≥ Cuh } and Γ≤ 
+
+> h,I
+
+:= Γ I \ Γ>h,I 
+
+as well as using H¨ older’s inequality, we observe that 
+
+∥(1 + βedh)− 12 (uh − uh
+
+> ∞
+
+)∥2ΓI ,h = ∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 2Γ≤ 
+
+> h,I
+
++ ( Ih{| uh − uh
+
+> ∞
+
+|} , Cuh )Γ≥
+
+> h,I
+
+= ∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 2Γ≤ 
+
+> h,I
+
++ 1  
+
+> |Γ≥
+> h,I |+βm
+
+∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 21,Γ≥
+
+> h,I
+
+≥ 1  
+
+> |Γ≤
+> h,I |
+
+∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 21,Γ≤
+
+> h,I
+
++ 1  
+
+> |Γ≥
+> h,I |+βm
+
+∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 21,Γ≥
+
+> h,I
+
+≥ 1  
+
+> |ΓI|+βm
+
+∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 21,ΓI .
+
+(5.28) FE Approximation of an Optimal Insulation Problem 13 Using (5.28) in (5.27) , the trace embedding H1(Ω) ,→ H 12 (∂Ω) with embedding constant cTr > 0, and Friedrich’s inequality ( cf . (2.1)), we arrive at 
+
+κ∥∇ uh∥2Ω + β
+
+> 2
+
+Ä 1  
+
+> |ΓI|+βm
+
+∥Ih{| uh − uh
+
+> ∞
+
+|}∥ 21,ΓI + ∥(1 + βedh)− 12 (uh − uh
+
+> ∞
+
+)∥2ΓI ,h 
+
+ä
+
+≤ 12ε
+
+Ä∥fh∥2Ω + ∥gh∥2    
+
+> H−12(Γ N)
+
++ β∥(1 + βedh)− 12 uh
+
+> ∞
+
+∥2ΓI ,h 
+
+ä
+
++ ε
+
+> 2
+
+Ä(1 + c2Tr )∥uh∥2Ω + c2Tr ∥∇ uh∥2Ω + β∥(1 + βedh)− 12 uh∥2ΓI ,h 
+
+ä
+
+≤ 12ε
+
+Ä∥fh∥2Ω + ∥gh∥2    
+
+> H−12(Γ N)
+
++ β∥uh
+
+> ∞
+
+∥2ΓI
+
+ä
+
++ ε
+
+> 2
+
+Ä(1 + c2Tr )c2F
+
+Ä∥∇ uh∥2Ω + 2 ∥uh − uh
+
+> ∞
+
+∥21,ΓI + 2 ∥uh
+
+> ∞
+
+∥21,ΓI
+
+ä
+
++ c2Tr ∥∇ uh∥2Ω + β∥(1 + βedh)− 12 uh∥2ΓI ,h 
+
++ 2 βÄ∥(1 + βedh)− 12 (uh − uh
+
+> ∞
+
+)∥2ΓI ,h + ∥uh
+
+> ∞
+
+∥2ΓI ,h 
+
+ää .
+
+(5.29) Therefore, due to (5.24) and (2.8a) , and ∥·∥ 1,ΓI ∼ ∥ Ih{|·|}∥ 1,ΓI on S1(SIh) ( cf . [ 5 , Lem. 3.4]), choos-ing ε > 0 small enough in (5.29) , we conclude that the claimed stability estimate (5.25) applies .
+
+3. Convergence: Due to the stability estimate in (5.25) and the weak closedness of R≥0
+
+and Hm, there exists a triple ( u, Cu, ed) ∈ H1(Ω) × R≥0 × H m such that (up to a subsequence) the convergences (5.26a) – (5.26c) apply. It remains to establish that the triple ( u, Cu, ed) ∈
+
+H1(Ω) × R≥0 × H m satisfies the optimality conditions (4.2)–(4.4): 
+
+Step 1: Since Φ := (( a, c ) 7 → (|a| − c)+) ∈ C0,1(R × R), from Lemma 2.1 together with (5.24c) ,(5.26a), and (5.26c), it follows that 
+
+Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+} → (|u − u∞| − Cu)+ in L2(Γ I ) (h → 0+) . (5.30) Therefore, if we pass to the limit as h → 0+ in (5.3), using (5.30) and (5.26c), we find that 
+
+Cu = 1 
+
+> βm
+
+∥(|u − u∞| − Cu)+∥1,ΓI ; (5.31) 
+
+Step 2: Let v ∈ H1(Ω) be fixed, but arbitrary. Then, there exists a sequence vh ∈ S 1(Th) , h > 0,such that vh → v in H1(Ω) ( h → 0+). Since Ih{β(1+ βedh)−1(uh −uh
+
+> ∞
+
+)vh} = Ih{TCuh (uh −uh
+
+> ∞
+
+)vh}
+
+on Γ I and Φ := (( a, c ) 7 → Tca = sign (a) min {| a|, c }) ∈ C0,1(R × R), from Lemma 2.1 together with (5.24c), (5.26a), and (5.26c), it follows that 
+
+β((1 + βedh)−1(uh − uh
+
+> ∞
+
+), v h)ΓI ,h → (TCu {u − u∞}, v )ΓI (h → 0+) (5.32) Moreover, if we multiply (5.4) with βCuh > 0 and, subsequently, we pass to the limit as h → 0+,using (5.26a), (5.26b), and (5.30) in doing so, we find that 
+
+βCued = ( |u − u∞| − Cu)+ a.e. on Γ I . (5.33) Next, we need to distinguish the cases Cu > 0 and Cu = 0: 
+
+• Case ( Cu > 0). In this case, (5.33) is equivalent to (4.3), so that 
+
+β(1 + βed)−1(u − u∞) = TCu {u − u∞} a.e. on Γ I . (5.34) 
+
+• Case ( Cu = 0 ). In this case, due to (5.33) , we have that u = u∞ a.e. on Γ I , so that (5.34) holds. In summary, if we pass to the limit as h → 0+ in (5.5) , using (5.24a) – (5.24c) and (5.26a) –(5.26c), for every v ∈ H1(Ω), we find that 
+
+κ(∇u, ∇v)Ω + β((1 + βed)−1(u − u∞), v )ΓI = ( f, v )Ω + ⟨g, v ⟩ΓN . (5.35) 
+
+Step 3: Due to Lemma 4.4, from (5.31) and (5.35) , it follows that Cu > 0, so that (5.33) is equivalent to (4.3). In summary, the triple ( u, Cu, ed) ∈ H1(Ω) × R>0 × H m satisfies the optimality conditions (4.2) –(4.4) and, thus, by Proposition 4.1, the pair ( u, ed) ∈ H1(Ω) ×H m is a minimizer of (4.1) .H. Antil, A. Kaltenbach, and K. L. A. Kirk 14 
+
+6. Error analysis 
+
+In this section, we derive a priori error estimates for the discretization introduced in Section 5. Throughout this section, we assume that fh ∈ S 1(Th) and gh ∈ S 1(SNh ) are global L2-projections of f ∈ L2(Ω) and g ∈ (H 12 (Γ N )) ∗ onto S1(Th) and S1(SNh ), respectively. Moreover , we assume that 
+
+u∞ ∈ H1(Γ I ) and set uh 
+
+> ∞
+
+:= IIhu∞ ∈ S 1(Th), where IIh : H1(Γ I ) → S 1(SIh) is the quasi-interpolation operator from Appendix A. 
+
+6.1 Error bounds for the temperature distribution 
+
+In this subsection, we derive an a priori error estimate for the temperature distribution. As a by-product, we additionally obtain an a priori error estimate for the distribution of the insulation material over supp( u − u∞). 
+
+Theorem 6.1. Let the assumptions of Lemma 4.6 and Lemma 5.5 be satisfied. Moreover, assume that {T h}h> 0 is quasi-uniform, that u∞ ∈ H1(Γ I ) ∩ L∞(Γ I ), and that u ∈ H1+ s(Ω) , s ∈ [ 12 , 1] ,so that u ∈ E∆(Ω) ,→ H1(Γ I ) (since ∆u = −f ∈ L2(Ω) by (4.4) for all v ∈ H10 (Ω) ) and, thus, 
+
+ed ∈ H1(Γ I ) (by (4.3) and the chain rule for Sobolev functions). Then, there holds  
+
+> κ
+> 2
+
+∥∇ (uh − u)∥2Ω + β 
+
+> 2
+
+(1 + βedh)− 12
+
+Äuh − u − β(u−u∞)1+ βed (edh − ed)ä 2ΓI
+
++ β2 
+
+> 2
+
+((1 + βed)−2(u − u∞)2, ed − edh)ΓI ≲ h2s .
+
+(6.1) 
+
+If, in addition, the non-degeneracy condition 
+
+δ⋆ := dist L2(Γ I )
+
+Ä1, β(u−u∞)1+ βed eL2(Γ I )ä > 0 , (6.2) 
+
+where eL2(Γ I ) := {η ∈ L2(Γ I ) | (η, 1) ΓI = 0 } is satisfied, there holds 
+
+∥u − uh∥2 
+
+> H1(Ω)
+
+≲ h2s . (6.3) 
+
+Remark 6.2 (Sufficient conditions for the non-degeneracy condition (6.2) ). The non-degeneracy condition (6.2) excludes the possibility that constant modes of v − u can be compensated by admissible variations of ed. It is satisfied, for instance, under the following assumptions: (i) If |{ u = u∞} ∩ ΓI | > 0, then β(u−u∞)1+ βed ξ = 0 on a set of positive measure for all ξ ∈ eL2(Γ I ),so that 
+
+1 /∈ cl L2(Γ I )
+
+Ä β(u−u∞)1+ βed eL2(Γ I )ä , (6.4) 
+
+and, therefore, δ⋆ > 0;(ii) If u − u∞̸ = 0 a.e. on ΓI and 1 
+
+> u−u∞
+
+∈ L2(Γ I ), then β(u−u∞)1+ βed eL2(Γ I ) is a closed hyperplane in 
+
+L2(Γ I ) with normal vector 1+ βed 
+
+> β(u−u∞)
+
+∈ L2(Γ I ). If, in addition, we have that ( 1+ βed 
+
+> u−u∞
+
+, 1) ΓI̸ = 0 ,then (6.4) applies and, therefore, δ⋆ > 0;A sufficient condition for (ii) is that u−u∞ ≥ c0 or u−u∞ ≤ − c0 a.e. on ΓI for some c0 > 0;(iii) If u∞ = const a.e. on ΓI , f ≥ 0 a.e. in Ω, and g ≥ 0 a.e. on ΓN , then the weak maximum principle implies u − u∞ ≥ 0 a.e. in Ω, which follows by testing the optimality condition 
+
+(4.4) with v = −(u − u∞)− ∈ H1(Ω) resulting in 
+
+κ∥∇ (u − u∞)−∥2Ω + β (1 + βed)− 12 (u − u∞)−
+
+> 2ΓI
+
+≤ 0 . (6.5) 
+
+Consequently, if, in addition, u−u∞ > 0 a.e. on ΓI and 1 
+
+> u−u∞
+
+∈ L2(Γ I ), then ( 1+ βed 
+
+> u−u∞
+
+, 1) ΓI̸ = 0 ,so that (ii) applies and, therefore, δ⋆ > 0.If, in addition, ΓI = ∂Ω and the corresponding Robin problem is regular enough for the strong maximum principle and Hopf ’s boundary point lemma (cf. [ 21 , Lemma 3.4]) to apply up to ΓI , then u−u∞ ≥ c0 a.e. on ΓI for some c0 > 0. Indeed, for w := u−u∞ ∈ H1(Ω) , the Robin condition is homogeneous, and the claim follows from the strong maximum principle, Hopf ’s boundary point lemma, and compactness of ΓI .FE Approximation of an Optimal Insulation Problem 15 The proof of Theorem 6.1 follows a standard procedure: In the first step, we establish a quadratic growth estimate, which bounds the natural error of the discretization in terms of an energy difference. 
+
+Lemma 6.3. For every (v, η ) ∈ H1(Ω) × H m, there holds  
+
+> κ
+> 2
+
+∥∇ (v − u)∥2Ω + β 
+
+> 2
+
+∥(1 + βη )− 12 (v − u − β(u−u∞)1+ βed (η − ed)) ∥2ΓI
+
++ β2 
+
+> 2
+
+((1 + βed)−2(u − u∞)2, ed − η)ΓI = E(v, η ) − E(u, ed) ,
+
+(6.6) 
+
+where β2 
+
+> 2
+
+((1 + βed)−2(u − u∞)2, ed − η)ΓI ≥ 0 due to (4.8) .Proof. Let ( v, η ) ∈ H1(Ω) × H m be fixed, but arbitrary. Then, by the binomial formula and the optimality condition (4.4), we find that 
+
+E(v, η ) − E(u, ed) = κ 
+
+> 2
+
+∥∇ (v − u)∥2Ω + κ(∇u, ∇(v − u)) Ω − (f, v − u)Ω − ⟨ g, v − u⟩ΓN
+
++ β
+
+> 2
+
+Ä∥(1 + βη )− 12 (v − u∞)∥2ΓI − ∥ (1 + βed)− 12 (u − u∞)∥2ΓI
+
+ä
+
+= κ 
+
+> 2
+
+∥∇ (v − u)∥2Ω − β((1 + βed)−1(u − u∞), v − u)ΓI
+
++ β
+
+> 2
+
+Ä∥(1 + βη )− 12 (v − u∞)∥2ΓI − ∥ (1 + βed)− 12 (u − u∞)∥2ΓI
+
+ä .
+
+(6.7) Since the boundary integrands may be rewritten as (1 + βη )−1(v − u∞)2 − (1 + βed)−1(u − u∞)2 − 2(1 + βed)−1(u − u∞)( v − u)= (1 + βη )−1Äv − u − β(u−u∞)1+ βed (η − ed)ä2
+
++ β(1 + βed)−2(u − u∞)2(ed − η)
+
+ a.e. on Γ I ,
+
+from (6.7), we conclude the claimed quadratic growth identity (6.6). 
+
+Corollary 6.4. Assume that u, u ∞, ed ∈ L∞(Γ I ) and the non-degeneracy condition (6.2) . Then, for every (v, η ) ∈ H1(Ω) × Hm with η ∈ L∞(Γ I ), there holds 
+
+∥v − u∥2 
+
+> H1(Ω)
+
+≲ E(v, η ) − E(u, ed) , (6.8) 
+
+where the implicit constant in ≲ depends only on Ω, ΓI , κ, β, ∥ed∥∞,ΓI , ∥η∥∞,ΓI , and δ−1 
+
+> ⋆
+
+.Proof (of Corollary 6.4). Let ( v, η ) ∈ H1(Ω) × Hm with η ∈ L∞(Γ I ) be fixed, but arbitrary. Then, due to Lemma 6.3 and (1 + βη )−1 ≥ (1 + β∥η∥∞,ΓI )−1 a.e. on Γ I , we have that 
+
+E(v, η ) − E(u, ed) ≳ ∥∇ (v − u)∥2Ω + v − u − β(u−u∞)1+ βed (η − ed) 2ΓI
+
+. (6.9) Next, let ⟨v − u⟩ΓI := 1 
+
+> |ΓI|
+
+´ 
+
+> ΓI
+
+(v − u) d s. Then, by the boundary Poincar´ e inequality, there holds 
+
+∥v − u − ⟨ v − u⟩ΓI ∥ΓI ≲ ∥∇ (v − u)∥Ω . (6.10) Since η − ed ∈ eL2(Γ I ), we have that β(u−u∞)1+ βed (η − ed) ∈ β(u−u∞)1+ βed eL2(Γ I ), so that, by the non-degeneracy condition (6.2), we observe that 
+
+|⟨ v − u⟩ΓI |δ⋆ = dist L2(Γ I )
+
+Ä⟨v − u⟩ΓI , β(u−u∞)1+ βed eL2(Γ I )ä
+
+≤ ⟨v − u⟩ΓI − β(u−u∞)1+ βed (η − ed) ΓI
+
+. (6.11) Moreover, using (6.10), from (6.11), we infer that 
+
+∥v − u∥ΓI ≲ ∥v − u − ⟨ v − u⟩ΓI ∥ΓI + |⟨ v − u⟩ΓI |
+
+≲ ∥∇ (v − u)∥Ω + v − u − β(u−u∞)1+ βed (η − ed) ΓI
+
+,
+
+which, by Friedrich’s inequality (2.1), yields the claimed quadratic growth estimate (6.8). In the second step, we estimate the energy difference. To this end, in order to be in the position to exploit the minimality of ( uh, edh) ∈ S 1(Th) × H hm for the discrete energy functional (5.2) , we first estimate the difference between the minimal discrete and the minimal continuous energy. H. Antil, A. Kaltenbach, and K. L. A. Kirk 16 
+
+Lemma 6.5. Under the assumptions of Theorem 6.1, there holds 
+
+Eh(uh, edh) − E(u, ed) ≲ h2s . (6.12) 
+
+Proof. Let Jh : E∆(Ω) := {v ∈ H 32 (Ω) | ∆v ∈ L2(Ω) } → S 1(Th) be the quasi-interpolation oper-ator defined in (A.1) and Π m 
+
+> h
+
+: L1(Γ I ) → S 1(SIh) the mass-lumped L2-projection defined in (B.1) .Then, define (u# 
+
+> h
+
+, ed# 
+
+> h
+
+) := ( Jhu, Πm 
+
+> h
+
+ed) ∈ S 1(Th) × H hm , Ψh := (1 + βed# 
+
+> h
+
+)−1(u# 
+
+> h
+
+− uh
+
+> ∞
+
+)2 ∈ W 1,∞(Γ I ) .
+
+To begin with, we bound the side-wise tangential Hessian D 2Γ,h Ψh ∈ (L∞(Γ I )) d×d, for every S ∈ S ∂h ,defined by D 2Γ,h Ψh↾S := D 2 
+
+> S
+
+(Ψ h↾S ), where D 2 
+
+> S
+
+:= P S D2PS denotes the tangential Hessian on S:D2Γ,h Ψh = 2(1+ βed# 
+
+> h)3
+
+Ä(1 + βed# 
+
+> h
+
+)2∇Γ(u# 
+
+> h
+
+− uh
+
+> ∞
+
+) ⊗ ∇ Γ(u# 
+
+> h
+
+− uh
+
+> ∞
+
+)
+
+− (1 + βed# 
+
+> h
+
+)β(u# 
+
+> h
+
+− uh
+
+> ∞
+
+)( ∇Γed# 
+
+> h
+
+⊗ ∇ Γ(u# 
+
+> h
+
+− uh
+
+> ∞
+
+) + ∇Γ(u# 
+
+> h
+
+− uh
+
+> ∞
+
+) ⊗ ∇ Γed# 
+
+> h
+
+)+ β2(u# 
+
+> h
+
+− uh
+
+> ∞
+
+)2∇Γed# 
+
+> h
+
+⊗ ∇ Γed#
+
+> h
+
+ä a.e. on Γ I ,
+
+(6.13) where we used that D 2Γ,h u# 
+
+> h
+
+= D 2Γ,h uh 
+
+> ∞
+
+= D 2Γ,h ed# 
+
+> h
+
+= 0 a.e. on Γ I . Using Lemma 4.6, the L∞(Γ I )-stability of Jh (cf . [ 11 , Cor. 4.8.15]), Young’s inequality, (A.2) , and (B.4) , from (6.13) , we infer that 
+
+∥D2Γ,h Ψh∥1,ΓI ≲ ∥∇ Γ(u# 
+
+> h
+
+− uh
+
+> ∞
+
+)∥2ΓI + ∥∇ Γed# 
+
+> h
+
+∥2ΓI ≲ ∥∇ Γ(u − u∞)∥2ΓI . (6.14) Since ( uh, edh) ∈ S 1(Th) × H hm is minimal for the discrete energy functional (5.2) , we may estimate 
+
+Eh(uh, edh) − E(u, ed) ≤
+
+
+
+(Eh(u# 
+
+> h
+
+, ed# 
+
+> h
+
+) − E(u# 
+
+> h
+
+, ed# 
+
+> h
+
+)) + ( E(u# 
+
+> h
+
+, ed# 
+
+> h
+
+) − E(u, ed# 
+
+> h
+
+)) + ( E(u, ed# 
+
+> h
+
+) − E(u, ed)) 
+
+
+
+=: T h 
+
+> 1
+
++ T h 
+
+> 2
+
++ T h 
+
+> 3
+
+. (6.15) Thus, it remains to estimate the terms T hi , i = 1 , 2, 3: 
+
+ad T h 
+
+> 1
+
+. Using the local interpolation estimate for Ih on Γ I (cf . [ 20 , ineq. (11.17)]) and (6.14) ,we find that 
+
+T h 
+
+> 1
+
+≲ ∥Ih{Ψh} − Ψh∥1,ΓI ≲ h2∥D2Γ,h Ψh∥1,ΓI ≲ h2∥∇ Γ(u − u∞)∥2ΓI . (6.16) 
+
+ad T h 
+
+> 2
+
+. Using a binomial formula, the optimality condition (4.4) , Lemma 4.6, Lemma 5.5, and Young’s inequality, we find that 
+
+T h 
+
+> 2
+
+= 12 ∥∇ (u − u# 
+
+> h
+
+)∥2Ω + ( ∇u, ∇(u# 
+
+> h
+
+− u)) Ω − (f, u # 
+
+> h
+
+− u)Ω − ⟨ g, u # 
+
+> h
+
+− u⟩ΓN
+
++ β 
+
+> 2
+
+∥(1 + βed# 
+
+> h
+
+)− 12 (u# 
+
+> h
+
+− u∞)∥2ΓI − β 
+
+> 2
+
+∥(1 + βed# 
+
+> h
+
+)− 12 (u − u∞)∥2ΓI
+
+= 12 ∥∇ (u − u# 
+
+> h
+
+)∥2Ω + β 
+
+> 2
+
+∥(1 + βed# 
+
+> h
+
+)− 12 (u# 
+
+> h
+
+− u)∥2ΓI
+
++ β2((1 + βed# 
+
+> h
+
+)−1(1 + βed)−1(u − u∞)( u# 
+
+> h
+
+− u), ed − ed# 
+
+> h
+
+)ΓI
+
+≲ ∥∇ (u − u# 
+
+> h
+
+)∥2Ω + ∥u − u# 
+
+> h
+
+∥22,ΓI + ∥u − u# 
+
+> h
+
+∥2,ΓI ∥ed − ed# 
+
+> h
+
+∥2,ΓI
+
+≲ h2s|u|21+ s, Ω + h2∥∇ Γu∥2ΓI + h2∥∇ Γu∞∥2ΓI .
+
+(6.17) 
+
+ad T h 
+
+> 3
+
+. Using the differentiability and convexity of ( a 7 → (1 + βa )−1) : R≥0 → R≥0, that 
+
+{(1 + βed# 
+
+> h
+
+)−2(u − u∞)2}h> 0 ⊆ H1(Γ I ) is bounded (which follows from Lemma 4.6, Lemma 5.5, and B.4), and (B.14), we find that 
+
+T h 
+
+> 3
+
+= β 
+
+> 2
+
+∥(1 + βed# 
+
+> h
+
+)− 12 (u − u∞)∥2ΓI − β 
+
+> 2
+
+∥(1 + βed)− 12 (u − u∞)∥2ΓI
+
+≤ β 
+
+> 2
+
+((1 + βed# 
+
+> h
+
+)−2(u − u∞)2, ed − ed# 
+
+> h
+
+)ΓI
+
+≤ β 
+
+> 2
+
+∥(1 + βed# 
+
+> h
+
+)−2(u − u∞)2∥H1(Γ I )∥ed − ed# 
+
+> h
+
+∥H−1(Γ I )
+
+≲ h2∥∇ Γed∥ΓI .
+
+(6.18) Eventually, using (6.16)–(6.18) in (6.15), we conclude that (6.12) applies. FE Approximation of an Optimal Insulation Problem 17 Third, we estimate the consistency error. 
+
+Lemma 6.6. For every (vh, η h) ∈ S 1(Th) × H hm, there holds 
+
+E(vh, η h) ≤ Eh(vh, η h) + β∥vh − uh
+
+> ∞
+
+∥ΓI ,h ∥u∞ − uh
+
+> ∞
+
+∥ΓI + β 
+
+> 2
+
+∥u∞ − uh
+
+> ∞
+
+∥2ΓI . (6.19) 
+
+Proof. Let ( vh, η h) ∈ S 1(Th)×H hm be fixed, but arbitrary. The claimed estimate (6.19) follows from (vh − u∞)2 = ( vh − uh
+
+> ∞
+
+)2 + 2( vh − uh
+
+> ∞
+
+)( u∞ − uh
+
+> ∞
+
+) + ( u∞ − uh
+
+> ∞
+
+)2 on Γ I and (1 + βη h)−1(vh − uh
+
+> ∞
+
+)2 ≤ Ih{(1 + βη h)−1(vh − uh
+
+> ∞
+
+)2} on Γ I , (6.20) which is a consequence of convexity of the mapping ( s, a ) 7 → (1 + βs )−1a2 : R≥0 × R → R.
+
+Proof (of Theorem 6.1). We combine Lemma 6.3, Corollary 6.4, Lemma 6.5, and Lemma 6.6. 
+
+6.2 Error bounds for the distribution function of the insulation material and critical temperature difference 
+
+In this subsection, we derive a priori error estimates for both the distribution function of the insulation material –also outside the region of non-trivial temperature excess supp (u − u∞)– and critical temperature difference. In doing so, we assume that mβ > |ΓI |, meaning that the available insulation material is sufficiently large relative to the size of the insulated boundary and the heat transfer across it. Under this assumption, the a priori error estimate derived in Theorem 6.1 carries over by means of the following lemma. 
+
+Lemma 6.7. If mβ > |ΓI |, then 
+
+|Cu − Cuh | ≤ 1  
+
+> mβ −| ΓI|
+
+(∥u − uh∥1,ΓI + ∥u∞ − uh
+
+> ∞
+
+∥1,ΓI ) ; (6.21a) 
+
+∥ed − edh∥1,ΓI ≲ ∥u − uh∥1,ΓI + ∥u∞ − uh
+
+> ∞
+
+∥1,ΓI + h 12 . (6.21b) 
+
+Proof. ad (6.21a) . Since Φ := (( a, c ) 7 → (|a| − c)+) ∈ C0,1(R × R) and Lip(Φ) ≤ 1, we find that 
+
+|Cu − Cuh | ≤ 1 
+
+> mβ
+
+(∥u − uh∥1,ΓI + ∥u∞ − uh
+
+> ∞
+
+∥1,ΓI + |ΓI || Cuh − Cu|) ,
+
+and, thus, due to mβ > |ΓI |, that the claimed estimate (6.21a) applies. 
+
+ad (6.21b) . Using (4.3) and (5.4), we find that 
+
+ed − edh = 1 
+
+> βCu
+
+(|u − u∞| − Cu)+ − 1
+
+> βCuh
+
+Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+}
+
+= Ä 1 
+
+> βCu
+
+− 1
+
+> βCuh
+
+ä(|u − u∞| − Cu)+
+
++ 1
+
+> βCuh
+
+(( |u − u∞| − Cu)+ − (|uh − uh
+
+> ∞
+
+| − Cuh )+)+ 1
+
+> βCuh
+
+(( |uh − uh
+
+> ∞
+
+| − Cuh )+ − Ih{(|uh − uh
+
+> ∞
+
+| − Cuh )+})=: T h 
+
+> 1
+
++ T h 
+
+> 2
+
++ T h 
+
+> 3
+
+a.e. on Γ I .
+
+(6.22) Using (4.2) and (6.21a), we have that 
+
+∥T h 
+
+> 1
+
+∥1,ΓI ≤ 1
+
+> βCuCuh
+
+|Cu − Cuh |∥ (|u − u∞| − Cu)+∥1,ΓI
+
+= m
+
+> Cuh
+
+|Cu − Cuh |≤ m   
+
+> Cuh(mβ −| ΓI|)
+
+(∥u − uh∥1,ΓI + ∥u∞ − uh
+
+> ∞
+
+∥1,ΓI ) .
+
+(6.23) Since Φ := (( a, c ) 7 → (|a| − c)+) ∈ C0,1(R × R), using (6.21a) and Lemma 2.1, we have that 
+
+∥T h 
+
+> 2
+
+∥1,ΓI ≤ 1
+
+> βCuh
+
+(∥| u − u∞| − | uh − uh
+
+> ∞
+
+|∥ 1,ΓI + |ΓI || Cu − Cuh |)
+
+≤ 1  
+
+> Cuh
+> mmβ −| ΓI|
+
+(∥u − uh∥1,ΓI + ∥u∞ − uh
+
+> ∞
+
+∥1,ΓI ) ,
+
+∥T h 
+
+> 3
+
+∥1,ΓI ≲ h 12 ∥∇ uh − ∇ uh
+
+> ∞
+
+∥Ω .
+
+(6.24) Eventually, using (6.23) and (6.24) in (6.22) , we conclude that the claimed estimate (6.21b) applies. H. Antil, A. Kaltenbach, and K. L. A. Kirk 18 
+
+7. Numerical experiments 
+
+All computations use the block coordinate descent solver of Algorithm C.1, implemented in the fi-nite element library NETGEN /NGSolve (version v6.2.2602, cf . [ 26 ]/[ 27 ]); all graphics use Matplotlib 
+
+(version 3.10.8, cf . [ 23 ]) or PyVista (version 0.48.4, cf . [ 29 ]). We report two examples. The first is a manufactured-solution study on the unit square ( cf . Section 7.1) confirming the error decay rates of Theorem 6.1. The second is a qualitative three-dimensional example on the Orion crew-module geometry ( cf . Section 7.2), with a Robin datum idealizing windward biased reentry heating. 
+
+7.1 Manufactured test case 
+
+In this example, let Ω = (0 , 1) 2, Γ I = ∂Ω, κ = 1, β = 32 , m = 4, and u∞ ∈ C∞(R2), for every 
+
+x = ( x1, x 2) ∈ R2 defined by u∞(x1, x 2) := 32 (γ(x1) + γ(x2)) − 1 + 110 ( cos 2πx 1 + cos 2πx 2), where 
+
+γ(t) := t(1 −t) for all t ∈ [0 , 1]. Moreover, let ω := mβ ∥ψ +γ2∥−11,ΓI and let ψ ∈ W 2,∞(0 , 1) ∩C1[0 , 1], for every t ∈ [0 , 1], be defined by 
+
+ψ(t) := 
+
+
+
+0.12(1 − 3ξ2 + 2 ξ3) if t =: aξ ∈ [0 , a ] ,
+
+0 if t ∈ [a, b ] ,
+
+0.12(3 ζ2 − 2ζ3) if t =: (1 − b)ζ + b ∈ [b, 1] ,
+
+where ( a, b ) = (0 .3765 , 0.6184) .
+
+If f := −∆u ∈ L2(Ω), a pair ( u, ed) ∈ H1(Ω) ×H m minimizing (4.1) (solving (4.2)–(4.4) with Cu = 1 )is given via ( u(x), ed(s)) = ( u∞(x)+1+ ω(ψ(x1)+ γ2(x2)) , ωβ (ψ(s1)+ γ2(s2))) for all x = ( x1, x 2) ∈ R2
+
+and s = ( s1, s 2) ∈ ΓI , so that {| u − u∞| = Cu} = [ a, b ] × { 0, 1} and ed > 0 on Γ I \ {| u − u∞| = Cu}.Since u ∈ H2(Ω), Theorem 6.1 predicts first-order convergence in the energy norm and second-order convergence of the energy error. The plotted L2-errors in u and ed, as well as the error in Cu,also exhibit approximately second-order convergence under uniform mesh-refinement , see Figure 1 .Figure 2 visualizes the corresponding discrete temperature and optimal insulation distribution. 10 −2 10 −1
+
+Mesh size h
+
+10 −5
+
+10 −2        
+
+> Error  1211
+> ‖u−uh‖Ω
+> ‖˜d−˜dh‖ΓI
+> |Cu−Cuh|‖∇ u− ∇ uh‖Ω
+
+10 −2 10 −1
+
+Mesh size h
+
+10 −2
+
+10 0    
+
+> Energy error  12
+> |E(u, ˜d)−Eh(uh,˜dh)|
+
+Figure 1: Left: L2(Ω)- and H1(Ω)-semi-norm errors for u, L2(Γ I )-error for ed, and error in Cu;
+
+right: energy error with reference value E(u, ed) ≈ − 15 .5424. 0.0 0.5 1.0
+
+x   
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> y
+> Temperature uh
+> 0.00.51.0
+
+x    
+
+> 0.0
+> 0.5
+> 1.0
+> y
+> Insulation ˜dh(normal direction)
+> 0.00.51.0
+
+x  
+
+> 0.0
+> 0.5
+> 1.0
+> y
+> Insulation dh(transversal direction)
+> 0.38 0.68 0.99 1.30 1.61 1.91 2.22 2.53 2.84 3.14
+> temperature
+> 0.00.51.01.5
+> normal thickness
+> 0.00.51.01.5
+> transversal thickness
+
+Figure 2: Left: temperature uh ∈ S 1(Th) computed on a structured mesh with 65 ,536 simplices. 
+
+Center: distribution function edh ∈ S 1(SIh) in the normal direction. Right: distribution function 
+
+edh in the transversal direction. The support of edh intersects all four sides, while the contact set has positive measure and leaves the central parts of the top and bottom edges uninsulated. FE Approximation of an Optimal Insulation Problem 19 
+
+7.2 A qualitative three-dimensional test inspired by reentry heating 
+
+In this example, we consider a qualitative three-dimensional test case on an idealized reentry capsule geometry inspired by NASA’s Orion crew module. The computational domain Ω represents a blunt capsule with a broad heat shield, a rounded shoulder, and a tapered rear section. The geometry is based on the capsule dimensions reported in [ 22 ]. The entire exterior hull is treated as the insulated boundary ( i.e. , Γ I = ∂Ω). The purpose of this example is to illustrate the behavior of the proposed finite element approximation on a non-trivial three-dimensional geometry. It is not intended as a high-fidelity aero-thermal or thermal-protection-system simulation. In order to mimic the strongly windward-biased thermal loading during reentry, we prescribe a spatially varying ambient temperature on Γ I . Let bz := e3 = (0 , 0, 1) ∈ S2 denote the flight axis, and assume that the geometry is oriented such that the heat shield faces the positive e3-direction .Moreover, let x0 ∈ Ω denote the centroid of Ω and k ∈ (C∞(Γ I )) 3 a smooth (globally) transversal vector field, for every s ∈ ΓI defined by 
+
+k(s) := s−x0 
+
+> |s−x0|
+
+,
+
+which satisfies k · n ≥ κ on Γ I for some κ > 0, depending on the geometry of Ω. The ambient temperature u∞ ∈ C1,1(Γ I ), for every x ∈ R3 \ Ω, is defined by 
+
+u∞ := Θ wake + (Θ stag − Θwake )( bz · k)2+ , Θstag := 300 , Θwake := 0 .
+
+In particular, the maximum ambient temperature is attained in the windward stagnation region, while u∞ = 0 on the leeward part {bz · k ≤ 0}. The remaining data are κ = 40, β = 1, and f ≡ 110 .The domain Ω is discretized by 1 ,758 ,964 tetrahedral elements. In each step of the block coordinate descent algorithm, the resulting linear system is solved by a direct sparse Cholesky factorization. Figure 3 displays the discrete temperature uh ∈ S 1(Th) and the discrete optimal insulation distribution (in transversal direction) dh := ( k · n)−1edh ∈ H1(Γ I ) for the normalized insulation budgets   
+
+> m
+> |ΓI|
+
+∈ { 0.1, 0.5, 1, 1.5, 2, 2.5} .
+
+• For small budgets, the insulation is concentrated in a windward cap, where the temperature mismatch |uh − uh
+
+> ∞
+
+| is largest. As the budget increases, the support of the insulation expands along the hull. More precisely, when m/ |ΓI | increases from 0 .1 to 2 .5, the threshold Cuh decreases from 51 to 8 .4, while the insulated area fraction increases from 9% to 71%. For m/ |ΓI | ≤ 1, the support consists of a single windward component, with an insulated area fraction of at most 22%. 
+
+• For larger budgets, an additional disconnected component appears on the leeward flank. 
+
+Figure 3: Qualitative three-dimensional reentry capsule test for the normalized insulation budgets m/ |ΓI | ∈ { 0.1, 0.5, 1, 1.5, 2, 2.5}. Top: discrete temperature uh ∈ S 1(Th). Bottom: 
+
+discrete optimal insulation distribution (in the transversal direction) dh := ( k · n)−1edh ∈ H1(Γ I ). H. Antil, A. Kaltenbach, and K. L. A. Kirk 20 
+
+A. An H1(Γ I )-stable quasi-interpolant 
+
+Let Ih : H1(Ω) → S 1(Th) be a quasi-interpolant of Scott–Zhang or Cl´ ement type (see, e.g. , [ 19 ,Sec. 1.6]) and IIh : H1(Γ I ) → S 1(SIh) its boundary analogue defined on the boundary mesh SIh.Then, we define a quasi-interpolant Jh : E∆(Ω) := {v ∈ H 32 (Ω) | ∆v ∈ L2(Ω) } → S 1(Th) by setting (Jhv)( ν) := 
+
+(
+
+(IIhv)( ν) if ν ∈ N Ih ,
+
+(Ihv)( ν) if ν ∈ N h \ N Ih , (A.1) where we used the trace embedding E∆(Ω) ,→ H1(Γ I ) (cf . [ 9 , Cor. 3.7]), which has local stability and approximation properties with respect to both Th and SIh:
+
+Lemma A.1. The following statements apply: (i) For every vh ∈ S 1(Th), there holds Jhvh = vh in Ω;(ii) For every S ∈ S Ih, setting ωS := int S{S′ ∈ S Ih | S′ ∩ S̸ = ∅} , there holds 
+
+∥v − J hv∥S + hS ∥∇ S Jhv∥S ≲ hS ∥∇ Γv∥ωS ; (A.2) 
+
+(iii) For every T ∈ T h, setting ωT := int S{T ′ ∈ T h | T ′ ∩ T̸ = ∅} , there holds 
+
+∥v − J hv∥T + h∥∇J hv∥T ≲ h∥∇ v∥ωT ; (A.3) 
+
+(iv) For every T ∈ T h and v ∈ Hs(ωT ), s ∈ ( 12 , 2] , there holds 
+
+∥∇ v − ∇J hv∥T ≲ hs−1|v|s,ω T . (A.4) 
+
+The implicit constants in ≲ in (A.2) –(A.4) depend only on the shape-regularity of {T h}h> 0.Proof. ad (i). For every vh ∈ S 1(Th) and ν ∈ N h, there holds ( Jhvh)( ν) = ( IIhvh)( ν) = vh(ν) if 
+
+ν ∈ N Ih and ( Jhvh)( ν) = ( Ihvh)( ν) = vh(ν), so that Jhvh = vh in Ω. 
+
+ad (ii). Since Jhv↾ΓI = IIhv, using the local stability and interpolation error estimate of IIh
+
+(cf . [19, Lems. 1.127, 1.130]), we conclude that (A.2) applies. 
+
+ad (iii). Let v ∈ H1(Ω) be fixed, but arbitrary. We distinguish the cases T ∩ΓI = ∅ and T ∩ΓI̸ = ∅:
+
+• Case 1: ( T ∩ ΓI = ∅). In this case, we have that Jhv↾T = Ihv↾T , so that (A.3) follows from a local stability and interpolation error estimate for Ih (cf . [19, Lems. 1.127, 1.130]). 
+
+• Case 2: ( T ∩ΓI̸ = ∅). In this case, by the node-based norm equivalence ( cf . [ 20 , Prop. 12.5]), 
+
+∥I hv − J hv∥2 
+
+> T
+
+∼ max   
+
+> νi∈N Ih∩T
+
+¶hdνi |(Ihv − I Ihv)( νi)|2© , (A.5) where, for every νi ∈ N Ih ∩ T , we define hωνi := diam( ωνi ) and ωνi := int S{T ∈ T h | νi ∈ T }, due to 
+
+Ihc = c in Ω and IIhc = c on Γ I for all c ∈ R, local inverse estimates ( cf . [ 20 , Lem. 12.1]), a dis-crete trace estimate ( cf . [ 20 , Lem. 12.8]), a local interpolation error estimate for Ih (cf . [ 20 , Lems. 1.127, 1.130]), and the fractional Poincar´ e–Steklov inequality ( cf . [20, Lem. 3.26]), there holds 
+
+|(Ihv − I Ihv)( νi)|2 ≲ h−dνi ∥I hv − (1 , v )ωνi ∥2 
+
+> ωνi
+
++ h1−dνi ∥I Ihv − (1 , v )ωνi ∥2
+
+> ∂ω νi
+
+≲ h−dνi ∥I hv ± v − (1 , v )ωνi ∥2
+
+> ωνi
+
+≲ h2−dνi ∥∇ v∥2 
+
+> ωT
+
+.
+
+(A.6) Therefore, from (A.6) in (A.5), we obtain 
+
+∥v − J hv∥T ≲ h∥∇ v∥ωT . (A.7) Eventually, from (A.7) , using a stability and interpolation error estimate for Ih (cf . [ 19 , Lems. 1.127, 1.130]) and a local inverse estimate ( cf . [20, Lem. 12.1]), we infer that 
+
+∥∇J hv∥T ≲ ∥∇I hv∥T + ∥∇ (Ihv − J hv)∥T
+
+≲ ∥∇ v∥ωT + h−1∥I hv ± v − J hv∥T
+
+≲ ∥∇ v∥ωT .
+
+(A.8) In summary, from (A.7) and (A.8) , we conclude that the claimed local stability and interpolation error estimate (A.3) applies. FE Approximation of an Optimal Insulation Problem 21 
+
+ad (iv). Due to Jh(1 , v )ωT = (1 , v )ωT , using (A.3) and the fractional Poincar´ e–Steklov inequality (cf . [20, Lem. 3.26]), we conclude that 
+
+∥∇ (v − J hv)∥T ≤ ∥∇ (v − (1 , v )ωT )∥T + ∥∇J h(v − (1 , v )ωT )∥T
+
+≲ ∥∇ (v − (1 , v )ωT )∥ωT
+
+≲ hs−1|v|s,ω T ,
+
+i.e. , the claimed local interpolation error estimate (A.4) applies. 
+
+B. A positivity- and mean-preserving projection 
+
+In this section, we show that the mass-lumped L2-projection (onto S1(SIh)) Π m 
+
+> h
+
+: L1(Γ I ) →S1(SIh), for every η ∈ L1(Γ I ) and μh ∈ S 1(SIh) defined by (Π m 
+
+> h
+
+η, μ h)ΓI ,h := ( η, μ h)ΓI , (B.1) is positivity- and mean-preserving, Lp(Γ I )- and Hs(Γ I )-stable, and satisfies interpolation error estimates in L2(Γ I ) and H−t(Γ I ). 
+
+Lemma B.1 (Positivity and mean preservation) . For every η ∈ L1(Γ I ) with η ≥ 0 a.e. on ΓI , there holds Πm 
+
+> h
+
+η ≥ 0 a.e. on ΓI and ∥Πm 
+
+> h
+
+η∥1,ΓI = ∥η∥1,ΓI . In particular, there holds Πm 
+
+> h
+
+(Hm) ⊆ H hm.
+
+In order to prove Lemma B.1, we first characterize the nodal values of Π m 
+
+> h
+
+.
+
+Lemma B.2. For every η ∈ L1(Γ I ) and ν ∈ N Ih , there holds 
+
+(Π m 
+
+> h
+
+η)( ν) = (1 , φ ν )−1ΓI (η, φ ν )ΓI . (B.2) 
+
+Proof. Let η ∈ L1(Γ I ) and ν ∈ N Ih be fixed, but arbitrary. Choosing μh = φν↾ΓI ∈ S 1(SIh) in (B.1) as well as using Π m 
+
+> h
+
+η = P 
+
+> ν′∈N Ih
+
+(Π m 
+
+> h
+
+η)( ν′)φv′ in Γ I and ( φν , φ ν′ )ΓI ,h = δνν ′ (1 , φ ν )ΓI ,h , we find that (η, φ ν )ΓI = (Π m 
+
+> h
+
+η, φ ν )ΓI ,h = P 
+
+> ν′∈N Ih
+
+(Π m 
+
+> h
+
+η)( ν′)( φν′ , φ ν )ΓI ,h = (Π m 
+
+> h
+
+η)( ν)(1 , φ ν )ΓI .
+
+Proof (of Lemma B.1). Let η ∈ L1(Γ I ) with η ≥ 0 a.e. on Γ I be fixed, but arbitrary. 
+
+ad Positivity preservation. From η ≥ 0 a.e. on Γ I , by Lemma B.2 and φν ≥ 0 on Γ I for all ν ∈ N Ih ,it follows that (Π m 
+
+> h
+
+η)( ν) ≥ 0 for all ν ∈ N Ih and, thus, Π m 
+
+> h
+
+η ≥ 0 on Γ I .
+
+ad Mean preservation. From η ≥ 0 a.e. on Γ I and Π m 
+
+> h
+
+η ≥ 0 on Γ I , choosing μh = 1 ∈ S 1(SIh)in (B.1), it follows that ∥Πm 
+
+> h
+
+η∥1,ΓI = (1 , Πm 
+
+> h
+
+η)ΓI = (1 , Πm 
+
+> h
+
+η)ΓI ,h = (1 , η )ΓI = ∥η∥1,ΓI .Lemma B.1, in turn, puts us in the position to show the Lp(Γ I )-stability of Π m 
+
+> h
+
+with constant 1. 
+
+Proposition B.3. For every p ∈ [1 , +∞] and η ∈ Lp(Γ I ), there holds 
+
+∥Πm 
+
+> h
+
+η∥p, ΓI ≤ ∥ η∥p, ΓI . (B.3) 
+
+Proof. Let η ∈ Lp(Γ I ), p ∈ [1 , ∞], be fixed, but arbitrary. By the Schur–Riesz–Thorin interpola-tion theorem ( cf . [12, Thm. 4.32]), it is sufficient to establish the assertion for p ∈ { 1, ∞} :
+
+• Case p = 1 . In this case, if we set η+ := ( η)+, η − := ( −η)+ ∈ L1(Γ I ) , so that η+, η − ≥ 0, 
+
+η = η+ − η−, and |η| = |η+| + |η−| a.e. on Γ I , using Lemma B.1, we find that ∥Πm 
+
+> h
+
+η∥1,ΓI ≤∥Πm 
+
+> h
+
+η+∥1,ΓI + ∥Πm 
+
+> h
+
+η−∥1,ΓI = ∥η+∥1,ΓI + ∥η−∥1,ΓI = ∥η∥1,ΓI .
+
+• Case p = ∞. In this case, using Lemma B.2 and that (1 , φ ν )ΓI = ∥φν ∥1,ΓI for all ν ∈ N Ih ,we obtain max ν∈N Ih {(Π m 
+
+> h
+
+η)( ν)} = max ν∈N Ih {∥ φν ∥−11,ΓI(η, φ ν )ΓI } ≤ ∥ η∥∞,ΓI .
+
+Lemma B.4. For every η ∈ Hs(Γ I ), s ∈ (0 , 1] , there holds 
+
+∥η − Πm 
+
+> h
+
+η∥ΓI + hs|Πm 
+
+> h
+
+η|s, ΓI ≲ hs|η|s, ΓI , (B.4) 
+
+where the implicit constant in ≲ depends only on the shape-regularity of {T h}h> 0.H. Antil, A. Kaltenbach, and K. L. A. Kirk 22 
+
+Proof. Let η ∈ Hs(Γ I ), s ∈ (0 , 1], be fixed, but arbitrary. Then, the proof proceeds in two steps: 
+
+• Step 1: ( s = 1 ). For every μh ∈ S 1(SIh), due to (B.1) and the L2(Γ I )-self-adjointness of Π h,we have that (Π m 
+
+> h
+
+η, μ h)ΓI ,h = (Π hη, μ h)ΓI and, thus, using [5, Lem. 3.9], we obtain 
+
+|(Π m 
+
+> h
+
+η − Πhη, μ h)ΓI ,h | = |(Π hη, μ h)ΓI − (Π hη, μ h)ΓI ,h | ≲ h∥∇ ΓΠhη∥ΓI ∥μh∥ΓI . (B.5) Then, choosing μh = Π m 
+
+> h
+
+η − Πhη ∈ S 1(SIh) in (B.5) as well as using the H1(Γ I )-stability of Π h
+
+and [5, Lem. 3.9], we find that 
+
+∥Πm 
+
+> h
+
+η − Πhη∥ΓI ≤ ∥ Πm 
+
+> h
+
+η − Πhη∥ΓI ,h ≲ h∥∇ ΓΠhη∥ΓI ≲ h∥∇ Γη∥ΓI , (B.6) which, by the interpolation error estimate for Π h (cf . [20, Prop. 22.19]), implies that 
+
+∥η − Πm 
+
+> h
+
+η∥ΓI ≤ ∥ η − Πhη∥ΓI + ∥Πhη − Πm 
+
+> h
+
+η∥ΓI ≲ h∥∇ Γη∥ΓI . (B.7) From (B.6) , in turn, using the H1(Γ I )-stability of Π h and a global inverse estimate ( cf . [5, Lem. 3.5] ), we infer that 
+
+∥∇ ΓΠm 
+
+> h
+
+η∥ΓI ≤ ∥∇ ΓΠhη∥ΓI + ∥∇ ΓΠm 
+
+> h
+
+η − ∇ ΓΠhη∥ΓI
+
+≲ ∥∇ Γη∥ΓI + h−1∥Πm 
+
+> h
+
+η − Πhη∥ΓI
+
+≲ ∥∇ Γη∥ΓI .
+
+(B.8) In summary, from (B.7) and (B.8) , we conclude that the claimed local stability and interpolation error estimate (B.4) applies in the case s = 1. 
+
+• Step 2: ( s < 1). First, interpolating between L2(Γ I ) and H1(Γ I ) ( cf . [ 11 , Prop. 14.1.5]), from Proposition B.3 and (B.8), for every μ ∈ Hs(Γ I ), it follows that 
+
+∥Πm 
+
+> h
+
+μ∥s, ΓI ≲ ∥μ∥s, ΓI . (B.9) Then, since Π m 
+
+> h
+
+(1 , η )ΓI = (1 , η )ΓI on Γ I , from (B.9) and the fractional Poincar´ e–Steklov inequality (cf . [20, Lem. 3.26]), we infer that 
+
+|Πm 
+
+> h
+
+η|s, ΓI = |Πm 
+
+> h
+
+(η − (1 , η )ΓI )|s, ΓI ≲ ∥η − (1 , η )ΓI ∥s, ΓI ≲ |η|s, ΓI . (B.10) Since ∥Πh∥H1→H1 ≲ 1 and ∥Πh∥L2→H1 ≲ h−1 (cf . [ 5 , Lem. 3.5]), interpolating between L2(Γ I )and H1(Γ I ) ( cf . [ 11 , Prop. 14.1.5]), we find that ∥Πh∥Hs→H1 ≤ ∥ Πh∥sH1→H1 ∥Πh∥1−sL2→H1 ≲ hs−1.In other words, for every μ ∈ Hs(Γ I ), there holds 
+
+∥∇ ΓΠhμ∥ΓI ≲ hs−1∥μ∥s, ΓI . (B.11) Arguing as for (B.10) , but using (B.11) instead of (B.9) , since Π h preserves constants, we infer that 
+
+∥∇ ΓΠhη∥ΓI ≤ ∥∇ ΓΠh(η − (1 , η )ΓI )∥ΓI ≲ hs−1|η − (1 , η )ΓI |s, ΓI ≲ hs−1|η|s, ΓI . (B.12) Using the interpolation error estimate for Π h (cf . [ 20 , Prop. 22.19]), (B.5) , and (B.12) , we obtain 
+
+∥η − Πm 
+
+> h
+
+η∥ΓI ≤ ∥ η − Πhη∥ΓI + ∥Πhη − Πm 
+
+> h
+
+η∥ΓI
+
+≲ hs|η|s, ΓI + h∥∇ ΓΠhη∥ΓI
+
+≲ hs|η|s, ΓI .
+
+(B.13) In summary, from (B.10) and (B.13) , we conclude that the claimed local stability and interpolation error estimate (B.4) applies in the case s ∈ (0 , 1). 
+
+Lemma B.5. For every η ∈ Hs(Γ I ), s ∈ (0 , 1] , and t ∈ (0 , 1] , there holds 
+
+∥η − Πm 
+
+> h
+
+η∥−t, ΓI ≲ hs+t|η|s, ΓI , (B.14) 
+
+where the implicit constant in ≲ depends only on the shape-regularity of {T h}h> 0.Proof. For every ψ ∈ Ht(Γ I ), using (B.1), (2.8b), (B.12), and Lemma B.4, we find that 
+
+|(η − Πm 
+
+> h
+
+η, ψ )ΓI | ≤ | (η − Πm 
+
+> h
+
+η, ψ − Πhψ)ΓI | + |(Π m 
+
+> h
+
+η, Πhψ)ΓI ,h − (Π m 
+
+> h
+
+η, Πhψ)ΓI |
+
+≲ ∥η − Πm 
+
+> h
+
+η∥ΓI ∥ψ − Πhψ∥ΓI + h2∥∇ ΓΠm 
+
+> h
+
+η∥ΓI ∥∇ ΓΠhψ∥ΓI
+
+≲ hs+t|η|s, ΓI |ψ|t, ΓI + h1+ s−1h1+ t−1|η|s, ΓI |ψ|t, ΓI .
+
+so that, taking the supremum with respect to ψ ∈ Ht(Γ I ) with |ψ|t, ΓI = 1, we conclude the claimed negative-norm interpolation error estimate (B.14). FE Approximation of an Optimal Insulation Problem 23 
+
+C. Block coordinate descent algorithm 
+
+In order to compute a minimizer ( uh, edh) ∈ S 1(Th)×H hm of the discrete heat loss functional (5.2) ,we resort to a block coordinate descent algorithm that seeks to iteratively solve the discrete optimality conditions (5.3)–(5.5). 
+
+Algorithm C.1 (Block coordinate descent algorithm) . Let u(0)  
+
+> h
+
+∈ S 1(Th) be an initial iterate. Then, for every i ∈ N0, perform the following iteration loop: (i) Given u(i) 
+
+> h
+
+∈ S 1(Th) from the previous iteration, compute Cu(i) 
+
+> h
+
+> 0, implicitly defined by 
+
+Cu(i) 
+
+> h
+
+= 1 
+
+> mβ
+
+∥Ih{(|u(i) 
+
+> h
+
+− uh
+
+> ∞
+
+| − Cu(i) 
+
+> h
+
+)+}∥ 1,ΓI ; (C.1) 
+
+(ii) Given Cu(i) 
+
+> h
+
+> 0 from step (i), compute edh(i) ∈ H hm given via 
+
+edh(i) := 1  
+
+> Cu(i)
+> hβ
+
+Ih{(|u(i) 
+
+> h
+
+− uh
+
+> ∞
+
+| − Cu(i) 
+
+> h
+
+)+} on ΓI ; (C.2) 
+
+(iii) Given edh(i) ∈ H hm from step (ii), compute u(i+1)  
+
+> h
+
+∈ S 1(Th) such that for every vh ∈ S 1(Th),there holds 
+
+κ(∇u(i+1)  
+
+> h
+
+, ∇vh)Ω + β((1 + βedh(i))−1(u(i+1)  
+
+> h
+
+− uh
+
+> ∞
+
+), v h)ΓI ,h = ( fh, v h)Ω + ( gh, v h)ΓN . (C.3) The following theorem establishes the well-posedness and linear convergence of Algorithm C.1. 
+
+Theorem C.2 (Well-posedness and linear convergence) . The following statements apply: (i) Algorithm C.1 is well-posed, i.e., for every i ∈ N0, the iterate (u(i+1)  
+
+> h
+
+, Cu(i) 
+
+> h
+
+, edh(i)) ∈ S 1(Th) ×
+
+R>0 × H hm is computable according to steps (i)–(iii); (ii) If, in addition, the discrete non-degeneracy condition 
+
+δ⋆,h := dist S1(SIh)
+
+Ä1, β(uh−uh
+
+> ∞)1+ βedh
+
+eS1(SIh)ä > 0 , (C.4) 
+
+where eS1(SIh) := {ηh ∈ S 1(SIh) | (ηh, 1) ΓI ,h = 0 }, is satisfied, Algorithm C.1 is linearly con-vergent, i.e., for every i ∈ N0, there holds 
+
+σh∥u(i) 
+
+> h
+
+− uh∥2 
+
+> H1(Ω)
+
+≤ Eh(u(i) 
+
+> h
+
+, edh(i)) − Eh(uh, edh)
+
+≤ (1 − σh 
+
+> 8L
+
+)iÄEh(u0
+
+> h
+
+, edh0) − Eh(uh, edh)ä , (C.5) 
+
+where σh > 0 is a constant that may deteriorate as h → 0+ and L := κ + c2Tr β(d + 1) > 0.Proof. ad (i). First, the well-posedness of step (i), by analogy with [ 15 , Lem. 4.1], follows from the intermediate value theorem. Second, the well-posedness of step (ii) follows from Cu(i) 
+
+> h
+
+> 0, which itself follows from step (iii) of the previous iteration arguing as in the proof of Lemma 5.2. Third, the well-posedness of step (iii) follows from the Lax–Milgram lemma ( cf . [ 19 , Lem. 2.2]). 
+
+ad (ii). To begin with, we introduce the extended energy functional “Eh : S1(Th)×S 1(SIh) → R,for every ( vh, η h) ∈ S 1(Th) × S 1(SIh) defined by 
+
+“Eh(vh, η h) := κ 
+
+> 2
+
+∥∇ vh∥2Ω + β 
+
+> 2
+
+∥(1 + βη h)− 12 (vh − uh
+
+> ∞
+
+)∥2ΓI ,h − (fh, v h)Ω − (gh, v h)ΓN , (C.6) which satisfies the following quadratic growth and Lipschitz gradient properties: 
+
+• Quadratic growth. Analogously to the proof of Corollary 6.4, for every ( vh, η h) ∈ S 1(Th)×H hm,we find that 
+
+“Eh(vh, η h) − “Eh(uh, edh) ≥ σh(ηh)∥vh − uh∥2 
+
+> H1(Ω)
+
+, (C.7) where σh(ηh) > 0 depends on Th, Ω, Γ I , κ, β, ∥edh∥∞,ΓI , ∥ηh∥∞,ΓI , and δ−1
+
+> ⋆,h
+
+. By a global inverse estimate ( cf . [ 5 , Lem. 3.5]), we have that ∥ηh∥∞,ΓI ≲ h−d+1 ∥ηh∥1,ΓI = h−d+1 m for all ηh ∈ H hm,so that (C.7) applies with σh(ηh) replaced by σh := inf ηh∈H hm {σh(ηh)} > 0. H. Antil, A. Kaltenbach, and K. L. A. Kirk 24 
+
+• Lipschitz gradient. For every ( vh, η h) ∈ S 1(Th) × S 1(SIh) and wh ∈ S 1(Th), using (2.8a) ,we find that 
+
+∥Dvh {“Eh(vh + wh, η h) − “Eh(vh, η h)}∥ (S1(Th)) ∗
+
+= sup   
+
+> ‹wh∈S 1(Th) : ∥‹wh∥H1(Ω) ≤1
+
+¶κ(∇wh, ∇ ewh)Ω + β((1 + βη h)−1wh, ewh)ΓI ,h 
+
+©
+
+≤ sup   
+
+> ‹wh∈S 1(Th) : ∥‹wh∥H1(Ω) ≤1
+
+¶κ∥∇ wh∥Ω∥∇ ewh∥Ω + β(d + 1) ∥wh∥ΓI ∥ ewh∥ΓI
+
+©
+
+≤ L∥wh∥H1(Ω) .
+
+(C.8) Based on the quadratic growth and Lipschitz gradient properties, following arguments of [ 10 ], we are now in the position to establish the claimed linear convergence of Algorithm C.1: Then, from the Fr´ echet differentiability and convexity of “Eh : S1(Th)×S 1(SIh) → R as well as that 
+
+⟨Dηh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)), edh(i) − edh⟩S1(SIh) ≤ 0, since −Dηh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)) ∈ ∂ηh IHhm (edh(i)), for all 
+
+i ∈ N0, for every i ∈ N0, it follows that 
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(uh, edh) ≤ ⟨ Dvh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)), u (i) 
+
+> h
+
+− uh⟩S1(Th)
+
++ ⟨Dηh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)), edh(i) − edh⟩S1(SIh)
+
+≤ ⟨ Dvh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)), u (i) 
+
+> h
+
+− uh⟩S1(Th) ,
+
+(C.9) where, for every γ ∈ (0 , 1], due to (C.7) , (C.8) , the Fr´ echet differentiability and convexity of 
+
+“Eh(·, edh(i)) : S1(Th) → R, and the minimality of u(i+1)  
+
+> h
+
+∈ S 1(Th) for the latter, we have that 
+
+⟨Dvh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)), u (i) 
+
+> h
+
+− uh⟩S1(Th)
+
+= ⟨Dvh
+
+“Eh(u(i) 
+
+> h
+
+, edh(i)) − Dvh
+
+“Eh(u(i) 
+
+> h
+
++ γ(uh − u(i) 
+
+> h
+
+), edh(i)), u (i) 
+
+> h
+
+− uh⟩S1(Th)
+
++ 1 
+
+> γ
+
+⟨Dvh
+
+“Eh(u(i) 
+
+> h
+
++ γ(uh − u(i) 
+
+> h
+
+), edh(i)), γ (u(i) 
+
+> h
+
+− uh)⟩S1(Th)
+
+≤ Lγ ∥u(i) 
+
+> h
+
+− uh∥2 
+
+> H1(Ω)
+
++ 1
+
+> γ
+
+Ä“Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(u(i) 
+
+> h
+
++ γ(uh − u(i) 
+
+> h
+
+), edh(i))ä
+
+≤ 2Lγ σh
+
+Ä“Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(uh, edh)ä + 1
+
+> γ
+
+Ä“Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(u(i+1)  
+
+> h
+
+, edh(i))ä .
+
+(C.10) Using (C.10) with γ = σh 
+
+> 4L
+
+∈ (0 , 14 ] in (C.9) and rearranging the resulting estimate, for every i ∈ N0,we find that 
+
+“Eh(u(i+1)  
+
+> h
+
+, edh(i)) − “Eh(uh, edh) ≤ (1 − σh 
+
+> 8L
+
+)( “Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(uh, edh)) .
+
+Eventually, noting that “Eh(u(i) 
+
+> h
+
+, edh(i)) ≤ “Eh(u(i) 
+
+> h
+
+, edh(i−1) ) ≤ “Eh(u(i−1)  
+
+> h
+
+, edh(i−1) ) for all i ∈ N, for every i ∈ N0, we conclude that 
+
+“Eh(u(i+1)  
+
+> h
+
+, edh(i+1) ) − “Eh(uh, edh) ≤ “Eh(u(i+1)  
+
+> h
+
+, edh(i)) − “Eh(uh, edh)
+
+≤ (1 − σh 
+
+> 8L
+
+)Ä“Eh(u(i) 
+
+> h
+
+, edh(i)) − “Eh(uh, edh)ä
+
+...
+
+≤ (1 − σh 
+
+> 8L
+
+)i+1 Ä“Eh(u(0)  
+
+> h
+
+, edh(0) ) − “Eh(uh, edh)ä ,
+
+which, together with (C.7) , is the claimed linear convergence estimate (C.5) for Algorithm C.1. 
+
+Remark C.3 (further comments on Algorithm C.1) . (i) Computation of Cu(i) 
+
+> h
+
+. Although in the proof of Theorem C.2(i), the existence of a constant Cu(i) 
+
+> h
+
+, solving (C.1) , was shown based on the intermediate value theorem, there are several ways to obtain this constant constructively: (i.a) In general, since the intermediate value theorem is applicable, one may resort to the bisection method, which converges globally with linear rate and reduces the error by a factor of 12 in each iteration. FE Approximation of an Optimal Insulation Problem 25 
+
+(i.b) If a suitable initial guess is available (for example, obtained via the bisection method), one may employ a semi-smooth Newton method, which converges locally superlinearly. (i.c) If |ΓI | < mβ , then the associated fixed-point mapping is a contraction; consequently, by the Banach fixed-point theorem, one may resort to a Picard iteration, which converges globally with linear rate and reduces the error by a factor of |ΓI | 
+
+> mβ
+
+in each iteration. (ii) Convergence of {(Cu(i) 
+
+> h
+
+, edh(i))}i∈N0 . If |ΓI | < mβ , arguing similarly to the proof of Lemma 6.7, for every i ∈ N0, we find that 
+
+|Cu(i) 
+
+> h
+
+− Cuh | ≤ 1  
+
+> mβ −| ΓI|
+
+∥u(i) 
+
+> h
+
+− uh∥1,ΓI , (C.11a) 
+
+∥edh(i) − edh∥1,ΓI ≤ 2m  
+
+> Cu(i)
+> h
+> 1
+> mβ −| ΓI|
+
+∥u(i) 
+
+> h
+
+− uh∥1,ΓI , (C.11b) 
+
+so that the linear convergence estimate in Theorem C.2(ii) carries over. 
+
+Remark C.4 (Sufficient conditions for the discrete non-degeneracy condition (C.4) ). The discrete non-degeneracy condition (C.4) excludes the possibility that constant modes of vh − uh
+
+can be compensated by admissible variations of edh. It is satisfied, for instance, under the following assumptions: (i) If there exists a vertex ν ∈ N Ih such that uh(ν) = uh
+
+> ∞
+
+(ν), then β(uh(ν)−uh 
+
+> ∞(ν)) 1+ βedh(ν)
+
+ξh(ν) = 0 for all ξh ∈ eS1(SIh), so that 
+
+1 /∈ β(uh−uh
+
+> ∞)1+ βedh
+
+eS1(SIh) , (C.12) 
+
+which is equivalent to δ⋆,h > 0;(ii) If uh(ν)−uh
+
+> ∞
+
+(ν)̸ = 0 for all ν ∈ N Ih , then β(uh−uh
+
+> ∞)1+ βedh
+
+eS1(SIh) is a closed hyperplane in the finite-dimensional trace space with normal vector 1+ βedh 
+
+> β(uh−uh
+> ∞)
+
+. If, in addition, ( 1+ βedh
+
+> uh−uh
+> ∞
+
+, 1) ΓI ,h ̸ = 0 ,then (C.12) applies, which is equivalent to δ⋆,h > 0;A sufficient condition for (ii) is that uh − uh 
+
+> ∞
+
+≥ c0 or uh − uh 
+
+> ∞
+
+≤ − c0 on ΓI for some c0 > 0;(iii) If uh 
+
+> ∞
+
+= const on ΓI , fh ≥ 0 in Ω, gh ≥ 0 on ΓN , and Assumption 5.4 is satisfied, then the discrete maximum principle implies uh − uh 
+
+> ∞
+
+≥ 0 on ΓI , which follows by testing the discrete optimality condition (5.5) with vh = −Ih{(uh − uh
+
+> ∞
+
+)−} ∈ S 1(Th) and using Lemma 5.6, resulting in 
+
+κ∥∇ Ih{(uh − uh
+
+> ∞
+
+)−}∥ 2Ω + β Ih{(1 + βedh)− 12 (uh − uh
+
+> ∞
+
+)−} 2ΓI ,h ≤ 0 . (C.13) 
+
+Consequently, if uh −uh 
+
+> ∞
+
+> 0 on ΓI , then ( 1+ βedh
+
+> uh−uh
+> ∞
+
+, 1) ΓI ,h > 0, so that (ii) applies. Otherwise, (i) applies and, therefore, δ⋆,h > 0.
+
+References 
+
+[1] E. Acerbi and G. Buttazzo , Reinforcement problems in the calculus of variations, Ann. Inst. Henri Poincar´ e, Anal. Non Lin´ eaire 3 (1986), 273–284. doi:10.1016/S0294-1449(16)30380-8. [2] H. Antil , A. Kaltenbach , and K. L. A. Kirk , Convection effects and optimal insulation: Modelling and analysis, 2025. doi:10.48550/arXiv.2512.13098. [3] H. Antil , A. Kaltenbach , and K. L. A. Kirk , Duality-Based Algorithm and Numerical Analysis for Optimal Insulation Problems on Non-Smooth Domains, SIAM J. Control Optim. (2025), accepted. [4] H. Antil , A. Kaltenbach , and K. L. A. Kirk , Modeling and analysis of an optimal insulation prob-lem on nonsmooth domains, SIAM J. Math. Anal. 58 no. 1 (2026), 450–470. doi:10.1137/25M1741947. [5] S. Bartels , Numerical methods for nonlinear partial differential equations , Springer Ser. Comput. Math. 47 , Cham: Springer, 2015. doi:10.1007/978-3-319-13797-1 1. [6] S. Bartels and G. Buttazzo , Numerical solution of a nonlinear eigenvalue problem arising in optimal insulation, Interfaces Free Bound. 21 no. 1 (2019), 1–19. doi:10.4171/IFB/414. [7] S. Bartels , G. Buttazzo , and H. Keller , Optimization of an eigenvalue arising in optimal insu-lation with a lower bound, Adv. Contin. Discret. Model. 2025 no. 1 (2025), 95. doi:10.1186/s13662-025-03955-3. H. Antil, A. Kaltenbach, and K. L. A. Kirk 26 
+
+[8] S. Bartels , H. Keller , and G. Wachsmuth , Numerical approximation of optimal convex and rotationally symmetric shapes for an eigenvalue problem arising in optimal insulation, Comput. Math. Appl. 119 (2022), 327–339. doi:10.1016/j.camwa.2022.05.026. [9] J. Behrndt , F. Gesztesy , and M. Mitrea , Sharp boundary trace theory and Schr¨ odinger operators on bounded Lipschitz domains , Mem. Am. Math. Soc. 1550 , Providence, RI: American Mathematical Society (AMS), 2025. doi:10.1090/memo/1550. [10] J. W. Both , On the rate of convergence of alternating minimization for non-smooth non-strongly convex optimization in Banach spaces, Optim. Lett. 16 no. 2 (2022), 729–743. doi:10.1007/s11590-021-01753-w. [11] S. C. Brenner and L. R. Scott , The Mathematical Theory of Finite Element Methods , 3 ed., 
+
+Texts in Applied Mathematics , Springer, New York, NY, 2008. doi:10.1007/978-0-387-75934-0. [12] H. Brezis , Functional analysis, Sobolev spaces and partial differential equations , Universitext , New York, NY: Springer, 2011. doi:10.1007/978-0-387-70914-7. [13] J. Claesson , Optimal distribution of thermal insulation for a ground slab, Building and Environment 
+
+15 no. 2 (1980), 87–100. doi:10.1016/0360-1323(80)90035-5. [14] E. Cristoforoni , C. Nitsch , and C. Trombetti , On the classical Reinforcement problem and Optimisation, 2026. doi:10.48550/arXiv.2602.17331. [15] F. Della Pietra , C. Nitsch , R. Scala , and C. Trombetti , An optimization problem in thermal insulation with Robin boundary conditions, Commun. Partial Differ. Equations 46 no. 12 (2021), 2288–2304. doi:10.1080/03605302.2021.1931885. [16] F. Della Pietra and F. Oliva , Some remarks on optimal insulation with Robin boundary conditions, Calc. Var. Partial Differ. Equ. 64 no. 5 (2025), 14. doi:10.1007/s00526-025-03009-2. [17] L. Diening , T. Scharle , and E. S ¨uli , Uniform H¨ older-norm bounds for finite element approx-imations of second-order elliptic equations, IMA J. Numer. Anal. 41 no. 3 (2021), 1846–1898. doi:10.1093/imanum/drab029. [18] G. Dziuk and C. M. Elliott , Finite element methods for surface PDEs, Acta Numerica 22 (2013), 289–396. doi:10.1017/S0962492913000056. [19] A. Ern and J.-L. Guermond , Theory and practice of finite elements , Appl. Math. Sci. 159 , New York, NY: Springer, 2004. doi:10.1007/978-1-4757-4355-5. [20] A. Ern and J.-L. Guermond , Finite elements I. Approximation and interpolation , Texts Appl. Math. 72 , Cham: Springer, 2020 (English). doi:10.1007/978-3-030-56341-7. [21] D. Gilbarg and N. S. Trudinger , Elliptic Partial Differential Equations of Second Order , 2 ed., 
+
+Classics in Mathematics 224 , Springer, Berlin, Heidelberg, 2001. doi:10.1007/978-3-642-61798-0. [22] B. R. Hollis , K. T. Berger , T. J. Horvath , J. J. Coblish , J. D. Norris , R. P. Lillard ,and B. S. Kirk , Aeroheating Testing and Predictions for Project Orion Crew Exploration Vehicle, 
+
+Journal of Spacecraft and Rockets 46 no. 4 (2009), 766–780. doi:10.2514/1.38579. [23] J. D. Hunter , Matplotlib: A 2d graphics environment, Computing in Science & Engineering 9
+
+no. 3 (2007), 90–95. doi:10.1109/MCSE.2007.55. [24] D. Kinderlehrer and G. Stampacchia , An Introduction to Variational Inequalities and Their Applications , Society for Industrial and Applied Mathematics, 2000. doi:10.1137/1.9780898719451. [25] T. Scharle , A priori regularity results for discrete solutions to elliptic problems , DPhil thesis, University of Oxford, 2020. doi:10.5287/ora-nyogqk5n4. [26] J. Sch ¨oberl , Netgen an advancing front 2d/3d-mesh generator based on abstract rules, Comput. Vis. Sci. 1 no. 1 (1997), 41–52. doi:10.1007/s007910050004. [27] J. Sch ¨oberl , C++11 Implementation of Finite Elements in NGSolve , Tech. report, Institute for Analysis and Scientific Computing, Vienna University of Technology, 2014, ASC Report. [28] G. Stampacchia , Le probl` eme de Dirichlet pour les ´ equations elliptiques du second ordre ` acoefficients discontinus, Ann. Inst. Fourier 15 no. 1 (1965), 189–257. doi:10.5802/aif.204. [29] C. B. Sullivan and A. A. Kaszynski , PyVista: 3d plotting and mesh analysis through a streamlined interface for the Visualization Toolkit (VTK), Journal of Open Source Software 4 no. 37 (2019), 1450. doi:10.21105/joss.01450. [30] W. P. Ziemer , Weakly differentiable functions. Sobolev spaces and functions of bounded variation ,
+
+Grad. Texts Math. 120 , Berlin etc.: Springer-Verlag, 1989. doi:10.1007/978-1-4612-1015-3.

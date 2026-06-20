@@ -1,0 +1,1586 @@
+Title: A GPGPU-Oriented Full Phase-Space Parallel Unified Gas-Kinetic Scheme with Velocity-Block Pipelining
+
+URL Source: https://arxiv.org/pdf/2606.15720v1
+
+Published Time: Tue, 16 Jun 2026 01:28:01 GMT
+
+Number of Pages: 51
+
+Markdown Content:
+# A GPGPU-Oriented Full Phase-Space Parallel Unified Gas-Kinetic Scheme with Velocity-Block Pipelining 
+
+Zhiwen Zhuang a,b,c , Yixiao Wang d, Xinhang Guo a,b,c , Xing Ji a,b,c, ∗, Xian Wang a,b,c , Kun Xu d
+
+> aSchool of Aerospace Engineering, Xi’an Jiaotong University, Xi’an 710049, Shaanxi, China
+> bState Key Laboratory for Strength and Vibration of Mechanical Structures, Xi’an 710049, Shaanxi, China
+> cShaanxi Key Laboratory of Environment and Control for Flight Vehicle.Xi’an 710049,Shannxi,China
+> dThe Hong Kong University of Science and Technology, Hong Kong, China
+
+Abstract 
+
+The deterministic unified gas-kinetic scheme (UGKS) provides a multiscale framework for nonequilibrium gas dynamics, but its high-dimensional phase-space discretization leads to severe memory pressure and communication overhead, especially on large unstructured meshes. This paper presents a GPGPU-oriented UGKS with velocity-block pipelining and full phase-space MPI decomposition. In the proposed formulation, the discrete velocity space is partitioned into fixed-size velocity blocks for accelerator execution, while MPI ranks are organized into coupled physical-space and velocity-space communicators. As a result, each rank stores and advances only a local physical subdomain together with a contigu-ous subset of velocity blocks, and macroscopic moments are recovered through lightweight reductions over the velocity-space communicator. To improve concurrency and reduce ex-posed communication cost, a triple-buffered pipeline is further developed to overlap mi-croscopic reconstruction, physical-halo exchange, nonequilibrium flux evaluation, and the first-stage distribution update during the local velocity-block sweep. The implementation targets SIMT-based GPGPU accelerators through a portable device-runtime abstraction. Numerical experiments demonstrate that the Pv = 8 configuration achieves a 33 .4–35 .4×
+
+strong-scaling speedup on 64 nodes, while an Orion-like capsule simulation reaches approx-imately 1 .33 × 10 11 phase-space degrees of freedom on 4096 GPGPU accelerators. These results indicate that the proposed method preserves the original UGKS flux construction and two-stage time discretization, while substantially reducing microscopic storage per rank and improving the scalability of large unstructured phase-space simulations. 
+
+Keywords: Unified gas-kinetic scheme, GPGPU computing, MPI parallelization    
+
+> ∗Corresponding author
+> Email address: jixing@xjtu.edu.cn (Xing Ji)
+> Preprint submitted to Elsevier June 16, 2026
+> arXiv:2606.15720v1 [physics.comp-ph] 14 Jun 2026
+
+1. Introduction 
+
+Many gas-dynamic systems of practical interest are intrinsically multiscale: strong nonequi-librium effects, large density variations, and substantial local changes in the Knudsen number may coexist in a single configuration [1]. Such features are commonly encountered in hyper-sonic vehicles, rarefied external flows, and microscale transport devices. In these problems, continuum descriptions may lose validity in some regions, whereas conventional fixed-scale kinetic solvers can become prohibitively expensive in others. A broad class of kinetic and multiscale approaches has therefore been developed over the past decades. Early gas-kinetic schemes established a flux-construction framework in which macroscopic transport is recovered from the time-dependent kinetic evolution at cell interfaces [2]. In parallel, the gas-kinetic unified algorithm (GKUA), developed from model Boltzmann equations, provided a practical framework for simulations spanning rarefied, transitional, and continuum regimes [3, 4]. For steady multiscale rarefied flows, the gen-eral synthetic iterative scheme (GSIS) and its extensions significantly improved convergence in the near-continuum regime while preserving the correct asymptotic behavior [5–7]. In another direction, generalized hydrodynamic models and nonlinear coupled constitutive relation (NCCR) models extended continuum-type constitutive descriptions toward local nonequilibrium regimes [8, 9]. Among these approaches, the unified gas-kinetic scheme (UGKS) has become one of the representative frameworks for all-regime gas dynamics. Starting from the original for-mulation of Xu and Huang, UGKS couples particle transport and collision directly in the construction of the time-dependent interface flux. As a result, the same numerical formu-lation can recover flow physics from the rarefied regime to the hydrodynamic limit. The method was subsequently extended to multidimensional configurations and microflow simu-lations, establishing UGKS as a direct-modeling approach for multiscale transport [10–12]. The discrete unified gas-kinetic scheme (DUGKS), introduced by Guo, Xu, and Wang, pro-vides another important multiscale kinetic formulation based on coupled transport-collision flux evaluation and has been extended to unstructured meshes for computations over com-plex geometries [13–15]. More recently, the unified gas-kinetic wave-particle (UGKWP) method enriched the UGKS family by combining deterministic wave evolution and stochas-tic particle transport within a unified multiscale framework, thereby improving efficiency across both rarefied and continuum regimes [16–18]. Substantial efforts have also been devoted to improving UGKS itself, including implicit UGKS for steady and unsteady com-putations [19, 20], moving-mesh and velocity-space adaptation strategies [21], and adaptive UGKS with continuous-discrete velocity-space switching for multiscale transport [22]. GPGPU computing refers to general-purpose computation on graphics processing units and, more broadly, to the use of GPU-like many-core processors as programmable accel-erators for scientific workloads [23]. As high-fidelity simulations move toward larger scales and more complex configurations, high-performance computing has become indispensable for both continuum and kinetic flow solvers. Within the broader CFD community, GPU acceleration has developed along several complementary routes. Early studies demon-strated the feasibility of mapping Euler and hypersonic-flow solvers to graphics hardware, 2showing that GPU devices can be used effectively for structured-grid aerodynamic calcu-lations [24, 25]. Subsequent work extended GPU acceleration to unstructured-grid finite-volume solvers, high-order discontinuous Galerkin and flux-reconstruction formulations, and multi-level GPU implementations for incompressible flow, where the main issues are exposing fine-grained parallelism and reducing memory traffic [26–30]. More recent open frameworks and production-oriented solvers, including ZEFR, NekRS, and STREAmS, further illustrate the move toward reusable high-order, spectral-element, and multi-GPU infrastructures for turbulent and compressible-flow simulations [31–33]. GPU-CFD reviews and recent hetero-geneous CFD frameworks further emphasize portability through domain-specific languages, automatic code generation, and accelerator-oriented solver infrastructure [34–37]. At the same time, high-fidelity CFD studies based on compact finite-difference schemes, high-order overset-grid technology, and turbomachinery DNS have shown that scalable domain de-composition, robust interface treatment, and complex-geometry capability are central to production-scale simulations [38–40]. Within gas-kinetic methods, GPU-related develop-ments have expanded from multi-GPU high-order gas-kinetic solvers for compressible tur-bulence to GPU-enabled simulations of wind-turbine wakes [41, 42]. Related high-order gas-kinetic studies involving Ji and co-workers have also explored compact fourth-order recon-struction and GPU-oriented multigrid acceleration for continuum CFD applications [43, 44]. These developments indicate that performance improvement increasingly depends not only on raw hardware capability, but also on algorithmic organization in terms of parallel gran-ularity, data locality, portability, and communication efficiency. For kinetic methods, the challenge is more fundamental because the computational state is defined in phase space rather than in physical space alone. Consequently, determin-istic methods such as the discrete velocity method (DVM), UGKS, and DUGKS gener-ally require much larger memory capacity, incur higher communication overhead, and ex-hibit more irregular data access than conventional continuum solvers, especially for three-dimensional nonequilibrium flows. Considerable efforts have therefore been made to im-prove both algorithmic efficiency and hardware utilization. Early studies demonstrated the feasibility of solving model kinetic equations on many-core accelerators [45]. Later work introduced GPU acceleration for iterative DVM solvers together with memory-reduction techniques [46], multi-level MPI/OpenMP implementations for large-scale rarefied-flow sim-ulations [47], and hybrid physical/velocity-space parallelization strategies for DUGKS on unstructured meshes [48]. More recently, direct GPU implementations of DUGKS have been developed for low-speed and turbulent flow simulations [49, 50], while memory-saving and communication-aware programming paradigms have been introduced for UGKS to reduce storage cost and improve large-scale parallel efficiency [51]. Nevertheless, for unstructured phase-space discretizations on modern many-core accelerators, microscopic velocity-space evolution remains a dominant bottleneck. Further performance gains therefore require not only advances in physical modeling and asymptotic-preserving formulations, but also a more efficient execution organization for velocity-space evolution. This work develops a GPGPU-oriented velocity-block-pipelined UGKS for unstructured phase-space simulations. Unlike physical-domain-only parallelization, in which every MPI rank stores the complete discrete velocity space, the present implementation adopts a Full 3Phase-Space Parallel (FPP) decomposition. MPI ranks are arranged into physical-space and velocity-space communicators, so that each rank advances only its local physical subdomain and assigned velocity-block subset. Microscopic evolution is reorganized into a blockwise sweep in which update, reconstruction, and communication stages are overlapped. The velocity-block design improves data reuse and reduces intermediate memory traffic, while reductions over the velocity communicator assemble macroscopic moments across the dis-tributed velocity space. The device layer is expressed through portable accelerator-runtime primitives, allowing the same algorithmic structure to target SIMT-based GPGPU accel-erators. The resulting FPP-UGKS implementation preserves the UGKS flux construction while improving memory scalability and parallel efficiency for multiscale nonequilibrium-flow computations. 
+
+2. Method 
+
+2.1. Unified gas-kinetic scheme 
+
+The gas evolution is modeled by the BGK–Shakhov kinetic equation 
+
+∂f ∂t + u · ∇ f = f + − fτ , (1) where f = f (x, t, u, ξ) is the molecular velocity distribution function, x is the spatial co-ordinate, t is time, u is the resolved translational molecular velocity, and ξ denotes the unresolved degrees of freedom. For a D-dimensional physical-space computation with K
+
+molecular internal degrees of freedom, the dimension of ξ is 
+
+Kξ = K + 3 − D. (2) Thus the total number of molecular degrees of freedom is D + Kξ = K + 3. The relaxation time is denoted by τ , and f + is the Shakhov equilibrium state. To recover the correct Prandtl number, the equilibrium distribution is written in the Shakhov form 
+
+f + = g
+
+
+
+1 + (1 − Pr) c · q
+
+5pRT 
+
+ |c|2
+
+RT − 5
+
+ 
+
+= g + g+, (3) where Pr is the Prandtl number, p is the pressure, R is the gas constant, T is the temperature, 
+
+c = u − U is the peculiar velocity, and U and q are the macroscopic velocity and heat flux, respectively. In Eq. (3), g+ denotes the Shakhov correction to the Maxwellian rather than an additional equilibrium distribution. The Maxwellian distribution is 
+
+g = ρ
+
+ λπ
+
+D+Kξ
+
+> 2
+
+exp  −λ  |u − U|2 + ξ2 , (4) where ρ is the density and 
+
+ξ2 = ξ21 + ξ22 + · · · + ξ2 
+
+> Kξ
+
+. (5) 4The parameter λ is related to temperature by 
+
+λ = m
+
+2kB T = 12RT , (6) where m is the molecular mass and kB is the Boltzmann constant. The BGK–Shakhov collision operator preserves the conservative moments, 
+
+Z
+
+(f + − f ) ψ du dξ = 0 , (7) with the collision invariants 
+
+ψ =
+
+
+
+1, u, 12
+
+ |u|2 + ξ2T
+
+, (8) and the internal-space measure dξ = d ξ1 dξ2 · · · dξKξ . (9) The macroscopic conservative variables are obtained from the moments of the distribu-tion function, 
+
+W =
+
+
+
+ρρU
+
+ρE 
+
+ =
+
+Z
+
+ψ f du dξ, (10) while the heat flux is 
+
+q = 12
+
+Z
+
+(u − U)  |u − U|2 + ξ2 f du dξ. (11) To avoid explicit discretization of the unresolved velocity space, two reduced distribution functions are introduced: 
+
+h(x, t, u) = 
+
+Z
+
+f dξ, b(x, t, u) = 
+
+Z
+
+ξ2f dξ. (12) In terms of h and b, Eq. (11) becomes 
+
+q = 12
+
+Z
+
+(u − U)  |u − U|2h + b du. (13) Multiplying Eq. (1) by 1 and ξ2, respectively, and integrating over the unresolved degrees of freedom gives 
+
+∂h ∂t + u · ∇ h = h+ − hτ , ∂b ∂t + u · ∇ b = b+ − bτ , (14) 5where 
+
+h+ = H + H+, b+ = B + B+. (15) The reduced Maxwellian distributions are 
+
+H =
+
+Z
+
+g dξ = ρ
+
+ λπ
+
+D/ 2
+
+exp  −λ|u − U|2 , (16) and 
+
+B =
+
+Z
+
+ξ2g dξ = Kξ
+
+2λ H. (17) The corresponding reduced Shakhov correction terms are 
+
+H+ =
+
+Z
+
+g+ dξ = 4(1 − Pr) λ2
+
+5ρ (u − U) · q  2λ|u − U|2 − 2 − D H, (18) and 
+
+B+ =
+
+Z
+
+ξ2g+ dξ = 4(1 − Pr) λ2
+
+5ρ (u − U) · q (2 λ|u − U|2 − D) Kξ − 2K
+
+2λ H. (19) These expressions are consistent with the implementation convention Kξ = K + 3 − D; in a three-dimensional calculation, Kξ = K.For brevity, the following finite-volume formulation is written for a generic distribution function f . In the actual computation, the same operations are applied separately to the reduced distributions h and b.Let the physical domain Ω be partitioned into non-overlapping control volumes Ω i,Ω = [
+
+> i
+
+Ωi, Ωi ∩ Ωj = ∅, i̸ = j. (20) The molecular velocity space is discretized into velocity cells δuk. For a generic quantity Q,the velocity-space integration is approximated by 
+
+Z
+
+Q du ≈ X
+
+> k
+
+Qkωk, (21) where Qk is the cell-averaged value over δuk, and 
+
+ωk =
+
+Z
+
+> δuk
+
+du (22) is the corresponding velocity-space volume. Integrating Eq. (1), or equivalently Eq. (14), over a velocity cell δuk gives the governing equation for the discrete distribution function, 
+
+∂f k
+
+∂t + uk · ∇ fk = f + 
+
+> k
+
+− fk
+
+τ , (23) 6where fk = f (x, t, uk). Integrating Eq. (23) over the control volume Ω i and over the time interval [ tn, t n+1 ] yields 
+
+f n+1  
+
+> i,k
+
+= f ni,k − 1
+
+|Ωi|
+
+X 
+
+> j∈N(i)
+
+Sij Fij,k +
+
+Z tn+1 
+
+> tn
+
+f + 
+
+> i,k
+
+− fi,k 
+
+τi
+
+dt, (24) where f ni,k and f n+1  
+
+> i,k
+
+are the cell-averaged microscopic distribution functions at time levels 
+
+tn and tn+1 , respectively. Here, N (i) is the set of face-neighboring cells of cell i, Sij is the area of the interface between cells i and j, and Fij,k is the time-integrated microscopic flux, 
+
+Fij,k = uk,n 
+
+Z tn+1 
+
+> tn
+
+fij,k (t) d t, (25) with 
+
+uk,n = uk · nij . (26) Here nij is the interface unit normal, and fij,k (t) is the interface distribution function. Taking moments of Eq. (24) and using the compatibility condition gives the finite-volume update of the macroscopic conservative variables, 
+
+Wn+1  
+
+> i
+
+= Wni − 1
+
+|Ωi|
+
+X 
+
+> j∈N(i)
+
+Sij Fij , (27) where the macroscopic flux is evaluated from the time-integrated microscopic fluxes as 
+
+Fij = X
+
+> k
+
+ωk
+
+
+
+Hij,k 
+
+ukHij,k  
+
+> 12
+
+(|uk|2Hij,k + Bij,k )
+
+ . (28) Here, Hij,k and Bij,k are the time-integrated fluxes associated with the reduced distributions 
+
+h and b:
+
+Hij,k = uk,n 
+
+Z tn+1 
+
+> tn
+
+hij,k (t) d t, Bij,k = uk,n 
+
+Z tn+1 
+
+> tn
+
+bij,k (t) d t. (29) The essential ingredient of UGKS is the time evolution of the interface distribution function. Along the characteristic line, the integral solution of Eq. (23) is 
+
+fk(x0, t ) = 1
+
+τ
+
+Z t
+
+> 0
+
+f + 
+
+> k
+
+(x′, t ′) exp 
+
+
+
+−t − t′
+
+τ
+
+
+
+dt′ + exp 
+
+
+
+− tτ
+
+
+
+f0,k (x0 − ukt), (30) where f0,k is the initial distribution function at the beginning of the time step. Without loss of generality, the interface center is taken as x0 = 0. To achieve second-order accuracy, the initial distribution at the interface is reconstructed from the left and 7right sides, 
+
+f0,k (x) = 
+
+(f lk + x · ∇ f lk, uk,n > 0,f rk + x · ∇ f rk , uk,n < 0, (31) where f lk and f rk are the reconstructed interface values from the left and right cells, respec-tively. The equilibrium state around the interface is approximated by a first-order expansion in space and time, 
+
+f + 
+
+> k
+
+(x, t ) ≈ g0,k + g+0,k + x · ∇ g0,k + t ∂ tg0,k , (32) where g0,k is the interface Maxwellian determined from the conservative variables transported from both sides of the interface, and g+0,k is the corresponding Shakhov correction. Substituting Eqs. (31) and (32) into Eq. (30), the interface distribution function can be expressed as 
+
+fk(0, t ) = 
+
+
+
+c1f lk + c2 uk · ∇ f lk + c3
+
+ g0,k + g+0,k 
+
+ + c4 uk · ∇ g0,k + c5 ∂tg0,k , uk,n > 0,c1f rk + c2 uk · ∇ f rk + c3
+
+ g0,k + g+0,k 
+
+ + c4 uk · ∇ g0,k + c5 ∂tg0,k , uk,n < 0,
+
+(33) with 
+
+c1 = exp 
+
+
+
+− tτ
+
+
+
+, c2 = −t exp 
+
+
+
+− tτ
+
+
+
+, c3 = 1 − exp 
+
+
+
+− tτ
+
+
+
+, (34) and 
+
+c4 = t exp 
+
+
+
+− tτ
+
+
+
+− τ
+
+
+
+1 − exp 
+
+
+
+− tτ
+
+ 
+
+, c5 = t − τ
+
+
+
+1 − exp 
+
+
+
+− tτ
+
+ 
+
+. (35) Equation (33) gives a multiscale interface evolution in which free transport and collisional relaxation are coupled within one time step. Boundary fluxes are constructed through ghost-cell treatment. For artificial boundaries, such as inflow, outflow, and far-field boundaries, the ghost-cell conservative variables are specified by the corresponding macroscopic boundary relations. The microscopic distribution in the ghost cell is then taken as the Maxwellian associated with those conservative variables, and the interface distribution is selected according to the sign of the molecular normal velocity. For solid walls, a diffuse-reflection Maxwell boundary condition is employed. The wall distribution function is written as 
+
+fw,k =
+
+(fin ,k + uk · ∇ fin ,k t, uk,n > 0,gw,k , uk,n < 0, (36) where uk,n = uk ·nw is the molecular normal velocity with respect to the wall normal nw, fin ,k 
+
+8is obtained by one-sided interpolation from the interior side, and gw,k is the wall Maxwellian, 
+
+gw = ρw
+
+ m
+
+2πk B Tw
+
+D+Kξ
+
+> 2
+
+exp 
+
+
+
+−m (|u − Uw|2 + ξ2)2kB Tw
+
+
+
+, (37) with Tw and Uw denoting the prescribed wall temperature and wall velocity. The wall density ρw is determined from the non-penetration condition 
+
+X
+
+> k
+
+ωkuk,n 
+
+Z tn+1 
+
+> tn
+
+hw,k (t) d t = 0 . (38) Once the wall microscopic flux is obtained, the corresponding macroscopic surface quantities are evaluated from the moments of the wall flux. The collision source term is discretized in time by the trapezoidal rule, 
+
+Z tn+1 
+
+> tn
+
+f + 
+
+> i,k
+
+− fi,k 
+
+τi
+
+dt = ∆t
+
+2
+
+f +,n +1  
+
+> i,k
+
+− f n+1 
+
+> i,k
+
+τ n+1 
+
+> i
+
++ f +,n i,k − f ni,k 
+
+τ ni
+
+!
+
+, (39) where f +,n +1  
+
+> i,k
+
+and τ n+1  
+
+> i
+
+are determined from the updated macroscopic conservative variables 
+
+Wn+1  
+
+> i
+
+.Substituting Eq. (39) into Eq. (24), the fully discrete microscopic update becomes 
+
+f n+1  
+
+> i,k
+
+=
+
+
+
+1 + ∆t
+
+2τ n+1 
+
+> i
+
+−1
+
+f ni,k − 1
+
+|Ωi|
+
+X 
+
+> j∈N(i)
+
+Sij Fij,k + ∆t
+
+2
+
+f +,n +1 
+
+> i,k
+
+τ n+1 
+
+> i
+
++ f +,n i,k − f ni,k 
+
+τ ni
+
+! . (40) A direct evaluation of Eq. (40) requires flux and reconstruction-related quantities for all discrete velocity points to be available simultaneously. For large three-dimensional compu-tations, this leads to substantial memory consumption. To reduce the memory footprint, the microscopic update is reformulated into two stages. In the first stage, an intermediate distribution function is defined as 
+
+ef n+1  
+
+> i,k
+
+= f ni,k − 1
+
+|Ωi|
+
+X 
+
+> j∈N(i)
+
+Sij Fij,k + ∆t
+
+2τ ni
+
+ f +,n i,k − f ni,k 
+
+ . (41) This step accounts for transport and the old-time part of the collision term. Since the update is carried out sequentially in velocity space, only the microscopic information associated with the currently processed velocity point or velocity block needs to be stored. After the macroscopic conservative variables have been updated to time level tn+1 , the new equilibrium state f +,n +1  
+
+> i,k
+
+and the new relaxation time τ n+1  
+
+> i
+
+are obtained from the updated 9macroscopic solution. The second-stage update is 
+
+f n+1  
+
+> i,k
+
+=
+
+ef n+1  
+
+> i,k
+
++ ∆t
+
+2τ n+1 
+
+> i
+
+f +,n +1 
+
+> i,k
+
+1 + ∆t
+
+2τ n+1 
+
+> i
+
+. (42) The two-stage formulation is algebraically equivalent to the trapezoidal collision discretiza-tion in Eq. (40), but it is more suitable for memory-saving implementation. Once ef n+1  
+
+> i,k
+
+has been obtained, the storage associated with f ni,k can be reused. Therefore, microscopic vari-ables can be advanced sequentially in velocity space without storing full-velocity gradients and residuals at the same time. In the reduced formulation, the same procedure is applied separately to h and b.
+
+2.2. GPGPU-oriented full phase-space parallel UGKS with block pipelining 
+
+The two-stage microscopic update introduced above allows distribution functions to be advanced sequentially in velocity space. It follows the memory-saving principle that micro-scopic gradients and residuals need not be retained for the complete velocity space at the same time [51]. For GPGPU architectures, however, a pointwise velocity sweep is inefficient: a single velocity point provides insufficient parallel granularity for device kernels, halo ex-change at the single-velocity level exposes excessive communication latency, and the same geometric and macroscopic interface data are repeatedly loaded from global memory. The present method therefore reorganizes microscopic evolution into a velocity-block sweep and combines it with a full phase-space MPI decomposition. 
+
+2.2.1. Full phase-space MPI decomposition 
+
+Let the total number of MPI ranks be P = PxPv, where Px is the number of physical-space partitions and Pv is the number of velocity-space partitions. The global rank is mapped to the pair 
+
+r = pP v + q, 0 ≤ p < P x, 0 ≤ q < P v, (43) where p is the physical-space partition index and q is the velocity-space partition index. The physical domain and the discrete velocity space are decomposed as Ω = 
+
+> Px−1
+
+[
+
+> p=0
+
+Ω(p), V = 
+
+> Pv−1
+
+[
+
+> q=0
+
+V(q). (44) Rank ( p, q ) therefore stores and advances the local phase-space block 
+
+Dp,q = Ω (p) × V (q). (45) The physical-space communicator Cx(q) contains ranks with the same velocity index q and different physical indices p; it is used for cell-halo and microscopic-gradient exchange across physical subdomain interfaces. The velocity-space communicator Cv(p) contains ranks with 10 the same physical index p and different velocity indices q; it is used for reductions and broadcasts of macroscopic quantities whose evaluation requires moments over the full veloc-ity space. In the implementation, Pv is specified by the input parameter, and the global MPI size must be divisible by Pv. The physical mesh is partitioned independently within each physical-space communicator, while the velocity-space communicator couples ranks that own the same physical subdomain but different velocity subsets. This organization reduces the persistent microscopic storage per rank from full-velocity storage to local-velocity storage, at the cost of low-dimensional moment reductions over the velocity communicator. 
+
+2.2.2. Local velocity-block sweeping 
+
+The global discrete velocity space is indexed as 
+
+V = {u0, u1, . . . , uNv −1}. (46) It is padded, if necessary, and divided into fixed-size velocity blocks. Let 
+
+M =
+
+Nv
+
+Bv
+
+
+
+, N ∗ 
+
+> v
+
+= M B v, (47) where Bv is the number of discrete velocity points processed in one device block. The padded entries Nv ≤ k < N ∗ 
+
+> v
+
+are assigned zero quadrature weights, so the velocity quadrature is unchanged. The padded velocity space is then partitioned as 
+
+V∗ = 
+
+> M−1
+
+[
+
+> m=0
+
+Vm, Vm = {uk | mB v ≤ k < (m + 1) Bv}. (48) The parameter Bv is a hardware- and case-dependent blocking parameter rather than a physical parameter of the UGKS discretization. It controls the granularity of GPGPU parallelism, the amount of data reuse inside a thread group, the size of microscopic MPI messages, and the temporary storage required by one sweep. In practice, Bv is selected ac-cording to the velocity-space resolution, mesh size, accelerator occupancy, available memory, and communication environment. The velocity-space MPI partition is applied to the sequence of velocity blocks rather than to individual velocity points: 
+
+V(q) =  
+
+> Lq+Mq−1
+
+[
+
+> m=Lq
+
+Vm, 
+
+> Pv−1
+
+X
+
+> q=0
+
+Mq = M, |Mq − Mq′ | ≤ 1. (49) Here Lq is the first global velocity-block index owned by velocity rank q. Thus each velocity rank owns a contiguous set of complete velocity blocks. This matches the local memory layout used by the device kernels and avoids splitting a single Bv-point execution block across MPI ranks. 11 Figure 1: Schematic of the velocity-block sweeping strategy. The discrete velocity space is divided into blocks of size Bv . Each block is used as the basic unit for microscopic reconstruction, nonequilibrium flux evaluation, moment accumulation, and the first-stage microscopic update. 
+
+With this organization, the macroscopic flux in Eq. (28) is accumulated in a blockwise and velocity-distributed form. On velocity rank q, the local contribution is 
+
+F(q) 
+
+> ij
+
+= δq0Feq  
+
+> ij
+
++  
+
+> Lq+Mq−1
+
+X
+
+> m=Lq
+
+∆Fneq 
+
+> ij,m
+
+, (50) where δq0 indicates that the equilibrium flux is owned only by the root velocity rank, chosen as q = 0 in each communicator Cv(p). All non-root velocity ranks initialize the equilibrium part of their local face-flux accumulator to zero. The full macroscopic flux is 
+
+Fij = 
+
+> Pv−1
+
+X
+
+> q=0
+
+F(q) 
+
+> ij
+
+. (51) Here, Feq  
+
+> ij
+
+denotes the contribution determined by the interface equilibrium state and its derivatives. It depends only on macroscopic reconstructed quantities and is computed once on the root velocity rank before the velocity-block sweep. The interface equilibrium state, time-integration coefficients, and derivative coefficients needed by the nonequilibrium flux kernel are then broadcast from the root velocity rank to all other ranks in Cv(p). These broadcast data are read-only coefficients; the equilibrium flux accumulator itself is not added on the non-root velocity ranks. After the local block sweeps, a sum reduction over Cv(p)combines the local accumulators in Eq. (50). Because Feq  
+
+> ij
+
+appears only through δq0, it is included exactly once, while the nonequilibrium contributions from all velocity blocks are included once through their owning velocity ranks. The nonequilibrium contribution from velocity block Vm is ∆Fneq  
+
+> ij,m
+
+= X 
+
+> uk∈V m
+
+ωk
+
+
+
+Hneq 
+
+> ij,k
+
+ukHneq 
+
+> ij,k
+
+12
+
+ |uk|2Hneq  
+
+> ij,k
+
++ Bneq 
+
+> ij,k
+
+ , (52) where Hneq  
+
+> ij,k
+
+and Bneq  
+
+> ij,k
+
+are the nonequilibrium parts of the time-integrated microscopic fluxes 12 associated with the reduced distribution functions. After the contribution of one local velocity block has been accumulated into the velocity-rank local macroscopic interface-flux accumulator, the same block of microscopic fluxes is immediately consumed by Eq. (41) to update the intermediate distributions eh n+1 and eb n+1 . Therefore, the microscopic flux cache is required only for the current velocity block, rather than for the complete velocity space. A finite velocity block is essential for matching the memory hierarchy of modern GPGPU accelerators. Similar to GPU-oriented CFD implementations, which must expose sufficient thread-level parallelism while controlling memory traffic and communication granularity [26– 29], the present block design increases the amount of work assigned to each device kernel without changing the velocity quadrature. For a given physical interface, the face normal, cell indices, geometric offsets, interface equilibrium state, time-integration coefficients, and macroscopic derivative coefficients are shared by all velocity points in the block. These quantities can be loaded once and reused by Bv velocity threads. At the same time, the moment contribution in Eq. (52) can be reduced locally within the thread group before being written to global memory. This reduces global-memory traffic and avoids excessive pointwise accumulation of macroscopic fluxes. 
+
+Algorithm 1: Blockwise microscopic contribution and first-stage update. 
+
+Input: Velocity block Vm; local and ghost-cell distributions hnm, b nm; gradients 
+
+∇hm, ∇bm; precomputed interface equilibrium data. 
+
+Output: Block contribution ∆ Fneq  
+
+> ij,m
+
+and intermediate distributions eh n+1  
+
+> m
+
+,eb n+1  
+
+> m
+
+.Initialize the block microscopic flux cache for Vm
+
+foreach interface ij assigned to the GPGPU thread group do 
+
+Load interface geometry and precomputed macroscopic interface data once 
+
+foreach velocity point uk ∈ V m in parallel do 
+
+Reconstruct the upwind values of hij,k and bij,k from the corresponding side of the interface Evaluate the time-integrated microscopic fluxes Hij,k and Bij,k 
+
+Form the weighted conservative-moment contribution for uk
+
+end foreach 
+
+Reduce the velocity-moment contributions inside the thread group Accumulate the reduced block contribution into the velocity-rank local face-flux accumulator 
+
+end foreach foreach cell i assigned to the GPGPU thread group do 
+
+Load cell-level macroscopic quantities once 
+
+foreach velocity point uk ∈ V m in parallel do 
+
+Gather the microscopic fluxes through all faces of cell i
+
+Update hni,k , b ni,k to eh n+1  
+
+> i,k
+
+,eb n+1  
+
+> i,k
+
+by the first-stage update 
+
+end foreach end foreach 
+
+13 2.2.3. Triple-buffered microscopic reconstruction 
+
+In a multi-accelerator computation with the above phase-space decomposition, physical-halo exchange is performed inside each physical-space communicator Cx(q). Since ranks with different velocity indices own different velocity subsets, no microscopic distribution function is exchanged across Cv(p); the velocity-space communicator is used only for macroscopic reductions and broadcasts. For a local velocity block Vm ⊂ V (q), microscopic reconstruction near physical subdomain interfaces requires distribution functions in ghost cells, whereas nonequilibrium flux evaluation at parallel interfaces requires distribution-function gradients in ghost cells. Thus two types of physical-halo data are involved: the distribution values fm
+
+required before reconstruction and the gradients ∇fm required before flux evaluation. A strictly sequential procedure would perform, for every velocity block, halo exchange of fm, local reconstruction of ∇fm, halo exchange of ∇fm, and finally nonequilibrium flux calculation. Such an ordering exposes communication latency at every block. To avoid this serialization, the present method uses a triple-buffered velocity-block pipeline. During the sweep of block Vm, three data lifetimes coexist: current block: ∇fm is used for nonequilibrium flux evaluation ,
+
+next block: ∇fm+1 is packed and exchanged through MPI ,
+
+future block: ∇fm+2 is reconstructed on the device .
+
+(53) Three rotating gradient buffers are therefore required to decouple these lifetimes. One buffer is read by the current flux kernel, one buffer is associated with in-flight halo communication, and one buffer is written by the reconstruction kernel. This design prevents overwrite conflicts and allows reconstruction, communication, and flux evaluation to proceed in a staggered manner. The microscopic communication package sent during the sweep of block Vm contains both the gradients needed by the next block and the distribution values needed by a future reconstruction. In abstract form, 
+
+Pm = {fm+3 , ∇fm+1 } . (54) For the present reduced formulation, this package becomes 
+
+Pm = {hm+3 , b m+3 , ∇hm+1 , ∇bm+1 } . (55) The look-ahead distance in Eq. (55) follows from the data dependency of the pipeline: the gradient of block m + 1 is needed for the next flux calculation, while the distribution values of block m + 3 must be available before the reconstruction of that future block. At the beginning and end of a local sweep, unavailable look-ahead entries are treated as padded or empty entries. Let Nr be the number of reduced distribution functions. In the present h/b formulation, 
+
+Nr = 2. For one MPI interface cell and one velocity block, the number of communicated 14 Algorithm 2: Triple-buffered scheduling for velocity-block sweeping. 
+
+Input: Current velocity-block index m; rotating gradient buffers; computation stream Sc; communication stream Sp; velocity-rank local face-flux accumulator. 
+
+Output: Scheduled execution of Algorithm 4, first-stage update, next-block halo exchange, and future-block reconstruction. Select the current, communication, and reconstruction buffers by cyclic rotation: 
+
+Gcur , G comm , G rec 
+
+Wait until Gcur contains the unpacked ghost gradients ∇fm
+
+Launch Algorithm 4 for Vm on Sc using Gcur and accumulate its block contribution locally Launch the first-stage microscopic update of Vm on Sc after the current-block microscopic flux cache is produced Launch the reconstruction of ∇fm+2 into Grec on Sc
+
+if Gcomm contains the reconstructed local gradients ∇fm+1 then 
+
+Pack the communication package Pm = {fm+3 , ∇fm+1 } on Sp
+
+Start the non-blocking halo exchange for Pm
+
+Unpack the received ghost data after the MPI requests are completed Record a data-ready event for block Vm+1 
+
+end if 
+
+Before launching the flux evaluation of Vm+1 , wait only for its data-ready event 15 Figure 2: Triple-buffered velocity-block pipeline. During the sweep of velocity block m, the current gradient buffer is consumed by nonequilibrium flux evaluation, another gradient buffer is associated with MPI halo exchange for block m + 1, and the third buffer is written by the reconstruction of block m + 2. The communication package contains {fm+3 , ∇fm+1 }.
+
+16 scalar values is 
+
+N block comm = Nr(D + 1) Bv, (56) where NrBv corresponds to distribution values and NrDB v corresponds to distribution gradi-ents in D physical dimensions. For the three-dimensional reduced formulation, this becomes 
+
+N block comm = 8 Bv. (57) The communication granularity is therefore enlarged from a single velocity point to a velocity block. This reduces the relative impact of MPI latency while keeping the working set bounded by Bv.
+
+2.2.4. Device-stream overlap and exposed communication cost 
+
+The velocity-block pipeline is executed by two asynchronous device-side streams. The computation stream performs macroscopic reconstruction, microscopic reconstruction, in-terface equilibrium precomputation, nonequilibrium flux evaluation, local velocity-moment reduction, and microscopic update. The communication stream performs halo-data pack-ing, host-device staging when required, non-blocking MPI communication, and halo-data unpacking. The two streams are synchronized only at true data-dependency points. For example, the communication stream must wait until the reconstruction of ∇fm+1 
+
+has been completed before packing the gradient part of the communication package. Con-versely, the computation stream must wait until the ghost-cell data for block Vm+1 have been unpacked before launching the next flux evaluation. Between these dependency points, GPGPU computation and MPI communication proceed asynchronously. Thus, while the current velocity block is used for flux evaluation and intermediate update, halo exchange for the next block can progress concurrently. This overlap should be interpreted as a latency-reduction mechanism rather than complete communication hiding: if MPI waiting time or host-device staging time exceeds the available computation window, the remaining cost is still exposed in the timeline. The overlap is dependency-driven rather than unconditional. If the communication time is shorter than the available computation window of the current block, much of the MPI cost can be overlapped. If the communication time exceeds this window, the remaining part appears as exposed waiting time before the next block. In practical profiling, especially when host-device staging is required, MPI waiting time and device-host transfers may still dominate the end-to-end time of one velocity-block iteration. When device-aware MPI or RDMA is available, halo buffers can be transferred directly from device memory. Otherwise, pinned host memory is used as a staging buffer; in that case, asynchronous host-device transfers are still placed in the communication stream so that staging and network transfer can overlap with GPGPU computation as much as possible. 
+
+2.2.5. Block-level cache reuse and local moment reduction 
+
+The nonequilibrium interface flux calculation is well suited to velocity-block paralleliza-tion. A thread group is assigned to one physical interface and one velocity block. Interface-level quantities, such as geometric metrics, interface primitive variables, time-integration 17 Algorithm 3: Microscopic halo package exchange in the communication stream. 
+
+Input: Send-side interface cells; receive-side ghost cells; distribution block fm+3 ;gradient block ∇fm+1 ; communication stream Sp.
+
+Output: Ghost-cell values of fm+3 and ∇fm+1 .Wait on Sp until the reconstruction event of ∇fm+1 is satisfied Pack hm+3 , b m+3 , ∇hm+1 , ∇bm+1 into the send buffer 
+
+if device-aware MPI or RDMA is available then 
+
+Call non-blocking MPI routines with device send and receive buffers 
+
+else 
+
+Asynchronously copy the packed send buffer from device memory to pinned host memory Call non-blocking MPI routines with pinned host buffers Asynchronously copy the received buffer from pinned host memory to device memory 
+
+end if 
+
+Wait for the corresponding MPI requests before the received data are unpacked Unpack the received package into ghost-cell storage on Sp
+
+Record the data-ready event used by the computation stream  
+
+> Figure 3: Schematic of the two-stream execution model. The computation stream evaluates reconstruction, nonequilibrium fluxes, local reductions, and microscopic updates. The communication stream packs halo data, performs non-blocking MPI communication, and unpacks received data. Device events are used only at necessary dependency points, allowing part of the next-block communication to overlap with the computation of the current block.
+
+18 coefficients, and equilibrium derivative coefficients, are common to all velocity points in the block. These quantities are first loaded into registers or shared memory and then reused by the velocity threads. Each thread evaluates the contribution of one discrete velocity point, including the local coordinate transformation, upwind selection of the reconstructed distribution, gradient contribution, Shakhov correction, and microscopic flux construction. After the microscopic fluxes have been obtained, the same thread group performs a local reduction over the velocity block to compute the partial macroscopic moment in Eq. (52). Only the reduced block contribution is written back to the velocity-rank local face-flux accumulator. This organization increases arithmetic intensity because a relatively large amount of floating-point work is performed after loading the shared interface data, and it reduces global-memory pressure because the macroscopic moment is accumulated at the block level rather than at the velocity-point level. 
+
+Algorithm 4: Block-level nonequilibrium interface flux kernel. 
+
+Input: Interface ij ; velocity block Vm; reconstructed distributions and gradients; interface equilibrium data. 
+
+Output: Microscopic flux cache for Vm and block-level macroscopic increment ∆Fneq 
+
+> ij,m
+
+.Assign one GPGPU thread group to the pair ( ij, Vm)Load the face normal, geometric offsets, and macroscopic interface coefficients into the shared cache Initialize the local moment accumulator for ∆ Fneq 
+
+> ij,m
+
+foreach velocity point uk ∈ V m handled by one thread do 
+
+Transform uk and the distribution gradients to the local interface frame Select the left or right reconstructed distribution according to the sign of uk · nij 
+
+Evaluate the free-transport term, gradient term, equilibrium derivative term, and Shakhov correction Store the time-integrated microscopic fluxes Hij,k and Bij,k in the current-block flux cache Add the weighted moment contribution to the thread-local accumulator 
+
+end foreach 
+
+Reduce the thread-local accumulators inside the thread group Write only the reduced block contribution ∆ Fneq  
+
+> ij,m
+
+to the velocity-rank local face-flux accumulator A similar reuse pattern appears in the microscopic update. For a given physical cell and velocity block, the cell volume, macroscopic state, relaxation time, temperature, and heat flux are common to all velocity points in the block. These cell-level quantities are reused while the block of intermediate distributions is updated by Eq. (41). Since the microscopic flux cache is consumed immediately after being produced, its lifetime is short and its active working set remains limited to the current velocity block. 19 Figure 4: Block-level data reuse and local moment reduction. For one physical interface, the geometric and macroscopic interface data are shared by all velocity threads in the block. Each thread computes one velocity-point contribution, and the partial macroscopic moment is reduced inside the thread group before a block-level contribution is written to global memory. 
+
+20 2.2.6. Memory footprint and suitability for GPGPU architectures 
+
+The full phase-space decomposition first reduces persistent microscopic storage by as-signing only a local velocity subset to each velocity rank. Let N (q) 
+
+> v
+
+= MqBv be the padded number of velocity points owned by velocity rank q, and let N tot  
+
+> c
+
+be the number of local cells including ghost cells. The persistent storage of the reduced distributions on rank ( p, q )scales as 
+
+O NrN tot  
+
+> c
+
+N (q)
+
+> v
+
+ , (58) instead of O(NrN tot  
+
+> c
+
+N ∗ 
+
+> v
+
+) for a physical-domain-only implementation. The velocity-block pipeline further reduces microscopic intermediate storage from the local velocity-space scale to the block scale. Let Nf be the number of local faces. If all microscopic gradients were stored for the local velocity subset, the storage complexity would be 
+
+O NrDN tot  
+
+> c
+
+N (q)
+
+> v
+
+ . (59) With the triple-buffered velocity-block pipeline, only three gradient buffers are retained, and the corresponding complexity becomes 
+
+O 3NrDN tot  
+
+> c
+
+Bv
+
+ . (60) Similarly, the storage of microscopic interface fluxes is reduced from 
+
+O NrNf N (q)
+
+> v
+
+ (61) for full local velocity-space storage to 
+
+O(NrNf Bv) (62) for current-block storage. Since typically N (q) 
+
+> v
+
+≫ Bv, the reduction in temporary storage is substantial. This organization matches the high compute-to-memory-bandwidth ratio of modern GPGPU accelerators. The UGKS nonequilibrium flux evaluation involves local coordinate transformations, exponential Maxwellian evaluation, Shakhov correction, gradient expan-sion, time-integration coefficient combination, and velocity-moment accumulation. These operations provide abundant floating-point work once the required geometric and macro-scopic data have been loaded. The velocity-block pipeline improves reuse of these data, confines temporary variables to a small working set, and reduces global-memory accumula-tion. With velocity-space MPI decomposition, each rank accumulates only a partial moment over its local velocity subset; heat fluxes, wall moments, and face fluxes are then completed by reductions over Cv(p). These reductions involve macroscopic arrays rather than full mi-croscopic distribution arrays, so the dominant storage and physical-halo communication remain bounded by the local velocity-block working set. 21 2.2.7. Algebraic equivalence to the original UGKS discretization 
+
+The velocity-block sweep and the MPI velocity-space partition do not introduce a new physical approximation. They only reorganize the evaluation of the same discrete-velocity sums and the same microscopic update. To see this, consider any velocity moment appearing in the UGKS formulation, 
+
+M = 
+
+> Nv−1
+
+X
+
+> k=0
+
+ωk ϕk Qk, (63) where ϕk denotes the corresponding collision invariant or flux weight, and Qk may be a cell distribution, a wall distribution, a heat-flux integrand, or a time-integrated interface flux. After padding, ωk = 0 for Nv ≤ k < N ∗ 
+
+> v
+
+. Since the padded velocity blocks form a disjoint partition of the same velocity index set, 
+
+M = 
+
+> Pv−1
+
+X  
+
+> q=0
+> Lq+Mq−1
+
+X
+
+> m=Lq
+
+X 
+
+> uk∈V m
+
+ωk ϕk Qk. (64) Equation (64) is exactly the operation performed by the local block reductions followed by the MPI reduction over Cv(p). Therefore, the macroscopic conservative variables, heat fluxes, wall moments, and face fluxes obtained by the velocity-space partition are identical to those obtained by a direct full-velocity summation in exact arithmetic. For each fixed physical cell i and velocity point k, the microscopic UGKS evolution is local in velocity once the macroscopic moments have been assembled. The interface distribution in Eq. (33), the microscopic fluxes in Eq. (29), the first-stage update in Eq. (41), and the second-stage update in Eq. (42) use the same reconstructed distribution, equilibrium state, relaxation time, heat flux, and time-integration coefficients as the original full-velocity implementation. Physical-subdomain halo exchange is still performed for the same velocity point k inside Cx(q), so the left and right reconstructed states at each partition interface are unchanged. The velocity communicator is not used to exchange microscopic distributions; it only completes the moment sums in Eq. (64). The equivalence follows by induction over time steps. Suppose that, at time level tn,the block-pipelined phase-space implementation and the original full-velocity UGKS have the same hni,k , bni,k , and Wni . The partitioned reductions then give the same heat flux and boundary moments, so the same Shakhov correction, wall density, interface equilibrium state, and equilibrium flux part are used. For every velocity point k, the block sweep evaluates the same time-integrated microscopic fluxes as the original scheme and applies the same first-stage update. Summing the block contributions by Eq. (64) gives the same macroscopic face flux, hence Eq. (27) produces the same Wn+1  
+
+> i
+
+. The second-stage update then uses the same Wn+1  
+
+> i
+
+and gives the same hn+1  
+
+> i,k
+
+and bn+1  
+
+> i,k
+
+. Since the initial condition is identical, the complete discrete solution is unchanged at all time levels. Consequently, conservation, the coupled transport–collision flux construction, the trape-zoidal collision discretization, and the multiscale numerical behavior of UGKS are preserved by the block sweep and by the MPI velocity-space decomposition. In floating-point arith-22 metic, different local and MPI reduction orders may lead only to round-off-level differences, as in standard parallel reductions; they do not represent a change of the UGKS discretization itself. The resulting time-marching procedure is summarized in Algorithm 5. 
+
+Algorithm 5: GPGPU-oriented full phase-space parallel UGKS with block pipelin-ing for one time step. 
+
+Input: Local cell-averaged conservative variables Wn and local velocity-subset reduced distributions hnq , b nq .
+
+Output: Updated conservative variables Wn+1 and local velocity-subset reduced distributions hn+1  
+
+> q
+
+, b n+1  
+
+> q
+
+.Compute the local time step and partial heat flux; reduce the heat flux over Cv(p)Apply boundary ghost-cell states Exchange macroscopic quantities and the leading microscopic halo data over Cx(q)Reconstruct the macroscopic variables and the first microscopic velocity block Exchange macroscopic gradients over Cx(q) for the interface equilibrium construction On the root velocity rank q = 0, precompute the interface equilibrium state, time-integration coefficients, equilibrium derivatives, and Feq 
+
+> ij
+
+Initialize the local face-flux accumulator with Feq  
+
+> ij
+
+only on q = 0 and with zero on 
+
+q̸ = 0 Broadcast the read-only interface coefficients over Cv(p) while keeping the equilibrium flux only in the q = 0 accumulator Initialize the velocity-block pipeline by prefetching future distribution values and exchanging the first required gradient block 
+
+for m ← Lq to Lq + Mq − 1 do 
+
+Execute the triple-buffered scheduling in Algorithm 2 
+
+end for 
+
+Complete the physical boundary flux treatment in the local face-flux accumulator Reduce the local face-flux accumulators by summation over Cv(p) to assemble the full macroscopic interface flux Update the macroscopic conservative variables by Eq. (27) 
+
+for m ← Lq to Lq + Mq − 1 do 
+
+Finish the second-stage microscopic update by Eq. (42) for all velocity points in the local block Vm
+
+end for 
+
+In Algorithm 5, the call to Algorithm 2 is a scheduling wrapper for the current velocity block: it launches the block-level flux kernel in Algorithm 4, accumulates the returned nonequilibrium contribution into the local face-flux accumulator, and performs the first-stage microscopic update once. These operations are therefore not repeated elsewhere in the outer velocity-block loop. The proposed block-pipelined formulation does not alter the UGKS flux model or the 23 two-stage time discretization. Instead, it reorganizes the execution order of microscopic nonequilibrium evolution so that GPGPU computation, local cache reuse, and MPI com-munication overlap can be exploited within a single velocity-space sweep. 
+
+3. Numerical results 
+
+3.1. Three-dimensional lid-driven cavity flow 
+
+The three-dimensional lid-driven cavity flow is first used to assess the accuracy of the present block-pipelined UGKS implementation for rarefied internal flows. The gas is enclosed in a cubic cavity. The upper wall moves tangentially with velocity uw, while the remaining walls are stationary. Diffuse-reflection boundary conditions are imposed on all solid walls. Two Knudsen numbers, Kn = 0 .1 and Kn = 1 .0, are considered to cover the transition and highly rarefied regimes. The physical space is discretized by an 80 × 80 × 80 uniform mesh, and the velocity space uses a 21 × 21 × 21 tensor-product Gauss–Hermite quadra-ture. In the following plots, velocity components are normalized by uw, and temperature is nondimensionalized by the reference wall temperature. The discrete velocity set is generated from one-dimensional Gauss–Hermite points. Let 
+
+ξi and ωGH  
+
+> i
+
+be the roots and weights of the physicists’ Hermite polynomial HNGH , with 
+
+NGH = 21. The one-dimensional nodes are scaled to a prescribed velocity range by 
+
+s = Umax 
+
+max i |ξi|, vi = sξ i, Umax = 6 . (65) The standard Gauss–Hermite weights integrate functions in the form R e−ξ2
+
+ϕ(ξ) dξ . Since the solver reads ordinary velocity-space quadrature weights, the one-dimensional weights written to the velocity-space file are 
+
+ωi = s ω GH  
+
+> i
+
+exp( ξ2 
+
+> i
+
+), (66) where the factor s is the Jacobian associated with the coordinate scaling. The three-dimensional velocity point and its quadrature weight are then given by 
+
+uijk = ( vi, v j , v k), Wijk = ωiωj ωk, (67) which gives 21 3 = 9261 discrete velocity points. Figure 5 compares the centerline velocity profiles obtained by the present UGKS with DVM reference data. For both Knudsen numbers, the present results agree closely with the DVM data for the streamwise velocity u/u w and the transverse velocity w/u w. At Kn = 0 .1, the driven-wall motion produces a stronger streamwise velocity near the moving wall and a broader recirculating response in the cavity core. At Kn = 1 .0, the velocity magnitude is reduced and the profiles become smoother because the flow is more rarefied. The agreement in both cases indicates that the velocity-block formulation and the phase-space decomposition preserve the original UGKS solution behavior. 24 x,z      
+
+> 00.2 0.4 0.6 0.8 1
+> u/u w,w/u w
+> -0.2
+> 0
+> 0.2
+> 0.4
+> 0.6
+> u/u w
+> w/u w
+> DVM
+> FPP UGKS
+
+(a) Kn = 0 .1x,z       
+
+> 00.2 0.4 0.6 0.8 1
+> u/u w,w/u w
+> -0.2
+> 0
+> 0.2
+> 0.4
+> u/u w
+> w/u w
+> DVM
+> FPP UGKS
+
+(b) Kn = 1 .0
+
+Figure 5: Centerline velocity profiles for the three-dimensional lid-driven cavity flow. Symbols denote DVM reference data, and solid lines denote the FPP-UGKS results. 
+
+Figure 6 shows the corresponding temperature distributions. The temperature variation is moderate around the reference wall temperature, but the thermal nonequilibrium structure is clearly visible inside the cavity. A colder region appears near the upstream side of the recirculating flow, while a warmer region forms near the downstream side where the driven-wall motion compresses and redistributes the gas. The Kn = 1 .0 case exhibits a more diffuse thermal structure than the Kn = 0 .1 case, consistent with the stronger rarefaction effect and weaker momentum coupling across the cavity. 25 (a) Kn = 0 .1 (b) Kn = 1 .0
+
+> Figure 6: Temperature distributions of the three-dimensional lid-driven cavity flow.
+
+3.2. Scalability test 
+
+The scalability of the proposed GPGPU-oriented FPP-UGKS is then evaluated using the same three-dimensional lid-driven cavity geometry. The hardware and software descrip-tion in this subsection applies only to the scalability tests reported here. The tests were carried out on a heterogeneous supercomputing platform in China with a scale-up/scale-out architecture. Each node contains two 64-bit CISC-based server processors and eight SIMT-based GPGPU accelerators. Each processor has 64 cores at 2.4 GHz, a NUMA memory organization, eight-channel DDR5-6400 memory, and PCIe Gen5 connectivity, with host-to-device and device-to-host bandwidths of 64 GB/s. Each accelerator contains 320 SIMD units, 64 GB of HBM with a bandwidth of 1.8 TB/s, 768 KB of registers, 64 KB of LDS, and 8 MB of L2 cache. The peak performance of one accelerator is 37 TFLOPS in FP64, 74 TFLOPS in FP32, and 470 TFLOPS in FP16. The nodes are connected through a pro-prietary InfiniBand-like native RDMA interconnect with four 400 Gbps ports per node and are organized as a three-level Clos topology with two data planes. The software environment consists of Anolis OS 8.9, a GPGPU programming environment compatible with standard accelerator runtime APIs, GCC-8.5.0, BLIS-2.0, FFTW-3.3.10, OpenMPI-5.0.3, and a col-lective communications library compatible with GPU collective-communication APIs. In all tests, one MPI process is bound to one GPGPU accelerator; therefore, the MPI process number np is also the number of accelerators used in the run. In the raw timing records, mode distinguishes strong and weak scaling, nodes is the number of nodes, np is the number of MPI processes, N is the grid resolution in each coordinate direction, and 
+
+cells is the total number of physical cells, i.e., N 3. The discrete velocity space is fixed to 15000 velocity points. Four velocity-block sizes, Bv = DVS PER BLOCK = 32 , 64 , 128 , and 256, are tested, and the device thread-block size is set to 256. Each timing result is the wall-clock time for 100 time steps. Four velocity-space MPI settings are compared: Pv = 1, 26 corresponding to a single velocity-space MPI partition; Pv = Nnode , for which the number of velocity partitions equals the number of nodes; and two fixed velocity partition numbers, 
+
+Pv = 4 and Pv = 8. These settings correspond to the raw timing columns denoted by 
+
+v1 algorithm s , vnode algorithm s , v4 algorithm s , and v8 algorithm s , respectively. The raw timing data are listed in Appendix Appendix A. For the strong-scaling test, the physical mesh is fixed at 80 3 cells. For each velocity-block size Bv, the baseline runtime is defined as the one-node run with one velocity-space partition, namely the entry v1 algorithm s at Nnode = 1. Since each node contains eight GPGPU accelerators, this baseline corresponds to eight MPI processes and eight accelerators. The strong-scaling speedup and parallel efficiency are computed as 
+
+Sn = Tref 
+
+Tn
+
+, Estrong = Sn
+
+Nnode ,n /N node ,ref 
+
+, (68) where Tref is the above one-node baseline runtime and Nnode ,ref = 1. All strong-scaling curves in a given Bv panel are normalized by this same baseline, so configurations with the same measured runtime at the same node count have the same speedup and efficiency. For the weak-scaling test, the mesh size increases from 30 3 to 120 3 cells as the node count increases from 1 to 64. The one-node v1 algorithm s runtime is again used as the reference time. Because the rounded weak-scaling meshes do not keep the number of cells per node exactly constant at every node count, the weak-scaling efficiency is weighted by the actual workload, 
+
+Eweak = Tref 
+
+Tn
+
+Nc,n /N c, ref 
+
+Nnode ,n /N node ,ref 
+
+, (69) where Tref is the one-node reference runtime, Tn is the runtime at node count n, and Nc is the physical-cell count. The strong-scaling results in Figs. 7–10 show that velocity-space decomposition becomes increasingly important at large node counts. With Pv = 1, the full discrete velocity space is stored and advanced on every physical-space partition, and the speedup starts to saturate once the physical subdomain per accelerator becomes small. In contrast, the fixed velocity-space decompositions continue to reduce the local microscopic workload. At 64 nodes, Pv = 8 gives the shortest runtime for all tested block sizes: 19 s for Bv = 32, 18 s for Bv = 64, 17 s for Bv = 128, and 18 s for Bv = 256. The corresponding strong-scaling speedups are approximately 35.4, 35.3, 35.3, and 33.4, respectively, and are consistently higher than those obtained with Pv = 1, Pv = Nnode , and Pv = 4. The weak-scaling results further indicate that a moderate fixed velocity-space partition gives the best balance between microscopic workload reduction and velocity-communicator overhead. The Pv = 8 curves maintain the highest workload-weighted weak-scaling efficiency at large node counts for all tested block sizes. At 64 nodes, the Pv = 8 runtimes are 31 s, 33 s, 36 s, and 40 s for Bv = 32 , 64 , 128 , and 256, respectively, whereas the physical-domain-only Pv = 1 setting takes 65–72 s. The Pv = Nnode setting can be competitive at small node counts, but its efficiency deteriorates when the velocity communicator becomes too fine. These results show that the proposed phase-space decomposition is most effective when the 27 1 2 4 8 16 32 64 
+
+Number of nodes 
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> Speedup
+
+(a)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> Parallel efficiency
+
+(b)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 1.2
+> Weighted weak-scaling efficiency
+
+(c)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 10 -4
+> 10 -3
+> Time per cell (s)
+
+(d)     
+
+> v1 vnode v4 v8 Ideal
+
+Figure 7: Strong and weak scalability for Bv = 32. Panels show (a) strong-scaling speedup, (b) strong-scaling parallel efficiency, (c) workload-weighted weak-scaling efficiency, and (d) time per cell in the strong-scaling test. 
+
+28 1 2 4 8 16 32 64 
+
+Number of nodes 
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> Speedup
+
+(a)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> Parallel efficiency
+
+(b)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 1.2
+> Weighted weak-scaling efficiency
+
+(c)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 10 -4
+> 10 -3
+> Time per cell (s)
+
+(d)     
+
+> v1 vnode v4 v8 Ideal
+
+Figure 8: Strong and weak scalability for Bv = 64. Panels show (a) strong-scaling speedup, (b) strong-scaling parallel efficiency, (c) workload-weighted weak-scaling efficiency, and (d) time per cell in the strong-scaling test. 
+
+29 1 2 4 8 16 32 64 
+
+Number of nodes 
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> Speedup
+
+(a)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> Parallel efficiency
+
+(b)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1
+> 1.1
+> Weighted weak-scaling efficiency
+
+(c)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 10 -4
+> 10 -3
+> Time per cell (s)
+
+(d)     
+
+> v1 vnode v4 v8 Ideal
+
+Figure 9: Strong and weak scalability for Bv = 128. Panels show (a) strong-scaling speedup, (b) strong-scaling parallel efficiency, (c) workload-weighted weak-scaling efficiency, and (d) time per cell in the strong-scaling test. 
+
+30 1 2 4 8 16 32 64 
+
+Number of nodes 
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> Speedup
+
+(a)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> Parallel efficiency
+
+(b)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 1.2
+> Weighted weak-scaling efficiency
+
+(c)       
+
+> 124816 32 64
+
+Number of nodes 
+
+> 10 -4
+> 10 -3
+> Time per cell (s)
+
+(d)     
+
+> v1 vnode v4 v8 Ideal
+
+Figure 10: Strong and weak scalability for Bv = 256. Panels show (a) strong-scaling speedup, (b) strong-scaling parallel efficiency, (c) workload-weighted weak-scaling efficiency, and (d) time per cell in the strong-scaling test. 
+
+31 velocity partition is large enough to reduce local microscopic storage and work, but not so large that macroscopic moment reductions dominate the runtime. An x38 production case was also profiled with Nsight Systems over the CUDA profiler API capture range covering a 50-step time loop. The available capture records MPI rank 0, and the values reported here and in Appendix Appendix B are rank-0 per-rank measure-ments. On the profiled rank, the dominant GPU work is the non-equilibrium interior-face flux kernel, followed by the DVS least-squares reconstruction and the distribution-function update. These three kernels account for 89.9% of the accumulated GPU kernel time. The same capture reports 68.27 GB of host-to-device transfers, 68.28 GB of device-to-host trans-fers, and 62.85 GB of point-to-point MPI send volume on rank 0 over the 50 steps. These data give a quantitative view of the compute-side kernel balance, staged host-device copies, MPI payloads, and resident microscopic gradient-cache footprint under velocity-block pipelining. 
+
+3.3. Supersonic flow around a sphere 
+
+Supersonic flow around a sphere is further considered to assess the present method for an external rarefied flow with strong compression and thermal nonequilibrium. The hard-ware and software description in this paragraph applies to the sphere and X38-like vehicle calculations reported below. These two cases were carried out on a local GPU cluster using eight nodes and 64 NVIDIA Tesla V100-SXM2 accelerators in total. Each node contains two Intel Xeon Gold 5117 processors at 2.00 GHz, with 28 physical CPU cores and 56 hardware threads, and 250 GiB of main memory. Each node is equipped with eight Tesla V100-SXM2-16GB GPUs of compute capability 7.0; each GPU has 16 GiB of device memory, a maximum SM clock of 1530 MHz, and a 300 W power limit. The GPUs within one node are connected through NVLink, with six NVLink connections reported for each GPU. The nodes are connected by a Mellanox ConnectX-4 InfiniBand interconnect with an active 100 Gb/s link. The software environment consists of Ubuntu 20.04.6 LTS, Linux kernel 5.15, NVIDIA driver 550.163.01, CUDA 12.4, GCC 9.4.0, and OpenMPI 4.1.8. In these production runs, one MPI process is bound to one GPU, so that the sphere and X38-like vehicle simulations use 64 MPI processes on 64 V100 GPUs. The two hardware environments are used for different purposes. The scalability and Orion-like capsule tests use the large heterogeneous accelerator platform to assess multi-node scalability and large-case feasibility, whereas the sphere and X38-like vehicle runs use the local NVIDIA V100 cluster for validation cases and Nsight Systems profiling. Therefore, wall-clock timings are compared only within the same hardware environment. Two Knudsen numbers, Kn = 0 .031 and Kn = 0 .121, are computed at a freestream Mach number of M∞ = 4 .25. The wall temperature is fixed at Tw = 302 K, and the freestream total temperature is T0 = 300 K. The physical space is discretized by an unstructured mesh with 138240 cells, and the velocity space contains 18802 discrete velocity points. The physical-space and velocity-space discretizations used in this test are shown in Fig. 11. The physical mesh is body-fitted around the sphere and is locally refined near the wall and in the downstream flow region, so that the strong gradients in the shock layer and wake can be represented. The velocity mesh is nonuniform and refined around the freestream-velocity and stagnation-velocity regions. This allocation concentrates velocity 32 points in the parts of velocity space that dominate the incoming molecular beam and the strongly compressed near-stagnation distribution, while keeping the total number of velocity points manageable for the full phase-space calculation. 
+
+(a) Physical-space mesh (b) Velocity-space mesh 
+
+> Figure 11: Physical-space and velocity-space meshes for the supersonic sphere-flow calculation.
+
+Figures 12 and 13 show the computed Mach-number and temperature distributions on the symmetry plane. In both cases, a detached bow shock forms upstream of the sphere, followed by a low-speed stagnation region and a wake behind the body. When the Knudsen number is increased from 0.031 to 0.121, the shock layer and wake become more diffuse, and the near-wall gradients are smoothed by rarefaction effects. The temperature field exhibits strong aerodynamic heating around the forebody and a thermal wake downstream, while the higher-Knudsen-number case shows a broader nonequilibrium region. 33 (a) Kn = 0 .031 (b) Kn = 0 .121 
+
+Figure 12: Mach-number distributions for supersonic flow around a sphere at M∞ = 4 .25. 
+
+(a) Kn = 0 .031 (b) Kn = 0 .121 
+
+Figure 13: Temperature distributions for supersonic flow around a sphere at M∞ = 4 .25. 
+
+34 The surface coefficient distributions are compared with DSMC reference data [51] in Figs. 14–16. The pressure coefficient Cp decreases monotonically from the stagnation point toward the downstream side, while the heat-transfer coefficient Ch and tangential-stress coefficient Ct show peak values away from the stagnation point. For both Knudsen num-bers, the present FPP-UGKS results follow the DSMC data closely over the full polar-angle range. This agreement indicates that the velocity-block-pipelined formulation preserves the capability of UGKS to resolve rarefied hypersonic flow features while using the proposed phase-space parallel execution strategy. 
+
+(a) Kn = 0 .031 (b) Kn = 0 .121   
+
+> Figure 14: Pressure coefficient Cpon the sphere surface. Symbols denote DSMC reference data from Ref. [51], and solid lines denote the present FPP-UGKS results.
+
+(a) Kn = 0 .031 (b) Kn = 0 .121   
+
+> Figure 15: Heat-transfer coefficient Chon the sphere surface. Symbols denote DSMC reference data from Ref. [51], and solid lines denote the present FPP-UGKS results.
+
+35 (a) Kn = 0 .031 (b) Kn = 0 .121   
+
+> Figure 16: Tangential-stress coefficient Cton the sphere surface. Symbols denote DSMC reference data from Ref. [51], and solid lines denote the present FPP-UGKS results.
+
+3.4. Hypersonic flow around the X38-like vehicle 
+
+The next validation case considers hypersonic flow around an X38-like reentry vehi-cle, which provides a more demanding external-flow configuration with a complex three-dimensional body shape. The freestream and wall conditions follow the near-continuum argon case reported by Li et al. [52]. The freestream Mach number is M∞ = 8 .0, the angle of attack is α = 20 ◦, the Knudsen number is Kn = 0 .00275, and the Reynolds number is Re = 5937. The freestream density, temperature, and velocity are ρ∞ = 1 .11 × 10 −4 kg /m3,
+
+T∞ = 56 K, and U∞ = 1115 .31 m /s, respectively. The wall temperature is fixed at 
+
+Tw = 300 K. The scaled model has a characteristic length of 0 .28 m and a reference area of 0.012 m 2. In the present computation, the physical space is discretized by an unstructured mesh with 913784 cells, and the velocity space contains 19563 discrete velocity points. The physical-space and velocity-space discretizations are shown in Fig. 17. The physical mesh is refined around the forebody, the control-surface region, and the near-wall flow around the vehicle, while the surface mesh resolves the rounded nose, body curvature, and vertical fins. The discrete velocity mesh is refined in both the freestream-velocity and stagnation-velocity regions, so that the incoming molecular beam and the compressed distribution near the forebody are represented with higher velocity-space resolution. This case also provides a direct memory-footprint indication of the benefit of velocity-block pipelining and phase-space decomposition. On 64 GPUs, one complete double-precision full-velocity copy of the two reduced distributions h and b for this mesh would require about 2NcNv × 8/64 ≈ 4.47 GB per GPU. A conventional physical-domain-parallel UGKS im-plementation that keeps two full distribution states, three full-velocity microscopic-gradient arrays, and a full-velocity face-flux cache would require roughly (2 + 3 + 2) × 4.47 ≈ 31 GB per GPU, where the face number is estimated by Nf ≈ 2Nc for the unstructured mesh. This exceeds the 16 GB memory capacity of one Tesla V100-SXM2 GPU. In the present FPP-UGKS implementation, the measured memory footprint of the X38-like vehicle calculation is about 8.5 GB per GPU on average, showing that the same UGKS discretization can be 36 executed within the available device memory. 
+
+(a) Physical-space mesh (b) Surface mesh (c) Velocity-space mesh 
+
+> Figure 17: Physical-space and velocity-space meshes for the X38-like vehicle calculation.
+
+Figure 18 shows the computed flow field around the X38-like vehicle. A strong bow shock forms ahead of the blunt forebody, and the highest temperature and pressure occur near the windward stagnation region. Downstream of the forebody, the flow accelerates around the body and fins, producing a strongly three-dimensional nonequilibrium structure. This case therefore exercises both the unstructured physical-space treatment and the locally refined velocity-space discretization in a configuration that is more representative of practical hypersonic reentry applications. The surface pressure, heat-transfer, and tangential-stress coefficients are compared with DSMC reference data [53] in Fig. 19. The present FPP-UGKS results capture the high pressure and heat-transfer levels near the forebody and the rapid reduction of the surface quantities along the downstream body. The upper- and lower-surface branches also follow the DSMC trends over the main body region. The remaining differences are mainly located near regions where the reference DSMC data exhibit visible statistical scatter, especially for heat transfer and tangential stress at this low Knudsen number. Overall, the comparison confirms that the proposed implementation preserves the accuracy of UGKS for a complex hypersonic rarefied-flow configuration. For the X38-like vehicle calculation, the x38 Nsight Systems profiling run is summa-rized in Table 1 and Appendix Appendix B. The summary reports the GPU kernel timing breakdown, staged host-device transfers, MPI message volume, and an analytical memory-footprint estimate for the profiled rank. Appendix Appendix B also includes the represen-tative timeline for the same profiling run. 37 Figure 18: Computed temperature, Mach-number, and pressure distributions around the X38-like vehicle at M∞ = 8 .0, α = 20 ◦, and Kn = 0 .00275. x       
+
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Cp
+> 0
+> 0.5
+> 1
+> 1.5
+> 2DSMC
+> FPP UGKS
+
+(a) Cpx        
+
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Ch
+> 0
+> 0.05
+> 0.1
+> 0.15
+> 0.2
+> 0.25 DSMC
+> FPP UGKS
+
+(b) Chx       
+
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Ct
+> 0
+> 0.05
+> 0.1
+> 0.15
+> 0.2
+> 0.25
+> 0.3
+> DSMC
+> FPP UGKS
+
+(c) Ct
+
+Figure 19: Surface coefficient distributions on the X38-like vehicle. Symbols denote DSMC reference data from Ref. [53], and solid lines denote the present FPP-UGKS results. 
+
+38 Table 1: Compact rank-0 summary for the x38 profiling case over 50 time steps. Timing and transfer values are from Nsight Systems; the gradient-cache footprint is an analytical estimate from the same run configuration. Metric Rank-0 value Top three GPU kernels 89.9% of accumulated GPU kernel time CUDA staged copies 68.27 GB H2D and 68.28 GB D2H Point-to-point MPI sends 62.85 GB payload Resident microscopic gradient cache 13.93 GiB full-cache estimate reduced to 0.615 GiB triple-buffered cache, a 22.7x reduction 
+
+3.5. Large-scale capability demonstration around the Orion-like capsule 
+
+After the validation cases above, hypersonic flow around an Orion-like capsule is used as a large-scale capability demonstration of the present implementation. The calculation is per-formed on the heterogeneous accelerator platform described in Section 3.2. The freestream Mach number, Knudsen number, and velocity-space discretization are the same as those used in the X38-like vehicle case, namely M∞ = 8 .0, Kn = 0 .00275, and 19563 discrete velocity points. The physical space is discretized by an unstructured mesh with approx-imately 3.4 million cells, which is about 3.7 times larger than the X38-like vehicle mesh. Using Ndof = 2 NcNv, where Nc is the number of physical-space cells and Nv is the num-ber of discrete velocity points, the Orion-like capsule calculation contains approximately 2 × 3.4 × 10 6 × 19563 ≈ 1.33 × 10 11 phase-space degrees of freedom. The physical-space mesh and surface mesh are shown in Fig. 20. The mesh is refined near the capsule forebody and shoulder region to resolve the detached bow shock and near-wall gradients, while the far-field region is coarsened to control the total cell count. The calcula-tion was performed using 4096 GPGPU accelerators from the scalability-test platform, with one MPI process bound to each accelerator. The complete computation required about 2 h of total wall-clock time, demonstrating that the proposed full phase-space decomposition can make multi-million-cell deterministic UGKS simulations practical on large accelerator systems. Figure 21 shows the computed flow field around the Orion-like capsule. A detached shock is formed in front of the blunt heat-shield surface, and strong compression and heat-ing occur between the shock and the forebody. The streamline pattern illustrates the three-dimensional deflection and acceleration of the flow around the capsule shoulder. This large-scale demonstration shows that the proposed velocity-block-pipelined full phase-space de-composition can be applied to realistic blunt-body hypersonic rarefied-flow configurations at substantially larger physical-space resolution. 39 (a) Physical-space mesh (b) Surface mesh 
+
+Figure 20: Physical-space and surface meshes for the Orion-like capsule calculation. 
+
+40 Figure 21: Computed temperature, pressure, Mach-number, and streamline distributions around the Orion-like capsule at M∞ = 8 .0 and Kn = 0 .00275. 
+
+41 4. Conclusion 
+
+A GPGPU-oriented FPP-UGKS with velocity-block pipelining has been developed for large unstructured kinetic simulations. The formulation retains the original UGKS flux con-struction and the two-stage temporal discretization, but reorganizes microscopic evolution around fixed-size velocity blocks. Within each block, nonequilibrium flux evaluation, local moment accumulation, and the first-stage microscopic update are executed with data reuse at the interface and cell levels, making the method more suitable for many-core accelerator execution. The key algorithmic change is the combination of velocity-block sweeping with a full phase-space MPI decomposition. Global ranks are split into physical-space and velocity-space communicators, so each rank owns only a physical subdomain and a subset of ve-locity blocks. Physical-halo communication is confined to ranks with the same velocity subset, whereas heat fluxes, wall moments, interface coefficients, and face fluxes are com-pleted through reductions or broadcasts over the velocity communicator. The triple-buffered pipeline further overlaps reconstruction, halo exchange, nonequilibrium flux evaluation, and intermediate microscopic updates. As a result, persistent microscopic storage scales with the local velocity subset, and temporary gradients and fluxes are limited to the active velocity-block working set. The numerical tests confirm that the proposed implementation preserves the accuracy of the underlying UGKS while improving its memory behavior and parallel scalability. The val-idation cases cover both internal and external rarefied-flow configurations, including canon-ical cavity flows, supersonic flow around a sphere, and hypersonic flow around the X38-like vehicle. Across these validation cases, the method retains the ability of UGKS to capture nonequilibrium transport, detached shocks, aerodynamic heating, and surface-force distri-butions. The Orion-like capsule calculation is used separately as a large-scale capability demonstration, showing that full phase-space decomposition extends the feasible problem size without changing the physical flux model. Using 4,096 GPGPU accelerators, this demon-stration represents, to the best of our knowledge, the largest reported parallel computation in terms of GPU count for DVM-type deterministic kinetic methods applied to transitional-flow simulation. These results show that velocity-block pipelining and full phase-space decomposition provide an effective route toward large-scale deterministic UGKS simulations on modern heterogeneous accelerator platforms. The present study also indicates that performance depends on a balance between local microscopic workload reduction and the cost of velocity-communicator reductions. Future work will therefore focus on automatic selection of the velocity-block size and velocity partition, stronger use of device-aware communication, and extensions to more general gas models, adaptive velocity spaces, and implicit or steady-state acceleration strategies. 
+
+Acknowledgements 
+
+The current research is supported by the GHfund A (ghfund202407012738), the National Natural Science Foundation of China (12302378, 92371201, and 92371107), the National 42 Numerical Windtunnel Project, the Funding of National Key Laboratory of Computational Physics, the Natural Science Basic Research Plan in Shaanxi Province of China (2025SYS-SYSZD-070) 43 Appendix A. Raw scalability timing data 
+
+This appendix lists the raw wall-clock runtimes used in Figs. 7–10. Each entry is the runtime in seconds for 100 time steps. The columns t1, tnode , t4, and t8 correspond to Pv = 1, 
+
+Pv = Nnode , Pv = 4, and Pv = 8, respectively. 
+
+Table A.1 
+
+Raw strong- and weak-scaling timings for Bv = 32. 
+
+Mode Nodes np N Nc t1 tnode t4 t8
+
+Strong 1 8 80 512000 492 492 674 673 Strong 2 16 80 512000 258 320 338 345 Strong 4 32 80 512000 127 177 176 182 Strong 8 64 80 512000 85 96 93 96 Strong 16 128 80 512000 62 88 64 55 Strong 32 256 80 512000 46 60 38 34 Strong 64 512 80 512000 31 43 26 19 Weak 1 8 30 27000 30 30 26 28 Weak 2 16 38 54872 33 30 27 29 Weak 4 32 48 110592 41 27 27 29 Weak 8 64 60 216000 50 30 28 30 Weak 16 128 76 438976 57 41 32 30 Weak 32 256 96 884736 62 47 35 31 Weak 64 512 120 1728000 65 56 38 31 
+
+Table A.2 
+
+Raw strong- and weak-scaling timings for Bv = 64. 
+
+Mode Nodes np N Nc t1 tnode t4 t8
+
+Strong 1 8 80 512000 488 488 620 635 Strong 2 16 80 512000 256 284 311 326 Strong 4 32 80 512000 126 162 162 172 Strong 8 64 80 512000 85 92 86 91 Strong 16 128 80 512000 61 72 59 52 Strong 32 256 80 512000 45 53 35 32 Strong 64 512 80 512000 31 38 24 18 Weak 1 8 30 27000 30 30 27 30 Weak 2 16 38 54872 33 30 29 31 Weak 4 32 48 110592 41 29 29 31 Weak 8 64 60 216000 50 32 30 32 Weak 16 128 76 438976 57 41 33 32 Weak 32 256 96 884736 62 51 36 32 Weak 64 512 120 1728000 65 67 40 33 
+
+44 Table A.3 
+
+Raw strong- and weak-scaling timings for Bv = 128. 
+
+Mode Nodes np N Nc t1 tnode t4 t8
+
+Strong 1 8 80 512000 484 484 570 600 Strong 2 16 80 512000 254 252 286 308 Strong 4 32 80 512000 125 148 149 162 Strong 8 64 80 512000 84 85 79 86 Strong 16 128 80 512000 61 59 54 49 Strong 32 256 80 512000 45 47 32 30 Strong 64 512 80 512000 31 34 22 17 Weak 1 8 30 27000 30 30 28 32 Weak 2 16 38 54872 33 30 30 33 Weak 4 32 48 110592 41 30 30 33 Weak 8 64 60 216000 50 34 31 34 Weak 16 128 76 438976 57 41 35 35 Weak 32 256 96 884736 62 54 38 35 Weak 64 512 120 1728000 65 72 42 36 
+
+Table A.4 
+
+Raw strong- and weak-scaling timings for Bv = 256. 
+
+Mode Nodes np N Nc t1 tnode t4 t8
+
+Strong 1 8 80 512000 486 486 529 601 Strong 2 16 80 512000 252 254 266 304 Strong 4 32 80 512000 125 137 137 153 Strong 8 64 80 512000 82 80 72 80 Strong 16 128 80 512000 59 48 48 44 Strong 32 256 80 512000 42 35 27 28 Strong 64 512 80 512000 37 29 21 18 Weak 1 8 30 27000 30 30 26 31 Weak 2 16 38 54872 35 30 28 32 Weak 4 32 48 110592 40 29 29 35 Weak 8 64 60 216000 46 35 35 35 Weak 16 128 76 438976 55 42 39 36 Weak 32 256 96 884736 63 62 43 38 Weak 64 512 120 1728000 72 94 44 40 
+
+45 Appendix B. Nsight Systems profiling of the X38 case 
+
+The x38 case was additionally profiled with Nsight Systems using the CUDA profiler API range already placed around the solver time loop. The profiling window covered 50 UGKS time steps. The current subsection reports rank-0 per-rank timing, transfer, and message-volume measurements from that capture, together with an analytical memory-footprint es-timate for the same profiled rank. 
+
+Table B.1 
+
+Nsight Systems GPU kernel summary for the x38 case on MPI rank 0 over 50 time steps.                                       
+
+> Kernel Calls Total time (s) Time/step (ms) Kernel time (%) Non-equilibrium interior flux 3400 40.661 813.2 44.9 DVS least-squares reconstruction 3500 24.611 492.2 27.2 Update ftilde 3400 16.108 322.2 17.8 Conservative-variable update 50 3.626 72.5 4.0 Unpack fand gradients 3450 1.724 34.5 1.9 Non-equilibrium parallel-face flux 3400 1.440 28.8 1.6 Pack fand gradients 3450 1.321 26.4 1.5
+
+The non-equilibrium interior flux, DVS least-squares reconstruction, and distribution-function update together account for 89.9% of the accumulated GPU kernel time on the profiled rank, identifying these kernels as the primary compute-side bottlenecks visible to Nsight Systems. 
+
+Table B.2 
+
+Host-device transfer and MPI message volume measured by Nsight Systems for the x38 case on MPI rank 0 over 50 time steps. For MPI rows, the time column is the Nsight Systems MPI API event duration.                                     
+
+> Category Count Total volume (GB) Volume/step (GB) Total time (s) CUDA H2D memcpy 4200 68.274 1.365 20.412 CUDA D2H memcpy 4225 68.277 1.366 16.770 MPI Isend payload 17750 62.851 1.257 0.042 MPI Irecv payload 17750 62.851 1.257 0.019 MPI Bcast send volume 450 36.738 0.735 3.537 MPI Bcast receive volume 450 4.592 0.092 3.537 MPI Allreduce send volume 205 5.815 0.116 2.010 MPI Allreduce receive volume 205 5.815 0.116 2.010
+
+The point-to-point MPI payload is consistent with the halo exchange model of the im-plementation: the dominant term is the repeated exchange of f and microscopic gradients for each velocity block. The measured point-to-point send volume is 1.257 GB per step on rank 0, while the corresponding staged CUDA transfer volume is 1.365 GB/step in each direction. 46 Table B.3 
+
+Analytical GPU memory footprint estimate for major UGKS arrays on the profiled x38 rank, derived from the rank-0 problem sizes and array dimensions in the profiling run.                         
+
+> Array group Size (GB) Size (GiB) Distribution function f5.207 4.849 Boundary distribution cache 0.122 0.114 Triple microscopic gradient cache 0.660 0.615 Microscopic flux/update cache fdt 0.168 0.156 Face macro/coefficient cache 0.089 0.083 MPI pre buffers, send+recv 0.019 0.018 MPI gradient buffers, send+recv 0.002 0.002 Triple MPI f-gradient buffers, send+recv 0.108 0.101 Major microscopic/cache subtotal 6.246 5.817
+
+For rank 0, a full resident microscopic gradient cache over all 2,176 local velocities would require 13.93 GiB, whereas the triple-buffered velocity-block cache requires 0.615 GiB. Thus the resident microscopic gradient cache is reduced to 4.4% of the full-cache footprint, cor-responding to a 22.7x reduction for this array group. Table B.3 should be interpreted as an analytical accounting of the dominant microscopic and communication-buffer arrays on the profiled rank, not as the complete device-resident memory reported by the runtime. The listed arrays account for 5.817 GiB, while the measured X38-like vehicle memory footprint of about 8.5 GB per GPU reported in Section 3.4 also includes auxiliary macroscopic arrays, mesh and connectivity storage, boundary and reduction workspaces, allocator padding, and runtime/library overhead. The comparison therefore shows both the main source of mem-ory reduction relative to a full resident gradient cache and the consistency between the major-array estimate and the measured total footprint. 47 Figure B.1 shows a representative NVIDIA Nsight Systems timeline for the X38-like vehicle calculation. The device timeline contains repeated velocity-block cycles consisting of memory transfers, least-squares reconstruction, nonequilib-rium interface-flux evaluation, and microscopic distribution update kernels. On the host side, MPI API events and CUDA stream synchronization calls appear between consecutive block cycles. 
+
+> Figure B.1  Representative NVIDIA Nsight Systems timeline for the X38-like vehicle calculation, illustrating the repeated velocity-block execution pattern and the interaction between GPU kernels, memory transfers, MPI waiting intervals, and CUDA stream synchronization.
+
+48 References 
+
+[1] Wen-Lan Wang and Iain D Boyd. Predicting continuum breakdown in hypersonic viscous flows. Physics of fluids , 15(1):91–100, 2003. [2] Kun Xu. A gas-kinetic bgk scheme for the navier–stokes equations and its connection with artificial dissipation and godunov method. Journal of Computational Physics , 171(1):289–335, 2001. [3] Zhihui Li, Junlin Wu, Qiang Ma, Xinyu Jiang, and Hanxin Zhang. Gas-kinetic unified algorithm for hypersonic flows covering various flow regimes solving boltzmann model equation in nonequilibrium effect. In AIP Conference Proceedings , volume 1628, pages 92–99. American Institute of Physics, 2014. [4] Wen-Qiang Hu, Zhi-Hui Li, Ao-Ping Peng, and Xin-Yu Jiang. A gas-kinetic unified algorithm for non-equilibrium polyatomic gas flows covering various flow regimes. Communications in Computational Physics , 30(1):144–189, 2021. [5] Wei Su, Yonghao Zhang, and Lei Wu. Multiscale simulation of molecular gas flows by the general synthetic iterative scheme. Computer Methods in Applied Mechanics and Engineering , 373:113548, 2021. [6] Lianhua Zhu, Xingcai Pi, Wei Su, Zhi-Hui Li, Yonghao Zhang, and Lei Wu. General synthetic iterative scheme for nonlinear gas kinetic simulation of multi-scale rarefied gas flows. Journal of Computational Physics , 430:110091, 2021. [7] Wei Su, Lianhua Zhu, Peng Wang, Yonghao Zhang, and Lei Wu. Can we find steady-state solutions to multiscale rarefied gas flows within dozens of iterations? Journal of Computational Physics , 407:109245, 2020. [8] RS Myong. Thermodynamically consistent hydrodynamic computational models for high-knudsen-number gas flows. Physics of Fluids , 11(9):2788–2802, 1999. [9] RS Myong. A computational method for eu’s generalized hydrodynamic equations of rarefied and microscale gasdynamics. Journal of Computational Physics , 168(1):47–72, 2001. [10] Kun Xu and Juan-Chen Huang. A unified gas-kinetic scheme for continuum and rarefied flows. Journal of Computational Physics , 229(20):7747–7764, 2010. [11] Juan-Chen Huang, Kun Xu, and Pubing Yu. A unified gas-kinetic scheme for continuum and rarefied flows ii: multi-dimensional cases. Communications in Computational Physics , 12(3):662–690, 2012. [12] Juan-Chen Huang, Kun Xu, and Pubing Yu. A unified gas-kinetic scheme for continuum and rarefied flows iii: Microflow simulations. Communications in Computational Physics , 14(5):1147–1173, 2013. [13] Zhaoli Guo, Kun Xu, and Ruijie Wang. Discrete unified gas kinetic scheme for all knudsen number flows: Low-speed isothermal case. Physical Review E , 88(3):033305, 2013. [14] Zhaoli Guo, Ruijie Wang, and Kun Xu. Discrete unified gas kinetic scheme for all knudsen number flows. ii. thermal compressible case. Physical Review E , 91(3):033313, 2015. [15] Lianhua Zhu, Zhaoli Guo, and Kun Xu. Discrete unified gas kinetic scheme on unstructured meshes. 
+
+Computers & Fluids , 127:211–225, 2016. [16] Chang Liu, Yajun Zhu, and Kun Xu. Unified gas-kinetic wave-particle methods i: Continuum and rarefied gas flow. Journal of Computational Physics , 401:108977, 2020. [17] Yajun Zhu, Chang Liu, Chengwen Zhong, and Kun Xu. Unified gas-kinetic wave-particle methods. ii. multiscale simulation on unstructured mesh. Physics of Fluids , 31(6):067105, 2019. [18] Sha Liu, Kun Xu, and Chengwen Zhong. Progress of the unified wave-particle methods for non-equilibrium flows from continuum to rarefied regimes. Acta Mechanica Sinica , 38:122123, 2022. [19] Yajun Zhu, Chengwen Zhong, and Kun Xu. Implicit unified gas-kinetic scheme for steady state solutions in all flow regimes. Journal of Computational Physics , 315:16–38, 2016. [20] Yajun Zhu, Chengwen Zhong, and Kun Xu. An implicit unified gas-kinetic scheme for unsteady flow in all knudsen regimes. Journal of Computational Physics , 386:190–217, 2019. [21] Songze Chen, Kun Xu, Cunbiao Lee, and Qingdong Cai. A unified gas kinetic scheme with moving mesh and velocity space adaptation. Journal of Computational Physics , 231(20):6643–6664, 2012. [22] Tianbai Xiao, Chang Liu, Kun Xu, and Qingdong Cai. A velocity-space adaptive unified gas kinetic scheme for continuum and rarefied flows. Journal of Computational Physics , 415:109535, 2020. 
+
+49 [23] John D. Owens, Mike Houston, David Luebke, Simon Green, John E. Stone, and James C. Phillips. GPU computing. Proceedings of the IEEE , 96(5):879–899, 2008. [24] Tobias Brandvik and Graham Pullan. Acceleration of a 3D Euler solver using commodity graphics hardware. In 46th AIAA Aerospace Sciences Meeting and Exhibit , pages AIAA Paper 2008–607, Reno, Nevada, 2008. [25] Erich Elsen, Patrick LeGresley, and Eric Darve. Large calculation of the flow over a hypersonic vehicle using a GPU. Journal of Computational Physics , 227(24):10148–10161, 2008. [26] Andrew Corrigan, Fernando Camelli, Rainald L¨ ohner, and John Wallin. Running unstructured grid-based CFD solvers on modern graphics hardware. International Journal for Numerical Methods in Fluids , 66(2):221–229, 2011. [27] Andreas Kl¨ ockner, Tim Warburton, Jeffrey Bridge, and Jan S. Hesthaven. Nodal discontinuous Galerkin methods on graphics processors. Journal of Computational Physics , 228(21):7863–7882, 2009. [28] Dana A. Jacobsen and Inanc Senocak. Multi-level parallelism for incompressible flow computations on GPU clusters. Parallel Computing , 39(1):1–20, 2013. [29] Freddie D. Witherden, Antony M. Farrington, and Peter E. Vincent. PyFR: An open source framework for solving advection–diffusion type problems on streaming architectures using the flux reconstruction approach. Computer Physics Communications , 185(11):3028–3040, 2014. [30] Brian C. Vermeire, Freddie D. Witherden, and Peter E. Vincent. On the utility of GPU accelerated high-order methods for unsteady flow simulations: A comparison with industry-standard tools. Journal of Computational Physics , 334:497–521, 2017. [31] Joshua Romero, Jacob Crabill, Jerry E. Watkins, Freddie D. Witherden, and Antony Jameson. ZEFR: A GPU-accelerated high-order solver for compressible viscous flows using the flux reconstruction method. 
+
+Computer Physics Communications , 250:107169, 2020. [32] Paul Fischer, Stefan Kerkemeier, Misun Min, Yu-Hsiang Lan, Malachi Phillips, Thilina Rathnayake, Elia Merzari, Ananias Tomboulides, Ali Karakus, Noel Chalmers, and Tim Warburton. NekRS, a GPU-accelerated spectral element Navier–Stokes solver. Parallel Computing , 114:102982, 2022. [33] Matteo Bernardini, Davide Modesti, Francesco Salvadore, and Sergio Pirozzoli. STREAmS: A high-fidelity accelerated solver for direct numerical simulation of compressible turbulent flows. Computer Physics Communications , 263:107906, 2021. [34] Kyle E. Niemeyer and Chih-Jen Sung. Recent progress and challenges in exploiting graphics processors in computational fluid dynamics. The Journal of Supercomputing , 67(2):528–564, 2014. [35] David J. Lusher, Satya P. Jammy, and Neil D. Sandham. OpenSBLI: Automated code-generation for heterogeneous computing architectures applied to compressible fluid dynamics on structured grids. 
+
+Computer Physics Communications , 267:108063, 2021. [36] Austen C. Duffy, Dana P. Hammond, and Eric J. Nielsen. Production level CFD code acceleration for hybrid many-core architectures. NASA Technical Memorandum NASA/TM-2012-217770, NASA Langley Research Center, 2012. [37] Federico Piscaglia and Federico Ghioldi. GPU acceleration of CFD simulations in OpenFOAM. 
+
+Aerospace , 10(9):792, 2023. [38] Jae Wook Kim and Richard D. Sandberg. Efficient parallel computing with a compact finite difference scheme. Computers & Fluids , 58:70–87, 2012. [39] Mathieu Deuse and Richard D. Sandberg. Implementation of a stable high-order overset grid method for high-fidelity simulations. Computers & Fluids , 211:104449, 2020. [40] Richard D. Sandberg and Vittorio Michelassi. The current state of high-fidelity simulations for main gas path turbomachinery components and their industrial impact. Flow, Turbulence and Combustion ,102(4):797–848, 2019. [41] Yuhang Wang, Guiyu Cao, and Liang Pan. Multiple-GPU accelerated high-order gas-kinetic scheme for direct numerical simulation of compressible turbulence. Journal of Computational Physics , 476:111899, 2023. [42] Pengyu Huo, Liang Pan, Ziwen Wang, Guiyu Cao, Christopher Vogel, and Kun Xu. GPU-enabled high-order gas-kinetic scheme for actuator line model simulations of wind turbine wakes. Journal of 
+
+50 Physics: Conference Series , 3016(1):012017, 2025. [43] Xing Ji, Liang Pan, Wei Shyy, and Kun Xu. A compact fourth-order gas-kinetic scheme for the Euler and Navier–Stokes equations. Journal of Computational Physics , 372:446–472, 2018. [44] Hongyu Liu, Xing Ji, Yuan Fu, and Kun Xu. A geometric multigrid-accelerated compact gas-kinetic scheme for fast convergence in high-speed flows on GPUs. Journal of Computational Physics ,562:115038, 2026. [45] A. Frezzotti, G. P. Ghiroldi, and L. Gibelli. Solving model kinetic equations on GPUs. Computers & Fluids , 50(1):136–146, 2011. [46] Lianhua Zhu, Peng Wang, Songze Chen, Zhaoli Guo, and Yonghao Zhang. GPU acceleration of an iterative scheme for gas-kinetic model equations with memory reduction techniques. Computer Physics Communications , 245:106861, 2019. [47] Minh Tuan Ho, Lianhua Zhu, Lei Wu, Peng Wang, Zhaoli Guo, Zhi-Hui Li, and Yonghao Zhang. Amulti-level parallel solver for rarefied gas flows in porous media. Computer Physics Communications ,234:14–25, 2019. [48] Qi Zhang, Yunlan Wang, Dongxin Pan, Jianfeng Chen, Sha Liu, Congshan Zhuo, and Chengwen Zhong. Unified x-space parallelization algorithm for conserved discrete unified gas kinetic scheme. Computer Physics Communications , 278:108410, 2022. [49] Peiyao Liu, Changsheng Huang, and Zhaoli Guo. GPU implementation of the discrete unified gas kinetic scheme for low-speed isothermal flows. Computer Physics Communications , 294:108908, 2024. [50] Kairzhan Karzhaubayev, Lian-Ping Wang, and Dauren Zhakebayev. DUGKS-GPU: An efficient parallel GPU code for 3D turbulent flow simulations using discrete unified gas kinetic scheme. Computer Physics Communications , 301:109216, 2024. [51] Yue Zhang, Yufeng Wei, Wenpei Long, and Kun Xu. An efficiency and memory-saving programming paradigm for the unified gas-kinetic scheme. Computer Physics Communications , 314:109684, 2025. [52] Jin Li, Dingwu Jiang, Xiangren Geng, and Jianqiang Chen. Kinetic comparative study on aerodynamic characteristics of hypersonic reentry vehicle from near-continuous flow to free molecular flow. Advances in Aerodynamics , 3:10, 2021. [53] Wenpei Long, Yufeng Wei, and Kun Xu. An implicit adaptive unified gas-kinetic scheme for steady-state solutions of nonequilibrium flows. Physics of Fluids , 36(10):106114, 2024. 
+
+51
