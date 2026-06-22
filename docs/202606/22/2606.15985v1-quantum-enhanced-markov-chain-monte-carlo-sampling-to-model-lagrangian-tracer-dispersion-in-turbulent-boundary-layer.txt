@@ -1,0 +1,1556 @@
+Title: Quantum-enhanced Markov chain Monte Carlo sampling to model Lagrangian tracer dispersion in turbulent boundary layer
+
+URL Source: https://arxiv.org/pdf/2606.15985v1
+
+Published Time: Tue, 16 Jun 2026 01:49:04 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Quantum-enhanced Markov chain Monte Carlo sampling to model Lagrangian tracer dispersion in turbulent boundary layer 
+
+Fabian Schindler 1 and J¨ org Schumacher 1
+
+> 1
+
+Institute of Thermodynamics and Fluid Mechanics, Technische Universit¨ at Ilmenau, P.O. Box 100565, D-98684 Ilmenau, Germany 
+
+(Dated: June 16, 2026) We present a quantum-enhanced Markov chain Monte Carlo (QE-MCMC) method to sample turbulent acceleration vectors from a joint target distribution that depends on all three components and height to model the transport and dispersion of massless Lagrangian tracer particles in two different turbulent shear flows. A homogeneous shear flow, which is characterized by a uniform shear rate S, is considered as the starting point. Secondly, a turbulent boundary layer, which forms in both halves of a plane turbulent channel flow (TCF) at a friction Reynolds number of 
+
+Re τ = 1000, is considered. Then the mean shear rate S(y) varies with distance from the wall y. In this hybrid quantum-classical method, the proposal distribution Q for the first of the two Metropolis-Hastings sampling substeps is constructed by a parametric quantum circuit. The algorithm generates synthetic tracer particle tracks. The resulting scaling laws for the tracer particle pair dispersion, a central quantity to probe the turbulent mixing properties of the shear flow from a Lagrangian perspective, are found to agree with a stochastic transport model consisting of a set of coupled Langevin equations and the classical MCMC counterpart. Differently to the classical sampling method, QE-MCMC takes to this end a tempered target distribution. Due to the height-dependence of the tracer dynamics in TCF, an effective height-weighted spectral gap between the first and second eigenvalue of the Markov chain transition matrix is introduced. The latter is found to significantly exceed the one of classical MCMC when the sampling is done from a multivariate distribution with cross correlations at the highest qubit numbers and thus resolutions. Consequently, our results support the applicability of this one-shot algorithm as a generative Lagrangian quantum computing module, possibly embedded in a complex fluid flow problem. Our module is found to work reliably for a relatively small number of qubits per spatial dimension of Nq ≤ 6. 
+
+I. INTRODUCTION 
+
+In many applications in science and technology, one has to sample from a complex probability density func-tion P (a), where the data (or state) vector a ∈ Rd and 
+
+d ≫ 1. A typical example is a multivariate normal dis-tribution with a potentially complex covariance matrix. Direct sampling may be computationally infeasible or an-alytically intractable. To address this challenge, Markov Chain Monte Carlo (MCMC) methods provide a power-ful framework for generating approximate samples from distributions that depend on many variables [1]. Its most prominent version goes back to the pioneering works of Metropolis et al. [2] and Hastings [3]. The method con-sists basically of two steps; in a first step a new sample 
+
+a∗ is created by a proposal distribution Q(a∗|a) and in a second step this new sample is accepted or rejected fol-lowing an acceptance probability A(a∗|a). The transition probability Π for the Markov chain step from a to a∗ is then given by Π( a∗|a) = Q(a∗|a)A(a∗|a) ∀ a∗̸ = a . (1) Classical MCMC methods are widely used. In fluid mechanics and atmospheric or environmental sciences, MCMC methods are used for data assimilation, i.e., to integrate observations into fluid mechanical models, such as for water cycle processes [4]. They are also applied to estimate parameters and uncertainties in complex flow problems, e.g., in numerical simulations of volcanic lava flows which were supported by satellite data [5]. Classi-cal MCMC methods have been coupled to quantum algo-rithms in chemistry, such as variational quantum eigen-solvers [6] to accelerate high-dimensional non-convex op-timization, e.g., in graph partitioning problems [7]. Quantum computing methods in general [9] are known for the efficient sampling properties, caused by the na-ture of the measurement process [10, 11]. Recently, the MCMC method was extended to a quantum-enhanced MCMC (QE-MCMC) algorithm by Layden et al. [12]. The authors could show that by taking samples of the proposal distribution Q(a∗|a), which is constructed by a quantum algorithm, a speedup for a notoriously hard spin-glass Ising model problem is obtained. The target distribution p(a) to sample from is a Boltzmann distri-bution in this case, 
+
+p(a) = 1
+
+Z exp[ − ˆH(a)/k B T ] , (2) with the partition sum Z (which sums over all possi-ble spin configurations a), the Hamilton operator ˆH(a)quantifying the energy stored in each specific spin-glass configuration, the Boltzmann constant kB , and the tem-perature T . They showed that QE-MCMC gave the big-gest spectral gap δ = 1 − | λ2| between the first, λ1 = 1, and second eigenvalue, λ2 < λ 1, of the Markov transition matrix Π( a∗|a) when compared to classical sampling, see Sec. II for further details. The width of the spectral gap is the essential quantity as it determines the convergence 
+
+> arXiv:2606.15985v1 [physics.flu-dyn] 14 Jun 2026
+
+2       
+
+> FIG. 1. Principal sketch of the workflow of the Quantum-enhanced MCMC method for the synthetic generation of Lagrangian tracer trajectories in a turbulent boundary layer above the ground and its comparison with a classical MCMC method. The velocity fluctuations u′(x, t ) about a mean turbulent shear flow ⟨u⟩are obtained from simulations. They are used to construct the target distribution of the acceleration p(a) for the sampling. The contour plot (upper left) shows the turbulent kinetic energy of the velocity field, taken from a snapshot of the lower half of a channel simulation [8]. Two initially very close tracer tracks are sketched. Their distance grows with time due to turbulent mixing. The red box below illustrates the stochastic particle advection method. The proposal distribution is either obtained classically or by the quantum algorithm, see blue box to the right. Note that the QE-MCMC algorithm is a hybrid quantum-classical algorithm.
+
+rate to the target distribution p(a) of the Markov chain [13]. The wider the gap the faster the convergence. In [12], a quadratic speed-up was obtained for the quantum physical problem compared to classical MCMC sampling. A quantum advantage is, however, not always guar-anteed. In QE-MCMC, the assumed symmetry of the proposal distribution Q is implemented in the unitary quantum circuit ˆU with ˆU −1 = ˆU † requiring in addition ˆU = ˆU T. This typically results in deep quantum circuits, which complicate a detailed understanding and tuning of the spectral gap δ, as shown in ref. [14]. In addition, Orfi and Sels [15] constructed a sampling problem that does not obtain a quantum advantage over the classical coun-terpart. As a consequence, Nakano et al. [16] adapted the QE-MCMC algorithm by combination with a classi-cal generative neural sampler (GNS) in the form of an autoencoder to accelerate the evaluation of the proposal distribution. In this hybrid algorithm, the calculation of A(a∗|a) was drastically simplified. In [17], a coarse grained QE-MCMC was presented to perform sampling tasks with considerably smaller qubit numbers. With a view to these open points and solution strate-gies, we want to investigate in the following the applica-bility of the original QE-MCMC algorithm to a sampling problem, which arises in classical fluid turbulence as a subtask next to the time advancement of the fluid flow equations. To this end, we apply the hybrid quantum-classical QE-MCMC method to draw acceleration field samples for modeling the Lagrangian material transport and dispersion of substances, described as a cloud of in-dividual tracer particles in a turbulent fluid flow. We consider two application cases: (1) a homogeneous shear flow (HSF), which will serve as the benchmark case for the approach. This turbulent flow is characterized by a uniform mean shear rate S = const . [18]. (2) A turbulent pressure-driven shear flow, which is formed in a channel flow geometry [19]. This flow develops tur-bulent boundary layers (TBL) and is characterized by a mean shear rate S(y) that depends on the vertical distance y from the horizontal channel wall. The sub-stance to be transported is then considered as an en-semble of small and practically massless tracer particles, which nearly perfectly follow the turbulent fluid flow — the Lagrangian perspective on fluid dynamics [20–24]. The QE-MCMC algorithm will generate synthetic particle tracks by sampling from a target distribution 
+
+p(ax, a y , a z | y) of the three components of the accelera-tion vector field a. Acceleration component statistics is inferred from the covariance of velocity fluctuations u′,coupled in a two-layer stochastic model that contains two internal flow time scales [25, 26]. A schematic illustration is shown in Fig. 1. Each component of the acceleration vector field varies between a minimal and maximal value; the distributions also change with increasing distance from the wall y. This sets our multivariable sampling task. Our studies are compared with a classical MCMC algorithm and a stochastic tracer transport model. The quantum algorithm reproduces the particle pair disper-3sion D(t) in agreement with the other classical methods; 
+
+D(t) is a central measure that quantifies the strength of turbulent mixing in the flow in a scaling law with re-spect to time. We also show that QE-MCMC method obeys a spectral gap δ that is comparable to the classi-cal MCMC for qubit number per dimension Nq = 6 in the HSF case; the (effective) spectral gap is significantly larger in the more complex TBL case for the quantum al-gorithm which supports the applicability of QE-MCMC for more complex sampling tasks. Most transport models for the dispersion of substances in the atmosphere are based on large-eddy simulations and discuss the scalar mixing in the Eulerian frame of reference [27, 28]. Classical stochastic transport mod-els, as those discussed here, have been used to inves-tigate the transport of chemical tracers or aerosols in the atmosphere in global circulation models [29, 30]. Next to the resolved large-scale wind fields, unresolved velocity fluctuations at meso- and small scales are de-scribed as Gaussian fields, which, however, mostly ne-glect the cross-correlations between different components [31]. Our hybrid quantum-classical model goes beyond this stage by including cross correlations between the ve-locity and acceleration components in the corresponding covariances together with a large-scale correlation length and a two internal flow time scales in the underlying two-layer stochastic model, motivated by concepts of refs. [25, 26]. Our adapted QE-MCMC method provides a quantum algorithm for the complementary Lagrangian description of fluid dynamics, where the frame of reference is con-nected to individual fluid particles. This opens new phys-ical perspectives for understanding transport processes in fluid turbulence, as discussed above. We note here that basically all previous applications of quantum computing for fluid mechanics are formulated in the standard Eule-rian frame of reference [32–49], see also refs. [50–52] for reviews. The outline is as follows. In Sec. II, we summarize the MCMC and QE-MCMC methods for completeness. Section III reports the results, first for a homogeneous shear flow as a benchmark, then for the turbulent channel flow. Finally, the work ends with a conclusion and an outlook.   
+
+> II. METHODS A. Classical Markov chain Monte Carlo method
+
+MCMC sampling is among the most popular algo-rithms to take samples from a targeted stationary proba-bility density function p(a) without explicitly computing it [1]. To this end, the algorithm creates a Markov chain, which implies that the next sample a∗ depends only on the previous sample a. The chain is specified by a tran-sition matrix Π( a∗|a). The convergence of the chain to the stationary target distribution p(a) is satisfied when the detailed balance condition holds, 
+
+p(a∗)Π( a∗|a) = p(a)Π( a|a∗) . (3) Furthermore, it is required that the chain is irreducible and aperiodic, two properties that are satisfied in stan-dard cases. As already discussed in the introduction, a common strategy in MCMC algorithms is to decompose the Markov step into 2 substeps, a proposal and accep-tance step. Off-diagonal elements of the transition matrix Π can be written as (1). One widely used MCMC tech-nique is the Metropolis-Hastings algorithm [2, 3], which constructs a Markov chain. The method proceeds iter-atively as follows. At each iteration n, a new candidate point a∗ is proposed based on the current state a(n) us-ing proposal distribution Q(· | a(n)). In our case, we use a simple isotropic Gaussian centered at the current state: 
+
+a∗ ∼ Q(· | a(n)) (4) where 
+
+Q(v|a) = 1(2 πσ 2prop )d/ 2 exp 
+
+
+
+− 12σ2prop 
+
+∥v − a∥2
+
+
+
+. (5) Here, σ2prop denotes the proposal variance, which controls the size of the random perturbation applied to the cur-rent state. The choice of σprop is critical for the efficiency and convergence behavior of the Markov chain: (1) If σprop is too small, proposed moves will be very close to the current state. This leads to high accep-tance rates but poor exploration of the state space, resulting in slow mixing and high autocorrelation between successive samples. The chain may require a very large number of iterations to approximate the target distribution well. (2) If σprop is too large, proposed moves are likely to fall into low-probability regions of p(a), and thus be rejected frequently. This leads to a low acceptance rate, causing the chain to remain stuck at its cur-rent position for many iterations, again impairing convergence. Once a proposal a∗ has been generated, the next step is to decide whether to accept the proposed move. For this, we compute the acceptance probability: 
+
+A(a∗|a(n)) = min 
+
+
+
+1, p(a∗)
+
+p(a(n))
+
+Q(a(n)|a∗)
+
+Q(a∗|a(n))
+
+
+
+= min 
+
+
+
+1, p(a∗)
+
+p(a(n))
+
+
+
+, (6) where the simplification follows from the symmetry of the proposal distribution, Q(v|a) = Q(a|v), see again Eq. (5). Then, a uniform random number U ∼ Uniform(0 , 1) is drawn. The proposed sample is accepted if U ≤ A(a∗ |
+
+a(n)), and rejected otherwise: 
+
+a(n+1) =
+
+(
+
+a∗ if U ≤ A(a∗ | a(n))
+
+a(n), otherwise . (7) 4            
+
+> FIG. 2. Quantum circuit of the distribution Qsketched with
+> d×Nqqubits. The operator ˆVconsists of players of rotation operators ˆRX(2 θ) followed by a unitary ˆUC(γ) that entangles all qubits in each layer and follows from ˆHprob . The layers of ˆRXare connected to ˆHmix .
+
+This accept–reject rule preserves the detailed balance condition, ensuring that the Markov chain converges to the correct equilibrium distribution, and therefore en-ables accurate sampling from the target distribution p(a). The performance of the classical MCMC is evaluated by the rate of convergence to p(a). It can be obtained by a so-called total variation distance (TVD) ξ. The stationary distribution p(a) is linked with an eigenvalue of λ1 = 1 of Π. The spectrum of Π is given by λ1 > λ 2 >λ3 > ... Essential for the convergence rate is the spectral gap between λ1 and λ2 which is denoted as δ = 1 − | λ2|.In a nutshell, this gap quantifies the deviations to the stationary distribution. TVD and spectral gap can be shown to bound the mixing time tmix as follows [13]: 
+
+ 1
+
+δ − 1
+
+
+
+log 
+
+ 12ξ
+
+
+
+≤ tmix ≤ 1
+
+δ log 
+
+ 12ξ p min 
+
+
+
+, (8) with pmin = min a p(a). In other words, the bigger the gap the faster the MCMC method is converged and the shorter the mixing time tmix becomes.  
+
+> B. Quantum-enhanced Markov chain Monte Carlo method
+
+The quantum-enhanced MCMC method (QE-MCMC) is a hybrid quantum-classical algorithm that operates on the classical data. The new sample a∗ is suggested by a parametric quantum circuit in a unitary evolution step, i.e., 
+
+Q(a∗|a) = |⟨ a∗| ˆU |a⟩| 2 , (9) with ˆU −1 = ˆU †. In short, the proposal step is quantum. For the quantum case, we will use the bra-ket notation for the statevectors [9]. Typically, one takes ˆU = exp( −i ˆHt )with ˆH = ˆH†. Operator ˆH is the Hamiltonian of the quantum system that is supposed to take the quantum task. QE-MCMC is a class of quantum-inspired sampling algorithms that combine ideas from quantum comput-ing with classical Metropolis-Hastings steps to explore complex probability landscapes more efficiently. As al-ready said, the central idea is to replace the classical proposal distribution with one derived from a quantum circuit, whose measurement outcomes define the sam-pling candidates. Importantly, while the proposal dis-tribution is now quantum-inspired, the overall structure of the Metropolis-Hastings algorithm—including the ac-cept–reject rule—remains unchanged. At each iteration n, a new a∗ is proposed according to a transition probability 
+
+a∗ ∼ Q(· | a(n)), (10) where Q(a∗|a(n)) is given by (9). The transition prob-ability corresponds to the probability that a quantum system, initialized in |a(n)⟩, collapses into state |a∗⟩ af-ter application of the unitary ˆU and a measurement. The quantum circuit itself consists of alternating uni-tary transformations associated with two Hamiltonians that are combined with each other: a mixing Hamilto-nian ˆHmix and a cost (or problem) Hamiltonian ˆHprob 
+
+[12, 14]. The general form of the circuit is given by ˆU = ˆV (θ, γ) ˆV (θ, γ)T (11) with ˆV (θ, γ) = 
+
+> p
+
+Y
+
+> j=1
+
+ˆUC (γj ) ˆUB (θj ), (12) where ˆUB (θj ) = exp( −iθ j ˆHmix ), (13) ˆUC (γj ) = exp( −iαγ j ˆHprob ), (14) and p is a hyperparameter that determines the depth of the circuit. The constant α = | ˆHmix |F /| ˆHprob |F
+
+in Eq. (14) ensures that the contributions of the mix-ing and problem Hamiltonians enter at comparable scales, thereby balancing exploration and exploitation in the quantum proposal ( | · | F denotes the Frobenius norm). The layered structure in Eq. (12) is inspired by the Quantum Approximate Optimization Algorithm (QAOA) [14], and the parameters θ = {θ1, . . . , θ p} and 
+
+γ = {γ1, . . . , γ p} control the interplay between explo-ration and exploitation in the quantum proposal. To re-duce the complexity of the parameter space, we consider 5here a simplified circuit with a single effective parameter 
+
+θ, and define ˆU = ˆV (θ) ˆV T(θ) with ˆV (θ) = [ ˆUC (θ) ˆUB (θ)] p. (15) By construction, this unitary ˆU is symmetric, i.e., ˆU =ˆU T, ensuring a symmetric proposal distribution. This ad-ditional symmetry of the unitary guaranties cancelation of the proposal terms in the acceptance ratio, simplify-ing the algorithm. The quantum circuit used to construct the proposal is schematically illustrated in Fig. 2. The mixing Hamiltonian is chosen as ˆHmix =
+
+> d×Nq
+
+X
+
+> j=1
+
+ˆXj , (16) where Nq denotes the number of qubits per dimension d,and ˆXj are Pauli X operators acting on qubit j, inducing transitions between bit strings. The problem Hamilto-nian encodes the effective energy landscape of the target distribution: ˆHprob = X
+
+> a
+
+E(a) |a⟩⟨ a|, (17) where 
+
+E(a) = aT ˆΣ−1 a. (18) Here, E(a) should not be interpreted as a physical energy, but rather as a Mahalanobis-type squared acceleration distance that quantifies how atypical a given acceleration vector is with respect to the covariance ˆΣ. After preparing the quantum state via the circuit ˆU , a measurement in the computational basis is per-formed. This measurement collapses the quantum state into a classical bit string a∗, sampled with probability 
+
+Q(a∗|a(n)). Since quantum measurement always yields one of the 2 d×Nq basis states, the output samples a∗ are discrete vectors in {0, 1}d×Nq . Notably, this is a one-shot quantum algorithm which avoids repeated runs to recon-struct all probabilities of the components of the quantum state. Thus, each qubit contributes one bit of resolution in the sample space. To apply this scheme to continuous target distributions, the state vector a must first be dis-cretized and assigned to a bit string, and the correspond-ing inverse mapping must be applied after sampling. The candidate a∗ is then accepted or rejected accord-ing to a Metropolis-like rule. A uniform random number 
+
+U ∼ Uniform(0 , 1) is drawn, and the acceptance proba-bility is computed as: 
+
+A(a∗|a(n)) = min 
+
+
+
+1, p(a∗)
+
+p(a(n))
+
+Q(a(n)|a∗)
+
+Q(a∗|a(n))
+
+
+
+. (19) Due to the additional symmetry ˆU = ˆU T of the quantum circuit, 
+
+Q(a∗|a(n)) = |⟨ a∗| ˆU |a(n)⟩| 2
+
+= |⟨ a(n)| ˆU |a∗⟩| 2 = Q(a(n)|a∗), (20) the acceptance rule simplifies to a Metropolis step, cf. Eq.(6). The rule is then given by 
+
+A(a∗|a(n)) = min 
+
+
+
+1, p(a∗)
+
+p(a(n))
+
+
+
+. (21) In our setting, the target distribution is a multi-variate normal distribution, p(a) ∝ exp( − 12 aT ˆΞ−1a). This can be written in Boltzmann form as p(a) ∝
+
+exp( −E(a)/(kB T )). The Boltzmann constant kB = 1 in the following. The effective energy becomes E(a) = 
+
+aT ˆΣ−1a, provided that ˆΞ = T 
+
+> 2
+
+ˆΣ. In the reference case corresponding to the original Gaussian, this yields T = 2. For additional flexibility, we consider sampling tem-peratures T > 2 in QE-MCMC and treat T as a tunable parameter. This corresponds to sampling from a tem-pered target distribution, pT (a) ∝ exp( −E(a)/T ), which broadens the distribution and increases the probability of visiting less likely states. As a consequence, the QE-MCMC chain no longer samples exactly the original tar-get distribution, but instead a controlled, temperature-modified variant. This allows us to adjust the balance between exploration and exploitation, as discussed fur-ther in Sec. III. This leads to the final expression for the acceptance probability 
+
+A(a∗|a(n)) = min 
+
+
+
+1, exp 
+
+
+
+− E(a∗) − E(a(n))
+
+T
+
+ 
+
+.
+
+(22) The Markov chain is updated accordingly: 
+
+a(n+1) =
+
+(
+
+a∗, if U ≤ A(a∗|a(n))
+
+a(n), otherwise . (23) This hybrid algorithm retains the convergence guarantee of classical MCMC while exploiting quantum coherence and interference for nonlocal and potentially more effi-cient exploration of the state space.  
+
+> III. RESULTS
+
+In the following, the application of the QE-MCMC al-gorithm to two turbulent fluid flow configurations is pre-sented. We will start with the simplest extension to ho-mogeneous isotropic turbulence in a cubic box, the ho-mogeneous shear flow case [53–56]. This configuration has already been investigated by Ingelmann et al. [18]. Here, it serves as a benchmark for the new QE-MCMC application. The complexity of the application case in-creases subsequently by turning to a turbulent channel flow with near-wall turbulent boundary layers [8, 57, 58]. Here, we used the simulation data record for a turbulent channel flow at a friction Reynolds number Re τ = 1000 [8], which is provided in the Johns Hopkins Turbulence Database [59]. 6  
+
+> A. Homogeneous shear flow
+> 1. Flow configuration
+
+MCMC and QE-MCMC methods were first tested in a three-dimensional homogeneous turbulent shear flow, see also ref. [18]. Such a turbulent flow, which evolves far away from walls and boundaries, is commonly described by a decomposition of the velocity field into a streamwise mean flow and fluctuations which are given by 
+
+u(x, t ) = ⟨ux⟩(y)ex + u′(x, t ) . (24) The homogeneous mean flow is given by 
+
+⟨ux⟩(y) = Sy , (25) where ⟨ux⟩ denotes the mean streamwise velocity, linearly increasing with the wall-normal coordinate y with a con-stant shear rate S. Note that the indices i, j, k take values of {x, y, z }, which correspond to {1, 2, 3}. The vector u′
+
+contains the velocity fluctuations around this mean pro-file. Due to the imposed shear, correlations arise between the fluctuating velocity components u′ 
+
+> x
+
+and u′ 
+
+> y
+
+, which are particularly important for the evolution of passive tracers or particles embedded in the flow. The motion of such particles is modeled using a system of stochastic differential equations (SDE) of Langevin type. Differently to ref. [18], we extend the stochas-tic model in this work by two points to model a more realistic particle dispersion process: (1) Streamwise extended velocity structures with a fi-nite length develop in both types of shear flows, streamwise streaks in the homogeneous shear flow [60, 61] as well as large-scale motions or turbu-lent superstructures in high-Reynolds-number tur-bulent channel flows [62, 63]. Thus, we include an exponential correlation decay term with a charac-teristic length scale ℓcorr in the large-scale compo-nent of the flow, similar to ref. [24]. (2) Turbulence is characterized by multiple time scales. Thus, we extend the basic stochastic model to a two-equation model for velocity fluctuations and accelerations, which was originally introduced by Sawford [25] and recently refined and extended by Viggiano et al. [26]. Both steps in combination will lead to more realistic tracer dispersion behavior in the Lagrangian turbulence. The equations for each tracer particle pair ( k) (which should not be mixed with the index of a Markov chain step) are given in variables {Xi, u ′
+
+> i
+
+, a i} for tracer 1 and 
+
+{ ˜Xi, ˜u′
+
+> i
+
+, ˜ai} for tracer 2. Here, we write down those of tracer 1 of pair ( k) only, da(k) 
+
+> i
+
+= − a(k)
+
+> i
+
+τη
+
+dt + Gij dW (k) 
+
+> j
+
+, (26) du′ (k) 
+
+> i
+
+= − u′ (k)
+
+> i
+
+τi
+
+dt + a(k) 
+
+> i
+
+dt, (27) dX(k) 
+
+> i
+
+=
+
+h
+
+SY (k)F(X(k), ℓ corr )δix + u′(k)
+
+> i
+
+i
+
+dt, (28) with the spatial correlation decay term 
+
+F(X(k), ℓ corr ) = exp − |X(k) − ˜X(k)|
+
+ℓcorr 
+
+!
+
+(29) where τi denotes a characteristic relaxation time scale, 
+
+τη < τ i the Kolmogorov time scale, Gij a diffusion tensor; dWj represents independent Wiener processes and ℓcorr 
+
+is a characteristic spatial correlation length scale con-trolling the exponential decay of F with the streamwise tracer separation [25, 54]. The first pair of equations gov-erns the random acceleration components ai(t) and ˜ ai(t)of both tracers in the pair, the second their evolution of the fluctuating velocity components u′
+
+> i
+
+(t) and ˜ u′
+
+> i
+
+(t), and the third describes the corresponding particle positions 
+
+Xi(t) and ˜Xi(t). The term SY F(X(k), ℓ corr )δix reflects the deterministic advection due to the mean shear pro-file in the streamwise direction x. Note that upper case letters ( X, Y, Z ) = ( X1, X 2, X 3) are used for spatial coor-dinates Xi of the Lagrangian tracer particles in Eqs. (28) and (29) (not mixed with Pauli operator X); the same holds for tracer 2 in the pair. In discrete time tn = n∆t
+
+with a fixed ∆ t, the system (26)–(28) becomes 
+
+a(k) 
+
+> i
+
+(tn+1 ) = a(k) 
+
+> i
+
+(tn) − a(k) 
+
+> i
+
+(tn)
+
+τη
+
+∆t + Gij ∆W (k) 
+
+> j
+
+(tn),u′(k) 
+
+> i
+
+(tn+1 ) = u′(k) 
+
+> i
+
+(tn) −
+
+"
+
+u′(k) 
+
+> i
+
+(tn)
+
+τi
+
+− a(k) 
+
+> i
+
+(tn)
+
+#
+
+∆t, X(k) 
+
+> i
+
+(tn+1 ) = X(k) 
+
+> i
+
+(tn) + 
+
+h
+
+SY (k)(tn)F(tn)δix + u′(k) 
+
+> i
+
+(tn)
+
+i
+
+∆t. 
+
+Numerically, it is solved by an Euler-Murayama scheme [64]. We use the Einstein summation convention. To close the stochastic model, the second-order veloc-ity statistics are prescribed through a Gaussian descrip-tion of the velocity fluctuations u′. In the present setting, we assume a multivariate normal distribution with sym-metric covariance matrix ˆΣu′u′ , inferred from the shear-flow statistics of the simulation data, ˆΣu′u′ =
+
+Σxx Σxy 0Σxy Σyy 00 0 Σzz 
+
+ . (30) This yields the bivariate in-plane density 
+
+p(u′)2D (u′
+
+> x
+
+, u ′ 
+
+> y
+
+) = 12π ˆΣ(u)2D  
+
+> 1/2
+
+exp 
+
+
+
+− 12 u′ T   ˆΣ(u′)2D 
+
+−1u′
+
+
+
+,
+
+(31) 7with 
+
+u′ =
+
+u′
+
+> x
+
+u′
+
+> y
+
+
+
+, ˆΣ(u′)2D =
+
+Σxx Σxy 
+
+Σxy Σyy 
+
+
+
+, (32) and the statistically independent spanwise component is modeled by the univariate normal density 
+
+p(u′)1D (u′ 
+
+> z
+
+) = 1
+
+√2π Σzz 
+
+exp 
+
+
+
+− u′2
+
+> z
+
+2Σ zz 
+
+
+
+. (33) While Eqs. (26)–(28) evolve both u′ and a dynami-cally, the MCMC and QE-MCMC variants require an explicit target distribution for the sampled variables. In this work, we sample the accelerations a at each time step. Direct acceleration statistics are not available from the data, hence we reconstruct the covariance ˆΣaa from the diffusion tensor ˆG in Eq. (26). In continuous time, the Ornstein-Uhlenbeck form (26) implies the stationary Lyapunov relation ˆΣaa = τη
+
+2 ˆG ˆGT, (34) which we use to define the acceleration covariance. The construction of ˆG from ˆΣu′u′ is detailed in the appendix. Analogously to the velocity model above, we assume a Gaussian factorization for the acceleration components in this framework and introduce the in-plane and spanwise acceleration densities 
+
+p(a)2D (ax, a y ) = 12π ˆΣ(a)2D  
+
+> 1/2
+
+exp 
+
+
+
+− 12 aT12 
+
+  ˆΣ(a)2D 
+
+−1a12 
+
+
+
+,
+
+(35) 
+
+p(a)1D (az ) = 1
+
+q
+
+2π Σ(a)
+
+> zz
+
+exp 
+
+
+
+− a2
+
+> z
+
+2 Σ (a)
+
+> zz
+
+
+
+, (36) where 
+
+a12 =
+
+ax
+
+ay
+
+
+
+, ˆΣ(a)2D =
+
+"
+
+Σ(a) 
+
+> xx
+
+Σ(a)
+
+> xy
+
+Σ(a) 
+
+> xy
+
+Σ(a)
+
+> yy
+
+#
+
+, Σ(a) 
+
+> ij
+
+= ( ˆΣaa )ij .
+
+(37) Accordingly, the target law used for acceleration sam-pling becomes 
+
+a(tn) ∼ p(a)2D (ax, a y ) ⊗ p(a)1D (az ). (38) The sampled accelerations are then inserted into the discrete-time update of u′ and X (see Eqs. (26)–(29)), providing a consistent two-stage model that couples the prescribed second-order velocity statistics ˆΣu′u′ to an in-ferred acceleration covariance ˆΣaa . Although real accel-eration statistics are known to be non-Gaussian [21], the Gaussian approximation in Eq. (38) enables a tractable construction of the two-equation model and a well-defined target distribution for MCMC and QE-MCMC sampling. We note here that Eq. (26) leads to an exponential decay of the temporal correlations of the acceleration, 
+
+Ci(τ ) = ⟨ai(t)ai(t + τ )⟩ ∼ exp( −τ /τ η ) . (39) The Kolmogorov time τη determines the decay of the correlations. This is important for the present problem since the Markov chain is not an equilibrium sampler. This point will be detailed further in Sec. III.A.3 when the optimal parameters of the MCMC methods are dis-cussed. 
+
+2. Lagrangian particle pair dispersion 
+
+A key quantity of interest in the Lagrangian frame-work is the particle dispersion, which characterizes the spreading of particle trajectories due to turbulent mixing. To assess this quantity, we compute the mean-squared relative displacement D(t) between pairs of Lagrangian particles, initialized with small differences in their initial conditions. Specifically, we define the dispersion in the 
+
+i-th direction at time tn for all particle pairs k as: 
+
+Di(tn) = 
+
+h
+
+∆X(k) 
+
+> i
+
+(tn) − ∆X(k) 
+
+> i
+
+(0) 
+
+i2
+
+> L
+
+= 1
+
+Npa 
+
+> Npa
+
+X
+
+> k=1
+
+h
+
+∆X(k) 
+
+> i
+
+(tn) − ∆X(k) 
+
+> i
+
+(0) 
+
+i2
+
+(40) with ∆X(k) 
+
+> i
+
+(tn) = X(k) 
+
+> i
+
+(tn) − ˜X(k) 
+
+> i
+
+(tn) , (41) where Npa denotes the number of sampled particle pair trajectories, and X(k) 
+
+> i
+
+(tn), ˜X(k) 
+
+> i
+
+(tn) are the trajectories of two particles from the k-th pair realization. The tracer pairs are initialized with a small displacement in the wall-normal direction y as well as distinct initial accelerations 
+
+a(0) and velocity fluctuations u′ (0) . Specifically, the joint initial state is sampled as 
+
+ a(0) , u′ (0) T ∼ N 
+
+
+
+0, ˆΣzz 
+
+
+
+, (42) with the block covariance matrix ˆΣzz =
+
+ ˆΣu′u′ ˆΣu′a
+
+ˆΣau ′ ˆΣaa 
+
+
+
+∈ R6×6. (43) The construction of the individual blocks of ˆΣzz from the prescribed shear-flow statistics is described the in ap-pendix. We use the initial particle dispersion as a normalization constant. It is calculated according to 
+
+D0 =
+
+> 3
+
+X
+
+> i=1
+
+h
+
+∆X(k) 
+
+> i
+
+(0) 
+
+i2
+
+> L
+
+= 1
+
+Npa 3X
+
+> i=1
+> Npa
+
+X
+
+> k=1
+
+h
+
+∆X(k)
+
+> i
+
+i2
+
+.
+
+(44) 8      
+
+> FIG. 3. Comparison of dispersion curves computed using the solution of the stochastic differential equations (26)–(29) (SDE), the classical MCMC and QE-MCMC scheme. In all cases, the dispersion curves have been obtained for 3000 individual Lagrangian particle tracks, which were initialized with slightly different initial vertical positions. (a) Streamwise pair dispersion
+> Dx(t), (b) wall-normal pair dispersion Dy(t), (c) spanwise pair dispersion Dz(t), and (d) total pair dispersion D(t).
+
+In the numerical benchmark experiments, the follow-ing simulation parameters were employed, equal to [18], which follow from [54] and the simulation data described therein. All quantities are given in characteristic time and length units. The shear rate was set to S = 3 .51 inverse time units (and thus results in a shear time 
+
+S−1 = 0 .28), and the time step used for time integration was S∆t = 0 .01, and the mean kinetic energy dissipation rate ε = 1 .34. The Kolmogorov time τη = pν/ε ≈ 0.07 which is estimated from the Taylor microscale Reynolds number that varied between 40 and 110. As the decor-relation length ℓcorr = pε/S 3 ≈ 0.18 is taken in the present case. The number of time steps was set to 
+
+Nsteps = 10 000, resulting in a total simulation time of 
+
+ST = 100. The calculations were carried out for a num-ber of Npa = 3000 particles. For the QE-MCMC simulation, we used Nq = 6 qubits. The covariance matrix of the velocity fluctuations, the diffusion tensor and the relaxation times for the Langevin model were prescribed as detailed in [18]. The dispersion in each direction was computed using Eq. (41), and the total dispersion was obtained as the sum of the dispersion in the three spatial directions, D(t) = P3 
+
+> i=1
+
+Di(t). The resulting dispersion curves are presented in Fig. 3. For the smallest times t ≪ S−1, the particle dispersion comes out of a ballistic scaling regime with Di(t) ∼ t2 for times 
+
+t ≪ S−1. This is indicated here only, since the time step was taken larger to capture the long-term dispersion. Up to times t ≲ S−1, the scaling crosses over into a scaling with Di(t) ∼ t4. For times t ≳ S−1, spatial and temporal correlations are decayed such that a diffusive scaling is observed, Di(t) ∼ t. All three methods, both classical and the quantum-enhanced method, give practically the same results.  
+
+> 3. Optimal parameters of the MCMC method
+
+To ensure efficient sampling within the MCMC frame-work, a parameter study was conducted to determine the optimal proposal variance σprop for the acceleration fluc-tuations, see again Eq. (5) for Q(a∗|a(n)). The proposal standard deviations are calibrated by matching the tem-poral correlation structure of the Markov chain to the target dynamics implied by the stochastic acceleration model. This calibration directly determines the mixing behaviour of the Markov chain, since the proposal scale controls the balance between exploration of the continu-ous state space and persistence of temporal correlations in the sampled trajectories. 9In classical MCMC theory, the spectral gap of the Markov operator is often interpreted as an indicator of convergence speed, with larger values corresponding to faster relaxation towards the stationary distribution. However, this interpretation is only meaningful when the Markov chain is used as a purely equilibrium sampler. In the present case, the Markov chain is embedded into the temporal evolution of the stochastic acceleration process and therefore contributes directly to the generation of a time-ordered physical signal. As a consequence, its mix-ing properties cannot be optimized independently of the temporal correlation structure prescribed by the under-lying model. Since the acceleration process exhibits a characteris-tic relaxation time scale τη , as shown in Eq. (26), the theoretical lag-k autocorrelation is 
+
+ρtarget  
+
+> k
+
+= exp 
+
+
+
+−k ∆tτη
+
+
+
+, k = 1 , . . . , K, (45) where ∆ t, again, denotes the (physical) time step of the particle integrator and K is the maximum lag consid-ered. For a given candidate proposal scale σprop , an MCMC chain is generated for the corresponding acceler-ation components, empirical autocorrelations ρk(σprop )are computed, and the mismatch is quantified via a weighted least-squares error over the first K lags, 
+
+E(σprop ) = 
+
+> K
+
+X
+
+> k=1
+
+wk
+
+ ρk(σprop )−ρtarget 
+
+> k
+
+2, wk = 1
+
+k . (46) Because the coupled in-plane update ( a1, a 2) or ( ax, a y )and the scalar update a3 or az generally exhibit different mixing behavior, two separate proposal scales are deter-mined: σ12 ,prop for the bivariate chain ( a1, a 2) and σ3,prop 
+
+for the univariate chain a3. For ( a1, a 2), the objective combines the lagged autocorrelation errors of both com-ponents, 
+
+E12 (σ12 ,prop ) = 
+
+> K
+
+X
+
+> k=1
+
+wk
+
+h ρ(a1) 
+
+> k
+
+− ρtarget 
+
+> k
+
+2 +
+
+ ρ(a2) 
+
+> k
+
+− ρtarget 
+
+> k
+
+2i
+
+, (47) while for a3 an analogous scalar expression is used, 
+
+E(σ3,prop ) = 
+
+> K
+
+X
+
+> k=1
+
+wk
+
+ ρ(a3) 
+
+> k
+
+− ρtarget 
+
+> k
+
+2. (48) To reduce statistical noise, each candidate proposal scale is evaluated by averaging the error over multiple inde-pendent repeats, and the optimal values are obtained by a grid search, 
+
+σ∗ 
+
+> 12 ,prop
+
+= arg min 
+
+> σ12 ,prop
+
+E12 (σ12 ,prop ), (49) 
+
+σ∗ 
+
+> 3,prop
+
+= arg min 
+
+> σ3,prop
+
+E3(σ3,prop ). (50) For the parameter set considered here, we set K = 5, which yielded σ∗ 
+
+> 12 ,prop
+
+= 1 .75 for the coupled ( a1, a 2) up-date and σ∗ 
+
+> 3,prop
+
+= 2 .00 for the scalar a3 update. At these values, the distribution Q produces steps of appropri-ate magnitude, enabling efficient exploration of the state space while reproducing the intended temporal correla-tion of the target stochastic dynamics. Consequently, the induced particle-trajectory statistics Xi(t) are consistent with the intended stochastic dynamics. Finally, it is worth noting that the spectral gap of the resulting Markov chain remains a useful diagnostic quantity for characterizing mixing efficiency in the clas-sical MCMC sense. In particular, it provides informa-tion about the relaxation properties of the chain in the abstract sense of convergence towards its stationary dis-tribution. However, in the present setting it should not be interpreted as an unconditional figure of merit or as an independent optimization objective. This is because the target distribution is not tuned to maximize mixing speed alone, but is instead calibrated to reproduce the prescribed temporal correlation structure of the under-lying stochastic acceleration model on the time scale τη .As a consequence, the spectral gap reflects a constrained trade-off between two competing requirements: efficient exploration of the continuous state space, and preser-vation of the physically relevant temporal dependence structure of the generated trajectories. In this sense, the spectral gap provides a meaningful but conditional mea-sure of performance, which must be interpreted in con-junction with the autocorrelation-based calibration cri-terion used to determine the proposal parameters.  
+
+> 4. Optimal parameters of the QE-MCMC method
+
+The quantum-enhanced MCMC introduces additional parameters that influence the structure and efficiency of the sampling process. In the present setting, QE-MCMC was applied to the distribution of the acceleration fluc-tuations using separate quantum proposals for the joint (a1, a2) and individual spanwise ( a3) components. The corresponding distributions are not accessible from the DNS data records, thus they will be reconstructed from the Gaussian velocity fluctuation statistics. For each of these components, QE-MCMC employs a quantum walk-based proposal mechanism, which is gov-erned by the following tunable parameters. (1) Temperature parameters T12 and T3 control the ex-ploration scale of the tempered target distribution. Higher values result in broader range of proposal values, thus enhancing exploration, but potentially reducing local acceptance rates. Conversely, lower values sharpen the proposal, improving local accu-racy at the expense of global mobility. (2) Phase angels θ12 and θ3, the rotation angles of the quantum gates, modulate interference effects in the quantum proposal, see Fig. 2. They influence the 10 balance between constructive and destructive con-tributions in the superposition of sampling ampli-tudes. In practice, they serve to shape the detailed structure of the target distribution and can intro-duce non-trivial correlations. (3) Parameter p governs the number of quantum repli-cas or parallel sampling paths. Higher values gener-ally improve convergence to the target distribution by averaging over multiple phase-shifted paths but increase computational cost. (4) Grid bound amax sets the finite support of the discretized quantum state space, i.e., the admis-sible acceleration samples are restricted to a ∈Q 
+
+> i∈{ x,y,z }
+
+[−amax ,i , a max ,i ]. Increasing amax en-larges the dynamic range and reduces boundary effects, but coarsens the effective resolution for a fixed qubit number Nq . Decreasing amax improves resolution around the origin, but may truncate the tails of the target distribution, which can bias both acceptance and long-time dispersion statistics. In all QE-MCMC runs, we fix the grid bound based on the target acceleration covariance, amax ,i = 3 
+
+q
+
+( ˆΣaa )ii 
+
+for i ∈ { x, y, z }. This choice provides sufficient dynamic range to capture the relevant probability mass of the tar-get while keeping the discretization resolution adequate for the chosen qubit count. To evaluate the influence of the remaining parameters on the accuracy of the QE-MCMC method, a parameter grid search was conducted, using the mean squared log-arithmic error MSLE ( T12 , T 3, θ 12 , θ 3, p ) as the objective function, MSLE = 1
+
+NtNtX
+
+> n=1
+
+[ log  DQE −MCMC (tn) + 1 
+
+− log  DSDE (tn) + 1 ]2. (51) This choice is motivated by the coarse discretization in-duced by the quantum encoding and limited qubit counts, which restrict the effective resolution of the sampler and can lead to a wide dynamic range of D(t). The logarith-mic transform stabilizes the optimization by reducing the dominance of late-time, large-magnitude dispersion val-ues and by keeping the objective well-conditioned even when early-time dispersion is small. Correlation-based calibration strategies were also ex-plored, for instance by matching short-lag autocorre-lations of the acceleration Markov chain to the target relaxation behavior of the underlying stochastic model. However, in the coupled tracer dynamics these local-in-time correlation matches did not reliably translate into agreement of the full dispersion curve across time scales. Therefore, the MSLE-based grid search is adopted as the primary calibration strategy for QE-MCMC in this work. A systematic scan over the QE-MCMC parameter space revealed a (local) minimum of the MSLE for the following combination: p = 10, T12 = 2 .6, T3 = 19 .0, 
+
+θ12 = 7 π/ 1024, and θ3 = 11 π/ 2048. At this configura-tion, the QE-MCMC method produced dispersion curves that closely matched the reference SDE solution with MSLE = 0 .014, indicating that the quantum proposal mechanism, when properly tuned, can effectively repli-cate the correct statistical behavior of the underlying dy-namics, see again Fig. 3.  
+
+> 5. Spectral gap analysis
+
+To quantitatively assess the potential quantum advan-tage, we compared the spectral gaps δ of the Markov matrices of the classical MCMC and quantum-enhanced MCMC algorithms. Since the spectral gap governs the asymptotic convergence rate of a Markov chain in the classical sense (see Sec. I), larger values of δ are typi-cally associated with faster mixing and thus more effi-cient sampling. In the present framework, however, this interpretation also carries over in a more structured way, as the Markov chain is calibrated such that its temporal correlations are consistent with the physically prescribed relaxation dynamics. Consequently, the spectral gap re-mains linked to an effective convergence rate, but only insofar as it preserves the target correlation time scale of the underlying stochastic process. In the QE-MCMC case, the transition matrix naturally has finite dimension of dim(Π) = 2 d×Nq , (52) where d denotes the dimensionality of the distribution, such as d = 1 for az and d = 2 for ax and ay . Further-more, Nq is the number of qubits per dimension d. In contrast, the classical MCMC operates in a continuous state space, implying an infinite-dimensional transition operator. To enable a consistent comparison, we dis-cretized the MCMC samples by grouping them into the same effective resolution as in the QE-MCMC method, thereby constructing transition matrices of identical di-mension. The resulting comparison is shown in Fig. 4. It is seen that the spectral gap for classical sampling al-gorithm is always larger than the one for the quantum-enhanced algorithm, which would imply that no quantum advantage is obtainable. However, we observe that the difference between classical and quantum case is steadily reduced when the qubit number and thus the resolution of the sampling distribution is enhanced. We note that the QE-MCMC case operates at sampling temperatures 
+
+T > 2, which results in a tempered target PDF.   
+
+> B. Turbulent channel flow
+> 1. Flow configuration
+
+The second application case is a turbulent channel flow (TCF), a three-dimensional Navier-Stokes flow between 11 
+
+FIG. 4. Comparison of the spectral gap δ between classical MCMC and QE-MCMC as a function of the number of qubits per dimension Nq for the HSF case. Here, the number of layers is p = 10 in the quantum algorithm. 
+
+two parallel plates of distance 2 h that is driven by a con-stant pressure gradient d p/ dx in streamwise direction x
+
+[19, 57]. In this configuration, two turbulent boundary layers form at the bottom and top plates, which grow up from both walls to the mid-plane of the channel (where they meet). Since there is a statistical top-down symme-try, we will consider the lower half channel only for our study, 0 ≤ z ≤ h. The Lagrangian particle dispersion will be studied in the lower channel half for the following. In the wall-normal direction, at y = {0, 2h} the fluid satis-fies the no-slip boundary condition, u = 0; in streamwise (x) and spanwise ( z) periodic boundary conditions ap-ply. The velocity field u is obtained by direct numerical simulations (DNS) of the incompressible Navier-Stokes equations, which are given by 
+
+∂u
+
+∂t + ( u · ∇)u = − 1
+
+ρ0
+
+∇P + ν∇2u (53) 
+
+∇ · u = 0 , (54) with constant mass density of the fluid ρ0, pressure field 
+
+P , and kinematic viscosity ν.Figure 5 shows three horizontal contour cuts at a time instant through the channel volume V = Lx × 2h × Lz =8πh × 2h × 3πh taken at different distances from the bottom wall. The distance is measured in wall or inner units, which are given by ℓ+ = ν/u τ with uτ = pτw/ρ 0.Here, uτ is the friction velocity, τw the wall shear stress — the viscous stress at the wall. The coordinates and the velocity field components are expressed in wall units: 
+
+x+ 
+
+> i
+
+= xi/ℓ + and u+ 
+
+> i
+
+= ui/u τ . Consequently, a dimension-less time t+ = tu τ /ℓ + follows. We observe that the struc-tures of the streamwise velocity component u+ 
+
+> x
+
+display contours that are increasingly elongated in the stream-wise direction. We quantify the streamwise correlation 
+
+FIG. 5. Contours of the streamwise velocity component 
+
+u+ 
+
+> x
+
+(x+, y +, z +, t + ≈ 250) at a time instant. The horizontal slice cuts are taken at three distances from the wall, (a) in the viscous sublayer at y+ ≈ 10, (b) in the logarithmic region at y+ ≈ 60, and (c) in the center region at y+ ≈ 500. The midplane of the channel is at y = h, which corresponds to 
+
+y+ = 1000. Data are taken from the Johns Hopkins Turbu-lence Database [8]. In each panel, we indicate the correlation scale ℓcorr , which increases with distance from the wall. 
+
+length in the TCF case by 
+
+ℓcorr (y+) = 
+
+Z ∞
+
+> 0
+
+C11 (r, y +) d r, (55) where the normalized streamwise autocorrelation of the streamwise velocity fluctuations is 
+
+C11 (r, y +) = ⟨u′
+
+> x
+
+(x, z, t ; y+) u′
+
+> x
+
+(x + r, z, t ; y+)⟩x,z,t 
+
+⟨u′ 2 
+
+> x
+
+(x, z, t ; y+)⟩x,z,t 
+
+.
+
+(56) The DNS turbulence data, which we will use to build the target distributions, are at a friction Reynolds number [8] 
+
+Re τ = uτ hν = 1000 .12 
+
+FIG. 6. Wall-normal mean profiles of essential turbulent properties plotted in wall units for 64 selected horizontal planes, that will be used for the models, in semi-logarithmic plots. (a) Mean streamwise velocity ⟨u+ 
+
+> x
+
+⟩xz (y+). (b) Components of the symmetric Reynolds stress tensor ⟨u′+ 
+
+> i
+
+u′+ 
+
+> j
+
+⟩xz (y+). (c) Plane-averaged mean Kolmogorov scale η+(y+) = η(y)/ℓ + and mean kinetic energy dissipation rate ε+(y+) = ε(y)ℓ+/u 3 
+
+> τ
+
+. Note that the vertical grid resolution of the DNS is given with 512 non-uniform grid points, much finer than the selected 64 points, which are shown here. 
+
+Figure 6 replots the essential statistical quantities for the MCMC and QE-MCMC models versus y+. These are the mean velocity in panel (a), the Reynolds stress components in panel (b), and the Kolmogorov scale 
+
+η(y) = ⟨ν3/ε (y)⟩1/4 
+
+> xz
+
+, which quantifies the size of the smallest vortical structures at distance y, and the kinetic energy dissipation rate ε(y) = ν⟨(∇u)2⟩xz in panel (c). The averages are combined time- and xz -plane-averages which are given by (here for a single velocity component) 
+
+⟨u+ 
+
+> i
+
+⟩xz (y+) = 1
+
+L+ 
+
+> x
+
+L+
+
+> z
+
+Z L+
+
+> x
+> 0
+
+Z L+
+
+> z
+> 0
+
+⟨u+ 
+
+> i
+
+⟩ dz+ dx+ (57) with 
+
+⟨u+ 
+
+> i
+
+⟩ = 1
+
+T
+
+Z T
+
+> 0
+
+u+ 
+
+> i
+
+dt . (58) Here, T is the total time interval. The linear scaling in panel (a) for 30 ≲ y+ ≲ 200 defines the so-called logarith-mic region of the channel flow. Unlike the homogeneous shear flow benchmark, the statistical quantities are now height-dependent. The turbulence is not homogeneous with respect to the wall-normal direction, but remains homogeneous with respect to the streamwise and span-wise directions. This adds a further dependence to the probability density functions, namely the height depen-dence, which increases the complexity of the modeling task significantly. 
+
+2. Height dependence of velocity fluctuation statistics 
+
+We proceed similarly to the HSF case. The accelera-tion statistics will be inferred from the velocity fluctua-tion statistics as discussed in subsection III.A. Complex-ity is, however, significantly increased by the dependence of the turbulent fluctuations from the distance to the wall. Figure 6 shows that the Reynolds stresses ⟨u′+ 
+
+> i
+
+u′+ 
+
+> j
+
+⟩xz =0 for the cross correlations ( i, j ) = ( x, z ) and ( i, j ) = (y, z ), which suggests a factorization similar to the ho-mogeneous shear flow case: 
+
+p(u′)(u′+ 
+
+> x
+
+, u ′+ 
+
+> y
+
+, u ′+ 
+
+> z
+
+| y+) = p(u′)2D (u′+ 
+
+> x
+
+, u ′+ 
+
+> y
+
+| y+) ⊗
+
+p(u′)1D (u′+ 
+
+> z
+
+| y+) . (59) Compare the probability density in Eq. (59), that now contains a height-dependence, with Eq. (38). We do not display data in the viscous sublayer, y+ ≲ 10. In this near-wall region the velocity-fluctuation distributions ex-tracted from the database are strongly non-Gaussian and exhibit pronounced skewness and intermittency, such that a skew-normal approximation does not provide a re-liable fit. Figure 7 discusses the PDFs of the velocity fluctuations at different heights y+. Panels (a), (d), (e) display the JPDFs p(u′)2D (u′+ 
+
+> x
+
+, u ′+ 
+
+> y
+
+| y+). They are skewed with respect to both velocity components as shown in correspond-ing panels (c), (f), (i) where we calculate the skewness 
+
+M3(u′+ 
+
+> i
+
+) = ⟨(u′+ 
+
+> i
+
+)3⟩xz /⟨(u′+ 
+
+> i
+
+)2⟩3/2 
+
+> xz
+
+versus y+ for the 64 se-lected planes of the lower half channel. We also recognize that the distribution of the spanwise velocity fluctuation component p(u′)1D (u′+ 
+
+> z
+
+| y+) in panel (h) is symmetric with 
+
+M3 almost perfectly zero for all y+, which is visible in panel (i). Also observable is a change of the sign of the skewness of the streamwise and wall-normal components; while the streamwise velocity component switches from a fatter positive to a negative tail at the beginning of the logarithmic layer ( y+ ≃ 30), the wall-normal com-ponent shows a reverse trend. This statistical behavior is connected to the formation of streamwise streaks by counter-rotating streamwise vortices in the presence of height-dependent mean shear. Figure 7 also underscores that the factorized distribu-tions can be approximated as skew normal distributions, 13 
+
+FIG. 7. Statistics of the velocity fluctuations in the turbulent channel flow at different heights. Panels (a,b) display data for 
+
+y+ ≈ 10, (d,e) for y+ ≈ 60, and (g,h) for y+ ≈ 500. Panels (a,d,g) show the joint conditional PDFs p(u′)2D (u′+ 
+
+> x
+
+, u ′+ 
+
+> y
+
+| y+). Panels (b,e,h) the spanwise PDFs p(u′)1D (u′+ 
+
+> z
+
+| y+). Finally, panels (c), (f), and (i) plot the skewness M3 of the velocity u′+ 
+
+> x
+
+, u′+ 
+
+> y
+
+, and 
+
+u′+ 
+
+> z
+
+, respectively, versus wall normal coordinate y+ at the selected 64 analysis planes. 
+
+which are given by (also cf. Eq. (31) for the homogeneous shear flow) 
+
+p(u′)2D (u′+ 
+
+> x
+
+, u ′+ 
+
+> y
+
+|y+) = 12π | ˆΣ(u′)2D |1/2 exp 
+
+
+
+− 12 (u′+)T  ˆΣ(u′)2D 
+
+−1u′+
+
+
+
+×
+
+2Φ( √2κT( ˆΣ(u′)2D )−1/2u′+) (60) with Φ( x) = [1 + erf( x/ √2)] /2 and 
+
+u′+ =
+
+u′+
+
+> x
+
+u′+
+
+> y
+
+
+
+, ˆΣ(u′)2D (y+) = 
+
+Σxx (y+) Σxy (y+)Σxy (y+) Σyy (y+)
+
+
+
+. (61) Similarly, the target distribution for the spanwise com-ponent follows to 
+
+p(u′)1D (u′+ 
+
+> z
+
+| y+) = 1
+
+p2π σ 2
+
+> u
+
+exp 
+
+
+
+− u′+ 2 
+
+> z
+
+2σ2
+
+> u
+
+
+
+×
+
+2Φ( √2κz σ−1 
+
+> u
+
+u′+ 
+
+> z
+
+) (62) with σ2
+
+> u
+
+(y+) = Σ zz (y+). The parameter vector κ(y+) = [κx(y+), κ y (y+), κ z (y+)] T captures the change of the sign, κi(y+) = sgn[ M3(u′+ 
+
+> i
+
+, y +)] in Eqs. (60) and (62). It is expected that the skewness for the spanwise statis-tics is significantly less skewed as for the other two space directions, which are correlated. It could be well approx-imated by a normal distribution in the core of the fluc-tuation range. We will stick to the generalized version of 
+
+p1D (u′ 
+
+> z
+
+), similar to the other two components. As men-tioned in the HSF case, the velocity statistics enter our stochastic two-equation model through the diffusion ten-sor Gij (y+), which is obtained from the velocity covari-ance by solving the stationary Lyapunov equation (see again the appendix). This yields a height-dependent ac-celeration covariance ˆΣaa (y+) = 12 τη ˆG(y+) ˆGT(y+) and thus the corresponding conditional acceleration target distributions p(a)2D (a+ 
+
+> x
+
+, a + 
+
+> y
+
+| y+) and p(a)1D (a+ 
+
+> z
+
+| y+) used by MCMC and QE-MCMC. 
+
+3. Lagrangian particle pair dispersion 
+
+Similarly to subsection III.A.2, we analyze the La-grangian particle pair dispersion. The definitions (40) 14                
+
+> FIG. 8. Temporal evolution of two Lagrangian particles within a tracer pair over 10 5steps which were generated by the QE-MCMC algorithm. They were initialized at X+(0) = [0 ,500 , L +
+> z/2] Tand ˜X+(0) = [0 ,500 + 16 η+, L +
+> z/2] T, respectively. The initial fluctuating velocities and accelerations were sampled as ( u′(0) ,a(0)) T∼ N (0,ˆΣzz (y+0)).
+
+are used again. Figure 8 displays two trajectories within a tracer pair, that were initialized close to each other. It is observed that they stay together for a period before separating. This is caused by spatially extended stream-wise velocity fluctuations, which are observable in the contours in Fig. 5. The number of qubits per dimension in the QE-MCMC case is mostly Nq = 5; the statistics is collected again for Npa = 3000. We need a volume measure of the mean shear. Thus, we first define the following mean derivative 
+
+S+ 
+
+> h
+
+(y+) = d⟨u⟩+
+
+> xz
+
+dy+ and ⟨S⟩+ 
+
+> y
+
+= 1
+
+L+
+
+> y
+
+Z L+
+
+> y
+> 0
+
+S+ 
+
+> h
+
+(y+) d y+ .
+
+(63) The global mean shear time TS+ follows to 
+
+TS+ = 1
+
+⟨S⟩+
+
+> y
+
+. (64) For the present data record, we obtain TS+ ≈ 91 time units. In this analysis, we enforce reflective (specular) boundary conditions at y+ = 20 and y+ = 1000 via ideal elastic wall collisions, i.e. any boundary overshoot is corrected by mirroring the wall-normal position back into the domain and reversing the wall-normal compo-nents, u+ 
+
+> y
+
+→ − u+ 
+
+> y
+
+and a+ 
+
+> y
+
+→ − a+ 
+
+> y
+
+. As already stated, for 
+
+y+ < 20 the velocity statistics deviates strongly from as-sumptions that we made. We note here that we cannot provide a comparison with Lagrangian trajectory data obtained from the DNS data since the snapshot output interval is too coarse for a particle advection. The results are shown in Fig. 9 for the individual space directions and their sum. All curves start with a ballistic scaling Di(t) ∼ t2 for small time scales t+ ≪ TS+ with the mean shear-based characteristic time scale 1 /⟨S⟩+ 
+
+> y
+
+.For times t+ ≳ TS+ , we either observe a crossover to a diffusive scaling Di(t) ∼ t for the wall-normal and span-wise directions, or a superdiffusive scaling of Di(t) ∼ t3
+
+for the streamwise direction (and thus for the total dis-persion). This scaling behavior is similar to the HSF benchmark case, where such an intermediate superdiffu-sive scaling was observed for all space directions. We suspect that the absence of a superdiffusive dispersion for wall-normal and spanwise directions is caused by the shear rate dependence on y+. The present TCF disper-sion behavior has also been observed in previous DNS studies, e.g. by Polanco et al. [58]. Note that for the present case the mean shear rate depends on the dis-tance form the wall (or ground); the shear scale TS+ is an average measure as given in Eq. (64). Eventually, for t+ ≫ TS+ , we obtain a diffusive scaling in stream-wise and wall-normal directions. The level-off for Dy (t)is caused by the constraining of the vertical motion in the lower half channel. We again find very good agreement in the pair-dispersion statistics for all three methods. A cubic scaling of the pair dispersion is otherwise ob-tained from the classical Kolmogorov-Obukhov (K41) theory of the inertial cascade range of turbulence [65], see also [66, 67]. Starting point is dD
+
+dt = τ (ℓ)⟨(δℓu)2⟩ , (65) 15                 
+
+> FIG. 9. Lagrangian particle pair dispersion curves. We compare a classical stochastic model (SDE) with a classical and quantum-enhanced Markov chain Monte Carlo method. We seed 3000 Lagrangian tracer particles in pairs at ini-tial positions X(k)+ (0) = [0 ,500 , L +
+> z/2] T,˜X(k)+ (0) = [0 ,500 + 16 η+, L +
+> z/2] Tand sampled initial velocity and acceleration (u′(k)(0) ,a(k)(0)) T∼ N (0,ˆΣzz (y+0)).
+
+with an eddy turnover time scale at scale ℓ of τ (ℓ) = 
+
+ε−1/3ℓ2/3 and a second-order velocity increment mo-ment of ⟨(δℓu)2⟩ = C2ε2/3ℓ2/3. This leads to d D/ dt =
+
+C2ε1/3ℓ4/3. Inserting ℓ = √D into Eq. (65) yields 
+
+D(t) = C2
+
+27 εt 3 . (66) The constant C2 ≈ 2, such that the prefactor gK41 =
+
+C2/27 ≈ 0.07 [23]. Here, we obtain g ≃ 0.13. We mention that such an intermediate scaling D ∼ tα with α ≃ 3 to 4, as seen here for HSF and TCF, is observed in other flows, such as turbulent convection [68, 69]. Figure 10 compares the time series of the three veloc-ity fluctuation components, generated by the three algo-rithms that are compared with each other. A zoom to the right of each panel shows that the time series generated by QE-MCMC method are comparable the correspond-ing classical counterparts. We observed less rejections in the QE-MCMC case than in the MCMC case, which generated slightly smoother time series. We can conclude that a small number of qubits can generate synthetic time traces effectively. Next, we investigate the height dependence of the total dispersion. Figure 11 compares the results for the three methods and 5 different seeding positions of the tracer pairs, as indicated in the legend of the figure. All curves start with a ballistic scaling ∼ t2. A diffusive range with a t–scaling range is found for all data at the largest times. For intermediate seeding heights beyond the logarithmic region a crossover to a short superdiffusive scaling is de-tected, consistent with the findings in Fig. 9. It is also seen that all three methods give again nearly the same results.  
+
+> 4. Optimal parameters of the MCMC and QE-MCMC method
+
+For the turbulent channel flow case, we employ the same calibration strategies as in the HSF benchmark to determine the sampling parameters of both MCMC and QE-MCMC. Due to the height-dependent flow statistics, the classical MCMC proposal scales must be adapted lo-cally in y+, i.e. σ12 ,prop = σ12 ,prop (y+) and σ3,prop =
+
+σ3,prop (y+), in order to reproduce the prescribed height-dependent target statistics and the resulting dispersion behavior. In the QE-MCMC method, the finite quan-tum grid bounds are likewise chosen height-dependent via 
+
+amax ,i (y+) = 3 
+
+q
+
+( ˆΣaa )ii (y+) to accommodate the chang-16 
+
+FIG. 10. Time traces of the three components of the velocity fluctuation vector field, u′+ 
+
+> i
+
+. We compare the solution of the stochastic differential equation (SDE), with the classical and quantum-enhanced Markov chain Monte Carlo method, (MCMC) and (QE-MCMC). The left column shows the time traces for 1000 time units. The right column displays a zoom. The legend at the top holds for all panels. 
+
+FIG. 11. Total particle pair dispersion curves for different initial seeding heights, which are indicated in the legend on top of the panels. (a) Classical MCMC algorithm. (b) Stochastic model. (c) Quantum-enhanced MCMC algorithm. The temperature parameter T was set to 3.4 for the two-dimensional and 3.9 for the one-dimensional distribution. 
+
+ing acceleration variance across the channel. In con-trast, the remaining QE-MCMC circuit parameters can be kept constant over the height, i.e. ( θ12 , θ 3, T 12 , T 3) are selected globally, which indicates a stronger degree of pa-rameter transferability (generalization) of the quantum proposal mechanism compared to the classical random-walk proposal. For the turbulent channel flow considered here, the resulting optimal QE-MCMC parameters are 
+
+θ12 = 8 π/ 1024, θ3 = 33 π/ 2048, T12 = 3 .4, and T3 = 3 .9. We used p = 10 as in the shear-flow case. 
+
+5. Spectral gap analysis 
+
+Due to the wall-normal inhomogeneity of the turbu-lent channel flow, the acceleration statistics and thus the Markov transition mechanism depend on the instanta-neous wall distance. Consequently, we consider a height-conditioned transition probability Π( y+) and define the local spectral gap as δy (y+) = 1 − | λ2(Π( y+)) |, where 
+
+λ2 denotes the second-largest eigenvalue of Π( y+) in magnitude. In order to obtain a single scalar measure that is representative for the overall tracer dynamics, we introduce an effective spectral gap width by averag-ing δy (y+) with the wall-normal occupancy probability density pY (y+), 
+
+δ =
+
+Z
+
+pY (y+) δy (y+) d y+. (67) This weighted averaging accounts for the fact that dif-ferent wall-normal regions contribute unequally to the overall tracer dynamics. Here, pY (y+) is defined as the 17        
+
+> FIG. 12. Comparison of the effective spectral gap δ, as de-fined in Eq. (67), between classical MCMC and QE-MCMC as a function of the number of qubits per dimension Nqfor the TCF case. Here, the number of layers is p= 10 in the quantum algorithm.
+
+long-time empirical distribution of the tracer wall-normal coordinate Y +(t), 
+
+pY (y+) = lim  
+
+> T→∞
+
+1
+
+T
+
+Z T
+
+> 0
+
+δD
+
+ y+ − Y +(t) dt, (68) with δD denoting the Dirac delta distribution. This defi-nition ensures that δ reflects the turbulent mixing perfor-mance in those wall-normal regions correctly that are ac-tually visited by the tracers. Clearly, Eqns. (67) and (68) define a heuristic effective measure of the spectral gap. This indicator is applied consistently to both MCMC al-gorithms, enabling a direct comparison, however in a less rigorous sense than the original spectral gap. The comparison of the spectral gap for the classical and quantum-enhanced algorithm for qubit numbers per di-mension between 2 and 5 is reported in Fig. 12. Similar to the subsection in III.A, both methods use the same coarse grain level for a fair comparison. First, we find that the analysis is relatively insensitive with respect to the number of layers; here we take p = 10, which sug-gests that the expressivity cannot be further increased by enhancing the depth of the parametric circuit. Similar observations have been made in other applications cases, such as the solution of linear and nonlinear partial dif-ferential equations with variational quantum algorithms [46, 70]. The differences between classical and quantum algo-rithms become now significant for the highest resolutions as seen in Fig. 12. Differently to the HSF case, the most complex sampling task, the bivariate PDF at high-est resolutions clearly favors QE-MCMC for Nq ≥ 3, see again Fig. 4. The one-dimensional distribution tasks, in contrast, exhibit comparable spectral gaps for both methods.             
+
+> FIG. 13. Dependence of the effective spectral gap width on the sampling temperature Tfor a given qubit number 2 ≤
+> Nq≤5. Top: Data for the joint PDF of a′
+> xand a′
+> y. Bottom: Data for the PDF of a′
+> z. In both panels, the spectral gap for the classical MCMC algorithm is added for comparison.
+
+The sampling temperature T was chosen to 3.4 and 3.9 for the two- and one-dimensional sampling task, respec-tively. These are the same parameters which have been used for the calculation of the dispersion curves in Fig. 9. Nevertheless, it is interesting to take a closer look at this free parameter in the present case, which does not stand for a real temperature as in the original canonical equilibrium ensemble in applications in condensed matter physics (cf. Eq. (2)). The role of T can be understood from two complementary perspectives. From an algorithmic point of view, the higher the sam-pling temperature T , the more broadly the Markov chain will explore new accelerations. Smaller sampling temper-atures cause a narrower target distribution and thus a more conservative selection with higher rejection rates, cf. Eq. (22). This is clearly visible in Fig. 13 for Nq > 2and for both sampling tasks. If the temperature param-eter is enhanced too strongly, however, the tracks of the velocity fluctuations will become too noisy. See also our discussion in subsection III.A.4. From a representation point of view, in the QE-MCMC case, the acceleration space for each component is rep-resented using only a few qubits, resulting in a coarse discretization of the possible acceleration values for the 18                                                                     
+
+> Time per step and particle Wallclock time for NPa ×T= 3 ·10 7
+> HSF SDE tSDE ≈2.381 ·10 −7stSDE ≈7.14 s MCMC tMCMC ≈3.465 ·10 −7stMCMC ≈10 .39 s QE-MCMC tQE −MCMC ≈1.699 ·10 −6stQE −MCMC ≈50 .96 s Time per step and particle Wallclock time for NPa ×T= 3 ·10 8
+> TCF SDE tSDE ≈5.607 ·10 −7stSDE ≈168 s MCMC tMCMC ≈1.770 ·10 −6stMCMC ≈531 s QE-MCMC tQE −MCMC ≈7.490 ·10 −6stQE −MCMC ≈2247 s TABLE I. Wallclock time comparison of the three algorithms for the two cases, HSF and TCF. NPa is the number of particles and Tis the number of time steps. All comparisons are run on a single CPU.
+
+sampler. The nominal target may then be too sharply localized on this coarse grid and only a small number of discrete states receive a significant probability weight. The Markov chain has little room to explore the state space, in particular the tails of the distribution, and many quantum-generated proposals may land in states that are strongly penalized. This rationalizes why the tempered version works better. Importantly, at the reference value T = 2, the tem-pered target distribution reduces exactly to the original Gaussian distribution, so that QE-MCMC and classical MCMC operate under identical target statistics. This implies that any remaining differences in the spectral gap at T = 2 are not caused by tempering, but re-flect differences in the underlying transition mechanism of the Markov chain itself. In particular, for the bivariate sampling task the QE-MCMC already exhibits a larger spectral gap than the classical MCMC, whereas for the one-dimensional case the spectral gap of the QE-MCMC remains slightly smaller. At the same time, we still em-ploy a tempered setting in this work, since it yields more robust dispersion statistics for the considered flow cases. In summary, we could show that the quantum-enhanced MCMC algorithm yields a bigger effective spec-tral gap δ in case of the channel flow case with sampling from the most complex distribution in our applications, 
+
+p(a)2D (a+ 
+
+> x
+
+, a + 
+
+> y
+
+|y+). Thus, our findings indicate an advan-tage of the quantum-enhanced case in comparison to the classical one for exactly those sampling problems that define potential future applications, namely complex dis-tributions that depend on several variables.  
+
+> 6. Runtime comparison
+
+To further assess the practical relevance of the pro-posed approach, we compare their computational cost in terms of wall-clock time. Table I summarizes the run-times of the SDE, classical MCMC, and QE-MCMC al-gorithms for both caes, HSF and TCF flow. The results show that, on current classical hardware, the QE-MCMC algorithm is computationally more ex-pensive than both, SDE and classical MCMC approaches. This is expected, as the quantum-enhanced sampling pro-cedure involves additional overhead related to the circuit-based proposal generation and its emulation on classical processors. In contrast, the classical algorithms benefit from highly optimized implementations and efficient use of standard hardware architectures. We note that the reported timings are obtained us-ing optimized classical implementations based on just-in-time compilation [71]. In test cases without such op-timization, the runtime differences between the meth-ods become less pronounced, indicating that classi-cal algorithms currently benefit more strongly from established hardware-specific acceleration techniques. This highlights that the present comparison is influ-enced by the maturity of classical computing frame-works, whereas comparable optimization strategies for quantum-enhanced algorithms are not yet available. Thus, the runtime comparison must be interpreted with care. First, the present implementation does not yet benefit from actual quantum hardware acceleration, but relies on classical simulation of quantum circuits. Secondly, the advantage of QE-MCMC is not primarily reflected in raw wall-clock time, but rather in its sam-pling dynamics, as characterized by the spectral gap. In particular, for sampling tasks from more complex dis-tributions, the QE-MCMC algorithm exhibits improved mixing properties. Note also that the ratio of wallclock times tQE −MCMC /t MCMC = drops from 4.9 for the HSF case to 4.2 for the TCF case. We therefore interpret the current findings as a proof of concept: while QE-MCMC is not yet competitive in terms of computational cost at the present technolog-ical stage, it already demonstrates favorable algorith-mic properties for complex, strongly correlated sampling problems that are beyond the reach of simple factorized models. In this sense, the QE-MCMC approach should be viewed as complementary rather than competitive un-der current technological constraints.  
+
+> IV. SUMMARY AND OUTLOOK
+
+The main objective of the present work was to ap-ply a hybrid quantum-classical algorithm for the sam-pling of fluctuations of the acceleration components from 19 well-resolved probability density functions that depend on several variables. These fluctuations are used to gen-erate synthetic Lagrangian tracer tracks in two turbulent shear flow cases. These are (1) a homogeneous shear flow (HSF) – a turbulent shear flow, which is characterized by a uniform shear rate – and (2) a turbulent boundary layer flow, which was taken from the lower half-channel of a turbulent plane Poiseuille channel flow (TCF). In the second test case, data have to be sampled from a dis-tribution that depends on more variables since the shear rate S(y) is a function of the distance from the wall y;the shear rate is highest at the wall and decreases to zero at the center plane. The present work extends our previ-ous study by Ingelmann et al. [18]. Both are to the best of our knowledge the first applications of quantum com-puting to Lagrangian fluid turbulence (which considers the fluid motion in a frame of reference that is co-moving with fluid parcels). The statistical analysis of the synthetic Lagrangian tracer tracks was focused on the scaling of particle pair dispersion with respect to time. This is a central quan-tity that characterizes the turbulent mixing properties in a turbulent flow as the prefactor in the corresponding law quantifies the scale-dependent turbulent diffusivity. Since turbulent shear flows are anisotropic, these disper-sions scale differently with respect to different directions in space. For short times, all algorithms give a ballistic scaling, D(t) ∼ t2. For the largest times, we obtain a diffusive scaling, Di(t) ∼ t. At intermediate time scales of the order of the shear time scale, we find a superdiffu-sive scaling of the mean pair dispersion, D(t) ∼ tα with exponents α ≃ 3 to 4. The main reason for the lat-ter scaling are the streamwise streaky structures of size 
+
+ℓcorr , which we implemented in the stochastic model via the correlation decay term in the otherwise featureless synthetic fields. To summarize, the introduction of de-caying spatial correlations and two time scales, τi and 
+
+τη < τ i, are thus already capable to generate realistic Lagrangian turbulent dispersion. The two-layer stochastic model is based on the veloc-ity fluctuation statistics, which we obtained in both cases from simulation data. Velocity fluctuation statistics is used to infer acceleration statistics, which is required for the stochastic equation system. The latter is thus also Gaussian in the present stochastic approach. It is known that accelerations are typically non-Gaussian distributed [21]. This would require a extension of the present two-layer stochastic model to multiple layers (and thus re-gressive equations), thus introducing a whole hierarchy of time scales of the turbulent flow, as discussed in Vig-giano et al. [26]. Such a more realistic model goes beyond the scope of the present proof-of-concept study, but will be investigated further in the future. However, we could demonstrate the applicability of the hybrid quantum-classical generative algorithm for a use case from classical fluid dynamics. The present quan-tum sampling algorithm requires a one-shot measurement only that keeps the query complexity in applications low. A further positive aspect is that the method operates al-ready robustly with a low number of qubits (here Nq = 5 or 6) and is thus appropriate for the present noisy inter-mediate scale quantum devices. A significantly larger effective spectral gap in QE-MCMC than MCMC for the bivariate PDF of the more complex TCF case suggests an advantage of the quantum algorithm in comparison to its classical counterpart. It is seen for the TCF tempered sampling cases with best res-olution due to largest qubit number, see Fig. 12. In con-trast, wall-clock measurements indicate that the current QE-MCMC implementation is computationally more ex-pensive than the classical MCMC approach, which re-flects the additional overhead of the circuit-based pro-posal generation and its classical emulation rather than an intrinsic limitation of the sampling strategy itself. If this finding is robust for other flow cases needs to be explored in future investigations. This would encourage further QE-MCMC applications in more complex flow configurations. These would generate joint distributions that depend on more physical variables and parameters, i.e., involve more degrees of freedom. An example can be the particle transport in rotating spherical-shell and buoyancy-driven turbulent flows. These investigations are in progress and will be reported elsewhere. It also remains to be clarified whether a quantum com-puting module, such as the present Lagrangian one which processes a smaller subtask for many tracers, can be inte-grated into a larger classical high-performance comput-ing framework for turbulent fluid flow. In particular, the potential of quantum-centric supercomputing platforms, where a quantum processor is coupled to a classical HPC system, for modeling turbulent transport of pollutants, aerosols, or chemical species in a hybrid Earth system model remains an open question. The present work rep-resents, in our view, a first promising step in this direc-tion. 
+
+> ACKNOWLEDGEMENTS
+
+The work is funded by the European Union (ERC, MesoComp, 101052786). Views and opinions expressed, however, are those of the authors only and do not neces-sarily reflect those of the European Union or the Eu-ropean Research Council. F.S. is supported by the Deutsche Forschungsgemeinschaft (DFG). The work ben-efited from helpful discussions with Sachin S. Bharadwaj and Katepalli R. Sreenivasan. 
+
+> DATA AVAILABILITY
+
+The input data for the homogeneous shear flow case are found in Zenodo [72]. The input data for the turbulent channel case have been taken from the Johns Hopkins Turbulence Database (JHTDB) [59]. These are the chan-nel flow data at Re τ = 1000 [8]. The Python scripts for 20 processing the data and the MCMC and QE-MCMC al-gorithms in this manuscript are found in a further repos-itory in Zenodo. 
+
+Appendix A: Diffusion matrix ˆG from velocity fluctuation covariance ˆΣu′u′
+
+In this appendix, we explain in brief how the diffusion matrix ˆG in the SDE for the accelaration components is inferred in our approach from the velocity fluctuation covariance ˆΣu′u′ , the latter of which can be extracted from the simulation data bases, see also ref. [73] for de-tails. We use the compact block matrix notation for the following and summarize Eqs. (26) and (27) to dz = ˆA z dt + ˆB dW (A1) with 
+
+z =
+
+ au′
+
+
+
+, ˆA =
+
+ − ˆT ˆI
+
+ˆI − 1
+
+τη
+
+ˆI
+
+ , ˆB =
+
+ 0ˆG
+
+
+
+, (A2) containing identity matrix ˆI and matrix ˆT with the auto-correlation times of the three components of the velocity fluctuation vector field, ˆT = diag( τ1, τ 2, τ 3). Next, we define the covariance block matrix for z as follows, ˆΣzz =
+
+ ˆΣu′u′ ˆΣu′a
+
+ˆΣau ′ ˆΣaa 
+
+
+
+∈ R6×6 . (A3) Here, ˆΣ = ˆΣu′u′ to distinguish it better from the re-maining matrices. The covariance matrix ˆΣzz satisfies the Lyapunov equation [73], which is given by d ˆΣzz 
+
+dt = ˆA ˆΣzz + ˆΣzz ˆAT + ˆB ˆBT . (A4) We seek statistically steady distributions, such that the left hand side of (A4) is zero. In detail, we get with ˆΣau ′ = ˆΣu′a the following terms, ˆA ˆΣzz = − ˆT −1 ˆΣu′u′ + ˆΣu′a′ − ˆT −1 ˆΣu′a + ˆΣaa 
+
+− 1
+
+> τη
+
+ˆΣu′a − 1
+
+> τη
+
+ˆΣaa 
+
+!
+
+ˆΣzz ˆAT = − ˆΣu′u′ ˆT −1 + ˆΣu′a − 1
+
+> τη
+
+ˆΣu′a
+
+− ˆΣu′a ˆT −1 + ˆΣaa − 1
+
+> τη
+
+ˆΣaa 
+
+!
+
+ˆB ˆBT =
+
+ 0 00 ˆG ˆGT
+
+
+
+.
+
+We can solve the steady Lyapunov equation blockwise: tl : ˆΣu′a = 12 ( ˆT −1 ˆΣu′u′ + ˆΣu′u′ ˆT −1) (A5) tr : ˆΣaa =
+
+
+
+ˆT −1 + 1
+
+τη
+
+ˆI
+
+
+
+ˆΣu′a (A6) bl : ˆΣaa = ˆΣu′a
+
+
+
+ˆT −1 + 1
+
+τη
+
+ˆI
+
+
+
+(A7) br : ˆG ˆGT = 2
+
+τη
+
+Σaa , (A8) where tl stands for top left, tr for top right, bl for bottom left, and br for bottom right, respectively. Combining the conditions bl and tl in br, one ends up with ˆG ˆGT = 1
+
+τη
+
+
+
+ˆT −1 + 1
+
+τη
+
+ˆI
+
+
+
+( ˆT −1 ˆΣu′u′ + ˆΣu′u′ ˆT −1) ,
+
+(A9) which connects ˆG and ˆΣu′u′ and allows to calculate the components of the diffusion matrix ˆG.
+
+[1] C. M. Bishop, Pattern recognition and machine learning 
+
+(Springer, New York, 2006). [2] N. Metropolis, A. W. Rosenbluth, M. N. Rosenbluth, A. H. Teller, and E. Teller, Equation of state calcula-tions by fast computing machines, J. Chem. Phys. 21 ,1087 (1953). [3] W. K. Hastings, Monte Carlo sampling methods using Markov chains and their applications, Biometrika 57 , 97 (1970). [4] J. A. Vrugt, C. J. F. ter Braak, C. G. H. Diks, and G. Schoups, Hydrologic data assimilation using particle Markov chain Monte Carlo simulation: Theory, concepts and applications, Adv. Water Resour. 51 , 457 (2013). [5] F. Zuccarello, G. Bilotta, F. Cannav` o, A. Cappello, R. Guardo, and G. Ganci, A Markov Chain Monte Carlo approach for complex lava flow simulations driven by satellite-derived data, Environ. Model. Softw. 188 ,106426 (2025). [6] M. Cerezo, A. Arrasmith, R. Babbush, S. C. Benjamin, S. Endo, K. Fujii, J. R. McClean, K. Mitarai, X. Yuan, L. Cincio, and P. J. Coles, Variational quantum algo-rithms, Nat. Rev. Phys. 3, 625 (2021). [7] T. L. Patti, O. Shehab, K. Najafi, and S. F. Yelin, Markov chain Monte Carlo enhanced variational quantum algo-rithms, Quantum Sci. Technol. 8, 015019 (2023). [8] J. Graham, K. Kanov, X. I. A. Yang, M. K. Lee, N. Malaya, C. C. Lalescu, R. Burns, G. Eyink, A. Szalay, R. D. Moser, and C. Meneveau, A Web Services - acces-sible database of turbulent channel flow and its use for testing a new integral wall model for LES, J. Turb. 17 ,181 (2016). [9] M. Nielsen and I. Chuang, Quantum Computation and Quantum Information: 10th Anniversary Edition (Cam-bridge University Press, 2011). 21 
+
+[10] F. Arute, K. Arya, and R. Babbush et al., Quantum supremacy using a programmable superconducting pro-cessor, Nature 574 , 505 (2019). [11] D. S. Wild, D. Sels, H. Pichler, C. Zanoci, and M. D. Lukin, Quantum sampling algorithms for near-term de-vices, Phys. Rev. Lett. 127 , 100504 (2021). [12] D. Layden, G. Mazzola, R. V. Mishmash, M. Motta, P. Wocjan, J.-S. Kim, and S. Sheldon, Quantum-enhanced Markov-chain Monte Carlo, Nature 619 , 282 (2023). [13] D. A. Levin and Y. Peres, Markov chains and mixing times: Second edition (American Mathematical Society, Providence, RI, 2017). [14] Y. Nakano, H. Hakoshima, K. Mitarai, and K. Fujii, Markov-chain Monte Carlo method enhanced by a quan-tum alternating operator ansatz, Phys. Rev. Res. 6,033105 (2024). [15] A. Orfi and D. Sels, Bounding speedup of quantum-enhanced Markov chain Monte Carlo, Phys. Rev. A 110 ,052414 (2024). [16] Y. Nakano, K. N. Okada, and K. Fujii, Neural-network-assisted Monte Carlo sampling trained by quantum ap-proximate optimization algorithm, PRX Quantum 7,010338 (2026). [17] S. Ferguson and P. Wallden, Quantum-enhanced Markov chain Monte Carlo for systems larger than a quantum computer, Phys. Rev. Res. 7, 013231 (2025). [18] J. Ingelmann, F. Schindler, and J. Schumacher, Quantum-assisted Lagrangian tracer dispersion in tur-bulent shear flow, Phys. Fluids 37 , 085251 (2025). [19] J. Kim, P. Moin, and R. D. Moser, Turbulence statistics in fully developed channel flow at low Reynolds number, J. Fluid Mech. 177 , 133 (1987). [20] P. K. Yeung, Lagrangian investigations of turbulence, Annu. Rev. Fluid Mech. 34 , 115 (2002). [21] F. Toschi and E. Bodenschatz, Lagrangian properties of particles in turbulence, Annu. Rev. Fluid Mech. 41 , 375 (2009). [22] K. R. Sreenivasan and J. Schumacher, Lagrangian views on turbulent mixing of passive scalars, Phil. Trans. R. Soc. A 368 , 1561 (2010). [23] I. M. Mazzitelli, F. Fornarelli, A. S. Lanotte, and P. Oresta, Pair and multi-particle dispersion in numeri-cal simulations of convective boundary layer turbulence, Phys. Fluids 26 , 055110 (2014). [24] I. M. Mazzitelli, F. Toschi, and A. S. Lanotte, An accu-rate and efficient Lagrangian sub-grid model, Phys. Flu-ids 26 , 095101 (2014). [25] B. L. Sawford, Reynolds number effects in Lagrangian stochastic models of turbulent dispersion, Phys. Fluids A 3, 1577 (1991). [26] B. Viggiano, J. Friedrich, R. Volk, M. Bourgoin, R. Bayo` an Cal, and L. Chevillard, Modelling Lagrangian velocity and acceleration in turbulent flows as infinitely differentiable stochastic processes, J. Fluid Mech. 900 ,A27 (2020). [27] F. T. M. Nieuwstadt, A large-eddy simulation of a line source in a convective atmospheric boundary layer – I. Dispersion characteristics, Atmos. Environ. 26A , 485 (1992). [28] A. Dosio and J. Vil` a-Guerau de Arrelano, Statistics of absolute and relative dispersion in the atmospheric con-vective boundary layer: A large-eddy simulation study, J. Atmos. Sci. 63 , 1253 (2006). [29] A. F. Stein, R. R. Draxler, G. D. Rolph, B. J. B. Stunder, M. D. Cohen, and F. Ngan, NOAA’s HYSPLIT atmo-spheric transport and dispersion modeling system, Bull. Am. Meteor. Soc. 96 , 2059 (2015). [30] L. Hoffmann, G. G¨ unther, D. Li, O. Stein, X. Wu, S. Griessbach, Y. Heng, P. Konopka, R. M¨ uller, B. Vogel, and J. S. Wright, From ERA-Interim to ERA5: the con-siderable impact of ECMWF’s next-generation reanaly-sis on Lagrangian transport simulations, Atmos. Chem. Phys. 19 , 3097 (2019). [31] L. Hoffmann, T. R¨ oßler, S. Griessbach, Y. Heng, and O. Stein, Lagrangian transport simulations of volcanic sulfur dioxide emissions: Impact of meteorological data products, J. Geophys. Res. Atmos. 121 , 4651 (2016). [32] M. Lubasch, J. Joo, P. Moinier, M. Kiffner, and D. Jaksch, Variational quantum algorithms for nonlinear problems, Phys. Rev. A 101 , 010301 (2020). [33] B. N. Todorova and R. de Steijl, Quantum algorithm for the collisionless Boltzmann equation, J. Comp. Phys. 
+
+409 , 109347 (2020). [34] F. Gaitan, Finding flows in a Navier-Stokes fluid through quantum computing, npj Quantum Inf. 6, 61 (2021). [35] L. Budinski, Quantum algorithm for the advec-tion–diffusion equation simulated with the Lattice Boltz-mann method, Quantum Inf. Process. 20 , 57 (2021). [36] P. Pfeffer, F. Heyder, and J. Schumacher, Hybrid quantum-classical reservoir computing of thermal con-vection flow, Phys. Rev. Res. 4, 033176 (2022). [37] P. Pfeffer, F. Heyder, and J. Schumacher, Reduced-order modeling of two-dimensional turbulent Rayleigh-B´ enard flow by hybrid quantum-classical reservoir computing, Phys. Rev. Res. 5, 043242 (2023). [38] S. S. Bharadwaj and K. R. Sreenivasan, Hybrid quantum algorithms for flow problems, Proc. Natl. Acad. Sci. USA 
+
+120 , e2311014120 (2023). [39] D. Jaksch, P. Givi, A. J. Daley, and T. Rung, Variational quantum algorithms for computational fluid dynamics, AIAA J. 61 , 1885 (2023). [40] Z. Meng and Y. Yang, Quantum computing of fluid dy-namics using the hydrodynamic Schr¨ odinger equation, Phys. Rev. Res. 5, 033182 (2023). [41] J. Ingelmann, S. S. Bharadwaj, P. Pfeffer, K. R. Sreeni-vasan, and J. Schumacher, Two quantum algorithms for solving the one-dimensional advection–diffusion equa-tion, Comput. Fluids 281 , 106369 (2024). [42] O. Ahmed, F. Tennie, and L. Magri, Prediction of chaotic dynamics and extreme events: A recurrence-free quan-tum reservoir computing approach, Phys. Rev. Res. 6,043082 (2024). [43] A. J. Pool, A. D. Somoza, C. Mc Keever, M. Lubasch, and B. Horstmann, Nonlinear dynamics as a ground-state so-lution on quantum computers, Phys. Rev. Res. 6, 033257 (2024). [44] P. Brearley and S. Laizet, Quantum algorithm for solv-ing the advection equation using Hamiltonian simulation, Phys. Rev. A 110 , 012430 (2024). [45] Z. Meng, J. Zhong, S. Xu et al., Simulating unsteady flows on a superconducting quantum processor, Com-mun. Phys. 7, 349 (2024). [46] N. K¨ ocher, H. Rose, S. S. Bharadwaj, J. Schumacher, and S. Schumacher, Numerical solution of nonlin-ear Schr¨ odinger equation by a hybrid pseudospectral-variational quantum algorithm, Sci. Rep. 15 , 23478 (2025). 22 
+
+[47] S. S. Bharadwaj and K. R. Sreenivasan, Compact quan-tum algorithms for time-dependent differential equations, Phys. Rev. Res. 7, 023262 (2025). [48] P. Over, S. Bengoechea, T. Rung, F. C. L. Scandurra, E. de Villiers, and D. Jaksch, Boundary treatment for variational quantum simulations of partial differential equations on quantum computers, Comput. Fluids 288 ,106508 (2025). [49] P. Pfeffer, P. Brearley, S. Laizet, and J. Schumacher, Spectral quantum algorithm for passive scalar transport in shear flows, Sci. Rep. 15 , 41172 (2025). [50] S. S. Bharadwaj and K. R. Sreenivasan, Quantum com-putation of fluid dynamics, Indian Academy of Sciences Conference Series 3, 77 (2020). [51] S. Succi, W. Itani, K. R. Sreenivasan, and R. Steijl, Quantum computing for fluids: Where do we stand?, Eu-rophys. Lett. 144 , 10001 (2023). [52] F. Tennie, S. Laizet, S. Lloyd, and L. Magri, Quantum computing for nonlinear differential equations and tur-bulence, Nat. Rev. Phys. 7, 1 (2025). [53] P. Shen and P. K. Yeung, Fluid particle dispersion in homogeneous turbulent shear flow, Phys. Fluids 9, 3472 (1997). [54] S. B. Pope, Stochastic Lagrangian models of velocity in homogeneous turbulent shear flow, Phys. Fluids 14 , 1696 (2002). [55] J. Schumacher and B. Eckhardt, Derivative moments in stationary homogeneous shear turbulence, J. Fluid Mech. 
+
+441 , 109 (2001). [56] J. Schumacher, Relation between shear parameter and Reynolds number in statistically stationary turbulent shear flows, Phys. Fluids 16 , 3094 (2004). [57] S. B. Pope, Turbulent Flows (Cambridge University Press, Cambridge, UK, 2000). [58] J. I. Polanco, I. Vinkovic, N. Stelzenmuller, N. Mordant, and M. Bourgoin, Relative dispersion of particle pairs in turbulent channel flow, Int. J. Heat Fluid Flow 71 , 231 (2018). [59] Y. Li, E. Perlman, M. Wan, Y. Yang, C. Meneveau, R. Burns, S. Chen, A. Szalay, and G. Eyink, A public turbulence database cluster and applications to study La-grangian evolution of velocity increments in turbulence, J. Turb. 9, N31 (2008). [60] J. Schumacher and B. Eckhardt, On statistically station-ary homogeneous shear turbulence, Europhys. Lett. 52 ,627 (2000). [61] P. Gualtieri, C. M. Casciola, R. Benzi, G. Amati, and R. Piva, Scaling laws and intermittency in homogeneous shear flow, Phys. Fluids 14 , 583 (2002). [62] S. C. C. Bailey and A. J. Smits, Experimental investi-gation of the structure of large- and very-large-scale mo-tions in turbulent pipe flow, J. Fluid Mech. 651 , 339 (2010). [63] A. J. Smits and I. Marusic, Wall-bounded turbulence, Phys. Today 66 , 25 (2013). [64] D. J. Higham and P. E. Kloeden, An Introduction to the Numerical Simulation of Stochastic Differential Equa-tions (SIAM, Philadelphia, 2021). [65] A. M. Obukhov, Distribution of energy in the spectrum of turbulent flow, Izv. Akad. Nauk Ser. Geogr. i Geophys. 
+
+4-5 (1941). [66] G. Boffetta and I. M. Sokolov, Statistics of two-particle dispersion in two-dimensional turbulence, Phys. Fluids 
+
+14 , 3224 (2002). [67] B. Birnir and L. Angheluta, Scaling of Lagrangian struc-ture functions, Phys. Rev. Res. 7, 023225 (2025). [68] J. Schumacher, Lagrangian dispersion and heat transport in convective turbulence, Phys. Rev. Lett. 100 , 134502 (2008). [69] M. Ettel, R. J. Samuel, M. Chertkov, and J. Schumacher, Lagrangian single-particle, multi-particle and topolog-ical analyses in turbulent Rayleigh-B´ enard convection, arXiv:2605.22326 10.48550/arXiv.2605.22326 (2026). [70] T. Gubaev, P. Pfeffer, C. Dreßler, and J. Schu-macher, Variational quantum algorithm for anion ex-change across electrolyzer membrane, arXiv:2512.01120 10.48550/arXiv.2512.01120 (2025). [71] S. K. Lam, A. Pitrou, and S. Seibert, Numba: A llvm-based python jit compiler, in Proceedings of the Second Workshop on the LLVM Compiler Infrastructure in HPC 
+
+(ACM, 2015) pp. 1–6. [72] J. Ingelmann, F. Schindler, and J. Schumacher, https: //zenodo.org/records/16035235 (2025). [73] S. S¨ arkk¨ a and A. Solin, Applied Stochastic Differential Equations (Cambridge University Press, Cambridge, UK, 2019).

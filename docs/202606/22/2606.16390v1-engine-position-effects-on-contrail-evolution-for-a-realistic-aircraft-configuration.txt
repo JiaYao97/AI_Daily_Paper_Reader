@@ -1,0 +1,819 @@
+Title: Engine position effects on contrail evolution for a realistic aircraft configuration
+
+URL Source: https://arxiv.org/pdf/2606.16390v1
+
+Published Time: Tue, 16 Jun 2026 02:27:44 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+# Engine position e ff ects on contrail evolution for a realistic aircraft configuration 
+
+# R´ emy Annunziata ⋆, Nicolas Bonne ⋆, Franc ¸ois Garnier ‡
+
+Abstract: This study investigates the influence of representative engine positions on contrail evolution during the vortex and dissipation regimes, using three-dimensional simulations of a realistic aircraft geometry. Large Eddy Simulations are employed, coupled with an Eulerian microphysical bulk model, and initialized using fields obtained from prior Reynolds-Averaged Navier-Stokes simulations. This approach enables a consistent transition from near-field jet-vortex interactions to far-field wake dynamics. Three engine placements are examined under two atmospheric stratifications and two relative humidity conditions. The results reveal that engine position influences the onset and evolution of vortex instabilities, alters the descent of the vortex pair, and leads to slight changes in the distribution of particles within the wake. Despite these aerodynamic di ff erences, the microphysical properties of the contrails tend to converge over time for the parameters and con-figurations covered in this study. From a broader perspective, engine placement strongly influences initial contrail formation and early vortex-regime dynamics. At later stages, these di ff erences largely disappear, as vortex dynamics and atmospheric conditions dominate over the initial dilution changes induced by engine position. 
+
+# 1 Introduction 
+
+Aircraft-induced condensation trails (contrails) represent a significant factor in aviation’s non-CO 2 environmental impact [1]. Once formed, contrails a ff ect the Earth’s radiative balance through dual mechanisms: they reflect incoming solar radiation while simultaneously trapping terrestrial infrared radiation [2]. An intricate interplay between ambient atmospheric condi-tions and aircraft-specific factors dictates their formation and evolution, resulting in substantial variability in their spatial extent, lifetime, and optical properties. This variability poses challenges in precisely quantifying their net climatic impact. Nevertheless, current assessments suggest that the best estimate e ff ective radiative forcing from contrail cirrus (i.e., persistent contrails) is about 1.67 times that of aviation CO 2, albeit with substantial uncertainty [3]. Given their substantial contribution to anthropogenic climate forcing, research on contrails focuses on refining our understanding of the mechanisms governing their formation and dissipation and identifying viable mitigation strategies to minimize their climatic footprint [4]. The early-stage evolution of a contrail is inherently tied to the dynamics of the aircraft wake. This evolution can be classified into four distinct regimes [5]. The first of these stages is the jet regime, during which the contrail is formed. While the engine exhaust dilutes with ambient air, gases and particles cool su ffi ciently to act as nucleation sites. Water vapor, either emitted directly by the engines or already present in the atmosphere, condenses onto these nuclei and freezes under the given thermodynamic conditions to form ice crystals. Potential nucleation sites include soot particles [6], generated from kerosene combustion in fuel-rich conditions, as well as potentially on secondary aerosols [7]. The wake evolution, in this regime, is primarily governed by interactions between the propulsive jet and the wingtip vortex. Its study involves a range of modeling approaches. Box models resolve detailed microphysical processes [8, 9], but are typically driven o ffl ine using prescribed mean dilution rates or trajectories derived from flow simulations. As a consequence, they have limited capability to represent the wake dilution accurately and to capture its feedback on microphysics. By contrast, jet-regime simulations based on Computational Fluid Dynamics (CFD), such as Reynolds-Averaged Navier-Stokes (RANS) [10, 11] or Large-Eddy Simulation (LES) [12, 13], provide a more realistic description of aircraft-induced dilution with online microphysics coupling. However, the representation of the microphysical processes remains simplified in these approaches. Once the propulsive jet is entirely under the vortex dynamics, the vortex regime begins. A fraction of the ice crystals becomes entrained within the descending vortex pair. The gases undergo adiabatic compression, which heats the particles and causes sublimation. Meanwhile, another portion of the ice crystals ascends back to flight altitude, driven by the upward 1
+
+> arXiv:2606.16390v1 [physics.flu-dyn] 15 Jun 2026
+
+convection of vorticity and thus forming the secondary wake. This separation is largely influenced by the interaction between the wake and the surrounding atmosphere. Baroclinic instabilities emerge as a result of misalignment between pressure and density gradients, leading to di ff erential vorticity advection that enhances vertical mixing [14]. As the vortex dipole continues its descent, it becomes susceptible to various instabilities. These include long-wave instabilities, such as the Crow instability [15], and short-wave instabilities, like the Widnall instability [16]. The onset of these instabilities signals the transition to the dissipation regime, during which the vortex dipole undergoes progressive breakdown. The vortex and dissipation regimes are typically analyzed using LES [17, 18], while often omitting the simulation of the jet regime. The vortex regime is typically initialized using an analytical Lamb-Oseen-type vortex combined with a Gaussian round jet [19, 20, 21]. Some studies, however, employ more realistic initial conditions, such as jet-vortex interactions derived from LES [22] or two-dimensional flow fields obtained from realistic aircraft configurations [23, 24]. Finally, the last regime, the dispersion regime, begins once the wake vortices have fully dissipated. In this regime, its behavior is dictated by ambient atmospheric conditions, including wind shear, atmospheric turbulence, and thermodynamic conditions [25, 26]. Contrail evolution during the first three regimes (jet, vortex, and dissipation) is therefore primarily governed by soot number emission index [27] and atmospheric conditions such as ambient temperature or humidity [28, 24]. These factors are expected to play a particularly important role in determining the number of ice crystals that survive vortex descent, which in turn strongly conditions the radiative impact of the contrail [25]. Although they play a more secondary role, the characteristics of the aircraft that generate the contrails also influence their evolution [29]. These characteristics correspond to design parameters that can, in principle, be modified. Key design factors include the aircraft size [30], which determines vortex circulation, as well as the relative positioning of the propulsive jets and the wingtip vortices [31]. From this perspective, the interaction between the propulsive jets and the wingtip vortices warrants particular attention, as it can be altered by modifying the engine’s position beneath the aircraft wing. Adjusting this position changes how the plume disperses within the aircraft’s wake, a ff ecting parameters such as species concentration, temperature, and dispersion patterns [32]. Additionally, the presence of a hot jet has significant aerodynamic e ff ects, bringing the vortices closer together and speeding up their descent [33]. Most studies on jet-vortex interactions have primarily focused on contrail formation rather than its long-term evolution. Within this context, the refs. [12, 34, 35] have demonstrated that modifying engine placement influences key contrail properties, such as particle activation and the final ice crystal size at the end of the jet regime. The latter two studies have considered a realistic aircraft configuration. Recent research by Saulgeot et al. [36] further underscores the substantial impact of jet-vortex interactions on contrail evolution during the vortex regime, o ff ering valuable insights into their behavior in the later stages of wake development. The study demonstrates that dynamic modifications induced by engine placement a ff ect the contrails optical properties under di ff erent atmospheric stratification conditions. In parallel, a separate study by Naiman et al. [21] indirectly explores similar e ff ects within a fully three-dimensional framework, comparing two distinct engine positions (corresponding to di ff erent aircraft with varying initial circulations) as well as a twin-engine configuration. These simulations, which extend up to twenty minutes, reveal a persistent sensitivity of contrail evolution to aircraft configuration over extended timescales. Limitations appear in both of these last studies addressing jet-vortex interactions during the vortex and dissipation regimes. The first limitation pertains to the study of Saulgeot et al. [36], which, although directly investigating the influence of en-gine position, relies on a two-dimensional framework. This assumption limits its applicability due to the inherently three-dimensional nature of wake dynamics through short- and long-wave instabilities, and the subsequent influence on contrail properties [37]. Furthermore, contrail ice microphysics is described using a simplified diagnostic framework, in which the vapor and ice phases are inferred from a passive scalar, while crystal growth is not explicitly modeled (i.e., the time-dependent growth of individual ice crystals is not resolved; instead, ice mass and e ff ective radius are diagnosed under a local thermo-dynamic equilibrium assumption). Another limitation, shared in both studies, lies in their initialization at the onset of the vortex regime. They are based on idealized conditions, using a Lamb-Oseen vortex model combined with a round jet, thereby neglecting the near-field e ff ects associated with realistic aircraft wake initial development. The impact of engine relocation on contrail properties at the end of the jet regime is then not considered. These include variations in dilution, ice crystal size, spatial distribution around the vortex, local supersaturation levels, and temperature fields, as highlighted in ref. [35]. This limitation in the initialization is, as previously mentioned, typical of studies addressing contrail evolution during the vortex and dissipation regimes. In most cases, the full aircraft geometry is only taken into account during the initial formation of the contrail in the jet regime [38]. However, a recently developed methodology [39, 40] o ff ers a means to bridge the gap between near-field simulations (i.e., RANS simulations), which incorporate realistic aircraft geometry, and the far-field simulations (i.e., LES) of the wake and resulting contrail. This advancement enables the use of a fully realistic aircraft configuration, enabling the resolution of key aerodynamic features, such as tail vortices, which can play a significant role in contrail de-velopment by promoting additional vortex instabilities [41, 40]. Furthermore, the method captures the wrapping of the jet around the vortex, a behavior that deviates from the idealized round jet assumption and more accurately represents the actual 2jet-vortex interactions occurring in the near field. Naturally, this method remains subject to several limitations, mainly from the simplified treatment of the disperse phase through a bulk microphysical representation [23, 42], which does not allow for an accurate representation of the crystal size distribution, and some limitations arising from the intrinsic constraints of the RANS and LES framework. It should be noted that the importance of accounting for such dynamical e ff ects on microphysi-cal properties remains di ffi cult to quantify precisely. However, Garnier et al. [43] highlight the influence of compressibility eff ects on crystal size, while Bouhafid et al. [40] demonstrate the importance of including tail vortices in determining plume dimensions. In this study, we aim to examine how engine position influences contrail evolution during the vortex and dissipation regimes, while consistently accounting for a realistic aircraft geometry and for the e ff ects of engine relocation on contrail formation in the jet regime. To this end, LES are carried out, initialized from preceding RANS computations [35], which explicitly model contrail formation for several engine positions using a fully three-dimensional representation of the aircraft. This approach captures the full aerodynamic complexity of the configuration, including the modified jet-vortex interactions induced by changes in engine location. The LES initialization employs the transition methodology proposed by Bouhafid et al. [39], which enables a consistent coupling between the RANS simulations in the near-field and the LES in the far-field. In the present study, the analysis is conducted for a single aircraft configuration with three distinct engine positions, under two di ff erent atmospheric stratification conditions on contrail development up to five minutes after the end of the jet regime. A primary objective of this work is to assess whether a modification of the initial plume dilution meaningfully alters subsequent contrail development in these later regimes. Particular attention is given to the role of engine positioning in shaping vortex dynamics, plume dispersion, and downstream e ff ects on contrail microphysics. The paper is structured as follows: section 2 details the computational methodology, followed by a description of the numerical configurations in section 3. The analysis of vortex dynamics and microphysical properties of induced contrails is presented in sections 4, 5, and 6. Finally, section 7 provides conclusions and a discussion of the findings and their limitations. 
+
+# 2 Methodology 
+
+# 2.1 Flow modeling 
+
+Numerical simulations are performed using CEDRE [44], a multi-physics computational platform, and in particular, the CHARME solver, a Navier-Stokes solver specifically designed for compressible and reactive flows. This solver utilizes a cell-centered finite volume method for unstructured meshes. LES are subsequently carried out by solving the filtered compressible Navier-Stokes equations: 
+
+∂∂t (ρ ˜Yk) + ∂∂xi
+
+(ρ˜ui ˜Yk) + ∂∂xi
+
+ ρ( guiYk − ˜ui ˜Yk) = ∂∂xi
+
+ρDk
+
+∂ ˜Yk
+
+∂xi
+
+!
+
++ ˙ωk (1) 
+
+∂∂t (ρ˜u j) + ∂∂xi
+
+(ρ˜ui ˜u j) + ∂∂xi
+
+ ρ( guiu j − ˜ui ˜u j) = − ∂p
+
+∂x j
+
++ ∂τ i j 
+
+∂xi
+
++ ρ fi (2) 
+
+∂∂t (ρ˜h) + ∂∂xi
+
+(ρ˜ui ˜h) = ∂p
+
+∂t + ˜ui
+
+∂p
+
+∂xi
+
++ ∂∂xi
+
+ρcpα ∂T
+
+∂xi
+
+− ρ( fuih − ˜ui ˜h)
+
+!
+
+− ∂∂xi
+
+X
+
+> k
+
+ρ˜hk Dk
+
+∂ ˜Yk
+
+∂xi
+
+− τi j 
+
+∂˜ui
+
+∂x j
+
+!
+
++ ρ fiui
+
+(3) where ρ, ui, p, T , Yk, ˙ ωk, τi j , and h represent the density, velocity components, static pressure, static temperature, species mass fraction, source term for species k, viscous stress tensor, and total enthalpy. The quantities Dk, hk, cp, α, and fi denote, respectively, the species di ff usion coe ffi cient, species enthalpy, specific heat capacity at constant pressure, thermal di ff usivity, and body-force components per unit mass. Dynamic viscosities are computed using Sutherland’s law, from which the kine-matic viscosity and the di ff usion coe ffi cient are derived through the Schmidt number. The specific heat capacity at constant pressure is evaluated using a temperature-dependent polynomial, while the thermal di ff usivity is obtained from Eucken’s law. The corresponding values can be found in refs. [10, 38, 11]. The species considered in the simulation are air, represented by a single mass fraction Yair , water vapor YH2O, and ice, represented within the bulk scheme by YH2O,s.Spatial filtering is applied to variables denoted as Φ through a convolution operation, while variables expressed as ˜ Φ = 
+
+ρΦ/ρ are filtered using a Favre average, a formulation particularly suitable for compressible flows. The subgrid-scale (SGS) 3terms that emerge from the spatial filtering of the Navier-Stokes equations, τsgs i j = ρ( guiu j − ˜ui ˜u j), represent momentum fluxes due to unresolved scales and are modeled using the Smagorinsky model, based on the Boussinesq hypothesis: 
+
+τsgs i j = −2νtS i j + 13 δi j τsgs kk (4) where νt denotes the turbulent eddy viscosity, defined as νt = (Cs∆)2|S |, with Cs = 0.1 and ∆ representing the filter cut-o ff 
+
+length. The term S i j corresponds to the shear rate tensor. Species flux, expressed as Jsgs i,k = ρ( gYkui − ˜Yk ˜ui), are modeled following a turbulent Fickian di ff usion approach, while a turbulent Fourier law describes subgrid enthalpy fluxes as qsgs i =
+
+ρcp(gT u i − ˜T ˜ui). These fluxes are computed using a gradient assumption: 
+
+Jsgs i,k = − νt
+
+S c t
+
+∂ ˜Yk
+
+∂xi
+
+(5) 
+
+qsgs i = − νt
+
+Pr t
+
+∂ ˜T
+
+∂xi
+
+(6) where S c t and Pr t denote the turbulent Schmidt and Prandtl numbers, respectively, both set to 0.9. Time integration is performed using a second-order implicit Runge-Kutta scheme, while the resulting linear system is solved using the Generalized Minimal Residual (GMRES) method. A second-order numerical scheme is applied for di ff usive flows. These choices will be discussed further in the discussion section (Section 7) at the end of the paper. 
+
+# 2.2 Microphysical modeling 
+
+An Eulerian bulk microphysical framework, initially developed by the refs. [10, 38], is employed to model the microphysical processes. This approach consists of transporting the zeroth- and third-order moments of the particle size distribution. The zeroth-order moment corresponds to the number density of particles within the flow. Here, the particles are assumed to be soot, which then provides the only available sites where ice is present. This assumption is justified under soot-rich rich-burn engine regimes [45]. Soot particles are considered as passive tracers of the flow, under the asymptotic limit of Stokes numbers that tend to zero. This assumption is justified by the Stokes number being on the order of ∼ 10 −4 in studies of the vortex and dissipation regimes [21]. Accordingly, they are considered to be in dynamical equilibrium, with no explicit drag contribution, and in thermal equilibrium with the carrier phase, such that their temperature is equal to that of the surrounding fluid. Under the LES framework, using a Smagorinsky-type subgrid-scale model and a gradient-di ff usion hypothesis, the transport equation for the filtered soot particle number density ˜ Np reads: 
+
+∂∂t (ρ ˜Np) + ∂∂xi
+
+(ρ˜ui ˜Np) = ∂∂xi
+
+ρDs + νt
+
+S c t
+
+ ∂ ˜Np
+
+∂xi
+
+!
+
+(7) where Ds represents the molecular di ff usion coe ffi cient of soot particles, associated with the Schmidt number S c , which is prescribed as unity with respect to the kinematic viscosity of air, consistent with the passive tracer hypothesis. In this approach, particles are assumed to be monodisperse within each mesh cell. The smallest admissible radius is thus the radius of an individual soot particle, rs.Ice (denoted H2O, s) is represented by the third moment of the particle size distribution. Therefore, it is the ice water content (IWC), IWC = ρYH2O,s, that is transported by the flow, where YH2O,s is the ice mass fraction. Ice production or loss is governed by phase changes (deposition and sublimation) through the reversible reaction between atmospheric water vapor 
+
+YH2O,v and ice YH2O,s: H2O, v ↔ H2O, s. Consequently, ice production is accounted for by a source term ˙ ωH2O,s in the IWC transport equation: ˙ωH2O,s = 4π ˜Nprp DH2O,v MH2O
+
+RT 
+
+ pH2O,v − psat ,sH2O(rp, T )G(rp)Π(psat ,lH2O(T ), rp) (8) where rp denotes the ice crystal radius. Ice crystals are therefore assumed to be monodisperse within each cell, just like soot. Note that Np soot particles are conserved in the calculation even when the surrounding ice has sublimated. Thus, it is the presence or absence of ice within a cell that determines whether the particles are ice crystals or just soot. The ice crystal radius value is determined from the mass fraction of ice YH2O,s, by applying fundamental geometric con-siderations under the assumption that ice crystals adopt a spherical morphology. The corresponding expression is given by: 4rp =
+
+
+
+r3 
+
+> s
+
++ 34πρ ˜YH2O,s
+
+ρpH2O,s(T ) ˜ Np
+
+1/3
+
+(9) where ρpH2O,s(T ) represents the mass density of ice within a particle, taken from ref. [46]. From Equation 8, DH2O,v denotes the di ff usion coe ffi cient of water vapor, which is given by ref. [47]. The terms pH2O,v,
+
+psat ,sH2O(T ) and psat ,lH2O(T ) correspond, respectively, to the partial pressure of water vapor, the saturation pressure with respect to ice, and the saturation pressure with respect to liquid water [48]. The Kelvin e ff ect is also incorporated for calculating saturation around the particles. For the last terms in Equation 8, the function G(rp) accounts for the transition between the kinetic gas regime and the di ff usion regime [49]. The function Π(psat ,lH2O,v, rp), given by: 
+
+Π(psat ,lH2O, rp) =
+
+
+
+0 if pH2O,v ≤ psat ,lH2O and rp = rs
+
+1 if pH2O,v ≥ psat ,lH2O or rp > rs
+
+(10) governs the deposition on particles. It should be noted that both this formulation and the monodisperse closure adopted here exhibit intrinsic limitations for representing the disperse phase. As shown in the ref. [23, 42], although the bulk formulation provides a reasonably accurate estimate of the ice mass within a contrail, it tends to substantially underestimate the number of ice crystals surviving the vortex regime. This limitation is even more pronounced when a monodisperse closure is employed, as such an approach suppresses competition through the Kelvin e ff ect. These limitations should therefore be kept in mind when interpreting the present results. The implication of microphysical modeling choices and assumptions on the results will be further discussed in Section 7 at the end of the article. 
+
+# 2.3 Transition from near-field to far-field calculation 
+
+To conduct a comprehensive assessment of engine installation e ff ects on a realistic aircraft configuration, from contrail forma-tion through its subsequent evolution up to the end of the dissipation regime, it is interesting to simulate the initial formation phase. This approach makes it possible to directly simulate the resulting changes in dilution and their impact on microphysical properties, without requiring assumptions regarding these properties (microphysical or dynamical) at the onset of the vortex regime, and to ensure a consistent coupling between the near-field and far-field dynamics. Especially given that ref. [35] have shown that engine position can modify the ice crystal radius, potentially leading to di ff erences in the number of crystals surviving the vortex regime. Moreover, [40] have demonstrated that plume spreading is also significantly a ff ected by the hor-izontal tailplane vortices. Such a task presents significant challenges, primarily due to the distinct spatial and temporal scales characterizing each regime and the complexity of the underlying physical processes [50]. To address these challenges, a novel methodology has been recently developed and validated by Bouhafid et al. [39]. This approach e ff ectively captures both the near-field and far-field dynamics of contrail evolution. In the near field, a RANS framework is employed, inspired by the work of Khou et al. [38], which is particularly well-suited for representing the aircraft geometry and thus ensuring a realistic description of the initial dilution process. Meanwhile, the far-field dynamics, encompassing vortex and dissipation regimes, are modeled using LES to resolve unsteady phenomena such as vortex instabilities. This hybrid methodology seamlessly integrates the RANS and LES approaches, e ff ectively bridging the near-field and far-field regimes. In the initial phase of this methodology, 3D RANS simulations are performed over a computational domain extending approximately twenty wingspans downstream of the aircraft. Subsequently, a two-dimensional slice of the RANS solution is extracted, oriented perpendicular to the flight direction. This extraction occurs at a su ffi cient distance from the aircraft, ensuring that axial gradients remain negligible in comparison to transverse gradients, a necessary condition for applying periodic boundary conditions [51]. The flight speed is then subtracted from the velocity field, which is thus expressed in the ground reference frame. A new computational mesh is then generated, onto which the RANS solution is interpolated. The extracted slice is then extruded over a length corresponding to the Crow instability wavelength, given by λcrow = 8.6b0 [15], where b0 represents the spacing between the counter-rotating vortices. This extrusion provides a su ffi ciently representative domain for capturing and analyzing the temporal development [52]. To ensure a seamless transition between the turbulence characteristics in the RANS field and the resolved turbulence in the LES framework, synthetic fluctuations are introduced using the Modified Discretizing and Synthesizing Random Flow Generation (MDSRFG) method [53]. These fluctuations are superimposed onto the jet to enhance its turbulent structure, ensuring consistency in turbulence representation across the modeling approaches. Additionally, another set of fluctuations is introduced to account for atmospheric turbulence. These fluctuations are generated randomly from jet and atmospheric 5turbulence spectra, using the turbulence magnitude and the RANS velocity field as input. These perturbations play a crucial role in contrail evolution, as they contribute to the destabilization of vortical structures and are therefore intrinsically linked to their eventual dissipation [22]. A further essential aspect of the initialization process is the inclusion of gravitational e ff ects to enforce atmospheric stratification. While gravity and stratification are typically neglected in the near-field due to their minimal impact on the early plume dynamics, stratification becomes increasingly important in the far-field regime. Its inclusion leads to variations in pressure, temperature, and consequently, relative humidity with altitude, driven by a specified Brunt-V¨ ais¨ al¨ a frequency. This stratification e ff ect has been shown to play a critical role in contrail evolution, as demonstrated in the studies by the refs. [19, 21]. 
+
+# 3 Numerical Setup 
+
+As previously mentioned, the present study focuses on the vortex and dissipation regimes. The jet regime, in contrast, has been extensively analyzed in a previous study that examined the impact of near-field engine positioning on contrail formation. Consequently, the computational results from the RANS simulations of Annunziata et al. [35], in which soot particles are assumed to be fully activated, will serve as the initial conditions for the LES conducted in this study. The results obtained with this modeling approach are retained instead of those based on soot activation by adsorption, since, as discussed in [35], they are in much better agreement with available measurements and with previous modeling studies. It is furthermore expected that activation processes are primarily relevant in the near field, while exerting a much weaker influence farther downstream, particularly on crystal sublimation during the vortex regime. The use of these RANS fields is therefore important, as they enable the inclusion of a fully realistic aircraft configuration and capture the relevant near-field phenomena, within the scope and limitations of RANS modeling. While the latter enables robust simulations of contrail formation by incorporating realistic aircraft geometry and accurately capturing jet-vortex interactions, it also entails inherent limitations, including the inability to represent unsteady phenomena and the near-complete modeling of turbulent structures. The aircraft configuration used in the RANS simulation is the Common Research Model (CRM), a geometry developed by NASA, which is representative of a Boeing 777 (Figure 1). This complete configuration includes the fuselage, wings, engines, and tailplane. The pylon connecting the wing and the engine has been removed to facilitate engine relocation. The aircraft features a wingspan of b = 58 .8 m and an average chord length of cm = 6.5 m. Three distinct engine placements are analyzed in the previous study, and the present work extends this investigation. The first configuration corresponds to the original CRM engine position, with a relative spanwise placement of d j/b = 0.34, meaning that the engines are positioned at 34% of the half-wingspan. This configuration closely resembles engine placements found on aircraft such as the Airbus A320, A350, or Boeing 777. The second configuration places the engines at d j/b = 0.60, corresponding to 60% of the half-wingspan, representative of the outboard engine position on a B-747. The third configuration, at d j/b = 0.80, aligns the jet exhaust with the wingtip vortex. This placement corresponds to the case where the two wingtip vortices, which under elliptic lift distribution are separated by a distance b0 = π 
+
+> 4
+
+b [54], positioning the jet at approximately 80% of the wing’s half-span. This engine position has also been shown to influence the optical properties of the contrail, leading to reduced extinction compared to alternative positions during the vortex phase [36]. For brevity, the thermodynamic conditions of the engine and the RANS computational domain are not detailed in this paper. Readers interested in these specifics are encouraged to refer to the near-field study for further information [35]. As shown in Figure 1 and for the sake of clarity throughout this article, the 34% configuration is consistently represented in blue, the 60% configuration in orange, and the 80% configuration in green. Following the recommendations of Bouhafid et al. [39], the two-dimensional slice is extracted at x/b = 18 for each configuration, corresponding to a position 18 wingspans downstream of the engine exit. The sensitivity analysis conducted in the study indicates minimal variation in results based on the slice extraction location, as demonstrated by their comparative assessment between x/b = 15 and x/b = 18. This distance corresponds to the location at which the propulsive jet velocity becomes negligible compared with the transverse vortex-induced velocities (see Fig. 5 in [35]). The slices extracted at 
+
+x/b = 18 for each configuration are shown in Figure 2, where the streamwise vorticity field ωx is displayed along with the IWC isoline at 10 −3 mg /m3. The lower row also presents the IWC field. The initial positions of the engine and the wingtip, where the vortex originates, are indicated on both fields. 634% 
+
+𝒃 /𝟐  𝒅 𝒋 /𝟐 
+
+# 60%  80% Figure 1: CRM engine configurations: d j/b = 0.34 (blue); 0 .60 (orange); 0 .80 (green). −40 
+
+−20 020 
+
+> z [m]
+
+## t=0s 34% 60% 80% 
+
+−25 0 25 
+
+## y [m]
+
+−40 
+
+−20 020 
+
+> z [m]
+
+−25 0 25 
+
+## y [m]
+
+−25 0 25 
+
+## y [m]
+
+−6
+
+−4
+
+−20246
+
+> ωx [rad/s ]
+
+0.01 0.10 1.00 10 .00 
+
+> IW C  [mg/m 3]
+
+Figure 2: RANS slices at x/b=18 for LES initialization: streamwise vorticity ωx and IWC , with initial engine (cross) and vortices positions (circle), for d j/b = 0.34 (left), 0.60 (center), 0.80 (right). In all configurations, the wingtip vortex remains the dominant wake feature, corresponding to the peak vorticity. In the 34% engine position case, the two additional vortices correspond to the tail vortices and exhibit lower vorticity levels than the wingtip vortex. As a reminder, and as visible in the slices, modifying the engine position in the CRM configuration induces 7flow separation over the wing, which in turn leads to the formation of additional vortex structures in the 60% and 80% cases. In the 60% configuration, the tail vortices have reached their lowest vertical position, and the two remaining vortices visible in the slice then correspond to the lift-o ff vortices. Finally, in the 80% configuration, the merging vortices can be observed along with the tail vortices positioned below. For each configuration, the corresponding vortex spacing b0 is as follows: b0,34% = 46 m; b0,60% = 47 m and b0,80% = 46 m. In the latter case, since the slice at x/b = 18 corresponds to the vortex merging stage, the value of b0 is thus defined as the barycentric distance between the centers of the two merging vortices. A particularly noteworthy aspect of these initializations is the distinct morphology of the jets in each case. The jets exhibit significant variations in shape, wrapping around the vortices in di ff erent configurations. This phenomenon has been extensively analyzed in the ref. [35], and it is intrinsically linked to near-field aerodynamics. It is interesting to note that at the initialization point, the distance between the vortex core and the jet center is 14 m for the 34% configuration, 13 m for the 60%, and 12 m for the 80%. These values di ff er from the initialization distances used by Saulgeot et al. [36], as their analysis does not account for the near-field interactions. Regarding the microphysical properties of the plume at initialization, as in the RANS computations, all soot particles are converted into ice crystals, the emission index of the ice crystals EI ice is equal to that of soot, 1 × 10 15 kg-fuel −1. These soot particles have a radius of 27 nm, and for each configuration, the mean radii rp,0 and total mass per meter of flight at initialization mi,0 are listed in Table 1, which summarizes all relevant parameters for the LES simulations. Table 1: LES simulation parameters 
+
+Category Parameter Value Mesh resolution 
+
+Axial domain length Lx 400 m Transverse /vertical domain size Ly, Lz 1.2 km Axial grid spacing ∆x 2 m Transverse /vertical grid spacing ∆min y, ∆min z 0.5 m Grid points Nx × Ny × Nz 200 × 552 × 1429 
+
+Jet and vortex properties (34%; 60%; 80%) 
+
+Vortex radius rc 5.00; 5.20; 5.20 m Crow instability wavelength λcrow 400 m Jet dissipation rate ϵ j 30; 29; 35 m 2/s3
+
+Jet radius r j 4.10; 4.10; 3.50 m 
+
+Ice crystal properties (34%; 60%; 80%) 
+
+Ice crystal emission index EI ice 1 × 10 15 kg.fuel −1
+
+Soot radius rs 27 nm Ice mass mi,0 0.032; 0.042; 0.037 g /mMean radius rp,0 842; 920; 884 nm 
+
+Atmospheric conditions 
+
+Atmospheric dissipation rate ϵatm 6 × 10 −5 m2/s3
+
+Relative humidity (ice) RH i 110%; 120% Temperature T 223 K Pressure p 264 hPa Stratification NBV 0.012; 0.030 s−1
+
+The extracted slices are subsequently extruded over a length corresponding to the Crow instability wavelength λcrow =
+
+8.6b0. Given the close values of b0 across all cases, we assume a single Crow wavelength for the three configurations, expressed as λcrow = 8.6 b0,34% ≈ 400 m, following the refs. [39, 40] for the CRM configuration. For the transverse and vertical directions, we set Ly = Lz = 26 b0 ≈ 1.2 km, ensuring minimal influence of the edge boundary conditions on the wake. Regarding the mesh resolution, a grid spacing in the axial direction of ∆x = 2 m is used. This results in 200 points along the axial direction, which is su ffi cient to resolve the Crow wavelength, and provides 18 points to accurately capture the smallest wavelengths in the range 0 .79 < λ/ b0 < 1.57 [41]. For the discretizations in the transverse and vertical directions, special refinement is applied in the wake vortex descent zone as in ref. [22], ensuring that the mesh resolution satisfies  
+
+> ∆
+> rc
+
+= 0.1, meaning that 10 grid points resolve each vortex radius rc. As demonstrated in the study by Annunziata et al. [35], engine displacement has a negligible impact on the wingtip vortex radius, particularly at x/b = 18, where the radii remain very similar across configurations. Therefore, we adopt the minimum vortex radius, rc,34% = 5 m, leading to a uniform mesh 8resolution of ∆min = ∆ min y = ∆ min z = 0.5 m in the plume descent region. This region extends 640 m in height and 100 m in width. The mesh is then gradually coarsened away from this core zone, with the outermost cells (located near the domain boundaries) reaching a resolution of ∆max y = 6.8 m and ∆max z = 7.4 m, thereby optimizing computational e ffi ciency. This meshing strategy enables the use of a single, consistent computational grid across all three engine configurations. The domain and mesh used, with their dimensions, are shown in Figure 3, with the plume of the 34% case in the center. Periodic boundary conditions are applied in the axial direction, while the remaining boundaries (bottom, top, left, and right) are prescribed with fixed temperature and ambient pressure, along with zero velocity. 26𝑏 0
+
+26𝑏 0 8.6𝑏 0
+
+4.5𝑏 0 10.75 𝑏 0
+
+14𝑏 0
+
+12𝑏 0
+
+Figure 3: LES domain with mesh, and their relevant dimensions. As mentioned in the previous section, turbulence properties in the jet are incorporated at LES initialization using values derived from the RANS simulations for each configuration. Since each case exhibits distinct turbulence dissipation rates and jet radii, the corresponding values at x/b = 18 are as follows: for 34% ϵ j = 30 m 2/s3, r j = 4.1 m; for 60% ϵ j = 29 m 2/s3, r j =
+
+4.1 m and for 80% ϵ j = 35 m 2/s3, r j = 3.5 m. For the atmospheric conditions in the LES domain, a single turbulent dissipation rate value is used across all simulations, set at ϵatm = 6 × 10 −5 m2/s3. As determined from the RANS calculations, the atmospheric flight conditions remain unchanged, with a relative humidity with respect to ice of RH i = 110%, and temperature and pressure values of 223 K and 264 hPa, respectively. In addition to this baseline ambient relative humidity, the sensitivity of the results to engine position is also assessed against variations in ambient relative humidity by considering additional cases at 120%. The following equations then describe the temperature and pressure profiles as a function of altitude z :1
+
+Θ
+
+dΘ
+
+dz = N2
+
+> BV
+
+g , dp dz = −gρ(z) (11) where Θ = T   pp0
+
+−(γ−1) /γ represents the potential temperature of the atmosphere, with p0 representing the reference pressure and γ denoting the adiabatic index. g is the gravitational acceleration, and NBV is the Brunt-V¨ ais¨ al¨ a (BV) frequency. In this study, two stratification regimes are considered: a moderate stratification with NBV = 0.012 s −1 and a strong stratification at NBV = 0.030 s −1. These values have been carefully selected to represent realistic atmospheric conditions [55] while also being relevant based on the findings of Saulgeot et al. [36]. Considering the inverse Froude number defined as Fr −1 = τb NBV ,where τb = 2πb20/Γ is the characteristic time of the vortex dipole, the selected values correspond by analogy with their study to values near Fr −1 ≈ 0.3 and Fr −1 ≈ 0.8. Then, for a given vortex characteristic time, weak and moderate stratification lead to minimal di ff erences between engine positions, whereas strong stratification results in more significant variations in optical impact [36]. The LES initializations for each configuration are finally illustrated in Figure 4, where the Q-criterion iso-surface is plotted at 0 .030 s −2. This visualization captures the wingtip vortices, tail vortices, wake turbulence, and flow separation-induced vortices. The iso-surface is colored according to the x-component of the rotational vector, providing insight into the 9rotational structures present in the wake. Additionally, the IWC iso-surface at 10 −3 mg /m3 is plotted, o ff ering a qualitative representation of contrail morphology at the onset of the LES computations. Flow 
+
+separation 
+
+vortices (a)  (b)  (c) 
+
+Wingtip 
+
+vortices 
+
+Tail  vortices 
+
+Wingtip 
+
+vortices 
+
+Tail  vortices 
+
+Wingtip  +
+
+Flow 
+
+separation 
+
+vortices 
+
+Tail  vortices 
+
+Jet turbulence 
+
+Figure 4: LES initialization: Q-criterion iso-surface ( Q =0.03 s -2 ) colored by streamwise vorticity, and white IWC iso-surface (10 -3 mg /m3) for d j/b = 0.34, 0.60, 0.80. 
+
+# 4 Wake Flows Characteristics 
+
+By modifying the engine’s position beneath the aircraft wing, not only the jet properties but also the kinematics of the wingtip vortices are a ff ected. In the near-field, the proximity of the jet to the vortex reduces the amplitude of tangential velocities, thereby modifying the vortex circulation [56, 57]. In addition, secondary vortex structures further alter circulation [35]. This circulation, together with the vortex spacing b0 (which remains nearly similar across all three configurations), governs the characteristic time of the vortex dipole τb. It then varies with the configuration, leading to the following vortex timescales: 
+
+τb,34% = 27 s; τb,60% = 30 s and τb,80% = 24 s. Di ff erences obtained from the RANS calculations, which are used to initialize the LES, particularly in terms of vortex and jet properties, lead to aerodynamic behaviors specific to each engine configuration. The evolution of the vortex dipole for 
+
+NBV = 0.012 s −1 (i.e. Fr −1 ≈ 0.3), at three instants, normalized by the characteristic time of the vortex dipole, t/τ b = 1, 3 and 5 is shown in Figure 5. The figure displays the iso-surface of the Q-criterion at Q = 0.03 s −2, colored by the rotational component along the x-axis. These visualizations reveal the development of short-wavelength instabilities, starting at t/τ b = 1, and the emergence of the Crow instability at t/τ b = 5 in all three cases, approaching vortex dipole breakdown. These instabilities appear and evolve di ff erently depending on the engine position. Given the rather di ff erent initial conditions inherited from the RANS field, many phenomena could account for these di ff erences. 10 Τ𝑡 𝜏 𝑏 = 1Τ𝑡 𝜏 𝑏 = 3(a)  (c) (b) 
+
+Τ𝑡 𝜏 𝑏 = 5Figure 5: Q-criterion iso-surface ( Q = 0.03 s −2) evolution, colored by ωx, for NBV = 0.012 s −1, at t/τ b = 1, 3, and 5: d j/b =
+
+0.34 (a); 0.60 (b); 0.80 (c). In the case of short-wavelength instabilities (i.e., elliptic instabilities), bending and double-helix modes are observed in all configurations [58], the latter being characteristic of flows with axial motion. These modes are further amplified by jet-induced turbulence and axial components, the proximity of which varies by configuration. Such instabilities are particularly prominent in the 60% and 80% cases, where their development is already apparent at t/τ b = 1, whereas they are much less marked for the 34% configuration. However, for the latter and the 80% case, the tail vortex also plays a key role by interacting with the stress field around the vortices, thereby enhancing instability development [41]. For the 60% configuration, the tail vortex interacts with the vortex generated by flow separation and remains near cruise altitude, inducing fewer instabilities in the wake vortices at t/τ b = 3 than the other cases. In 60%, the vortices originating from the tailplane and those caused by flow separation interact, leading to the development of elliptical instabilities in both structures. This interaction gives rise to the formation of Ω-loops [59] and their breakdown. Finally, Crow instabilities develop in all configurations, with di ff erent inflection points and growth rates. These are influ-enced by the interaction between elliptic and Crow instabilities, which can modify the onset and amplification of the latter [60]. The onset of Crow instabilities is also known to be highly sensitive to the nature of the initial perturbations, as shown by Paugam et al. [20]. As such, the presence of jets with varying shapes and intensities can initiate and modulate the de-11 velopment of Crow instabilities in di ff erent ways. Although not shown here, the vortex evolution under strong stratification 
+
+NBV = 0.030 s −1 (i.e. Fr −1 ≈ 0.8) follows a similar instability progression, with initial short-wavelength development followed by the Crow instability, both phenomena occurring more rapidly and intensely due to the enhanced e ff ects of stratification [61]. More quantitatively, the vortex descent z − z0 and the lifetime of the vortex dipole are shown in Figure 6. Here, z0 denotes the altitude of the vortex dipole at t = 0 s, with values z0,34% = 20 .74 m; z0,60% = 22 .76 m and z0,80% = 16 .21 m. The lifetime of the vortex dipole is evaluated by computing the ratio between the minimum separation distance between the vortices and the vortex core average diameter [39]. When this ratio reaches a value of 1, it indicates that the vortices are su ffi ciently close to interact and be destroyed by the Crow instability. 0 2 4 6 8
+
+# t/τ b
+
+# −8
+
+# −6
+
+# −4
+
+# −2
+
+# 0
+
+> (z − z0)/b 0
+
+# −t(a) 
+
+# 0 2 4 6 8
+
+# t/τ b
+
+# 0
+
+# 1
+
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+> dmin /d c
+
+# dmin /d c = 1 
+
+# (b) 
+
+NBV [/s ]
+
+0.012 0.03 34% 60% 80% 34% 60% 80% 
+
+Figure 6: Descent of vortex dipole ( z − z0)/ (a) and minimum core separation dmin /dc (b) for the three engine configurations and both stratification versus t/τ b.In terms of vortex descent, it is first observed that the descent is nearly linear across all configurations up to the point of complete vortex decay. This linearity is particularly evident under moderate stratification, where the descent reaches approximately 6 b0, a value consistent with findings from previous studies such as the refs. [62, 22, 36, 39]. Under strong stratification, the descent is reduced to around 2 b0, consistent with the values reported in the previously cited studies. This reduction is attributed to stronger buoyancy forces, which counteract the vertical motion of the vortices. Across the configurations, subtle di ff erences in vortex descent behavior emerge under moderate stratification. The 34% configuration exhibits the deepest descent, followed by the 60%, while the 80% configuration maintains the highest altitude. This deviation in the latter can be attributed to the fusion of the two vortices, which slows the descent before the first charac-teristic time, but can also be influenced by the proximity of the jet and its buoyancy e ff ects. In this regard, the 34% and 60% configurations exhibit descent curves that fall lower, likely due to the proximity of the jet, which enhances descent through momentum transfer to the vortices [33]. These observations are in line with the results of Saulgeot et al. [36] up to approx-imately 5 τb. Under strong stratification, the di ff erences between configurations remain broadly similar to those observed in the moderate case, with the key distinction being that the 80% configuration exhibits a greater descent relative to the 60% case than it does under moderate stratification. The strong stratification is expected to enhance the instability of the six-vortex system, leading to its more rapid breakdown. This stratification level is challenging to compare directly with the findings of Saulgeot et al. [36], as in the present study, the early onset of the Crow instability rapidly disrupts the vortex dipole. In terms of the vortex dipole’s lifetime, stratification, as previously discussed, tends to shorten it by bringing the vortices together more rapidly. Overall, for both stratification levels and all three engine positions, the vortex tubes come into contact at approximately the same normalized times: around 4 τb for moderate stratification and 2 .5τb for strong stratification, except for the 60% configuration under strong stratification, where vortex interaction occurs earlier, at 2 τb. Ultimately, in all cases, the vortices are fully destroyed at nearly the same normalized time t/τ b, approximately 7 τb under moderate stratification and around 4 τb under strong stratification. These values are consistent with those reported by the refs. [39, 40] for the CRM configuration. The increased proximity of the vortex tubes in the 34% and 80% configurations also contributes to the intensification of elliptical instabilities observed at t/τ b = 3, as their growth rate is strongly dependent on the inter-vortex 12 distance [63]. This e ff ect remains visible at t/τ b = 5, when the Crow instability drives the merging of the vortices. Ultimately, quantifying the specific e ff ect of engine placement on vortex behavior is challenging, given the complex interplay of competing aerodynamic phenomena. Nevertheless, the presence and proximity of the jet introduce additional buoyancy into the wingtip vortices and play a more prominent role in initiating elliptical instabilities. These instabilities are further amplified by local turbulence and the closeness of the jet to the vortex core and may interact with the Crow instability, altering its development. 
+
+# 5 Impact on Contrail Properties 
+
+# 5.1 Spatial Distribution of Induced Contrails 
+
+This section presents the microphysical results obtained for each contrail. The evolution of the ice plumes, under moderate and strong stratification, is respectively illustrated in Figures 7 and 8 using the integrated IWC field of the plume, as defined by Equation 12. A masking is applied so that only the regions of the plume containing soot particles are displayed. The plume is shown at three moments in its lifetime: 1 minute, 3 minutes, and 5 minutes (rows) for each engine position (columns). 
+
+IWC (y, z, t) = 1
+
+Lx
+
+Z
+
+ρYH2O,s(x, y, z, t)dx (12) −400 
+
+−300 
+
+−200 
+
+−100 0100 
+
+> z [m]
+
+t=1min 
+
+# 34% 60% 80% 
+
+−400 
+
+−300 
+
+−200 
+
+−100 0100 
+
+> z [m]
+
+t=3min 
+
+−200 −100 0 100 200 
+
+# y [m]
+
+−400 
+
+−300 
+
+−200 
+
+−100 0100 
+
+> z [m]
+
+t=5min 
+
+−200 −100 0 100 200 
+
+# y [m]
+
+−200 −100 0 100 200 
+
+# y [m]
+
+0.01 0.10 
+
+> IW C  [mg/m 3]
+
+Figure 7: Evolution of the ice plume from integrated IWC at 1, 3, 5 minutes for NBV = 0.012 s −1 and the three engine positions. 13 −200 
+
+−100 0100 
+
+> z [m]
+
+t=1min 
+
+# 34% 60% 80% 
+
+−200 
+
+−100 0100 
+
+> z [m]
+
+t=3min 
+
+−200 −100 0 100 200 
+
+# y [m]
+
+−200 
+
+−100 0100 
+
+> z [m]
+
+t=5min 
+
+−200 −100 0 100 200 
+
+# y [m]
+
+−200 −100 0 100 200 
+
+# y [m]
+
+0.01 0.10 
+
+> IW C  [mg/m 3]
+
+Figure 8: Evolution of the ice plume from integrated IWC at 1, 3, 5 minutes for NBV = 0.030 s −1 and the three engine positions. The evolution of the ice plume in each configuration is intrinsically linked to the aerodynamic behavior of the wingtip vortices. Across both stratification regimes, the 60% engine configuration consistently displays the most distinct ice plume morphology compared to the 34% and 80% cases. This distinction arises primarily from the early-time interactions between the tail vortex and the vortex generated by flow separation (Figure 5). These interactions retain a portion of ice particles near cruise altitude, leading to a more horizontally extended plume at later times and a less pronounced vertical spread. In contrast, the 34% and 80% configurations produce ice plumes that are more comparable, both being more vertically elongated and less laterally spread. Di ff erences between moderate and strong stratification can be attributed to the distinct wake dynamics driven by baroclinic instabilities and buoyancy forces. For instance, at NBV = 0.030 s −1 (Figure 8), the vortices dissipate much more rapidly, causing the ice plume to remain at a higher altitude (Figure 6). Consequently, the plume exhibits a broader horizontal spread and a reduced vertical extent compared to the moderate stratification case (Figure 7). For the latter, the upper part of the plume, corresponding to the secondary wake, then contains almost all of the remaining ice. Most of the ice in the primary wake has sublimated during the compression associated with the descent of the vortex pair. The majority of very low IWC remaining values are likely attributable to numerical di ff usion. To better analyze and quantify the impact of engine position on plume dimensions and dispersion, the vertical distributions of integrated total particle density Np(z, t) and ice mass mi(z, t) are examined in Figures 9. These quantities are defined as follows: 14 Np(z, t) = 1
+
+Lx
+
+"
+
+Np(x, y, z, t)dxdy (13) 
+
+mi(z, t) = 1
+
+Lx
+
+"
+
+ρYH2O,sdxdy . (14) −400 
+
+# −300 
+
+# −200 
+
+# −100 0100 
+
+> z [m]
+
+## NBV [/s ]
+
+# 0.012 0.03 
+
+## NBV [/s ]
+
+# 0.012 0.03 
+
+## t=1min 
+
+# 34% 60% 80% 34% 60% 80% 
+
+## t=2min 
+
+# 10 9 10 10 
+
+# Np [/m 2]
+
+# −400 
+
+# −300 
+
+# −200 
+
+# −100 0100 
+
+> z [m]
+
+# 10 −4 10 −2 10 0
+
+# mi [g/m 2]
+
+## t=3min 
+
+# 10 9 10 10 
+
+# Np [/m 2]
+
+# 10 −4 10 −2 10 0
+
+# mi [g/m 2]
+
+## t=5min 
+
+Figure 9: Vertical profiles of integrated soot density Np(z, t) (total particles, left) and ice mass mi(z, t) (right) for the three engine spacings and both stratification. Slight di ff erences are observed across the configurations, primarily driven by variations in particle distributions. An analysis of the vertical distribution of particles Np(z, t) shows that the 34% and 80% plumes are more spatially extended than the 60% case for both stratification levels. This variation in spatial extent translates into di ff erences in particle concentration, which are influenced by the number of particles entrained by the vortex dipole. The initial particle distribution plays a key role in shaping this entrainment. As shown in ref. [35], the engine position sig-nificantly a ff ects the initial spread of particles, with a greater or lesser proportion of soot entering the vortex region depending on the configuration. This e ff ect is particularly pronounced for the 60% case, where many particles are initially entrained into the vortex core. The consequences of this initial disparity are still apparent after 5 minutes of simulation in the lower part of the plume. For moderate stratification, the 60% configuration exhibits a higher particle concentration peak in this area. In contrast, for the 34% and 80% cases, a more similar number of particles are entrained into the vortex dipole, consistent with the closer initial distributions reported in ref. [35]. However, both their final particle distributions di ff er due to di ff erences in vortex dipole lifetime and the onset and strength of the Crow instability, which influences how the particles are dispersed within the lower part of the plume. These di ff erences induced by the initial distribution are also evident in ref. [37], where Gaussian and uniform jet initializations are compared. These e ff ects, however, have little impact on the ice mass distribution at t = 5 min. For each stratification case, the distributions for the 34% and 80% configurations remain fairly similar, consistent with the similarities observed in particle 15 distribution between these cases, particularly in the upper part of the plume. Under moderate stratification, the 60% configu-ration exhibits an ice mass distribution that is broadly comparable to the other two, but with some notable di ff erences. These include the emergence of a secondary peak in the distribution and a change in the amplitude of the main peak, features that are observed for both stratification levels. This behavior is primarily attributed to a di ff erent particle distribution than in the 34% and 80% configurations, leading to an ice plume that is more confined and less diluted, but more concentrated in ice content. Examining the morphology and distribution of the ice plumes suggests that engine position primarily influences their dimensions by altering particle dispersion. The characteristic sizes of each contrail, the height zc and width yc, are then presented in Figure 10. These two quantities are defined as the vertical and horizontal intervals containing 99.99% of the total contrail ice mass. The sensitivity of the plume dimensions to the choice of criterion has been assessed using several definitions. The selected criterion exhibits low sensitivity. 0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 50 
+
+# 100 
+
+# 150 
+
+# 200 
+
+# 250 
+
+> zc [m]
+
+# (a) 
+
+# 0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 100 
+
+# 200 
+
+# 300 
+
+# 400 
+
+# 500 
+
+> yc [m]
+
+# (b) 
+
+NBV [/s ]
+
+0.012 0.03 34% 60% 80% 34% 60% 80% 
+
+Figure 10: Contrail height zc (a) and width yc (b) for the three engine spacings, under both stratification levels, versus time t.As qualitatively observed earlier, the 34% and 80% configurations exhibit similar trends, while the 60% configuration stands out, under both stratification values. In the vertical direction, the 34% and 80% contrails extend further than the 60% case. This enhanced vertical spread is associated with the greater vortex descent as seen in Figure 6 for those configurations. Using the 34% configuration as a reference, the relative di ff erences, at t = 300 s, are 5% and 2% for moderate stratification, and 12% and 1% for strong stratification, for the 60% and 80% configurations, respectively. In the horizontal direction, the relative di ff erences are 40% and 10% for the 60% and 80% cases under moderate stratifica-tion. For strong stratification, they are 7% and 4%, respectively. As shown in Figures 7 and 8, the presence of additional vortex structures in the 60% configuration causes a portion of the ice plume to remain near cruise altitude, leading to a broader lateral spread. In contrast, for the other configurations, the degree of lateral dispersion varies depending on the proximity between the jet and the vortex, which influences the subsequent spreading. In terms of order of magnitude, particularly regarding con-trail width, the results are in good agreement with values reported in the literature for B-777 [30], consistent with the present study’s configuration. Thus, the values are in good agreement with the magnitude reported in measurements [29, 55]. From a spatial perspective, modifying the engine position a ff ects the spatial distribution of the induced contrails, influenc-ing both their overall dimensions and particle concentration patterns. The spatial dispersion of particles is also influenced by the initial particle distribution, which determines the fraction of particles entrained by the vortex dipole. Despite these di ff er-ences, the ice distribution exhibits a clear tendency toward uniformity across the engine configurations. This convergence is largely attributed to the similar overall morphology of the plumes, which drives the contrails toward comparable microphysical characteristics over time. 
+
+# 5.2 Contrail Ice Content 
+
+As shown in the previous section, despite di ff erences in vertical particle distribution and plume dimensions, the ice plumes exhibit relatively similar ice mass distributions across the di ff erent engine configurations. It is therefore of interest to examine 16 the integrated ice properties of each induced contrail to assess whether this tendency toward uniformity persists over time. To this end, the total ice mass per flight meter, mi, is presented in Figure 11. It is obtained by z-integrating Equation 14. Moreover, it is also of interest to examine the surviving crystals in each configuration, as this quantity is the most important for the contrail-to-cirrus transition [28]. The fraction of surviving ice crystals, fNi , is then, jointly with the total ice mass, shown in Figure 11. In the bulk framework adopted here, the transported particles Np are considered to be soot, unlike in the bulk models of [52, 28], where the transported particle density is assumed to correspond to the ice crystal density. The total soot number, here, is then conserved throughout the simulation, and no parameterization of crystal loss is included, in contrast to [28, 42]. Moreover, bulk models are known to reproduce ice mass reasonably well but to overestimate the number of ice crystals when these are directly transported [23, 19, 42]. With this in mind, ice crystals are here defined as soot particles located within the cumulative region containing 99.99% of the total ice in the simulation. This criterion excludes areas where ice is only present due to numerical di ff usion (Figures 7 and 8). It should be noted that a criterion based on particle radius did not prove satisfactory, as it was excessively sensitive for precisely this reason. By contrast, the mass-based criterion is reasonably representative of most of the contrail and exhibits comparatively low sensitivity across the various tests performed. This criterion is therefore not intended to provide an exact estimate of the number of sublimated crystals, something the bulk formulation cannot resolve, but rather to yield a representative order of magnitude for comparing the di ff erent engine positions. 0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 5
+
+# 10 
+
+# 15 
+
+# 20 
+
+# 25 
+
+# 30 
+
+> mi [g/m ]
+
+# (a) 
+
+NBV [/s ]
+
+0.012 0.03 34% 60% 80% 34% 60% 80% 
+
+# 0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 20 
+
+# 40 
+
+# 60 
+
+# 80 
+
+# 100 
+
+> fNi [%]
+
+# (b) 
+
+Figure 11: Total ice mass per flight meter mi (a) and total fraction of ice crystals fN,i (b), for the three engine spacings, and both stratification versus time t.Total ice mass e ff ectively confirms the microphysical convergence observed. The 34% and 80% configurations are closely aligned, with 1% and 5% of deviation for moderate and strong stratification. The 60% configuration remains the most distinct case, with a di ff erent evolution driven by the presence of the additional vortices. Its order of magnitude is comparable to that of the other engine positions, with 5% and 14% the di ff erences with the 34% configuration. The di ff erences then arise due to the di ff erent spatial configurations of the plumes (Figures 9 and 10). In terms of ice mass increase, these two configurations also exhibit the largest growth relative to their initial values at LES initialization. Initially, it was the 60% and 80% engine positions, respectively, in increasing order, that showed the highest ice mass. However, the 34% configuration displays a greater relative increase compared to its initial state, regardless of the atmospheric stratification. This behavior can be attributed to an increased supply of water vapor to the plume through initial dilution (Figure 9). A few di ff erences are found between engine positions. For moderate stratification, the discrepancies are the smallest: at the end of the simulations, the fractions of surviving ice crystals are 22, 20, and 24% for the three engine positions, respectively. For strong stratification, the corresponding fractions are 63, 90, and 67%. Overall, the di ff erences between configurations re-main limited, with the notable exception of the 60% case under strong stratification, for which the vortices are destroyed more rapidly (Figure 6), allowing a larger fraction of crystals to survive. These values for 60% also explain the small di ff erences observed for ice mass (Figure 10). It is also worth noting that, for the other strongly stratified cases, the di ff erences appear slightly larger than for the moderately stratified ones, indicating that when vortex lifetime is reduced, changes in dispersion 17 may have a somewhat greater impact on microphysics. Nevertheless, the di ff erences between configurations remain relatively small, suggesting that initial dilution plays a secondary role in determining the number of surviving crystals compared with vortex descent and atmospheric stratification. Concerning the number of surviving crystals with the criterion used here, the orders of magnitude obtained in this study are broadly consistent with those reported in the literature for comparable ambient and aircraft conditions [52, 21, 42, 64]. Furthermore, following ref. [64] and computing the z∆ value defined in their Equation 9, we obtain, for the three config-urations, values of -13, -2, and -10 for moderate stratification, and 82, 96, and 83 for strong stratification. The values are broadly comparable with the cloud points shown in their Figure 9 for 110%, as well as with the values reported in their study to compare with the literature [24, 22]. To better understand the mechanism under this convergence, the integrated particle mean size class distributions are plotted as a function of particle diameter in Figure 12. The top panels correspond to the moderate stratification case, while the bottom panels show results for strong stratification. It should be noted that the monodisperse assumption does not permit a fully accurate representation of the particle size distribution. The particle fields are therefore shown primarily for illustrative purposes, in order to provide physical insight into the mechanisms driving convergence among the di ff erent configurations. 10 4
+
+# 10 5
+
+# 10 6
+
+# 10 7
+
+# 10 8
+
+> dN p/dlogD p [m−1]
+
+t=1min t=3min t=5min 
+
+# 0.1 1 10 
+
+# Dp [μm ]
+
+# 10 4
+
+# 10 5
+
+# 10 6
+
+# 10 7
+
+# 10 8
+
+> dN p/dlogD p [m−1]
+
+# 0.1 1 10 
+
+# Dp [μm ]
+
+NBV [/s ]
+
+# 0.012 0.03 
+
+NBV [/s ]
+
+# 0.012 0.03 
+
+# 0.1 1 10 
+
+# Dp [μm ]
+
+# 34% 60% 80% 34% 60% 80% 
+
+Figure 12: Integrated total particle mean size distributions for three engine spacings under moderate (top) and strong (bottom) stratification, at t = 1, 3, 5 min. The particle diameter distributions provide a more detailed characterization of the growth and ice crystal loss mechanisms, particularly through their distinctive shapes. Typically, the distributions exhibit a bimodal structure [65]: a first peak at small diameters, corresponding to the sublimating ice crystals with radius close to that of dry soot, and a second peak at larger diameters, representing ice crystals in the secondary plume that have either risen or remained near cruise altitude, where sustained supersaturation favors continued growth. The key di ff erences among the di ff erent engine positions lie in the relative amplitudes of these two peaks. In the early stages ( t = 1 min), the distributions are shaped by the initial entrainment of the plume by the wake vortices. In the 34% and 80% configurations, the initial ice crystal concentration is primarily governed by the dynamics of jet entrainment into the 18 vortex system. This entrainment occurs more rapidly in the 80% configuration, due to both the closer proximity of the jet to the vortex core and the faster descent of the vortex dipole (Figure 6). These factors reduce the residence time of ice crystals in ice-supersaturated regions, limiting their growth. Consequently, fewer large-diameter crystals are formed, and those that do form undergo slightly more sublimation compared to the 34% case. Conversely, the 60% configuration shows the highest concentration of large particles, which is consistent with the retention of part of the plume at cruise altitude due to vortex interactions. In these regions, supersaturation with respect to ice allows crystals to grow more extensively. As the plume evolves ( t = 3 min and t = 5 min), these trends gradually shift. The distributions become increasingly similar across the three cases, as vortex dynamics progressively dominate ice increase and loss over the e ff ects of the initial dilution. The 60% configuration still stands out for both stratifications, owing to the presence of the additional vortex structures. As a result, no significant di ff erences in microphysical properties are observed between engine positions, for the configura-tions studied here, at the end of the simulation. The main variations arise at the beginning of the vortex regime, where the flow dynamics still reflect the di ff erences associated with each engine placement. These variations are subsequently outweighed by the e ff ects of vortex dynamics and atmospheric stratification. 
+
+# 5.3 Sensitivity to Variations in Ambient Relative Humidity 
+
+To strengthen the conclusions drawn in the previous section regarding the influence of engine position, the sensitivity of the results is further assessed under a di ff erent ambient relative humidity with respect to ice. Whereas the previous results were obtained for an ambient RH i of 110%, additional simulations are presented here for the 34% and 80% configurations under an ambient RH i of 120%. The comparison is restricted to these two engine positions, since the 60% configuration is a ff ected by vortical structures associated with flow separation. This additional comparison is particularly relevant because ambient relative humidity is a first-order parameter governing the early evolution of a contrail [28] and, as shown in Figure 6, one of the primary e ff ects of engine position during the vortex regime is to modify both the descent and the lifetime of the vortex dipole. A change in ambient RH i may therefore have a significant impact, as a larger fraction of the contrail remains in supersaturated conditions, allowing more ice crystals to survive during vortex descent. Consequently, the di ff erences in vortex descent induced by engine position may in turn a ff ect the resulting contrail properties. To examine this, the vertical dimensions of the ice plume zc, together with the fraction of surviving crystals fNi , are shown in Figure 13 for both RH i.0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 100 
+
+# 200 
+
+# 300 
+
+# 400 
+
+> zc [m]
+
+# (a) 
+
+# 0 60 120 180 240 300 
+
+# t [s]
+
+# 0
+
+# 20 
+
+# 40 
+
+# 60 
+
+# 80 
+
+# 100 
+
+> fNi [%]
+
+# (b) 
+
+RH i [%] 
+
+110% 120% 34% 80% 34% 80% 
+
+Figure 13: Contrail height zc (a) and total fraction of ice crystals fN,i (b) under moderate stratification, for RH i = 110% and 120%, versus time t.The results indicate that increasing ambient relative humidity does not amplify the di ff erences between engine positions, whether in terms of contrail height or the fraction of surviving ice crystals. Although not shown here, the same trend holds for other quantities previously examined, such as the plume width and the total ice mass. The relative di ff erences obtained between the 34% and 80% configurations at RH i = 120% are on the order of 0.3% for the plume height, against 2% for 19 RH i = 110%. For the fraction of surviving ice crystals, values of 58% and 61% are obtained. The resulting discrepancy is fully consistent with that found at 110%, remaining on the order of 2-3%. These values, both in terms of plume dimensions and crystal survival, are consistent with those reported in [37, 30] for a B777, as well as with the results of [64]. This agreement further supports the validity of the criterion used to define the ice plume. Finally, variations in engine position exhibit relatively weak sensitivity to changes in ambient relative humidity. This find-ing not only reinforces the conclusions drawn in the previous section, particularly the tendency toward plume homogenization, but also highlights that, alongside atmospheric stratification and vortex dynamics, initial dilution e ff ects (i.e., engine position) are a second-order parameter relative to ambient relative humidity. This contrasts with the jet regime, where both e ff ects are of comparable magnitude [35]. 
+
+# 6 Impact of Turbulence Randomization 
+
+In this study, turbulent fluctuations rely on random numbers [53, 39]. Between configurations, the jet turbulence corresponds to di ff erent realizations of the random variable, whereas the atmospheric turbulence is kept identical to facilitate comparison. Since it is the atmospheric turbulence that triggers the instabilities, it is interesting to examine another realization in order to assess how sensitive the results are to this random process and to compare this sensitivity with that associated with engine position. To do so, an additional simulation is carried out for the 34% configuration under moderate stratification, and RH i = 110%. In this run, the jet and atmospheric fluctuations are regenerated to obtain a new realization of the random variables, while all other simulation parameters are kept identical to those of the previous simulation. To compare the two simulations, the relative deviations in contrail height and width (panel (a)), total ice mass, and the fraction of surviving ice crystals (panel (b)) are shown in Figure 14. For comparison with the variations induced by engine position, the relative di ff erences between the 34% and 80% configurations for RH i = 110% are also shown in the figure. 0 60 120 180 240 300 
+
+# t [s]
+
+# −10 
+
+# −5
+
+# 0
+
+# 5
+
+# 10 
+
+> ε [%]
+
+# (a) 
+
+∆zc
+
+∆yc
+
+∆zc
+
+∆yc
+
+# 0 60 120 180 240 300 
+
+# t [s]
+
+# (b) 
+
+mi
+
+fNi
+
+34 − 80 
+
+I1 − I2
+
+34 − 80 
+
+I1 − I2
+
+Figure 14: Relative deviation ε between two fluctuation initializations for the 34% configuration (blue) and between the old initializations for engine position (red), under moderate stratification, versus time t.Regarding the relative di ff erences associated with the new initialization (in blue), the largest relative deviations during the simulation are found in the ice mass and in the fraction of surviving ice crystals. They reach maximum values of -6% and 10%, respectively, and -4% and -6.5% at the end of the simulation. For the fraction of surviving crystals, the maximum deviation occurs during the sublimation phase, which therefore takes place at slightly di ff erent times in the two initializations. The di ff erences in the horizontal and vertical extents of the two contrails are smaller, of the order of 1.5% and 3%, respectively. Interestingly, the ref. [28] also reports di ff erences associated with di ff erent fluctuation fields. They observed a 15% di ff erence, however, the study has been conducted in 2D. These di ff erences arise from the di ff erent fluctuation initializations. They modify the triggering of short-wavelength insta-bilities and also a ff ect the onset of Crow instability. As a result, vortex decay is slightly altered, in particular, its timing. This, 20 in turn, a ff ects wake dispersion and microphysical properties. These di ff erences are particularly interesting. Indeed, when compared to those typically associated with variations in engine position (in red), they show that the deviations previously observed between engine positions are of the same order of magnitude as those obtained by simply changing the turbulent fluctuation initialization. Since the orders of magnitude are comparable, this supports the conclusions of the previous section: the initial dilution di ff erences induced in the jet regime are largely erased by larger-scale parameter e ff ects. 
+
+# 7 Conclusions 
+
+# 7.1 Discussion and Outlooks 
+
+Finally, it is important to acknowledge the limitations of this study, which are inherently linked to the numerical approach and modeling assumptions, as well as to highlight potential future developments. The strength of this study lies in its fully dynamic approach, which allows plume dilution processes to be captured consistently in both the near and far fields, for each engine position studied. The main limitations are primarily in the modeling of microphysics. The microphysical model used in this study is a bulk scheme, which is known in the literature to exhibit certain limitations. As shown by refs. [23, 42], this approach reproduces the ice mass of a contrail reasonably well, but strongly overestimates the number of ice crystals surviving at the end of the vortex and dissipation regimes compared with Lagrangian or Eulerian sectional models. This discrepancy is even more pronounced when particles are assumed to be monodisperse within each mesh cell, as in this study. In the same way, ref. [66] also shows that, within a bulk framework, it is challenging to introduce a source term capable of correcting this e ff ect. In these studies, it is the ice crystals that are directly transported, and the term sublimation is applied to their concentration. In the present work, soot particles are transported, and they remain passive in the flow. Consequently, a mass-based filter must be used during post-processing to distinguish ice-bearing soot from ice-free soot. This should be kept in mind when interpreting Figure 11, which yields orders of magnitude comparable to those reported in the literature. However, the value may be biased, as it does not account for the heterogeneity of the contrail. The choice of a bulk model is ultimately justified by the need to strike a compromise between a full resolution of plume dilution and the computational cost associated with the microphysical model, particularly in the near-field. The use of a bulk monodisperse scheme also a ff ects the near-field results, most notably by converting all particles into ice crystals. A more comprehensive microphysical treatment, particularly one accounting for polydispersity, would therefore be valuable. In light of the e ff ects of ambient relative humidity and temperature identified in the near field, it is conceivable that changes in engine position may influence the number of ice crystals formed initially and, consequently, the number of crystals surviving farther downstream. From a flow modeling perspective, some limitations can also be identified. The sensitivity of the Smagorinsky model constant Cs has not been evaluated in the present work. In practice, selecting Cs values that are too large or too small leads, respectively, to an over- or underestimation of the subgrid-scale eddy viscosity, and thereby to a more or less di ff usive solution for a given grid resolution. Moreover, this may result in excessive eddy viscosity production within the vortex core. However, the results of ref. [39] indicates that, with the value used here, jet-vortex interaction experiments are reproduced quite faithfully, giving us confidence in this choice. A possible refinement would be to employ a dynamic procedure that recomputes during the simulation [21]. A possible limitation is the use of a second-order scheme, chosen to reduce computational cost. This may artificially di ff use the vortices and homogenize the mixture too rapidly. Future work could explore higher-order schemes, as in ref. [22]. A further point worth discussing, closely related to the limitations of the RANS framework, concerns the extent to which such calculations truly require RANS-based initialization. In the present study, this initialization is important, notably to account for the dilution changes induced by variations in engine position, but also to properly represent the empennage vortices, which play a significant role in plume development [41, 40]. It would nevertheless be valuable to assess how the results would di ff er if the calculations had been initialized instead from a jet-vortex interaction LES [12], a hybrid RANS-LES approach [51], or an analytical model. More broadly, it remains to be determined to what extent the dynamical framework of the near field a ff ects the subsequent microphysical evolution and, ultimately, the downstream contrail properties. Lastly, another limitation of the present study concerns the vortex structures generated by flow separation on the CRM wing as a result of engine nacelle displacement. While these vortices exert minimal influence in the near-field, they have a more substantial impact in the far-field, particularly for the 60% configuration, where they retain part of the plume near cruise altitude and consequently alter its evolution. This introduces a configuration-specific bias, whereas, in the 80% case, the rapid merging of the vortices limits such e ff ects. 21 7.2 General Conclusion 
+
+In the present study, Large-Eddy Simulations have been conducted over five minutes of contrail evolution, encompassing both the vortex and dissipation regimes. These simulations have been performed for three distinct engine positions, under two atmospheric stratification conditions (one moderate and one strong) and two ambient relative humidity, using an Eulerian microphysical bulk model. The LES computations have been initialized using RANS simulations carried out in the near-field of a realistic aircraft configuration, as presented in ref. [35], incorporating the full 3D geometry (fuselage, wings, engines, and tailplane). The transition method of Bouhafid et al. [39] has been employed to ensure continuity between the RANS and LES calculations. This approach enables consideration not only of the aircraft geometry but also of the complex jet-vortex interactions that arise immediately after ejection when the engine position is modified. The results demonstrate that engine position, for the configurations and parameters employed, slightly influences the aerodynamic wake. The proximity of the jet to the wingtip vortex a ff ects the development of vortex instabilities, notably by amplifying short-wavelength instabilities due to the jet’s inherent turbulence. These amplified instabilities, in turn, alter the onset of the Crow instability, leading to variations in its timing and development across configurations. Additionally, the jet-vortex proximity impacts vortex dynamics more broadly: when the jet is closer to the vortex core, it contributes to a faster descent of the vortex pair and tends to reduce their separation, which further enhances the development of both short-wavelength instabilities and the Crow instability. However, the influence of engine position remains small. By contrast, stratification plays a much more important role. Despite these di ff erences, the three ice plumes tend toward uniformity across the stratification in terms of ice crystal number and ice content, with a larger ice mass increase in the cases that initially had lower values. The particle distribution is influenced primarily by the initial distribution, but also by the proximity of the particles to the vortex, which entrains the plume more or less rapidly. Even though these entrainment di ff erences are noticeable in the early stages, the plumes tend to become similar in terms of size, ice mass, and number of surviving crystals. The di ff erences observed are on the order of 5% for each quantity for the 34% and 80% positions, which are the most comparable cases. The 60% position is more specific owing to the additional vortices. The magnitude of the di ff erences between configurations is therefore comparable to that obtained when changing the initialization of turbulent fluctuations. Moreover, changes in ambient relative humidity do not significantly a ff ect the di ff erences induced by engine position. This confirms that the initial dilution of the plume has only a minor influence compared with other key parameters such as vortex descent, ambient relative humidity, and stratification. From a broader perspective, and in light of the conclusions drawn in ref. [35], engine position, i.e, dilution, appears, for the parameters and configurations considered here, to exert a clear influence on near-field contrail properties such as the onset of formation, radius, and the distribution of ice crystals. By the end of the dissipation regime, however, contrail properties tend to become more uniform, and atmospheric conditions and vortex dynamics largely dominated the initial dilution di ff erences. Nonetheless, the present results provide additional insight into contrail behavior and dispersion mechanisms. 
+
+# Acknowledgments 
+
+The authors would like to thank Marc Massot for his thorough review and insightful suggestions, which significantly enhanced the clarity and overall quality of the manuscript. The authors gratefully acknowledge ONERA for funding this study. 
+
+# References 
+
+[1] D. S. Lee, D. W. Fahey, P. M. Forster, P. J. Newton, R. C. Wit, L. L. Lim, B. Owen, R. Sausen, Aviation and global climate change in the 21st century, Atmospheric Environment 43 (22) (2009) 3520–3537. doi:10.1016/j.atmosenv. 2009.04.024 .[2] U. Burkhardt, B. K¨ archer, Global radiative forcing from contrail cirrus., Nature Clim Change 1 (2011) 54–58. doi: 10.1038/nclimate1068 .[3] D. Lee, D. Fahey, A. Skowron, M. Allen, U. Burkhardt, Q. Chen, S. Doherty, S. Freeman, P. Forster, J. Fuglestvedt, A. Gettelman, R. De Le´ on, L. Lim, M. Lund, R. Millar, B. Owen, J. Penner, G. Pitari, M. Prather, R. Sausen, L. Wilcox, The contribution of global aviation to anthropogenic climate forcing for 2000 to 2018, Atmospheric Environment 244 (2021) 117834. doi:10.1016/j.atmosenv.2020.117834 .[4] B. K¨ archer, Formation and radiative forcing of contrail cirrus., Nature Clim Change 9 (2018) 54–58. doi:doi.org/ 10.1038/s41467-018-04068-0 .22 [5] H. L. Hoshizaki, L. B. Anderson, R. J. Conti, High altitude aircraft wake dynamics, Proceedings of the 2nd Conference on CIAP DOT-TST-75-53 (1972) 263–284. [6] B. K¨ archer, T. Peter, U. M. Biermann, U. Schumann, The initial composition of jet condensation trails, Journal of Atmospheric Sciences 53 (21) (1996) 3066 – 3083. doi:10.1175/1520-0469(1996)053<3066:TICOJC>2.0.CO;2 .[7] B. K¨ archer, Physicochemistry of aircraft-generated liquid aerosols, soot, and ice particles: 1. model description, Journal of Geophysical Research: Atmospheres 103 (D14) (1998) 17111–17128. doi:10.1029/98JD01044 .[8] C. Rojo, X. Vancassel, P. Mirabel, J.-L. Ponche, F. Garnier, Impact of alternative jet fuels on aircraft-induced aerosols, Fuel 144 (2015) 335–341. doi:https://doi.org/10.1016/j.fuel.2014.12.021 .[9] A. Bier, S. Unterstrasser, X. Vancassel, Box model trajectory studies of contrail formation using a particle-based cloud microphysics scheme, Atmospheric Chemistry and Physics 22 (2) (2022) 823–845. doi:10.5194/acp-22-823-2022 .[10] F. Guignery, E. Montreuil, O. Thual, X. Vancassel, Contrail microphysics in the near wake of a realistic wing through RANS simulations, Aerospace Science and Technology 23 (1) (2012) 399–408, 35th ERF: Progress in Rotorcraft Re-search. doi:10.1016/j.ast.2011.09.011 .[11] J. Khou, W. Ghedha¨ ıfi, X. Vancassel, E. Montreuil, F. Garnier, CFD simulation of contrail formation in the near field of a commercial aircraft: E ff ect of fuel sulfur content, Meteorologische Zeitschrift 26 (6) (2017) 585–596. doi:10.1127/ metz/2016/0761 .[12] R. Paoli, L. Nybelen, J. Picot, D. Cariolle, E ff ects of jet /vortex interaction on contrail formation in supersaturated condi-tions, Physics of Fluids 25 (5) (2013) 053305. doi:10.1063/1.4807063 .[13] T. Ferreira, J. Alonso, C. Gorl´ e, Large eddy simulation of the early jet-vortex interaction phase of contrails from hydrogen aircraft, AIAA AVIATION FORUM AND ASCEND 2025 (2024). doi:10.2514/6.2025-3032 .[14] P. R. Spalart, On the motion of laminar wing wakes in a stratified fluid, Journal of Fluid Mechanics 327 (1996) 139–160. 
+
+doi:10.1017/S002211209600849X .[15] S. C. Crow, Stability theory for a pair of trailing vortices, AIAA Journal 8 (12) (1970) 2172–2179. doi:10.2514/3. 6083 .[16] S. E. Widnall, D. B. Bliss, C.-Y. Tsai, The instability of short waves on a vortex ring, Journal of Fluid Mechanics 66 (1) (1974) 35–47. doi:10.1017/S0022112074000048 .[17] D. C. Lewellen, W. S. Lewellen, Large-eddy simulations of the vortex-pair breakup in aircraft wakes, AIAA Journal 34 (11) (1996) 2337–2345. doi:10.2514/3.13399 .[18] A. Chlond, Large eddy simulation of contrails., Journal of the Atmospheric Sciences (1998). [19] S. Unterstrasser, K. Gierens, P. Spichtinger, The evolution of contrail microphysics in the vortex phase, Meteorologische Zeitschrift 17 (2) (2008) 145–156. doi:10.1127/0941-2948/2008/0273 .[20] R. Paugam, R. Paoli, D. Cariolle, Influence of vortex dynamics and atmospheric turbulence on the early evolution of a contrail, Atmospheric Chemistry and Physics 10 (8) (2010) 3933–3952. doi:10.5194/acp-10-3933-2010 .[21] A. D. Naiman, S. K. Lele, M. Z. Jacobson, Large eddy simulations of contrail development: Sensitivity to initial and ambient conditions over first twenty minutes, Journal of Geophysical Research: Atmospheres 116 (D21) (2011). doi: 10.1029/2011JD015806 .[22] J. Picot, R. Paoli, O. Thouron, D. Cariolle, Large-eddy simulation of contrail evolution in the vortex phase and its interaction with atmospheric turbulence, Atmospheric Chemistry and Physics 15 (13) (2015) 7369–7389. doi:10. 5194/acp-15-7369-2015 .[23] W. Huebsch, D. Lewellen, Sensitivity study on contrail evolution, 36th AIAA Fluid Dynamics Conference and Exhibit (2006). doi:10.2514/6.2006-3749 .23 [24] D. C. Lewellen, O. Meza, W. W. Huebsch, Persistent contrails and contrail cirrus. Part I: Large-eddy simulations from inception to demise, Journal of the Atmospheric Sciences 71 (12) (2014) 4399 – 4419. doi:10.1175/JAS-D-13-0316. 1.[25] S. Unterstrasser, K. Gierens, Numerical simulations of contrail-to-cirrus transition – part 2: Impact of initial ice crys-tal number, radiation, stratification, secondary nucleation and layer depth, Atmospheric Chemistry and Physics 10 (4) (2010b) 2037–2051. doi:10.5194/acp-10-2037-2010 .[26] D. C. Lewellen, Persistent contrails and contrail cirrus. Part II: Full lifetime behavior, Journal of the Atmospheric Sci-ences 71 (12) (2014) 4420 – 4438. doi:10.1175/JAS-D-13-0317.1 .[27] B. K¨ archer, F. Yu, Role of aircraft soot emissions in contrail formation, Geophysical Research Letters 36 (1) (2009). 
+
+doi:https://doi.org/10.1029/2008GL036649 .[28] S. Unterstrasser, K. Gierens, Numerical simulations of contrail-to-cirrus transition – part 1: An extensive parametric study, Atmospheric Chemistry and Physics 10 (4) (2010a) 2017–2036. doi:10.5194/acp-10-2017-2010 .[29] P. Jeßberger, C. Voigt, U. Schumann, I. S¨ olch, H. Schlager, S. Kaufmann, A. Petzold, D. Sch¨ auble, J.-F. Gayet, Aircraft type influence on contrail properties, Atmospheric Chemistry and Physics 13 (23) (2013) 11965–11984. doi:10.5194/ acp-13-11965-2013 .[30] S. Unterstrasser, N. G¨ orsch, Aircraft-type dependency of contrail evolution, Journal of Geophysical Research: Atmo-spheres 119 (24) (2014) 14,015–14,027. doi:10.1002/2014JD022642 .[31] F. Garnier, S. Brunet, L. Jacquin, Modelling exhaust plume mixing in the near field of an aircraft., Annales Geophysicae 15 (1997). doi:10.1007/s00585-997-1468-1 .[32] R. Paoli, F. Laporte, B. Cuenot, T. Poinsot, Dynamics and mixing in jet /vortex interactions, Physics of Fluids 15 (7) (2003) 1843–1860. doi:10.1063/1.1575232 .[33] A. A. Shirgaonkar, S. K. Lele, Interaction of vortex wakes and buoyant jets: A study of two-dimensional dynamics, Physics of Fluids 19 (8) (2007) 086601. doi:10.1063/1.2753515 .[34] J. Ramsay, I. Tristanto, S. Shahpar, A. John, Assessing the Environmental Impact of Aircraft /Engine Integration With Respect to Contrails, Journal of Engineering for Gas Turbines and Power 146 (11) (2024) 111026. doi:10.1115/1. 4066150 .[35] R. Annunziata, N. Bonne, F. Garnier, Numerical investigation of engine position e ff ects on contrail formation and evo-lution in the near-field of a realistic aircraft configuration, Aerospace Science and Technology (2025) 110703 doi: 10.1016/j.ast.2025.110703 .[36] P. Saulgeot, V. Brion, N. Bonne, E. Dormy, L. Jacquin, E ff ects of atmospheric stratification and jet position on the properties of early aircraft contrails, Phys. Rev. Fluids 8 (2023) 114702. doi:10.1103/PhysRevFluids.8.114702 .[37] S. Unterstrasser, Large-eddy simulation study of contrail microphysics and geometry during the vortex phase and con-sequences on contrail-to-cirrus transition, Journal of Geophysical Research: Atmospheres 119 (12) (2014) 7537–7555. 
+
+doi:10.1002/2013JD021418 .[38] J.-C. Khou, W. Ghedha¨ ıfi, X. Vancassel, F. Garnier, Spatial simulation of contrail formation in near-field of commercial aircraft, Journal of Aircraft 52 (6) (2015) 1927–1938. doi:10.2514/1.C033101 .[39] Y. Bouhafid, N. Bonne, L. Jacquin, Combined reynolds-averaged Navier-Stokes /Large-Eddy Simulations for an aircraft wake until dissipation regime, Aerospace Science and Technology 154 (2024) 109512. doi:10.1016/j.ast.2024. 109512 .[40] Y. Bouhafid, N. Bonne, Simulation of a contrail formation and early life cycle for a realistic airliner geometry, Atmo-spheric Chemistry and Physics 26 (2) (2026) 1053–1078. doi:10.5194/acp-26-1053-2026 .[41] D. Fabre, L. Jacquin, A. Loof, Optimal perturbations in a four-vortex aircraft wake in counter-rotating configuration, Journal of Fluid Mechanics 451 (2002) 319–328. doi:10.1017/S0022112001006954 .24 [42] S. Unterstrasser, I. S¨ olch, Study of contrail microphysics in the vortex phase with a lagrangian particle tracking model, Atmospheric Chemistry and Physics 10 (20) (2010) 10003–10015. doi:10.5194/acp-10-10003-2010 .[43] F. Garnier, E. Maglaras, F. Morency, X. Vancassel, E ff ect of compressibility on contrail ice particle growth in an engine jet, International Journal of Turbo & Jet-Engines 31 (2) (2014) 131–140. doi:doi:10.1515/tjj-2013-0039 .[44] A. Refloch, B. Courbet, A. Murrone, P. Villedieu, C. Laurent, P. Gilbank, J. Troyes, L. Tess´ e, G. Chaineray, J. Dargaud, E. Qu´ emerais, F. Vuillot, CEDRE Software, AerospaceLab Journal (03 2011). [45] J. Kleine, C. Voigt, D. Sauer, H. Schlager, M. Scheibe, T. Jurkat-Witschas, S. Kaufmann, B. K¨ archer, B. E. Anderson, In situ observations of ice particle losses in a young persistent contrail, Geophysical Research Letters 45 (24) (2018) 13,553–13,561. doi:10.1029/2018GL079390 .[46] A. Tabazadeh, S. T. Martin, J.-S. Lin, The e ff ect of particle size and nitric acid uptake on the homogeneous freezing of aqueous sulfuric acid particles, Geophysical Research Letters 27 (8) (2000) 1111–1114. doi:10.1029/1999GL010966 .[47] W. D. Hall, H. R. Pruppacher, The survival of ice particles falling from cirrus clouds in subsaturated air, Journal of Atmospheric Sciences 33 (10) (1976) 1995 – 2006. doi:10.1175/1520-0469(1976)033<1995:TSOIPF>2.0.CO;2 .[48] D. M. Murphy, T. Koop, Review of the vapour pressures of ice and supercooled water for atmospheric applications, Quarterly Journal of the Royal Meteorological Society 131 (608) (2005) 1539–1565. doi:10.1256/qj.04.94 .[49] C. Davies, Physics of drop formation in the atmosphere: by Yu S. Sedunov (Translated from Russian), pp. x + 234. hard cover. £8.40. Israel program for scientific translations, John Wiley & sons, New York and Toronto. 1974, Journal of Aerosol Science 7 (2) (1976) 192. doi:10.1016/0021-8502(76)90075-6 .[50] R. Paoli, K. Shari ff , Contrail modeling and simulation, Annual Review of Fluid Mechanics 48 (Volume 48, 2016) (2016) 393–427. doi:10.1146/annurev-fluid-010814-013619 .[51] D. Kolomenskiy, R. Paoli, Numerical simulation of the wake of an airliner, Journal of Aircraft 55 (4) (2018) 1689–1699. 
+
+doi:10.2514/1.C034349 .[52] D. C. Lewellen, W. S. Lewellen, The e ff ects of aircraft wake dynamics on contrail development, Journal of the Atmo-spheric Sciences 58 (4) (2001) 390 – 406. doi:10.1175/1520-0469(2001)058<0390:TEOAWD>2.0.CO;2 .[53] H. G. Castro, R. R. Paz, A time and space correlated turbulence synthesis method for large eddy simulations, Journal of Computational Physics 235 (2013) 742–763. doi:10.1016/j.jcp.2012.10.035 .[54] L. Jacquin, D. Fabre, P. Ge ff roy, E. Coustols, The properties of a transport aircraft wake in the extended near field - an experimental study, 39th Aerospace Sciences Meeting and Exhibit (2001). doi:10.2514/6.2001-1038 .[55] U. Schumann, R. Baumann, D. Baumgardner, S. T. Bedka, D. P. Duda, V. Freudenthaler, J.-F. Gayet, A. J. Heymsfield, P. Minnis, M. Quante, E. Raschke, H. Schlager, M. V´ azquez-Navarro, C. Voigt, Z. Wang, Properties of individual contrails: a compilation of observations and some comparisons, Atmospheric Chemistry and Physics 17 (1) (2017) 403–438. doi:10.5194/acp-17-403-2017 .[56] H. C. Ghimire, S. C. C. Bailey, An experimental investigation of wing-tip vortex decay in turbulence, Physics of Fluids 29 (3) (2017) 037108. doi:10.1063/1.4979133 .[57] T. B¨ olle, V. Brion, M. Couliou, P. Molton, Experiment on jet–vortex interaction for variable mutual spacing, Physics of Fluids 35 (1) (2023) 015117. doi:10.1063/5.0127634 .[58] C. Roy, T. Leweke, M. C. Thompson, K. Hourigan, Experiments on the elliptic instability in vortex pairs with axial core flow, Journal of Fluid Mechanics 677 (2011) 383–416. doi:10.1017/jfm.2011.91 .[59] J. M. Ortega, R. L. Bristol, O. Savas, Experimental study of the instability of unequal-strength counter-rotating vortex pairs, Journal of Fluid Mechanics 474 (2003) 35–84. doi:10.1017/S0022112002002446 .[60] T. Leweke, C. H. K. Williamson, Cooperative elliptic instability of a vortex pair, Journal of Fluid Mechanics 360 (1998) 85–119. doi:10.1017/S0022112097008331 .25 [61] F. Holz¨ apfel, T. Gerz, R. Baumann, The turbulent decay of trailing vortex pairs in stably stratified environments, Aerospace Science and Technology 5 (2) (2001) 95–108. doi:10.1016/S1270-9638(00)01090-7 .[62] T. Misaka, F. Holz¨ apfel, I. Hennemann, T. Gerz, M. Manhart, F. Schwertfirm, Vortex bursting and tracer transport of a counter-rotating vortex pair, Physics of Fluids 24 (2) (2012) 025104. doi:10.1063/1.3684990 .[63] K. Nomura, H. Tsutsui, D. Mahoney, J. W. Rottman, Short-wavelength instability and decay of a vortex pair in a stratified fluid, Journal of Fluid Mechanics 553 (2006) 283–322. doi:10.1017/S0022112006008883 .[64] A. Lottermoser, S. Unterstrasser, High-resolution modeling of early contrail evolution from hydrogen-powered aircraft, Atmospheric Chemistry and Physics 25 (14) (2025) 7903–7924. doi:10.5194/acp-25-7903-2025 .[65] F. Schr¨ oder, B. K¨ archer, C. Duroure, J. Str¨ om, A. Petzold, J.-F. Gayet, B. Strauss, P. Wendling, S. Borrmann, On the transition of contrails into cirrus clouds, Journal of the Atmospheric Sciences 57 (4) (2000) 464 – 480. doi: 10.1175/1520-0469(2000)057<0464:OTTOCI>2.0.CO;2 .[66] K. Gierens, S. Bretl, Analytical treatment of ice sublimation and test of sublimation parameterisations in two–moment ice microphysics models, Atmospheric Chemistry and Physics 9 (19) (2009) 7481–7490. doi:10.5194/ acp-9-7481-2009 .26
