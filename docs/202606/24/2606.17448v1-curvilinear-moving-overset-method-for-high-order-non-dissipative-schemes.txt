@@ -1,0 +1,1428 @@
+Title: Curvilinear Moving Overset Method for High-order Non-dissipative Schemes
+
+URL Source: https://arxiv.org/pdf/2606.17448v1
+
+Published Time: Wed, 17 Jun 2026 00:29:47 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+# Curvilinear Moving Overset Method for High-order Non-dissipative Schemes 
+
+Minhazul Islam a and Nek Sharan a
+
+> aDepartment of Aerospace Engineering, Auburn University, Auburn, AL 36849, USA
+
+Abstract 
+
+This paper presents a non-dissipative, high-order, moving overset method for curvilinear grids to simulate unsteady compressible flows in complex geometries with moving components. Centered finite-difference schemes that are up to sixth-order accurate in the interior are used with a weak moving overset interface treatment. The novel aspects of the proposed approach compared to conventional overset methods are: (i) instead of overwriting all conservative or primitive variables at the interface (or fringe) points with the interpolated values, a characteristic decomposition is performed and only the incoming characteristic variables are imposed for inviscid flows, consistent with the hyperbolic character of the Euler equations; for viscous flows, the viscous fluxes are imposed in addition to the incoming characteristics variables, (ii) instead of using multiple layers of fringe points at the interface, the proposed approach ensures high-order accuracy and stability with a single layer, thus minimizing the parallel communication costs at each timestep, and (iii) the proposed approach ensures long time stability with non-dissipative schemes without introducing artificial dissipation explicitly (using numerical filters) or implicitly (using upwind schemes). The stability is demonstrated by an eigenvalue analysis of the time-dependent (semi-discrete) system matrix for moving grids, proving the eigenvalue spectra remains confined to the left half of the complex plane with grid motion. The proposed approach is validated over a range of canonical and practical unsteady flow problems involving moving grids: one-dimensional scalar advection, two-dimensional isentropic vortex convection, flow past rotating two-dimensional circular cylinder, pitching two and three-dimensional airfoil/wing flow, and flow past two and three-dimensional oscillating circular cylinder, demonstrating high-order accuracy and long time stability for inviscid/viscous flows. 
+
+Keywords: 
+
+overset method, moving grids, high-order, finite-difference schemes 
+
+1. Introduction 
+
+Overset grids offer a simple and cost-effective approach to simulate fluid flows in complex configurations involving moving components. They enable independently generated body-fitted component grids to move through a static background grid, providing opportunities for selective mesh refinement around solid (mov-ing) bodies without grid distortion. The first application of moving overset grids was reported in [1] for an inviscid, two-dimensional store separation simulation, where a store grid moved relative to a background grid and the overset connectivity was updated via hole cutting, donor identification, and inter-grid interpo-lation [2]. A more general moving overset framework for viscous, three-dimensional simulations of multiple aerodynamic bodies in relative motion was presented by Meakin and Suhs [3], who applied it to perform tiltrotor simulations [4], among other flow problems [5, 6]. These applications demonstrated the feasibility of dynamically updating overset connectivity during grid motion. Subsequent efforts broadened the application of moving overset methods to flow-feature tracking with moving (overset) tracker grids. For example, [7] used locally refined tracker grids to follow shocks and vortical   
+
+> Email address: nsharan@auburn.edu (Nek Sharan)
+> Preprint submitted to Elsevier
+> arXiv:2606.17448v1 [physics.flu-dyn] 16 Jun 2026
+
+structures, Good accuracy can be maintained if overset connectivity remains robust under grid motion. As simulation scale became larger and more complex, studies increasingly focused on developing efficient and scalable methods to handle overset connectivity in parallel computations [8]. These developments have led to solver-independent overset assemblers, such as PEGASUS [9] and SUGGAR [10], which formalized moving overset connectivity as a reusable, automated capability, with later works improving parallel performance and data management strategies [11, 12]. Addressing overset connectivity and parallel scalability represents only part of the challenge of deploying overset methods; robust moving overset grid simulations of practical turbulent flows also require high-order accurate and time-stable discretizations. The application of high-order methods [13, 14, 15, 16, 17] has long been recognized to alleviate resolution and computational cost limitations associated with low-order schemes in applications involving turbulence, aeroacoustics, and unsteady aerodynamics. However, the use of non-dissipative high-order methods in non-canonical/practical domains is often limited by the lack of accurate and stable boundary and interface procedures suitable for general curvilinear and moving/deforming meshes [18, 19]. To be effective, overset interface treatments must preserve the global order of accuracy and stability properties of the underlying scheme; otherwise, interface-related errors can become the primary limitation on solution quality. Existing high-order approaches span finite-difference/volume, discontinuous Galerkin, and flux-reconstruction schemes. These approaches differ in the way the interface conditions are enforced, 
+
+i.e. , strongly or weakly, as further discussed in Sections 2.1 and 2.2. They also vary in the strategy used to ensure numerical stability, including artifical dissipation, upwind fluxes, dynamic filtering, or slope/flux limiting. In addition, different strategies (e.g., mutliple fringe layers [20], supermesh projection [21], etc.) are often adopted to preserve high-order accuracy near overset interfaces. Alabi and Ladeinde [22] formulated a high-order dynamic overset procedure using a strong (Dirichlet) interface treatment in a finite-difference discretization, where the 4th and 6th order compact differencing was used in the interior for low subsonic flows and WENO/MUSCL schemes at high Mach numbers when strong flow gradients were present. To preserve the order of accuracy of the interior scheme, multiple layers of overset interface (fringe) points were required, with high-order discretizations necessitating two or more layers. With careful choice of boundary closure and moving overset interface treatment, we show in this study that high-order accuracy can be ensured with a single layer of fringe point. Moreover, as discussed in Section 4.2, the strong imposition/overwriting of solutions at the interface points can lead to numerical instabilities at the moving overset interface with non-dissipative interior schemes. To address the issue, this study investigates a weak interface treatment with characteristic decomposition. Brazell et al. [23] developed a moving overset mesh approach to solve problems with bodies in relative motion using high-order Discontinuous Galerkin (DG) methods on hybrid unstructured meshes. They eval-uated the advective terms of the compressible flow equations using a Riemann solver with Lax-Friedrichs fluxes and the overset interface condition was enforced strongly by inserting the interpolated data into the boundary flux integrals. Duan and Wang [24] developed a high-order moving-overset method using a flux re-construction (FR) method, where elementwise polynomial solutions were advanced using common Riemann fluxes evaluated at flux points. They utilized a hybrid approach employing structured Cartesian background grids and unstructured near-body grids, which allows the solver to handle complex moving geometries while efficiently propagating wake features. The interpolated data at the overset interface were applied weakly by imposing a Riemann flux at the boundary flux points of the receiver elements. The common Riemann fluxes (e.g., Roe, HLLC, Rusanov) used in the FR method introduce upwinding, as they rely on directional wave propagation and apply numerical dissipation based on characteristic speeds. The numerical dissipation is essential for stability in this framework, providing the necessary upwind bias to prevent oscillations at overset interfaces. Applications such as bio-inspired flapping flight [25], wind turbine aerodynamics [26], and rotorcraft flows [27] involve complex unsteady flows dominated by vortical structures whose accurate resolution requires computational methods that introduce minimal numerical dissipation over long integration times. Unsteady 2flow computations employing overset grids, as disscused above, often require numerical dissipation or spatial filtering to ensure long-time stability; these ad hoc treatments can nonphysically alter critical flow features and dampen vortical structures/shear turbulence in the wake. It is a well-recognized limitation of overset grid methods that they are prone to numerical instabilities when combined with low-dissipative, high-order methods, since it cannot be guaranteed that interpolation at overlapping interfaces will not increase the overall energy of the solution. Efforts to develop stable high-order overset methods for large-eddy simulation (LES) of turbomachinery (e.g., [28, 29]) have similarly found that minimizing artificial dissipation and dispersion of turbulent structures at moving interfaces is a central challenge, with accuracy at overset interfaces limited by the interpolation scheme employed. High-order centered finite-difference methods are particularly well-suited for turbulence and aeroacoustic computations due to their low dissipation and dispersion errors, but their combination with moving overset interfaces — without any stabilizing upwinding or filtering — remains an open problem. Building on the theoretical foundations of [30], the present study develops a curvilinear moving overset method that uses non-dissipative centered finite-difference schemes with up to sixth-order accuracy in the interior. A weak overset interface treatment is applied, rather than overwriting the solution at interface points with interpolated values. No artificial/numerical dissipation or filtering is introduced to stabilize the solution at overset interfaces; the robustness is demonstrated by inviscid simulations that remain stable over long durations. The approach uses only one layer of fringe points, enabling cost-efficient simulations of unsteady flows with moving bodies while preserving the non-dissipative high-order character of the interior scheme. The paper is organized as follows. Section 2 describes the curvilinear mapping, the interpolation proce-dure, and the strong/weak interface treatments. Section 3 presents the detailed derivation of the numerical discretization based on the weak overset interface treatment with characteristic decomposition for moving curvilinear meshes. An eigenvalue analysis is presented to prove the stability of the proposed discretization for a scalar advection problem. Section 4 discusses the results for a wide range of 2-D and 3-D inviscid and viscous flow problems involving moving bodies/grids. Section 5 provides the conclusions of this study. 
+
+2. Interface Treatment in Overset Methods 
+
+To discuss the interface treatment for an overset grid configuration, consider a receiver (also called the fringe or interface) point located at the physical coordinate xr ∈ RN , where N = 1 , 2, 3 denotes the number of spatial dimensions, as shown for a N = 2 (two-dimensional) overset interface in Fig. 1. Let q(r)(xr , t )
+
+denote the numerical solution at the receiver point and ˆq(xr , t ) be the interpolated solution evaluated at xr
+
+from the donor grid. The evaluation of the interpolated solution at xr is carried out in two steps. First, the donor grid interpolation stencil is mapped from the physical space to a reference (computational) space, as shown in Fig. 1(b), to obtain the computational coordinates, ξr , of the receiver point in the donor stencil. Then, the interpolated solution, ˆq(xr , t ), is evaluated using Lagrange interpolation on the donor stencil in the computational coordinate system. The physical to computational space mapping with details of the interpolation procedure is discussed below. Let K(d) denote the donor grid interpolation stencil (in the physical space) for the receiver point xr ,shown as blue nodes in Fig. 1(b). The interpolation stencil is mapped to the computational space through a smooth curvilinear mapping 
+
+Ξ(d) 
+
+> K
+
+: K(d) → ˆK(d), ξ = Ξ(d) 
+
+> K
+
+(x), (1) with its inverse 
+
+Φ(d) 
+
+> K
+
+: ˆK(d) → K(d), x = Φ(d) 
+
+> K
+
+(ξ). (2) For general curvilinear grids, the mapping Φ(d) 
+
+> K
+
+is constructed from the coordinates of the donor points using 3a Lagrange interpolant over donor cells in computational space, given by 
+
+Φ(d) 
+
+> K
+
+(ξ) = 
+
+> Ns
+
+X
+
+> a=1
+
+xa La(ξ), (3) where xa = ( xa, y a, z a) ∈ K(d) are the physical coordinates of the donor points ( i.e. , the nodes in the interpolation stencil), La(ξ) are the Lagrange basis functions, and Ns is the number of donor points. Here, 
+
+ξ = ( ξ, η, ζ ) ∈ ˆK(d) denotes the computational coordinates local to the mapped donor stencil, shown in green in Fig. 1(b) for a two-dimensional configuration, and Ξ(d) 
+
+> K
+
+=
+
+h
+
+Φ(d)
+
+> K
+
+i−1
+
+. The Lagrange basis functions, 
+
+La(ξ), are given by 
+
+La(ξ) ≡ Lαβγ (ξ, η, ζ ) = ℓα(ξ) ℓβ (η) ℓγ (ζ), (4) where a = ( α, β, γ ) denotes the donor point indices. The one-dimensional Lagrange polynomials in (4) are 
+
+ℓα(ξ) = Y
+
+> m∈I
+> m̸=α
+
+ξ − ξm
+
+ξα − ξm
+
+, ℓβ (η) = Y
+
+> n∈J
+> n̸=β
+
+η − ηn
+
+ηβ − ηn
+
+, ℓγ (ζ) = Y
+
+> p∈K
+> p̸=γ
+
+ζ − ζp
+
+ζγ − ζp
+
+, (5) with {ξm}m∈I , {ηn}n∈J , and {ζp}p∈K denoting the donor point locations in ˆK(d) along the ξ, η, and ζ
+
+directions, respectively. The stencil index sets I, J , and K are chosen according to the interpolation order. For Lagrange linear interpolation in each direction, 
+
+I = {0, 1}, J = {0, 1}, K = {0, 1}, (6) whereas for cubic interpolation in each direction, 
+
+I = {0, 1, 2, 3}, J = {0, 1, 2, 3}, K = {0, 1, 2, 3}. (7) We assume that the mapping Φ(d) 
+
+> K
+
+is nonsingular, so that the Jacobian matrix, given by 
+
+J (ξ) = ∂Φ(d)
+
+> K
+
+∂ξ =
+
+
+
+∂ξ x ∂η x ∂ζ x∂ξ y ∂η y ∂ζ y∂ξ z ∂η z ∂ζ z
+
+ , (8) is positive definite. Accordingly, the entries of the Jacobian matrix are evaluated by differentiating (3), given by 
+
+∂ξ Φ(d) 
+
+> K
+
+(ξ) = 
+
+> Ns
+
+X
+
+> a=1
+
+xa ∂ξ La(ξ), (9) and similarly for ∂η Φ(d) 
+
+> K
+
+and ∂ζ Φ(d) 
+
+> K
+
+.The computational coordinates corresponding to the receiver location, xr , is then obtained by solving the nonlinear inverse problem 
+
+Φ(d) 
+
+> K
+
+(ξr ) = xr , ξr = ( ξr , η r , ζ r ). (10) For general curvilinear grids, (10) does not have a closed-form solution and is solved iteratively using the Newton’s method. Given an initial guess ξ(0) , successive iterations are computed using 
+
+ξ(h+1) = ξ(h) − J −1
+
+ξ(h)  
+
+Φ(d)
+
+> K
+
+
+
+ξ(h)
+
+− xr
+
+
+
+, (11) where the inverse of the Jacobian is calculated by inverting (8) and using (9) for derivative calculations. The iteration is terminated once the physical residual satisfies 
+
+Φ(d) 
+
+> K
+
+(ξ(h)) − xr 2
+
+< ε, (12) and ξ(h) ∈ ˆK, where ε = 10 −10 is chosen. The converged solution ξr = ( ξr , η r , ζ r ) uniquely identifies the location of the receiver point in the computational space, ˆK(d).4Physical Space Computational Space 
+
+> Receiver Point
+
+(a) (b)   
+
+> Figure 1: Overset-grid interpolation framework. (a) Global view of the curvilinear overset grids for flow simulations over an airfoil; the body-conforming (O-grid) is shown in blue, whereas the background Cartesian grid in red. The fringe (receiver) points on the background grid are identified by the red nodes. (b) An overset interface showing the donor (blue) and receiver (red) grids and the curvilinear mapping used for overset interpolation.
+
+With the computational coordinates ξr = ( ξr , η r , ζ r ) determined, the donor solution is evaluated using Lagrange interpolation, similar to (3), given by 
+
+ˆq(xr , t ) = 
+
+> Ns
+
+X
+
+> a=1
+
+q(d) 
+
+> a
+
+La(ξr ), (13) where q(d) 
+
+> a
+
+≡ q(d)(xa, t ) is the vector of conserved variables at the donor node indexed by a = ( α, β, γ ) and the Lagrange basis functions La(ξr ) are given by (4) and (5). The interpolated solution, ˆq(xr , t ), obtained from (13) is then applied at the interface (fringe) points strongly or weakly, as discussed below. 
+
+2.1. Strong Overset Interface Treatment 
+
+As illustrated in Fig. 1, let xr denote a receiver (fringe/interface) point on an overset interface. The receiver-grid numerical solution at this point is q(r)(xr , t ), and the overlapping donor grid provides an interpolated solution ˆq(xr , t ). In the strong interface treatment ( e.g. , [22, 23, 31], the interpolated solution is injected at the receiver point, 
+
+q(r)(xr , t ) ← ˆq(xr , t ), (14) overwriting the solution at each time step (or substep). Although simple to implement, overwriting all conservative variables at each fringe/interface point ignores the hyperbolic nature of the inviscid terms in the flow equations that specify the direction of propagation of the characteristic waves. Hence, overwriting all conservative variables often leads to numerical instabilities that originate at the overset interface and reflect back and forth between the domain boundaries and overset interfaces, amplifying over time and eventually destabilizing the entire simulation [19]. This requires the introduction of numerical filtering or artificial dissipation for long-time stability. Moreover, the (ad hoc) overwriting at the end of each time step also complicates the theoretical stability analysis because this interface treatment cannot be easily incorporated in the system of ordinary differential equations resulting from the numerical semi-discretization. 
+
+2.2. Weak Overset Interface Treatment 
+
+In the weak interface treatment, the interpolated solution is imposed using a penalty term added to the discretization of the governing equations. Unlike strong overset injection, which replaces the receiver grid 5m0 1 2 … m-1…   
+
+> 012
+
+… nn-1…
+
+> pp-1
+
+…0 1 2 …Figure 2: Schematic of the one-dimensional overlapping grids on which Eq. (16) is solved. 
+
+point solution with interpolated data from the donor grid, the weak approach computes the solution at the interface/fringe points. Let Q denote the vector of numerical solution at all points on the receiver grid and 
+
+ˆQ denote a vector containing donor interpolated data at the (overset interface) receiver points. A general form of semi-discretization for governing equations on the receiver grid can then be written as 
+
+dQ
+
+dt = G(Q) − P  Q − ˆQ, (15) where G(Q) denotes a discretization of the spatial derivative terms in the governing equations and the operator P ensures that the penalty term is applied only to the receiver grid points at the overset interface. 
+
+P can also incorporate the eigendecomposition to impose only the incoming characteristic variables. The explicit forms of G and P for the 1-D scalar advection equation and the 3-D compressible Navier-Stokes equations are detailed in Sections 3.1 and 3.2, respectively. 
+
+3. Moving Overset Grid Discretization Using the Weak Interface Treatment 
+
+The weak interface treatment is employed in this study because of its flexibility in accommodating a characteristic decomposition and enabling theoretical stability analysis, which helps avoid the use of ad hoc numerical dissipation for stabilization. In the following, we discuss the numerical discretization and the stability proof for a linear scalar advection problem (Section 3.1) and the extension of the approach to solving the compressible Navier-Stokes equations (Section 3.2). 
+
+3.1. Moving Overset Interface Treatment for the 1-D Scalar Advection Equation 
+
+Consider the one-dimensional linear advection equation 
+
+∂u ∂t + c ∂u ∂x = 0 , −1 ≤ x ≤ 1, t ≥ 0, (16) on three overlapping (overset) grids: a left grid −1 = aL ≤ x ≤ bL, a middle grid aM (t) ≤ x ≤ bM (t), and a right grid aR ≤ x ≤ bR = 1 , as shown in Fig. 2. The left and right grids are static, whereas the middle grid moves according to dx M
+
+dt = β(t), (17) so that its left and right boundaries remain within the neighboring grids. Assuming c > 0, the initial and boundary conditions are, respectively, 
+
+u(x, 0) = f (x), u(−1, t ) = g(t). (18) 6To accommodate moving and spatially stretched grids, we introduce the general curvilinear coordinate transformation 
+
+τ = t, ξ = ξ(x, t ). (19) Applying the chain rule, the Cartesian derivatives can be expressed in terms of the curvilinear derivatives using ∂∂t = ∂∂τ + ξt
+
+∂∂ξ , ∂∂x = ξx
+
+∂∂ξ , (20) where the shorthand notation ξt = ∂ξ/∂t and ξx = ∂ξ/∂x is used. Similarly, the curvilinear derivatives can be expressed in terms of the Cartesian derivatives using 
+
+∂∂τ = ∂∂t + xτ
+
+∂∂x , ∂∂ξ = xξ
+
+∂∂x . (21) Equations (20) and (21) can be written as, respectively, 
+
+"
+
+∂/∂t ∂/∂x 
+
+#
+
+=
+
+"
+
+1 ξt
+
+0 ξx
+
+# " 
+
+∂/∂τ ∂/∂ξ 
+
+#
+
+and 
+
+"
+
+∂/∂τ ∂/∂ξ 
+
+#
+
+=
+
+"
+
+1 xτ
+
+0 xξ
+
+# " 
+
+∂/∂t ∂/∂x 
+
+#
+
+. (22) Inverting the second equation in (22) and comparing it with the first equation provides the metric relations 
+
+ξt = −xτ ξx, ξx = 1
+
+xξ
+
+. (23) Substituting (20) into (16) provides 
+
+∂u ∂τ + ( ξt + cξ x) ∂u ∂ξ = 0 , (24) and using (23) in (24) yields 
+
+∂u ∂τ + ( −xτ + c) ξx
+
+∂u ∂ξ = 0 . (25) Here, xτ incorporates the grid motion. Assuming c > 0 and −xτ + c > 0, a semi-discretization of (25) with the boundary condition (18) using a weak boundary/interface treatment on the three overset grids shown in Fig. 2 can be written as du
+
+dτ = −X LDLu − τLXLH−1 
+
+> L
+
+eL 
+
+> 0
+
+(u0 − g), (26) 
+
+dv
+
+dτ = −X M DM v − τM XM H−1 
+
+> M
+
+eM
+
+> 0
+
+ v0 − ITL u , (27) 
+
+dw
+
+dτ = −X RDRw − τRXRH−1 
+
+> R
+
+eR
+
+> 0
+
+ w0 − ITM v , (28) where 
+
+u =
+
+h
+
+u0 · · · um
+
+iT
+
+, v =
+
+h
+
+v0 · · · vn
+
+iT
+
+, w =
+
+h
+
+w0 · · · wp
+
+iT
+
+are the solution vectors on the left, middle, and right grids, respectively. In (26)–(28), Xκ (κ = L, M, R )are diagonal matrices whose i-th diagonal entry is an approximation to |− xτ + c| ξx at the i-th grid point of the respective grids. The left and right grids are static, therefore, xτ and ξt is non-zero only for the middle grid. Dκ denote summation-by-parts first-derivative approximations of the form Dκ = H−1 
+
+> κ
+
+Qκ [32, Appendix B.1], where Hκ is a diagonal, symmetric positive definite (s.p.d.) norm matrix and 
+
+Qκ + QTκ = diag( −1, 0, · · · , 0, 1) . (29) The penalty parameter τκ ≥ 1/2, the vector eκ 
+
+> 0
+
+=
+
+h
+
+1 0 · · · 0
+
+iT
+
+selects the left boundary node, and IL
+
+contains the interpolation weights for the solution interpolation from the left grid to the first node of the middle grid. Similarly, IM enables interpolation from the middle grid to the first node of the right grid. The discretization (27), for the middle grid, assumes −xτ + c > 0; therefore, the interpolated data is (weakly) imposed at the left boundary of the grid. The stability proof for c < 0 and −xτ + c < 0 (where the 7boundary condition must be imposed at the right boundary) will follow a similar procedure, as discussed below and in Appendix A. The constraint −xτ + c > 0 for c > 0 (and, similarly, −xτ + c < 0 for c < 0) can be interpreted as the assumption that the moving grid velocity (typically associated with structure/body’s motion) does not exceed the freestream velocity. The scheme (26)–(28) can be collectively written as 
+
+dΦ
+
+dτ = M Φ + b, Φ =
+
+
+
+uvw
+
+ . (30) where the matrix M , called the system or discretization matrix, is given by 
+
+M =
+
+
+
+−X LH−1 
+
+> L
+
+QL − τLXLH−1 
+
+> L
+
+EL 
+
+> 0
+
+0 0
+
+τM XM H−1 
+
+> M
+
+eM 
+
+> 0
+
+ITL −X M H−1 
+
+> M
+
+QM − τM XM H−1 
+
+> M
+
+EM 
+
+> 0
+
+00 τRXRH−1 
+
+> R
+
+eR 
+
+> 0
+
+ITM −X RH−1 
+
+> R
+
+QR − τRXRH−1 
+
+> R
+
+ER
+
+> 0
+
+ ,
+
+(31) and 
+
+Eκ 
+
+> 0
+
+= eκ 
+
+> 0
+
+(eκ 
+
+> 0
+
+)T , b =
+
+
+
+τLXLH−1 
+
+> L
+
+eL 
+
+> 0
+
+g
+
+00
+
+ . (32) For bounded data, g ∈ L2 in (18), the following are equivalent necessary and sufficient conditions for energy stability (which implies that the solutions of (30) remain uniformly bounded in time): 
+
+• All eigenvalues of M have negative real part. 
+
+• There exists a symmetric positive definite (s.p.d.) matrix H such that uT HM u ≤ 0 for all u.
+
+• Real symmetric matrix HM + M T H, for a s.p.d. matrix H, is negative semidefinite. These conditions are standard results from classical linear systems theory; see, e.g. , [33]. In Appendix A, we employ the first condition to prove the energy stability of (30), by showing that all the eigenvalues of 
+
+M have a negative real part. The proof is independent of the form of the interpolation operators IL and 
+
+IM , hence the weak overset interface treatment in (26)–(28) which applies the interpolation data based on the direction of characteristic wave propagation (and not in both directions) ensures theoretical stability for all spatial overlaps and interpolation bases. In the next section, we extend the treatment to solve the three-dimensional compressible flow equations on moving overset grids. 
+
+3.2. Moving Overset Interface Treatment for the 3-D Compressible Navier-Stokes Equations 
+
+The compressible Navier-Stokes equations in general curvilinear coordinates are given by [34] 
+
+∂q
+
+∂τ + ∂F
+
+∂ξ + ∂G
+
+∂η + ∂H
+
+∂ζ = 0 , (33) where 
+
+q = 1
+
+J
+
+
+
+ρρu ρv ρw E
+
+
+
+, F = Fc + Fv , G = Gc + Gv , H = Hc + Hv . (34) In (34), ρ denotes the density, u = ( u1, u 2, u 3) = ( u, v, w ) are the Cartesian velocity components, E =
+
+p/ (γ − 1) + 12 ρ(u2 + v2 + w2) is the total energy, p denotes the pressure, and J = det ( ∂ξ/∂ x) is the Jacobian 8of the coordinate transformation. We assume the time to be invariant, therefore, τ = t. The flow variables are non-dimensionalized by a reference length scale L∗, velocity scale a∗∞ (ambient speed of sound), density scale ρ∗∞, pressure scale ρ∗∞a∗2
+
+> ∞
+
+, temperature scale a∗2
+
+> ∞
+
+/C ∗ 
+
+> p, ∞
+
+= ( γ − 1) T ∗∞, and viscosity μ∗∞. ∗ denotes a dimensional variable, while ∞ denotes an ambient quantity. γ = C∗ 
+
+> p
+
+/C ∗ 
+
+> v
+
+is the ratio of the specific heat at a constant pressure to the specific heat at a constant volume. The Reynolds number and the Prandtl number are defined as Re = ρ∗∞a∗∞L∗/μ ∗∞ and P r = μ∗C∗ 
+
+> p
+
+/k ∗, respectively, where k∗ denotes the thermal conductivity. Fc, Gc, and Hc in (34) are the inviscid fluxes, given by 
+
+Fc = 1
+
+J
+
+
+
+ρU ρuU + pξ x
+
+ρvU + pξ y
+
+ρwU + pξ z
+
+(ρE + p)U − ξtp
+
+
+
+, Gc = 1
+
+J
+
+
+
+ρV ρuV + pη x
+
+ρvV + pη y
+
+ρwV + pη z
+
+(ρE + p)V − ηtp
+
+
+
+, Hc = 1
+
+J
+
+
+
+ρW ρuW + pζ x
+
+ρvW + pζ y
+
+ρwW + pζ z
+
+(ρE + p)W − ζtp
+
+
+
+, (35) where the contravariant velocities are 
+
+U = ξt + ξxu + ξy v + ξz w, V = ηt + ηxu + ηy v + ηz w, W = ζt + ζxu + ζy v + ζz w. (36) The metric time-derivative terms appearing in the contravariant velocities account for grid motion, and are further discussed below. Fv , Gv , and Hv are the viscous fluxes, given by 
+
+Fv = 1
+
+J
+
+
+
+ξx ˜Fv + ξy ˜Gv + ξz ˜Hv
+
+
+
+, Gv = 1
+
+J
+
+
+
+ηx ˜Fv + ηy ˜Gv + ηz ˜Hv
+
+
+
+, Hv = 1
+
+J
+
+
+
+ζx ˜Fv + ζy ˜Gv + ζz ˜Hv
+
+
+
+,
+
+(37) where 
+
+˜Fv =
+
+
+
+0
+
+τ11 
+
+τ12 
+
+τ13 
+
+uj τ1j − q1
+
+
+
+, ˜Gv =
+
+
+
+0
+
+τ21 
+
+τ22 
+
+τ23 
+
+uj τ2j − q2
+
+
+
+, ˜Hv =
+
+
+
+0
+
+τ31 
+
+τ32 
+
+τ33 
+
+uj τ3j − q3
+
+
+
+. (38) are the Cartesian viscous fluxes, and the stress tensor and the heat flux are given by 
+
+τij = μRe 
+
+ ∂u i
+
+∂x j
+
++ ∂u j
+
+∂x i
+
+
+
++ λRe ∂u k
+
+∂x k
+
+δij , qi = − μRe P r ∂T ∂x i
+
+. (39) The viscosity is modeled by the Sutherland law and λ = μB − 23 μ, where μB = 0 .6μ is chosen as a model for the bulk viscosity of air. The non-dimensional ideal gas law is 
+
+p = γ − 1
+
+γ ρT. (40) For more details on the flow governing equations in curvilinear coordinates, see [35, 30]. 
+
+3.2.1. Metric Terms to Account for Grid Motion 
+
+For moving grids, time derivative of the curvilinear coordinates (ξ, η, ζ ) in (36) are non-zero, and are given by [34] 
+
+ξt = − (xt ξx + yt ξy + zt ξz ) ,ηt = − (xt ηx + yt ηy + zt ηz ) ,ζt = − (xt ζx + yt ζy + zt ζz ) ,
+
+(41) where xt, yt, and zt depend on the grid movement (translation/rotation) in physical coordinates. We consider rigid body motion in this study, where, as illustrated in Fig. 3, the location of a grid point initially (at time t0) located at x0 = ( x(t0), y (t0), z (t0)) T ≡ (x0, y 0, z 0)T on the moving grid can be obtained from 
+
+
+
+x(t)
+
+y(t)
+
+z(t)
+
+ =
+
+
+
+xp(t)
+
+yp(t)
+
+zp(t)
+
+ + R(ϕ(t), θ (t), ψ (t)) 
+
+
+
+x0
+
+y0
+
+z0
+
+ −
+
+
+
+xp, 0
+
+yp, 0
+
+zp, 0
+
+ . (42) 9𝝍 
+
+Y3
+
+X3
+
+Z3       
+
+> 𝒙 𝒕 ,𝒚 𝒕 ,𝒛 𝒕
+
+X1
+
+Y1
+
+Z1
+
+Y2
+
+Z2
+
+𝝓 
+
+X1
+
+# 𝜽 
+
+Y2
+
+X2
+
+Z3    
+
+> 𝒙 𝒑 ,𝟎 ,𝒚 𝒑 ,𝟎 ,𝒛 𝑷 ,𝟎
+> 𝒙 𝟎 ,𝒚 𝟎 ,𝒛 𝟎
+
+X1
+
+Y1
+
+Z1Figure 3: Schematic of a wing undergoing rigid-body motion. The right side shows the rotational sequence ending at   
+
+> (X3, Y 3, Z 3), while the left side shows the complete translation and rotation. The dashed and solid wings denote the ini-tial (at time t0) and translated/rotated configuration, respectively.
+
+In (42), the grid’s translational motion is captured by the displacement of the pivot point xp(t) = ( xp(t), y p(t), z p(t)) T
+
+and rotational motion by the rotation about the pivot point using the (time-dependent) rotation matrix 
+
+R(ϕ, θ, ψ ). The (Euler) angles ϕ(t), θ(t), and ψ(t) denote rotation about the axes x, y, and z, respectively, and xp, 0 = ( xp(t0), y p(t0), z p(t0)) T ≡ (xp, 0, y p, 0, z p, 0)T is the initial location of the pivot point. The rotation matrix is given by 
+
+R(ϕ, θ, ψ ) = 
+
+
+
+cos ψ cos θ cos ψ sin θ sin ϕ − sin ψ cos ϕ cos ψ sin θ cos ϕ + sin ψ sin ϕ
+
+sin ψ cos θ sin ψ sin θ sin ϕ + cos ψ cos ϕ sin ψ sin θ cos ϕ − cos ψ sin ϕ
+
+− sin θ cos θ sin ϕ cos θ cos ϕ
+
+ . (43) The time derivative of (42) provides the grid velocity components for the RHS of (41), given by 
+
+xt ≡ ˙x = ˙ xp + ˙R11 (x0 − xp, 0) + ˙R12 (y0 − yp, 0) + ˙R13 (z0 − zp, 0),yt ≡ ˙y = ˙ yp + ˙R21 (x0 − xp, 0) + ˙R22 (y0 − yp, 0) + ˙R23 (z0 − zp, 0),zt ≡ ˙z = ˙ zp + ˙R31 (x0 − xp, 0) + ˙R32 (y0 − yp, 0) + ˙R33 (z0 − zp, 0),
+
+(44) where the overdot denotes time derivative and ˙Rij represents the time derivative of the rotation-matrix components. 
+
+3.2.2. Weak Interface Treatment with Characteristic Decomposition 
+
+The weak overset interface treatment that respects the direction of characteristic wave propagation, as discussed for the scalar advection problem in Section 3.1, is adapted in this section for the compressible Navier-Stokes equations to impose the interpolated data at the fringe (or receiver) points; see Fig. 1(a). To discuss the discretization at an overset interface, consider a fringe point on, say, the κ± boundary where 10 κ = ξ, η or ζ. κ is the direction normal to the face on which the interface point lies and ± indicates an inflow ( +) or an outflow ( −) boundary. Let the solution at the fringe point with index (i, j, k ) be denoted by qijk and the interpolated value, from the donor grid, be given by ˆqijk . To impose only the incoming characteristics at the fringe point, the inviscid flux Jacobians are obtained from 
+
+Aξ (q) = ∂Fc
+
+∂q , Aη (q) = ∂Gc
+
+∂q , Aζ (q) = ∂Hc
+
+∂q , (45) and decomposed using 
+
+Aκ = Sκ Λκ S−1 
+
+> κ
+
+for κ = ξ, η or ζ, (46) where Sκ is the matrix of the right eigenvectors and Λκ is the diagonal matrix of eigenvalues. The eigenvalues are split to identify incoming and outgoing characteristic waves using 
+
+Λ± 
+
+> κ
+
+= 12 (Λ κ ± | Λκ|) , Kκ± = Sκ Λ± 
+
+> κ
+
+S−1 
+
+> κ
+
+. (47) For viscous flows, the viscous fluxes Fv , Gv , and Hv are interpolated (in addition to the solution values) from the donor grid, denoted below by ˆFv , ˆGv , and ˆHv , respectively. The interpolated values are imposed weakly at the fringe point using a semi-discretization given by 
+
+dqijk 
+
+dt = − (Dξm Fm)ijk − 1
+
+h0
+
+
+
+σI Kκ± + σV 
+
+> 1
+
+I5
+
+
+
+(qijk − ˆqijk ) + σV
+
+> 2
+
+h
+
+(Fκv )ijk −
+
+ ˆFκv
+
+
+
+> ijk
+
+i
+
+, (48) where Dξm Fm is the discrete approximation to the spatial (flux) derivatives of (33) and summation over 
+
+m = 1 , 2, 3 is implied. h0 is the (1 , 1) entry of the norm matrix H [32, Appendix B.1], and I5 is the 5 × 5
+
+identity matrix. In the first and last terms of the RHS of (48), the notation (F1, F2, F3) ≡ (F, G, H) and 
+
+(F1 
+
+> v
+
+, F2 
+
+> v
+
+, F3 
+
+> v
+
+) ≡ (Fv , Gv , Hv ), respectively, is used. Consistent with the static overset grid discretization [30], the penalty parameters are chosen as 
+
+σI ≥ 12 , σV 
+
+> 1
+
+= 2
+
+Re 
+
+1
+
+κ2 
+
+> x
+
++ κ2 
+
+> y
+
++ κ2
+
+> z
+
+, σV 
+
+> 2
+
+=
+
+
+
++ 12 , κ+ (inflow) ,
+
+− 12 , κ− (outflow) .
+
+(49) If the interface point lies on an edge or a corner, then each normal direction ( 2 for an edge and 3 for a corner) is treated separately and the interface terms for each direction is added to the RHS of (48). 
+
+4. Numerical Results 
+
+The above moving overset interface treatment is implemented in the in-house compressible flow code [19, 36, 37] to solve various inviscid/viscous flow problems on moving grids. This section details the stability and accuracy results for those problems. Time integration in all simulations is performed using the classical fourth-order Runge-Kutta (RK4) method. Spatial derivatives are approximated using the diagonal-norm summation-by-parts operators [32], denoted here by the notation p–2p–p, where p is the order-of-accuracy of the boundary scheme and 2p is that of the interior scheme. 
+
+4.1. 1-D Scalar Advection 
+
+The scalar advection equation (24) is solved on overlapping grids as shown in Fig. 2, where the left and right grids are static with (aL, b L) = ( −1, −0.1) and (aR, b R) = (0 .1, 1) . The middle grid undergoes a prescribed sinusoidal translation, given by 
+
+xM (t) = A sin( ωt ), (50) with amplitude A = 0 .1 and angular frequency ω = 2 π/T , where a time period T = 1 is chosen. The extent of the moving middle grid is then given by 
+
+(aM (t), b M (t)) = ( −0.35 + xM (t), 0.35 + xM (t)) . (51) 11 The initial/boundary condition (18) is specified using the exact solution 
+
+u(x, t ) = f (x − ct ) = e−β(x−x0−ct )2
+
+, (52) where the constant advection speed c = 1 , the scaling parameter β = 80 , and the initial location of the Gaussian x0 = −0.4.For this one-dimensional problem, the grid motion reduces to pure translation in the x-direction. Conse-quently, yt = zt = 0 and only a single curvilinear coordinate ξ is required. The metric time derivatives (41) therefore simplify to 
+
+ξt = −xt ξx, (53) where xt denotes the grid velocity in physical coordinates. The sinusoidal translation (50) implies 
+
+xt = dx M
+
+dt = Aω cos( ωt ) (54) for the middle grid and xt = 0 for the left and right grids. To preserve the spatial accuracy of the underlying scheme, Lagrange linear interpolation is used with the 1–2–1 scheme, while cubic interpolation is used with the 2–4–2 and 3–6–3 schemes. The interpolation and the donor–receiver mapping procedure were described in Section 2. Figure 4 shows the numerical solution and the corresponding spatial error for the moving overset grid configuration described above. 80 grids points are used on the left grid, 100 on the middle grid, and 120 on the right grid. The results are reported at t = 0 .5, chosen so that the advected solution has traversed the moving overset interface and is located at the right boundary/interface of the middle grid. The dashed vertical lines mark the instantaneous location of the moving middle-grid overset interfaces. The rows correspond to various p − 2p − p schemes. As evident, the error is not concentrated around the overset interfaces, and hence the proposed treatment does not compromise the accuracy of the underlying scheme. To evaluate the order of accuracy, Fig. 5(b) presents the L2-norm of the error with grid refinement, where the errors are calculated at t = 1 , when the initial pulse has traversed the moving middle grid to the right grid, as shown in Fig. 5(a). For this convergence analysis, the number of grid points is kept the same in all three grids. A global p + 1 order of accuracy is observed for various schemes, consistent with the theoretical result of [38]. Figure 6 compares the eigenvalue spectra of the system matrix (31) for various schemes, evaluated at the solution time t = 0 .5. In all cases, the eigenvalues lie strictly in the left half of the complex plane, 
+
+i.e. , every eigenvalue has a negative real part. This observation is consistent with the energy-stability analysis in Section 3.1 and Appendix A, and provides a numerical verification that the moving overset semi-discretization (26)–(28) with weak interface treatment is stable for the configurations considered here. Since the overset connectivity and the interpolation weights used in the weak treatment varies with time under grid motion, the system matrix is time-dependent M = M (t). Nevertheless, in our simulations the eigenvalue spectrum remains confined to the left half-plane for all sampled times during the motion, indicating that the semi-discrete operator stays stable throughout the simulation. 
+
+4.2. 2-D Isentropic Vortex Convection 
+
+To verify the overset interface treatment for an inviscid flow under grid motion, a benchmark problem with a known exact solution is considered. The grid consists of two overlapping 2-D Cartesian grids, as shown in Fig. 7(a). The smaller square grid (shown in red) undergoes a prescribed rigid-body rotation about its center (0, 0). Referring to Eq. (42), this configuration corresponds to zero translation, xp(t) = yp(t) = zp(t) = 0 ,and a pure rotation about the z-axis, with ϕ(t) = 0 and θ(t) = 0 in the rotation matrix (43), and 
+
+ψ(t) = ψ0 sin 
+
+ 2πt T
+
+
+
+, (55) 12 (a) (b) 
+
+(c) (d) 
+
+(e) (f) 
+
+Figure 4: 1-D scalar advection results at t = 0 .5 for various schemes: (a) & (b) 1–2–1 scheme, (c) & (d) 2–4–2 scheme, and (e) & (f) 3–6–3 scheme. The left column shows the solutions, while the right column shows the spatial errors. The vertical dashed line indicates the overset interface of the moving middle grid. slope = 2.0 
+
+> slope = 3.0
+> slope = 4.0
+
+(a) (b) 
+
+Figure 5: (a) Solution from the 3 − 6 − 3 scheme at three times; the vertical dashed lines mark the moving overset interface. (b) Convergence plot verifying the global accuracy. 
+
+13 (a) (b) 
+
+(c)                    
+
+> Figure 6: Eigenvalue spectra of the system matrix (31) evaluated at the solution time t= 0 .5for the (a) 1−2−1, (b) 2−4−2,and (c) 3−6−3schemes.
+
+where ψ0 = π/ 6 is chosen as the motion amplitude, T = 5 is the time period, and t denotes the solution time. Using Eq. (44), the grid velocity in physical coordinates is given by 
+
+xt = − ˙ψ(t) y, yt = ˙ψ(t) x, zt = 0 . (56) The grid velocity enters the governing equations through the time-metric derivatives defined in Eq. (41), given for a two-dimensional configuration by 
+
+ξt = −(xtξx + ytξy ), ηt = −(xtηx + ytηy ), ζt = 0 . (57) For the smaller grid, (56) is substituted in (57) to incorporate grid motion, while the background grid remains static, which implies xt = yt = zt = 0 and hence ξt = ηt = ζt = 0 .The vortex convection velocity is prescribed as (u0, v 0) = ( U∞, 0) so that the vortex translates only in the x-direction. With periodic boundaries, this choice causes the vortex to re enter the domain and encounter the rotating square overset grid repeatedly, allowing an assessment of the framework’s accuracy over multiple passes. Information exchange from one grid to another uses Lagrange bicubic interpolation. The governing equations for this problem are the Euler equations, and the exact density solution is given by 
+
+ρ(x, y, t ) = 
+
+
+
+1 − ϵ2(γ − 1) 8π2γ e 1−s2((x−x0−u0t)2+( y−y0−v0t)2)
+
+ 1
+
+> γ−1
+
+, (58) where ϵ determines the strength of the density perturbation, γ is the specific heat ratio (isentropic exponent), 
+
+s controls the spatial decay rate of the exponential function, and (x0, y 0) is the initial location of the vortex center. Fig. 7(b) shows the initial density contours, where (x0, y 0) = ( −0.75 , 0.0) . The solutions to other flow variables for this problem can be found in [19, Section 5.2]. 14 (a) (b) 
+
+> Figure 7: 2-D vortex convection initial grid: (a) a square background grid (black) overlapping a smaller grid (red) which rotates with time, and (b) the initial density contour.
+
+(a) (b)  
+
+> Figure 8: Density contours at two different time instants for the 2-D isentropic vortex convection on the moving overset configuration.
+
+Fig. 8 shows the density contours at two different time instants as the vortex traverses the rotating square overset grid. To evaluate stability, the simulation is carried out for a long duration and the density error, 
+
+ερ(x, t ), is examined by calculating the difference between the exact and numerical solution at each time step. The grid resolutions considered for the moving overset grid cases are shown in Table 1, where Nsg and 
+
+Nbg denote the number of grid points in each direction for the smaller and background grids, respectively. For simplicity, an equal number of grid points is used in each coordinate direction. Therefore, the smaller grid contains Nsg × Nsg points, while the background grid contains Nbg × Nbg points. Numerical results that confirm the accuracy of the proposed approach for a static grid using various p − 2p − p schemes are 15 Parameters Resolution 1 Resolution 2 Resolution 3 Resolution 4 Grid 1 (smaller, Nsg × Nsg )Grid 2 (background, Nbg × Nbg )
+
+50 × 50 120 × 120 75 × 75 180 × 180 100 × 100 240 × 240 125 × 125 300 × 300 
+
+> Table 1: Various grid resolutions for the moving overset grid configuration shown in Fig. 7(a) for isentropic vortex convection tests.
+
+(a) (b)                       
+
+> Figure 9: Log–log convergence plots of ∥ερ∥∞. (a) Comparison of the errors from linear and cubic interpolation with 3−6−3
+> scheme. (b) Comparison of the errors from 1−2−1,2−4−2, and 3−6−3schemes using Lagrange cubic interpolation.
+
+discussed in Appendix B. The L∞-norm of the density error, ∥ερ∥∞, at a non-dimensional time of 10 for the four grid resolutions listed in Table 1 is shown in a log-log plot in Fig. 9. The 3 − 6 − 3 scheme is used in Fig. 9(a) with linear and cubic Lagrange interpolations. As expected, linear interpolation yields second-order accuracy, compromising the accuracy of the underlying scheme, whereas cubic interpolation provides global fourth-order accuracy. Fig. 9(b) compares ∥ερ∥∞ for various schemes, confirming p + 1 order of accuracy for the p − 2p − p scheme, consistent with the theoretical result of [38]. The effect of grid refinement on error reduction is also shown in Fig. 10 through the density error contours at a non-dimensional time of 8 from 3 − 6 − 3 scheme. Fig. 10(a) shows the errors for Resolution 1, whereas Fig. 10(b) shows the errors for Resolution 4; for a one-to-one comparison the same contour levels are used in both plots. 
+
+(a) (b) (c)       
+
+> Figure 10: Density error contours using the 3−6−3scheme on (a) Resolution 1 and (b) Resolution 4 gird. (c) Density contours showing the location of the isentropic vortex at that solution time.
+
+To compare the performance of the two moving overset interface treatments, strong and weak imposition, as described in Sections 2.1 and 2.2, a time history of ∥ερ∥∞ from the two treatments is evaluated. The commonly used strong treatment injects the interpolated data, overwriting the solution at the receiver points, whereas the proposed weak treatment includes a characteristic decomposition and imposes the interpolated 16 incoming characteristic variables weakly. Figure 11 presents the ∥ερ∥∞ time history for both approaches on the Resolution 4 grid with the grid motion described above. In the strong imposition run, the error increases steadily and then shoots up sharply, leading to a solution blow-up around a non-dimensional time of 2.6; the instability appears as an abrupt spike in the error curve. In contrast, the weak imposition remains stable over long durations for this moving overset inviscid problem, with the simulation continuing robustly even as the vortex interacts with the rotating smaller grid multiple times. Strong injection treatment    
+
+> treatment Weak characteristic treatment
+> Figure 11: A comparison of ∥ερ∥∞from the strong and weak overset treatment applied to solve the 2-D vortex convection problem on a moving overset configuration shown in Fig. 7.
+
+4.3. 2-D Pitching Airfoil Flow 
+
+The curvilinear moving overset framework described in Section 3.2 is validated by simulating the flow over a pitching 2-D NACA 0012 airfoil at a freestream Mach number M∞ = 0 .2 and a Reynolds number (based on the airfoil chord length) Re c = 1000 . A body-conforming O-grid is used around the airfoil; it overlaps with a Cartesian background grid, as shown in Fig. 13(a). The O-grid moves with respect to the background grid to model the pitching motion. This problem provides a rigorous evaluation of the proposed overset treatment for a viscous flow problem on moving grids. As a first step, a static airfoil configuration was validated against existing results by comparing the aerodynamic coefficients, as discussed in Appendix C. For a rigid-body motion described by Eq. (42), a 2-D pitching airfoil motion in the x–y plane corresponds to pure rotation about the z-axis, as depicted in Fig. 12. Therefore, the motion is represented in (44) by setting ˙xp(t) = ˙ yp(t) = ˙ zp(t) = 0 and ϕ(t) = θ(t) = 0 , allowing rotation only about the z-axis, denoted by the angle ψ(t). Consistent with the reference study [39], the pitching angle is defined positive in the clockwise direction, and is given by 
+
+ψ(t) = − (ψ0 + sin(2 πf t )) π
+
+180 , (59) where ψ0 is the mean pitch angle in degrees and f is the pitching frequency. The airfoil rotates about a pivot located at the quarter-chord, (xp, y p) = ( xp, 0, y p, 0) = (0 .25 c, 0) , so that Eq. (42) reduces (in 2-D) to a rotation about (xp, y p). The grid-velocity components, given by Eq. (44), then simplifies to 
+
+xt = − ˙ψ [sin( ψ) ( x − xp) + cos( ψ) ( y − yp)] , yt = ˙ψ [cos( ψ) ( x − xp) − sin( ψ) ( y − yp)] , zt = 0 .
+
+(60) These grid-velocity components are incorporated into the governing equations using Eq. (41), which for a 2-D motion simplifies to Eq. (57). For validation, the pitching frequency f is chosen to match the value used in [39]. Two cases are considered with ψ0 = 0 ◦ and ψ0 = 11 ◦.The overset grid setup and z-vorticity after few cycles of motion for the ψ0 = 0 ◦ and ψ0 = 11 ◦ flow cases are shown in Figs. 13 and 14, respectively. The lift coefficients CL for the two cases are compared with the reference data in Fig. 15, which shows good agreement. The simulation is run for a sufficiently long duration 17 Figure 12: Schematic of the prescribed 2-D pitching motion of the NACA 0012 airfoil about the quarter-chord pivot, (xp, y p) = (0 .25 c, 0) . The dashed outline indicates the initial position, and the solid outline shows an instantaneous rotated position with pitch angle ψ(t).
+
+(a) (b) 
+
+Figure 13: 2-D pitching NACA 0012 airfoil for ψ0 = 0 ◦: (a) moving overset grid configuration and (b) z-vorticity field with contour levels in the range ωz ∈ [−0.3, 0.3] .
+
+to ensure that the unsteady aerodynamic response reached a time-periodic state after the initial transient effects. The favorable agreement with the reference data in Fig. 15 and the long time simulations confirm the high-order accuracy and stability of the proposed moving overset treatment. 
+
+(a) (b) 
+
+Figure 14: 2-D pitching NACA 0012 airfoil for ψ0 = 11 ◦: (a) moving overset grid configuration and (b) z-vorticity field with contour levels in the range ωz ∈ [−0.3, 0.3] .
+
+18 (a) (b)         
+
+> Figure 15: Validation of the lift coefficient CLfor the (a) ψ0= 0 ◦and (b) for ψ0= 11 ◦pitching airfoil/wing flow cases against the results of [39].
+
+4.4. 3-D Pitching Wing Flow 
+
+To evaluate the performance of the proposed overset treatment for a three-dimensional simulation, pitch-ing wing simulations are conducted for ψ0 = 0 ◦ and ψ0 = 11 ◦, extending the pitching airfoil configurations considered in the previous section to three dimensions. The lift-coefficient time history, CL(t), is compared with the same reference study [39]. By enforcing periodic boundary conditions in the spanwise direction, the 3-D configuration approximates an infinite wing and removes finite span/tip effects. As shown in Fig. 16, the spanwise periodic configuration yields wake dynamics that for a low Re c of 1000 considered here can be directly compared with the 2-D pitching airfoil case. The close match of the lift-coefficient time history, CL(t), in Fig. 15 with the reference data demonstrates that the proposed approach accurately preserves the phase and amplitude of the unsteady aerodynamic response during grid motion in three dimensions. Unlike strong overset interface treatments, stable long-time force predictions are obtained without introducing any filtering or numerical dissipation at the overset interface. 
+
+(a) (b)        
+
+> Figure 16: Flow past a pitching 3-D NACA 0012 wing for ψ0= 11 ◦: (a) moving overset grid configuration and (b) iso-surfaces of vorticity magnitude at |ω|= 0 .3,0.5,1.0, colored by x-momentum.
+
+4.5. 2-D Forced Oscillation of a Circular Cylinder 
+
+The curvilinear moving-overset treatment discussed in Section 3.2 is applied here to study the flow past a circular cylinder undergoing prescribed transverse (heaving) oscillations. The Reynolds number based on the cylinder diameter ( D) is set to Re D = 185 , the oscillation amplitude to Ao/D = 0 .2, and the oscillation frequency to fo/f vs = 1 .0, where fvs denotes the vortex shedding frequency for a stationary circular cylinder. 19 The non-dimensional frequency fo, based on the reference velocity scale ( = a∗∞, the ambient speed of sound) and the reference length scale ( = D∗, the cylinder diameter), where the superscript ∗ denotes a dimensional variable, as discussed in Section 3.2, is given by 
+
+fo = f ∗ 
+
+> o
+
+D∗
+
+a∗∞
+
+=
+
+ f ∗ 
+
+> o
+
+D∗
+
+U ∗∞
+
+  U ∗∞
+
+a∗∞
+
+
+
+= St M ∞, (61) where the Strouhal number, St , for a stationary circular cylinder is ∼ 0.2 and the free-stream Mach number considered here is M∞ = 0 .2 yielding fo = 0 .04 . These values are chosen to match the configuration reported in [40]. This two-dimensional case corresponds to pure translation in the transverse ( y) direction with no rotation, therefore, xp(t) = zp(t) = 0 and ϕ(t) = θ(t) = ψ(t) = 0 in Eq. (42). The prescribed heaving motion is 
+
+yp(t) = Ao sin(2 πf ot) . (62) The grid velocity components in Eq. (44) are then given by 
+
+xt = 0 , yt = ˙ yp = 2 πf oAo cos(2 πf ot) , zt = 0 . (63) The grid-velocity components are incorporated into the curvilinear governing equations (33) through the time-metric derivatives defined in Eq. (41). Accordingly, the moving overset grid time metrics for the present case are evaluated as 
+
+ξt = − (yt ξy ) , ηt = − (yt ηy ) , ζt = 0 . (64) Figure 17 illustrates two cylinder positions during the motion and the associated z-vorticity contours. The corresponding lift-coefficient time series, CL(t), is provided in Fig. 19. The lift-coefficient time series CL(t)
+
+obtained using the present framework agrees fairly well with the reference data from [40].  
+
+> Figure 17: z-vorticity contours at two different time instants in the flow past a 2-D heaving circular cylinder.
+
+4.6. 3-D Forced Oscillation of a Circular Cylinder 
+
+To test the robustness of the proposed overset treatment for a 3-D configuration, the oscillating circular cylinder flow discussed in the previous section is simulated in a 3-D domain with periodic boundary conditions in the spanwise direction. The Reynolds number, oscillation amplitude, and frequency are chosen to be the same as in the previous section to allow direct comparisons with the results of [40]. At a low Reynolds number, Re D = 185 , the spanwise inhomogeneity is expected to be minimal, enabling comparison with the 20 Figure 18: 3-D wake visualization for a transversely oscillating (heaving) circular cylinder at Re D = 185 and fo/f vs = 1 .0.Iso-surfaces of vorticity magnitude, |ω| = 0 .3, 0.5, 1.0, are shown and colored by x-momentum. 
+
+2-D results discussed in Section 4.5. The wake dynamics from the 3-D simulations is shown in Fig. 18 using isosurfaces of vorticity magnitude, colored by x-momentum. To eliminate initial transients from the starting of the cylinder motion, the simulation was advanced for many cycles until the lift response, CL,reached a time-periodic behavior. The CL time series is compared with the results of [40] in Fig. 19. For the spanwise-periodic 3-D configuration, the lift profile is nearly indistinguishable from the two-dimensional results, consistent with the expected spanwise-homogeneous dynamics at low Re D and in the absence of end effects. The favorable agreement with the reference data demonstrates the accuracy of the proposed moving overset treatment for viscous problems. Moreover, the preservation of coherent vortex structures after crossing the overset interface shows that the non-dissipative scheme, together with the weak moving overset interface treatment, does not artificially damp vortical flow features. )  
+
+> Figure 19: Lift coefficient ( CL) response of a heaving circular cylinder at fo/f vs = 1 .0.
+
+4.7. 2-D Rotating Circular Cylinder 
+
+The curvilinear moving overset framework is further applied to simulate flow past a circular cylinder rotating at a constant angular velocity in a uniform free stream. Following the standard definition for this configuration, the Reynolds number is given by Re D = U ∗∞D∗/ν ∗, where D∗ is the cylinder diameter, U ∗∞ is the free-stream velocity, and ν∗ is the kinematic viscosity. The superscript * denotes dimensional variables. The rotation rate is defined as α = D∗ω∗/(2 U ∗∞), where ω∗ denotes the angular velocity of the cylinder about its axis. For this test case, the Reynolds number is set to Re D = 200 , and the non-dimensional rotation rate is prescribed as α = 1 . The flow conditions and non-dimensional parameters are matched to the reference study [41], enabling a direct comparison of the lift-coefficient ( CL) time history. This flow problem assesses the capability of the present moving overset treatment in handling large rigid-body rotational motions. 21 Here, the grid motion is restricted to a rigid-body rotation about the z-axis with no translational motion. Therefore, in Eq. (42), xp(t) = yp(t) = zp(t) = 0 and ϕ(t) = θ(t) = 0 . The non-dimensional rotation rate 
+
+α = D∗ω∗/(2 U ∗∞) is defined using U ∗∞ for validation against the results of [41]; however, as discussed in Section 3.2, the present code implementation uses the ambient speed of sound, a∗∞, as the velocity scale. Therefore, for the calculation of the grid velocity components in Eq. (44), which reduces to Eq. (60) for this pure rotation case, 
+
+˙ψ = αcode = D∗ω∗
+
+2a∗∞
+
+=
+
+ D∗ω∗
+
+2U ∗∞
+
+
+
+=
+
+ D∗ω∗
+
+2a∗∞
+
+  U ∗∞
+
+a∗∞
+
+
+
+= α M ∞. (65) For a constant rotation rate, assuming ψ(t = 0) = 0 , see Fig. 20, 
+
+ψ(t) = α M ∞ t, (66) where the freestream Mach number, M∞, is chosen as 0.2. The grid velocity components are then given by Eq. (60) with time metric terms defined by Eq. (57). Figure 20 compares the lift-coefficient time history, 
+
+CL, with the reference results of [41]. The favorable match between the computed and reference results demonstrates the accuracy of the proposed framework in capturing the unsteady force response for rotating-body flow. The simulations in this and the previous sections are performed using only one layer of fringe points, indicating that the weak overset interface treatment remains stable for long durations and high-order accurate without requiring additional fringe layers. 
+
+(a) (b)       
+
+> Figure 20: Flow past a rotating circular cylinder at Re D= 200 :(a) zoomed in instantaneous z-vorticity contours around the overset interface illustrating the asymmetric wake induced by cylinder rotation; (b) time history of the lift coefficient CL
+> compared with reference results.
+
+5. Conclusions 
+
+This work develops and validates a non-dissipative, high-order moving overset-grid method for unsteady compressible flows using central finite-difference schemes in the interior. A sixth-order centered interior scheme with summation-by-parts boundary closure achieves fourth-order global accuracy, while the weak overset coupling ensures long time stability without upwind flux stabilization or ad hoc filtering/artificial dissipation. Stability is demonstrated for inviscid moving overset grid simulations, and is further supported by eigenvalue analysis of the time-dependent (semi-discrete) system matrix showing the spectra are confined to the (stable) left half of the complex plane. Validation on 1-D scalar advection, 2-D isentropic vortex convection, flow past a 2-D rotating cylinder, pitching 2-D and 3-D airfoil/wing flow, and flow past a 2-D/3-D oscillating cylinder confirm the method’s robustness. Moreover, in all simulations, stable and high-order accurate results are obtained using only one layer of fringe points, minimizing the parallel communication costs in each time iteration. 22 6. Acknowledgments 
+
+This work was supported in part by the Defense Established Program to Stimulate Competitive Re-search (DEPSCoR) grant AF-FA9550-24-1-0170 and the National Science Foundation (NSF) CBET Award# 2418406 (under the direction of Dr. Ron Joslin). The computations used the Advanced Cyberinfrastruc-ture Coordination Ecosystem: Services & Support (ACCESS) resources under grants PHY210037 and PHY240185 and the Auburn University Easley Cluster. 
+
+Appendix A. Proof That All Eigenvalues of M , Given by (31) , Have a Negative Real Part 
+
+The system matrix M , given by (31), is a block lower triangular matrix; therefore, the eigenvalues of M are the same as those of the matrix 
+
+ˆM =
+
+
+
+−X LH−1 
+
+> L
+
+QL − τLXLH−1 
+
+> L
+
+EL 
+
+> 0
+
+0 00 −X M H−1 
+
+> M
+
+QM − τM XM H−1 
+
+> M
+
+EM 
+
+> 0
+
+00 0 −X RH−1 
+
+> R
+
+QR − τRXRH−1 
+
+> R
+
+ER
+
+> 0
+
+
+
+(A.1) 
+
+Xκ is an approximation to |− xτ + c| ξx, which is positive definite. We define a s.p.d. matrix 
+
+ˆH =
+
+
+
+HLX −1
+
+> L
+
+HM X −1
+
+> M
+
+HRX −1
+
+> R
+
+ , (A.2) such that 
+
+ˆH ˆM + ˆM T ˆH =
+
+
+
+−(QL + QTL ) − 2τLEL 
+
+> 0
+
+0 00 −(QM + QTM ) − 2τM EM 
+
+> 0
+
+00 0 −(QR + QTR) − 2τRER
+
+> 0
+
+ . (A.3) Using the property (29), each diagonal block of (A.3) yields 
+
+−(Qκ + QTκ ) − 2τκEκ 
+
+> 0
+
+=
+
+
+
+1 − 2τκ
+
+0
+
+. . .
+
+0
+
+−1
+
+
+
+. (A.4) 
+
+For τκ ≥ 12 , (A.4) is negative semidefinite and, hence, the matrix ˆH ˆM + ˆM T ˆH is negative semidefinite. If ˆH ˆM + ˆM T ˆH is negative semidefinite, then the real part of all eigenvalues of ˆM must be non-positive [42]. The eigenvalues of M are the same as those of ˆM , therefore, the real part of all eigenvalues of M are non-positive. To satisfy the first energy stability condition listed in Section 3.1, we further show that none of the eigenvalues has a zero real part, and hence all eigenvalues have a negative real part. Let sκi =
+
+h
+
+sκi, 0 · · · sκi,N 
+
+iT
+
+, where N = m, n, p for κ = L, M, R , respectively, be the eigenvector correspond-ing to the eigenvalue λκi of ˆMκ = −X κH−1 
+
+> κ
+
+Qκ − τκXκH−1 
+
+> κ
+
+Eκ 
+
+> 0
+
+, then Eq. (A.4) provides 
+
+(sκi )∗ ( ˆHκ ˆMκ + ˆM ∗ 
+
+> κ
+
+ˆHκ)sκi = (1 − 2τκ)  sκi, 0
+
+2 −  sκi,N 
+
+2 , (A.5) where ∗ denotes the conjugate transpose. Furthermore, using ˆMκsκi = λκi sκi ,
+
+(sκi )∗ ( ˆHκ ˆMκ + ˆM ∗ 
+
+> κ
+
+ˆHκ)sκi = ( sκi )∗ ˆHκ( ˆMκsκi ) + ( ˆMκsκi )∗ ˆHκsκi = λκi + ( λκi )∗ (sκi )∗ ˆHκsκi . (A.6) 
+
+ˆHκ is positive definite and hence Eqs. (A.5) and (A.6) provide 
+
+Re (λκi ) = (1 − 2τκ)  sκi, 0
+
+2 −  sκi,N 
+
+2
+
+2 ( sκi )∗ ˆHκsκi
+
+. (A.7) 23 τκ ≥ 12 in (A.7) implies Re (λκi ) ≤ 0, and Re (λκi ) = 0 if and only if sκi, 0 = sκi,N = 0 . The reduced row echelon form of the matrix ˆMκ − λκi Iκ on removing the first and last columns (see, e.g., [43, Lemmas 1.3 and 1.4]) shows that the matrix is full rank. Hence ˆMκsκi = λκi sκi or 
+
+ ˆMκ − λκi Iκ
+
+
+
+sκi = 0 with sκi, 0 = sκi,N = 0 if and only if sκi = 0. Therefore, the eigenvectors ( sκi ) of ˆMκ cannot have sκi, 0 = sκi,N = 0 and, hence, Re (λκi )̸ = 0 .This proves that all eigenvalues of M , given by (31), have negative real part; hence, the scheme (26)–(28) is energy stable. For c < 0 and −xτ + c < 0, the boundary condition is imposed at the right boundary, and therefore the system matrix, M , will be block upper triangular instead of block lower triangular, as in (31). The above procedure can be applied to prove stability in that case, since the eigenvalues depend on the diagonal blocks for the block lower/upper triangular matrix. 
+
+Appendix B. 2-D Isentropic Vortex Convection On Static Overset Grids 
+
+The inviscid test case discussed in Section 4.2 is validated here on a static overset grid configuration using various p − 2p − p schemes. The grid configuration consists of two overlapping Cartesian square grids, as shown in Fig. 7(a), with a smaller square overset grid containing Nsg × Nsg points placed inside a background grid containing Nbg × Nbg points. In the static case, both grids remain fixed in time. Therefore, the time-metric terms defined in Eq. (41) reduce to 
+
+ξt = ηt = ζt = 0 . (B.1) The 1 − 2 − 1 scheme employs Lagrange linear interpolation, whereas the 2 − 4 − 2 and 3 − 6 − 3 schemes use Lagrange cubic interpolation. Figure B.21 presents the corresponding grid convergence results for the three schemes over four grid resolutions. A p + 1 order of accuracy is observed for the p − 2p − p scheme, consistent with the theoretical result of [38]. Based on these results, the 3 − 6 − 3 scheme is used for several moving grid simulations discussed in Section 4.   
+
+> Figure B.21: Grid convergence results showing ∥ερ∥∞from the proposed overset scheme for the 2-D isentropic vortex convection problem solved over static overset grids.
+
+Appendix C. 2-D NACA 0012 Airfoil On Static Overset Grids 
+
+The flow over a static two-dimensional NACA 0012 airfoil at an angle of attack α = 10 ◦ and a Reynolds number Re c = 1000 is simulated using overset grids for validation. A body-conforming O-grid is used around the airfoil with an overset rectangular (background) grid to capture the wake flow. Fig. C.22(a) shows the 
+
+z-vorticity contours at a time instant and Fig. C.22(b) presents the temporal evolution of the lift coefficient, 
+
+CL. The time-averaged value of computed CL is 0.417 , which is in good agreement with the reference value of CL = 0 .41 reported in [44]. This confirms the high-order accuracy of the static overset implementation. 24 (a) (b) 
+
+Figure C.22: NACA 0012 airfoil at α = 10 ◦ and Re c = 1000 : (a) instantaneous z-vorticity ( ωz ) contour and (b) time history of the lift coefficient, CL.
+
+Appendix D. Flow Over a Circular Cylinder On Static Overset Grids 
+
+A circular cylinder at Reynolds number Re D = 500 is simulated on a static overset-grid configuration for validation. As shown in Fig. D.23(b), the computed CL time history is in good agreement with the reference results of [45]. 
+
+(a) (b) 
+
+Figure D.23: Circular cylinder at Re D = 500 : (a) instantaneous z-vorticity ( ωz ) contour field, and (b) time history of the lift coefficient, CL.
+
+References 
+
+[1] F. C. Dougherty, J. A. Benek, J. L. Steger, On applications of chimera grid schemes to store separation, NASA Technical Memorandum NASA TM-88193, National Aeronautics and Space Administration, Ames Research Center, Moffett Field, CA, USA, accessed 2026-02-18 (1985). URL https://ntrs.nasa.gov/api/citations/19860003824/downloads/19860003824.pdf 
+
+[2] F. Dougherty, J.-H. Kuan, Transonic store separation using a three-dimensional chimera grid scheme. arXiv:https: //arc.aiaa.org/doi/pdf/10.2514/6.1989-637 , doi:10.2514/6.1989-637 .URL https://arc.aiaa.org/doi/abs/10.2514/6.1989-637 
+
+[3] R. MEAKIN, N. SUHS, Unsteady aerodynamic simulation of multiple bodies in relative motion. arXiv:https://arc. aiaa.org/doi/pdf/10.2514/6.1989-1996 , doi:10.2514/6.1989-1996 .URL https://arc.aiaa.org/doi/abs/10.2514/6.1989-1996 
+
+[4] R. L. Meakin, Moving body overset grid methods for complete aircraft tiltrotor simulations, in: 11th AIAA Computational Fluid Dynamics Conference, 1993. doi:10.2514/6.1993-3350 .[5] R. L. Meakin, The chimera method of simulation for unsteady three-dimensional viscous flow, Tech. rep. (1996). [6] R. Meakin, A. Wissink, Unsteady aerodynamic simulation of static and moving bodies using scalable computers, in: 14th Computational Fluid Dynamics Conference, 1999, p. 3302. 
+
+25 [7] K. Chawla, Numerical simulation of a powered-lift landing, tracking flow features using overset grids, and simulation of high lift devices on a fighter-lift-and-control wing, Contractor Report NASA-CR-194260, National Aeronautics and Space Administration (NASA), also issued as MCAT-93-18 and NAS 1.26:194260. Document ID: 19940009849. (Aug. 1993). URL https://ntrs.nasa.gov/api/citations/19940009849/downloads/19940009849.pdf 
+
+[8] N. C. Prewitt, D. M. Belk, W. Shyy, Parallel computing of overset grids for aerodynamic problems with moving objects, Progress in Aerospace Sciences 36 (2) (2000) 117–172. doi:10.1016/S0376-0421(99)00013-5 .[9] S. E. Rogers, N. E. Suhs, W. E. Dietz, Pegasus 5: An automated preprocessor for overset-grid computational fluid dynamics, AIAA journal 41 (6) (2003) 1037–1045. [10] R. W. Noack, Suggar: A general capability for moving body overset grid assembly, in: 17th AIAA Computational Fluid Dynamics Conference, 2005. doi:10.2514/6.2005-5117 .[11] W. M. Chan, Overset grid technology development at nasa ames research center, Computers & FluidsScienceDirect PII: S0045793008001953 (2009). URL https://www.sciencedirect.com/science/article/pii/S0045793008001953 
+
+[12] B. Roget, J. Sitaraman, Robust and efficient overset grid assembly for partitioned unstructured meshes, Journal of Com-putational Physics 260 (2014) 1–24. [13] C. Canuto, M. Hussaini, A. Quarteroni, T. Zang, Spectral Methods in Fluid Dynamics, Springer-Verlag, 1987. [14] S. K. Lele, Compact finite difference schemes with spectral-like resolution, Journal of Computational Physics 103 (1992) 16–42. [15] C. Tam, J. Webb, Dispersion-relation-preserving finite difference schemes for computational aeroacoustics, Journal of Computational Physics 107 (1993) 262–281. [16] R. Hirsch, Higher order accurate difference solutions of fluid mechanics problems by a compact differencing technique, Journal of Computational Physics 19 (1975) 90–109. [17] J. Kim, P. Moin, R. Moser, Turbulence statistics in fully developed channel flow at low reynolds numbers, Journal of Fluid Mechanics 177 (1987) 133–166. [18] M. H. Carpenter, D. Gottlieb, S. Abarbanel, The stability of numerical boundary treatments for compact high-order finite-difference schemes, Journal of Computational Physics 108 (2) (1993) 272–295. [19] N. Sharan, C. Pantano, D. J. Bodony, Time-stable overset grid method for hyperbolic problems using summation-by-parts operators, Journal of Computational Physics 361 (2018) 199–230. [20] W. Chan, The overgrid interface for computational simulations on overset grids, in: 32nd AIAA Fluid Dynamics Conference and Exhibit, 2002, p. 3188. [21] J. A. Crabill, J. Sitaraman, A. Jameson, A high-order overset method on moving and deforming grids, in: AIAA modeling and simulation technologies conference, 2016, p. 3225. [22] K. Alabi, F. Ladeinde, High-order dynamic overset procedure applied to moving body calculations, in: 45th AIAA Aerospace Sciences Meeting and Exhibit, 2007. doi:10.2514/6.2007-248 .[23] M. J. Brazell, J. Sitaraman, D. J. Mavriplis, An overset mesh approach for 3d mixed element high-order discretizations, Journal of Computational Physics 322 (2016) 33–51. doi:10.1016/S002199911630256X .[24] Z. Duan, Z. J. Wang, High-order overset flux reconstruction method for dynamic moving grids, AIAA Journal 58 (10) (2020) 4534–4547. doi:10.2514/1.J059185 .[25] T. Engels, Numerical modeling of fluid-structure interaction in bio-inspired propulsion, Ph.D. thesis, Aix-Marseille Uni-versité; Technische Universität Berlin (2015). [26] F. Zahle, N. Sørensen, Overset grid flow simulation on a modern wind turbine, in: 26th AIAA Applied Aerodynamics Conference, 2008, p. 6727. [27] R. C. Strawn, E. P. Duque, J. Ahmad, Rotorcraft aeroacoustics computations with overset-grid cfd methods, Journal of the American Helicopter Society 44 (2) (1999) 132–140. [28] J. Marty, N. Lantos, B. Michel, V. Bonneau, Les and hybrid rans/les simulations of turbomachinery flows using high order methods, in: Turbo Expo: Power for Land, Sea, and Air, Vol. 56659, American Society of Mechanical Engineers, 2015, p. V02CT44A003. [29] J. De Laborderie, F. Duchaine, L. Gicquel, O. Vermorel, G. Wang, S. Moreau, Numerical analysis of a high-order un-structured overset grid method for compressible les of turbomachinery, Journal of Computational Physics 363 (2018) 371–398. [30] N. Sharan, Time-stable high-order finite difference methods for overset grids, Ph.D. thesis, University of Illinois at Urbana-Champaign (2016). [31] R. Koomullil, G. Cheng, B. Soni, R. Noack, N. Prewitt, Moving-body simulations using overset framework with rigid body dynamics, Mathematics and Computers in Simulation 78 (5) (2008) 618–626, applied Scientific Computing: Numerical Grid Generation and Field Simulation. doi:https://doi.org/10.1016/j.matcom.2008.04.009 .URL https://www.sciencedirect.com/science/article/pii/S0378475408001638 
+
+[32] B. Gustafsson, High order difference methods for time dependent PDE, Vol. 38, Springer Science & Business Media, 2007. [33] P. J. Antsaklis, A. N. Michel, A Linear Systems Primer, 1st Edition, Birkh&#228;user Basel, 2007. [34] T. H. Pulliam, D. Chaussee, A diagonal form of an implicit approximate-factorization algorithm, Journal of Computational Physics 39 (2) (1981) 347–363. 
+
+26 [35] J. Kim, Adjoint-based control of turbulent jet noise, University of Illinois at Urbana-Champaign, 2012. [36] N. Sharan, J. Bellan, Investigation of high-pressure turbulent jets using direct numerical simulation, Journal of Fluid Mechanics 922 (2021) A24. [37] N. Sharan, P. T. Brady, D. Livescu, High-order dimensionally-split cartesian embedded boundary method for non-dissipative schemes, Journal of Computational Physics 464 (2022) 111341. [38] B. Gustafsson, The convergence rate for difference approximations to mixed initial boundary value problems, Mathematics of Computation 29 (130) (1975) 396–406. [39] D. Kurtulus, Unsteady aerodynamics of a pitching naca0012 airfoil at low reynolds number, International Journal of Micro Air Vehicles 11 (2019) 1756829319890609. [40] E. GUILMINEAU, P. QUEUTEY, A numerical simulation of vortex shedding from an oscillating circular cylinder, Journal of Fluids and Structures 16 (6) (2002) 773–794. doi:https://doi.org/10.1006/jfls.2002.0449 .URL https://www.sciencedirect.com/science/article/pii/S0889974602904494 
+
+[41] S. MITTAL, B. KUMAR, Flow past a rotating cylinder, Journal of Fluid Mechanics 476 (2003) 303–334. doi:10.1017/ S0022112002002938 .[42] M. J. Corless, A. Frazho, Linear systems and control: an operator perspective, CRC Press, 2003. [43] N. Sharan, C. Pantano, D. J. Bodony, Energy stable overset grid methods for hyperbolic problems, in: 7th AIAA Theo-retical Fluid Mechanics Conference, 2014, p. 2924. [44] S. Mittal, T. Tezduyar, Massively parallel finite element computation of incompressible flows involving fluid-body inter-actions, Computer Methods in Applied Mechanics and Engineering 112 (1) (1994) 253–282. doi:https://doi.org/10. 1016/0045-7825(94)90029-9 .URL https://www.sciencedirect.com/science/article/pii/0045782594900299 
+
+[45] J. J. Alonso, L. Martinelli, A. Jameson, Multigrid unsteady navier-stokes calculations with aeroelastic applications, 1995. URL https://api.semanticscholar.org/CorpusID:16783199 
+
+27

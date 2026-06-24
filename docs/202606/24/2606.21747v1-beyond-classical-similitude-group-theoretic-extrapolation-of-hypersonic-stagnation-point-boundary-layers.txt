@@ -1,0 +1,2035 @@
+Title: Beyond classical similitude: group theoretic extrapolation of hypersonic stagnation-point boundary layers
+
+URL Source: https://arxiv.org/pdf/2606.21747v1
+
+Published Time: Tue, 23 Jun 2026 01:20:08 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+> Under consideration for publication in J. Fluid Mech.
+
+Banner appropriate to article type will appear here in typeset article 
+
+# Beyond classical similitude: group theoretic extrapolation of hypersonic stagnation-point boundary layers 
+
+Shujaut H. Bader 1 and Daniel J. Bodony 1 
+
+> 1Center for Hypersonics and Entry Systems Studies, University of Illinois, Urbana-Champaign, IL, USA
+> Corresponding author: shbader@illinois.edu (Received xx; revised xx; accepted xx)
+
+Motivated by the need to extrapolate the results from ground-based experiments to the conditions of high-speed flight, we present the Lie equivalence symmetry analysis of the hypersonic stagnation-point boundary layers. We demonstrate the application of the equivalence symmetry on the set of coupled ODEs which are physically relevant in hypersonics. By allowing the property laws to transform along with the independent and dependent variables, the invariants derived within the similarity-reduced stagnation-point ODE formulation, identify families of non-linear maps that can be used to extrapolate the laboratory-scale predictions to flight. In practice, implementing these maps requires the laboratory-scale ODE solution together with the lab- and flight-side thermochemical property data, which are generally available from existing databases. The maps are derived for the similarity-reduced non-dimensional temperature across the boundary layer and are shown to collapse with independently computed flight solutions for a range of relevant cases. 
+
+Key words: 
+
+1. Introduction 
+
+Bell X-1 broke the sound barrier in 1947 with the help of wind-tunnel tests that fell short of fully replicating the Bell X-1 flight environment due to tunnel-wall interference and a lower-than-desired Reynolds number. In 1953, the Douglas D-558-2 Skyrocket became the first aircraft to reach twice the speed of sound without fully knowing the aerodynamic loads 
+
+a priori from ground test simulation (Griffith et al. 1987). With the advent of hypersonic spaceflight which is characterized by Mach numbers, 𝑀 ≥ 5, where dissociation of air begins to become significant and heat loads become high, the ground test facilities proved to be less able to simulate the flight environment, underscoring the persistent gap between ground testing and true flight conditions. 
+
+Abstract must not spill onto p.2 0 X0-1 
+
+> arXiv:2606.21747v1 [physics.flu-dyn] 19 Jun 2026
+
+Bader and Bodony 
+
+It remains extraordinarily difficult to duplicate the full aerothermochemical environment of the stagnation region in the ground facilities at hypersonic relevant conditions. This difficulty in simultaneously reproducing flight conditions such as Mach number, Reynolds number Re , shear stress, real gas chemistry, and viscous effects in any single ground facility constitutes what can be classically termed the hypersonic simulation problem (Griffith 
+
+et al. 1987). The classical formulation posed the problem mainly in terms of globally averaged aerodynamic loads and the discrepancies between their preflight predictions and the values inferred from flight data. With rapid advances in high-speed flight in recent decades, the modern formulation of this problem targets the same underlying difficulty, now in a regime where complex aerothermochemical effects like dissociation, gas –surface interaction, radiation, and material response all play central roles in the stagnation region and boundary layer. The inclusion of additional physical effects introduces additional controlling parameters, making simultaneous matching in a single ground-test facility rarely feasible. Consequently, hypersonic research relies on a suite of complementary facilities, spanning high-enthalpy and plasma environments, to isolate specific aspects of the flight physics by matching selected nondimensional groups (del Val et al. 2020). A complete characterization of real flight conditions thus requires coordinated efforts across both high-enthalpy facilities and plasma wind tunnels (Chazot & Panerai 2015; Gu & Olivier 2020). In ground-based atmospheric re-entry studies, the primary objective is to reproduce the near-wall environment, namely the shear stresses, the reactive species within the boundary layer, and the resulting wall heat flux. Many such studies focus on the similitude of the key parameters to enable extrapolation from lab to flight values, i.e., matching as many non-dimensional parameters as possible. One of the earliest ground-to-flight similarity concepts is binary scaling which provides a similarity rule for the chemically nonequilibrium inviscid flow over blunt bodies using the Lighthill-Freeman ideal dissociating gas (Freeman 1958). Analysis shows that in the regime where dissociation dominates recombination the equations collapse to a single similarity parameter proportional to the product of edge density and characteristic length, 𝜌 𝑒 𝐿 . Thus, two flows with the same binary scaling parameter 𝜌 e 𝐿 have similar nonequilibrium shock-layer and dissociation fields even if their individual density and length differ (Gibson & Marrone 1964; Muylaert 1996; Inger 
+
+et al. 2003). A second popular method is the concept of Local Heat Transfer Simulation (LHTS), proposed by Kolesnikov (1993, 2000), to reproduce the highest heat load at the stagnation point of the vehicle. LHTS shows that the stagnation-point heat flux in flight can be reproduced on a test sample in a subsonic facility by matching the centerline free-stream enthalpy, stagnation pressure, and velocity gradient between the laboratory case and the hypersonic flight case. In addition, LHTS assumes that Local Thermal Equilibrium (LTE) and Local Chemical Equilibrium (LCE) hold at the boundary-layer edge of the test sample. Traditional extrapolation-to-flight methodologies, as outlined above, are usually formu-lated for experiments, with simple empirical or semi-analytical justifications; computa-tional fluid dynamics (CFD) and data-assisted extrapolation efforts are presented in von Kaenel et al. (2009), Dreyer et al. (2017) and Fedeli (2024). Very few mathematical or analytical efforts have been pursued beyond basic similarity theory to address the extrapolation-to-flight challenge. In this work, we leverage Lie equivalence symmetries to derive new relations that seek to link laboratory-scale observations to their flight-scale counterparts. The present work is inspired by the study of Tranchant et al. (2022, 2025), in which Lie equivalence transformations are used to analyze extreme astrophysical phenomena in laboratory settings. As opposed to the standard Lie symmetries, Lie equivalence transformations scale not only the independent and dependent variables in the governing equations, but also the underlying property laws. These transformations act  
+
+> 0X0-2
+
+Journal of Fluid Mechanics 
+
+on the physical material elements of a model (such as constitutive or transport laws) in addition to the field variables, thereby mapping entire classes of problems into one another. The versatility of these symmetries allows them to be generalized to different systems. The method of Lie symmetry transformations has been used in many branches of physical sciences to develop particular solutions of differential equations (Ibragimov 1994). In fluid dynamics, several studies (Oberlack 1999, 2001; Lindgren et al. 2004; Oberlack et al. 2006; She et al. 2011; Rosteck 2014) on plane-parallel turbulent shear flows and zero-pressure-gradient turbulent boundary layers use Lie point symmetries to derive families of invariant scaling laws for mean velocity and higher-order moments. All of the aforementioned fluid dynamic studies used classical Lie symmetry methods to derive scaling laws. In this work, we go one step further and, for the first time, demonstrate the applicability of Lie equivalence symmetries in stagnation-point boundary-layer theory to obtain transformations that enable us to go beyond classical similitude. Rather than enforcing classical similitude by matching selected nondimensional groups, we adopt an equivalence-symmetry viewpoint that identifies invariant symmetry groups of the family of governing equations with arbitrary 1 property laws. Classical similarity parameters may then emerge as special cases of invariants associated with admitted scaling transformations. This viewpoint is consistent with the standard connection between dimensional analysis and Lie scaling symmetries: for boundary-value problems such as the Prandtl–Blasius boundary layer, invariance under a one-parameter Lie group of scalings can produce the similarity reduction directly, and in this sense scaling symmetry provides a generalization of dimensional analysis for reducing the number of independent variables (Cantwell 2002; She et al. 2011). A rich discussion on this can be found in Bluman & Anco (2002). For the ease of implementation and to provide a clear proof of concept, we apply the Lie equivalence framework to the similarity-reduced stagnation-point ODEs discussed in Bottin (1999); Barbante et al. (2001) and Lanza et al. (2025). We recognize that the resulting equivalence symmetry group is more restrictive than the one that would be obtained for the full stagnation-point PDE system. The ODEs are a similarity-reduced form of the same underlying laws, for which the determining equations reduce to a manageable problem while still yielding a meaningful subgroup of the full PDE equivalence and practically usable laboratory–flight mappings.  
+
+> 2. Lie equivalence symmetries of stagnation-point ODEs
+
+In this section, the theoretical results from Lie equivalence symmetry analysis of the system of stagnation-point ODEs will be presented. For the paper to be self-contained, we have included the detailed derivations of the symmetries and final invariants relevant for mapping in the text below. At this point, we strongly encourage the reader to refer to the Appendix A for a brief introduction to the Lie-symmetry/equivalence concepts used in this study. The stagnation-point ODEs as described in Lanza et al. (2025) read, 
+
+𝑑𝑉 𝑑𝜂 = −𝐹, (2.1 a)
+
+𝑉 𝑑𝐹 𝑑𝜂 = 12
+
+
+
+𝑅 𝜌 − 𝐹 2
+
++ 𝑑 𝑑𝜂 
+
+
+
+ℓ0
+
+𝑑𝐹 𝑑𝜂 
+
+
+
+, (2.1 b)   
+
+> 1arbitrary in the context of equivalence symmetry analysis means that the property laws are not fixed in the governing equations, and that they are arbitrary functions of one of the field variables.
+
+0 X0-3 Bader and Bodony 
+
+𝑉 𝑑𝑔 𝑑𝜂 = 1
+
+𝐶 𝑝 
+
+𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+
+
+. (2.1 c)where, 
+
+𝐹 = 𝑢 𝑢 𝑒 
+
+, 𝑔 = 𝑇 𝑇 𝑒 
+
+, 𝑉 = 2𝜉 𝜕𝜉 /𝜕𝑥 𝐹 𝜕𝜂 𝜕𝑥 + 𝜌𝑣𝑟 √︁ 
+
+2𝜉 
+
+!
+
+, 𝑅 𝜌 = 𝜌 e
+
+𝜌 ,𝜉 (𝑥 ) =
+
+∫ 𝑥 
+
+> 0
+
+𝜌 𝑒 𝜇 𝑒 𝑢 𝑒 𝑟 2 𝑑𝑥 ′, 𝜂 (𝑥, 𝑦 ) = 𝑟𝑢 𝑒 √︁ 
+
+2𝜉 
+
+∫ 𝑦 
+
+> 0
+
+𝜌 𝑑𝑦 ′,𝑙 0 = 𝜌𝜇 𝜌 𝑒 𝜇 𝑒 
+
+, 𝜒 = 𝜆𝜌 𝜌 𝑒 𝜇 𝑒 
+
+Rewriting (2.1) in the standard form yields, 
+
+𝛥 𝐶 := 𝑑𝑉 𝑑𝜂 + 𝐹 = 0, (2.2 a)
+
+𝛥 𝑀 := 𝑑 2 𝐹 𝑑𝜂 2 − 1
+
+ℓ0
+
+
+
+𝑉 𝑑𝐹 𝑑𝜂 − 12 (𝑅 𝜌 − 𝐹 2) − 𝑑𝐹 𝑑𝜂 𝑑ℓ 0
+
+𝑑𝑔 𝑑𝑔 𝑑𝜂 
+
+
+
+= 0, (2.2 b)
+
+𝛥 𝐸 := 𝑑 2𝑔 𝑑𝜂 2 − 1
+
+𝜒 
+
+"
+
+𝐶 𝑝 𝑉 𝑑𝑔 𝑑𝜂 −
+
+ 𝑑𝑔 𝑑𝜂 
+
+2 𝑑𝜒 𝑑𝑔 
+
+#
+
+= 0. (2.2 c)The subscript ‘ 𝑒 ’ denotes the value of the variable computed at the edge of the boundary layer. For more details about the transformations used to derive the above ODEs from their underlying mass, momentum and energy PDEs, the interested reader is referred to Bottin (1999); Barbante et al. (2001) and Lanza et al. (2025). It should be emphasized that the standard form of ODEs (2.2) is purely an algebraic rearrangement, introduced only to cast the system into a form that is convenient for Lie –equivalence symmetry analysis. In the equivalence analysis of the stagnation-point ODE system, the set of elements 
+
+𝑎 𝑖 = {ℓ0, 𝜒, 𝑅 𝜌 , 𝐶 𝑝 } depend on the non-dimensionalized temperature 𝑔 = 𝑇 /𝑇 𝑒 and 
+
+𝑇 𝑒 . For example, ℓ0 (𝑔 ; 𝑇 𝑒 ) = 𝜌𝜇 /( 𝜌 𝑒 𝜇 𝑒 ) = 𝜌 (𝑔𝑇 𝑒 )𝜇 (𝑔𝑇 𝑒 )/( 𝜌 (𝑇 𝑒 )𝜇 (𝑇 𝑒 )) , 𝜒 (𝑔 ; 𝑇 𝑒 ) =
+
+𝜆𝜌 /( 𝜌 𝑒 𝜇 𝑒 ) = 𝜆 (𝑔𝑇 𝑒 )𝜌 (𝑔𝑇 𝑒 )/( 𝜌 (𝑇 𝑒 )𝜇 (𝑇 𝑒 )) . Since 𝑇 𝑒 does not appear explicitly in the ODEs, equivalence symmetries cannot encode its variation directly. Therefore, 𝑇 𝑒 does not add any new degrees of freedom to the symmetry, and only acts as a label for the property tables from which the elements in 𝑎 𝑖 are built, such that 𝑎 𝑖 = 𝑎 𝑖 (𝑔 ; 𝑇 𝑒 ). Unless explicitly stated, 𝑇 𝑒 in the argument of the property laws will be suppressed for brevity and these constitutive functions will be declared as 𝑎 𝑖 (𝑔 ). Based on the explicit 𝑔 -dependence of the auxiliary elements 𝑎 𝑖 , the system of auxiliary equations written in the standard form is, 
+
+𝛥 𝑎 𝑖,𝑘 := 𝜕𝑎 𝑖 
+
+𝜕𝑥 𝑘 
+
+= 0 (2.3) where 𝑎 𝑖 ∈ { 𝑅 𝜌 , 𝐶 𝑝 , ℓ 0, 𝜒 } and 𝑥 𝑘 ∈ { 𝜂, 𝐹, 𝑉 }. These equations constrain the auxiliary functions 𝑎 𝑖 with respect to 𝜂, 𝐹, and 𝑉 while leaving the 𝑔 -dependence unconstrained. The universal infinitesimal generator and its prolongations for the equivalence transfor-mations of the systems of equations (2.2) and (2.3) can be written as, 
+
+𝑋 = 𝜙 𝜂 𝜕 𝜂 +
+
+> {𝐹,𝑉 ,𝑔 }
+
+∑︁  
+
+> 𝑑 𝑖 ∈
+
+𝜙 𝑑 𝑖 𝜕 𝑑 𝑖 +   
+
+> {𝑅 𝜌 ,𝐶 𝑝 ,ℓ 0,𝜒 }
+
+∑︁  
+
+> 𝑎 𝑖 ∈
+
+𝜙 𝑎 𝑖 𝜕 𝑎 𝑖 , (2.4 a)
+
+0 X0-4 Focus on Fluids articles must not exceed this page length Journal of Fluid Mechanics 
+
+𝑋 (1) = 𝑋 +
+
+> {𝐹,𝑉 ,𝑔 }
+
+∑︁  
+
+> 𝑑 𝑖 ∈
+
+𝜙 (1) 
+
+> 𝑑 𝑖
+
+𝜕 𝑑 𝑖 (1) +   
+
+> {𝑅 𝜌 ,𝐶 𝑝 ,ℓ 0,𝜒 }
+
+∑︁   
+
+> 𝑎 𝑖 ∈{𝜂,𝐹,𝑉 ,𝑔 }
+
+∑︁   
+
+> 𝑥 𝑗 ∈
+
+𝜙 (1) 𝑥 𝑗  
+
+> 𝑎 𝑖
+
+𝜕 𝑎 𝑖 ( 𝑥 𝑗 ) , (2.4 b)
+
+𝑋 (2) = 𝑋 (1) +
+
+> {𝐹,𝑔 }
+
+∑︁  
+
+> 𝑑 𝑘 ∈
+
+𝜙 (2) 
+
+> 𝑑 𝑘
+
+𝜕 𝑑 𝑘 (2) . (2.4 c)The superscripts (1) and (2) on the variables 𝑑 𝑖 and 𝑑 𝑘 in 𝑋 (1) and 𝑋 (2) denote their first and second derivatives with respect to 𝜂 , respectively. The superscript (𝑥 𝑗 ) in equation for 𝑋 (1) denotes the first derivative of the variables collected in 𝑎 𝑖 with respect to the variable 𝑥 𝑗 . The superscripts (1) and (2) on the 𝜙 ’s in 𝑋 (1) and 𝑋 (2) are merely indices and do not denote derivatives of 𝜙 . Any other index without parentheses is a label. When projecting the universal generator onto a given equation, only a subset of its terms is retained; the remaining terms vanish or are inapplicable for that equation and/or the auxiliary manifold. We restrict to the equivalence group in which the infinitesimals associated with the base variables (𝜂, 𝐹, 𝑉, 𝑔 ) depend only on (𝜂, 𝐹, 𝑉, 𝑔 ), whereas the infinitesimals for the property laws 𝑎 𝑖 ∈ { ℓ0, 𝜒, 𝑅 𝜌 , 𝐶 𝑝 } may depend on (𝜂, 𝐹, 𝑉, 𝑔, 𝑎 𝑖 );which is the standard convention in equivalence-group treatments (e.g. Tranchant et al. 
+
+(2025)). In the subsequent sections, to obtain the equivalence symmetries, we project the prolonged generator 𝑋 (2) first onto the auxiliary equations (2.3), and subsequently to each equation in the main system (2.2). 2.1. Auxiliary system of equations 
+
+Because the auxiliary system of equations contains only first derivatives of the constitu-tive elements, projecting the second prolongation 𝑋 (2) onto the auxiliary manifold retains only the first-order prolongation terms 𝜙 (1) 𝑥 𝑗  
+
+> 𝑎 𝑖
+
+for 𝑥 𝑗 ∈ { 𝜂, 𝐹, 𝑉 }.The linearized symmetry condition (LSC) for this system reads, 𝑋 (2) 𝛥 𝐴 𝑖,𝑘 
+
+ = 0, yielding, 
+
+𝜙 (1) 𝑥 𝑗  
+
+> 𝑎 𝑖
+
+= 0, ∀ 𝑎 𝑖 ∈ { 𝑅 𝜌 , 𝐶 𝑝 , ℓ 0, 𝜒 } and 𝑥 𝑗 ∈ { 𝜂, 𝐹, 𝑉 }. (2.5) For 𝑎 𝑖 ∈ { 𝑅 𝜌 , 𝐶 𝑝 , ℓ 0, 𝜒 }, and 𝑥 𝑗 ∈ { 𝜂, 𝐹, 𝑉, 𝑔 }, we know that, 
+
+𝜙 (1) 𝑥 𝑗  
+
+> 𝑎 𝑖
+
+= 𝐷 𝑥 𝑗 
+
+ 𝜙 𝑎 𝑖 
+
+ − 
+
+> {𝜂,𝐹,𝑉 ,𝑔 }
+
+∑︁  
+
+> 𝑥 𝑚 ∈
+
+𝑎 𝑖,𝑥 𝑚 𝐷 𝑥 𝑗 
+
+ 𝜙 𝑥 𝑚 
+
+ . (2.6) To illustrate the structure of this sum, a few representative terms are written out below while keeping 𝑎 𝑖 general. For 𝑥 𝑘 = 𝜂 :
+
+𝜙 (1) 𝜂 𝑎 𝑖 = 𝐷 𝜂 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝜂 𝐷 𝜂 (𝜙 𝜂 ) − 𝜕𝑎 𝑖 
+
+𝜕𝐹 𝐷 𝜂 (𝜙 𝐹 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑉 𝐷 𝜂 (𝜙 𝑉 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝜂 (𝜙 𝑔 )
+
+(2.7 a)For 𝑥 𝑘 = 𝐹 :
+
+𝜙 (1) 𝐹 𝑎 𝑖 = 𝐷 𝐹 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝜂 𝐷 𝐹 (𝜙 𝜂 ) − 𝜕𝑎 𝑖 
+
+𝜕𝐹 𝐷 𝐹 (𝜙 𝐹 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑉 𝐷 𝐹 (𝜙 𝑉 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝐹 (𝜙 𝑔 )
+
+(2.7 b)For 𝑥 𝑘 = 𝑉 :
+
+0 X0-5 Bader and Bodony 
+
+𝜙 (1)𝑉 𝑎 𝑖 = 𝐷 𝑉 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝜂 𝐷 𝑉 (𝜙 𝜂 ) − 𝜕𝑎 𝑖 
+
+𝜕𝐹 𝐷 𝑉 (𝜙 𝐹 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑉 𝐷 𝑉 (𝜙 𝑉 ) − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝑉 (𝜙 𝑔 )
+
+(2.7 c)For any 𝑎 𝑖 , imposing 𝜕 𝜂 𝑎 𝑖 = 𝜕 𝐹 𝑎 𝑖 = 𝜕 𝑉 𝑎 𝑖 = 0 on the auxiliary manifold, only the last term corresponding to 𝑥 𝑚 = 𝑔 survives in the sum. Therefore, these expressions reduce to, 
+
+𝜙 (1) 𝜂 𝑎 𝑖 = 𝐷 𝜂 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝜂 (𝜙 𝑔 ), for 𝑥 𝑘 = 𝜂 (2.8 a)
+
+𝜙 (1) 𝐹 𝑎 𝑖 = 𝐷 𝐹 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝐹 (𝜙 𝑔 ), for 𝑥 𝑘 = 𝐹 (2.8 b)
+
+𝜙 (1)𝑉 𝑎 𝑖 = 𝐷 𝑉 
+
+ 𝜙 𝑎 𝑖 
+
+ − 𝜕𝑎 𝑖 
+
+𝜕𝑔 𝐷 𝑉 (𝜙 𝑔 ), for 𝑥 𝑘 = 𝑉 (2.8 c)Given that the infinitesimals 𝜙 𝑎 𝑖 and 𝜙 𝑔 are functions of only the base variables and arbitrary properties, their total derivatives with respect to base variables do not con-tain the arbitrary gradient 𝜕𝑎 𝑖 /𝜕𝑔 . Therefore a relation of the form 𝑃 (𝜂, 𝐹, 𝑉, 𝑔, 𝑎 𝑖 ) − (𝜕𝑎 𝑖 /𝜕𝑔 ) 𝑄 (𝜂, 𝐹, 𝑉, 𝑔, 𝑎 𝑖 ) = 0 must hold for all admissible 𝑎 𝑖 only if 𝑃 (𝜂, 𝐹, 𝑉, 𝑔, 𝑎 𝑖 ) =
+
+0, 𝑄 (𝜂, 𝐹, 𝑉, 𝑔, 𝑎 𝑖 ) = 0.
+
+Applying this argument to the expressions (2.8) above yields, 
+
+𝐷 𝜂 (𝜙 𝑎 𝑖 ) = 𝐷 𝐹 (𝜙 𝑎 𝑖 ) = 𝐷 𝑉 (𝜙 𝑎 𝑖 ) = 0, (2.9 a)
+
+𝐷 𝜂 (𝜙 𝑔 ) = 𝐷 𝐹 (𝜙 𝑔 ) = 𝐷 𝑉 (𝜙 𝑔 ) = 0. (2.9 b)In the auxiliary equations, only 𝑎 𝑖 enters the system as a dependent variable, the rest of the variables 𝑥 𝑘 ∈ { 𝜂, 𝐹, 𝑉, 𝑔 } are regarded as independent coordinates, so there are no jet variables such as 𝜕 𝜂 𝐹 , 𝜕 𝜂 𝑉 , 𝜕 𝑉 𝜂 , 𝜕 𝐹 𝑉 and so on. Consequently the total derivatives become, 
+
+𝐷 𝜂 = 𝜕 𝜕𝜂 + 𝜕𝑎 𝑖 
+
+𝜕𝜂 𝜕 𝜕𝑎 𝑖 
+
+, 𝐷 𝑉 = 𝜕 𝜕𝑉 + 𝜕𝑎 𝑖 
+
+𝜕𝑉 𝜕 𝜕𝑎 𝑖 
+
+, 𝐷 𝐹 = 𝜕 𝜕𝐹 + 𝜕𝑎 𝑖 
+
+𝜕𝐹 𝜕 𝜕𝑎 𝑖 
+
+. (2.10) Imposing the auxiliary constraints 𝜕 𝜂 𝑎 𝑖 = 𝜕 𝐹 𝑎 𝑖 = 𝜕 𝑉 𝑎 𝑖 = 0 reduces these total derivatives, when acting on the infinitesimals 𝜙 𝑔 and 𝜙 𝑎 𝑖 , to 
+
+𝐷 𝜂 = 𝜕 𝜕𝜂 , 𝐷 𝐹 = 𝜕 𝜕𝐹 , 𝐷 𝑉 = 𝜕 𝜕𝑉 . (2.11) Using the above in the determining equations (2.9), we get, 
+
+𝜙 𝑔 = 𝜙 𝑔 (𝑔 ), 𝜙 𝑎 𝑖 = 𝜙 𝑎 𝑖 (𝑔, 𝑅 𝜌 , ℓ 0, 𝐶 𝑝 , 𝜒 ). (2.12) 2.2. Continuity equation 
+
+The linearized symmetry condition for (2.2 a) is, 
+
+𝑋 (2) [𝛥 𝐶 ] = 0, (2.13) The continuity equation is a first-order ODE, therefore the coefficients up to first order in 𝑋 (2) enter the LSC, and the second order prolongation terms vanish identically. Additionally, the terms corresponding to arbitrary functions also drop out for this case. From (2.13), we have, 
+
+𝜙 (1) 
+
+> 𝑉
+
++ 𝜙 𝐹 = 0 (2.14) 
+
+0 X0-6 Journal of Fluid Mechanics 
+
+Substituting 𝜙 (1) 
+
+> 𝑉
+
+= 𝐷 𝜂 (𝜙 𝑉 ) − 𝑉 (1) 𝐷 𝜂 (𝜙 𝜂 ) and expanding the total derivative 𝐷 𝜂 =
+
+𝜕 𝜂 + 𝐹 (1) 𝜕 𝐹 + 𝑉 (1) 𝜕 𝑉 + 𝑔 (1) 𝜕 𝑔 , we obtain, 
+
+𝜕 𝜂 𝜙 𝑉 + 𝐹 (1) 𝜕 𝐹 𝜙 𝑉 + 𝑉 (1) 𝜕 𝑉 𝜙 𝑉 + 𝑔 (1) 𝜕 𝑔 𝜙 𝑉 − 𝑉 (1)  𝜕 𝜂 𝜙 𝜂 + 𝐹 (1) 𝜕 𝐹 𝜙 𝜂 
+
++𝑉 (1) 𝜕 𝑉 𝜙 𝜂 + 𝑔 (1) 𝜕 𝑔 𝜙 𝜂 
+
+ + 𝜙 𝐹 = 0.
+
+Using 𝑉 (1) = −𝐹 , collecting the coefficients of the independent jet variables, and grouping the remaining zeroth–order terms, results in, 
+
+𝐹 (1)  𝜕 𝐹 𝜙 𝑉 + 𝐹𝜕 𝐹 𝜙 𝜂 
+
+ + 𝑔 (1)  𝜕 𝑔 𝜙 𝑉 + 𝐹𝜕 𝑔 𝜙 𝜂 
+
+ + 𝐹  −𝜕 𝑉 𝜙 𝑉 + 𝜕 𝜂 𝜙 𝜂 
+
+
+
+−𝐹 2𝜕 𝑉 𝜙 𝜂 + 𝜕 𝜂 𝜙 𝑉 + 𝜙 𝐹 = 0.
+
+The aforementioned convention on superscripts applies here and throughout the main article. For example, 𝐹 (1) := 𝜕𝐹 /𝜕𝜂 etc. Splitting on 𝐹 (1) , 𝑔 (1) and the remaining zero-order terms, we get the determining equations for the equivalence symmetry analysis of the continuity equation as listed below, 
+
+𝜕 𝐹 𝜙 𝑉 + 𝐹𝜕 𝐹 𝜙 𝜂 = 0, (2.15 a)
+
+𝜕 𝑔 𝜙 𝑉 + 𝐹𝜕 𝑔 𝜙 𝜂 = 0, (2.15 b)
+
+𝐹  −𝜕 𝑉 𝜙 𝑉 + 𝜕 𝜂 𝜙 𝜂 
+
+ − 𝐹 2𝜕 𝑉 𝜙 𝜂 + 𝜕 𝜂 𝜙 𝑉 + 𝜙 𝐹 = 0. (2.15 c)To solve the above system to derive meaningful dependencies, we assume the spatial coordinate transformation does not depend on the velocities or temperature, implying 
+
+𝜙 𝜂 = 𝜙 𝜂 (𝜂 ), which readily yields, 
+
+𝜕 𝐹 𝜙 𝑉 = 0,𝜕 𝐹 𝜙 𝜂 = 0,
+
+
+
+from (2.15 a) (2.16 a)
+
+𝜕 𝑔 𝜙 𝑉 = 0,𝜕 𝑔 𝜙 𝜂 = 0,
+
+
+
+from (2.15 b) (2.16 b)The first of both equations (2.16 a) and (2.16 b) give, 
+
+𝜙 𝑉 = 𝜙 𝑉 (𝜂, 𝑉 ) (2.17) Now using the above together with 𝜙 𝜂 = 𝜙 𝜂 (𝜂 ) in the zero-order split, we get, 
+
+𝜙 𝐹 = 𝐹  𝜕 𝑉 𝜙 𝑉 − 𝜕 𝜂 𝜙 𝜂 
+
+ − 𝜕 𝜂 𝜙 𝑉 . (2.18) 2.3. Momentum equation 
+
+In this section, the prolonged infinitesimal generator (2.4 c) is projected onto the momentum equation (2.2 b) to yield the linearized symmetry condition as, 
+
+𝑋 (2) [𝛥 𝑀 ] = 0 (2.19) Since (2.2 b) contains the second order derivative of 𝐹 and first order derivatives of 𝐹 and 𝑔 
+
+with respect to 𝜂 , and of ℓ0 with respect to 𝑔 , the prolongations corresponding to these terms will be non-zero. The reduced linearized symmetry condition (2.19) yields, 
+
+𝜙 (2) 
+
+> 𝐹
+
+=  𝜙 𝜂 𝜕 𝜂 + 𝜙 𝑉 𝜕 𝑉 + 𝜙 𝐹 𝜕 𝐹 + 𝜙 𝑔 𝜕 𝑔 + 𝜙 ℓ0 𝜕 ℓ0 + 𝜙 𝑅 𝜌 𝜕 𝑅 𝜌 
+
++ 𝜙 (1) 
+
+> 𝐹
+
+𝜕 𝐹 (1) + 𝜙 (1) 
+
+> 𝑔
+
+𝜕 𝑔 (1) + 𝜙 (1)𝑔 ℓ0 𝜕 ℓ (𝑔 )
+
+> 0
+
+M, (2.20) 
+
+0 X0-7 Bader and Bodony 
+
+where the following shorthand has been adopted, 
+
+M = 1
+
+𝑙 0
+
+
+
+𝑉 𝑑𝐹 𝑑𝜂 − 12 (𝑅 𝜌 − 𝐹 2) − 𝑑𝐹 𝑑𝜂 𝑑𝑙 0
+
+𝑑𝑔 𝑑𝑔 𝑑𝜂 
+
+
+
+Before we expand (2.20), the prolonged infinitesimals 𝜙 (1) 
+
+> 𝑔
+
+, 𝜙 (1) 
+
+> 𝐹
+
+, 𝜙 (1)𝑔 ℓ0 and 𝜙 (2) 
+
+> 𝐹
+
+can be obtained as follows, 
+
+𝜙 (1) 
+
+> 𝑔
+
+= 𝐷 𝜂 
+
+ 𝜙 𝑔 
+
+ − 𝑑𝑔 𝑑𝜂 𝐷 𝜂 
+
+ 𝜙 𝜂 
+
+ (2.21 a)
+
+𝜙 (1) 
+
+> 𝐹
+
+= 𝐷 𝜂 
+
+ 𝜙 𝐹 
+
+ − 𝑑𝐹 𝑑𝜂 𝐷 𝜂 
+
+ 𝜙 𝜂 
+
+ (2.21 b)
+
+𝜙 (2) 
+
+> 𝐹
+
+= 𝐷 𝜂 
+
+ 𝜙 (1)
+
+> 𝐹
+
+ − 𝑑 2 𝐹 𝑑𝜂 2 𝐷 𝜂 
+
+ 𝜙 𝜂 
+
+ (2.21 c)Using 𝐷 𝜂 = 𝜕 𝜂 +( 𝑑𝐹 /𝑑𝜂 )𝜕 𝐹 +( 𝑑𝑉 /𝑑𝜂 )𝜕 𝑉 +( 𝑑𝑔 /𝑑𝜂 )𝜕 𝑔 +𝑑 2 𝐹 /𝑑𝜂 2𝜕 𝐹 (1) +𝑑 2𝑔 /𝑑𝜂 2𝜕 𝑔 (1) +
+
+. . . together with 𝜙 𝑔 = 𝜙 𝑔 (𝑔 ) from (2.12), 𝜙 𝜂 = 𝜙 𝜂 (𝜂 ) and 𝜙 𝐹 from (2.18), we get, 
+
+𝜙 (1) 
+
+> 𝑔
+
+=
+
+ 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ) − 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) 𝑑𝑔 𝑑𝜂 , (2.22 a)
+
+𝜙 (1) 
+
+> 𝐹
+
+= −𝐹 2𝜕 𝑉𝑉 𝜙 𝑉 − 𝐹 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) + 2𝐹𝜕 𝑉 𝜂 𝜙 𝑉 + 𝑑𝐹 𝑑𝜂 𝜕 𝑉 𝜙 𝑉 − 2 𝑑𝐹 𝑑𝜂 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) − 𝜕 𝜂 𝜂 𝜙 𝑉 ,
+
+(2.22 b)
+
+𝜙 (2) 
+
+> 𝐹
+
+= M
+
+
+
+𝜕 𝑉 𝜙 𝑉 − 3 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 )
+
+− 3𝐹 𝑑𝐹 𝑑𝜂 𝜕 𝑉𝑉 𝜙 𝑉 + 3 𝑑𝐹 𝑑𝜂 𝜕 𝜂𝑉 𝜙 𝑉 − 3 𝑑𝐹 𝑑𝜂 𝑑 2  𝜙 𝜂 (𝜂 )
+
+𝑑𝜂 2
+
++ 𝐹 3𝜕 𝑉𝑉𝑉 𝜙 𝑉 − 3𝐹 2𝜕 𝜂𝑉𝑉 𝜙 𝑉 − 𝐹 𝑑 3  𝜙 𝜂 (𝜂 )
+
+𝑑𝜂 3 + 3𝐹𝜕 𝜂 𝜂𝑉 𝜙 𝑉 − 𝜕 𝜂 𝜂 𝜂 𝜙 𝑉 (2.22 c)Evaluating the differentials on the right-hand side of (2.20) termwise, we obtain, 
+
+𝜕 𝜂 M = 0, 𝜕 𝑉 M = 1
+
+ℓ0
+
+𝑑𝐹 𝑑𝜂 , 𝜕 𝐹 M = 𝐹 ℓ0
+
+, 𝜕 𝑔 M = 0, 𝜕 ℓ0 M = − 1
+
+ℓ0
+
+𝑑 2 𝐹 𝑑𝜂 2 , 𝜕 𝑅 𝜌 M = − 12ℓ0
+
+,𝜕 𝐹 (1) M = 1
+
+ℓ0
+
+
+
+𝑉 − 𝑑ℓ 0
+
+𝑑𝑔 𝑑𝑔 𝑑𝜂 
+
+
+
+, 𝜕 𝑔 (1) M = − 1
+
+ℓ0
+
+ 𝑑ℓ 0
+
+𝑑𝑔 𝑑𝐹 𝑑𝜂 
+
+
+
+, 𝜕 ℓ (𝑔 )
+
+> 0
+
+M = − 1
+
+ℓ0
+
+𝑑𝑔 𝑑𝜂 𝑑𝐹 𝑑𝜂 
+
+
+
+(2.23) Substituting (2.22) and (2.23) in (2.20), and rearranging, we finally obtain the expanded linearized symmetry condition, 
+
+𝑑𝐹 𝑑𝜂 𝑑𝑔 𝑑𝜂 
+
+
+
+− 1
+
+ℓ0
+
+𝑑ℓ 0
+
+𝑑𝑔 𝜙 ℓ0 + 𝜙 (1)𝑔 ℓ0 + 𝑑ℓ 0
+
+𝑑𝑔 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
++ 𝑑𝐹 𝑑𝜂 
+
+
+
+−𝜙 𝑉 + 3ℓ0𝜕 𝜂𝑉 𝜙 𝑉 − 3ℓ0 𝐹𝜕 𝑉𝑉 𝜙 𝑉 − 3ℓ0
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) − 𝑉 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) + 𝜙 ℓ0
+
+ℓ0
+
+𝑉 
+
+
+
++ 𝑑𝑔 𝑑𝜂 
+
+
+
+− 𝑑ℓ 0
+
+𝑑𝑔 
+
+
+
+𝜕 𝜂 𝜂 𝜙 𝑉 − 2𝐹𝜕 𝜂𝑉 𝜙 𝑉 + 𝐹 2𝜕 𝑉𝑉 𝜙 𝑉 + 𝐹 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) 
+
++
+
+
+
+−ℓ0𝜕 𝜂 𝜂 𝜂 𝜙 𝑉 + 𝐹𝜕 𝜂 𝜙 𝑉 + 3ℓ0 𝐹𝜕 𝜂 𝜂𝑉 𝜙 𝑉 − 12 𝐹 2𝜕 𝑉 𝜙 𝑉 − 3ℓ0 𝐹 2𝜕 𝜂𝑉𝑉 𝜙 𝑉 
+
+0 X0-8 Journal of Fluid Mechanics 
+
++ ℓ0 𝐹 3𝜕 𝑉𝑉𝑉 𝜙 𝑉 − 12 𝐹 2 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) − ℓ0 𝐹 𝑑 3
+
+𝑑𝜂 3
+
+ 𝜙 𝜂 (𝜂 )
+
++ 𝐹 2
+
+2ℓ0
+
+𝜙 ℓ0 + 12 𝜙 𝑅 𝜌 − 12 𝑅 𝜌 𝜕 𝑉 𝜙 𝑉 + 32 𝑅 𝜌 
+
+𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 )
+
+− 𝑅 𝜌 
+
+2ℓ0
+
+𝜙 ℓ0 + 𝑉 𝜕 𝜂 𝜂 𝜙 𝑉 − 2𝐹𝑉 𝜕 𝜂𝑉 𝜙 𝑉 + 𝐹 2𝑉 𝜕 𝑉𝑉 𝜙 𝑉 + 𝐹𝑉 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 )
+
+= 0.
+
+(2.24) We have eliminated the highest derivative by substituting 𝐹 𝜂 𝜂 = M in (2.24). The first derivatives 𝑑𝐹 /𝑑𝜂 and 𝑑𝑔 /𝑑𝜂 are independent jet coordinates. Therefore, the coefficients of the independent monomials 𝑑𝐹 𝑑 𝜂 𝑑𝑔 𝑑 𝜂 , 𝑑𝐹 𝑑 𝜂 , 𝑑𝑔 𝑑 𝜂 and the remaining constant terms must vanish separately. This gives the following determining equations, coeff. of 𝑑𝐹 𝑑𝜂 𝑑𝑔 𝑑𝜂 :
+
+− 1
+
+ℓ0
+
+𝑑ℓ 0
+
+𝑑𝑔 𝜙 ℓ0 + 𝜙 (1)𝑔 ℓ0 + 𝑑ℓ 0
+
+𝑑𝑔 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ) = 0, (2.25) coeff. of 𝑑𝐹 𝑑𝜂 :
+
+− 𝜙 𝑉 + 3ℓ0𝜕 𝜂𝑉 𝜙 𝑉 − 3ℓ0 𝐹𝜕 𝑉𝑉 𝜙 𝑉 − 3ℓ0
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) − 𝑉 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) + 𝜙 ℓ0
+
+ℓ0
+
+𝑉 = 0,
+
+(2.26) coeff. of 𝑑𝑔 𝑑𝜂 :
+
+− 𝑑ℓ 0
+
+𝑑𝑔 
+
+
+
+𝜕 𝜂 𝜂 𝜙 𝑉 − 2𝐹𝜕 𝜂𝑉 𝜙 𝑉 + 𝐹 2𝜕 𝑉𝑉 𝜙 𝑉 + 𝐹 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 )
+
+= 0, (2.27) remaining zero-order terms : 
+
+− ℓ0𝜕 𝜂 𝜂 𝜂 𝜙 𝑉 + 𝐹𝜕 𝜂 𝜙 𝑉 + 3ℓ0 𝐹𝜕 𝜂 𝜂𝑉 𝜙 𝑉 − 12 𝐹 2𝜕 𝑉 𝜙 𝑉 − 3ℓ0 𝐹 2𝜕 𝜂𝑉𝑉 𝜙 𝑉 + ℓ0 𝐹 3𝜕 𝑉𝑉𝑉 𝜙 𝑉 
+
+− 12 𝐹 2 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) − ℓ0 𝐹 𝑑 3
+
+𝑑𝜂 3
+
+ 𝜙 𝜂 (𝜂 ) + 𝐹 2
+
+2ℓ0
+
+𝜙 ℓ0 + 12 𝜙 𝑅 𝜌 − 12 𝑅 𝜌 𝜕 𝑉 𝜙 𝑉 
+
++ 32 𝑅 𝜌 
+
+𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) − 𝑅 𝜌 
+
+2ℓ0
+
+𝜙 ℓ0 + 𝑉 𝜕 𝜂 𝜂 𝜙 𝑉 − 2𝐹𝑉 𝜕 𝜂𝑉 𝜙 𝑉 + 𝐹 2𝑉 𝜕 𝑉𝑉 𝜙 𝑉 + 𝐹𝑉 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) = 0.
+
+(2.28) We now solve these determining equations one by one. Equation (2.25) yields, 
+
+𝜙 (1)𝑔 ℓ0 =
+
+ 𝜙 ℓ0
+
+ℓ0
+
+− 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ) 𝑑ℓ 0
+
+𝑑𝑔 . (2.29) Splitting (2.26) by 𝐹 , we obtain, 3ℓ0𝜕 𝑉𝑉 𝜙 𝑉 = 0 ⇒ 𝜙 𝑉 = A ( 𝜂 )𝑉 + B( 𝜂 ), (2.30) which immediately gives 𝜕 𝜂𝑉 𝜙 𝑉 = 𝜕 𝜂 A ( 𝜂 ). Using these in (2.26), we get, 
+
+0 X0-9 Bader and Bodony 
+
+−(A ( 𝜂 )𝑉 + B( 𝜂 )) + 3ℓ0
+
+𝑑 A ( 𝜂 )
+
+𝑑𝜂 − 3ℓ0
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) − 𝑉 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) + 𝑉 𝜙 ℓ0
+
+ℓ0
+
+= 0 (2.31) Splitting by the powers of 𝑉 we get two equations, one for 𝑉 1 and the other for 𝑉 0,respectively, as, 
+
+𝜙 ℓ0 =
+
+
+
+A ( 𝜂 ) + 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 )
+
+ℓ0, (2.32 a)
+
+−B( 𝜂 ) + 3ℓ0
+
+ 𝑑 A ( 𝜂 )
+
+𝑑𝜂 − 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 )
+
+= 0 ⇒ B( 𝜂 ) = 0, and 𝑑 A ( 𝜂 )
+
+𝑑𝜂 = 𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 )
+
+(2.32 b)Similarly, splitting (2.27) by the powers of 𝐹 , and skipping the intermediate steps for brevity, we obtain, 
+
+𝜕 𝑉𝑉 𝜙 𝑉 = 0, for the coeff. of 𝐹 2 (2.33 a)
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) = 2𝜕 𝜂𝑉 𝜙 𝑉 , for the coeff. of 𝐹 1 (2.33 b)
+
+𝜕 𝜂 𝜂 𝜙 𝑉 = 0, for the coeff. of 𝐹 0 (2.33 c)Using B( 𝜂 ) = 0 from (2.32 b) in (2.30), we get 𝜙 𝑉 = A ( 𝜂 )𝑉 , which leads to 𝜕 𝜂𝑉 𝜙 𝑉 =
+
+𝑑 A ( 𝜂 )/ 𝑑𝜂 . With this and (2.33 b), we get, 
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) = 2 𝑑 A ( 𝜂 )
+
+𝑑𝜂 (2.34) The above equation and the last of (2.32 b) are satisfied only when, 
+
+𝑑 A ( 𝜂 )
+
+𝑑𝜂 = 0 ⇒ A ( 𝜂 ) = 𝐴 0, a constant (2.35) which immediately yields, 
+
+𝑑 2
+
+𝑑𝜂 2
+
+ 𝜙 𝜂 (𝜂 ) = 0 ⇒ 𝑑 𝑑𝜂 
+
+ 𝜙 𝜂 (𝜂 ) = 𝐶 0, a constant (2.36) such that , 𝜙 𝜂 = 𝐶 0𝜂 (2.37) where the constant of integration is chosen to be zero to preserve the transformed wall coordinate at ˆ 𝜂 = 0. Substituting the results obtained so far in (2.28) and (2.18), we obtain, 
+
+𝜙 𝑅 𝜌 = 2( 𝐴 0 − 𝐶 0)𝑅 𝜌 , (2.38) 
+
+𝜙 𝐹 = ( 𝐴 0 − 𝐶 0)𝐹, (2.39) respectively. The infinitesimals generated so far by the preceding analysis are listed below, 
+
+𝜙 𝜂 = 𝐶 0𝜂, 𝜙 𝑉 = 𝐴 0𝑉, 𝜙 𝐹 = ( 𝐴 0 − 𝐶 0)𝐹, 𝜙 𝑔 = 𝜙 𝑔 (𝑔 ),𝜙 𝑅 𝜌 = 2( 𝐴 0 − 𝐶 0)𝑅 𝜌 , 𝜙 ℓ0 = ( 𝐴 0 + 𝐶 0)ℓ0.
+
+
+
+(2.40) 
+
+0 X0-10 Rapids articles must not exceed this page length Journal of Fluid Mechanics 
+
+2.4. Energy equation 
+
+Following the same procedure as above, the prolonged infinitesimal generator (2.4 c) is projected onto (2.2 c) to yield the linearized symmetry condition for the energy equation as, 
+
+𝑋 (2) [𝛥 𝐸 ] = 0 (2.41) The energy equation (2.2 c) contains the first and second order derivatives of 𝑔 with respect to 𝜂 , and first order derivative of 𝜒 with respect to 𝑔 . Therefore, the prolongations corresponding to these terms will be non-zero. The reduced form of the linearized symmetry condition (2.41) reads, 
+
+𝜙 (2) 
+
+> 𝑔
+
+=  𝜙 𝜂 𝜕 𝜂 + 𝜙 𝑉 𝜕 𝑉 + 𝜙 𝑔 𝜕 𝑔 + 𝜙 𝜒 𝜕 𝜒 + 𝜙 𝐶 𝑝 𝜕 𝐶 𝑝 + 𝜙 (1) 
+
+> 𝑔
+
+𝜕 𝑔 (1) + 𝜙 (1)𝑔 𝜒 𝜕 𝜒 (𝑔 )
+
+E, (2.42) where the following shorthand has been adopted, 
+
+E = 1
+
+𝜒 
+
+"
+
+𝐶 𝑝 𝑉 𝑑𝑔 𝑑𝜂 −
+
+ 𝑑𝑔 𝑑𝜂 
+
+2 𝑑𝜒 𝑑𝑔 
+
+#
+
+.
+
+From (2.22 a) and (2.40), the first prolongation 𝜙 (1) 
+
+> 𝑔
+
+= (𝑑𝜙 𝑔 (𝑔 )/ 𝑑𝑔 − 𝐶 0)𝑑𝑔 /𝑑𝜂 . Using this, we obtain the second prolongation 𝜙 (2) 
+
+> 𝑔
+
+recursively as, 
+
+𝜙 (2) 
+
+> 𝑔
+
+= 𝐷 𝜂 
+
+ 𝜙 (1)
+
+> 𝑔
+
+ − 𝑑 2𝑔 𝑑𝜂 2 𝐷 𝜂 
+
+ 𝜙 𝜂 
+
+
+
+⇒ 𝜙 (2) 
+
+> 𝑔
+
+=
+
+ 𝑑𝑔 𝑑𝜂 
+
+2 𝑑 2
+
+𝑑𝑔 2
+
+ 𝜙 𝑔 (𝑔 ) +
+
+ 𝑑𝜙 𝑔 (𝑔 )
+
+𝑑𝑔 − 2𝐶 0
+
+ 𝑑 2𝑔 𝑑𝜂 2 (2.43) Evaluating the differentials on the right-hand side of (2.42) termwise, we obtain, 
+
+𝜕 𝜂 E = 0, 𝜕 𝑉 E = 𝐶 𝑝 
+
+1
+
+𝜒 𝑑𝑔 𝑑𝜂 , 𝜕 𝑔 E = 0, 𝜕 𝜒 E = − 1
+
+𝜒 𝑑 2𝑔 𝑑𝜂 2 ,𝜕 𝐶 𝑝 E = 1
+
+𝜒 𝑉 𝑑𝑔 𝑑𝜂 , 𝜕 𝑔 (1) E = 1
+
+𝜒 
+
+
+
+𝐶 𝑝 𝑉 − 2 𝑑𝜒 𝑑𝑔 𝑑𝑔 𝑑𝜂 
+
+
+
+, 𝜕 𝜒 (𝑔 ) E = − 1
+
+𝜒 
+
+ 𝑑𝑔 𝑑𝜂 
+
+2
+
+
+
+(2.44) Using 𝜙 (1) 
+
+> 𝑔
+
+, 𝜙 (2) 
+
+> 𝑔
+
+and (2.44) in (2.42), and upon simplifying and rearranging, we finally obtain the expanded linearized symmetry condition, 
+
+𝑉 𝑑𝑔 𝑑𝜂 
+
+
+
+−( 𝐴 0 + 𝐶 0)𝐶 𝑝 + 𝐶 𝑝 
+
+𝜙 𝜒 
+
+𝜒 − 𝜙 𝐶 𝑝 
+
+
+
++
+
+ 𝑑𝑔 𝑑𝜂 
+
+2 
+
+𝜒 𝑑 2
+
+𝑑𝑔 2
+
+ 𝜙 𝑔 (𝑔 ) + 𝑑𝜒 𝑑𝑔 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ) + 𝜙 (1)𝑔 𝜒 − 𝑑𝜒 𝑑𝑔 𝜙 𝜒 
+
+𝜒 
+
+
+
+= 0. (2.45) Splitting the above equation with respect to the independent monomials 𝑉 𝑑𝑔 /𝑑𝜂 and 
+
+(𝑑𝑔 /𝑑𝜂 )2, we obtain the following, respectively, 
+
+𝜙 𝐶 𝑝 =
+
+
+
+−( 𝐴 0 + 𝐶 0) + 𝜙 𝜒 
+
+𝜒 
+
+
+
+𝐶 𝑝 (2.46) 
+
+𝜒 𝑑 2
+
+𝑑𝑔 2
+
+ 𝜙 𝑔 (𝑔 ) = 𝜙 𝜒 
+
+𝜒 𝑑𝜒 𝑑𝑔 − 𝜙 (1)𝑔 𝜒 − 𝑑𝜒 𝑑𝑔 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ) (2.47) 
+
+0 X0-11 Bader and Bodony 
+
+Using 𝜙 (1)𝑔 𝜒 = 𝐷 𝑔 
+
+ 𝜙 𝜒 
+
+ − ( 𝑑𝜒 /𝑑𝑔 )𝐷 𝑔 
+
+ 𝜙 𝑔 (𝑔 ) = 𝐷 𝑔 
+
+ 𝜙 𝜒 
+
+ − ( 𝑑𝜒 /𝑑𝑔 )( 𝑑𝜙 𝑔 (𝑔 )/ 𝑑𝑔 ) in the second equation above yields, 
+
+𝜒 𝑑 2
+
+𝑑𝑔 2
+
+ 𝜙 𝑔 (𝑔 ) = 𝜙 𝜒 
+
+𝜒 𝑑𝜒 𝑑𝑔 − 𝐷 𝑔 
+
+ 𝜙 𝜒 
+
+ (2.48) Equations (2.46) and (2.48) must hold for all admissible 𝐶 𝑝 (𝑔 ) and 𝜒 (𝑔 ). Recall, from (2.12), we have established that 𝜙 𝜒 = 𝜙 𝜒 (𝑔, 𝑅 𝜌 , ℓ 0, 𝐶 𝑝 , 𝜒 ), therefore we can expand 𝐷 𝑔 
+
+as, 
+
+𝐷 𝑔 (𝜙 𝜒 ) = 𝜕𝜙 𝜒 
+
+𝜕 𝑔 
+
++ 𝜕𝑅 𝜌 
+
+𝜕𝑔 𝜕𝜙 𝜒 
+
+𝜕𝑅 𝜌 
+
++ 𝜕ℓ 0
+
+𝜕𝑔 𝜕𝜙 𝜒 
+
+𝜕ℓ 0
+
++ 𝜕𝐶 𝑝 
+
+𝜕𝑔 𝜕𝜙 𝜒 
+
+𝜕𝐶 𝑝 
+
++ 𝜕 𝜒 𝜕𝑔 𝜕𝜙 𝜒 
+
+𝜕 𝜒 (2.49) Substituting this into (2.48) gives, 
+
+𝜒 𝑑 2
+
+𝑑𝑔 2 (𝜙 𝑔 (𝑔 )) = 𝑑𝜒 𝑑𝑔 
+
+ 𝜙 𝜒 
+
+𝜒 − 𝜕𝜙 𝜒 
+
+𝜕 𝜒 
+
+
+
+− 𝜕𝜙 𝜒 
+
+𝜕𝑔 − 𝑑𝑅 𝜌 
+
+𝑑𝑔 𝜕𝜙 𝜒 
+
+𝜕𝑅 𝜌 
+
+− 𝑑ℓ 0
+
+𝑑𝑔 𝜕𝜙 𝜒 
+
+𝜕ℓ 0
+
+− 𝑑𝐶 𝑝 
+
+𝑑𝑔 𝜕𝜙 𝜒 
+
+𝜕𝐶 𝑝 
+
+. (2.50) The left-hand side is a function of 𝑔 only, since 𝜙 𝑔 = 𝜙 𝑔 (𝑔 ) from (2.12). Since 𝑅 𝜌 (𝑔 ), ℓ 0 (𝑔 ), 𝐶 𝑝 (𝑔 ), and 𝜒 (𝑔 ) are arbitrary elements of the equivalence class, their first derivatives with respect to 𝑔 are treated as independent auxiliary jet variables. There-fore, the above identity must hold for arbitrary values of 𝑑𝑅 𝜌 /𝑑𝑔, 𝑑ℓ 0/𝑑𝑔, 𝑑𝐶 𝑝 /𝑑𝑔 and 𝑑𝜒 /𝑑𝑔 
+
+and the coefficients multiplying these independent quantities are split and set to zero separately, together with the remaining derivative-free part, coefficient of 𝑑𝑅 𝜌 
+
+𝑑𝑔 ⇒ 𝜕𝜙 𝜒 
+
+𝜕𝑅 𝜌 
+
+= 0, (2.51 a)coefficient of 𝑑ℓ 0
+
+𝑑𝑔 ⇒ 𝜕𝜙 𝜒 
+
+𝜕ℓ 0
+
+= 0, (2.51 b)coefficient of 𝑑𝐶 𝑝 
+
+𝑑𝑔 ⇒ 𝜕𝜙 𝜒 
+
+𝜕𝐶 𝑝 
+
+= 0, (2.51 c)coefficient of 𝑑𝜒 𝑑𝑔 ⇒ 𝜙 𝜒 
+
+𝜒 − 𝜕𝜙 𝜒 
+
+𝜕 𝜒 = 0. (2.51 d)remaining terms, 𝜒 𝑑 2
+
+𝑑𝑔 2 (𝜙 𝑔 (𝑔 )) = − 𝜕𝜙 𝜒 
+
+𝜕𝑔 (2.51 e)Equation (2.51 d) has general solution 
+
+𝜙 𝜒 = 𝑓 (𝑔 ) 𝜒, (2.52) 
+
+𝑓 (𝑔 ) represents a 𝑔 -dependent rescaling factor for 𝜒 . Using (2.52) in (2.51 e) yields, 
+
+𝜒 
+
+ 𝑑 2
+
+𝑑𝑔 2
+
+ 𝜙 𝑔 (𝑔 ) + 𝑑 𝑑𝑔 
+
+  𝑓 (𝑔 )
+
+= 0,
+
+⇒ 𝑓 (𝑔 ) = 𝐾 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 ), (2.53 a)where 𝐾 0 is a constant of integration. 
+
+0 X0-12 Journal of Fluid Mechanics 
+
+Using 𝑓 (𝑔 ) in (2.46) and (2.52) yields, 
+
+𝜙 𝐶 𝑝 =
+
+
+
+−( 𝐴 0 + 𝐶 0) + 𝐾 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝐶 𝑝 , (2.54 a)
+
+𝜙 𝜒 =
+
+
+
+𝐾 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝜒. (2.54 b)Combining all the results, the infinitesimal generator can be written as, 
+
+𝑋 = 𝐶 0𝜂 𝜕 𝜕𝜂 + ( 𝐴 0 − 𝐶 0)𝐹 𝜕 𝜕𝐹 + 𝐴 0𝑉 𝜕 𝜕𝑉 + 𝜙 𝑔 (𝑔 ) 𝜕 𝜕𝑔 + 2( 𝐴 0 − 𝐶 0)𝑅 𝜌 
+
+𝜕 𝜕𝑅 𝜌 
+
++ ( 𝐴 0 + 𝐶 0)ℓ0
+
+𝜕 𝜕ℓ 0
+
++
+
+
+
+𝐾 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝜒 𝜕 𝜕 𝜒 +
+
+
+
+𝐾 0 − ( 𝐴 0 + 𝐶 0) − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝐶 𝑝 
+
+𝜕 𝜕𝐶 𝑝 
+
+. (2.55) As a sanity check, direct substitution of the finite transformations for the arbitrary elements and other variables into the continuity, momentum, and energy equations shows that each equation is mapped onto itself, proving that the derived symmetries are correct and valid. The detailed equation-by-equation substitution is given in Appendix B.  
+
+> 3. 𝑔 -mapping and numerical verification
+
+This section presents the key theoretical result in this paper: an integral invariant built from thermochemical property data, which is inverted numerically to infer the mapped non-dimensional temperature profile across the similarity reduced stagnation-point boundary layer. Having obtained the expression for 𝜙 𝜒 in (2.54 b), which depends on 𝜒 and the infinitesimal of 𝑔 , we proceed to infer the 𝑔 -map when property tables for 𝜒 (𝑔 ) are available for the target solution to which 𝑔 is to be mapped. In hypersonic boundary layers, the required thermochemical properties (viscosity, thermal conductivity, specific heats, etc.) can be obtained up to temperatures of order 𝑇 ∼ 20 ,000 K from high-temperature libraries such as Mutation++ (Scoggins et al. 2020). The availability of the property law data in hypersonics motivates us to cast the symmetry relations in terms of tabulated thermochemical property data rather than prescribed analytic constitutive laws. The tabulated property data define a particular numerical representation of the arbitrary elements. Tranchant et al. (2025) provide a useful precedent for the present use of tabulated property laws. In one of their cases, they impose the tabulated opacity data in the radiative wave model in astrophysics to constrain the temperature map. The present construction as outlined below is analogous: we use tabulated 𝜒 law on both the flight and laboratory sides to constrain the temperature map ˆ 𝑔 . The rest of the arbitrary elements are also constrained by this reparametrization, and their deviations with respect to the flight values serve as the indicators of how the true flight data compare against the transformed counterparts. All of this is discussed in the rest of this section. We regard the one –parameter equivalence group as generating an orbit in the extended space of variables. The tangent vector to the orbit at the point ( ˆ𝑔, ˆ𝜒 ) is 𝑑 ˆ𝑔 /𝑑𝜀 =
+
+𝜙 𝑔 ( ˆ𝑔 ), 𝑑 ˆ𝜒 /𝑑𝜀 = 𝜙 𝜒 ( ˆ𝑔, ˆ𝜒 )(Hydon 2000). These equations describe the evolution of the transformed variables ( ˆ𝑔, ˆ𝜒 ) along the orbit, where the rate of change at each step is given by the infinitesimals 𝜙 𝑔 and 𝜙 𝜒 evaluated at that point ( ˆ𝑔, ˆ𝜒 ). To infer the finite map point by point in the boundary layer, we then consider the associated family of orbits through each initial point 𝑔 0 on the BL profile, where ˆ 𝑔 (𝜀 = 0, 𝑔 0) = 𝑔 0. 
+
+> 0X0-13
+
+Bader and Bodony 
+
+Defining the Jacobian of this transformation by, 
+
+𝐽 (𝜀, 𝑔 0) = 𝜕 ˆ𝑔 (𝜀, 𝑔 0)
+
+𝜕𝑔 0
+
+. (3.1) Then, differentiating 𝐽 with respect to 𝜀 and interchanging the order of differentiation gives, 
+
+𝜕𝐽 𝜕𝜀 = 𝜕 𝜕𝜀 
+
+ 𝜕 ˆ𝑔 𝜕𝑔 0
+
+
+
+= 𝜕 𝜕𝑔 0
+
+ 𝜕 ˆ𝑔 𝜕𝜀 
+
+
+
+. (3.2) Using 𝜕 ˆ𝑔 /𝜕𝜀 = 𝜙 𝑔 ( ˆ𝑔 ), this gives, 
+
+𝜕𝐽 𝜕𝜀 = 𝜕 𝜕𝑔 0
+
+𝜙 𝑔 ( ˆ𝑔 (𝜀, 𝑔 0)) = 𝑑 𝑑 ˆ𝑔 (𝜀, 𝑔 0)
+
+ 𝜙 𝑔 ( ˆ𝑔 (𝜀, 𝑔 0))  𝜕 ˆ𝑔 𝜕𝑔 0
+
+= 𝑑 𝑑 ˆ𝑔 (𝜀, 𝑔 0)
+
+ 𝜙 𝑔 ( ˆ𝑔 (𝜀, 𝑔 0))  𝐽 
+
+(3.3) Integrating the above equation yields, 
+
+𝐽 (𝜀, 𝑔 0) = exp 
+
+∫ 𝜀 
+
+> 0
+
+𝑑 𝑑 ˆ𝑔 (𝑠, 𝑔 0)
+
+ 𝜙 𝑔 ( ˆ𝑔 (𝑠, 𝑔 0))  𝑑𝑠 
+
+
+
+. (3.4) where 𝐽 (𝜀 = 0, 𝑔 0) = 1 sets the constant of integration as ln 𝐽 (0, 𝑔 0) = 0. Using (2.54 b), the transformation of 𝜒 satisfies, 
+
+𝜕 ˆ𝜒 ( ˆ𝑔 (𝜀, 𝑔 0)) 
+
+𝜕𝜀 =
+
+
+
+𝐾 0 − 𝑑 𝑑 ˆ𝑔 (𝜀, 𝑔 0)
+
+ 𝜙 𝑔 ( ˆ𝑔 (𝜀, 𝑔 0)) 
+
+ˆ𝜒 ( ˆ𝑔 (𝜀, 𝑔 0)) . (3.5) Upon integration and using (3.4), we obtain, ˆ𝜒 ( ˆ𝑔 (𝜀, 𝑔 0)) = ˆ𝜒 ( ˆ𝑔 (0, 𝑔 0)) 𝑒 𝐾 0 𝜀  𝐽 (𝜀, 𝑔 0) −1 (3.6) which is a pointwise differential identity for each point 𝑔 0 and its transformed state ˆ 𝑔 
+
+in the boundary layer. An analogous expression for 𝐶 𝑝 can be immediately obtained as ˆ𝐶 𝑝 ( ˆ𝑔 ) = 𝐶 𝑝 (𝑔 )𝑒 (𝐾 0 − ( 𝐴 0+𝐶 0 ) ) 𝜀 𝐽 −1. Invoking the definition of 𝐽 (𝜀, 𝑔 0) = 𝜕 ˆ𝑔 (𝜀, 𝑔 0)/ 𝜕𝑔 0,and integrating (3.6) both sides from any interior point 𝑔 interior to the edge 𝑔 = 1, we finally get, 
+
+∫ 1ˆ𝑔 interior 
+
+𝜒 𝜀 ( ˆ𝑔 )𝑑 ˆ𝑔 = 𝑒 𝐾 0 𝜀 
+
+∫ 1
+
+> 𝑔 interior
+
+𝜒 0 (𝑔 )𝑑𝑔 (3.7) where at 𝜀 = 0, ˆ𝑔 (0, 𝑔 0) = 𝑔 0. The shorthand ˆ 𝜒 ( ˆ𝑔 (𝜀, 𝑔 0)) = 𝜒 𝜀 ( ˆ𝑔 ), ˆ 𝜒 ( ˆ𝑔 (0, 𝑔 0)) = 𝜒 0 (𝑔 0)
+
+has been adopted and the dummy variable 𝑔 0 has been relabeled as 𝑔 in the right-hand side for simplicity. This is the integral invariant which connects the laboratory- and flight-side thermochemcial property data ( 𝜒 ) that can be inverted numerically to infer the correct mapped ˆ 𝑔 , as demonstrated below. Absorbing the parameter 𝜀 in the constant, and defining 𝐻 𝐹 ( ˆ𝑔 ) = ∫ 1ˆ𝑔 interior 𝜒 𝜀 ( ˆ𝑔 )𝑑 ˆ𝑔 and 
+
+𝐻 𝐿 (𝑔 ) = ∫ 1 
+
+> 𝑔 interior
+
+𝜒 0 (𝑔 )𝑑𝑔 , the finite transformation to obtain the mapped ˆ 𝑔 is, ˆ𝑔 = 𝐻 −1
+
+> 𝐹
+
+ 𝑒 𝐾 0 𝐻 𝐿 (𝑔 ), (3.8) where the subscripts ‘ 𝐹 ’ and ‘ 𝐿 ’ refer to the properties calculated on the flight-side and lab-side, respectively. Equation (3.8) expresses ˆ 𝑔 implicitly as the composition of the inverse map 𝐻 −1 
+
+> 𝐹
+
+with 𝑒 𝐾 0 𝐻 𝐿 . Since 𝜒 (𝑠 ) > 0 on the interval [𝑔 (𝑤 ) 
+
+> 𝐹
+
+, 1], the integral 
+
+𝐻 𝐹 (𝑠 ) is strictly monotonically decreasing and therefore the inverse 𝐻 −1 
+
+> 𝐹
+
+exists, and the 
+
+0 X0-14 Journal of Fluid Mechanics 
+
+formula (3.8) is well-posed. The monotonicity of the integrals 𝐻 𝐿 , 𝐻 𝐹 for three different tests with varying wall and edge temperatures is shown in figure 1. We construct the                                                            
+
+> Figure 1. Integrals 𝐻 (𝑔 )for (a) 𝑇 𝑤 𝐿 =100 K, 𝑇 𝑤 𝐹 =1000 K and 𝑇 𝑒 𝐿 =2935 K, 𝑇 𝑒 𝐹 =3103 K, (b) 𝑇 𝑤 𝐿 =100 K,
+> 𝑇 𝑤 𝐹 =200 K and 𝑇 𝑒 𝐿 =2935 K, 𝑇 𝑒 𝐹 =4165 K, and (c) 𝑇 𝑤 𝐿 =100 K, 𝑇 𝑤 𝐹 =1000 K and 𝑇 𝑒 𝐿 =2935 K, 𝑇 𝑒 𝐹 =8586 K. The integrals are monotone with respect to 𝑔 . The abscissa 𝑔 is an arbitrary uniform g-grid selected to compute the integrals with the given 𝑇 𝑤 , 𝑇 𝑒 for both laboratory and flight cases.
+
+inverse 𝐻 −1 
+
+> 𝐹
+
+numerically by tabulating 𝐻 𝐹 on a monotone 𝑔 -grid and interpolating ˆ 𝑔 
+
+as a function of 𝐻 𝐹 . The numerical implementation of the ˆ 𝑔 -map proceeds as follows. Given the laboratory solution, the running integral 𝐻 𝐿 (𝑔 ) = ∫ 1 
+
+> 𝑔 interior
+
+𝜒 0 (𝑔 )𝑑𝑔 is evaluated on the native 𝑔 -grid of the lab profile. The lab-side property data and solution are readily available from Plasflowsolver (Lanza et al. 2025). Independently, the flight-side integral 
+
+𝐻 𝐹 ( ˆ𝑔 ) = ∫ 1ˆ𝑔 interior 𝜒 𝜀 ( ˆ𝑔 )𝑑 ˆ𝑔 is tabulated on an arbitrary monotone 𝑔 -grid using only the flight thermochemical property data from Mutation++ (Scoggins et al. 2020). It is important to stress that no explicit information about the shape of the flight temperature profile as a function of 𝜂 in the boundary layer is introduced in this step; only the functional dependence of the flight-side property 𝜒 𝐹 on 𝑔 enters through 𝐻 𝐹 (𝑔 ), where the role of the arbitrary g-grid is to define the discrete sampling on which the integral 𝐻 𝐹 (𝑔 ) is tabulated. In other words, no knowledge of the flight temperature profile ˆ 𝑔 (𝜂 ) is required at this stage, as that is the solution we are seeking. For each interior lab point 𝑔 , the target value 
+
+H𝐿 (𝑔 ) = 𝑒 𝐾 0 𝐻 𝐿 (𝑔 ) is computed, and ˆ 𝑔 is recovered by solving 𝐻 𝐹 ( ˆ𝑔 ) = H𝐿 (𝑔 ), i.e. ˆ 𝑔 =
+
+𝐻 −1 
+
+> 𝐹
+
+(H 𝐿 (𝑔 )) . Since 𝜒 > 0 everywhere, 𝐻 𝐹 and 𝐻 𝐿 are strictly monotonically decreasing, so this inversion is unique and is performed (easily) numerically by interpolating the pre-tabulated  𝐻 𝐹 , ˆ𝑔  table as: for any target value H𝐿 (𝑔 ) lying between two consecutive 
+
+𝐻 𝐹 ( ˆ𝑔 𝑖 ) and 𝐻 𝐹 ( ˆ𝑔 𝑖 +1), the correct mapped ˆ 𝑔 must lie between ˆ 𝑔 𝑖 and ˆ 𝑔 𝑖 +1, which is then obtained by interpolating between these neighboring tabulated points. See figure 2 for the illustration of the interpolation procedure. The construction guarantees that the wall and edge boundary conditions are recovered exactly: 𝑔 = 𝑔 𝐿 𝑤 maps to ˆ 𝑔 = 𝑔 𝐹 𝑤 and 𝑔 = 1 maps to ˆ 𝑔 = 1. The interior mapping is determined entirely by the thermochemical property variation ( 𝜒 𝐿 and 𝜒 𝐹 ) through the integral invariant. For reproducibility and general use, the accompanying utility used to generate the ˆ 𝑔 -map and extrapolation results is publicly available at https://github.com/shbader/HyFLEX .Since the wall conditions are known for both the laboratory and flight cases, the constant coefficient 𝐾 0 in (3.8) is determined by evaluating the transformation at the wall: 
+
+𝐾 0 = ln 𝐻 (𝑤 )
+
+> 𝐹
+
+𝐻 (𝑤 )
+
+> 𝐿
+
+!
+
+, with 𝐻 (𝑤 ) 
+
+> 𝐹
+
+=
+
+∫ 1
+
+> 𝑔 (𝑤 )
+> 𝐹
+
+𝜒 𝐹 (𝑠 )𝑑𝑠, and 𝐻 (𝑤 ) 
+
+> 𝐿
+
+=
+
+∫ 1
+
+> 𝑔 (𝑤 )
+> 𝐿
+
+𝜒 𝐿 (𝑠 )𝑑𝑠. (3.9) In contrast, the group parameter 𝐶 0 corresponds to the 𝜂 -stretch admitted by the equivalence group. For the tests discussed in the next section, we set 𝐶 0 = 0 to obtain the sufficient collapse, indicating the effective 𝜂 scale is already matched by how 𝜂 is defined. Also, from 
+
+0 X0-15 Bader and Bodony                 
+
+> Figure 2. Illustration of the interpolation procedure used to infer ˆ 𝑔 from the map (3.8). Here the green curve represents the lab-side property integral 𝐻 𝐿 and the blue curve represents its flight-side counterpart evaluated on an arbitrary grid. The mapping procedure follows a continuous path from the laboratory state to the flight state: starting at 𝑔 𝐿 , we compute the lab integral 𝐻 𝐿 , scale it to the flight target H𝐿 =𝑒 𝐾 0𝐻 𝐿 , and find the corresponding flight temperature ˆ 𝑔 through the inversion of the 𝐻 𝐹 curve.
+
+edge matching/normalization, we have ˆ 𝑔 = 1 when 𝑔 = 1; ˆ 𝑅 𝜌 ( ˆ𝑔 = 1) = 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝑅 𝜌 =
+
+1 when 𝑅 𝜌 (𝑔 = 1) = 1, and ˆ ℓ0 ( ˆ𝑔 = 1) = 𝑒 ( 𝐴 0+𝐶 0 ) 𝜀 ℓ0 = 1 when ℓ0 (𝑔 = 1) = 1, this forces the scaling parameters 𝐴 0 = 𝐶 0 = 0. The non-trivial validation is that the resulting mapped profile ˆ 𝑔 ( ˆ𝜂 ), together with the 
+
+𝜂 -stretch, ˆ 𝜂 = 𝑒 𝐶 0 𝜂 , collapses with the independently computed flight solution 𝑔 𝐹 (𝜂 ),as discussed below in detail. The 𝑔 -map obtained above is tested in three different stagnation point boundary layer flows with different wall (𝑇 𝑤 ) and edge ( 𝑇 𝑒 ) temperatures for laboratory and flight cases. The idea is to test the robustness of the method in its ability to map the laboratory solution computed using modest values of 𝑇 𝑤 and 𝑇 𝑒 to a regime where the thermochemical property laws (e.g. 𝜒 ) exhibit altered functional 𝑔 -dependence due to dissociation and related effects. As stated above, we use Plasflow-solver (Lanza et al. 2025) to compute the solutions of the original stagnation-point ODEs (2.2). The gas mixture used for all numerical tests is air 11 , which comprises of N2, O2, N, O, NO , N+, O+, NO +, N+ 
+
+> 2
+
+, O+ 
+
+> 2
+
+, and e − (Lanza et al. 2025). In figures 3 (a-e), the wall temperature in the laboratory test is held fixed at 𝑇 𝑤 𝐿 =
+
+100 K , and that for the reference flight case, 𝑇 𝑤 𝐹 = 1000 K . In the solver (Lanza et al. 
+
+2025), the target wall-heat flux 𝑞 𝑤 =√︃ 2𝛽 𝜇 𝑒 𝜌 𝑒 𝑇 𝑒 𝜌 𝑤 𝜆 𝑤 
+
+ 𝑑𝑔 𝑑 𝜂 
+
+ 
+
+> 𝜂 =0
+
+can be prescribed and the edge temperature 𝑇 𝑒 is iterated until the specified target wall-heat flux is reached. In the cases shown in figures 3(a-e), the same value of 𝑞 𝑤 is imposed for the laboratory and the reference flight cases, with laboratory case edge temperature 𝑇 𝑒 𝐿 = 2935 K and the iterated flight side edge temperature 𝑇 𝑒 𝐹 = 3103 K . The stagnation pressure ( 𝑝 𝑠 ) and the velocity gradient 𝛽 = (𝑑𝑢 𝑒 /𝑑𝑥 )𝑥 =0 = 𝑢 /𝑅 ∗
+
+> 𝑚
+
+, where 𝑢 is the characteristic mixture freestream velocity and 𝑅 ∗ 
+
+> 𝑚
+
+is the external radius of the probe/body, are matched while as the thermochemical edge states characterized by total enthalpy (ℎ0) differ by 10 − 15% between the laboratory and flight cases. To completely determine the stagnation-point heat flux in a ground test, LHTS (Kolesnikov 1993, 2000) requires matching the parameters 
+
+(ℎ0, 𝛽, 𝑝 𝑠 ) at the edge of the boundary layer together with the thermal boundary condition 
+
+0 X0-16 Journal of Fluid Mechanics                                                                
+
+> Figure 3. Thermophysical property profiles in laboratory and flight conditions and the corresponding boundary-layer temperature profiles for three test cases. Panels (a–d), (f–i), and (k–n) show the laboratory and flight laws for ℓ0,𝜒 ,𝑅 𝜌 , and 𝐶 𝑝 , respectively; panels (e), (j), and (o) compare the mapped temperature profile ˆ 𝑔 (ˆ𝜂 )with the laboratory 𝑔 𝐿 (𝜂 𝐿 )and flight 𝑔 𝐹 (𝜂 𝐹 )profiles. Row 1: 𝑇 𝐿 𝑤 =100 K, 𝑇 𝐹 𝑤 =1000 K, 𝑇 𝐿 𝑒 =2935 K, 𝑇 𝐹 𝑒 =3103 K. Row 2: 𝑇 𝐿 𝑤 =100 K, 𝑇 𝐹 𝑤 =200 K, 𝑇 𝐿 𝑒 =2935 K, 𝑇 𝐹 𝑒 =4165 K. Row 3: 𝑇 𝐿 𝑤 =100 K, 𝑇 𝐹 𝑤 =1000 K,
+> 𝑇 𝐿 𝑒 =2935 K, 𝑇 𝐹 𝑒 =8586 K.
+
+at the wall (𝑇 𝑤 ). In the present case (see figure 3)(a-e), although the laboratory and flight configurations employ distinct wall thermochemical states ( 𝑇 𝐿 𝑤 = 100 K, 𝑇 𝐹 𝑤 = 1000 K) and ℎ0 differs by ∼ 10 − 15%, enforcement of identical wall heat flux 𝑞 𝑤 with different wall and edge states demonstrates that the LHTS matching conditions are only sufficient (but not necessary ) conditions of equality of wall-heat fluxes between the laboratory test and flight. In the equivalence framework, we observe that even when 𝑇 𝑤 differs significantly and ℎ0 mismatches, there exists a nontrivial transformation in the equivalence class of the underlying ODEs that maps 𝑔 from laboratory to flight and preserves the near-wall heat transfer. The classical LHTS framework is recovered as the mathematically trivial (identity) case of this mapping, corresponding to exact matching of the wall boundary condition 𝑇 𝑤 and the edge thermochemical state ℎ0, and leading to identical stagnation-point boundary-layer temperature profiles in the laboratory and flight configurations. It must be stressed here that while LHTS is a degenerate case from a mathematical standpoint, its experimental utility is nontrivial. In this sense, the present analysis provides a group-theoretic interpretation of LHTS by identifying its matching conditions as the identity limit of a broader equivalence mapping between laboratory and flight stagnation-point similarity solutions. In Figures 3(f-j) and 3(k-o), two additional tests are presented with different wall temperatures (𝑇 𝑤 𝐿 , 𝑇 𝑤 𝐹 ) and varying 𝑞 𝑤 between the laboratory and reference flight cases. Despite these variations, the mapped temperature profile ˆ 𝑔 exhibits a good collapse with the flight solution 𝑔 𝐹 across the boundary layer. It must be noted that the collapse is not exact and any departures from the exact collapse of mapped profile ˆ 𝑔 with the flight profile 𝑔 𝐹 may be attributed to the invalidity of the integral invariant condition in the outer part of the boundary layer ( 𝜂 > 3). The constant 𝐾 0 in (3.9) is obtained by using the wall condition and it is used for scaling the 𝐻 𝐿 (𝑔 ) integral throughout the layer. For example, in Figures 1(b,c), there are regions in the boundary layer when the validity of 
+
+0 X0-17 Bader and Bodony    
+
+> Figure 4. Comparison of transformed ˆ 𝐶 𝑝 obtained from the 𝜒 -based reparametrization of temperature for the two cases presented in the rows 2 (panel (a) here) and 3 (panel (b) here) of figure 3.
+
+this invariant breaks; these regions are marked by 𝐻 𝐹 (𝑔 ) < 𝐻 𝐿 (𝑔 ) which contradicts the positive scaling factor 𝐾 0 set by the wall condition. This is why the profiles are more accurate in the inner region of the boundary layer, 𝜂 ≤ 3 in Figures 3(j,o). The structure of the mapped profile is accurate close to the wall, giving a correct gradient and consequently an accurate measure of heat-transfer. Overall, the derived integral invariant yields an exact temperature profile within the interpolation error in the inner part of the boundary layer, 
+
+𝜂 ≤ 3, and is able to successfully incorporate the effects of thermochemical property variation on the temperature profile. The construction and the associated results above determine the nonlinear temperature reparametrization 𝑔 ↦ → ˆ𝑔 from the 𝜒 -law. Once ˆ 𝑔 -map is inferred, the other arbitrary elements are constrained. This prevents the physical flight property data to be an exact transformed image of the laboratory data for every arbitrary element. As discussed above, under the edge normalization, we have ˆ 𝑔 = 1 when 𝑔 = 1; ˆ𝑅 𝜌 ( ˆ𝑔 = 1) = 1 when 𝑅 𝜌 (𝑔 =
+
+1) = 1, and ˆ ℓ0 ( ˆ𝑔 = 1) = 1 when ℓ0 (𝑔 = 1) = 1, this forces the scaling parameters 
+
+𝐴 0 = 𝐶 0 = 0, reducing the ℓ0 and 𝑅 𝜌 laws to ˆ 𝑅 𝜌 ( ˆ𝑔 ) = 𝑅 𝜌 (𝑔 ), ˆℓ0 ( ˆ𝑔 ) = ℓ0 (𝑔 ). The nontrivial freedom in the thermal map is carried by the Jacobian-weighted transformations of 𝜒 and 
+
+𝐶 𝑝 . Since the 𝜒 law satisfies the ˆ 𝑔 -map by construction, the 𝐶 𝑝 law is then compatible with the same map if ˆ 𝐶 𝑝 ( ˆ𝑔 ) ≃ 𝑒 𝐾 0 𝐽 −1𝐶 𝑝,𝐿 (𝑔 ) = ( 𝜒 𝐹 ( ˆ𝑔 )/ 𝜒 𝐿 (𝑔 )) 𝐶 𝑝,𝐿 (𝑔 ). As an example, for the cases presented in rows 2 and 3 of the Figure 3, 𝐶 𝑝 remains comparatively compatible with the 𝜒 -inferred map. The results are shown in the figure 4. The incompatibility of the 
+
+𝑅 𝜌 and ℓ0 transformations do not theoretically invalidate the equivalence transformation: the Lie map remains exact for the transformed member of the differential-equation class. Rather, they quantify the extent to which the prescribed physical flight property data departs from the exact transformed counterpart. 
+
+4. Conclusions 
+
+To address the problem of lab-to-flight extrapolation in high-speed, dissociative bound-ary layers, we present the Lie equivalence symmetry analysis of hypersonic stagnation-point ODEs to derive mappings ( ˆ𝑔 ) for non-dimensional temperature (𝑔 ). The framework extends beyond classical similitude by introducing invariants associated with the underlying equivalence group, which can, in principle, include the similarity parameters employed in classical similitude as a subset. The practical consequence of this extension alleviates the need to match the entire set of non-dimensional groups characteristic of a set of governing equations. Instead, by allowing the property laws to transform, the invariants allow for non-linear maps which can be used to infer the laboratory-to-flight mappings. In practice, 
+
+0 X0-18 Journal of Fluid Mechanics 
+
+implementing these maps requires only the laboratory-scale solution together with lab- and flight-side thermochemical property data; for commonly used thermochemical databases, these properties are available up to temperatures of order 2 × 10 4 K (Scoggins et al. 2020). For all the cases considered in this study, the derived 𝑔 -map demonstrates a good collapse with the corresponding similarity-ODE flight solution, verifying the validity of the derived invariant. A limitation of the present study is that the analysis is carried out for a system of coupled, similarity-reduced stagnation-point boundary-layer ODEs. The results should therefore be interpreted as a proof of concept for this reduced formulation, rather than as a validation of a general laboratory-to-flight extrapolation framework. Accordingly, the invariant derived here is valid for the specific ODE class considered, and its numerical assessment is performed against independently computed similarity-ODE flight solutions. We have not considered the full boundary-layer PDE system for a more general equivalence mapping, or validated our current results against multidimensional CFD, or experimental measurements. Despite these limitations, the similarity-reduced stagnation point ODEs still provide a practically accurate representation of the stagnation region in hypersonic flows. Overall, the Lie equivalence-symmetry framework provides a systematic means of generalizing local similarity concepts for hypersonic boundary layers. Extension of the present analysis to incorporate additional physical complexity, including chemical and thermal nonequilibrium and radiative effects, will be pursued in future editions of this work. 
+
+Acknowledgment The authors gratefully acknowledge Domenico Lanza (Politecnico di Milano), Massimo Franco (UIUC) and Francesco Panerai (UIUC) for fruitful discussions and their assistance with PlasFlow-Solver .
+
+Funding S.B. gratefully acknowledges financial support from CHESS, the Center for Hypersonics and Entry System Studies, in the Grainger College of Engineering at the University of Illinois Urbana-Champaign. 
+
+Declaration of interests The authors report no conflict of interest. 
+
+Author contributions SB: Conceptualization, Methodology, Data curation, Software, Formal analysis, Validation, Writing – original draft, review & editing. DB: Supervision, Resources, Project administration, Funding acquisition, Writing – review & editing. 
+
+A. Lie symmetry and equivalence transformations 
+
+A Lie point symmetry of a differential equation is a smooth change of variables that maps every solution of the equation to another solution. Following Hydon (2000) and Cantwell (2002), one regards a symmetry as a diffeomorphism 𝛤 : (𝑥, 𝑦 ) ↦ → ( ˆ𝑥, ˆ𝑦 ) which induces a corresponding action on all derivatives 𝑦 (𝑘 ) . When the transformed derivatives ˆ 𝑦 (𝑘 ) are substituted into the differential equation, the equation retains its form; in other words, the solution set is invariant under 𝛤 . These continuous symmetries form a Lie group, and their infinitesimal generators provide a systematic way to construct transformations that can simplify, reduce, or relate solutions of differential equations. For brevity, we will mainly follow the simple notation of Hydon (2000) to discuss the Lie point symmetries in the context of an ODE of any arbitrary order ‘ 𝑛 ’. Consider an 
+
+𝑛 th-order ODE of the form, 
+
+𝑦 (𝑛 ) = F
+
+
+
+𝑥, 𝑦, 𝑦 (1) , . . . 𝑦 (𝑛 −1) 
+
+, 𝑦 (𝑘 ) ≡ 𝑑 𝑘 𝑦 𝑑𝑥 𝑘 𝑘 = 1, 2, . . . 𝑛. (A 1) For 𝜀 sufficiently close to zero, the prolonged Lie symmetries are of the form, ˆ𝑥 = 𝑥 + 𝜀𝜉 + O( 𝜀 2) (A 2 a)ˆ𝑦 = 𝑦 + 𝜀𝜂 + O( 𝜀 2) (A 2 b)
+
+0 X0-19 Bader and Bodony 
+
+ˆ𝑦 (𝑘 ) = 𝑦 (𝑘 ) + 𝜀𝜂 (𝑘 ) + O( 𝜀 2), 𝑘 ≥ 1 (A 2 c)where 
+
+(𝜉 (𝑥, 𝑦 ), 𝜂 (𝑥, 𝑦 )) =
+
+ 𝑑 ˆ𝑥 𝑑𝜀 𝜀 =0
+
+, 𝑑 ˆ𝑦 𝑑𝜀 𝜀 =0
+
+
+
+, (A 3) is the tangent vector at (𝑥, 𝑦 ), and 𝜂 (𝑘 ) can be obtained recursively as, 
+
+𝜂 (𝑘 )  𝑥, 𝑦, 𝑦 ′, . . . 𝑦 (𝑘 )  = 𝐷 𝑥 𝜂 (𝑘 −1) − 𝑦 (𝑘 ) 𝐷 𝑥 𝜉, (A 4) with 𝜂 (1) = 𝐷 𝑥 𝜂 − 𝑦 (1) 𝐷 𝑥 𝜉, and 𝐷 𝑥 = 𝜕 𝑥 + 𝑦 (1) 𝜕 𝑦 + 𝑦 (2) 𝜕 𝑦 (1) + · · · . The superscripts (1), (2), . . . (𝑘 ) on variable 𝑦 represent the derivatives. For 𝜂 as in 𝜂 (1) , it is merely an index and it does not represent the derivative of 𝜂 . The action of 𝛤 induces an action on the derivatives 𝑦 (𝑘 ) , yielding the map, 𝛤 : (𝑥, 𝑦, 𝑦 ′, . . . 𝑦 (𝑛 ) ) ↦ → ( ˆ𝑥, ˆ𝑦, ˆ𝑦 ′, . . . ˆ𝑦 (𝑛 ) ) with ˆ 𝑦 (𝑘 ) = 𝑑 𝑘 ˆ𝑦 /𝑑 ˆ𝑥 𝑘 , 𝑘 = 1 . . . 𝑛 . To describe how Lie symmetries act on derivatives up to order 𝑛 we define the prolonged infinitesimal generator 
+
+𝑋 (𝑛 ) = 𝜉𝜕 𝑥 + 𝜂𝜕 𝑦 + 𝜂 (1) 𝜕 𝑦 (1) + · · · + 𝜂 (𝑛 ) 𝜕 𝑦 (𝑛 ) . (A 5) Here the coefficient of 𝜕 𝑦 (𝑘 ) is the O( 𝜀 ) term in the expansion of ˆ 𝑦 (𝑘 ) so 𝑋 (𝑛 ) represents the tangent vector in the space of variables (𝑥, 𝑦, 𝑦 (1) , . . . 𝑦 (𝑛 ) ). Using this prolonged generator the linearized symmetry condition can be written compactly as 
+
+𝑋 (𝑛 ) [𝛥 ] = 0, when (A 1) holds . (A 6) where 
+
+𝛥 := 𝑦 (𝑛 ) − F 
+
+
+
+𝑥, 𝑦, 𝑦 (1) , . . . 𝑦 (𝑛 −1) 
+
+= 0. (A 7) The linearized symmetry condition (A 6) is split into a system of determining equations whose solution leads to the Lie group of symmetries of the given ODE (A 1). For more details, the interested reader is referred to Hydon (2000) and Cantwell (2002). Lie point symmetries act on the variables of a single, fixed differential equation while keeping all its coefficients (like viscosity, conductivity etc.) and constitutive laws fixed. However, these arbitrary functions like coefficients and constitutive laws may also be allowed to transform. This results in symmetries acting on the entire class of equations. Simply put, if we include the arbitrary functions in the process of obtaining symmetries as outlined above, the resulting symmetries are known as Lie equivalence symmetries. The general framework for obtaining equivalence symmetries can be outlined as, 
+
+F
+
+
+
+𝑥, 𝑦, 𝑦 (1) , . . . , 𝑦 (𝑛 −1) , 𝑦 (𝑛 ) , 𝐾 (𝑦 ), 𝐾 (1) (𝑦 ), . . . , 𝐾 (𝑛 −1) (𝑦 ), 𝐾 (𝑛 ) (𝑦 )
+
+
+
+= 0, (A 8) The dependence of the arbitrary function 𝐾 (𝑦 ) on the independent variable is given by the auxiliary equation, 
+
+𝜕𝐾 /𝜕𝑥 = 0. For the case of multiple variables, it could be a system of equations. The simple case of the arbitrary function depending only on the variable 𝑦 is demonstrated in this example. Multiple variables may exist with multiple dependencies, as will be the case in stagnation-point ODEs. In the enlarged system with arbitrary function(s) as extra dependent variable(s), the prolonged infinitesimal generator includes additional components, 
+
+𝑋 (𝑛 ) = 𝜉𝜕 𝑥 + 𝜂𝜕 𝑦 + 𝜂 (1) 𝜕 𝑦 (1) + · · · + 𝜂 (𝑛 ) 𝜕 𝑦 (𝑛 ) + 𝜅𝜕 𝐾 + 𝜅 (1) 𝜕 𝐾 (1) + . . . + 𝜅 (𝑛 ) 𝜕 𝐾 (𝑛 ) . (A 9) The rest of the procedure is similar: the prolonged infinitesimal generator is applied to the auxilliary system of equations in addition to the main ODE, and the resulting system of determining equations is solved for the equivalence group. For more details, the interested reader is referred to Ovsiannikov (2014). 
+
+B. Invariance check of the derived transformations 
+
+As a sanity check, we verify that the transformations obtained from the equivalence generators preserve the form of each equation in the stagnation-point ODE system. The governing equations are, 
+
+𝑑𝑉 𝑑𝜂 + 𝐹 = 0, (B 1) 
+
+𝑉 𝑑𝐹 𝑑𝜂 = 12
+
+
+
+𝑅 𝜌 − 𝐹 2 
+
++ 𝑑 𝑑𝜂 
+
+
+
+ℓ0
+
+𝑑𝐹 𝑑𝜂 
+
+
+
+, (B 2) 
+
+0 X0-20 Journal of Fluid Mechanics 
+
+𝑉 𝑑𝑔 𝑑𝜂 = 1
+
+𝐶 𝑝 
+
+𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+
+
+. (B 3) The infinitesimal generator is, 
+
+𝑋 = 𝐶 0𝜂 𝜕 𝜕𝜂 + ( 𝐴 0 − 𝐶 0)𝐹 𝜕 𝜕𝐹 + 𝐴 0𝑉 𝜕 𝜕𝑉 + 𝜙 𝑔 (𝑔 ) 𝜕 𝜕𝑔 + 2( 𝐴 0 − 𝐶 0)𝑅 𝜌 
+
+𝜕 𝜕𝑅 𝜌 
+
++ ( 𝐴 0 + 𝐶 0)ℓ0
+
+𝜕 𝜕ℓ 0
+
++
+
+
+
+𝐾 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝜒 𝜕 𝜕 𝜒 +
+
+
+
+𝐾 0 − 𝐴 0 − 𝐶 0 − 𝑑 𝑑𝑔 
+
+ 𝜙 𝑔 (𝑔 )
+
+𝐶 𝑝 
+
+𝜕 𝜕𝐶 𝑝 
+
+. (B 4) The corresponding finite transformations are, ˆ𝜂 = 𝑒 𝐶 0 𝜀 𝜂, ˆ𝑉 = 𝑒 𝐴 0 𝜀 𝑉, ˆ𝐹 = 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐹, (B 5) together with, 
+
+𝜕 ˆ𝑔 𝜕𝜀 = 𝜙 𝑔 ( ˆ𝑔 ), ˆ𝑔 (0, 𝑔 ) = 𝑔, and 𝐽 = 𝑑 ˆ𝑔 𝑑𝑔 . (B 6) The arbitrary elements transform as, ˆ𝑅 𝜌 ( ˆ𝑔 ) = 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝑅 𝜌 (𝑔 ), (B 7) ˆℓ0 ( ˆ𝑔 ) = 𝑒 ( 𝐴 0 +𝐶 0 ) 𝜀 ℓ0 (𝑔 ), (B 8) ˆ𝜒 ( ˆ𝑔 ) = 𝑒 𝐾 0 𝜀 𝐽 −1 𝜒 (𝑔 ), (B 9) ˆ𝐶 𝑝 ( ˆ𝑔 ) = 𝑒 (𝐾 0 − 𝐴 0 −𝐶 0 ) 𝜀 𝐽 −1𝐶 𝑝 (𝑔 ). (B 10) Since ˆ 𝜂 = 𝑒 𝐶 0 𝜀 𝜂 , the derivative operator transforms as, 
+
+𝑑 𝑑 ˆ𝜂 = 𝑒 −𝐶 0 𝜀 𝑑 𝑑𝜂 . (B 11) 
+
+B.1. Continuity equation 
+
+𝑑 ˆ𝑉 𝑑 ˆ𝜂 = 𝑒 −𝐶 0 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝑒 𝐴 0 𝜀 𝑉 
+
+
+
+= 𝑒 −𝐶 0 𝜀 𝑒 𝐴 0 𝜀 𝑑𝑉 𝑑𝜂 
+
+= 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝑑𝑉 𝑑𝜂 . (B 12) Since ˆ 𝐹 = 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐹 , the transformed continuity equation is, 
+
+𝑑 ˆ𝑉 𝑑 ˆ𝜂 + ˆ𝐹 = 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 
+
+ 𝑑𝑉 𝑑𝜂 + 𝐹 
+
+
+
+= 0.
+
+⇒ 𝑑 ˆ𝑉 𝑑 ˆ𝜂 + ˆ𝐹 = 0. (B 13) Thus, if (B 1) is satisfied, then the transformed continuity equation is also satisfied. 
+
+B.2. Momentum equation 
+
+First, 
+
+𝑑 ˆ𝐹 𝑑 ˆ𝜂 = 𝑒 −𝐶 0 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐹 
+
+
+
+= 𝑒 ( 𝐴 0 −2𝐶 0 ) 𝜀 𝑑𝐹 𝑑𝜂 . (B 14) Therefore the transformed left-hand side is, ˆ𝑉 𝑑 ˆ𝐹 𝑑 ˆ𝜂 =
+
+
+
+𝑒 𝐴 0 𝜀 𝑉 
+
+ 
+
+𝑒 ( 𝐴 0 −2𝐶 0 ) 𝜀 𝑑𝐹 𝑑𝜂 
+
+
+
+0 X0-21 Bader and Bodony 
+
+= 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝑉 𝑑𝐹 𝑑𝜂 . (B 15) The first term on the right-hand side transforms as, 12
+
+ ˆ𝑅 𝜌 − ˆ𝐹 2 
+
+= 12
+
+
+
+𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝑅 𝜌 − 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝐹 2 
+
+= 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 12
+
+
+
+𝑅 𝜌 − 𝐹 2 
+
+. (B 16) For the second term on the right-hand side, we have, ˆℓ0
+
+𝑑 ˆ𝐹 𝑑 ˆ𝜂 =
+
+
+
+𝑒 ( 𝐴 0 +𝐶 0 ) 𝜀 ℓ0
+
+ 
+
+𝑒 ( 𝐴 0 −2𝐶 0 ) 𝜀 𝑑𝐹 𝑑𝜂 
+
+
+
+= 𝑒 (2𝐴 0 −𝐶 0 ) 𝜀 ℓ0
+
+𝑑𝐹 𝑑𝜂 . (B 17) Hence, 
+
+𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆℓ0
+
+𝑑 ˆ𝐹 𝑑 ˆ𝜂 
+
+
+
+= 𝑒 −𝐶 0 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝑒 (2𝐴 0 −𝐶 0 ) 𝜀 ℓ0
+
+𝑑𝐹 𝑑𝜂 
+
+
+
+= 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 𝑑 𝑑𝜂 
+
+
+
+ℓ0
+
+𝑑𝐹 𝑑𝜂 
+
+
+
+. (B 18) Combining (B 15)–(B 18), we can write, ˆ𝑉 𝑑 ˆ𝐹 𝑑 ˆ𝜂 − 12
+
+ ˆ𝑅 𝜌 − ˆ𝐹 2 
+
+− 𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆℓ0
+
+𝑑 ˆ𝐹 𝑑 ˆ𝜂 
+
+
+
+= 𝑒 2( 𝐴 0 −𝐶 0 ) 𝜀 
+
+
+
+𝑉 𝑑𝐹 𝑑𝜂 − 12
+
+
+
+𝑅 𝜌 − 𝐹 2 
+
+− 𝑑 𝑑𝜂 
+
+
+
+ℓ0
+
+𝑑𝐹 𝑑𝜂 
+
+ 
+
+= 0.
+
+⇒ ˆ𝑉 𝑑 ˆ𝐹 𝑑 ˆ𝜂 = 12
+
+ ˆ𝑅 𝜌 − ˆ𝐹 2 
+
++ 𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆℓ0
+
+𝑑 ˆ𝐹 𝑑 ˆ𝜂 
+
+
+
+. (B 19) Thus, when (B 2) is satisfied, the transformed momentum equation is also satisfied. 
+
+B.3. Energy equation 
+
+We have, 
+
+𝑑 ˆ𝑔 𝑑𝜂 = 𝐽 𝑑𝑔 𝑑𝜂 , 𝐽 = 𝜕 ˆ𝑔 𝜕𝑔 . (B 20) Therefore, 
+
+𝑑 ˆ𝑔 𝑑 ˆ𝜂 = 𝑒 −𝐶 0 𝜀 𝐽 𝑑𝑔 𝑑𝜂 . (B 21) The transformed left-hand side of the energy equation is then, ˆ𝑉 𝑑 ˆ𝑔 𝑑 ˆ𝜂 =
+
+
+
+𝑒 𝐴 0 𝜀 𝑉 
+
+ 
+
+𝑒 −𝐶 0 𝜀 𝐽 𝑑𝑔 𝑑𝜂 
+
+
+
+= 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐽𝑉 𝑑𝑔 𝑑𝜂 . (B 22) Using (B 9) and (B 21), ˆ𝜒 𝑑 ˆ𝑔 𝑑 ˆ𝜂 =
+
+
+
+𝑒 𝐾 0 𝜀 𝐽 −1 𝜒 
+
+ 
+
+𝑒 −𝐶 0 𝜀 𝐽 𝑑𝑔 𝑑𝜂 
+
+
+
+= 𝑒 (𝐾 0 −𝐶 0 ) 𝜀 𝜒 𝑑𝑔 𝑑𝜂 . (B 23) Differentiating the above with respect to ˆ 𝜂 gives, 
+
+𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆ𝜒 𝑑 ˆ𝑔 𝑑 ˆ𝜂 
+
+
+
+= 𝑒 −𝐶 0 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝑒 (𝐾 0 −𝐶 0 ) 𝜀 𝜒 𝑑𝑔 𝑑𝜂 
+
+
+
+= 𝑒 (𝐾 0 −2𝐶 0 ) 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+
+
+. (B 24) 
+
+0 X0-22 Journal of Fluid Mechanics 
+
+From (B 10), 1ˆ𝐶 𝑝 
+
+= 𝑒 − ( 𝐾 0 − 𝐴 0 −𝐶 0 ) 𝜀 𝐽 1
+
+𝐶 𝑝 
+
+. (B 25) Thus the transformed right-hand side is, 1ˆ𝐶 𝑝 
+
+𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆ𝜒 𝑑 ˆ𝑔 𝑑 ˆ𝜂 
+
+
+
+=
+
+
+
+𝑒 − ( 𝐾 0 − 𝐴 0 −𝐶 0 ) 𝜀 𝐽 1
+
+𝐶 𝑝 
+
+  
+
+𝑒 (𝐾 0 −2𝐶 0 ) 𝜀 𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+ 
+
+= 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐽 𝐶 𝑝 
+
+𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+
+
+. (B 26) Hence the transformed energy equation becomes, ˆ𝑉 𝑑 ˆ𝑔 𝑑 ˆ𝜂 − 1ˆ𝐶 𝑝 
+
+𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆ𝜒 𝑑 ˆ𝑔 𝑑 ˆ𝜂 
+
+
+
+= 𝑒 ( 𝐴 0 −𝐶 0 ) 𝜀 𝐽 
+
+
+
+𝑉 𝑑𝑔 𝑑𝜂 − 1
+
+𝐶 𝑝 
+
+𝑑 𝑑𝜂 
+
+
+
+𝜒 𝑑𝑔 𝑑𝜂 
+
+ 
+
+= 0,
+
+⇒ ˆ𝑉 𝑑 ˆ𝑔 𝑑 ˆ𝜂 = 1ˆ𝐶 𝑝 
+
+𝑑 𝑑 ˆ𝜂 
+
+
+
+ˆ𝜒 𝑑 ˆ𝑔 𝑑 ˆ𝜂 
+
+
+
+. (B 27) Since 𝐽 ≠ 0 for an invertible finite temperature map 𝑑 ˆ𝑔 = 𝐽𝑑𝑔 , when (B 3) is satisfied, the transformed energy equation is also satisfied. 
+
+REFERENCES 
+
+Barbante, P. F. & others 2001 Accurate and efficient modelling of high temperature nonequilibrium air flows .Von Karman Institute for Fluid Dynamics. 
+
+Bluman, G. W. & Anco, S. C. 2002 Symmetry and integration methods for differential equations . Springer. 
+
+Bottin, B. 1999 Aerothermodynamic model of an inductively-coupled plasma wind tunnel: Numerical and experimental determination of the facility performance . Von Karman Inst. for Fluid Dynamics. 
+
+Cantwell, B. J. 2002 Introduction to symmetry analysis . Cambridge University Press. 
+
+Chazot, O. & Panerai, F. 2015 High-enthalpy facilities and plasma wind tunnels for aerothermodynamics ground testing. In Hypersonic Nonequilibrium Flows: Fundamentals and Recent Advances , chap. 7, pp. 329–342. AIAA. 
+
+Dreyer, E., Klock, R., Grier, B., McNamara, J. J. & Cesnik, C. E. 2017 Multi-discipline modeling of complete hypersonic vehicles using cfd surrogates. In 58th AIAA/ASCE/AHS/ASC Structures, Structural Dynamics, and Materials Conference , p. 0182. 
+
+Fedeli, T. 2024 Duplication of re-entry flight conditions in plasma wind tunnels. Master’s thesis, Politecnico di Torino, Turin, Italy. 
+
+Freeman, N. C. 1958 Non-equilibrium flow of an ideal dissociating gas. J. Fluid Mech. 4 (4), 407–425. 
+
+Gibson, W. E. & Marrone, P. V. 1964 A similitude for non-equilibrium phenomena in hypersonic flight. In 
+
+AGARDograph , , vol. 68, pp. 105–131. Elsevier. 
+
+Griffith, B. J., Maus, J. R., Majors, B. M. & Best, J. T. 1987 Addressing the hypersonic simulation problem. 
+
+J. Spacecr. Rockets 24 (4), 334–341. 
+
+Gu, S. & Olivier, H. 2020 Capabilities and limitations of existing hypersonic facilities. Prog. Aerosp. Sci. 113 ,100607. 
+
+Hydon, P. E. 2000 Symmetry methods for differential equations: a beginner’s guide , , vol. 22. Cambridge University Press. 
+
+Ibragimov, N. H. 1994 CRC Handbook of Lie Group Analysis of Differential Equations, Volume II: Applications in Engineering and Physical Sciences . Boca Raton: CRC Press. 
+
+Inger, G. R., Higgins, C. & Morgan, R. 2003 Generalized nonequilibrium binary scaling for shock standoff on hypersonic blunt bodies. J. Thermophys. Heat Transfer 17 (1), 126–128. 
+
+von Kaenel, R., Sanchi, S., Vos, J. B., Gaffurri, M., Leyland, P., Walloschek, T. & Binetti, P. 2009 IXV CFD simulations for wind tunnel rebuilding and extrapolation to flight. In Proceedings of the 6th European Symposium on Aerothermodynamics for Space Vehicles, ESA SP-659. ESTEC .
+
+Kolesnikov, A. F. 1993 Conditions of simulation of stagnation point heat transfer from a high-enthalpy flow. 
+
+Fluid Dyn. 28 (1), 131–137. 
+
+Kolesnikov, A. F. 2000 The concept of local simulation for stagnation point heat transfer in hypersonic flows: applications and validation. In 21st AIAA Aerodynamic Measurement Technology and Ground Testing Conference . AIAA Paper 2000-2515. 
+
+Lanza, D., Franco, Ma., Elliott, G., Panesi, M. & Panerai, F. 2025 Plasflowsolver: An aerothermodynamic 
+
+0 X0-23 Bader and Bodony 
+
+data reduction model for inductively coupled plasma wind tunnel facilities. In AIAA SCITECH 2025 Forum ,p. 0449. 
+
+Lindgren, B., ¨ Osterlund, J. M. & Johansson, A. V. 2004 Evaluation of scaling laws derived from lie group symmetry methods in zero-pressure-gradient turbulent boundary layers. J. Fluid Mech. 502 , 127–152. 
+
+Muylaert, J. 1996 Extrapolation to flight. In Hypersonic Experimental and Computational Capability, Improvement and Validation , AGARD Adv. Rep. , vol. 319. Neuilly-sur-Seine, France: NATO, vol. I, Chap. 7. 
+
+Oberlack, M. 1999 Symmetries and scaling-laws in turbulence. ZAMM-Journal of Applied Mathematics and Mechanics/Zeitschrift f¨ ur Angewandte Mathematik und Mechanik 79 (S1), 123–126. 
+
+Oberlack, M. 2001 A unified approach for symmetries in plane parallel turbulent shear flows. J. Fluid Mech. 
+
+427 , 299–328. 
+
+Oberlack, M., Cabot, W., Reif, B. A. P. & Weller, T. 2006 Group analysis, direct numerical simulation and modelling of a turbulent channel flow with streamwise rotation. J. Fluid Mech. 562 , 383–403. 
+
+Ovsiannikov, L. V. 2014 Group analysis of differential equations . Academic press. 
+
+Rosteck, A. M. 2014 Scaling laws in turbulence: A theoretical approach using lie-point symmetries. Phd thesis, Technische Universit¨ at Darmstadt, Darmstadt, Germany. 
+
+Scoggins, J. B., Leroy, V., Bellas-Chatzigeorgis, G., Dias, B. & Magin, T. E. 2020 Mutation++: Multicomponent thermodynamic and transport properties for ionized gases in c++. SoftwareX 12 , 100575. 
+
+She, Z. S., Chen, X. & Hussain, F. 2011 Quantifying wall turbulence via a symmetry approach. part i. a lie group theory. arXiv preprint arXiv:1112.6312 .
+
+Tranchant, V., Charpentier, N., Van Box Som, L., Ciardi, A. & Falize, ´ E. 2022 New class of laboratory astrophysics experiments: Application to radiative accretion processes around neutron stars. ApJ 936 (1), 14. 
+
+Tranchant, V., Charpentier, N., Van Box Som, L., Ciardi, A. & Falize, ´ E. 2025 Generalizing the similitude approach for laboratory astrophysics through equivalence symmetries for the example of radiative waves. 
+
+Sci. Rep. 15 (1), 1–13. 
+
+del Val, A., Chazot, O. & Magin, T. 2020 Uncertainty treatment applications: High-enthalpy flow ground testing. In Optimization Under Uncertainty with Applications to Aerospace Engineering , pp. 507–539. Springer. 
+
+0 X0-24

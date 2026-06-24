@@ -1,0 +1,3739 @@
+Title: A Fourth-order Conservative Adaptive Multiresolution Wavelet Upwind Scheme for Compressible Flows
+
+URL Source: https://arxiv.org/pdf/2606.18026v1
+
+Published Time: Wed, 17 Jun 2026 01:25:04 GMT
+
+Number of Pages: 54
+
+Markdown Content:
+> Preprint June 17, 2026
+
+## A Fourth-order Conservative Adaptive Multiresolution Wavelet Upwind Scheme for Compressible Flows 
+
+Bing Yang a,b , Xiaojing Liu a,b , Youhe Zhou a,b , Feng Xiao c and Jizeng Wang a,b ,∗
+
+> a
+
+School of Civil Engineering and Mechanics, Lanzhou University, LanZhou, 730000, Gansu, China 
+
+> b
+
+Key Laboratory of Mechanics on Disaster and Environment in Western China (Lanzhou University), the Ministry of Education, Lanzhou University, Lanzhou, 730000, China 
+
+> c
+
+Department of Mechanical Engineering, Institute of Science Tokyo, 2-12-1 Ookayama, Meguro-ku, Tokyo, 152-8550, Japan 
+
+A R T I C L E I N F O 
+
+Keywords :Average-interpolating wavelet Multiresolution analysis Conservative adaption Wavelet upwind scheme Boundary variation diminishing Hyperbolic conservation law 
+
+A B S T R A C T 
+
+A fourth-order conservative adaptive multiresolution average-interpolating wavelet upwind scheme is proposed for compressible flows governed by hyperbolic conservation laws. A family of asymmetric average-interpolating wavelets with upwind properties is constructed for conservative finite volume discretization, while symmetric average-interpolating wavelets are employed for multiresolution decomposition and reconstruction of physical variables in the adaptive procedure. This unified cell-average wavelet framework exploits the upwind property of asymmetric wavelets and the data-compression efficiency of symmetric wavelets. Since both the conservative discretization and the adaptive multiresolution representation are constructed from cell-average quantities, the proposed scheme preserves strict conservation during both numerical evolution and adaptive cell redistribution. Unlike hybrid adaptive wavelet methods that use wavelets mainly for data compression and mesh adaptation, the present adaptive wavelet upwind scheme utilizes average-interpolating wavelet multiresolution approximation to reconstruct the interface values directly for numerical flux evaluation, thereby avoiding additional ghost-cell marking and reconstruction near coarse–fine mesh interfaces. The boundary variation diminishing (BVD) reconstruction is incorporated at the finest resolution level to achieve non-oscillatory shock-capturing capability. Numerical tests demonstrate that the proposed scheme achieves the expected fourth-order accuracy, maintains conservation errors close to machine precision, and controls numerical errors around the prescribed threshold. The proposed method also sharply captures shock waves and contact discontinuities without spurious oscillations and resolves multiscale smooth structures through a sparse adaptive representation. These results indicate that the proposed scheme provides an efficient, conservative, and reliable approach for high-resolution simulations of compressible flows. 
+
+1. Introduction 
+
+Compressible flows governed by hyperbolic conservation laws often involve multiscale smooth structures, such as acoustic waves and vortices, as well as various discontinuities, including shock waves and contact discontinuities [1]. The coexistence of these complex flow features poses a continuing challenge to the development of accurate, robust, and efficient numerical schemes for compressible flows. When such problems are solved on fixed meshes, a fine resolution must be employed over the entire computational domain to resolve multiscale smooth structures and capture localized discontinuities. However, fine resolution is typically required only in limited regions that contain discontinuities, steep gradients, or small-scale flow structures. Numerical methods on the fixed meshes therefore introduce many unnecessary degrees of freedom in smooth large-scale regions, resulting in excessive computational cost and memory consumption. In contrast, adaptive numerical methods provide an effective way to address this difficulty by dynamically concentrating fine cells in regions with localized flow features while retaining coarse cells in smooth regions. In this manner, they can significantly improve computational efficiency while maintaining the required resolution and accuracy and therefore have become an important approach for high-resolution simulations of large-scale compressible flows [2]. For compressible flows, adaptive numerical methods are generally expected to have several fundamental properties, including conservativity, high-order accuracy, high-resolution shock capture capability, and reliable adaptive error estimation. Conservativity is essential for ensuring that discontinuities propagate at the correct speeds and are captured at the accurate locations [3]. High-order accuracy, together with high-resolution shock-capturing capability, allows flow 
+
+> ∗
+
+Corresponding author. 
+
+jzwang@lzu.edu.cn (J. Wang) 
+
+Page 1 of 54 
+
+> arXiv:2606.18026v1 [math.NA] 16 Jun 2026 Preprint June 17, 2026
+
+Submitted to Journal 
+
+structures over a broad range of frequency components to be accurately resolved using a limited number of degrees of freedom. In addition, reliable adaptive error estimation is required to assess and control the accuracy of the computed solution [4]. Among various adaptive strategies, adaptive mesh refinement (AMR) is currently one of the most widely used techniques in computational fluid dynamics. Therefore, we discuss the above properties of AMR-based adaptive methods. The construction of conservative adaptive numerical methods requires two key ingredients: a conservative discretization on general nonuniform meshes and a conservative reconstruction procedure during adaptive mesh redistribution. Conservative methods formulated in terms of cell averages, such as the finite volume method (FVM), discontinuous Galerkin (DG) method [5], and multi-moment constrained finite volume method [6], can naturally preserve conservation on general nonuniform meshes. By contrast, conservative finite difference schemes based on nodal values, i.e., the Shu–Osher conservative finite difference formulation [7], guarantee conservation only on uniform meshes and on certain nonuniform meshes generated by quadratic or exponential mappings, but are generally non-conservative on arbitrary nonuniform meshes [8]. In addition to the underlying discretization, the reconstruction of physical variables during mesh adaptation must also be conservative. Sebastian and Shu [9] noted that interpolation procedures not based on cell averages are non-conservative. Therefore, cell-average-based conservative interpolation or reconstruction is required to maintain conservation during adaptive mesh updates. Consequently, in the AMR framework, adaptive finite volume methods [10] and adaptive DG methods [11] generally preserve conservation, whereas adaptive finite difference methods usually fail to achieve strict conservation on general adaptive meshes [8, 12, 13]. Second-order AMR-based adaptive numerical methods have been well developed [10, 14, 15]. To further improve their accuracy, resolution, and computational efficiency, considerable efforts have been devoted to high-order adaptive numerical methods. Chen et al. [12] combined high-order finite difference weighted essentially non-oscillatory (WENO) schemes with AMR techniques and developed an adaptive method on curvilinear meshes. They noted that the resulting method is not strictly conservative, with conservation errors remaining at the same order as the truncation errors of the scheme. Schaal et al. [16] constructed adaptive high-order DG methods and demonstrated their efficiency advantage over low-order adaptive methods. Zhang and Groth [17] developed an anisotropic block-based AMR technique combined with a fourth-order finite volume central essentially non-oscillatory (ENO) scheme. Qi et al. [18] further integrated a third-order discontinuous Galerkin method with the immersed boundary method to efficiently simulate compressible flows around complex geometries on Cartesian meshes. Error estimation in AMR techniques aims to identify flow regions that significantly affect the resolution of flow structures or the prediction of aerodynamic quantities of interest. By evaluating local cell-wise errors, adaptive indicators are devised to determine whether the corresponding cells should be refined or coarsened [4]. Therefore, error estimation serves as a core ingredient of AMR techniques and is essential for ensuring the accuracy, efficiency, and reliability of adaptive computations. Existing error-estimation strategies for AMR techniques can be broadly classified into three categories: flow-feature-based methods [19], adjoint-based methods [20], and Hessian-based methods [21]. Flow-feature-based methods refine regions where prominent structures, such as shocks, shear layers, and separated vortices, are expected to make dominant contributions to the numerical error. Typical examples include indicators based on shock sensors [19] and vortex-identification criteria [22]. These methods are simple to implement and effective in improving the resolution of targeted flow features. However, they are often problem-dependent and do not guarantee a reduction in the global error [23]. Adjoint-based methods are goal-oriented approaches in which mesh refinement is guided by the sensitivity of a prescribed quantity. By solving the corresponding adjoint problem, adjoint-weighted error indicators can be constructed to identify regions that contribute most to the error in the target functional [20]. These methods can generate cost-effective meshes for practical simulations; however, the construction and robust solution of suitable adjoint problems remain nontrivial, especially for nonlinear compressible flows with discontinuities, thereby hindering their practical applications [24, 25]. Hessian-based criteria construct anisotropic meshes by equidistributing a local interpolation-error estimate [26]. They can generate highly stretched and directionally aligned elements, thereby substantially reducing the number of cells required to achieve a prescribed accuracy. However, the interpolation-error criterion does not necessarily provide a direct estimate of the actual discretization error of the governing partial differential equations (PDEs) [15]. In addition, its extension to high-order discretizations is nontrivial. The standard Hessian approach is associated with linear interpolation error, whereas the interpolation error of a 𝑝 th-order approximation is governed by (𝑝 + 1) th-order derivatives. Therefore, the construction of suitable high-order metric tensors further increases the algorithmic complexity, especially in three dimensions [24]. 
+
+Page 2 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Although conservative and high-order adaptive numerical methods have been developed within the AMR frame-work, there remain several limitations. Some high-order adaptive schemes do not strictly preserve the conservation property on general adaptive meshes. Existing indicators are often problem-dependent, and reliable error estimation remains difficult for nonlinear compressible flows with discontinuities. Addressing these issues requires a cell-average-based numerical tool capable of identifying, localizing and capturing flow features across different scales, while quantitatively estimating their scale-dependent magnitudes. Wavelet theory naturally provides such a framework due to its inherent multiresolution analysis, localization in both physical and scale spaces, and flexible choice of basis functions [27]. These features make wavelets particularly attractive for developing adaptive numerical methods for compressible flows. The basic principle of wavelet-based adaptive methods is to use the magnitudes of wavelet coefficients as indicators of local flow features. Mesh refinement is performed in regions where the wavelet coefficients exceed a prescribed threshold, typically corresponding to local steep gradients, discontinuities, or high-frequency smooth structures [28, 29, 30]. Accordingly, wavelet components whose coefficients are below the threshold are discarded, resulting in a sparse multiresolution representation of the function. Wavelet-based adaptive multiresolution methods therefore possess inherent advantages in adaptive indication, adaptive error estimation, and sparse data representation. For the adaptive indication, wavelet multiresolution analysis and localization in physical and scale spaces provide a natural way to identify, localize, and capture local solution features. The decay behavior of wavelet coefficients can further be used to distinguish strong discontinuities from high-frequency smooth structures. Together with wavelet-threshold filtering, these properties make adaptive mesh updating straightforward [31, 32]. From the viewpoint of error estimation, wavelet multiresolution analysis can quantitatively characterize the magnitudes of solution features at different scales, thereby enabling accurate error estimation for numerical solutions. Moreover, effective control of the global error can be achieved by specifying appropriate thresholding parameters for wavelet coefficients at different resolution levels [33]. From the perspective of function approximation, adaptive nonlinear wavelet approximation is highly efficient for representing functions whose Besov regularity is stronger than their Sobolev regularity, such as functions with localized steep gradients and boundary-layer structures. Consequently, high data compression ratios can be obtained while preserving the essential localized features of the solution [34, 35]. Wavelet-based adaptive numerical methods for compressible flows can be mainly classified into two categories according to how wavelet multiresolution analysis is incorporated into the numerical framework. In the first category, scaling and wavelet functions are applied directly as basis functions to construct the discretization scheme through wavelet multiresolution approximations. Meanwhile, the multiresolution framework is also employed to design the adaptive algorithm. These methods are referred to as pure wavelet numerical methods, mainly including wavelet Galerkin methods and wavelet collocation methods [32, 36]. Minbashian et al. [37] proposed an adaptive wavelet Streamline-Upwind Petrov-Galerkin (SUPG) method by borrowing the idea of the finite element SUPG method. Pereira et al. [38] showed that the dynamic adaptation procedure of adaptive methods intrinsically introduces a non-smooth discrete operator associated with energy dissipation, which contributes to the stable solution of hyperbolic conservation laws. In contrast, wavelet collocation methods are simpler to implement and computationally more efficient. Early studies on wavelet collocation methods mainly employed symmetric interpolating wavelets as basis functions and successfully applied them to small-viscosity convection–diffusion problems [31, 39]. However, sym-metric interpolating wavelet collocation schemes behave similarly to central finite difference schemes for convective-term discretization, since their modified wave-number analysis indicates zero numerical dissipation over the wave-number range. As a result, numerical oscillations may arise in simulations of low-viscosity or inviscid compressible flows, thereby limiting their practical applications [27]. Inspired by classical upwind schemes in finite difference and finite volume methods [40], we have recently constructed asymmetric interpolating wavelet basis functions with upwind-biased properties and proposed high-order adaptive multiresolution wavelet collocation upwind schemes [36]. In addition to their aforementioned advantages in adaptive indication, adaptive error estimation, and data compression, pure wavelet-based adaptive numerical methods can achieve improved spectral resolution compared with conventional polynomial-based upwind schemes [41]. Moreover, their inherent low-pass filtering property can effectively suppress high-frequency numerical oscillations, leading to improved accuracy and stability in flow problems under extreme conditions [42]. However, the wavelet basis functions used in the above adaptive pure wavelet numerical methods, such as Daubechies wavelets [43], semi-orthogonal wavelets [37], and interpolating wavelets [31, 36], are generally not constructed based on cell averages of the function. Consequently, these methods can at most preserve conservation in an approximate sense, but cannot guarantee strict conservation. 
+
+Page 3 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+In addition, Alpert’s multiwavelets [44], which provide 𝐿 2-basis functions through a multiresolution analysis on partitioned elements, have also been employed in pure wavelet-based adaptive numerical methods for conservation laws. In the adaptive multiresolution DG framework developed by Müller and co-workers [45, 46, 47], the DG approximation space is represented by element-wise scaling and wavelet functions of multiwavelets, and the governing equations are discretized in the corresponding multiwavelet space. In such multiwavelet-based multiresolution DG methods, the conservation property is inherited from the underlying DG weak formulation, together with the preservation of the cell-average coefficients in the multiwavelet representation. Since multiwavelets may have jumps inside an element, the internal numerical flux does not cancel in the evolution equations for the detail coefficients, and the corresponding integrals must be split across the internal discontinuity. This additional treatment, together with multiscale transformations, thresholding, and adaptive grid reconstruction, further increases the algorithmic complexity of multiwavelet-based adaptive methods [45]. The second category refers to hybrid wavelet-based methods, where wavelet multiresolution analysis is only used in the adaptive mesh-update procedure. In this type of method, wavelets are employed to detect discontinuities, estimate local multiscale errors, guide mesh refinement or coarsening, and reconstruct data during adaptive mesh updates, while the governing equations are discretized by classical numerical schemes. Harten [33] introduced symmetric average-interpolating wavelets for constructing conservative adaptive multiresolution finite volume schemes. It should be noted that, although these wavelets are constructed from cell averages, they retain many favorable properties similar to those of interpolating wavelets within the multiresolution framework, including compact support, shape adjustability, smoothness, polynomial reconstruction, and refinability [28, 48, 49]. Most existing hybrid wavelet-based adaptive methods are therefore constructed by coupling average-interpolating wavelets with classical conservative discretization schemes, and thus generally preserve conservation. Harten and co-workers [28, 48, 50] developed conservative adaptive finite volume shock-capturing schemes based on symmetric average-interpolating wavelets. In these methods, the wavelet multiresolution decomposition of physical variables is performed on a uniform mesh to locate discontinuities. Then, ENO reconstruction is applied only in the vicinity of discontinuities, while simpler linear schemes are used in smooth regions. This strategy reduces the computational cost associated with ENO reconstruction while retaining the shock-capturing capability of the scheme. However, both the spatial discretization and time evolution are still carried out on the finest uniform mesh. Consequently, the reduction in overall computational cost is only partially achieved. Cohen et al. [29] extended Harten’s approach to dynamically adaptive meshes and proposed fully adaptive multiresolution finite volume schemes for conservation laws, in which second-order ENO schemes were combined with average-interpolating wavelets. Roussel et al. [51] subsequently extended the fully adaptive multiresolution finite volume scheme to parabolic problems. Castro et al. [52] developed high-order adaptive multiresolution finite volume methods by combining high-order WENO schemes with average-interpolating wavelets. Their results showed that high-order adaptive methods require fewer computational resources and achieve higher efficiency than low-order ones. Since hybrid adaptive wavelet methods discretize the governing equations using classical numerical schemes, additional ghost cells must be marked near coarse–fine mesh interfaces for flux evaluation. The required physical variables are reconstructed through wavelet multiresolution approximation before the numerical fluxes are computed by the underlying scheme. This extra reconstruction procedure increases algorithmic complexity and may reduce computational efficiency. These observations suggest a promising alternative: using average-interpolating wavelets both as basis functions for the conservative discretization and as the foundation of the adaptive strategy. Such a formulation is expected to inherit many advantages of existing pure wavelet methods, including high-order accuracy, high resolution, robustness, reliable adaptive error estimation. At the same time, wavelet basis functions constructed from cell averages provide a natural mechanism for enforcing strict conservation. Moreover, because the discretization and the adaptive representation are constructed within the same wavelet multiresolution framework, additional ghost-cell marking and reconstruction near coarse–fine cell interfaces are no longer required for flux evaluation. All interface fluxes can instead be computed directly and efficiently through the wavelet multiresolution approximation. In this study, we develop a conservative adaptive multiresolution average-interpolating wavelet upwind scheme that goes beyond using wavelet multiresolution analysis merely for adaptive procedures. The proposed conservative adaptive wavelet upwind scheme fully exploits the upwind stability of asymmetric average-interpolating wavelets for conservative discretization and the data-compression efficiency of symmetric wavelets for adaptive representation within the unified average-interpolating wavelet framework, thereby providing a novel and efficient approach for high-resolution simulations of compressible flows. 
+
+Page 4 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+The rest of this paper is organized as follows. Section 2 introduces the multiresolution analysis of average-interpolating wavelets and presents the detailed construction of general average-interpolating wavelets. The main ingredients of the proposed wavelet upwind scheme on uniform cells and the conservative adaptive multiresolution wavelet upwind scheme are then described. In Section 3, the numerical performance of the proposed adaptive wavelet upwind schemes is examined through a series of benchmark tests. The main conclusions are summarized in Section 4. 
+
+2. Fundamental theory and numerical methods 
+
+As discussed above, constructing wavelet bases from cell averages is essential for developing a conservative adaptive wavelet upwind scheme. In this section, we start with the multiresolution analysis of average interpolating wavelets, and consider the following one-dimensional scalar conservation law as the basic model: 
+
+𝑢 𝑡 + 𝑓 (𝑢 )𝑥 = 0 . (1) We then elaborate on the fundamental ingredients of the proposed conservative adaptive wavelet upwind scheme. 
+
+2.1. Multiresolution analysis of average-interpolating wavelets 
+
+Average-interpolating wavelets were constructed in the 1990s, driven by the needs of diverse applications [50, 53]. In computational fluid dynamics community, Harten’s pioneering work on the average-interpolating wavelet originated with the development of adaptive multiresolution numerical methods for hyperbolic conservation laws [28]. The average-interpolating wavelets proposed by Harten mainly concentrate on the multiresolution representation of func-tions based on cell averages. Since the proposed adaptive wavelet upwind scheme exploits the wavelet multiresolution approximation of functions to construct the upwind discretization scheme, we present the fundamental theory of the average-interpolating wavelets from the perspective of function approximation. 
+
+2.1.1. Biorthogonal multiresolution analysis 
+
+Before introduce the biorthogonal multiresolution analysis, we first give some primary definitions. A Hilbert space denoted by 𝐿 2(Ω) is the collection of square integrable functions over Ω that satisfy ∫Ω |𝑓 (𝑥 )|2d𝑥 < ∞, where Ω is any open subset of ℝ [54]. The resulting 𝐿 2(Ω) -norm of the function is defined by 
+
+‖𝑓 ‖𝐿 2(Ω) =
+
+(
+
+∫Ω
+
+|𝑓 (𝑥 )|2 d𝑥 
+
+)1∕2 
+
+. (2) The space 𝐿 2(Ω) is naturally equipped with the following inner product: 
+
+(𝑓 , 𝑔 ) = ∫Ω
+
+𝑓 (𝑥 )𝑔 (𝑥 ) d 𝑥, whenever 𝑓 , 𝑔 ∈ 𝐿 2(Ω) . (3) In addition, the 𝐿 ∞(Ω) -norm is defined by 
+
+‖𝑓 ‖𝐿 ∞(Ω) = sup 
+
+𝑥 ∈Ω 
+
+{|𝑓 (𝑥 )|}. (4) A multiresolution analysis defined in 𝐿 2(ℝ) space consists of a sequence of closed subspaces 𝑉 𝐽 , satisfying the following relations: 
+
+⋯ 𝑉 −1 ⊂ 𝑉 0 ⊂ 𝑉 1 ⋯ ⊂ 𝑉 𝐽 ⊂ 𝑉 𝐽 +1 ⋯ , (5) 
+
+⋃
+
+𝐽 ∈ℤ
+
+𝑉 𝐽 = 𝐿 2(ℝ), (6) 
+
+⋂
+
+𝐽 ∈ℤ
+
+𝑉 𝐽 = {0} , (7) 
+
+Page 5 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+𝑓 ∈ 𝑉 𝐽 ⟺ 𝑓 (2 −𝐽 ⋅) ∈ 𝑉 0, (8) 
+
+𝑓 ∈ 𝑉 0 ⟺ 𝑓 (⋅ − 𝑘 ) ∈ 𝑉 0. (9) In addition, there exists an auxiliary function named as a scaling function 𝜙 such that 
+
+{𝜙 (𝑥 − 𝑘 )|𝑘 ∈ ℤ} is a Riesz basis of 𝑉 0. (10) The basic principle of the multiresolution analysis is that whenever a collection of closed spaces satisfies Eqs. (5)-(10), then there exists a wavelet basis {𝜓 𝐽 ,𝑘 (𝑥 )|𝐽 , 𝑘 ∈ ℤ}, 𝜓 𝐽 ,𝑘 = 𝜓 (2 𝐽 𝑥 − 𝑘 ) of the complement space 𝑊 𝐽 of 
+
+𝑉 𝐽 in 𝑉 𝐽 +1 . Due to 𝑉 𝐽 ⊂ 𝑉 𝐽 +1 and 𝑊 𝐽 ⊂ 𝑉 𝐽 +1 , the scaling function and wavelet function both satisfy the following refinement relation: 
+
+𝜙 (𝑥 ) = ∑
+
+𝑘 
+
+ℎ𝑘 𝜙 (2 𝑥 − 𝑘 ), 𝜓 (𝑥 ) = ∑
+
+𝑘 
+
+𝑔 𝑘 𝜙 (2 𝑥 − 𝑘 ), (11) where ℎ𝑘 and 𝑔 𝑘 are filter coefficients for the scaling function and wavelet function, respectively. The biorthogonal multiresolution analysis is composed of a primal multiresolution analysis and a dual multiresolu-tion analysis. Here, the multiresolution analysis introduced above is regarded as the primal multiresolution analysis. The dual multiresolution analysis consists of a sequence of closed subspaces ̃ 𝑉 𝐽 . The corresponding dual scaling function and wavelet function are denoted by ̃ 𝜙 (𝑥 ) and ̃𝜓 (𝑥 ), which also follow the refinement relations with filter coefficients ̃ℎ𝑘 and ̃𝑔 𝑘 , respectively. The biorthogonality implies that the dual scaling and wavelet functions are orthogonal to their primal counterparts in the sense of inner product, namely 
+
+(𝜙 (𝑥 ),̃𝜓 (𝑥 − 𝑙 ) ) = (𝜓 (𝑥 ),̃ 𝜙 (𝑥 − 𝑙 )) = 0 ,
+
+(𝜙 (𝑥 ),̃ 𝜙 (𝑥 − 𝑙 )) = ( 𝜓 (𝑥 ),̃𝜓 (𝑥 − 𝑙 ) ) = 𝛿 0,𝑙 , (12) where 𝛿 𝑖,𝑗 is the Kronecker function, 𝛿 𝑖,𝑗 = 1 , if 𝑖 = 𝑗 ; otherwise, 𝛿 𝑖,𝑗 = 0 .Then, a projection operator 𝐽 𝑓 ∶ 𝐿 2 → 𝑉 𝐽 can be found in the biorthogonal setting as 
+
+𝐽 𝑓 (𝑥 ) = ∑
+
+𝑘 
+
+𝑐 𝐽 ,𝑘 𝜙 𝐽 ,𝑘 , (13) where 𝑐 𝐽 ,𝑘 = ( 𝑓 ,̃ 𝜙 𝐽 ,𝑘 ),̃ 𝜙 𝐽 ,𝑘 = 2 𝐽 ̃ 𝜙 (2 𝐽 𝑥 − 𝑘 ), 𝜙 𝐽 ,𝑘 = 𝜙 (2 𝐽 𝑥 − 𝑘 ). Since 𝑉 𝐽 +1 = 𝑉 𝐽 
+
+⨁ 𝑊 𝐽 , the projection operator 
+
+𝐽 +1 can be decomposed accordingly as 
+
+𝐽 +1 𝑓 (𝑥 ) = ∑
+
+𝑘 
+
+𝑐 𝐽 ,𝑘 𝜙 𝐽 ,𝑘 + ∑
+
+𝑚 
+
+𝑑 𝐽 ,𝑚 𝜓 𝐽 ,𝑚 , (14) where 𝑑 𝐽 ,𝑚 = ( 𝑓 ,̃𝜓 𝐽 ,𝑚 ),̃𝜓 𝐽 ,𝑚 = 2 𝐽 ̃𝜓 (2 𝐽 𝑥 − 𝑚 ). The multiresolution analysis is said to be of 𝑁 th order if the scaling function can exactly reproduce polynomials of degree up to 𝑁 − 1 :
+
+𝐽 𝑥 𝑝 = 𝑥 𝑝 , 0 ≤ 𝑝 < 𝑁. (15) 
+
+2.1.2. Construction of general average-interpolating wavelets 
+
+We have summarized the properties of the scaling function for numerical computation and analysis in our previous study [36], including compact support, interpolation, polynomial reproduction, smoothness, refinability and shape adjustability. For solving elliptic PDEs, symmetric wavelets are advantageous, as their linear phase property enhances data compression rates [55], while the symmetry of the discretization operators ensures improved numerical stability. In contrast, for compressible flows governed by hyperbolic conservation laws, the upwind property of the scheme necessitates the use of asymmetric wavelet bases [36]. From the perspective of adaption process, symmetric wavelets with the linear phase property yield higher data compression rates [41]. Furthermore, to guarantee conservation property, wavelet functions must possess the cell-average interpolation property in both the discretization and 
+
+Page 6 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+adaptation processes. These requirements suggest that a conservative adaptive wavelet upwind scheme is preferably constructed based on both symmetric and asymmetric average-interpolating wavelets. However, existing studies have only reported the construction of symmetric average-interpolating wavelets [28, 56], whereas the construction of asymmetric counterparts, although conceptually similar, has not been systematically formulated in terms of explicit expressions and detailed construction procedures. Next, we present a general construction framework for average-interpolating wavelets using an integral-average interpolation technique together with the refinement relation in Eq. (11). First, we describe the detailed procedure for constructing the scaling functions as follows: (1) Choose the type of the required wavelet and determine its multiresolution analysis order 𝑁 : (a) for symmetric wavelets, 𝑁 ∈ odd is the unique choice; (b) for asymmetric wavelets, 𝑁 ∈ even or 𝑁 ∈ odd is optional. (2) Select a cell stencil. Specify 𝑁 cells in 𝑉 0 space as the base and choose two interpolation cells in the 𝑉 1 space. We define the difference between the number of cells in the 𝑉 0 space on the left side of the interpolation cells in 𝑉 1
+
+and that on the right side as a stencil bias parameter 𝑏 . Obviously, 𝑏 = 0 for symmetric wavelets, and 0 < |𝑏 | < 𝑁 
+
+for asymmetric wavelets. Here, we show stencils for 𝑁 = 5 symmetric wavelet and 𝑁 = 4 , 𝑏 = 1 asymmetric wavelet as examples in Fig. 1. (3) Calculate filter coefficients of the scaling function. The scaling function of the average-interpolating wavelet satisfies the following integral average relation over the cell [𝑘, 𝑘 + 1] and refinement relation respectively: ̄𝜙 𝑘 = ∫
+
+𝑘 +1 
+
+𝑘 
+
+𝜙 (𝑥 ) d 𝑥 = 𝛿 0,𝑘 . (16) 
+
+𝜙 (𝑥 ) = 
+
+𝑁 +𝑏 ∑
+
+𝑙 =1− 𝑁 +𝑏 
+
+ℎ𝑙 𝜙 (2 𝑥 − 𝑙 ). (17) Substituting Eq. (17) into Eq. (16), the following equations can be derived: 
+
+ℎ0 + ℎ1 = 2 . (18) 
+
+ℎ2𝑙 + ℎ2𝑙 +1 = 0 , 1 − 𝑁 + 𝑏 
+
+2 ≤ 𝑙 ≤ 𝑁 − 1 + 𝑏 
+
+2 , 𝑙 ≠ 0. (19) Eqs. (18) and (19) provide a system of 𝑁 linear equations. To uniquely determine the filter coefficients, an additional set of 𝑁 linear equations is required. These additional constraints are derived from average-interpolating polynomials constructed based on the scaling function 𝜙 (𝑥 ). Let 𝑝 𝑙 (𝑥 ) be a polynomial of degree 𝑁 −1 defined over cells in [𝑥 𝐿 , 𝑥 𝑅 ], which preserves the same cell averages as the scaling function 𝜙 (𝑥 ) over the intervals [𝑘, 𝑘 + 1] .Then, we have 
+
+∫
+
+𝑘 +1 
+
+𝑘 
+
+𝑝 𝑙 (𝑥 ) d 𝑥 = ∫
+
+𝑘 +1 
+
+𝑘 
+
+𝜙 (𝑥 ) d 𝑥 =̄ 𝜙 𝑘 , 𝑘 ∈ [𝑥 𝐿 , 𝑥 𝑅 
+
+] , (20) where 𝑥 𝐿 = 𝑙 + 1 − 𝑁 − 𝑏 
+
+2 , 𝑥 𝑅 = 𝑙 + 𝑁 + 1 − 𝑏 
+
+2 . Then, the polynomial 𝑝 𝑙 (𝑥 ) can be reconstructed by enforcing the integral average condition ̄ 𝜙 𝑘 = 𝛿 0,𝑘 . Accordingly, the scaling coefficient ℎ2𝑙 can be readily obtained by integrating 
+
+𝑝 𝑙 (𝑥 ) over the half cell [𝑙, 𝑙 + 12 ].
+
+ℎ2𝑙 = 2 ∫
+
+𝑙 + 12
+
+𝑙 
+
+𝑝 𝑙 (𝑥 ) d 𝑥. (21) At this point, the determination of the filter coefficients has been reduced to evaluating the integral of the reconstruction polynomials of degree 𝑁 − 1 over the half cell. The reconstruction methods developed in the FVM can be naturally adopted here. A straightforward approach is to enforce the integral average condition as shown in 
+
+Page 7 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+(a) 𝑁 = 5 (b) 𝑁 = 4 , 𝑏 = 1 
+
+Fig. 1: Stencils for symmetric and asymmetric wavelets. 
+
+Eq. (20) to determine the coefficients of the polynomial 𝑝 𝑙 (𝑥 ) and subsequently compute ℎ2𝑙 via integration over the half cell. However, this approach requires solving a system of linear equations and is therefore computationally implicit. Here, we propose an explicit formulation that directly evaluates ℎ2𝑙 using the primitive function of the polynomial 𝑝 𝑙 (𝑥 ). Let 𝑃 𝑙 (𝑥 ) be the primitive function of 𝑝 𝑙 (𝑥 ), we have 
+
+∫
+
+𝑥 𝑥 𝐿 
+
+𝑃 ′
+
+𝑙 (𝑥 ) d 𝑥 = ∫
+
+𝑥 𝑥 𝐿 
+
+𝑝 𝑙 (𝑥 ) d 𝑥 = 𝑃 𝑙 (𝑥 ) − 𝑃 𝑙 (𝑥 𝐿 ). (22) Assume that 𝑃 𝑙 (𝑥 𝐿 ) = 0 . Then, the values of 𝑃 𝑙 (𝑥 ) at integer points are given by 
+
+𝑃 (𝑘 ) = 
+
+𝑘 −1 ∑
+
+𝑖 =𝑥 𝐿 ̄𝜙 𝑖 =
+
+{
+
+0, 𝑘 < 1,
+
+1, 𝑘 ≥ 1. (23) After constructing the primitive function 𝑃 𝑙 (𝑥 ) via a Lagrange interpolating polynomial determined by its values at the integer points 𝑘 = 𝑥 𝐿 , 𝑥 𝐿 + 1 , … , 𝑥 𝑅 , the explicit formula for the filter coefficients ℎ2𝑙 can be derived as follows: 
+
+ℎ2𝑙 =
+
+⎧⎪⎪⎪⎪⎨⎪⎪⎪⎪⎩
+
+2
+
+𝑥 𝑅 ∑
+
+𝑚 =𝑥 𝐿 
+
+𝑃 (𝑚 )
+
+𝑥 𝑅 ∏
+
+𝑖 =𝑥 𝐿 
+
+𝑖 ≠𝑚 
+
+𝑙 + 12 − 𝑖 𝑚 − 𝑖 , 𝑙 ≤ 02
+
+⎡⎢⎢⎢⎣⎛⎜⎜⎜⎝
+
+𝑥 𝑅 ∑
+
+𝑚 =𝑥 𝐿 
+
+𝑃 (𝑚 )
+
+𝑥 𝑅 ∏
+
+𝑖 =𝑥 𝐿 
+
+𝑖 ≠𝑚 
+
+𝑙 + 12 − 𝑖 𝑚 − 𝑖 
+
+⎞⎟⎟⎟⎠
+
+− 1 
+
+⎤⎥⎥⎥⎦
+
+. 𝑙 > 0
+
+(24) By solving Eqs. (18), (19), and (24), we can uniquely determine the filter coefficients of the scaling function. (4) Compute the values and 𝑛 th order derivatives of the scaling function. First, these values at integer points are obtained from the refinement relation: 
+
+𝜙 (𝑛 )(𝑥 ) = 2 𝑛 𝑁𝑅 ∑
+
+𝑘 =𝑁𝐿 
+
+ℎ𝑘 𝜙 (𝑛 )(2 𝑥 − 𝑘 ), 𝑁 𝐿 = 1 − 𝑁 + 𝑏, 𝑁 𝑅 = 𝑁 + 𝑏, (25) where 𝑁 𝐿 and 𝑁 𝑅 denote the left and right endpoints of the compact support of the scaling function. Since linear equations derived by Eq. (25) are singular, an additional constraint must be imposed by the polynomial reproduction property as follows [56]: 
+
+∑
+
+𝑘 
+
+1
+
+𝑛 + 1 
+
+((𝑘 + 1) 𝑛 +1 − 𝑘 𝑛 +1 ) 𝜙 (𝑛 )(𝑥 − 𝑘 ) = 𝑛 !, 0 ≤ 𝑛 < 𝑁. (26) By replacing the last linear equation in the linear system obtained from Eq. (25) by Eq. (26) evaluated at 𝑥 = 0 , the values at integer points of the scaling function can be uniquely calculated. These values at arbitrary dyadic points can then be computed using Eq. (25) via a cascade algorithm [55, 57]. 
+
+Page 8 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Due to the average-interpolating property, scaling coefficients 𝑐 𝐽 ,𝑘 is the integral average of the function 𝑓 over the cell [ 𝑘 
+
+2𝐽 , 𝑘 +1 2𝐽 ] denoted by ̄ 𝑓 𝐽 ,𝑘 . It is natural to choose the characteristic function as the dual scaling function [56]: ̃𝜙 (𝑥 ) = 𝜒 [0 ,1] (𝑥 ) = 
+
+{
+
+1, 𝑥 ∈ [0 , 1] ,
+
+0, 𝑥 ∉ [0 , 1] . (27) In the dyadic framework, the scaling coefficients in 𝑉 𝐽 space can be determined by the arithmetic average of the scaling coefficients in 𝑉 𝐽 +1 space: ̄𝑓 𝐽 ,𝑘 = 12
+
+(̄𝑓 𝐽 +1 ,2𝑘 +̄ 𝑓 𝐽 +1 ,2𝑘 +1 
+
+) . (28) To facilitate the computation of wavelet coefficients through two successive projections, a natural choice of the wavelet function in the average-interpolating framework is the difference of two scaling functions [56]: 
+
+𝜓 (𝑥 ) = 𝜙 (2 𝑥 ) − 𝜙 (2 𝑥 − 1) . (29) As shown in Eq. (14), the wavelet coefficients 𝑑 𝐽 ,𝑚 can be obtained by the inner product between the function and the corresponding dual wavelet function. However, the direct construction of the dual wavelet function is generally nontrivial. Alternatively, the coefficients 𝑑 𝐽 ,𝑚 can be derived by substituting the refinement relation (11) into projection operator 𝐽 and calculating the difference 𝐽 +1 − 𝐽 . The wavelet coefficients can then be given by: 
+
+𝑑 𝐽 ,𝑚 =̄ 𝑓 𝐽 +1 ,2𝑚 − ∑
+
+𝑛 
+
+ℎ2𝑛 ̄ 𝑓 𝐽 ,𝑚 −𝑛 . (30) Thus far, all the essential procedures for constructing general average-interpolating wavelets have been presented. By following the above framework, both symmetric and asymmetric wavelets with desirable properties can be constructed. In what follows, the average-interpolating wavelet approximation of functions will be discussed. 
+
+2.1.3. Average-interpolating wavelet approximation of functions 
+
+Based on the scaling and wavelet functions, as well as the corresponding expansion coefficients introduced in subsection 2.1.2, both single-resolution and multiresolution average-interpolating wavelet approximations of a function in 𝐿 2(ℝ) can be formulated. However, the physical problems are generally defined on bounded domains. Functions limited in a finite domain Ω ⊂ ℝ can be approximated by the wavelet approximation at a single resolution level as follows: 
+
+𝐽 𝑓 (𝑥 ) = ∑
+
+𝑘 ∈𝐽 ̄𝑓 𝐽 ,𝑘 𝜙 𝐽 ,𝑘 (𝑥 ), 𝐽 = {𝑘 ∈ ℤ ∶ supp 𝜙 𝐽 ,𝑘 ∩ Ω ≠ ∅} . (31) The corresponding approximation error estimate for sufficiently smooth functions is given in Proposition 1. 
+
+Proposition 1. Assume that 𝐽 is generated by an average-interpolating wavelet multiresolution analysis of order 𝑁 
+
+on ℝ. In particular, 𝐽 exactly reproduces polynomials of degree at most 𝑁 − 1 from their cell averages. Let Ω ⊂ ℝ
+
+be a bounded computational interval, and let ̃ Ω be an extended interval containing all supports supp 𝜙 𝐽 ,𝑘 involved in the evaluation of 𝐽 𝑓 on Ω.Suppose that 𝑓 ∈ 𝐶 𝑟 (̃ Ω) with integer 𝑟 ≥ 1, and that the exterior values required near the boundary of Ω are supplied by the same function 𝑓 on ̃ Ω. Define 𝑞 = min{ 𝑁, 𝑟 }. Then 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 ∞(Ω) ≤ 𝐶 ∞ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω) , (32) 
+
+and consequently, 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 2(Ω) ≤ 𝐶 2ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω) , (33) 
+
+where 𝐶 ∞ is independent of 𝐽 and ℎ𝐽 = 12𝐽 , 𝐶 2 = |Ω|1∕2 𝐶 ∞.
+
+Page 9 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+PROOF . Let 𝑞 = min{ 𝑁, 𝑟 }. For any 𝑥 ∈ Ω , define 
+
+𝐽 (𝑥 ) = {𝑘 ∈ 𝐽 ∶ 𝑥 ∈ supp 𝜙 𝐽 ,𝑘 
+
+} .
+
+Then only the scaling functions with indices in 𝐽 (𝑥 ) contribute to 𝐽 𝑓 (𝑥 ). Let ̃ 𝐼 𝑥 ⊂̃ Ω be a local interval containing the supports of all 𝜙 𝐽 ,𝑘 with 𝑘 ∈ 𝐽 (𝑥 ). Since the scaling functions are compactly supported and have finite overlap, there exists a constant 𝐶 𝑠 > 0, depending only on the support size of the scaling functions, such that 
+
+diam( ̃ 𝐼 𝑥 ) ≤ 𝐶 𝑠 ℎ𝐽 ,
+
+where 𝐶 𝑠 is independent of 𝐽 and ℎ𝐽 = 12𝐽 .Choose a point 𝑥 0 ∈̃ 𝐼 𝑥 and let 𝑝 𝑞 −1 be the Taylor polynomial of 𝑓 of degree 𝑞 − 1 about 𝑥 0. Since the wavelet has multiresolution order 𝑁 on ℝ, 𝐽 exactly reproduces polynomials of degree at most 𝑁 − 1 from their cell averages. Since 𝑞 ≤ 𝑁 , we have 
+
+𝐽 𝑝 𝑞 −1 = 𝑝 𝑞 −1 .
+
+Therefore, 
+
+𝑓 − 𝐽 𝑓 = ( 𝑓 − 𝑝 𝑞 −1 ) − 𝐽 (𝑓 − 𝑝 𝑞 −1 ).
+
+Evaluating at 𝑥 and using the triangle inequality gives 
+
+|𝑓 (𝑥 ) − 𝐽 𝑓 (𝑥 )| ≤ |𝑓 (𝑥 ) − 𝑝 𝑞 −1 (𝑥 )| + |𝐽 (𝑓 − 𝑝 𝑞 −1 )( 𝑥 )|.
+
+The compact support and finite overlap of the scaling functions imply the local boundedness of 𝐽 in the maximum norm. Thus, there exists a constant 𝐶 𝑃 > 0, independent of 𝐽 and ℎ𝐽 , such that 
+
+|𝐽 𝑔 (𝑥 )| ≤ 𝐶 𝑃 ‖𝑔 ‖𝐿 ∞(̃𝐼 𝑥 ).
+
+Hence, 
+
+|𝑓 (𝑥 ) − 𝐽 𝑓 (𝑥 )| ≤ (1 + 𝐶 𝑃 )‖𝑓 − 𝑝 𝑞 −1 ‖𝐿 ∞(̃𝐼 𝑥 ).
+
+Since diam( ̃𝐼 𝑥 ) ≤ 𝐶 𝑠 ℎ𝐽 , Taylor’s theorem gives 
+
+‖𝑓 − 𝑝 𝑞 −1 ‖𝐿 ∞(̃𝐼 𝑥 ) ≤ 𝐶 𝑇 ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃𝐼 𝑥 ),
+
+where 𝐶 𝑇 depends only on 𝑞 and the relative support size of the scaling functions, but is independent of 𝐽 and ℎ𝐽 .Therefore, 
+
+|𝑓 (𝑥 ) − 𝐽 𝑓 (𝑥 )| ≤ (1 + 𝐶 𝑃 )𝐶 𝑇 ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃𝐼 𝑥 ).
+
+Since ̃ 𝐼 𝑥 ⊂̃ Ω, it follows that 
+
+|𝑓 (𝑥 ) − 𝐽 𝑓 (𝑥 )| ≤ 𝐶 ∞ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃ Ω) , 𝐶 ∞ = (1 + 𝐶 𝑃 )𝐶 𝑇 .
+
+Taking the supremum over 𝑥 ∈ Ω yields 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 ∞(Ω) ≤ 𝐶 ∞ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω) .
+
+Since Ω is bounded, we further have 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 2(Ω) ≤ |Ω|1∕2 ‖𝑓 − 𝐽 𝑓 ‖𝐿 ∞(Ω) .
+
+Consequently, 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 2(Ω) ≤ 𝐶 2ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω) , 𝐶 2 = |Ω|1∕2 𝐶 ∞.
+
+Page 10 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+The average-interpolating wavelet multiresolution approximation of the function defined on Ω can be written as 
+
+𝐽 max 
+
+𝐽 0 𝑓 (𝑥 ) = ∑
+
+𝑘 ∈𝐽 0̄𝑓 𝐽 0,𝑘 𝜙 𝐽 0,𝑘 (𝑥 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈Λ 𝐽 
+
+𝑑 𝐽 ,𝑚 𝜓 𝐽 ,𝑚 (𝑥 ),
+
+𝐽 0 =
+
+{
+
+𝑘 ∈ ℤ ∶ supp 𝜙 𝐽 0,𝑘 ∩ Ω ≠ ∅
+
+}
+
+, Λ𝐽 = {𝑚 ∈ ℤ ∶ supp 𝜓 𝐽 ,𝑚 ∩ Ω ≠ ∅} .
+
+(34) where 𝐽 0 is the coarsest resolution level, and 𝐽 max is the finest resolution level. The wavelet coefficients serve as local smoothness indicators, and their magnitude reflects the degree of local regularity, as quantified by Proposition 2. 
+
+Proposition 2. Let 𝑑 𝐽 ,𝑘 be the wavelet coefficient defined by the average-interpolating multiresolution decomposition. Suppose that 𝑓 ∈ 𝐶 𝑟 (̃Ω𝐽 ,𝑘 ) with integer 𝑟 ≥ 1, where ̃ Ω𝐽 ,𝑘 is a local extended interval containing the support region associated with the wavelet coefficient 𝑑 𝐽 ,𝑘 . Define 𝑞 = min{ 𝑁, 𝑟 }. Then 
+
+|𝑑 𝐽 ,𝑘 | ≤ 𝐶 𝑑 ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω𝐽 ,𝑘 ), (35) 
+
+where 𝐶 𝑑 is independent of 𝐽 and ℎ𝐽 = 12𝐽 .
+
+PROOF . Let 𝑞 = min{ 𝑁, 𝑟 }. For two consecutive approximation spaces 𝑉 𝐽 and 𝑉 𝐽 +1 , the detail component between these two levels is defined by 
+
+𝐽 𝑓 = 𝐽 +1 𝑓 − 𝐽 𝑓 . 
+
+Thus, 
+
+𝐽 𝑓 = ( 𝐽 +1 𝑓 − 𝑓 ) + ( 𝑓 − 𝐽 𝑓 ).
+
+Let ̃ Ω𝐽 ,𝑘 be a local extended interval associated with the wavelet coefficient 𝑑 𝐽 ,𝑘 . Applying Proposition 1 to the two levels 𝐽 and 𝐽 + 1 on ̃ Ω𝐽 ,𝑘 gives 
+
+‖𝑓 − 𝐽 𝑓 ‖𝐿 ∞(̃Ω𝐽 ,𝑘 ) ≤ 𝐶 (0) ∞ ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω𝐽 ,𝑘 ),
+
+and 
+
+‖𝑓 − 𝐽 +1 𝑓 ‖𝐿 ∞(̃ Ω𝐽 ,𝑘 ) ≤ 𝐶 (1) ∞ ℎ𝑞 𝐽 +1 |𝑓 |𝐶 𝑞 (̃Ω𝐽 ,𝑘 ),
+
+where 𝐶 (0) ∞ and 𝐶 (1) ∞ are independent of 𝐽 and ℎ𝐽 = 12𝐽 . Since ℎ𝐽 +1 = ℎ𝐽 ∕2 , it follows that ℎ𝑞 𝐽 +1 = 2 −𝑞 ℎ𝑞 𝐽 . Therefore, 
+
+‖𝐽 𝑓 ‖𝐿 ∞(̃Ω𝐽 ,𝑘 ) ≤ 𝐶 𝑄 ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃ Ω𝐽 ,𝑘 ), 𝐶 𝑄 = 𝐶 (0) ∞ + 2 −𝑞 𝐶 (1) ∞ .
+
+Since the average-interpolating wavelet coefficient is obtained from a finite linear combination of local cell averages of the detail component, there exist fixed coefficients {𝑎 𝑚 }𝑚 ∈𝑆 , with a finite index set 𝑆 , such that 
+
+𝑑 𝐽 ,𝑘 = ∑
+
+𝑚 ∈𝑆 
+
+𝑎 𝑚 𝐽 𝑓 𝑚 ,
+
+where 𝐽 𝑓 𝑚 denotes the cell average of 𝐽 𝑓 over a local cell contained in ̃ Ω𝐽 ,𝑘 . Hence, 
+
+|𝑑 𝐽 ,𝑘 | ≤ ∑
+
+𝑚 ∈𝑆 
+
+|𝑎 𝑚 | | 𝐽 𝑓 𝑚 |.
+
+Since 
+
+|𝐽 𝑓 𝑚 | ≤ ‖𝐽 𝑓 ‖𝐿 ∞(̃Ω𝐽 ,𝑘 ),
+
+Page 11 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+we obtain 
+
+|𝑑 𝐽 ,𝑘 | ≤ 𝐶 𝜓 ‖𝐽 𝑓 ‖𝐿 ∞(̃ Ω𝐽 ,𝑘 ), 𝐶 𝜓 = ∑
+
+𝑚 ∈𝑆 
+
+|𝑎 𝑚 |.
+
+Here 𝐶 𝜓 is independent of 𝐽 and ℎ𝐽 because the number of involved cell averages and the coefficients are fixed for a given average-interpolating wavelet. Combining the above estimates yields 
+
+|𝑑 𝐽 ,𝑘 | ≤ 𝐶 𝑑 ℎ𝑞 𝐽 |𝑓 |𝐶 𝑞 (̃Ω𝐽 ,𝑘 ), 𝐶 𝑑 = 𝐶 𝜓 𝐶 𝑄 .
+
+Finally, the fast wavelet transform (FWT) and its inverse are presented. The FWT is a linear algorithm to calculate the wavelet coefficients 𝑑 𝐽 ,𝑚 at resolution levels 𝐽 ≥ 𝐽 0 and the cell averages ̄ 𝑓 𝐽 0,𝑘 at the coarsest level 𝐽 0 from the given cell averages ̄ 𝑓 𝐽 ,𝑘 . The inverse FWT reconstructs the cell averages from its multiresolution representation. The details of the FWT and inverse FWT are described as follows: 
+
+Fast Wavelet Transform ∶
+
+For 𝐽 = 𝐽 max − 1 , 𝐽 max − 2 , … , 𝐽 0
+
+For each index 𝑘 at the level 𝐽 
+
+Compute scaling coefficients: ̄ 𝑓 𝐽 ,𝑘 = 12
+
+(̄𝑓 𝐽 +1 ,2𝑘 +̄ 𝑓 𝐽 +1 ,2𝑘 +1 
+
+) .
+
+Compute wavelet coefficients: 𝑑 𝐽 ,𝑘 =̄ 𝑓 𝐽 +1 ,2𝑘 − ∑
+
+𝑛 
+
+ℎ2𝑛 ̄ 𝑓 𝐽 ,𝑘 −𝑛 .
+
+(36) 
+
+Inverse Fast Wavelet Transform ∶
+
+For 𝐽 = 𝐽 0, 𝐽 0 + 1 , … , 𝐽 max − 1 
+
+For each index 𝑘 at the level 𝐽 
+
+Reconstruct even cell: ̄ 𝑓 𝐽 +1 ,2𝑘 = 𝑑 𝐽 ,𝑘 + ∑
+
+𝑛 
+
+ℎ2𝑛 ̄ 𝑓 𝐽 ,𝑘 −𝑛 .
+
+Reconstruct odd cell: ̄ 𝑓 𝐽 +1 ,2𝑘 +1 = 2 ̄𝑓 𝐽 ,𝑘 −̄ 𝑓 𝐽 +1 ,2𝑘 .
+
+(37) 
+
+Remark 1. In Proposition 1, we assume that the exterior values required near the boundary of Ω in the average-interpolating wavelet approximation are provided by the same function 𝑓 . For practical computations, these values should be supplied through appropriate boundary conditions. 
+
+Remark 2. It should be emphasized that the wavelet coefficients 𝑑 𝐽 ,𝑚 computed by Eq. (30) enable the reconstruction of the function 𝑓 at arbitrary dyadic points through the wavelet multiresolution approximation in Eq. (34). In contrast, the average-interpolating wavelets in Harten’s framework mainly focus on the discretized multiresolution representation of 𝑓 over computational cells [28]. This distinction indicates that the present formulation provides a function-space multiresolution representation rather than a purely data-based decomposition. 
+
+Remark 3. Proposition 2 shows that the wavelet coefficients provide a natural indicator of the local regularity of the function, thereby forming the foundation of adaptive multiresolution wavelet-based numerical methods. 
+
+Remark 4. Both the wavelet multiresolution decomposition and reconstruction are linear operators, since the wavelet coefficients and reconstructed cell averages are obtained through finite linear combinations of neighboring cell averages. The FWT and inverse FWT provide the efficient implementation of the wavelet transform. 
+
+2.2. Conservative wavelet upwind schemes on uniform cells 
+
+2.2.1. Finite volume method 
+
+In the finite volume method, the computational domain Ω is divided into 𝑁 1 non-overlapping cells, 𝑙 ∶ 𝑥 ∈[𝑥 𝑙 −1∕2 , 𝑥 𝑙 +1∕2 ], 𝑙 = 1 , 2, … , 𝑁 1, with a uniform mesh size Δ𝑥 = 𝑥 𝑙 +1∕2 − 𝑥 𝑙 −1∕2 . The cell-average of the variable 𝑢 
+
+in the cell 𝑙 is defined as follows: ̄𝑢 𝑙 (𝑡 ) = 1Δ𝑥 ∫
+
+𝑥 𝑙 +1∕2 
+
+𝑥 𝑙 −1∕2 
+
+𝑢 (𝑥, 𝑡 ) d 𝑥. (38) 
+
+Page 12 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+By integrating Eq. (1) over the cell 𝑙 and dividing by the mesh size Δ𝑥 , the following semi-discrete ordinary differential equation (ODE) is obtained: 
+
+d̄𝑢 𝑙 (𝑡 )d𝑡 = − 1Δ𝑥 
+
+(̂ 𝑓 𝑙 +1∕2 −̂ 𝑓 𝑙 −1∕2 
+
+) , (39) where ̂ 𝑓 𝑙 +1∕2 is the numerical flux at the cell interface 𝑥 𝑙 +1∕2 , which is generally determined by a Riemann solver: ̂𝑓 𝑙 +1∕2 = 𝑓 𝑅𝑖𝑒𝑚𝑎𝑛𝑛 𝑙 +1∕2 
+
+(
+
+𝑢 𝐿 𝑙 +1∕2 , 𝑢 𝑅 𝑙 +1∕2 
+
+)
+
+. (40) where 𝑢 𝐿 𝑙 +1∕2 and 𝑢 𝑅 𝑙 +1∕2 are the left and right interface values at 𝑥 𝑙 +1∕2 , reconstructed from the cell averages ̄𝑢 𝑘 using the corresponding upwind-biased reconstructions. 
+
+2.2.2. Average-interpolating wavelet upwind scheme 
+
+The construction of the conservative wavelet upwind scheme relies on cell-average-based wavelet basis functions with upwind properties. Using the general construction method for average-interpolating wavelets presented in subsection 2.1.2, a pair of asymmetric average-interpolating wavelets can be constructed that are mirror-symmetric with respect to 𝑥 = 1∕2 and enable upwind-biased wavelet reconstructions of the interface values 𝑢 𝐿 𝑙 +1∕2 and 𝑢 𝑅 𝑙 +1∕2 .The upwind property is controlled by the stencil bias parameter 𝑏 . An average-interpolating wavelet with 𝑏 > 0 is biased in the positive direction, whereas one with 𝑏 < 0 is biased in the negative direction. Accordingly, the wavelets with 𝑏 > 0 and 𝑏 < 0 are referred to as the positive- and negative-direction upwind wavelets, respectively. It should be noted that not all asymmetric average-interpolating wavelets are suitable for constructing stable upwind schemes. The stability of a wavelet upwind scheme can be assessed by examining the non-negativity of the dissipation coefficients over the entire wave-number range through the Fourier analysis [58, 59]. Owing to the mirror symmetry between the positive- and negative-direction upwind wavelets, it is sufficient to analyze the positive-direction case with 𝑏 > 0. In the present work, the average-interpolating wavelets with 𝑁 = 4 and 𝑏 = ±1 are adopted to construct the proposed scheme. The filter coefficients of the corresponding scaling functions are listed in Table. 1, and the associated scaling and wavelet functions are illustrated in Fig. 2. According to Proposition 1, the selected wavelet bases lead to a fourth-order average-interpolating wavelet upwind scheme, referred to as AIWU4. The spectral analysis in subsection 2.2.4 demonstrates that the proposed AIWU4 scheme has non-negative dissipation coefficients over the entire wave-number range, indicating the stability of the selected wavelet discretization operator. 
+
+Page 13 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Table 1 
+
+Filter coefficients of the scaling functions of the positive- and negative-direction upwind wavelets. Positive direction, 𝑁 = 4 , 𝑏 = 1 Negative direction, 𝑁 = 4 , 𝑏 = −1 
+
+Filter coefficient Value Filter coefficient Value 
+
+ℎ−2 −0 .078125 ℎ−4 0.046875 
+
+ℎ−1 0.078125 ℎ−3 −0 .046875 
+
+ℎ0 0.859375 ℎ−2 −0 .265625 
+
+ℎ1 1.140625 ℎ−1 0.265625 
+
+ℎ2 0.265625 ℎ0 1.140625 
+
+ℎ3 −0 .265625 ℎ1 0.859375 
+
+ℎ4 −0 .046875 ℎ2 0.078125 
+
+ℎ5 0.046875 ℎ3 −0 .078125         0 1 2 3 4 5
+
+    
+
+0.0
+
+0.3
+
+0.6
+
+0.9
+
+1.2
+
+1.5
+
+x
+
+Positive-direction
+
+Negative-direction
+
+>    (x )
+
+(a) Scaling functions     0 1 2 3
+
+    
+
+    
+
+    
+
+    
+
+0.0
+
+0.4
+
+0.8
+
+1.2
+
+1.6
+
+x
+
+Positive-direction
+
+Negative-direction 
+
+>   (x )
+
+(b) Wavelet functions 
+
+Fig. 2: Scaling and wavelet functions of the 𝑁 = 4 , 𝑏 = ±1 average-interpolating wavelets. 
+
+When using wavelet approximation at a single resolution level, the corresponding cells are distributed uniformly. Since the average-interpolating wavelet is constructed in the dyadic framework, the mesh size only depends on the resolution level. Hence, we utilize asymmetric average-interpolating wavelet approximation at the resolution level 
+
+𝐽 to construct the wavelet upwind scheme on uniform cells. First, we restate cell distributions used in the dyadic framework. The non-overlapping cells are generated as 𝑙 = [ 𝑙 
+
+2𝐽 , 𝑙 + 1 2𝐽 ], 𝑙 = 𝑙 𝐿 , 𝑙 𝐿 + 1 , … , 𝑙 𝑅 , with a uniform mesh size Δ𝑥 = 12𝐽 .̄ 𝑢 𝐽 ,𝑙 denotes the cell average of the variable 𝑢 over the cell 𝑙 . Then, the interface values 𝑢 𝐿 𝑙 +1∕2 and 
+
+𝑢 𝑅 𝑙 +1∕2 can be reconstructed by the corresponding upwind average-interpolating wavelet approximations as follows: 
+
+𝑢 𝐿 𝑙 +1∕2 =
+
+𝑙 −(1− 𝑁 +𝑏 )∑
+
+𝑘 =𝑙 +2−( 𝑁 +𝑏 )̄𝑢 𝐽 ,𝑘 𝜙 +
+
+𝐽 ,𝑘 (𝑥 𝑙 +1∕2 ), 𝑏 = 1 , (41) 
+
+𝑢 𝑅 𝑙 +1∕2 =
+
+𝑙 −(1− 𝑁 +𝑏 )∑
+
+𝑘 =𝑙 +2−( 𝑁 +𝑏 )̄𝑢 𝐽 ,𝑘 𝜙 −
+
+𝐽 ,𝑘 (𝑥 𝑙 +1∕2 ), 𝑏 = −1 , (42) where 𝜙 +
+
+𝐽 ,𝑘 (𝑥 ) and 𝜙 −
+
+𝐽 ,𝑘 (𝑥 ) are scaling functions of the positive- and negative-direction upwind wavelets, respectively. Once obtaining these interface values by the wavelet approximation, numerical fluxes can be computed by the selected Riemann solver. Then, the semi-discrete ODEs as shown in Eq. (39) can be resolved by the third-order strong-stability preserving Runge-Kutta (SSP-RK3) method [60]. 
+
+Page 14 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Although the upwind average-interpolating wavelet approximation has been introduced above in the finite-volume-type formulation, the same approximation can also be incorporated into the Shu–Osher’s conservative finite-difference form at a single resolution level 𝐽 [7, 8]. This provides a conservative finite-difference-type formulation at uniform cells. However, when this formulation is directly extended to an adaptive multiresolution setting, the conservativity of the resulting adaptive scheme is generally not preserved. This issue will be discussed in subsection 2.3.3. Therefore, the proposed finite-volume-type conservative wavelet upwind formulation based on cell averages is essential for preserving conservation property in the adaptive framework. 
+
+2.2.3. Boundary Variation Diminishing (BVD) reconstrutciton for discontinuties 
+
+To develop high-resolution shock-capturing schemes, Xiao and the co-authors [61, 62] proposed a novel BVD reconstruction method in the FVM framework. The philosophy of the BVD reconstruction is that the minimization of jumps of the reconstruction values at cell interfaces will effectively reduce the numerical dissipation in the Riemann solvers. By utilizing the BVD principle with a tangent of hyperbola for interface capturing (THINC) function as one of the reconstruction candidates, various polynomial-based high-resolution shock-capturing schemes have been proposed both in FVM and FDM frameworks [61, 62, 63, 64, 65, 66]. We also have proposed a fourth-order conservative wavelet upwind scheme with the BVD reconstruction in the FDM framework [42]. Due to the inherent low-pass filtering property of the wavelet bases, the wavelet-based numerical scheme naturally filters out high-frequency numerical oscillations and improves the ability to capture discontinuities. In this subsection, we will present the fourth-order average-interpolating wavelet upwind scheme with the BVD reconstruction for capturing discontinuities. By leveraging the monotonicity and differentiability of the hyperbolic tangent function, Xiao and the co-authors [61, 62] proposed the THINC reconstruction to depict discontinuities in compressible flows without spurious oscillations. The THINC reconstruction ̃ 𝑢 (𝑥 ) 𝑇 for the variable 𝑢 is given by [61, 62] ̃𝑢 (𝑥 ) 𝑇 =̄𝑢 min +̄ 𝑢 max 
+
+2
+
+[
+
+1 + 𝜃 tanh 
+
+(
+
+𝛽 
+
+( 𝑥 − 𝑥 𝑙 −1∕2 
+
+𝑥 𝑙 +1∕2 − 𝑥 𝑙 −1∕2 
+
+−̃𝑥 𝑙 
+
+))] 
+
+, (43) where ̄𝑢 min = min {̄𝑢 𝑙 −1 ,̄𝑢 𝑙 +1 
+
+},̄ 𝑢 max = max {̄𝑢 𝑙 −1 ,̄𝑢 𝑙 +1 
+
+} −̄𝑢 min , 𝜃 = sgn (̄𝑢 𝑙 +1 −̄𝑢 𝑙 −1 
+
+). The parameter 𝛽 controls the jump thickness. A small value of 𝛽 produces a smooth profile, while a large 𝛽 leads to a sharp transition. The unknown ̃𝑥 𝑙 which denotes the location of the jump center, is determined by the following cell average constraint condition: ̄𝑢 𝑙 = 1Δ𝑥 ∫
+
+𝑥 𝑙 +1∕2 
+
+𝑥 𝑙 −1∕2 ̃𝑢 (𝜉 ) 𝑇 d𝜉. (44) Since the THINC reconstruction has no solution for local extreme, it degrades to a piecewise constant in such cases. The explicit formulations of the THINC reconstruction for interface values 𝑢 𝐿,𝑇 𝑙 +1∕2 and 𝑢 𝑅,𝑇 𝑙 −1∕2 are given by [62] 
+
+𝑢 𝐿,𝑇 𝑙 +1∕2 =
+
+⎧⎪⎨⎪⎩̄𝑢 min +̄ 𝑢 max 
+
+2
+
+(
+
+1 + 𝜃 tanh( 𝛽 ) + 𝐴 
+
+1 + 𝐴 tanh( 𝛽 )
+
+)
+
+if (̄𝑢 𝑙 +1 −̄𝑢 𝑙 )( ̄𝑢 𝑙 −̄𝑢 𝑙 −1 ) > 0,̄ 𝑢 𝑙 otherwise .
+
+(45) 
+
+𝑢 𝑅,𝑇 𝑙 −1∕2 =
+
+⎧⎪⎨⎪⎩̄𝑢 min +̄ 𝑢 max 
+
+2 (1 + 𝜃𝐴 ) if (̄𝑢 𝑙 +1 −̄𝑢 𝑙 )( ̄𝑢 𝑙 −̄𝑢 𝑙 −1 ) > 0,̄ 𝑢 𝑙 otherwise .
+
+(46) where 𝐴 = 𝐵 ∕ cosh( 𝛽 ) − 1 tanh( 𝛽 ) , 𝐵 = exp[ 𝜃𝛽 (2 𝐶 − 1)] , and 𝐶 =̄ 𝑢 𝑙 −̄𝑢 min + 𝜖̄ 𝑢 max + 𝜖 . The parameter 𝜖 = 1 .0 × 10 −20 is used to avoid arithmetic failure. The choice of 𝛽 is critical for achieving satisfactory performance of the THINC scheme. He et al. [67] proved that the THINC scheme with 𝛽 = ln 3 achieves second-order accuracy and satisfies the TVD property. In addition, the spectral properties of THINC schemes with different 𝛽 showed that a larger value of 𝛽 is more suitable for capturing sharp 
+
+Page 15 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+discontinuities due to its anti-diffusion effect, with 𝛽 = 1 .6–2.0 being recommended [63]. Therefore, in the present work, the THINC scheme with 𝛽 𝑠 = ln 3 is used to reconstruct relatively smooth interface values, denoted by 𝑢 𝐿,𝑇 𝑠 𝑙 +1∕2 
+
+and 𝑢 𝑅,𝑇 𝑠 𝑙 −1∕2 , whereas the THINC scheme with 𝛽 ℎ = 1 .6 is adopted to enhance the resolution of sharp discontinuities, with the corresponding interface values denoted by 𝑢 𝐿,𝑇 ℎ 𝑙 +1∕2 and 𝑢 𝑅,𝑇 ℎ 𝑙 −1∕2 .In the present study, the AIWU4 scheme is used as the high-order candidate, whereas the aforementioned THINC schemes serve as the low-order candidates. The two-stage BVD reconstruction proposed by Deng et al. [62] is employed to select the desirable reconstructed interface values. The resulting method is referred to as the average-interpolating wavelet of fourth-order and THINC function of two-stage reconstruction based on the BVD algorithm ( AIW 4T2-BVD ). Before presenting the BVD reconstruction, we recall the definition of the total boundary variation (TBV) [62] of a given cell 𝑙 as TBV 𝑙 = |𝑢 𝐿 𝑙 +1∕2 − 𝑢 𝑅 𝑙 +1∕2 | + |𝑢 𝐿 𝑙 −1∕2 − 𝑢 𝑅 𝑙 −1∕2 |. (47) Then, the interface values of the variable 𝑢 can be determined by the following two-stage reconstruction process: 
+
+Stage 1 The first BVD reconstruction using the AIWU4 scheme and the 𝛽 𝑠 = ln 3 THINC scheme. (1) Initialize flag (𝑙 ) = 0 , and apply the AIWU4 scheme to compute the corresponding interface values 𝑢 𝐿,𝑊 𝑙 +1∕2 and 
+
+𝑢 𝑅,𝑊 𝑙 +1∕2 at the cell 𝑙 . Calculate the TBV 𝑊 𝑙 
+
+TBV 𝑊 𝑙 = |𝑢 𝐿,𝑊 𝑙 +1∕2 − 𝑢 𝑅,𝑊 𝑙 +1∕2 | + |𝑢 𝐿,𝑊 𝑙 −1∕2 − 𝑢 𝑅,𝑊 𝑙 −1∕2 |. (48) (2) Compute the interface values 𝑢 𝐿,𝑇 𝑠 𝑙 +1∕2 and 𝑢 𝑅,𝑇 𝑠 𝑙 +1∕2 by the THINC scheme with 𝛽 𝑠 = ln 3 , and obtain the associated 
+
+TBV 𝑇 𝑠 𝑙 
+
+TBV 𝑇 𝑠 𝑙 = |𝑢 𝐿,𝑇 𝑠 𝑙 +1∕2 − 𝑢 𝑅,𝑇 𝑠 𝑙 +1∕2 | + |𝑢 𝐿,𝑇 𝑠 𝑙 −1∕2 − 𝑢 𝑅,𝑇 𝑠 𝑙 −1∕2 |. (49) (3) Compare the TBV 𝑊 𝑙 and TBV 𝑇 𝑠 𝑙 at each cell, and mark the cell flag (𝑘 ) = 1 , 𝑘 = 𝑙 − 1 , 𝑙, 𝑙 + 1 , if TBV 𝑇 𝑠 𝑙 < TBV 𝑊 𝑙 . (50) (4) Modify the interface values by 
+
+𝑢 𝐿 𝑙 +1∕2 =
+
+{𝑢 𝐿,𝑇 𝑠 𝑙 +1∕2 , if f lag( 𝑙 ) = 1 ,𝑢 𝐿,𝑊 𝑙 +1∕2 , otherwise . (51) 
+
+𝑢 𝑅 𝑙 −1∕2 =
+
+{𝑢 𝑅,𝑇 𝑠 𝑙 −1∕2 , if f lag( 𝑙 ) = 1 ,𝑢 𝑅,𝑊 𝑙 −1∕2 , otherwise . (52) 
+
+Stage 2 The second BVD construction with the obtained interface values in Stage 1 and the 𝛽 ℎ = 1 .6 THINC scheme. (1) Calculate the TBV 𝑙 using the interface values obtained in Stage 1 
+
+TBV 𝑙 = |𝑢 𝐿 𝑙 +1∕2 − 𝑢 𝑅 𝑙 +1∕2 | + |𝑢 𝐿 𝑙 −1∕2 − 𝑢 𝑅 𝑙 −1∕2 |. (53) (2) Compute the interface values 𝑢 𝐿,𝑇 ℎ 𝑙 +1∕2 and 𝑢 𝑅,𝑇 ℎ 𝑙 +1∕2 by the THINC scheme with 𝛽 ℎ = 1 .6 and obtain the associated 
+
+TBV 𝑇 ℎ 𝑙 
+
+TBV 𝑇 ℎ 𝑙 = |𝑢 𝐿,𝑇 ℎ 𝑙 +1∕2 − 𝑢 𝑅,𝑇 ℎ 𝑙 +1∕2 | + |𝑢 𝐿,𝑇 ℎ 𝑙 −1∕2 − 𝑢 𝑅,𝑇 ℎ 𝑙 −1∕2 |. (54) (3) Mark the cell by comparing TBV 𝑙 and TBV 𝑇 ℎ 𝑙 
+
+f lag( 𝑙 ) = 2 , if TBV 𝑇 ℎ 𝑙 < TBV 𝑙 . (55) 
+
+Page 16 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+(4) Calculate the final interface values by 
+
+𝑢 𝐿 𝑙 +1∕2 =
+
+{𝑢 𝐿,𝑇 ℎ 𝑙 +1∕2 , if f lag( 𝑙 ) = 2 ,𝑢 𝐿 𝑙 +1∕2 , otherwise . (56) 
+
+𝑢 𝑅 𝑙 −1∕2 =
+
+{𝑢 𝑅,𝑇 ℎ 𝑙 −1∕2 , if f lag( 𝑙 ) = 2 ,𝑢 𝑅 𝑙 −1∕2 , otherwise . (57) 
+
+Remark 1. The adjacent cells 𝑙 − 1 and 𝑙 + 1 are marked for reconstruction using the THINC scheme with 𝛽 𝑠 = ln 3 
+
+if TBV 𝑇 𝑠 𝑙 < TBV 𝑊 𝑙 , thereby capturing the discontinuities without spurious oscillations. 
+
+Remark 2. For the Euler systems, both the computation of the interface values and the BVD reconstruction are performed in the local characteristic fields. The Roe average is employed for the local characteristic decomposition [68]. 
+
+2.2.4. Spectral properties of average-interpolating wavelet upwind schemes 
+
+For the linear AIWU4 scheme, Fourier analysis [59] is performed to assess its dissipation and dispersion properties. Since the standard Fourier analysis is not directly applicable to nonlinear schemes, the approximate dispersion relation (ADR) proposed by Pirozzoli [69] is employed for the nonlinear AIW 4T2-BVD scheme to examine the spectral properties. The dissipation and dispersion properties of the AIWU4 and AIW 4T2-BVD schemes are compared with those of the linear fifth-order upwind scheme and WENO5-Z scheme, as shown in Fig. 3. The dissipation coefficients of the AIWU4 scheme remain non-negative over the entire wave-number range, confirming its numerical stability as the basic high-order candidate. The AIW 4T2-BVD scheme can reproduce the dissipation and dispersion properties of the AIWU4 scheme for wave numbers up to an intermediate wave-number ( 𝛼 ≈ 1 .86 ) . The numerical dissipation of the wavelet schemes is comparable to that of the WENO5-Z scheme in the low and intermediate wave-number regions. In contrast, in the high wave-number region, the AIWU4 and AIW 4T2-BVD 
+
+schemes show substantially stronger dissipation, which is beneficial for suppressing high-frequency oscillations. The linear AIWU4 scheme exhibits better spectral resolution than the linear 5th order polynomial-based upwind scheme. For the nonlinear schemes, the AIW 4T2-BVD scheme provides significantly better spectral resolution than the WENO5-Z scheme in intermediate and high wave-number regions. Interestingly, by directly comparing the discretization coefficients, we find that the upwind discretization operator for 𝜕𝑢 ∕𝜕𝑥 constructed from the 𝑁 = 4 , 𝑏 = 1 average-interpolating wavelets is identical to that of the conservative wavelet upwind scheme based on the 𝑁 = 5 , 𝑏 = 1 interpolating wavelet. This coefficient-level equivalence indicates that the proposed wavelet upwind scheme inherits the numerical merits of the conservative wavelet upwind scheme based on interpolating wavelets. Moreover, it suggests that the relation between the two discretizations may not be accidental, but may instead reflect a more general correspondence between the upwind discretization operators for 
+
+𝜕𝑢 ∕𝜕𝑥 constructed from average-interpolating wavelets of order 𝑁 and interpolating wavelets of order 𝑁 + 1 . A rigorous proof of this correspondence for arbitrary order is beyond the scope of the present work and remains a topic for future investigation. 
+
+Page 17 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.5 1.0 1.5 2.0 2.5 3.0 0.0 0.4 0.8 1.2 1.6 
+
+Exact
+
+5
+
+> th
+
+Upwind
+
+WENO5-Z
+
+AIWU4
+
+AIW
+
+> 4
+
+T
+
+> 2
+
+-BVD
+
+> Imag
+
+(a) Dissipation. 0.0 0.5 1.0 1.5 2.0 2.5 3.0 0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+Exact
+
+5
+
+> th
+
+Upwind
+
+WENO5-Z
+
+AIWU4
+
+AIW
+
+> 4
+
+T
+
+> 2
+
+-BVD 
+
+> Real
+
+(b) Dispersion. 
+
+Fig. 3: Comparison of the spectral properties of different schemes. 
+
+2.3. Conservative adaptive wavelet upwind schemes on multiresolution non-uniform cells 
+
+2.3.1. Multiresolution cell adaptation 
+
+First, we introduce the cell structure of the average-interpolating wavelet multiresolution analysis, which corre-sponds to a graded tree structure in the dyadic framework [29, 51]. It should be noted that the connectivity in the tree structure must be always guaranteed. Following Cohen and the co-authors work [29], definitions of the tree structure are described as follow: (1) A cell 𝐽 ,𝑘 is defined as 𝐽 ,𝑘 = [ 𝑘 
+
+2𝐽 , 𝑘 + 1 2𝐽 ].(2) The root cells 𝐽 0,𝑘 form the basis of the tree and correspond to the cells at the coarsest level. (3) For a cell 𝐽 ,𝑘 , its two child cells at the next finer level are denoted by 𝐽 +1 ,2𝑘 and 𝐽 +1 ,2𝑘 +1 , respectively. (4) The child cells sharing the same parent cell are called sibling cells. (5) An active cell with no active child cells is referred to as a leaf cell denoted by leaf 
+
+𝐽 ,𝑘 , which constitutes the final adaptive cell distribution for the physical variables in the finite-volume discretization. (6) An active cell with two active child cells is referred to as a wavelet-basis cell denoted by 𝑤 𝐽 ,𝑘 , which is associated to the wavelet basis function 𝜓 𝐽 ,𝑘 (𝑥 ) required for the wavelet multiresolution approximation. Figure 4 shows a schematic illustration of the graded-tree structure for the one-dimensional average-interpolating wavelet. The cells at different resolution levels, from 𝐽 = 1 to 𝐽 = 5 , are displayed from coarse to fine. The standard cells are indicated by thin black lines, while the leaf cells and wavelet-basis cells are marked in orange and blue, respectively. In the construction of conservative adaptive multiresolution wavelet upwind schemes, the tree structure should satisfy the following conditions: (1) The root cells are always activated, since they correspond to the scaling functions at the coarsest level and ensure the baseline accuracy of the wavelet multiresolution approximation. (2) The two child cells of an active parent cell are activated simultaneously, so that hanging cells are avoided and the multiresolution decomposition between two successive levels remains well defined. (3) The stencil cells required for computing each wavelet coefficient must be activated, so that the multiresolution decomposition and reconstruction can be performed consistently by the FWT and inverse FWT algorithms. 
+
+Page 18 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Fig. 4: Schematic illustration of the graded-tree structure used in the adaptive average-interpolating wavelet method. 
+
+As presented in subsection. 2.1.3, the physical variable 𝑢 defined on a domain Ω can be decomposed into the following average-interpolating wavelet multiresolution approximation: 
+
+𝐽 max 
+
+𝐽 0 𝑢 (𝑥 ) = ∑
+
+𝑘 ∈𝐽 0̄𝑢 𝐽 0,𝑘 𝜙 𝐽 0,𝑘 (𝑥 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈Λ 𝐽 
+
+𝑑 𝐽 ,𝑚 𝜓 𝐽 ,𝑚 (𝑥 ),
+
+𝐽 0 =
+
+{
+
+𝑘 ∈ ℤ ∶ supp 𝜙 𝐽 0,𝑘 ∩ Ω ≠ ∅
+
+}
+
+, Λ𝐽 = {𝑚 ∈ ℤ ∶ supp 𝜓 𝐽 ,𝑚 ∩ Ω ≠ ∅} .
+
+(58) The magnitudes and local decay rates of the wavelet coefficients given in Proposition 2 can be used to evaluate the local regularity of the functions. For the solutions of compressible flows that contain multiscale smooth structures and discontinuities, the wavelet coefficients remain small magnitudes in large-scale smooth regions, but becomes significant near small-scale high-frequency structures and discontinuities. Therefore, the wavelet multiresolution analysis of functions provides a natural discontinuity detector. By discarding wavelet coefficients 𝑑 𝐽 ,𝑚 that fall below a prescribed tolerance, we can achieve a sparse representation of the physical variable 𝑢 with a specified accuracy as follows: 
+
+𝐽 max 
+
+𝐽 0 𝑢 (𝑥 ) = ∑
+
+𝑘 ∈𝐽 0̄𝑢 𝐽 0,𝑘 𝜙 𝐽 0,𝑘 (𝑥 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈𝐽 
+
+𝑑 𝐽 ,𝑚 𝜓 𝐽 ,𝑚 (𝑥 ),
+
+𝐽 0 =
+
+{
+
+𝑘 ∈ ℤ ∶ supp 𝜙 𝐽 0,𝑘 ∩ Ω ≠ ∅
+
+}
+
+, 𝐽 = {𝑚 ∈ ℤ ∶ supp 𝜓 𝐽 ,𝑚 ∩ Ω ≠ ∅, |𝑑 𝐽 ,𝑚 | ≥ 𝜖 𝐽 
+
+} ,
+
+(59) where 𝜖 𝐽 denotes the level-dependent thresholding parameter, and 𝐽 represents the collection of the index of the wavelet-basis cells at the level 𝐽 . Here, a wavelet-basis cell that |𝑑 𝐽 ,𝑚 | ≥ 𝜖 𝐽 is called a significant cell. For the average-interpolating wavelet, Harten [33] showed that, by setting 𝜖 𝐽 = 𝜖 0
+
+2𝐽 max −1− 𝐽 , the 𝐿 ∞-norm error of the wavelet multiresolution approximation in the smooth region Ω𝑠 , away from discontinuities, can be bounded by a prescribed tolerance 𝜖 0 as follows 
+
+‖𝑢 − 𝐽 max 
+
+𝐽 0 𝑢 ‖𝐿 ∞(Ω 𝑠 ) < 𝐶 𝜖 0. (60) This result suggests that wavelet multiresolution analysis provides a rigorous error-control mechanism, thereby enabling the development of adaptive numerical methods with automatic, threshold-based error control. Based on the aforementioned tree structure and theoretical foundation, we next present our multiresolution cell adaptation strategy. It should be noted that Eq. (59) is sufficient for approximating a function with localized features within the prescribed tolerance 𝜖 0. However, when this criterion is directly used for time-dependent compressible flows with discontinuities, stability issues may arise. To address this difficulty, Liandrat and Tchamitchian [70] introduced an adjacent zone, which consists of wavelet-basis cells whose coefficients are significant or may become significant during one time-integration step, while the adaptive cell distribution is kept fixed over that step. Müller and his collaborators [45, 46] also emphasized that the prediction set of cells should be constructed such that all detail coefficients not included in this set remain non-significant after the update and evolution procedures. The proposed multiresolution cell adaptation strategy also follows this idea. For compressible flows governed by hyperbolic conservation laws, discontinuities may develop even from sufficiently smooth initial conditions. Therefore, the adaptive strategy should include a refinement procedure capable of detecting newly emerging discontinuities based on the cell averages of the physical variables at the coarsest level. Accordingly, the proposed multiresolution cell adaptation strategy consists of two components: adaptive cell generation 
+
+Page 19 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+at the coarsest level 𝐽 0 and adaptive cell generation at the level 𝐽 , denoted by ACG -𝐽 0 and ACG -𝐽 , respectively. The set of adaptive multiresolution cells at 𝑡 𝑛 is denoted by 𝑛 . Next, we present how to obtain the multiresolution cells 
+
+𝑛 +1 from the solutions computed on 𝑛 .In the ACG -𝐽 0 strategy, newly emerging discontinuities are detected using the smoothness indicator proposed by Jiang and Shu [71]: 
+
+𝐼𝑆 𝐽 0,𝑙 = 13 12 
+
+(̄𝑢 𝐽 0,𝑙 −1 − 2 ̄𝑢 𝐽 0,𝑙 +̄𝑢 𝐽 0,𝑙 +1 
+
+)2
+
++ 14
+
+(̄𝑢 𝐽 0,𝑙 −1 −̄𝑢 𝐽 0,𝑙 +1 
+
+)2
+
+= (𝑢 ′Δ𝑥 )2 (1 +  (Δ𝑥 2)) , Δ𝑥 = 12𝐽 0
+
+.
+
+(61) Eq. (61) shows that 𝐼𝑆 𝐽 0,𝑙 is mainly governed by (𝑢 ′)2(Δ 𝑥 )2. For each cell at the coarsest level, if 𝐼𝑆 𝐽 0,𝑙 > 𝑀 0(Δ 𝑥 )2,where 𝑀 0 is a user-defined parameter for identifying newly developed steep gradients, the cell and its neighboring cells are refined by activating their child cells at the next finer level. The detailed procedure is summarized as follows: 
+
+ACG-𝐽 0 ∶
+
+For each cell 𝑙 at the coarsest level 𝐽 0
+
+𝐽 0,𝑙 are activated ,𝐼𝑆 𝐽 0,𝑙 = 13 12 
+
+(̄𝑢 𝐽 0,𝑙 −1 − 2 ̄𝑢 𝐽 0,𝑙 +̄𝑢 𝐽 0,𝑙 +1 
+
+)2
+
++ 14
+
+(̄𝑢 𝐽 0,𝑙 −1 −̄𝑢 𝐽 0,𝑙 +1 
+
+)2
+
+,
+
+if 𝐼𝑆 𝐽 0,𝑙 ≥ 𝑀 0(Δ 𝑥 )2 ⟹
+
+{
+
+𝐽 0+1 ,2𝑘 , 𝐽 0+1 ,2𝑘 +1 
+
+}
+
+𝑘 ∈{ 𝑙 −1 , 𝑙, 𝑙 +1} are activated. (62) As for the ACG -𝐽 , significant cells are identified by evaluating the wavelet coefficient 𝑑 𝐽 ,𝑘 of the physical variables. In the adaptive process, symmetric wavelets are adopted for function decomposition and reconstruction. Daubechies [55] noted that symmetric errors are generally more tolerable than asymmetric ones in compression applications, suggesting that symmetry is advantageous for obtaining sparse representations while preserving the essential shape of the reconstructed function. To maintain consistency with the accuracy of the fourth-order wavelet upwind scheme, the 𝑁 = 5 symmetric average-interpolating wavelet is adopted for decomposition and reconstruction in the adaptive procedure. There are three ingredients in the ACG -𝐽 :(a) If a significant cell satisfies |𝑑 𝐽 ,𝑘 | ≥ 2𝑁 −1 𝜖 𝐽 with 𝐽 + 2 ≤ 𝐽 max − 1 , it is refined by two levels. The cells 
+
+𝐼 𝐽 +2 ,4𝑘 , … , 𝐼 𝐽 +2 ,4𝑘 +3 are first activated. Then, the cell and the corresponding cells in its adjacent zone are activated. The adjacent zone is determined by 
+
+𝐽 ′ = 𝐽 + 1 , |𝑘 ′ − 2 𝑘 | ≤ 2𝑛 𝑟 0, (63) where 𝑛 𝑟 0 is the width of the adjacent zone. In all numerical tests, 𝑛 𝑟 0 = 2 is used unless otherwise specified. (b) If a significant cell satisfies 𝜖 𝐽 ≤ |𝑑 𝐽 ,𝑘 | < 2𝑁 −1 𝜖 𝐽 , the cell and the associated cells within its adjacent zone, are activated. The adjacent zone is specified by 
+
+𝐽 ′ = 𝐽 + 1 , |𝑘 ′ − 2 𝑘 | ≤ 2𝑛 𝑟 , (64) Here, 𝑛 𝑟 = 2 is used in all numerical tests. (c) For each cell 𝐼 𝐽 +1 ,𝑘 ′ activated in (a) and (b), the stencil cells associated with its parent cell at level 𝐽 are also activated to ensure the completeness of the FWT and inverse FWT stencils. Specifically, 𝐼 𝐽 , ⌊𝑘 ′∕2 ⌋+𝑠 is activated for 𝑠 = − 𝑛 𝑏 , … , 𝑛 𝑏 , where 𝑛 𝑏 denotes the stencil width determined by the multiresolution order 𝑁 .
+
+Page 20 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+The corresponding procedures of the ACG -𝐽 are presented below: 
+
+ACG-𝐽 ∶
+
+For 𝐽 = 𝐽 max − 1 , … , 𝐽 0, 𝜖 𝐽 = 𝜖 0
+
+2𝐽 max −1− 𝐽 , 𝑛 𝑏 = ( 𝑁 − 1 + |𝑏 |)∕2 ,
+
+For each wavelet-basis cell if |𝑑 𝐽 ,𝑘 | ≥ 𝜖 𝐽 , then if |𝑑 𝐽 ,𝑘 | ≥ 2𝑁 −1 𝜖 𝐽 , 𝐽 + 2 ≤ 𝐽 max 
+
+𝐽 +2 ,4𝑘 , … , 𝐽 +2 ,4𝑘 +3 are activated, 
+
+𝐽 ,𝑘 , 𝐽 +1 ,2( 𝑘 +𝑠 ), 𝐽 +1 ,2( 𝑘 +𝑠 )+1 are activated for 𝑠 = − 𝑛 𝑟 0, … , 𝑛 𝑟 0,
+
+else 
+
+𝐽 ,𝑘 , 𝐽 +1 ,2( 𝑘 +𝑠 ), 𝐽 +1 ,2( 𝑘 +𝑠 )+1 are activated for 𝑠 = − 𝑛 𝑟 , … , 𝑛 𝑟 ,
+
+if 𝐼 𝐽 +1 ,𝑘 ′ is activated , then 
+
+𝐽 , ⌊𝑘 ′∕2 ⌋+𝑠 is activated for 𝑠 = − 𝑛 𝑏 , … , 𝑛 𝑏 .
+
+(65) After the ACG -𝐽 0 and ACG -𝐽 procedures are performed, the refined multiresolution cells are obtained. However, although the stencil cells associated with all significant cells and their adjacent cells have been marked in the ACG -𝐽 
+
+procedure, the resulting marked-cell set may still be insufficient to guarantee a complete tree structure. By introducing a recursive stencil recheck procedure, a complete set of multiresolution cells 𝑛 +1 can be obtained for advancing the solution from 𝑡 𝑛 to 𝑡 𝑛 +1 .
+
+2.3.2. Adaptive multiresolution wavelet upwind scheme 
+
+In this subsection, we present the main ingredients of the adaptive multiresolution wavelet upwind scheme. Once the complete set of multiresolution cells 𝑛 +1 has been generated, the wavelet coefficients associated with the wavelet-basis cells 𝑤 𝐽 ,𝑘 in 𝑛 +1 are updated according to 
+
+𝑑 𝑛 +1 
+
+𝐽 ,𝑘 =
+
+{0, |𝑑 𝑛 𝐽 ,𝑘 | ≤ 𝜖 𝐽 and 𝑤 𝐽 ,𝑘 ∉ 𝑛 +1 ,𝑑 𝑛 𝐽 ,𝑘 , otherwise . (66) It should be noted that the order of the thresholding process is important for achieving desirable accuracy. In many adaptive multiresolution algorithms, thresholding is performed during the cell or node refinement procedure [28, 50, 72]. With such a treatment, some wavelet coefficients that may still be required in the updated multiresolution cell set 
+
+𝑛 +1 could be discarded before the final cell distribution is obtained. In the present strategy, the thresholding process is therefore performed after the complete multiresolution cell set 𝑛 +1 has been generated, in order to retain more physical information from the current solution. Then, the cell averages of the physical variable 𝑢 on the leaf cells leaf 
+
+𝐽 ,𝑙 in 𝑛 +1 are computed using the inverse FWT algorithm presented in subsection 2.1.3. Next, the FWT algorithm is applied to the positive- and negative-direction upwind wavelets to compute the corresponding wavelet coefficients of the variable 𝑢 . The interface values for all active leaf cells on are then reconstructed by the wavelet multiresolution approximation: 
+
+𝑢 𝐿,𝑀𝑊 𝑙 +1∕2 = ∑
+
+𝑘 ∈+
+
+> 𝐽 0
+
+̄𝑢 𝐽 0,𝑘 𝜙 +
+
+𝐽 0,𝑘 (𝑥 𝑙 +1∕2 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈+
+
+> 𝐽
+
+𝑑 +
+
+𝐽 ,𝑚 𝜓 +
+
+𝐽 ,𝑚 (𝑥 𝑙 +1∕2 ),
+
++
+
+𝐽 0 =
+
+{
+
+𝑘 ∈ ℤ ∶ supp 𝜙 +
+
+𝐽 0,𝑘 ∩ Ω ≠ ∅
+
+}
+
+, +
+
+𝐽 =
+
+{
+
+𝑚 ∈ ℤ ∶ supp 𝜓 +
+
+𝐽 ,𝑚 ∩ Ω ≠ ∅, 𝑤 𝐽 ,𝑚 ∈ 𝑛 +1 }
+
+,
+
+(67) 
+
+𝑢 𝑅,𝑀𝑊 𝑙 +1∕2 = ∑
+
+𝑘 ∈−
+
+> 𝐽 0
+
+̄𝑢 𝐽 0,𝑘 𝜙 −
+
+𝐽 0,𝑘 (𝑥 𝑙 +1∕2 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈−
+
+> 𝐽
+
+𝑑 −
+
+𝐽 ,𝑚 𝜓 −
+
+𝐽 ,𝑚 (𝑥 𝑙 +1∕2 ),
+
+−
+
+𝐽 0 =
+
+{
+
+𝑘 ∈ ℤ ∶ supp 𝜙 −
+
+𝐽 0,𝑘 ∩ Ω ≠ ∅
+
+}
+
+, −
+
+𝐽 =
+
+{
+
+𝑚 ∈ ℤ ∶ supp 𝜓 −
+
+𝐽 ,𝑚 ∩ Ω ≠ ∅, 𝑤 𝐽 ,𝑚 ∈ 𝑛 +1 }
+
+,
+
+(68) 
+
+Page 21 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+where the superscripts (+) and (−) correspond to the positive- and negative-direction upwind wavelets, respectively. For compressible flows with smooth solutions, the interface values obtained by the wavelet multiresolution approximation on the multiresolution cell set 𝑛 +1 lead to high-order accurate results. However, spurious oscillations may arise in the presence of discontinuities, such as shock waves and contact discontinuities. To suppress these oscillations, a limiting projection is incorporated into the multiresolution average-interpolating wavelet upwind scheme on the adaptive multiresolution cell set 𝑛 +1 . Since the sparse representation of the physical variable 𝑢 obtained by the wavelet multiresolution analysis reflects its local regularity, the resulting leaf cell distribution in the 𝑛 +1 can also serve as a natural indicator of local nonsmoothness. In particular, discontinuities and local steep gradients are preliminarily detected and localized by the finest-level leaf cells, and the limiting projection is subsequently applied within these nonsmooth regions. In the present work, the two-stage BVD reconstruction presented in subsection 2.2.3 is performed on the finest-level leaf cells whose stencil cells required by the THINC scheme are all located at the finest resolution level. Accordingly, the BVD reconstruction in the adaptive multiresolution wavelet upwind scheme is expressed as 
+
+BVD reconstruction in the set 𝑛 +1 ∶
+
+For each finest-level leaf cell leaf 
+
+𝐽 ,𝑙 ∈ 𝑛 +1 ,
+
+if the stencil cells required by the THINC scheme are all located at the finest level ,
+
+perform the BVD reconstruction to obtain 𝑢 𝐿 𝑙 +1∕2 , 𝑢 𝑅 𝑙 +1∕2 ,
+
+otherwise ,𝑢 𝐿 𝑙 +1∕2 = 𝑢 𝐿,𝑀𝑊 𝑙 +1∕2 , 𝑢 𝑅 𝑙 +1∕2 = 𝑢 𝑅,𝑀𝑊 𝑙 +1∕2 .
+
+(69) The interface values obtained on the multiresolution cell set 𝑛 +1 are then used to evaluate the numerical fluxes through the selected Riemann solver. The solution is subsequently advanced to 𝑡 𝑛 +1 using the SSP-RK3 scheme for time marching. With the above ingredients presented, the proposed adaptive multiresolution wavelet upwind scheme is referred to as the adaptive multiresolution average-interpolating wavelet scheme of fourth order with two-stage THINC reconstruction based on the BVD algorithm, denoted by AMAIW 4T2-BVD . The overall procedure of the proposed adaptive scheme is summarized below: (1) Select a characteristic variable that reflects the localized nonsmoothness of the physical variables. Evaluate the wavelet coefficients on the wavelet-basis cells 𝑤 𝐽 ,𝑘 in the 𝑛 using the FWT algorithm in Eq. (36) of the 𝑁 = 5 
+
+symmetric average-interpolating wavelet. (2) Obtain the complete set of multiresolution cells 𝑛 +1 through the ACG -𝐽 0 procedure in Eq. (62), the ACG -𝐽 
+
+procedure in Eq. (65), and the recursive stencil recheck. (3) Update the wavelet coefficients on the wavelet-basis cells 𝑤 𝐽 ,𝑘 in 𝑛 +1 according to Eq. (66), and then compute the physical variables on the leaf cells leaf 
+
+𝐽 ,𝑙 in 𝑛 +1 using the inverse FWT algorithm in Eq. (37) of the 𝑁 = 5 
+
+symmetric average-interpolating wavelet. (4) Evaluate the wavelet coefficients on the wavelet-basis cells 𝑤 𝐽 ,𝑘 in 𝑛 +1 using the FWT algorithms in Eq. (36) of the 𝑁 = 4 , 𝑏 = 1 and 𝑏 = −1 asymmetric upwind average-interpolating wavelets. Then, compute the left and right interface values at the leaf cells using the corresponding upwind wavelet multiresolution approximations given in Eqs. (67) and (68), respectively. Perform the BVD reconstruction in Eq. (69) to obtain the final interface values, and advance the solution from 𝑡 𝑛 to 𝑡 𝑛 +1 .(5) If 𝑡 𝑛 +1 = 𝑡 end , the computation is terminated; otherwise, repeat procedures (1)–(4). 
+
+Remark 1. For the Euler systems, the BVD reconstruction is also performed in the local characteristic fields. Since the wavelet multiresolution approximation on the given multiresolution cell set 𝑛 +1 is linear, the corresponding interface values can be computed entirely in the physical space. Only those used in the BVD reconstruction need to be transformed into the local characteristic fields. Thus, the proposed adaptive multiresolution wavelet upwind scheme with the BVD reconstruction avoids repeated characteristic projections over different wavelet reconstruction stencils, which simplifies the reconstruction procedure and reduces the overhead for systems of conservation laws. In contrast, the interface values of the THINC scheme must be reconstructed in the local characteristic fields because the THINC reconstruction is nonlinear. 
+
+Page 22 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Remark 2. The conventional conservative adaptive multiresolution methods hybridized with classical finite volume schemes [29, 51, 73] usually require additional marking of ghost cells within the stencil of the discretization scheme near the interface between coarse- and fine-level cells. The corresponding cell averages must be reconstructed by the inverse FWT algorithm before computing the interface values. This increases the complexity of the algorithmic structure and may reduce computational efficiency. In contrast, the proposed adaptive multiresolution wavelet upwind scheme does not require this additional procedure. The interface values are computed directly by the wavelet multiresolution approximation, making the algorithm simpler and more efficient. 
+
+Remark 3. In the proposed adaptive wavelet upwind scheme, the BVD reconstruction is restricted to the finest-level leaf cells. This localized implementation substantially reduces the associated computational cost and provides a novel framework for developing adaptive BVD-based shock-capturing methods. 
+
+Remark 4. It should be noted that the proposed conservative adaptive multiresolution wavelet upwind scheme is not limited to the fourth-order accurate formulation. Higher-order conservative adaptive wavelet upwind schemes can also be constructed by using asymmetric average-interpolating wavelets with higher multiresolution orders. 
+
+2.3.3. Analysis of the conservation property of numerical schemes 
+
+In this subsection, we analyze the conservativity of the proposed wavelet upwind scheme and other main numerical schemes on both fixed and adaptive meshes. Sebastian and Shu [9] pointed out that interpolation, regardless of its specific form, is generally nonconservative unless it is based on cell averages. For the Shu–Osher conservative finite difference form, Merriman [8] showed that its strict conservation property is essentially tied to uniform computational meshes. Although conservativity holds for certain specially stretched nonuniform meshes in the physical domain, such as quadratically or exponentially stretched meshes, this does not imply that the Shu–Osher form provides a directly conservative discretization on arbitrary nonuniform physical meshes. Consequently, adaptive finite difference schemes based on the Shu–Osher form, in which the discretization is directly carried out on adaptive meshes in the physical domain, are generally nonconservative [8]. Merriman [8] suggested that it might be possible to develop a fully adaptive version of the Shu–Osher finite difference scheme, based on Harten’s adaptive multiresolution framework using average-interpolating wavelets. Motivated by this conjecture, we examine whether the Shu–Osher conservative finite difference form can be directly extended to an adaptive multiresolution average-interpolating wavelet setting. Through an observation of the proposed adaptive multiresolution wavelet upwind scheme, we provide a counterexample to such a direct extension, while not excluding the possibility of achieving conservativity with additional correction mechanisms. Considering a flux function 𝑓 (𝑢 ) satisfying 𝑓 ′(𝑢 ) ≥ 0, the one-dimensional scalar conservation law in Eq. (1) is discretized by the following upwind wavelet multiresolution approximation: 
+
+d𝑢 𝑙 (𝑡 )d𝑡 = − 1Δ𝑥 𝑙 
+
+(̂𝑓 𝐿,𝑀𝑊 𝑙 +1∕2 −̂ 𝑓 𝐿,𝑀𝑊 𝑙 −1∕2 
+
+)
+
+,̂ 𝑓 𝐿,𝑀𝑊 𝑙 +1∕2 = ∑
+
+𝑘 ∈+
+
+> 𝐽 0
+
+𝑓 𝐽 0,𝑘 𝜙 +
+
+𝐽 0,𝑘 (𝑥 𝑙 +1∕2 ) + 
+
+𝐽 max −1 
+
+∑
+
+𝐽 =𝐽 0
+
+∑
+
+𝑚 ∈+
+
+> 𝐽
+
+𝑑 +,𝑓 𝐽 ,𝑚 𝜓 +
+
+𝐽 ,𝑚 (𝑥 𝑙 +1∕2 ).
+
+(70) If the above discretization were conservative in the sense of the Shu–Osher form, the flux values used in the multiresolution approximation would have to satisfy a consistency relation between two successive resolution levels. Specifically, the flux value at a coarse-level node should be equal to the arithmetic average of the corresponding two fine-level flux values, namely 
+
+𝑓 𝐽 ,𝑘 = 12
+
+(𝑓 𝐽 +1 ,2𝑘 + 𝑓 𝐽 +1 ,2𝑘 +1 
+
+) . (71) However, this relation is a consistency requirement of the average-interpolating wavelet for averaged quantities, and it is not generally satisfied for a nonlinear flux function 𝑓 (𝑢 ) on adaptive multiresolution nodes. Therefore, when the adaptive multiresolution wavelet upwind approximation is directly cast into the conservative Shu–Osher finite difference form, the resulting scheme is generally nonconservative on adaptive meshes. It is worth noting that the present nonconservative formulation may still preserve a discrete weighted sum of the nodal values. Specifically, the quantity ∑𝑙 𝑢 𝑙 Δ𝑥 𝑙 may remain unchanged during the computation. However, this property should not be confused with strict conservation of cell-average quantities, because 𝑢 𝑙 represents a nodal 
+
+Page 23 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+or pointwise degree of freedom rather than the cell average over 𝐼 𝑙 . It should be noted that this observation does not contradict the conservation property of the Shu–Osher finite difference formulation on uniform meshes. This is because, on uniform meshes, the nodal values can be consistently interpreted as cell averages due to the commutation property between the cell-average operator and the finite-difference operator [8]. Consequently, the preservation of the nodal sum admits a conservative interpretation in terms of cell averages. In contrast, for adaptive multiresolution meshes, this commutation property is generally lost, and the adaptive Shu–Osher finite-difference formulation therefore no longer preserves conservation in the cell-average sense. Nevertheless, for low-order numerical schemes, the discrepancy between nodal values and cell averages may be comparable to the leading truncation error. Therefore, preservation of the weighted nodal sum may be regarded as an approximate conservation property within the accuracy of the scheme. For the finite volume scheme on fixed uniform or nonuniform meshes given in Eq. (39), the conservation property is preserved both locally at the cell level and globally over the physical domain. This is because the scheme evolves cell averages by numerical fluxes across cell interfaces, so that the flux contribution at each internal interface is shared by two neighboring cells with opposite signs. This mechanism is also embedded in compact high-order schemes such as the DG scheme [5] and MCV scheme [6]. Although these schemes use multiple degrees of freedom to represent the solution within each cell, strict conservation is ensured through the evolution of the cell averages. In DG schemes, the constant mode corresponds to the element average and satisfies a flux-difference update when the test function is taken as unity. In MCV schemes, the cell average moment is explicitly constrained and updated by numerical fluxes across cell interfaces. Moreover, we note that although flux reconstruction methods evolve nodal values similar to finite difference schemes, cell-average conservation is inherently incorporated through the construction of the correction flux function [74]. The above discussion indicates that strict conservation in modern conservative schemes is essentially associated to the evolution of cell averages. For existing pure wavelet-based adaptive schemes, the associated wavelet basis functions, such as Daubechies wavelets and interpolating wavelets, are generally not constructed from cell averages. As a result, strict conservation is not inherently embedded in the wavelet representation itself, and the conservation property should be examined from both the spatial discretization and the adaptive redistribution process. From the perspective of PDE discretization, wavelet Galerkin methods within the classical Galerkin framework may preserve global conservation since the governing conservation law is enforced in a weak sense. However, they generally do not directly yield local conservation in the finite-volume sense because the resulting discrete equations do not explicitly provide a cell-wise flux balance. As discussed by Abgrall [75], Galerkin-type methods may be recast into a conservative residual-distribution or finite volume form if the element residuals satisfy a suitable local conservation relation. However, this relies on an additional residual-distribution or flux-reconstruction interpretation. For wavelet collocation methods, a conservative form of the wavelet collocation upwind scheme on uniform cells was derived in our previous study [42] by rewriting the conventional wavelet approximation into an interface flux-difference form. It should be noted that the conservative form of the wavelet collocation upwind scheme essentially falls within the Shu–Osher conservative finite-difference framework. It is thus not strictly conservative on adaptive nonuniform cells in the physical domain. For function reconstruction during the adaptive process, global conservation may be retained only if the compact supports of the discarded wavelet functions are fully contained in the computational domain, owing to their zero-mean property. Otherwise, truncation or redistribution of wavelet coefficients may alter the global integral and thus introduce non-conservative errors. The above analysis indicates that existing pure wavelet-based adaptive schemes whose wavelet bases are not constructed from cell averages generally encounter inherent difficulties in achieving strict conservation during both the spatial discretization and the adaptive redistribution of degrees of freedom. This observation motivates the present construction of a cell-average-based adaptive multiresolution wavelet scheme. In the present study, the proposed adaptive multiresolution wavelet upwind scheme exploits the advantages of average-interpolating wavelets in two aspects: the conservative discretization of the governing equations and the conservative redistribution of physical variables during cell adaptation. Specifically, the upwind discretization is constructed using a pair of average-interpolating wavelets with upwind properties in the positive and negative directions, respectively. Meanwhile, the decomposition and reconstruction of physical variables during adaptation are performed using symmetric average-interpolating wavelets, which preserve the cell-average representation while retaining the essential solution profiles and improving the compression capability. Consequently, the proposed scheme maintains strict conservation through both the flux-difference evolution of the governing equations and the conservative redistribution of physical quantities on adaptive multiresolution cells. 
+
+Page 24 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+2.4. Computational complexity analysis 
+
+At the end of this section, we discuss the computational complexity of the proposed AIW 4T2-BVD and 
+
+AMAIW 4T2-BVD schemes. We mainly focus on the computational costs of the wavelet multiresolution approximation, FWT, and inverse FWT, which constitute the primary computational components of the proposed schemes. For the AIW 4T2-BVD scheme on uniform cells, the reconstruction stencil of the wavelet approximation for computing the interface values involves six cells. This stencil size is larger than that of the WENO5-Z scheme but smaller than that of the WENO7-Z scheme. Therefore, the computational cost of the interface reconstruction in the 
+
+AIW 4T2-BVD scheme remains comparable to those of classical high-order shock-capturing schemes. For the AMAIW 4T2-BVD scheme, the wavelet multiresolution approximation operator is linear and sparse. For each active leaf cell, the number of cells involved in the reconstruction stencil is bounded by (𝐽 max − 𝐽 0 + 1 ) 2( 𝑁 −1) .Let 𝑁 1 denote the total number of active leaf cells. Then, the computational cost of the wavelet multiresolution approximation is bounded by  (( 𝐽 max − 𝐽 0 + 1 ) 2( 𝑁 − 1) 𝑁 1
+
+). In practical computations, the number of resolution levels is prescribed to be comparatively small; for example, 𝐽 max − 𝐽 0 ≤ 8 in the present study. Therefore, for a fixed multiresolution order 𝑁 , this bound reduces to (𝑁 1).For a full multiresolution representation, the FWT and inverse FWT have linear complexity because the compu-tational costs over successive resolution levels form a geometric series. In the present adaptive implementation, the multiresolution representation is further sparsified through the thresholding process, and the transforms are performed only on the active leaf cells and retained wavelet coefficients. Hence, their computational costs scale linearly with the number of involved active degrees of freedom. Therefore, the proposed adaptive multiresolution wavelet upwind scheme has a linear or nearly linear computational cost in practical computations, while retaining the advantages of adaptive data compression and conservative high-order shock-capturing discretization. This makes it an efficient framework for solving compressible flows. 
+
+3. Numerical results 
+
+In this section, we present numerical results for several benchmark tests to verify the order of accuracy, conservativity, computational efficiency, and robustness of the proposed conservative adaptive multiresolution wavelet upwind scheme. The SSP-RK3 scheme [60] is employed for time marching, with a CFL number of 0.4 unless otherwise specified. The time step for the adaptive wavelet upwind scheme is determined by the mesh size at the finest level. For the one-dimensional Euler systems, the HLLC Riemann solver [76] is employed to compute the numerical fluxes. To measure the numerical errors, the following 𝐿 1- and 𝐿 ∞-norm errors are defined: 
+
+‖𝐸 ‖𝐿 1 = ∑
+
+𝑙 
+
+|||̄𝑢 𝑠 𝑙 −̄𝑢 𝑒 𝑙 
+
+||| Δ𝑥 𝑙 , (72) 
+
+‖𝐸 ‖𝐿 ∞ = max 
+
+𝑙 
+
+|||̄𝑢 𝑠 𝑙 −̄𝑢 𝑒 𝑙 
+
+||| , (73) where ̄𝑢 𝑒 𝑙 and ̄𝑢 𝑠 𝑙 denote the exact and numerical solutions at the 𝑙 th leaf cell, respectively. To quantify the conservativity of the proposed AMAIW 4T2-BVD scheme, the conservation error is defined as 
+
+𝐸 𝑛 
+
+cons =
+
+||||||∑
+
+𝑙 ∈𝑛 ̄𝑢 𝑛 𝑙 Δ𝑥 𝑙 − ∑
+
+𝑙 ∈0̄𝑢 0
+
+𝑙 Δ𝑥 𝑙 
+
+||||||
+
+. (74) 
+
+3.1. Linear scalar equation in one dimension 
+
+In this subsection, numerical tests are conducted to the following one-dimensional linear scalar equation with the periodic boundary condition by the proposed wavelet upwind schemes: 
+
+𝑢 𝑡 + 𝑢 𝑥 = 0 , 𝑥 ∈ [−1 , 1] . (75) 
+
+3.1.1. Accuracy and error control tests of sine wave advection 
+
+We first consider the advection of a sine wave to evaluate the order of accuracy of the proposed AIWU4 and 
+
+AIW 4T2-BVD schemes with the initial condition: 
+
+𝑢 (𝑥, 0) = sin( 𝜋𝑥 ). (76) 
+
+Page 25 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+A CFL number of 1∕16 is used in this test to minimize the influence of the time integration scheme on the accuracy of the numerical results. The solutions at 𝑡 = 2 .0 are computed through refinement tests, and the corresponding errors and orders of accuracy in different norms are listed in Table 2, where 𝑁 1 denotes the total number of leaf cells. It can be observed that the orders of accuracy of the proposed schemes agree well with the theoretical order. Moreover, the numerical errors and convergence orders of the linear AIWU4 scheme are identical to those of the AIW 4T2-BVD 
+
+scheme. This indicates that, for smooth solutions, the BVD reconstruction selects the high-order average-interpolating wavelet upwind candidate. Next, we assess the error-control capability of the proposed adaptive multiresolution wavelet upwind scheme. The numerical errors under different prescribed tolerances 𝜖 0 are computed using the proposed AMAIW 4T2-BVD scheme with 𝐽 0 = 4 and 𝐽 max = 8 , as shown in Table 3. It can be seen that the errors in the 𝐿 1- and 𝐿 ∞-norm are consistent with the prescribed tolerances. This confirms the threshold-based error-control capability of the proposed adaptive scheme, in accordance with the theoretical estimate given in Eq. (60). We further evaluate the conservativity of the proposed adaptive scheme. In the following, the numerical result denoted by level 𝐽 refers to the solution computed by the AIW 4T2-BVD scheme on uniform cells at resolution level 𝐽 . The conservation errors obtained by the adaptive AMAIW 4T2-BVD scheme are compared with those of the AIW 4T2-BVD scheme in Fig. 5. As shown in Fig. 5a, the conservation errors remain within machine precision for both schemes. Moreover, Figure 5b shows that the conservation errors are nearly independent of the prescribed thresholding tolerances and maintain on the order of machine precision. These results confirm that the proposed adaptive multiresolution wavelet upwind scheme preserves strict conservation during both the discretized evolution and the adaptive cell redistribution process. 
+
+3.1.2. Advection of complex waves 
+
+To examine the performance of the proposed adaptive multiresolution wavelet upwind scheme in solving profiles with different local regularity, the propagation of a complex wave devised by Jiang and Shu [71] is simulated. The initial condition of this test consists of a smooth but narrow combination of Gaussian, a square wave, a sharp triangle wave, and a half ellipse expressed as 
+
+𝑢 (𝑥, 0) = 
+
+⎧⎪⎪⎪⎨⎪⎪⎪⎩
+
+16 (𝐺 (𝑥, 𝛽, 𝑧 − 𝛿 ) + 𝐺 (𝑥, 𝛽, 𝑧 + 𝛿 ) + 4 𝐺 (𝑥, 𝛽, 𝑧 )) −0 .8 ≤ 𝑥 ≤ −0 .6,
+
+1 −0 .4 ≤ 𝑥 ≤ −0 .2,
+
+1 − |10( 𝑥 − 0 .1) | 0 ≤ 𝑥 ≤ 0.2,
+
+16 (𝐹 (𝑥, 𝛼, 𝑎 − 𝛿 ) + 𝐹 (𝑥, 𝛼, 𝑎 + 𝛿 ) + 4 𝐹 (𝑥, 𝛼, 𝑎 )) 0.4 ≤ 𝑥 ≤ 0.6,
+
+0 otherwise ,
+
+(77) where functions 𝐺 and 𝐹 are defined as 𝐺 (𝑥, 𝛽, 𝑧 ) = 𝑒 −𝛽 (𝑥 −𝑧 )2
+
+, and 𝐹 (𝑥, 𝛼, 𝑎 ) = 
+
+√
+
+max (1 − 𝛼 2 (𝑥 − 𝑎 )2 , 0). The constants are given as 𝑎 = 0 .5, 𝑧 = −0 .7, 𝛿 = 0 .005 , 𝛼 = 10 , 𝛽 = ln 2∕ (36 𝛿 2).We first evaluate the capability of the proposed wavelet upwind schemes to resolve solution profiles with different smoothness, while maintaining high resolution and avoiding spurious oscillations. The numerical results at 𝑡 = 2 .0 and 
+
+𝑡 = 500 .0, computed by the AIW 4T2-BVD scheme on uniform cells, are compared with those obtained by the WENO5-Z scheme [77, 78] in Fig. 6. As shown in Fig. 6a, the proposed wavelet upwind scheme with the BVD reconstruction produces evidently steeper jump discontinuities than the WENO5-Z scheme. For the long-time evolution case shown in Fig. 6b, the AIW 4T2-BVD scheme not only achieves higher accuracy in smooth regions, but also captures significantly sharper discontinuities. These results demonstrate the numerical advantages of the proposed wavelet upwind scheme with the BVD reconstruction. Next, we examine the numerical performance of the proposed adaptive AMAIW 4T2-BVD scheme. For this problem, 𝑛 𝑟 0 is set to 6. In Fig. 7, the numerical solutions at 𝑡 = 2 .0 computed by the adaptive AMAIW 4T2-BVD 
+
+scheme are compared with those obtained by the uniform-cell AIW 4T2-BVD scheme at levels 𝐽 = 7 and 𝐽 = 10 .The uniform-cell solutions at the coarse level 𝐽 = 7 are considerably smeared near discontinuities and localized sharp features, whereas the adaptive scheme yields much more accurate profiles by locally refining cells in these regions. The adaptive results show excellent agreement with the corresponding finest uniform-cell results at 𝐽 = 10 , while using far fewer active cells. These results demonstrate that the proposed adaptive scheme retains the discontinuity and 
+
+Page 26 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Table 2 
+
+Numerical errors and orders of accuracy for the linear scalar equation. Schemes 𝑁 1 𝐿 ∞ error 𝐿 ∞ order 𝐿 1 error 𝐿 1 order 
+
+AIWU4 
+
+16 3.017 × 10 −3 – 3.817 × 10 −3 –32 1.850 × 10 −4 4.03 2.350 × 10 −4 4.02 64 1.149 × 10 −5 4.01 1.462 × 10 −5 4.01 128 7.173 × 10 −7 4.00 9.133 × 10 −7 4.00 256 4.483 × 10 −8 4.00 5.707 × 10 −8 4.00 512 2.803 × 10 −9 4.00 3.569 × 10 −9 4.00 
+
+AIW 4T2-BVD 
+
+16 3.017 × 10 −3 – 3.817 × 10 −3 –32 1.850 × 10 −4 4.03 2.350 × 10 −4 4.02 64 1.149 × 10 −5 4.01 1.462 × 10 −5 4.01 128 7.173 × 10 −7 4.00 9.133 × 10 −7 4.00 256 4.483 × 10 −8 4.00 5.707 × 10 −8 4.00 512 2.803 × 10 −9 4.00 3.569 × 10 −9 4.00 
+
+Table 3 
+
+Error-control tests with 𝐽 0 = 4 , 𝐽 max = 8 under different thresholding parameters for the sine wave advection. 
+
+𝜖 0 𝑁 1 𝐿 ∞ error 𝐿 1 error 
+
+1.000 × 10 −5 64 1.149 × 10 −5 1.462 × 10 −5 
+
+1.000 × 10 −6 128 5.842 × 10 −6 2.676 × 10 −6 
+
+1.000 × 10 −7 128 7.168 × 10 −7 9.125 × 10 −7 
+
+1.000 × 10 −8 256 1.192 × 10 −7 8.086 × 10 −8 
+
+1.000 × 10 −9 256 4.479 × 10 −8 5.702 × 10 −8 
+
+1.000 × 10 −10 512 2.830 × 10 −9 3.883 × 10 −9 
+
+localized-feature capturing capability of the underlying AIW 4T2-BVD scheme at the finest resolution level. They also verify the effectiveness of applying the BVD reconstruction only on the finest-level cells in the adaptive framework. We further compute the numerical results using the AMAIW 4T2-BVD scheme with different finest resolution levels and thresholding parameters to examine the accuracy, stability, and robustness of the proposed adaptive multiresolution wavelet upwind scheme. The numerical solutions at 𝑡 = 2 .0 with a fixed tolerance 𝜖 0 = 1 .0 × 10 −5 and various finest resolution levels are shown in Fig. 8. As the finest resolution level increases, the AMAIW 4T2-BVD scheme stably resolves sharper discontinuities and achieves higher accuracy in smooth regions through sparse adaptive representations. To evaluate the error-control capability of the proposed adaptive wavelet upwind scheme for problems involving both discontinuities and smooth structures, the absolute errors of the numerical results at 𝑡 = 2 .0 computed by the 
+
+AMAIW 4T2-BVD scheme with different thresholding tolerances are illustrated in Fig. 9. The errors obtained by the adaptive scheme are also compared with those of the uniform-cell AIW 4T2-BVD scheme at the resolution levels 
+
+𝐽 = 𝐽 0 and 𝐽 = 𝐽 max . It can be observed that the errors of the adaptive scheme generally lie between those of the uniform-cell scheme at the coarsest and finest resolution levels. This indicates that the nonuniform cell distribution and adaptive cell redistribution do not deteriorate the basic accuracy guaranteed by the wavelet approximation at the coarsest level. Moreover, as the prescribed thresholding tolerance decreases, more cells are activated and the overall error magnitude is correspondingly reduced. Except in the immediate neighborhoods of discontinuities, the numerical errors are effectively controlled around the prescribed thresholding tolerances. These results verify the threshold-based error-control capability of the proposed adaptive multiresolution wavelet upwind scheme. We further assess the computational efficiency of the proposed adaptive scheme by analyzing its data compression performance. An active-cell percentage is defined to measure the degree of data compression as follows: 
+
+𝜂 act = 𝑁 adaptive 
+
+𝑁 f inest 
+
+× 100% , (78) 
+
+Page 27 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+where 𝑁 adaptive is the number of adaptive cells, and 𝑁 f inest is the number of cells at the finest resolution level. The variation in active-cell percentages of the proposed adaptive scheme with time under different finest resolution levels and thresholding parameters are shown in Fig. 10a and Fig. 10b, respectively. As shown in Fig. 10a, the active-cell percentage significantly decreases as the finest resolution level increases. In particular, when the finest level is increased to 𝐽 max = 12 , the average active-cell percentage is reduced to about 11 .2% , indicating that the proposed adaptive scheme achieves a remarkable data compression capability while retaining the finest-level resolution near localized features. From Fig. 10b, the active-cell percentage increases as the thresholding parameter 𝜖 0 decreases. This is reasonable because a smaller threshold imposes a stricter error-control requirement, and therefore more cells are activated to resolve the localized discontinuities and smooth wave profiles accurately. Moreover, for each prescribed 
+
+𝐽 max or 𝜖 0, the active-cell percentage remains nearly constant with only slight oscillations during the time evolution. This behavior is consistent with the physical property of the linear advection problem, where the solution profile is transported without changing its structure. These results confirm that the proposed adaptive scheme can effectively capture and track localized solution features with a sparse representation. Finally, we verify the conservation property of the proposed adaptive scheme for solving problems containing discontinuities. The conservation errors of the adaptive AMAIW 4T2-BVD scheme are compared with those of the corresponding uniform-cell AIW 4T2-BVD scheme in Fig. 11. As shown in Fig. 11a, for different finest resolution levels 𝐽 max , the conservation errors of the adaptive scheme agree well with those of the uniform-cell scheme at the corresponding resolution level 𝐽 = 𝐽 max . More importantly, the conservation errors obtained at different resolution levels remain very close to each other and exhibit nearly the same temporal evolution. The conservation errors of both the adaptive and uniform-cell schemes at different resolution levels are of the same small magnitude, close to machine precision, indicating that neither the increase in resolution nor the adaptive cell redistribution introduces noticeable additional conservation errors. As shown in Fig. 11b, the conservation errors obtained with different 𝜖 0
+
+show some visible differences at the initial stage, mainly due to the different adaptive cell distributions generated by different tolerances. Nevertheless, these differences rapidly diminish as the computation proceeds, and the conservation errors subsequently remain almost identical to the corresponding uniform-cell result. This indicates that the prescribed thresholding tolerance has no obvious influence on the long-time conservation behavior, and the threshold-based adaptation process does not introduce additional conservation errors. Together with the theoretical conservation analysis presented previously, these numerical results demonstrate the strict conservativity of the proposed adaptive wavelet upwind scheme for compressible flows involving discontinuities. 
+
+Page 28 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.5 1.0 1.5 2.0 10    
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+> E
+> cons
+
+t J
+
+=6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+J
+
+=8
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+(a) 𝜖 0 = 1 .0 × 10 −6 .0.0 0.5 1.0 1.5 2.0 10    
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+> E
+> cons
+
+t  0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   (b) 𝐽 0 = 4 , 𝐽 max = 8 .
+
+Fig. 5: Comparison of conservation errors between the adaptive AMAIW 4T2-BVD and uniform-cell AIW 4T2-BVD schemes for the sine wave advection.         0 . 0 0 . 5 1 . 0
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+Exact
+
+AIW
+
+4
+
+T
+
+2
+
+-BVD
+
+WENO5-Z
+
+> u
+
+x
+
+(a) 𝑡 = 2 .0, 𝑁 1 = 256 .        0 . 0 0 . 5 1 . 0
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+Exact
+
+AIW
+
+4
+
+T
+
+2
+
+-BVD
+
+WENO5-Z
+
+> u
+
+x (b) 𝑡 = 500 .0, 𝑁 1 = 512 .
+
+Fig. 6: Numerical results of the Jiang and Shu’s problem computed by the AIW 4T2-BVD and WENO5-Z schemes at 𝑡 = 2 .0
+
+and 𝑡 = 500 .0.Page 29 of 54 Preprint June 17, 2026 
+
+Submitted to Journal                          
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+Exact
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=618
+
+J
+
+=7
+
+N
+
+1
+
+=256
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+(a) Gaussian profile.                          
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+Exact
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=618
+
+J
+
+=7
+
+N
+
+1
+
+=256
+
+J
+
+=10
+
+N
+
+1
+
+=2048 (b) Jump discontinuity.     0 . 0 0 . 1 0 . 2 0 . 3
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+Exact
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=618
+
+J
+
+=7
+
+N
+
+1
+
+=256
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+(c) Triangle wave profile. 0.3 0.4 0.5 0.6 0.7     
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+Exact
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=618
+
+J
+
+=7
+
+N
+
+1
+
+=256
+
+J
+
+=10
+
+N
+
+1
+
+=2048 (d) Half ellipse profile. 
+
+Fig. 7: Comparison of the numerical results at 𝑡 = 2 .0 of the Jiang and Shu’s problem obtained by the proposed 
+
+AMAIW 4T2-BVD and the AIW 4T2-BVD schemes for different solution profiles, 𝐽 0 = 6 , 𝜖 0 = 1 .0 × 10 −5 .Page 30 of 54 Preprint June 17, 2026 
+
+Submitted to Journal         0 . 0 0 . 5 1 . 0
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=368
+
+Exact
+
+(a) 𝐽 max = 8 .        0 . 0 0 . 5 1 . 0
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=618
+
+Exact
+
+> u
+
+x (b) 𝐽 max = 10 .        0 . 0 0 . 5 1 . 0
+
+    
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12
+
+N
+
+1
+
+=924
+
+Exact
+
+> u
+
+x
+
+(c) 𝐽 max = 12 .
+
+Fig. 8: Numerical solutions at 𝑡 = 2 .0 of the Jiang and Shu’s problem obtained by the proposed adaptive AMAIW 4T2-BVD 
+
+scheme with different finest resolution levels, 𝐽 0 = 6 , 𝜖 0 = 1 .0 × 10 −5 .Page 31 of 54 Preprint June 17, 2026 
+
+Submitted to Journal         0 . 0 0 . 5 1 . 0
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+10
+
+  
+
+10
+
+2
+
+> Error
+
+x
+
+J
+
+=6
+
+N
+
+1
+
+=128
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+ 0 = 1 . 0 × 1 0   N 1 = 3 8 5
+
+1.0
+
+×
+
+10
+
+ 3
+
+(a) 𝜖 0 = 1 .0 × 10 −3 .        0 . 0 0 . 5 1 . 0
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+10
+
+  
+
+10
+
+2
+
+> Error
+
+x
+
+J
+
+=6
+
+N
+
+1
+
+=128
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+ 0 = 1 . 0 × 1 0   N 1 = 5 0 4
+
+1.0
+
+×
+
+10
+
+ 4 (b) 𝜖 0 = 1 .0 × 10 −4 .        0 . 0 0 . 5 1 . 0
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+10
+
+  
+
+10
+
+2
+
+> Error
+
+x
+
+J
+
+=6
+
+N
+
+1
+
+=128
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+ 0 = 1 . 0 × 1 0   N 1 = 6 1 8
+
+1.0
+
+×
+
+10
+
+ 5
+
+(c) 𝜖 0 = 1 .0 × 10 −5 .        0 . 0 0 . 5 1 . 0
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+10
+
+  
+
+10
+
+2
+
+> Error
+
+x
+
+J
+
+=6
+
+N
+
+1
+
+=128
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+ 0 = 1 . 0 × 1 0   N 1 = 7 2 4
+
+1.0
+
+×
+
+10
+
+ 6 (d) 𝜖 0 = 1 .0 × 10 −6 .
+
+Fig. 9: Numerical solutions at 𝑡 = 2 .0 of the Jiang and Shu’s problem obtained by the proposed adaptive AMAIW 4T2-BVD 
+
+scheme with different thresholding parameters, 𝐽 0 = 6 , and 𝐽 max = 10 .0.0 0.5 1.0 1.5 2.0 020 40 60 80 100  a c t = 7 1 . 4 %
+
+>  a c t ( % )
+
+t
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=8
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12  a c t = 3 0 . 1 %
+
+ a c t = 1 1 . 2 %
+
+(a) Different finest resolution levels 𝐽 max , 𝜖 0 = 1 .0 × 10 −5 .0.0 0.5 1.0 1.5 2.0 10 20 30 40 50  a c t ( % )
+
+t
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+ a c t = 3 5 . 5 %
+
+ a c t = 3 0 . 1 %
+
+ a c t = 2 4 . 6 %
+
+ a c t = 1 9 . 3 % (b) Different thresholding parameters 𝜖 0, 𝐽 0 = 6 , 𝐽 max = 10 .
+
+Fig. 10: Active-cell percentage of the adaptive AMAIW 4T2-BVD scheme for the Jiang and Shu’s problem with different 
+
+𝐽 max and 𝜖 0.Page 32 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0200 400 600 800 1000 10    
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+steps J = 8 J
+
+0
+
+= 6 J
+
+max
+
+= 8
+
+J
+
+=10
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+J
+
+=12
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12
+
+> E
+> cons
+
+(a) Different finest resolution levels 𝐽 max , 𝜖 0 = 1 .0 × 10 −5 .0200 400 600 800 1000 10    
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+steps J = 1 0
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0    
+
+> E
+> cons
+
+(b) Different thresholding parameters 𝜖 0, 𝐽 0 = 6 , 𝐽 max = 10 .
+
+Fig. 11: Conservation errors of the AMAIW 4T2-BVD scheme for the Jiang and Shu’s problem with different 𝐽 max and 𝜖 0.Page 33 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+3.2. One-dimensional nonlinear inviscid Burgers’ equation 
+
+Here, the one-dimensional inviscid Burgers’ equation is solved with different initial conditions and final times: 
+
+𝑢 𝑡 +
+
+( 𝑢 2
+
+2
+
+)
+
+𝑥 
+
+= 0 , 𝑢 (𝑥, 0) = 𝑢 0(𝑥 ), (79) with periodic boundary conditions. The exact solutions of the Burgers’ equation is obtained by the semi-analytical method proposed by Harten et al. [79], in which Newton–Raphson iterations are used to solve the characteristic relation. 
+
+Case 1. This case is used to test the order of accuracy of the proposed wavelet upwind scheme for nonlinear problems. The initial condition is given by 
+
+𝑢 (𝑥, 0) = 0 .5 + sin( 𝜋𝑥 ), 𝑥 ∈ [0 , 2] . (80) The final time is set as 𝑡 = 0 .5∕ 𝜋 , which is before the shock formation time 𝑡 𝑠 = 1∕ 𝜋 .The numerical results are computed using the uniform-cell AIWU4 and AIW 4T2-BVD schemes under a CFL number of 1∕16 . The corresponding numerical errors and orders of accuracy measured in different norms are listed in Table 4. As the mesh is refined, both the AIWU4 and AIW 4T2-BVD schemes achieve convergence orders close to the theoretical value. This convergence behavior is consistent with that reported for DG [80], MCV [6], and spectral volume [81] methods. In addition, the nonlinear AIW 4T2-BVD scheme yields exactly the same numerical errors and orders of accuracy as the linear AIWU4 scheme. This indicates that, for the smooth solution of the nonlinear Burgers’ equation, the BVD reconstruction also selects the high-order wavelet discretization, thereby preserving the designed accuracy of the underlying linear scheme. 
+
+Case 2. This case was introduced by Sebastian and Shu [9] to test the capability of numerical schemes to capture much stronger shocks. Here, we use this problem to further evaluate the discontinuity-capturing capability, error-control performance, and conservation property of the proposed adaptive scheme. The initial condition is given by 
+
+𝑢 (𝑥, 0) = 17 .4 + 13 .3 sin( 𝜋𝑥 ), 𝑥 ∈ [−1 , 1] . (81) For this case, the shock formation time is 𝑡 𝑠 = 1∕(13 .3𝜋 ). The numerical solutions are computed at 𝑡 = 0 .1∕ 𝜋 , which is after shock formation, to examine the shock-capturing capability and adaptive performance of the proposed adaptive wavelet upwind scheme. In this case, 𝑛 𝑟 0 = 6 is used in the ACG -𝐽 . The numerical results at 𝑡 = 0 .1∕ 𝜋 obtained by the proposed adaptive AMAIW 4T2-BVD scheme with different finest resolution levels are shown in Fig. 12. The proposed adaptive scheme resolves this strong shock problem stably without spurious oscillations. As the finest resolution level increases, the discontinuity is captured more sharply and the numerical shock approaches the exact shock location, as further confirmed by the zoomed view near the shock. Meanwhile, the active-cell number increases from 𝑁 1 = 90 
+
+for 𝐽 max = 6 to 𝑁 1 = 198 for 𝐽 max = 10 , which is much smaller than the number of cells on the corresponding finest uniform mesh. These results demonstrate that the proposed adaptive multiresolution wavelet upwind scheme can effectively capture strong shocks through sparse adaptive representations. The numerical errors at 𝑡 = 0 .1∕ 𝜋 and variations in active-cell percentages with time obtained by the adaptive 
+
+AMAIW 4T2-BVD scheme under different thresholding tolerances are shown in Fig. 13. As shown in Fig. 13a, the errors of the proposed adaptive scheme generally lie between those of the uniform-cell AIW 4T2-BVD schemes at 𝐽 = 𝐽 0 and 
+
+𝐽 = 𝐽 max . Except in the immediate neighborhood of the shock, the numerical errors are effectively controlled around the prescribed thresholding tolerances. Figure 13b shows that smaller thresholding tolerances lead to larger active-cell percentages, since more cells are retained in regions with strong local variations. The active-cell percentage reaches a local peak around the shock formation time, because the rapidly increasing solution gradient produces large wavelet coefficients over a relatively wide region. After the shock is formed, the discontinuity becomes highly localized and the solution away from the shock becomes smoother, so the region requiring finest-level resolution becomes narrower and the active-cell percentage decreases. These results demonstrate the effectiveness of the threshold-based error-control strategy and the dynamic adaptivity procedure for nonlinear problems. Next, we conduct a long-time simulation up to 𝑡 = 24 to investigate the stability, data-compression capability, and conservation property of the proposed adaptive AMAIW 4T2-BVD scheme. The numerical solutions at 𝑡 = 24 with different finest resolution levels and the corresponding temporal evolutions of the active-cell percentages are presented in Fig. 14. It can be observed that the proposed adaptive wavelet upwind scheme can stably solve the nonlinear Burgers’ equation with a strong shock during the long-time evolution. The proposed adaptive scheme accurately 
+
+Page 34 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Table 4 
+
+Numerical errors and orders of accuracy for the one-dimensional Burgers’ equation at 𝑡 = 0 .5∕ 𝜋 .Schemes 𝑁 1 𝐿 ∞ error 𝐿 ∞ order 𝐿 1 error 𝐿 1 order 
+
+AIWU4 
+
+32 5.047 × 10 −4 – 8.495 × 10 −5 –64 4.633 × 10 −5 3.45 6.543 × 10 −6 3.70 128 3.467 × 10 −6 3.74 4.881 × 10 −7 3.74 256 2.355 × 10 −7 3.88 3.341 × 10 −8 3.87 512 1.529 × 10 −8 3.94 2.194 × 10 −9 3.93 1024 9.756 × 10 −10 3.97 1.414 × 10 −10 3.96 
+
+AIW 4T2-BVD 
+
+32 5.047 × 10 −4 – 8.495 × 10 −5 –64 4.633 × 10 −5 3.45 6.543 × 10 −6 3.70 128 3.467 × 10 −6 3.74 4.881 × 10 −7 3.74 256 2.355 × 10 −7 3.88 3.341 × 10 −8 3.87 512 1.529 × 10 −8 3.94 2.194 × 10 −9 3.93 1024 9.756 × 10 −10 3.97 1.414 × 10 −10 3.96 
+
+captures the shock wave at its correct position without spurious oscillations. As the finest resolution level increases, the discontinuity is captured more sharply, and the numerical solution obtained with 𝐽 max = 10 agrees very well with the exact solution. Figure 14d shows that the active-cell percentage reaches a local peak around the shock formation time 
+
+𝑡 𝑠 = 1∕(13 .3𝜋 ) ≈ 0 .02394 , and then decreases to a relatively stable value during the subsequent long-time evolution. Before and around shock formation, the solution gradient increases rapidly over a relatively wide region, leading to large wavelet coefficients and hence more activated cells. After the shock is formed, the discontinuity becomes localized, while the smooth component away from the shock is gradually stretched and becomes relatively smoother. During the subsequent long-time evolution, the local regularity of the smooth component remains nearly unchanged and the shock strength gradually decreases. This leads to the decrease and subsequent stabilization of the active-cell percentage. We can see that the data-compression advantage becomes more pronounced at higher finest resolution levels. These results demonstrate that the proposed adaptive multiresolution wavelet upwind scheme maintains good stability and accuracy for long-time shock evolution, while achieving effective data compression through adaptive cell redistribution. Finally, the conservation errors up to 4.0 × 10 4 time steps obtained by the proposed adaptive wavelet upwind scheme are compared with those of the corresponding uniform-cell scheme in Fig. 15. For different finest resolution levels, the conservation errors of the adaptive scheme almost overlap with those of the corresponding uniform-cell scheme. Moreover, the conservation errors at different resolution levels are nearly identical to each other and show the same temporal evolution. This indicates that, in the proposed conservative adaptive scheme, neither the variation in resolution levels nor the adaptive cell redistribution process introduces noticeable additional conservation errors during long-time computations. Even after such a large number of time steps, the conservation errors remain on the order of 10 −11 . In contrast, the conservation errors reported for the nonconservative schemes in Ref. [9] are several orders of magnitude larger, ranging from about 10 −4 to 10 −2 depending on the scheme and resolution. These results verify the conservation property of the proposed adaptive scheme for nonlinear problems with strong discontinuities. 
+
+Page 35 of 54 Preprint June 17, 2026 
+
+Submitted to Journal         0 . 0 0 . 5 1 . 0
+
+0
+
+10
+
+20
+
+30
+
+40
+
+> u
+
+x
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+N
+
+1
+
+=90
+
+Exact
+
+(a) 𝐽 max = 6 .        0 . 0 0 . 5 1 . 0
+
+0
+
+10
+
+20
+
+30
+
+40
+
+x
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=139
+
+Exact 
+
+> u
+
+(b) 𝐽 max = 8 .        0 . 0 0 . 5 1 . 0
+
+0
+
+10
+
+20
+
+30
+
+40
+
+x
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=198
+
+Exact
+
+> u
+
+(c) 𝐽 max = 10 .                              
+
+0
+
+10
+
+20
+
+30
+
+40
+
+> u
+
+x
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=198
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=139
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+N
+
+1
+
+=90
+
+Exact (d) Zoomed view near the shock. 
+
+Fig. 12: Numerical results at 𝑡 = 0 .1∕ 𝜋 obtained by the proposed adaptive AMAIW 4T2-BVD scheme for the Burgers’ equation with different finest resolution levels, 𝐽 0 = 4 , and 𝜖 0 = 1 .0 × 10 −5 .        0 . 0 0 . 5 1 . 0
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+0
+
+10
+
+2
+
+> Error
+
+x
+
+ 0 = 1 . 0 × 1 0   N 1 = 1 6 0
+
+ 0 = 1 . 0 × 1 0   N 1 = 1 9 8
+
+ 0 = 1 . 0 × 1 0   N 1 = 2 6 1
+
+ 0 = 1 . 0 × 1 0   N 1 = 3 7 9
+
+J
+
+=4
+
+N
+
+1
+
+=32
+
+J
+
+=10
+
+N
+
+1
+
+=2048
+
+(a) Numerical errors. 0.000 0.008 0.016 0.024 0.032 0510 15 20 25 30 35  a c t ( % )
+
+t
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+ 0 = 1 . 0 × 1 0    0 = 1 . 0 × 1 0   
+
+shockformation (b) Active-cell percentage. 
+
+Fig. 13: Numerical errors at 𝑡 = 0 .1∕ 𝜋 and variations in active-cell percentages with time obtained by the adaptive 
+
+AMAIW 4T2-BVD scheme for the Burgers’ equation with different thresholding parameters, 𝐽 0 = 4 , and 𝐽 max = 10 .Page 36 of 54 Preprint June 17, 2026 
+
+Submitted to Journal         0 . 0 0 . 5 1 . 0
+
+17.2
+
+17.3
+
+17.4
+
+17.5
+
+17.6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+N
+
+1
+
+=76
+
+Exact
+
+> u
+
+x
+
+(a) 𝐽 max = 6 .        0 . 0 0 . 5 1 . 0
+
+17.2
+
+17.3
+
+17.4
+
+17.5
+
+17.6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=110
+
+Exact
+
+> u
+
+x (b) 𝐽 max = 8 .        0 . 0 0 . 5 1 . 0
+
+17.2
+
+17.3
+
+17.4
+
+17.5
+
+17.6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=139
+
+Exact
+
+> u
+
+x
+
+(c) 𝐽 max = 10 .0.0 0.1 510 15 20 010 20 30 40 50 60 70 80 90 100  a c t ( % )
+
+t
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=10 s h o c k f o r m a t i o n (d) Active-cell percentage. 
+
+Fig. 14: Numerical solutions at 𝑡 = 24 for different finest resolution levels and the corresponding temporal evolutions of the active-cell percentages obtained by the adaptive AMAIW 4T2-BVD scheme for the Burgers’ equation with 𝜖 0 = 1 .0 × 10 −5 .01×10 42×10 43×10 44×10 410    
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+  
+
+> E
+> cons
+
+steps
+
+J
+
+=6
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=6
+
+J
+
+=8
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=8
+
+J
+
+=10
+
+J
+
+0
+
+=4
+
+J
+
+max
+
+=10
+
+Fig. 15: Conservation errors obtained by the adaptive AMAIW 4T2-BVD scheme and the corresponding uniform-cell scheme for the Burgers’ equation with different finest resolution levels up to 4.0 × 10 4 time steps, 𝜖 0 = 1 .0 × 10 −5 .Page 37 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+3.3. One-dimensional Euler equations 
+
+The one-dimensional Euler equations of gas dynamics for a polytropic gas in the conservative form are written as 
+
+𝐔 𝑡 + 𝐅 (𝐔 )𝑥 = 0 ,
+
+𝐔 = ( 𝜌, 𝜌𝑢, 𝐸 )𝑇 ,
+
+𝐅 (𝐔 ) = (𝜌𝑢, 𝜌𝑢 2 + 𝑝, 𝑢 (𝐸 + 𝑝 ))𝑇 .
+
+(82) where 𝜌, 𝑢, 𝑝 , and 𝐸 are the density, velocity, pressure and total energy, respectively. For the perfect gas, the total energy can be determined by the following equation: 
+
+𝐸 = 𝑝 𝛾 − 1 + 12 𝜌𝑢 2, (83) where 𝛾 = 1 .4.
+
+3.3.1. Advection of density perturbation 
+
+To verify the order of accuracy of the present average-interpolating wavelet upwind schemes, we consider the advection of density perturbation problem. The initial condition is given by 𝜌 (𝑥, 0) = 1 + 0 .2 sin( 𝜋𝑥 ), 𝑢 (𝑥, 0) = 1 , and 
+
+𝑝 (𝑥, 0) = 1 on the computational domain [0 , 2] with periodic boundary conditions. The numerical solutions at 𝑡 = 2 .0 are obtained using the uniform-cell AIWU4 and AIW 4T2-BVD schemes with a CFL number of 1∕16 . The corresponding numerical errors and convergence orders in different norms are reported in Table 5. It can be observed that both wavelet schemes achieve the expected fourth-order accuracy. Moreover, the 
+
+AIW 4T2-BVD scheme gives identical numerical errors and convergence orders to those of the AIWU4 scheme. This indicates that, for smooth solutions, the BVD algorithm consistently selects the high-order wavelet candidate, thereby preserving the designed high-order accuracy. Next, we evaluate the error-control capability of the proposed adaptive multiresolution average-interpolating wavelet upwind scheme for nonlinear systems. The numerical solutions at 𝑡 = 2 .0 are obtained using the adaptive 
+
+AMAIW 4T2-BVD scheme with various thresholding parameters. The corresponding numbers of active leaf cells and numerical errors are listed in Table 6. The numerical errors are effectively controlled in accordance with the prescribed tolerances. These results demonstrate the feasibility of the proposed adaptive error-control strategy based on wavelet multiresolution analysis for solving nonlinear systems. 
+
+3.3.2. Sod’s problem 
+
+This Riemann problem is a well-known benchmark test proposed by Sod [82] to test the performance of numerical schemes in solving Euler equations, which contains different types of discontinuities, such as shock wave and contact discontinuity. The initial condition of the Sod’s problem is expressed as 
+
+(𝜌, 𝑢, 𝑝 ) = 
+
+{
+
+(1 , 0, 1) , 0 ≤ 𝑥 ≤ 0.5,
+
+(0 .125 , 0, 0.1) , 0.5 < 𝑥 ≤ 1. (84) The final simulation time is 𝑡 = 0 .2.We first solve Sod’s problem using the adaptive AMAIW 4T2-BVD scheme and compare the results with those obtained by the corresponding uniform-cell AIW 4T2-BVD scheme at 𝐽 = 𝐽 max . The computed density, velocity, and pressure are compared in Fig. 16. To further illustrate the resolution improvement introduced by the adaptive refinement, the coarse uniform-cell result of the AIW 4T2-BVD scheme at 𝐽 = 8 is also included in the zoomed density profile near the discontinuities. It can be observed that the numerical solutions obtained by the adaptive scheme are in excellent agreement with those of the corresponding finest uniform-cell scheme at 𝐽 = 𝐽 max . The shock wave, contact discontinuity, and rarefaction wave are sharply resolved without noticeable spurious oscillations. As shown in Fig. 16d, the coarse uniform-cell result at 𝐽 = 8 suffers from visible numerical smearing near the discontinuities, while the adaptive scheme locally refines the cells in these regions and yields much sharper transitions. The adaptive result almost overlaps with the finest uniform-cell result at 𝐽 = 10 , demonstrating that the proposed adaptive scheme can achieve the local resolution of the finest uniform-cell computation without applying uniform refinement to the entire domain. These results verify that the proposed adaptive scheme retains the shock-capturing capability of the finest uniform-cell scheme and that the BVD reconstruction on the finest-level leaf cells is effective. 
+
+Page 38 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Table 5 
+
+Numerical errors and orders of accuracy for the one-dimensional Euler equations. Schemes 𝑁 1 𝐿 ∞ error 𝐿 ∞ order 𝐿 1 error 𝐿 1 order 
+
+AIWU4 
+
+16 6.030 × 10 −4 – 7.631 × 10 −4 –32 3.697 × 10 −5 4.03 4.697 × 10 −5 4.02 64 2.297 × 10 −6 4.01 2.923 × 10 −6 4.01 128 1.434 × 10 −7 4.00 1.825 × 10 −7 4.00 256 8.957 × 10 −9 4.00 1.140 × 10 −8 4.00 512 5.609 × 10 −10 4.00 7.127 × 10 −10 4.00 
+
+AIW 4T2-BVD 
+
+16 6.030 × 10 −4 – 7.631 × 10 −4 –32 3.697 × 10 −5 4.03 4.697 × 10 −5 4.02 64 2.297 × 10 −6 4.01 2.923 × 10 −6 4.01 128 1.434 × 10 −7 4.00 1.825 × 10 −7 4.00 256 8.957 × 10 −9 4.00 1.140 × 10 −8 4.00 512 5.609 × 10 −10 4.00 7.127 × 10 −10 4.00 
+
+Table 6 
+
+Error-control tests with 𝐽 0 = 4 , 𝐽 max = 8 under different thresholding parameters for the advection of density perturbation of the one-dimensional Euler equations. 
+
+𝜖 0 𝑁 1 𝐿 ∞ error 𝐿 1 error 
+
+1.000 × 10 −5 32 3.696 × 10 −5 4.697 × 10 −5 
+
+1.000 × 10 −6 64 2.297 × 10 −6 2.923 × 10 −6 
+
+1.000 × 10 −7 128 5.424 × 10 −7 2.939 × 10 −7 
+
+1.000 × 10 −8 128 1.434 × 10 −7 1.825 × 10 −7 
+
+1.000 × 10 −9 256 1.835 × 10 −8 1.394 × 10 −8 
+
+1.000 × 10 −10 512 2.814 × 10 −9 1.719 × 10 −9 
+
+Next, the numerical results at 𝑡 = 0 .2 are computed using the proposed adaptive wavelet upwind scheme with different finest resolution levels. The corresponding density profiles are shown in Figs. 17a–17c, and a zoomed-in comparison near the contact discontinuity is presented in Fig. 17d. The proposed adaptive AMAIW 4T2-BVD scheme sharply captures the shock wave and contact discontinuity without visible numerical oscillations for all considered values of 𝐽 max . As 𝐽 max increases, the computed contact discontinuity gradually approaches the exact solution, as shown in Fig. 17d. These results demonstrate that the proposed adaptive multiresolution wavelet upwind scheme can accurately and efficiently capture discontinuities in nonlinear Euler systems. To evaluate the adaptive performance of the proposed adaptive multiresolution wavelet upwind scheme, the temporal evolutions of the active-cell percentages are shown in Fig. 18a. The active leaf cell distribution for 𝐽 max = 12 
+
+at 𝑡 = 0 .2 is also presented in Fig. 18b. It can be observed that the active-cell percentage increases during the early stage of the wave evolution and then reaches a nearly steady value after the shock wave, contact discontinuity, and rarefaction wave are formed. The active-cell percentage decreases as the finest resolution level increases. In particular, for 𝐽 max = 12 , only about 6% of the corresponding uniform cells are activated. As shown in Fig. 18b, the finest-level leaf cells are mainly concentrated in the vicinity of the strong discontinuities to resolve discontinuities with sharp transitions. In contrast, relatively lower-level cells are sufficient to resolve the rarefaction wave. These results indicate that the proposed adaptive scheme can efficiently identify, locate, and capture different flow features in the nonlinear Euler system through a sparse representation of the solution. Finally, we verify the conservation property of the proposed adaptive average-interpolating wavelet upwind scheme for the nonlinear Euler equations. Figure 19 compares the conservation errors of mass, momentum, and total energy up to 1000 time steps obtained by the adaptive AMAIW 4T2-BVD scheme with those of the uniform-cell AIW 4T2-BVD 
+
+scheme at 𝐽 = 𝐽 max . It can be observed that the conservation errors of mass, momentum, and total energy produced by the adaptive scheme are comparable to those of the corresponding uniform-cell scheme, remaining below 10 −13 
+
+and thus close to machine precision. These results confirm the strict conservation property of the proposed adaptive wavelet upwind scheme for nonlinear Euler systems. 
+
+Page 39 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.2 0.4 0.6 0.8 1.0 0.0 0.2 0.4 0.6 0.8 1.0 1.2  Exact  J  = 10  N 1 = 1024  J 0 = 6  J max  = 10  N 1 = 196 
+
+x
+
+(a) Density. 0.0 0.2 0.4 0.6 0.8 1.0     
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+1.2
+
+> u
+
+x
+
+Exact
+
+J
+
+=10
+
+N
+
+1
+
+=1024
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=196 (b) Velocity. 0.0 0.2 0.4 0.6 0.8 1.0 0.0 0.2 0.4 0.6 0.8 1.0 1.2  Exact  J  = 10  N 1 = 1024  J 0 = 6  J max  = 10  N 1 = 196 xp
+
+(c) Pressure. 0.65 0.70 0.75 0.80 0.85 0.90 0.1 0.2 0.3 0.4 0.5  Exact  J  = 10  N 1 = 1024  J  = 8  N 1 = 256  J 0 = 6  J max  = 10  N 1 = 196 
+
+x (d) Zoomed density profile near the discontinuities. 
+
+Fig. 16: Comparison of the density, velocity, pressure, and zoomed density profile near the discontinuities at 𝑡 = 0 .2 obtained by the AMAIW 4T2-BVD scheme ( 𝜖 0 = 1 .0 × 10 −4 ), and the AIW 4T2-BVD scheme for Sod’s problem. Page 40 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.2 0.4 0.6 0.8 1.0 0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+x
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=139
+
+Exact
+
+(a) 𝐽 max = 8 .0.0 0.2 0.4 0.6 0.8 1.0 0.0 0.2 0.4 0.6 0.8 1.0 1.2  J 0 = 6  J max  = 10  N 1 = 196  Exact x (b) 𝐽 max = 10 .0.0 0.2 0.4 0.6 0.8 1.0 0.0 0.2 0.4 0.6 0.8 1.0 1.2 x J 0 = 6  J max  = 12  N 1 = 259  Exact 
+
+(c) 𝐽 max = 12 .0.66 0.67 0.68 0.69 0.70 0.25 0.30 0.35 0.40 0.45 0.50 
+
+x
+
+Exact
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=139
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=196
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12
+
+N
+
+1
+
+=259 (d) Zoomed-in view of the contact discontinuity. 
+
+Fig. 17: Numerical solutions at 𝑡 = 0 .2 of Sod’s problem obtained by the adaptive AMAIW 4T2-BVD scheme with different finest resolution levels and 𝜖 0 = 1 .0 × 10 −4 . The last panel shows a zoomed-in view near the contact discontinuity. 0.00 0.05 0.10 0.15 0.20 010 20 30 40 50 60  a c t ( % )
+
+t
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=8
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10 J 0
+
+= 6 J m a x
+
+= 1 2
+
+(a) Active-cell percentage. 0.0 0.2 0.4 0.6 0.8 1.0 5678910 11 12 13  J 0 = 6  J max  = 12  N 1 = 259 Jx (b) Active leaf cell distribution for 𝐽 max = 12 at 𝑡 = 0 .2.
+
+Fig. 18: Temporal evolutions of the active-cell percentages for different finest resolution levels and the active leaf cell distribution at 𝑡 = 0 .2 with 𝐽 max = 12 obtained by the adaptive AMAIW 4T2-BVD scheme for Sod’s problem with 
+
+𝜖 0 = 1 .0 × 10 −4 .Page 41 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0200 400 600 800 1000 10    
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   J = 1 0 J 0
+
+= 6 J max
+
+= 1 0
+
+J
+
+=12
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12
+
+steps
+
+> E
+> cons
+> (
+>  )
+
+(a) Mass. 0200 400 600 800 1000 10    
+
+10
+
+
+
+10
+
+
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+10
+
+  
+
+steps J = 1 0 J
+
+0
+
+= 6 J
+
+max
+
+= 1 0
+
+J
+
+=12
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12 
+
+> E
+> cons
+> (
+>    )
+
+(b) Momentum. 0200 400 600 800 1000 10    
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   
+
+10
+
+   J = 1 0 J 0
+
+= 6 J max
+
+= 1 0
+
+J
+
+=12
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=12
+
+steps
+
+> E
+> cons
+> (
+> E
+> )
+
+(c) Total energy. 
+
+Fig. 19: Conservation errors of mass, momentum, and total energy up to 1000 time steps for Sod’s problem. The adaptive 
+
+AMAIW 4T2-BVD scheme with 𝜖 0 = 1 .0 × 10 −4 , and different finest resolution levels is compared with the corresponding uniform-cell AIW 4T2-BVD scheme at 𝐽 = 𝐽 max .Page 42 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+3.3.3. Lax’s problem 
+
+To further evaluate the ability of the proposed adaptive wavelet upwind scheme to capture stronger shock, the Lax’s problem is solved with the following initial condition: 
+
+(𝜌 0, 𝑢 0, 𝑝 0) = 
+
+{
+
+(0 .445 , 0.698 , 3.528) , 0 ≤ 𝑥 ≤ 0.5,
+
+(0 .5, 0.0, 0.571) , 0.5 < 𝑥 ≤ 1. (85) The numerical solutions at 𝑡 = 0 .13 are computed using the proposed adaptive AMAIW 4T2-BVD scheme with different finest resolution levels. For comparison, the WENO5-Z scheme [77, 78] is also employed, where the number of uniform cells is adjusted to obtain a shock resolution comparable to that of the proposed adaptive wavelet upwind scheme. The computed density profiles and zoomed-in views near the discontinuities are shown in Fig. 20. It can be observed that the proposed adaptive AMAIW 4T2-BVD scheme produces satisfactory non-oscillatory solutions for all considered values of 𝐽 max . As shown in the zoomed-in views, the contact discontinuity and shock wave are resolved more sharply as the finest resolution level increases, and the computed discontinuities gradually approach the exact solution without noticeable overshoots or spurious oscillations. Compared with the WENO5-Z scheme, the proposed adaptive wavelet scheme requires significantly fewer active leaf cells to achieve comparable shock resolution. Specifically, the adaptive scheme uses only 𝑁 1 = 121 , 198 , and 
+
+256 active leaf cells for 𝐽 max = 8 , 10 , and 12 , respectively, whereas the WENO5-Z scheme uses 400 , 2000 , and 4000 
+
+uniform cells in the corresponding comparisons. Under comparable shock resolution, the adaptive wavelet upwind scheme captures sharper contact discontinuities than the WENO5-Z scheme, demonstrating its strong capability in resolving contact discontinuities. To illustrate how the multiresolution cells are distributed for different localized features, the active leaf cell distributions of the proposed adaptive AMAIW 4T2-BVD scheme at 𝑡 = 0.13 are shown in Fig. 21. The high-resolution leaf cells are mainly concentrated near the shock wave and the contact discontinuity to capture strong jump discontinuities, while relatively lower-level cells are activated near the head and tail of the rarefaction wave. In smooth regions, only coarse cells are retained. These results indicate that the proposed adaptive scheme can effectively identify, locate, and resolve different flow features through a sparse cell representation. To evaluate the computational efficiency of the proposed adaptive wavelet upwind scheme, we compare the CPU time of the adaptive AMAIW 4T2-BVD scheme with those of the corresponding uniform AIW 4T2-BVD scheme and WENO5-Z for the Lax problem, as shown in Table 7. As 𝐽 max increases, the active-cell percentage 𝜂 act decreases from 45 .5% to 5.9% , indicating that the adaptive multiresolution representation becomes increasingly sparse at higher finest resolution levels. Compared with the uniform AIW 4T2-BVD computation at the same finest resolution level, the adaptive scheme reduces the CPU time by factors of 1.697 , 3.903 , and 8.054 , respectively. Under comparable shock resolution, the CPU time ratios 𝑇 WENO ∕𝑇 adap are 8.718 , 25 .496 , and 12 .739 , respectively. These results demonstrate that the proposed adaptive wavelet scheme effectively reduces both the computational cost and the number of active degrees of freedom by exploiting the sparsity of the multiresolution representation, while maintaining high-resolution shock-capturing capability. 
+
+3.3.4. Shock-turbulence interaction 
+
+High-order numerical schemes for compressible flows should be able to resolve both shock waves and complex smooth structures. Here, we consider the shock–turbulence interaction problem proposed by Shu and Osher [7], which is widely used to assess the above capability of numerical schemes. In this test, a Mach 3 shock wave interacts with a density disturbance, generating a flow field that contains both strong discontinuities and highly oscillatory smooth structures. The initial condition is given by 
+
+(𝜌 0, 𝑢 0, 𝑝 0) = 
+
+{
+
+(3 .857148 , 2.629369 , 10 .33333) , −5 ≤ 𝑥 ≤ −4 ,
+
+(1 + 0 .2 sin 5 𝑥, 0, 1) , otherwise , − 5 ≤ 𝑥 ≤ 5. (86) The final simulation time is 𝑡 = 1 .8.For this problem, the reference solution is computed by the WENO5-JS scheme [71] with 10240 uniform cells. The numerical solutions at 𝑡 = 1 .8 obtained by the proposed adaptive AMAIW 4T2-BVD scheme are shown in Fig. 22, and the corresponding active leaf cell distributions are presented in Fig. 23. It can be observed from Fig. 22 that the proposed adaptive wavelet scheme captures the shock wave with a sharp transition while resolving the high-frequency 
+
+Page 43 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+Table 7 
+
+CPU time comparison among the adaptive AMAIW 4T2-BVD scheme, the corresponding uniform AIW 4T2-BVD scheme, and WENO5–Z scheme for the Lax’s problem. 
+
+(𝐽 0, 𝐽 max ) 𝜂 act 𝑇 adap ∕𝑠 𝑇 unif ∕𝑠 𝑇 unif ∕𝑇 adap 𝑇 WENO ∕𝑠 𝑇 WENO ∕𝑇 adap 
+
+(6 , 8) 0.455 0.039 0.066 ( 𝑁 1 = 256) 1.697 0.340 ( 𝑁 1 = 400) 8.718 
+
+(6 , 10) 0.173 0.278 1.084 ( 𝑁 1 = 1024) 3.903 7.088 ( 𝑁 1 = 2000) 25.496 
+
+(6 , 12) 0.059 2.161 17 .406 ( 𝑁 1 = 4096) 8.054 27 .528 ( 𝑁 1 = 4000) 12.739 
+
+smooth structures generated behind the shock. As the finest resolution level increases from 𝐽 max = 6 to 𝐽 max = 8 , the oscillatory smooth structures are resolved more accurately and the numerical solution agrees better with the reference solution. The corresponding active leaf cell distributions in Fig. 23 further illustrate the adaptive resolution allocation. The highest-resolution leaf cells are concentrated in narrow regions around the shock wave and steep transition zones. Meanwhile, relatively high-level cells are also allocated in the oscillatory region behind the shock to resolve the small-scale smooth structures. These results demonstrate that the proposed adaptive multiresolution wavelet upwind scheme can effectively identify and resolve both discontinuities and multiscale smooth structures through a sparse representation of the solution. 
+
+3.3.5. Two interacting blast waves 
+
+The two interacting blast waves problem, introduced by Woodward and Colella [83], is a challenging benchmark for numerical schemes due to the complex interactions between strong shock waves, contact discontinuities, and rarefaction waves. The initial condition is given by 
+
+(𝜌 0, 𝑢 0, 𝑝 0) = 
+
+⎧⎪⎨⎪⎩
+
+(1 , 0, 1000) , 0 ≤ 𝑥 < 0.1,
+
+(1 , 0, 0.01) , 0.1 ≤ 𝑥 < 0.9,
+
+(1 , 0, 100) , 0.9 ≤ 𝑥 < 1.
+
+(87) Reflective boundary conditions are imposed at 𝑥 = 0 and 𝑥 = 1 , following Ref. [79]. In the adaptive framework, special care should be taken when constructing the exterior extension cell set near the physical boundary. Specifically, the exterior cells must be generated as exact mirror images of the corresponding interior cells with respect to the boundary. This mirror-symmetric extension ensures that the reconstructed boundary states and numerical fluxes remain consistent with the prescribed reflective boundary condition, thereby preserving the local discrete conservation balance near the boundary. The reference solution at 𝑡 = 0 .038 is computed by the WENO5-JS scheme [71] with 16384 uniform cells. The density profiles obtained by the uniform-cell AIW 4T2-BVD scheme and the adaptive AMAIW 4T2-BVD scheme are shown in Fig. 24. Both schemes give satisfactory results and sharply resolve the complex discontinuity structures without noticeable spurious oscillations. It should be noted that, for this problem, polynomial-based shock-capturing schemes with BVD reconstruction have been reported to generate obvious overshoots [62, 63]. In contrast, the proposed wavelet upwind scheme combined with BVD reconstruction yields non-oscillatory solutions without overshoots. This behavior benefits from the inherent low-pass filtering property of the scaling functions, which enables the scheme to suppress high-frequency numerical perturbations near strong discontinuities. Moreover, the adaptive AMAIW 4T2-BVD scheme gives results that are in agreement with those of the corre-sponding uniform-cell AIW 4T2-BVD scheme with 𝐽 = 𝐽 max . This agreement verifies the effectiveness of performing the BVD reconstruction on the finest-level leaf cells in the proposed adaptive framework. Meanwhile, the adaptive scheme achieves this high-resolution shock-capturing performance using a much smaller number of active leaf cells, demonstrating its ability to resolve complex wave structures efficiently in a sparse form. These results indicate that the proposed wavelet upwind schemes can robustly solve complex wave-interaction problems involving strong shocks, and the adaptive version provides an efficient and stable approach for such challenging problems. Finally, the numerical results at 𝑡 = 0 .038 obtained by the proposed adaptive scheme are compared with those of the WENO5-Z scheme [77, 78], as shown in Fig. 25. The number of uniform cells used in the WENO5-Z scheme is selected so that the main wave structures, including the peak and valley profiles, are reasonably comparable to those of the 
+
+Page 44 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+proposed adaptive wavelet scheme. Both methods capture the overall wave pattern without visible spurious oscillations or overshoots. However, the adaptive AMAIW 4T2-BVD scheme resolves much sharper contact discontinuities around 
+
+𝑥 ≈ 0 .59 and 𝑥 ≈ 0 .80 , requiring only about three active leaf cells across the sharp transition and significantly fewer degrees of freedom over the whole domain. These results demonstrates the superior contact discontinuity capturing capability of the proposed adaptive multiresolution wavelet upwind scheme through a sparse representation. 
+
+Page 45 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4  Exact  J 0 = 6  J max  = 8  N 1= 121  WENO5-Z N1= 400 
+
+x
+
+(a) 𝐽 max = 8 .0.65 0.70 0.75 0.80 0.85 0.2 0.4 0.6 0.8 1.0 1.2 1.4  Exact  J 0 = 6  J max  = 8  N 1= 121  WENO5-Z N1= 400 
+
+x (b) Zoomed-in view for 𝐽 max = 8 .0.0 0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+x
+
+Exact
+
+J
+
+0
+
+=6
+
+J
+
+max
+
+=10
+
+N
+
+1
+
+=198
+
+WENO5-Z
+
+N
+
+1
+
+=2000
+
+(c) 𝐽 max = 10 .0.65 0.70 0.75 0.80 0.85 0.2 0.4 0.6 0.8 1.0 1.2 1.4  Exact  J 0 = 6  J max  = 10  N 1= 198  WENO5-Z N1= 2000 
+
+x (d) Zoomed-in view for 𝐽 max = 10 .0.0 0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4  Exact  J 0 = 6  J max  = 12  N 1= 256  WENO5-Z N1= 4000 
+
+x
+
+(e) 𝐽 max = 12 .0.65 0.70 0.75 0.80 0.85 0.2 0.4 0.6 0.8 1.0 1.2 1.4  Exact  J 0 = 6  J max  = 12  N 1= 256  WENO5-Z N1= 4000 
+
+x (f) Zoomed-in view for 𝐽 max = 12 .
+
+Fig. 20: Numerical solutions at 𝑡 = 0 .13 of the Lax’s problem obtained by the adaptive AMAIW 4T2-BVD scheme with 
+
+𝜖 0 = 1 .0 × 10 −4 and different finest resolution levels, and WENO5-Z scheme. The right panels show the corresponding zoomed-in views near the strong discontinuities. Page 46 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.0 0.2 0.4 0.6 0.8 1.0 5678910 11 Jx J 0 = 6  J max  = 10  N 1= 198 
+
+(a) 𝐽 max = 10 .0.0 0.2 0.4 0.6 0.8 1.0 5678910 11 12 13  J 0 = 6  J max  = 12  N 1= 256 Jx (b) 𝐽 max = 12 .
+
+Fig. 21: Active leaf cell distributions at 𝑡 = 0 .13 obtained by the adaptive AMAIW 4T2-BVD scheme for the Lax’s problem with 𝜖 0 = 1 .0 × 10 −4 , and different finest resolution levels.           0 1 2 3 4 5
+
+0.5
+
+1.0
+
+1.5
+
+2.0
+
+2.5
+
+3.0
+
+3.5
+
+4.0
+
+4.5
+
+5.0
+
+J
+
+0
+
+=3
+
+J
+
+max
+
+=6
+
+N
+
+1
+
+=317
+
+Exact
+
+> 
+
+x
+
+(a) 𝐽 max = 6 .          0 1 2 3 4 5
+
+0.5
+
+1.0
+
+1.5
+
+2.0
+
+2.5
+
+3.0
+
+3.5
+
+4.0
+
+4.5
+
+5.0
+
+J
+
+0
+
+=3
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=435
+
+Exact
+
+> 
+
+x (b) 𝐽 max = 8 .
+
+Fig. 22: Numerical solutions at 𝑡 = 1 .8 obtained by the adaptive AMAIW 4T2-BVD scheme for the shock–turbulence interaction problem with 𝜖 0 = 1 .0 × 10 −3 and different finest resolution levels. Page 47 of 54 Preprint June 17, 2026 
+
+Submitted to Journal           0 1 2 3 4 5
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+J
+
+0
+
+=3
+
+J
+
+max
+
+=6
+
+N
+
+1
+
+=317
+
+> J
+
+x
+
+(a) 𝐽 max = 6 .          0 1 2 3 4 5
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+J
+
+0
+
+=3
+
+J
+
+max
+
+=8
+
+N
+
+1
+
+=435
+
+> J
+
+x (b) 𝐽 max = 8 .
+
+Fig. 23: Active leaf cell distributions at 𝑡 = 1 .8 obtained by the adaptive AMAIW 4T2-BVD scheme for the shock–turbulence interaction problem with 𝜖 0 = 1 .0 × 10 −3 and different finest resolution levels. Page 48 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.4 0.6 0.8 1.0 01234567 J = 8  N 1 = 256  Exact x
+
+(a) Uniform-cell scheme with 𝐽 = 8 .0.4 0.6 0.8 1.0 01234567 J 0 = 5  J max  = 8  N 1 = 131  Exact x (b) Adaptive scheme with 𝐽 max = 8 .0.4 0.6 0.8 1.0 01234567 J = 9  N 1 = 512  Exact x
+
+(c) Uniform-cell scheme with 𝐽 = 9 .0.4 0.6 0.8 1.0 01234567 J 0 = 5  J max  = 9  N 1 = 219  Exact 
+
+x (d) Adaptive scheme with 𝐽 max = 9 .0.4 0.6 0.8 1.0 01234567 J = 9  N 1 = 1024  Exact x
+
+(e) Uniform-cell scheme with 𝐽 = 10 .0.4 0.6 0.8 1.0 01234567 J 0 = 5  J max  = 10  N 1 = 343  Exact 
+
+x (f) Adaptive scheme with 𝐽 max = 10 .
+
+Fig. 24: Numerical solutions at 𝑡 = 0 .038 of the two interacting blast waves problem obtained by the uniform-cell 
+
+AIW 4T2-BVD scheme at 𝐽 = 8 , 9, 10 and the adaptive AMAIW 4T2-BVD scheme with 𝜖 0 = 1 .0 × 10 −4 , and 𝐽 max = 8 , 9, 10 .Page 49 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 0.5 0.6 0.7 0.8 0.9 01234567 WENO5-Z  N 1 = 750  J 0 = 5  J max  = 9  N 1 = 219  Exact 
+
+x
+
+(a) 𝐽 max = 9 .0.5 0.6 0.7 0.8 0.9 01234567 WENO5-Z  N 1 = 1200  J 0 = 5  J max  = 10  N 1 = 343  Exact 
+
+x (b) 𝐽 max = 10 .
+
+Fig. 25: Comparison of the numerical solutions at 𝑡 = 0 .038 of the two interacting blast waves problem obtained by the adaptive AMAIW 4T2-BVD scheme with 𝜖 0 = 1 .0 × 10 −4 , and the WENO5-Z scheme. Page 50 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+4. Conclusion 
+
+In this study, a fourth-order conservative adaptive multiresolution average-interpolating wavelet upwind scheme with BVD reconstruction has been developed within the finite volume framework. Asymmetric average-interpolating wavelets with upwind properties are employed to construct the conservative discretization of the governing equations, while symmetric average-interpolating wavelets are used for multiresolution decomposition and reconstruction in the adaptive procedure. This formulation fully exploits the upwind stability of asymmetric wavelets and the data-compression efficiency of symmetric wavelets within a unified cell-average wavelet framework. A distinctive feature of the present method is that both the conservative discretization and the adaptive multiresolu-tion representation are constructed in terms of cell-average quantities. As a result, strict conservation can be maintained during both numerical evolution and adaptive cell redistribution. Moreover, unlike hybrid adaptive wavelet schemes, the present formulation avoids additional ghost-cell marking and reconstruction near coarse–fine cell interfaces by evaluating numerical fluxes directly based on the wavelet multiresolution approximation. BVD reconstruction is applied only at the finest resolution level, enabling effective non-oscillatory shock capturing while avoiding unnecessary reconstruction in smooth regions. Representative benchmark tests have demonstrated the accuracy, conservativity, error-control capability, compu-tational efficiency, and shock-capturing performance of the adaptive wavelet upwind scheme. The numerical results show that shocks and contact discontinuities are sharply resolved without visible spurious oscillations or overshoots. Compared with uniform-cell computations, the adaptive scheme significantly reduces the number of active degrees of freedom while maintaining sufficient resolution in regions containing localized flow features. These results indicate that the proposed conservative adaptive multiresolution average-interpolating wavelet upwind scheme provides an efficient, robust, and reliable adaptive approach for high-resolution simulations of compressible flows. Future work will focus on extending the present conservative adaptive wavelet upwind framework to multidimensional compressible flows. 
+
+CRediT authorship contribution statement 
+
+Bing Yang: Conceptualization, Methodology, Investigation, Formal analysis, Software, Writing-original draft. 
+
+Xiaojing Liu: Methodology, Software, Formal analysis. Youhe Zhou: Conceptualization, Methodology. Feng Xiao: Conceptualization, Methodology, Supervision, Writing-review and editing. Jizeng Wang: Conceptualization, Methodology, Supervision, Funding acquisition, Writing-review and editing. 
+
+Acknowledgements 
+
+This work was supported by the National Natural Science Foundation of China (Key Program, Grant No. 12532010) and Fundamental and Interdisciplinary Disciplines Breakthrough Plan of the Ministry of Education of China (Grant No. JYB2025XDXM105). 
+
+References 
+
+[1] C.-W. Shu, Essentially non-oscillatory and weighted essentially non-oscillatory schemes, Acta Numerica 29 (2020) 701–762. doi:10.1017/ S0962492920000057 .[2] Z. J. Wang, K. Fidkowski, R. Abgrall, F. Bassi, D. Caraeni, A. Cary, H. Deconinck, R. Hartmann, K. Hillewaert, H. T. Huynh, N. Kroll, G. May, P.-O. Persson, B. Van Leer, M. Visbal, High-order CFD methods: current status and perspective, International Journal for Numerical Methods in Fluids 72 (8) (2013) 811–845. doi:10.1002/fld.3767 .[3] R. J. LeVeque, Numerical methods for conservation laws, Vol. 214, Birkhäuser, Basel, 1992. [4] J. Tang, P. C. Cui, J. Zhang, N. C. Zhou, X. J. Wu, X. Q. Gong, Y. B. Zhang, Review of mesh adaptation for fluid numerical simulation, Advances in Mechanics 53 (3) (2023) 661–692, in Chinese. doi:10.6052/1000-0992-23-013 .[5] B. Cockburn, C.-W. Shu, TVB runge-kutta local projection discontinuous galerkin finite element method for conservation laws II: General framework, Mathematics of Computation 52 (186) (1989) 411–435. [6] S. Ii, F. Xiao, High order multi-moment constrained finite volume method. part I: Basic formulation, Journal of Computational Physics 228 (10) (2009) 3669–3707. doi:10.1016/j.jcp.2009.02.009 .[7] C.-W. Shu, S. Osher, Efficient implementation of essentially non-oscillatory shock-capturing schemes, II, Journal of computational physics 83 (1) (1989) 32–78. [8] B. Merriman, Understanding the Shu-Osher conservative finite difference form, Journal of Scientific Computing 19 (1) (2003) 309–322. [9] K. Sebastian, C.-W. Shu, Multidomain WENO finite difference method with interpolation at subdomain interfaces, Journal of Scientific Computing 19 (1) (2003) 405–438. doi:10.1023/A:1025372429380 .
+
+Page 51 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+[10] F. Alauzet, A parallel matrix-free conservative solution interpolation on unstructured tetrahedral meshes, Computer Methods in Applied Mechanics and Engineering 299 (2016) 116–142. doi:10.1016/j.cma.2015.10.012 .[11] J.-F. Remacle, J. E. Flaherty, M. S. Shephard, An adaptive discontinuous galerkin technique with an orthogonal basis applied to compressible flow problems, SIAM Review 45 (1) (2003) 53–72. doi:10.1137/S00361445023830 .[12] Y. Chen, G. Tóth, T. I. Gombosi, A fifth-order finite difference scheme for hyperbolic equations on block-adaptive curvilinear grids, Journal of Computational Physics 305 (2016) 604–621. doi:10.1016/j.jcp.2015.11.003 .[13] H. Li, S. Do, M. Kang, A wavelet-based adaptive WENO algorithm for Euler equations, Computers & Fluids 123 (2015) 10–22. doi: 10.1016/j.compfluid.2015.09.005 .[14] Z. Tang, H. Chen, L. Bi, X. Yuan, Numerical simulation of supersonic viscous flow based on adaptive cartesian grid, Acta Aeronautica et Astronautica Sinica 39 (5) (2018) 121697, in Chinese. [15] F. Alauzet, A. Loseille, A decade of progress on anisotropic mesh adaptation for computational fluid dynamics, Computer-Aided Design 72 (2016) 13–39. doi:10.1016/j.cad.2015.09.005 .[16] K. Schaal, A. Bauer, P. Chandrashekar, R. Pakmor, C. Klingenberg, V. Springel, Astrophysical hydrodynamics with a high-order discontinuous galerkin scheme and adaptive mesh refinement, Monthly Notices of the Royal Astronomical Society 453 (4) (2015) 4278–4300. doi: 10.1093/mnras/stv1859 .[17] Z. Zhang, C. Groth, Parallel high-order anisotropic block-based adaptive mesh refinement finite-volume scheme, in: 20th AIAA Computational Fluid Dynamics Conference, p. 3695. [18] X. Qi, Z. Wang, J. Zhu, L. Tian, N. Zhao, High-order discontinuous Galerkin method with immersed boundary treatment for compressible flows on parallel adaptive cartesian grids, Physics of Fluids 36 (11) (2024) 116139. doi:10.1063/5.0238605 .[19] J. Tang, P. Cui, B. Li, Y. Zhang, H. Si, Parallel hybrid mesh adaptation by refinement and coarsening, Graphical Models 111 (2020) 101084. 
+
+doi:10.1016/j.gmod.2020.101084 .[20] M. A. Park, Adjoint-based, three-dimensional error prediction and grid adaptation, AIAA Journal 42 (9) (2004) 1854–1862. doi:10.2514/ 1.10051 .[21] W. G. Habashi, J. Dompierre, Y. Bourgault, D. Ait-Ali-Yahia, M. Fortin, M.-G. Vallet, Anisotropic mesh adaptation: towards user-independent, mesh-independent and solver-independent CFD. part I: general principles, International Journal for Numerical Methods in Fluids 32 (6) (2000) 725–744. [22] S. J. Kamkar, A. M. Wissink, V. Sankaran, A. Jameson, Feature-driven cartesian adaptive mesh refinement for vortex-dominated flows, Journal of Computational Physics 230 (16) (2011) 6271–6298. doi:10.1016/j.jcp.2011.04.024 .[23] C. Roy, Strategies for driving mesh adaptation in CFD, in: 47th AIAA aerospace sciences meeting including the new horizons forum and aerospace exposition, 2009, p. 1302. [24] K. J. Fidkowski, D. L. Darmofal, Review of output-based error estimation and mesh adaptation in computational fluid dynamics, AIAA Journal 49 (4) (2011) 673–694. doi:10.2514/1.J050073 .[25] F. Alauzet, O. Pironneau, Continuous and discrete adjoints to the Euler equations for fluids, International Journal for Numerical Methods in Fluids 70 (2) (2012) 135–157. doi:10.1002/fld.2681 .[26] P. J. Frey, F. Alauzet, Anisotropic mesh adaptation for CFD computations, Computer Methods in Applied Mechanics and Engineering 194 (48) (2005) 5068–5082. doi:10.1016/j.cma.2004.11.025 .[27] B. Yang, J. Wang, X. Liu, Y. Zhou, Y. Feng, Wavelet-based numerical methods and their applications in computational mechanics, Advances in Mechanics 54 (3) (2024) 427–476. doi:10.6052/1000-0992-24-009 .[28] A. Harten, Multiresolution algorithms for the numerical solution of hyperbolic conservation laws, Communications on Pure and Applied Mathematics 48 (12) (1995) 1305–1342. doi:10.1002/cpa.3160481201 .[29] A. Cohen, S. Kaber, S. M?ller, M. Postel, Fully adaptive multiresolution finite volume schemes for conservation laws, Mathematics of Computation 72 (241) (2003) 183–225. [30] O. V. Vasilyev, C. Bowman, Second-generation wavelet collocation method for the solution of partial differential equations, Journal of Computational Physics 165 (2) (2000) 660–693. doi:10.1006/jcph.2000.6638 .[31] O. V. Vasilyev, S. Paolucci, A dynamically adaptive multilevel wavelet collocation method for solving partial differential equations in a finite domain, Journal of Computational Physics 125 (2) (1996) 498–512. doi:10.1006/jcph.1996.0111 .[32] K. Schneider, O. V. Vasilyev, Wavelet methods in computational fluid dynamics, Annual review of fluid mechanics 42 (2010) 473–503. [33] A. Harten, Discrete multi-resolution analysis and generalized wavelets, Applied Numerical Mathematics 12 (1) (1993) 153–192. doi: 10.1016/0168-9274(93)90117-A .[34] R. A. DeVore, Nonlinear approximation, Acta Numerica 7 (1998) 51–150. doi:10.1017/S0962492900002816 .[35] R. Deiterding, M. O. Domingues, S. M. Gomes, K. Schneider, Comparison of adaptive multiresolution and adaptive mesh refinement applied to simulations of the compressible Euler equations, SIAM Journal on Scientific Computing 38 (5) (2016) S173–S193. doi: 10.1137/15m1026043 .[36] B. Yang, J. Wang, X. Liu, Y. Zhou, High-order adaptive multiresolution wavelet upwind schemes for hyperbolic conservation laws, Computers & Fluids 269 (2024) 106111. doi:10.1016/j.compfluid.2023.106111 .[37] H. Minbashian, H. Adibi, M. Dehghan, An adaptive wavelet space-time SUPG method for hyperbolic conservation laws, Numerical Methods for Partial Differential Equations 33 (6) (2017) 2062–2089. doi:10.1002/num.22180 .[38] R. M. Pereira, N. Nguyen van yen, K. Schneider, M. Farge, Are adaptive galerkin schemes dissipative?, SIAM Review 65 (4) (2023) 1109–1134. 
+
+doi:10.1137/23M1588627 .[39] S. Bertoluzza, Adaptive wavelet collocation method for the solution of Burgers equation, Transport Theory and Statistical Physics 25 (3-5) (1996) 339–352. doi:10.1080/00411459608220705 .[40] A. Harten, P. D. Lax, B. V. Leer, On upstream differencing and Godunov-type schemes for hyperbolic conservation laws, SIAM Review 25 (1) (1983) 35–61. doi:10.1137/1025002 .
+
+Page 52 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+[41] B. Yang, Y. Zhou, J. Wang, High-order second-generation wavelet upwind schemes with multiresolution self-adaptive capabilities for hyperbolic conservation laws, Extreme Mechanics Letters 70 (2024) 102192. doi:10.1016/j.eml.2024.102192 .[42] B. Yang, X. Liu, Y. Zhou, J. Wang, A conservative wavelet upwind scheme for compressible flows, Acta Mechanica Sinica 41 (7) (2025) 325178. doi:10.1007/s10409-025-25178-x .[43] J. M. Restrepo, G. K. Leaf, Wavelet-galerkin discretization of hyperbolic equations, Journal of Computational Physics 122 (1) (1995) 118–128. [44] B. K. Alpert, A class of bases in L2 for the sparse representation of integral operators, SIAM Journal on Mathematical Analysis 24 (1) (1993) 246–262. doi:10.1137/0524016 .[45] N. Hovhannisyan, S. Müller, R. Schäfer, Adaptive multiresolution discontinuous galerkin schemes for conservation laws, Mathematics of computation 83 (285) (2014) 113–151. [46] N. Gerhard, S. Müller, Adaptive multiresolution discontinuous galerkin schemes for conservation laws: multi-dimensional case, Computational and Applied Mathematics 35 (2) (2016) 321–349. doi:10.1007/s40314-014-0134-y .[47] N. Gerhard, F. Iacono, G. May, S. Müller, R. Schäfer, A high-order discontinuous galerkin discretization with multiwavelet-based grid adaptation for compressible flows, Journal of Scientific Computing 62 (1) (2015) 25–52. doi:10.1007/s10915-014-9846-9 .[48] A. Harten, Adaptive multiresolution schemes for shock computations, Journal of Computational Physics 115 (2) (1994) 319–338. doi: 10.1006/jcph.1994.1199 .[49] B. L. Bihari, A. Harten, Multiresolution schemes for the numerical solution of 2-D conservation laws I, SIAM Journal on Scientific Computing 18 (2) (1997) 315–354. doi:10.1137/S1064827594278848 .[50] A. Harten, Multiresolution representation of data: A general framework, SIAM Journal on Numerical Analysis 33 (3) (1996) 1205–1256. [51] O. Roussel, K. Schneider, A. Tsigulin, H. Bockhorn, A conservative fully adaptive multiresolution algorithm for parabolic pdes, Journal of Computational Physics 188 (2) (2003) 493–523. doi:10.1016/S0021-9991(03)00189-X .[52] D. A. Castro, S. M. Gomes, J. Stolfi, High-order adaptive finite-volume schemes in the context of multiresolution analysis for dyadic grids, Computational and Applied Mathematics 35 (1) (2016) 1–16. doi:10.1007/s40314-014-0159-2 .[53] D. L. Donoho, Smooth wavelet decompositions with blocky coefficient kernels, in: Recent Advances in Wavelet Analysis, Academic Press, 1994. [54] P. G. Ciarlet, Linear and Nonlinear Functional Analysis with Applications, Society for Industrial and Applied Mathematics, Philadelphia, 2013. [55] I. Daubechies, Ten Lectures on Wavelets, Society for industrial and applied mathematics, Philadelphia, 1992. [56] W. Sweldens, P. Schroder, Building your own wavelets at home, Vol. Springer, Springer, Heidelberg, 2005. [57] X. Liu, G. Liu, J. Wang, Y. Zhou, A wavelet multiresolution interpolation galerkin method for targeted local solution enrichment, Computational Mechanics 64 (2019) 986–1096. [58] B. Yang, J. Wang, X. Liu, Y. Zhou, Stability and resolution analysis of the wavelet collocation upwind schemes for hyperbolic conservation laws, Fluids 8 (2) (2023) 65. doi:10.3390/fluids8020065 .[59] R. Vichnevetsky, J. B. Bowles, Fourier Analysis of Numerical Approximations of Hyperbolic Equations, SIAM, Philadelphia, 1982. doi: 10.1137/1.9781611970876 .[60] S. Gottlieb, C.-W. Shu, E. Tadmor, Strong stability-preserving high-order time discretization methods, SIAM Review 43 (1) (2001) 89–112. 
+
+doi:10.1137/S003614450036757X .[61] Z. Sun, S. Inaba, F. Xiao, Boundary variation diminishing (BVD) reconstruction: A new approach to improve Godunov schemes, Journal of Computational Physics 322 (2016) 309–325. doi:10.1016/j.jcp.2016.06.051 .[62] X. Deng, Y. Shimizu, F. Xiao, A fifth-order shock capturing scheme with two-stage boundary variation diminishing algorithm, Journal of Computational Physics 386 (2019) 323–349. doi:10.1016/j.jcp.2019.02.024 .[63] X. Deng, Y. Shimizu, B. Xie, F. Xiao, Constructing higher order discontinuity-capturing schemes with upwind-biased interpolations and boundary variation diminishing algorithm, Computers & Fluids 200 (2020) 104433. doi:10.1016/j.compfluid.2020.104433 .[64] X. Deng, Z.-H. Jiang, P. Vincent, F. Xiao, C. Yan, A new paradigm of dissipation-adjustable, multi-scale resolving schemes for compressible flows, Journal of Computational Physics 466 (2022) 111287. doi:10.1016/j.jcp.2022.111287 .[65] H. Wakimura, S. Takagi, F. Xiao, Symmetry-preserving enforcement of low-dissipation method based on boundary variation diminishing principle, Computers & Fluids 233 (2022) 105227. doi:10.1016/j.compfluid.2021.105227 .[66] C. Pan, S. Song, C. Chen, X. Li, X. Shen, F. Xiao, A high-fidelity finite volume scheme for ideal magnetohydrodynamics equations using boundary variation diminishing algorithm, Physics of Fluids 36 (11) (2024) 116136. doi:10.1063/5.0237231 .[67] Z. He, Y. Ruan, Y. Yu, B. Tian, F. Xiao, Self-adjusting steepness-based schemes that preserve discontinuous structures in compressible flows, Journal of Computational Physics 463 (2022) 111268. doi:10.1016/j.jcp.2022.111268 .[68] P. L. Roe, Approximate Riemann solvers, parameter vectors, and difference schemes, Journal of Computational Physics 135 (2) (1997) 250– 258. doi:10.1006/jcph.1997.5705 .[69] S. Pirozzoli, On the spectral properties of shock-capturing schemes, Journal of Computational Physics 219 (2) (2006) 489–497. doi: 10.1016/j.jcp.2006.07.009 .[70] J. Liandrat, P. H. Tchamitchian, Resolution of the 1D regularized burgers equation using a spatial wavelet approximation, Report, NASA Langley Research Center (01/01 1990). [71] G.-S. Jiang, C.-W. Shu, Efficient implementation of weighted ENO schemes, Journal of Computational Physics 126 (1) (1996) 202–228. 
+
+doi:10.1006/jcph.1996.0130 .[72] M. Holmström, Solving hyperbolic PDEs using interpolating wavelets, SIAM Journal on Scientific Computing 21 (2) (1999) 405–420. 
+
+doi:10.1137/s1064827597316278 .[73] L. Tang, S. Song, A multiresolution finite volume scheme for two-dimensional hyperbolic conservation laws, Journal of Computational and Applied Mathematics 214 (2) (2008) 583–595. doi:10.1016/j.cam.2007.03.014 .
+
+Page 53 of 54 Preprint June 17, 2026 
+
+Submitted to Journal 
+
+[74] H. T. Huynh, A Flux Reconstruction Approach to High-Order Schemes Including Discontinuous Galerkin Methods, Fluid Dynamics and Co-located Conferences, American Institute of Aeronautics and Astronautics, 2007. doi:10.2514/6.2007-4079 .[75] R. Abgrall, A personal discussion on conservation, and how to formulate it, in: E. Franck, J. Fuhrmann, V. Michel-Dansac, L. Navoret (Eds.), Finite Volumes for Complex Applications X–Volume 1, Elliptic and Parabolic Problems, Springer Nature Switzerland, 2023, pp. 3–19. [76] E. F. Toro, Riemann solvers and numerical methods for fluid dynamics: a practical introduction, Springer Science & Business Media, Heidelberg, 2013. [77] R. Borges, M. Carmona, B. Costa, W. S. Don, An improved weighted essentially non-oscillatory scheme for hyperbolic conservation laws, Journal of Computational Physics 227 (6) (2008) 3191–3211. doi:10.1016/j.jcp.2007.11.038 .[78] W.-S. Don, R. Borges, Accuracy of the weighted essentially non-oscillatory conservative finite difference schemes, Journal of Computational Physics 250 (2013) 347–372. doi:10.1016/j.jcp.2013.05.018 .[79] A. Harten, B. Engquist, S. Osher, S. R. Chakravarthy, Uniformly high order accurate essentially non-oscillatory schemes, III, Journal of Computational Physics 71 (2) (1987) 231–303. doi:10.1016/0021-9991(87)90031-3 .[80] B. Cockburn, M. Luskin, C.-W. Shu, E. Süli, Enhanced accuracy by post-processing for finite element methods for hyperbolic equations, Mathematics of Computation 72 (242) (2003) 577–606. doi:10.1090/S0025-5718-02-01464-3 .[81] Z. J. Wang, Spectral (finite) volume method for conservation laws on unstructured grids: Basic formulation, Journal of Computational Physics 178 (1) (2002) 210–251. doi:10.1006/jcph.2002.7041 .[82] G. A. Sod, A survey of several finite difference methods for systems of nonlinear hyperbolic conservation laws, Journal of Computational Physics 27 (1) (1978) 1–31. doi:10.1016/0021-9991(78)90023-2 .[83] P. Woodward, P. Colella, The numerical simulation of two-dimensional fluid flow with strong shocks, Journal of Computational Physics 54 (1) (1984) 115–173. doi:10.1016/0021-9991(84)90142-6 .
+
+Page 54 of 54

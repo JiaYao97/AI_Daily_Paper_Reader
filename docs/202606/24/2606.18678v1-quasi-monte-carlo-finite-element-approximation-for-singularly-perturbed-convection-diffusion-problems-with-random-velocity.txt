@@ -1,0 +1,1746 @@
+Title: Quasi-Monte Carlo finite element approximation for singularly perturbed convection-diffusion problems with random velocity
+
+URL Source: https://arxiv.org/pdf/2606.18678v1
+
+Published Time: Thu, 18 Jun 2026 00:27:55 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# Quasi-Monte Carlo finite element approximation for singularly perturbed convection–diffusion problems with random velocity 
+
+Seungchan Ko ∗
+
+, Guanglian Li †, and Yi Yu ‡
+
+Abstract 
+
+This paper studies the numerical approximation of a singularly perturbed convection–diffusion problem over a bounded polygonal domain in Rd (d = 2 , 3), where the velocity field is modeled by a log-uniform random field, a setting typical in uncertainty quantification. We introduce a novel numeri-cal framework for computing the expected value of the linear functionals of the solution. The approach combines a finite element discretization of the problem, a truncated Karhunen–Lo` eve expansion to rep-resent the stochastic velocity field, and a lattice-based quasi-Monte Carlo (QMC) method to estimate expectations over the parameter space. We provide a rigorous error analysis of the proposed scheme, establishing bounds on the mean squared error and demonstrating that the QMC method achieves a nearly linear optimal convergence rate, with a constant independent of the integration dimension. Furthermore, the convergence rate is shown to be independent of the singular perturbation parameter. 
+
+Keywords: Quasi-Monte Carlo method, finite element method, uncertainty quantification, convection– diffusion equation, random velocity, Karhunen–Lo´ eve expansion 
+
+AMS Classification: 65D30, 65D32, 65N30, 76D05 
+
+# 1 Introduction 
+
+Recent research has increasingly focused on uncertainty in the input data of mathematical models, rec-ognizing its significance in a wide range of scientific and engineering applications. Such uncertainty may arise from various sources, including coefficients, boundary conditions, initial conditions, and external forces. Understanding its impact on key quantities of interest provides valuable insight into the intrinsic variability of physical and engineering systems. Probability theory offers a versatile framework for de-scribing and analyzing uncertainty, where uncertain inputs are modeled as random fields, a particularly effective approach for characterizing the inherent randomness in physical quantities. In this paper, we consider the singularly perturbed convection–diffusion problem with an incompress-ible random velocity field. For each random parameter y, we seek u(·, y) such that 
+
+−ε∆u(x, y) + b(x, y) · ∇ u(x, y) = f (x) in D, u(x, y) = 0 on ∂D, 
+
+where D ⊂ Rd (d = 2 , 3) is a bounded Lipschitz domain, 0 < ε ≪ 1 is the singular perturbation parameter, and the gradients are taken with respect to the physical variable x ∈ D. The velocity field b(x, y) is modeled by a log-uniform random field satisfying ∇ · b(x, y) = 0 for each y, which introduces uncertainty into the solution u. This model describes the transport of particles, heat, energy, or other physical quantities under combined diffusion and convection processes. It can also represent the probability density function of particles undergoing Brownian motion with drift b. Moreover, we focus on    
+
+> ∗Department of Mathematics, Inha University, Incheon, Republic of Korea. Email: scko@inha.ac.kr
+> †Department of Mathematics, The University of Hong Kong, Pokfulam Road, Hong Kong. Email: lotusli@maths.hku.hk
+> ‡School of Mathematics and Information Science, Guangxi University, PR China. Email: yiyu@gxu.edu.cn
+
+1
+
+> arXiv:2606.18678v1 [math.NA] 17 Jun 2026
+
+the singularly perturbed case when ε ≪ 1, arising in numerous applications, including fluid mechanics, biological transport, and chemical reactions [32, 1]. A common feature is the presence of boundary or interior layers, where the solution varies rapidly over narrow regions while remaining smooth elsewhere. This multiscale behavior is induced by a small perturbation parameter ε > 0, often multiplying the highest-order derivative, leading to steep gradients and significant challenges for numerical approximation. Consequently, developing robust and efficient numerical methods for singularly perturbed problems has been an active area of research for decades (e.g., [35, 21, 15, 5]). Our goal is to efficiently estimate the expectation of the random solution u(·, ·) when ε ≪ 1; specifically, we aim to approximate E[G(u)] for some linear functional G ∈ H−1(D) with the convergence rate independent of ε.To numerically approximate E[G(u)], three discretization steps are required. First, the expectation is interpreted as an infinite-dimensional integral with respect to the random variables y = {yi}∞
+
+> i=1
+
+, which arise from a series expansion of the velocity b. For practical computation, we truncate this infinite series to a finite sum, reducing the problem to a finite but high-dimensional integral. Second, a numerical quadra-ture rule is applied to approximate this integral. Finally, for each quadrature point, the deterministic singularly perturbed convection–diffusion equation must be solved numerically. Classical Monte Carlo methods achieve a convergence rate of order 1 /2 with respect to the number of samples, which in this context requires solving the deterministic problem a large number of times. To improve efficiency, vari-ous methods from uncertainty quantification have been developed, including quasi-Monte Carlo (QMC) methods [31, 4, 16] and sparse polynomial chaos expansions [34, 2, 6]. In this work, we focus on QMC integration and investigate approximations using randomly shifted lattice rules [33, 10, 29]. Over the past decade, extensive research has been devoted to the design and analysis of QMC methods for linear PDEs with random coefficients. These methods are primarily used to estimate expected values of linear functionals of the exact or approximate solutions (see, e.g., [26, 16, 27, 20, 22]). The expectations are reformulated as infinite- or high-dimensional integrals over the parameter domain representing the uncertainty. To ensure tractability, the integrand must belong to an appropriately chosen function space. In QMC analysis, the standard setting involves weighted Sobolev spaces on (0 , 1) s, consisting of functions with square-integrable mixed first derivatives. If the integrand lies in a suitably weighted Sobolev space, randomly shifted lattice rules can be constructed to achieve, or nearly achieve, the optimal convergence rate of O(n−1); see, e.g., [7, 9, 11, 23, 33] and recent surveys [10, 25]. The primary objective of this work is to analyze the convergence of QMC finite element approximations for the singularly perturbed convection–diffusion equation with a random velocity field. The analysis of randomly shifted lattice rules for PDEs is nontrivial, as it requires establishing the regularity of the solution map in a weighted Sobolev space. To the best of our knowledge, no previous work has applied QMC methods to singularly perturbed problems or investigated the interplay between QMC convergence and singular perturbation effects. In this paper, we show for the first time that when randomness is present in the convection term, the mean of the corresponding random solution can be computed via QMC while retaining the standard QMC convergence rate. In particular, we prove that even for very small diffusion coefficients, if an FEM scheme designed for singularly perturbed problems is used, the resulting QMC convergence rate is independent of the diffusion coefficient. We present the convergence of the full approximation scheme in the root mean square sense. For convection–diffusion equations with random data, the multilevel Monte Carlo (MLMC) method has been developed to estimate the expectation of the smallest eigenvalue [8]. Our main contributions are threefold: 
+
+• The boundedness of mixed derivatives of u with respect to the random variables {yi}si=1 up to first order is made explicit in ε (cf. Theorem 4.4), leading to our proposed QMC error estimate (cf. Theorem 4.8). Compared with [16] for elliptic problems with random coefficients, the additional convection term complicates the analysis. 
+
+• The convergence rate of the QMC method is independent of ε, provided the covariance kernel of b
+
+is sufficiently regular. 2• We present several numerical tests that confirm our theoretical findings. To the best of our knowl-edge, this is the first QMC method applied to convection-dominated diffusion problems. The remainder of the paper is structured as follows. In Section 2, we provide a detailed problem description and its finite element discretization. Section 3 analyzes the error resulting from dimension reduction. The main QMC error estimates and numerical experiments are presented in Sections 4 and 5, respectively. Finally, we summarize our results in Section 6. Throughout, we employ standard notation for Lp and L∞ spaces, Sobolev spaces W 1,p  
+
+> 0
+
+(Ω), and their associated (semi)norms. The conjugate exponent of p is denoted by q, i.e., 1 /p + 1 /q = 1. The symbol 
+
+C (with or without a subscript) denotes a generic positive constant that is independent of the mesh size but whose value may change from one occurrence to another. 
+
+# 2 Problem setting 
+
+We consider the singularly perturbed convection–diffusion problem with an incompressible random ve-locity field. For each realization of the random parameter y, we seek u(·, y) ∈ V := H10 (D) satisfying 
+
+−ε∆u(x, y) + b(x, y) · ∇ u(x, y) = f (x) in D, u(x, y) = 0 on ∂D. (2.1) Here, the stochastic variable y = {yj }j≥1 consists of countably many independent and identically dis-tributed random variables yj , each uniformly distributed on [ − 12 , 12 ]. Thus, 
+
+y ∈  − 12 , 12
+
+N =: U, 
+
+and the parameter y is distributed over U according to the uniform probability measure 
+
+μ(d y) = 
+
+> ∞
+
+O
+
+> j=1
+
+dyj = d y.
+
+Throughout the paper, we assume the random velocity b(·, ·) ∈ L∞(D × U ) in (2.1) takes the form 
+
+b(x, y) := curl( ϕ) (2.2) for some log-uniform random field ϕ, where the operator curl is defined by curl( ϕ) := 
+
+
+
+∇⊥ϕ(x, y), if d = 2 ,
+
+∇ ×  ϕ(x, y), ϕ (x, y), ϕ (x, y), if d = 3 .
+
+A direct calculation yields the identity curl( vw ) = curl( v)w + v curl( w) ∀v, w ∈ H1(D). (2.3) We further assume the stream function can be expressed as ϕ(x, y) = exp  a(x, y), where the random field a(x, y) admits the Karhunen–Lo` eve (KL) expansion 
+
+a(x, y) = a(x) + X
+
+> j≥1
+
+yj ψj (x), x ∈ D, y ∈ U, (2.4) with ψj (x) = pλj bψj (x). Here, ( λj , bψj ) are eigenpairs of the corresponding covariance operator, ordered so that λj is nonincreasing and bψj is normalized by ∥ bψj ∥L2(D) = 1. 3Several remarks are in order regarding the choice (2.2)–(2.4). First, the representation b = curl( ϕ)ensures the velocity field is divergence-free for every realization, i.e., ∇ · b(·, y) = 0 for any y ∈ U .Second, while log-normal random fields are common in random PDE studies [19, 16, 24], the convective term requires boundedness of the random field. To meet this requirement, we employ a uniform random field as in (2.4) (see, e.g., [6, 26, 27]). This choice is made for technical convenience but preserves the stochastic nature of the velocity field. The mean of a(x, ·) is a(x), and its covariance is given by 
+
+E(a(x, ·) − a(x))( a(x′, ·) − a(x′))  =
+
+ˆ
+
+> U
+
+(a(x, y) − a(x))( a(x′, y) − a(x′)) d y
+
+= 112 
+
+> ∞
+
+X
+
+> j=1
+
+ψj (x)ψj (x′),
+
+where integration over U is understood as the limit 
+
+ˆ
+
+> U
+
+F (y) d y := lim 
+
+> s→∞
+
+ˆ    
+
+> [−12,12]s
+
+F (y1, . . . , y s, 0, 0, . . . ) d y1 · · · dys.
+
+We now state three assumptions that will be used throughout the paper. The first concerns the regularity of the random field a.
+
+Assumption 2.1. For some k ≥ d 
+
+> 2
+
++ 1 , we assume a(·, ·) ∈ L2(Ω; Hk(D)) .
+
+The second assumption prescribes a decay condition on the fluctuation coefficients ψj . Define the sequence g = {gj }j≥1 by 
+
+gj := max ∥ψj ∥C(D), ∥∇ ψj ∥C(D) . (2.5) 
+
+Assumption 2.2. For the sequence g = {gj }j≥1, we assume 
+
+X
+
+> j≥1
+
+gpj < ∞ for some p ∈ (0 , 1] .
+
+As will become clear later, the exponent p determines the convergence rate of the QMC integration. For instance, if Assumption 2.2 holds with p = 23 , then the QMC method with N points achieves a convergence rate of O(N −1+ δ). This condition is satisfied, for example, when gj ≲ j−3/2−α for some 
+
+α > 0. Finally, we assume uniform bounds on the random field a.
+
+Assumption 2.3. There exist constants amin , a max > 0 such that 
+
+a ∈ W 1,∞(D) and amin ≤ a(x, y) ≤ amax for all x ∈ D, y ∈ U. 
+
+Under Assumption 2.1, the eigenfunctions decay according to the following lemma, whose proof follows directly from Theorem 3.2 in [17] together with Lemma 2.1 of [18]. 
+
+Lemma 2.4. Suppose Assumption 2.1 holds. Then for gj defined in (2.5) , we have, for sufficiently large 
+
+j ∈ N, that 
+
+gj ≲ j 12 − k−1 
+
+> d
+
+.
+
+Consequently, if k > d 
+
+> 2
+
++ dp + 1 in Assumption 2.1, then Lemma 2.4 implies that Assumption 2.2 is automatically satisfied. 42.1 Finite element approximation 
+
+We begin with the parametric weak formulation of problem (2.1). Define the bilinear form e(·, ·) on V ×V
+
+by 
+
+e(w, v ) := ε
+
+ˆ
+
+> D
+
+∇w(x) · ∇ v(x) d x +
+
+ˆ
+
+> D
+
+ b(x, y) · ∇ w(x)v(x) d x for all w, v ∈ V. (2.6) Since ∇ · b(·, y) = 0 for each y ∈ U , integration by parts shows that e(·, ·) is V -elliptic: 
+
+e(v, v ) ≥ ε∥∇ v∥2 
+
+> L2(D)
+
+for all v ∈ V. (2.7) Using Poincar´ e’s inequality, we also obtain boundedness: 
+
+|e(w, v )| ≤  ε + C p∥b∥L∞(U ×D)
+
+∥∇ w∥L2(D)∥∇ v∥L2(D),
+
+where C p := diam( D)/π is the Poincar´ e constant. The weak formulation of (2.1) then reads: for each y ∈ U , find u(·, y) ∈ V such that 
+
+e(u(·, y), v ) = ( f, v )D for all v ∈ V, (2.8) where ( ·, ·)D denotes the L2-inner product over D. Existence and uniqueness of the solution follow directly from the Lax–Milgram theorem [13]. We now describe the finite element discretization of (2.8). Let {T h}h> 0 be a family of shape-regular, conforming triangulations of Ω ⊆ Rd (d ∈ { 2, 3}), consisting of d-dimensional simplices (see, e.g., [12]). Here h = max K∈T h hK denotes the maximal mesh size, with hK the diameter of simplex K. Shape regularity means there exists a constant C > 0, independent of h, such that max K∈T h hK /ρ K ≤ C, where 
+
+ρK is the diameter of the largest inscribed ball in K.Define the conforming finite element space 
+
+Vh = {vh ∈ V : vh|K ∈ Pi(K) for all K ∈ T h, v h|∂D = 0 },
+
+where Pi(K) denotes polynomials of degree at most i on K. The finite element approximation of (2.8) is: for each y ∈ U , find uh(·, y) ∈ Vh such that 
+
+e(uh(·, y), v h) = ( f, v h)D for all vh ∈ Vh. (2.9) Choosing vh = uh in (2.9) and applying Poincar´ e’s inequality yields, for each y ∈ U ,
+
+∥∇ uh(·, y)∥L2(D) ≤ Cp
+
+ε ∥f ∥L2(D). (2.10) Moreover, by Galerkin orthogonality and standard interpolation estimates (see, e.g., [12, 3]), if 
+
+u(·, y) ∈ Hm(D) for some m ∈ N and the finite element space uses polynomials of sufficiently high degree, we obtain the optimal error estimate 
+
+∥∇ (u(·, y) − uh(·, y)) ∥L2(D) ≤
+
+
+
+1 + Cp∥b∥L∞(U ×D)
+
+ε
+
+
+
+hm−1∥u(·, y)∥Hm(D).
+
+# 3 Truncation of the Karhunen–Lo` eve expansion 
+
+The next discretization step involves reducing the parametric dimension: in numerical applications, the infinite sum (2.4) must be truncated to a finite sum. We denote the s-term truncated uniform random field by 
+
+as(x, y) = a(x) + 
+
+> s
+
+X
+
+> j=1
+
+yj ψj (x).
+
+5The corresponding truncated velocity field is then defined as 
+
+bs(x, y) := curl( ϕs), (3.1) with ϕs(x, y) = exp( as(x, y)). Note that bs(x, y) can be interpreted as the velocity field b(x, y) evaluated at y = ( y1, . . . , y s, 0, 0, . . . ). Throughout the paper, for any set of active coordinates ν ⊂ N, we write vectors y ∈ U with yj = 0 for j / ∈ ν as ( yν ; 0). Under Assumption 2.2, we obtain the uniform bound 
+
+∥ϕs(·, y)∥C(D) + ∥∇ ϕs(·, y)∥C(D) ≤ 2
+
+> s
+
+Y
+
+> j=1
+
+exp(2 gj |yj |) ≤ 2 exp 
+
+ X
+
+> j≥1
+
+gj
+
+
+
+=: C B, (3.2) where C B > 0 is a constant independent of y ∈ U .We also define the truncated bilinear form es(·, ·) on V × V by 
+
+es(w, v ) := ε
+
+ˆ
+
+> D
+
+∇w(x) · ∇ v(x) d x
+
++
+
+ˆ
+
+> D
+
+ bs(x, y) · ∇ w(x)v(x) d x for all w, v ∈ V. 
+
+(3.3) Let ush denote the finite element approximation of the truncated parametric problem: for each s ∈ N
+
+and y ∈ U , find ush(·, y) ∈ Vh such that 
+
+es(ush(·, y), v h) = ( f, v h)D ∀vh ∈ Vh. (3.4) Analogously to (2.10), we have for each y ∈ U that 
+
+∥∇ ush(·, y)∥L2(D) ≤ Cp
+
+ε ∥f ∥L2(D). (3.5) The main goal of this section is to estimate the error between uh(·, y) and ush(·, y). We begin with the following lemma. 
+
+Lemma 3.1. For each s ∈ N and y ∈ U , let uh(·, y) and ush(·, y) be the solutions to (2.9) and (3.4) ,respectively. Then 
+
+∥∇ (uh(·, y) − ush(·, y)) ∥L2(D) ≤
+
+ Cp
+
+ε
+
+2
+
+∥b(·, y) − bs(·, y)∥C(D)∥f ∥L2(D). (3.6) 
+
+Proof. Using Galerkin orthogonality, we have 
+
+ε∥∇ (uh(·, y) − ush(·, y)) ∥2
+
+> L2(D)
+
+= e(uh(·, y) − ush(·, y), u h(·, y) − ush(·, y)) = −e(ush(·, y), u h(·, y) − ush(·, y)) + es(ush(·, y), u h(·, y) − ush(·, y)) =
+
+ˆ
+
+> D
+
+(bs(x, y) − b(x, y)) · ∇ ush(x, y) ( uh(x, y) − ush(x, y)) d x.
+
+Applying H¨ older’s inequality, Poincar´ e’s inequality, and (3.5) yields 
+
+ε∥∇ (uh(·, y) − ush(·, y)) ∥L2(D) ≤ Cp∥∇ ush(·, y)∥L2(D)∥b(·, y) − bs(·, y)∥C(D)
+
+≤ C2p
+
+ε ∥f ∥L2(D)∥b(·, y) − bs(·, y)∥C(D),
+
+which gives the desired estimate. 6We now state and prove the main result of this section, which quantifies the error introduced by dimension truncation. 
+
+Theorem 3.2 (Error estimate for dimension truncation) . Suppose Assumption 2.1 holds and G ∈ V ∗.Then for any truncation dimension s ∈ N,
+
+E|G (uh) − G (ush)| ≤ C
+
+ Cp
+
+ε
+
+2
+
+s− kd + 1   
+
+> d+32
+
+,
+
+where C > 0 is a constant independent of h and s.Proof. From the definitions of b and bs in (2.2) and (3.1), together with the triangle inequality, we obtain 
+
+E∥b − bs∥C(D)
+
+
+
+= E∥curl( a)ϕ − curl( as)ϕs∥C(D)
+
+
+
+≤ sup 
+
+> y∈U
+
+∥curl( a(·, y)) ϕ(·, y) − curl( as(·, y)) ϕs(·, y)∥C(D)
+
+≤ sup 
+
+> y∈U
+
+∥curl( a(·, y))( ϕ(·, y) − ϕs(·, y)) ∥C(D)
+
++ sup 
+
+> y∈U
+
+∥curl( a(·, y) − as(·, y)) ϕs(·, y)∥C(D)
+
+≤ ∥ curl( a)∥L∞(U,C (D)) sup 
+
+> y∈U
+
+∥ϕ(·, y) − ϕs(·, y)∥C(D)
+
++ ∥ϕs∥L∞(U,C (D)) sup 
+
+> y∈U
+
+∥curl( a(·, y) − as(·, y)) ∥C(D).
+
+Assumption 2.3 implies 
+
+∥a∥L∞(U,C (D)) + ∥curl( a)∥L∞(U,C (D)) < ∞.
+
+Moreover, by the mean value theorem, 
+
+|ex − ey| ≤ | x − y|(ex + ey) for all x, y ∈ R. (3.7) Combining these facts with Lemma 2.4 yields 
+
+E∥b − bs∥C(D)
+
+
+
+≲ sup 
+
+> y∈U
+
+∥ϕ(·, y) − ϕs(·, y)∥C(D) + ∥ϕs∥L∞(U,C (D)) ∥curl( a − as)∥L∞(U,C (D)) 
+
+≲ ∥ϕ + ϕs∥L∞(U ;C(D)) ∥a − as∥L∞(U ;C(D)) + ∥ϕs∥L∞(U,C (D)) ∥curl( a − as)∥L∞(U ;C(D)) 
+
+≲ ∥a − as∥L∞(U ;C(D)) + ∥curl( a − as)∥L∞(U ;C(D)) 
+
+≲ X
+
+> j>s
+
+gj ≲ X
+
+> j>s
+
+j 12 − k−1 
+
+> d
+
+≲
+
+ˆ ∞
+
+> s
+
+t 12 − k−1 
+
+> d
+
+dt ≲ s− kd + 1   
+
+> d+32
+
+.
+
+Finally, using (3.6), we conclude 
+
+E|G (uh) − G (ush)| ≲ E|G (uh − ush)| ≲ E∥G∥ V ∗ ∥∇ (uh − ush)∥L2(D)
+
+
+
+≲
+
+ Cp
+
+ε
+
+2
+
+E∥b − bs∥C(D)
+
+ ≲
+
+ Cp
+
+ε
+
+2
+
+s− kd + 1   
+
+> d+32
+
+.
+
+This completes the proof. 74 Quasi-Monte Carlo integration 
+
+We now derive an error estimate for the QMC approximation of the quantity of interest E[G(ush)], where 
+
+G ∈ V ∗ is a linear functional and ush is the finite element approximation corresponding to the truncated random velocity in (3.4). We adopt a specific QMC method, namely the randomly-shifted lattice rule [33, 10]. This section first describes QMC integration in a finite-dimensional setting. Since the regularity of the integrand is crucial for QMC error analysis, we establish the regularity of the finite element approximation with respect to the stochastic parameter in Subsection 4.2. Finally, we present the mathematical analysis of the mean-square error for the QMC integration. 
+
+4.1 Analytic framework for QMC integration 
+
+To compute the expectation of the random solution for problem (2.1), we consider integrals of the form 
+
+Is(F ) := 
+
+ˆ
+
+[− 12 , 12 ]s F (y) d y,
+
+where in our application F (y) = G(ush(·, y)) with y ∈ U . Note that the integration domain − 12 , 12
+
+s
+
+differs from the usual unit hypercube [0 , 1] s convention in QMC methods, but this can be handled by a straightforward translation argument. A QMC sampling approximation to this integral is given by 
+
+Qs,N (F ) := 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+F (y(i))with carefully selected points y(1) , . . . , y(N ) ∈ − 12 , 12
+
+s, to be specified later. Most QMC methods in the literature are formulated for functions defined on the unit hypercube. The relevant function spaces for QMC analysis are the weighted Sobolev spaces on (0 , 1) s, which consist of functions whose mixed first derivatives are square-integrable. Classical theory shows that if the integrand belongs to an appropriate weighted Sobolev space, randomly-shifted lattice rules can achieve an (almost) optimal convergence rate of O(n−1); see [7, 9, 11, 23, 33] and recent surveys [10, 25]. In this study, we assume the integrand F belongs to a corresponding weighted Sobolev space Ws,γ on − 12 , 12
+
+s, with norm defined by 
+
+∥F ∥Ws,γ =
+
+ X
+
+> ν⊆{ 1: s}
+
+γ−1
+
+> ν
+
+ˆ
+
+[− 12 , 12 ]|ν|
+
+ ˆ
+
+[− 12 , 12 ]s−| ν|
+
+∂|ν|F∂yν
+
+(yν ; y{1: s}\ ν ) d y{1: s}\ ν
+
+2
+
+dyν
+
+ 12
+
+, (4.1) where {1 : s} denotes {1, 2, . . . , s }, and ∂|ν|F∂yν denotes the mixed partial derivative with respect to the “active” variables yj for j ∈ ν, while y{1: s}\ ν denotes the “inactive” variables yj for j / ∈ ν.For a finite index set ν ⊂ N, we assign a weight parameter γν > 0 representing the relative importance of those variables. We denote γ = ( γν )ν⊂N and set γ∅ := 1. In [28], the authors considered only product weights , meaning there exists a sequence γ1 ≥ γ2 ≥ · · · > 0 such that γν := Q 
+
+> j∈ν
+
+γj . For generalizations, see [30]. The choice of weight parameters γν is crucial to ensure that the constant in the QMC error bound does not grow exponentially as s → ∞ .In this study, we adopt the product and order dependent weights (POD weights) introduced in [26]. Specifically, we consider a nonincreasing sequence γ1 ≥ γ2 ≥ · · · ≥ γs > 0 and constants Γ 0 = Γ 1 =1, Γ2, . . . , Γs, with weight parameters given by γν := Γ |ν|
+
+Q 
+
+> j∈ν
+
+γj .Within this framework, the worst-case error of a QMC quadrature rule is defined as 
+
+ewor (Qs,N ; Ws,γ ) := sup   
+
+> ∥F∥Ws,γ ≤1
+
+|Is(F ) − Qs,N (F )|. (4.2) 8By the linearity of Is(·) and Qs,N (·), we obtain the error bound 
+
+|Is(F ) − Qs,N (F )| ≤ ewor (Qs,N ; Ws,γ )∥F ∥Ws,γ for any F ∈ W s,γ . (4.3) We consider a family of QMC rules called shifted rank-1 lattice rules . The quadrature points are given by 
+
+y(i) = frac 
+
+ iz
+
+N + ∆ 
+
+
+
+−
+
+ 12 , . . . , 12
+
+
+
+, i = 1 , . . . , N, (4.4) where z ∈ Zs is a generating vector , ∆ ∈ [0 , 1] s is a shift , and frac( ·) denotes the fractional part of each component. The subtraction by ( 12 , . . . , 12 ) in (4.4) translates from [0 , 1] s to [ − 12 , 12 ]s.The quality of the approximation depends on the choice of the generating vector z. Assuming z is appropriately chosen and fixed, we denote the associated shifted lattice rule with random shift ∆ by 
+
+Qs,N (∆; F ). The following theorem, whose proof can be found in [26] and references therein, provides the convergence result. Here, ζ(x) := P∞ 
+
+> k=1
+
+k−x denotes the Riemann zeta function, and φ(N ) := |{ z ∈
+
+Z : 1 ≤ z ≤ N − 1 and gcd( z, N ) = 1 }| denotes the Euler totient function. Note that φ(p) = p − 1 for 
+
+p prime, and 1  
+
+> φ(N)
+
+< 9 
+
+> N
+
+for all N ≤ 10 30 , allowing us to replace φ(N ) by CN for some constant C > 0 in practice. 
+
+Theorem 4.1. Suppose F ∈ W s,γ for s ∈ N and a particular choice of weights γ. Then a randomly-shifted lattice rule can be constructed via a component-by-component algorithm such that the root-mean-square error satisfies, for any λ ∈ (1 /2, 1] ,
+
+q
+
+E∆ [|Is(F ) − Qs,N (·; F )|2] ≤
+
+ X
+
+> ∅̸ =ν⊆{ 1: s}
+
+γλ
+
+> ν
+
+ 2ζ(2 λ)(2 π2)λ
+
+|ν|
+
+
+
+> 12λ
+
+[φ(N )] − 12λ ∥F ∥Ws,γ ,
+
+where E∆[·] denotes expectation with respect to the random shift ∆ uniformly distributed over [0 , 1] s.
+
+We will use this result together with the regularity analysis in the next subsection to derive an error estimate for the QMC quadrature rule for our problem. 
+
+4.2 Regularity in parameter space 
+
+In this subsection, we establish the regularity of the finite element approximation ush with respect to the uniform random variables y = {yj }sj=1 . For any function u(x, y) with x ∈ D and y ∈ Rs, we denote the mixed first-order derivative with respect to y by ∂ν u = ∂ν1 
+
+> y1
+
+. . . ∂ νs 
+
+> ys
+
+u, where ν ∈ { 0, 1}s is a first-order multi-index. Note that ∇ denotes the spatial gradient, distinct from the mixed derivatives ∂ν in parameter space. We begin with an estimate for the mixed first-order derivative of the truncated velocity field bs defined in (3.1). 
+
+Lemma 4.2. For given s ∈ N, let ν = {νj }sj=1 ̸ = 0 be a multi-index with νj ∈ { 0, 1}, and let gj and 
+
+CB > 0 be defined in (2.5) and (3.2) , respectively. Then, for any y ∈ U , there holds 
+
+∥∂ν bs(·, y)∥C(D) ≤ CB|ν|
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+
+
+. (4.5) 9Proof. Using the identity (2.3) and the triangle inequality, we have 
+
+∥∂ν bs(·, y)∥C(D) = ∥∂ν curl ( ϕs(·, y)) ∥C(D)
+
+= curl 
+
+
+
+ϕs(·, y)
+
+> s
+
+Y
+
+> j=1
+
+(ψj (·)) νj
+
+
+
+> C(D)
+
+≤ curl ( ϕs(·, y)) 
+
+> s
+
+Y
+
+> j=1
+
+(ψj (·)) νj
+
+> C(D)
+
++ ϕs(·, y)
+
+ sX
+
+> j=1
+
+νj curl( ψj (·)) 
+
+> s
+
+Y
+
+> i=1
+> i̸=j
+
+(ψi(·)) νi
+
+
+
+> C(D)
+
+≤
+
+
+
+∥∇ ϕs(·, y)∥C(D) + ∥ϕs(·, y)∥C(D)
+
+
+
+|ν|
+
+> s
+
+Y
+
+> j=1
+
+gνj
+
+> j
+
+≤ CB|ν|
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+
+
+,
+
+which completes the proof. We also need the following auxiliary result. 
+
+Lemma 4.3. Let (Λ n)n∈N0 be a sequence defined recursively by 
+
+Λ0 = 1 and Λn =
+
+> n−1
+
+X
+
+> i=0
+
+ni
+
+
+
+(n − i)Λ i, ∀n ∈ N.
+
+Then for some α > 0 with αe α ≤ 1,
+
+Λn ≤ n!
+
+αn , ∀n ∈ N0. (4.6) 
+
+Proof. We prove (4.6) by induction. The case n = 0 is trivial. Assume (4.6) holds for all i ≤ n − 1. Then Λn ≤
+
+> n−1
+
+X
+
+> i=0
+
+ni
+
+
+
+(n − i) i!
+
+αi = n!
+
+αn α
+
+> n−1
+
+X
+
+> i=0
+
+αn−i−1
+
+(n − i − 1)! = n!
+
+αn α
+
+> n−1
+
+X
+
+> j=0
+
+αj
+
+j! ≤ n!
+
+αn αe α ≤ n!
+
+αn ,
+
+which completes the induction. We now state and prove the main regularity estimate. 
+
+Theorem 4.4. Given s ∈ N, let ν = {νj }sj=1 ̸ = 0 be a multi-index with νj ∈ { 0, 1}, and let gj and 
+
+CB > 0 be defined in (2.5) and (3.2) , respectively. Then for any y ∈ U and h > 0, the truncated finite element approximation ush(·, y) in (3.4) satisfies 
+
+∥∇ ∂ν ush(·, y)∥L2(D) ≤ | ν|!
+
+ 2C pCB
+
+ε
+
+|ν|+1  sY
+
+> j=1
+
+gνj
+
+> j
+
+
+
+∥f ∥L2(D), (4.7) 
+
+where Cp is the Poincar´ e constant. Proof. For arbitrary s ∈ N, h > 0, and y ∈ U , it suffices to prove 
+
+∥∂ν ∇ush(·, y)∥L2(D) ≤ CBΛ|ν|
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+  CpCB
+
+ε
+
+|ν|
+
+∥∇ ush(·, y)∥L2(D), (4.8) 10 where (Λ n)n∈N0 is defined in Lemma 4.3. Then the desired result follows from (3.5) and Lemma 4.3 with 
+
+α = 12 . We prove (4.8) by induction on |ν|.The case |ν| = 0 holds trivially since C B ≥ 1. Assume (4.8) holds for all multi-indices with |ν| ≤ n−1. Taking the derivative ∂ν with |ν| = n on both sides of (3.4) and applying the Leibniz rule yields 0 = ε
+
+ˆ
+
+> D
+
+∂ν ∇ush(x, y) · ∇ vh(x) d x +
+
+ˆ
+
+> D
+
+∂ν (bs(x, y) · ∇ ush(x, y)) vh(x) d x
+
+= ε
+
+ˆ
+
+> D
+
+∂ν ∇ush(x, y) · ∇ vh(x) d x
+
++ X
+
+> m⪯ν
+
+ νm
+
+ ˆ
+
+> D
+
+∂ν−mbs(x, y) · ∂m∇ush(x, y)vh(x) d x,
+
+where m ⪯ ν means mj ≤ νj for j = 1 , . . . , s , and   νm
+
+ := Qsj=1 
+
+  νj
+
+> mj
+
+.Setting vh := ∂ν ush(·, y) ∈ Vh and separating the term m = ν, we obtain 
+
+ε∥∂ν ∇ush(·, y)∥2 
+
+> L2(D)
+
++
+
+ˆ
+
+> D
+
+bs(x, y) · ∂ν ∇ush(x, y)∂ν ush(x, y) d x
+
+≤ X
+
+> m≺ν
+
+ νm
+
+ ˆ
+
+> D
+
+∂ν−mbs(x, y) · ∂m∇ush(x, y)∂ν ush(x, y) d x
+
+≤ X
+
+> m≺ν
+
+ νm
+
+
+
+∥∂ν−m(bs(·, y)) ∥C(D)∥∂m∇ush(·, y)∥L2(D)∥∂ν ush(·, y)∥L2(D)
+
+≤ Cp
+
+X
+
+> m≺ν
+
+ νm
+
+
+
+∥∂ν−m(bs(·, y)) ∥C(D)∥∂m∇ush(·, y)∥L2(D)∥∂ν ∇ush(·, y)∥L2(D),
+
+where m ≺ ν means m ⪯ ν and m̸ = ν, and the last inequality uses Poincar´ e’s inequality. Since bs(·, ·) is divergence-free, the second term on the left-hand side vanishes. Thus, 
+
+ε∥∂ν ∇ush(·, y)∥L2(D) ≤ Cp
+
+X
+
+> m≺ν
+
+ νm
+
+
+
+∥∂ν−mbs(·, y)∥C(D)∥∂m∇ush(·, y)∥L2(D).
+
+Applying Lemma 4.2 and the induction hypothesis gives 
+
+∥∂ν ∇ush(·, y)∥L2(D) ≤ Cp
+
+ε
+
+X
+
+> m≺ν
+
+ νm
+
+
+
+|ν − m|Λ|m|
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+  CpCB
+
+ε
+
+|m|
+
+C2B∥∇ ush(·, y)∥L2(D)
+
+≤ CB
+
+> n−1
+
+X
+
+> i=0
+
+ni
+
+
+
+(n − i)Λ i
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+  CpCB
+
+ε
+
+i+1 
+
+∥∇ ush(·, y)∥L2(D)
+
+≤ CBΛ|ν|
+
+ sY
+
+> j=1
+
+gνj
+
+> j
+
+  CpCB
+
+ε
+
+|ν|
+
+∥∇ ush(·, y)∥L2(D),
+
+where we used the identity Pm⪯ν
+
+> |m|=i
+
+  νm
+
+ =  |ν|
+
+> i
+
+, which follows from a counting argument. This completes the induction and the proof. 
+
+4.3 Error estimate for the QMC integration 
+
+We now show that for each s ∈ N and an appropriate choice of weights γν , the integrand belongs to the weighted Sobolev space with a controlled norm. 11 Theorem 4.5. Let Assumptions 2.2 and 2.3 hold, f ∈ L2(D), G ∈ V ∗, and gj be defined as in (2.5) .For given s ∈ N and h > 0, let ush be the finite element approximation of the truncated problem (3.4) .Then for N ∈ N and weights γ = ( γν ), a randomly-shifted lattice rule with N quadrature points can be constructed via a component-by-component algorithm such that for any λ ∈ (1 /2, 1] , the root-mean-square error satisfies q
+
+E|Is(G(ush)) − Qs,N (·; G(ush)) |2 ≤ Cγ (λ)[φ(N )] 1/(2 λ) ∥f ∥L2(D)∥G∥ V ∗ ,
+
+where E[·] denotes expectation with respect to the random shift uniformly distributed over [0 , 1] s, and 
+
+Cγ (λ) := 
+
+ X
+
+> |ν|<∞
+
+γλ 
+
+> ν
+
+[ρ(λ)] |ν|
+
+ 
+
+> 1/(2 λ)
+
+ X
+
+> |ν|<∞
+
+(|ν|!) 2(2C pCB/ε )2|ν|+2 Q 
+
+> j∈ν
+
+g2
+
+> j
+
+γν
+
+
+
+> 1/2
+
+(4.9) 
+
+with 
+
+ρ(λ) := 2ζ(2 λ)(2 π2)λ .
+
+Proof. From Theorem 4.4, the definition of the weighted Sobolev space (4.1), and the linearity of G, we have 
+
+∥G (ush)∥Ws,γ ≤ ∥ f ∥L2(D)∥G∥ V ∗
+
+ X
+
+> ν⊆{ 1: s}
+
+(|ν|!) 2(2C pCB/ε )2|ν|+2 Q 
+
+> j∈ν
+
+g2
+
+> j
+
+γν
+
+
+
+> 1/2
+
+.
+
+Applying Theorem 4.1 and extending the sum over all finite sets ν (thereby removing dependence on s)yields the desired result. To ensure convergence of the infinite sums in (4.9), we choose weights γ that minimize Cγ (λ). We first state two auxiliary lemmas, whose proofs can be found in [26, 16]. 
+
+Lemma 4.6. For n ∈ N, λ > 0, and Ai, B i > 0 (i = 1 , . . . , n ), the quantity 
+
+g(γ1, . . . , γ n) = 
+
+ nX
+
+> i=1
+
+γλi Ai
+
+1/λ  nX
+
+> i=1
+
+Bi
+
+γi
+
+
+
+is minimized by 
+
+γi = c
+
+ Bi
+
+Ai
+
+1/(1+ λ)
+
+for arbitrary c > 0.
+
+Lemma 4.7. For any Aj > 0 with P 
+
+> j≥1
+
+Aj < 1 and any nonnegative integer n,
+
+X
+
+> |ν|<∞
+
+(|ν| + n)! Y
+
+> j∈ν
+
+Aj ≤
+
+> ∞
+
+X
+
+> k=0
+
+(k + n)! 
+
+k!
+
+ X
+
+> j≥1
+
+Aj
+
+k
+
+= n!
+
+ 11 − P 
+
+> j≥1
+
+Aj
+
+n+1 
+
+.
+
+Moreover, for any Bj > 0 with P 
+
+> j≥1
+
+Bj < ∞,
+
+X
+
+> |ν|<∞
+
+Y
+
+> j∈ν
+
+Bj = Y
+
+> j≥1
+
+(1 + Bj ) = exp 
+
+ X
+
+> j≥1
+
+log(1 + Bj )
+
+
+
+≤ exp 
+
+ X
+
+> j≥1
+
+Bj
+
+
+
+.
+
+We now present the main result of the paper. Motivated by the strategy in [26, 16], for given 
+
+λ ∈ (1 /2, 1], we choose weight parameters γν that minimize Cγ (λ) in (4.9), provided the minimum is finite. Note that Cγ (λ) has a form similar to the quantity in Lemma 4.6, allowing us to determine an appropriate form for γν . In the following theorem, we specify λ > 0 so that Cγ (λ) is finite and a good convergence rate is obtained. 12 Theorem 4.8. Let Assumptions 2.2 and 2.3 hold. When p = 1 in Assumption 2.2, assume additionally that X
+
+> j≥1
+
+gj < ε√62C pCB
+
+. (4.10) 
+
+For any λ ∈ (1 /2, 1] , if we choose the weight parameters as 
+
+γν = γ∗ 
+
+> ν
+
+(λ) := 
+
+
+
+|ν|!
+
+ 2C pCB
+
+ε
+
+|ν|+1 Y
+
+> j∈ν
+
+gj
+
+pρ(λ)
+
+2/(1+ λ)
+
+, (4.11) 
+
+then Cγ (λ) in (4.9) is minimized whenever the minimum is finite. Furthermore, for p ∈ (0 , 1] in Assumption 2.2, if we set 
+
+λ = λp := 
+
+
+
+12 − 2δ , if p ∈ (0 , 2/3] ,p
+
+2 − p , if p ∈ (2 /3, 1) ,
+
+1, if p = 1 ,
+
+(4.12) 
+
+for arbitrarily small δ ∈ (0 , 1/2] , and take γν = γ∗ 
+
+> ν
+
+(λp), then Cγ (λ) < ∞. Consequently, a randomly-shifted lattice rule can be constructed via a component-by-component algorithm such that 
+
+q
+
+E|Is(G(ush)) − Qs,N (·; G(ush)) |2 ≲
+
+
+
+N −(1 −δ), if p ∈ (0 , 2/3] ,N −(1 /p −1/2) , if p ∈ (2 /3, 1) ,N − 12 , if p = 1 ,
+
+where the implicit constants are independent of h > 0 and s ∈ N, but may depend on p ∈ (0 , 1] and 
+
+δ ∈ (0 , 1/2] when applicable. Proof. First, Cγ (λ) is finite if and only if 
+
+ X
+
+> |ν|<n
+
+γλ 
+
+> ν
+
+[ρ(λ)] |ν|
+
+ 
+
+> 1/(2 λ)
+
+ X
+
+> |ν|<n
+
+(|ν|!) 2(2C pCB/ε )2|ν|+2 Q 
+
+> j∈ν
+
+g2
+
+> j
+
+γν
+
+
+
+> 1/2
+
+(4.13) is bounded uniformly in n ∈ N. By Lemma 4.6, the expression in (4.13) is minimized by choosing γν as in (4.11) for all ν with |ν| ≤ n. Since this holds for arbitrarily large n, we may choose γν according to (4.11) for all finite ν.Next, we show that Cγ (λ) < ∞ when γν is given by (4.11) and λ by (4.12). Define 
+
+Kλ := X
+
+> |ν|<∞
+
+(γ∗ 
+
+> ν
+
+(λ)) λ (ρ(λ)) |ν| = X
+
+> |ν|<∞
+
+
+
+|ν|!
+
+ 2C pCB
+
+ε
+
+|ν|+1 2λ/ (1+ λ) Y
+
+> j∈ν
+
+
+
+g2λj ρ(λ)
+
+1/(1+ λ)
+
+.
+
+Since Cγ (λ) = K1/(2 λ)+1 /2 
+
+> λ
+
+, it suffices to prove Kλ < ∞. We first consider 0 < λ < 1, which implies 2λ/ (1 + λ) < 1. Multiply and divide each term in Kλ by Q 
+
+> j∈ν
+
+κ2λ/ (1+ λ) 
+
+> j
+
+, where κj > 0 will be chosen later. Applying H¨ older’s inequality with exponents (1+ λ)/(2 λ) and (1+ λ)/(1 −λ), together with Lemma 13 4.7, yields 
+
+Kλ =
+
+ 2C pCB
+
+ε
+
+2λ/ (1+ λ) X
+
+> |ν|<∞
+
+ |ν|!2λ/ (1+ λ) Y
+
+> j∈ν
+
+κ2λ/ (1+ λ)
+
+> j
+
+Y
+
+> j∈ν
+
+ (2C pCB/ε )2λg2λj ρ(λ)
+
+κ2λj
+
+1/(1+ λ)
+
+≤ 2C pCB
+
+ε
+
+ X
+
+> |ν|<∞
+
+|ν|! Y
+
+> j∈ν
+
+κj
+
+2λ/ (1+ λ)
+
+×
+
+ X
+
+> |ν|<∞
+
+Y
+
+> j∈ν
+
+ (2C pCB/ε )2g2λj ρ(λ)
+
+κ2λj
+
+1/(1 −λ)(1 −λ)/(1+ λ)
+
+≤
+
+ 11 − P 
+
+> j≥1
+
+κj
+
+2λ/ (1+ λ)
+
+exp 
+
+ 1 − λ
+
+1 + λ
+
+ (2C pCB)2ρ(λ)
+
+ε2
+
+1/(1 −λ) X
+
+> j≥1
+
+ gj
+
+κj
+
+2λ/ (1 −λ)
+
+,
+
+provided that 
+
+X
+
+> j≥1
+
+κj < 1 and X
+
+> j≥1
+
+ gj
+
+κj
+
+2λ/ (1 −λ)
+
+< ∞. (4.14) Choose κj := gpj /θ for some θ > P 
+
+> j≥1
+
+gpj . Then P 
+
+> j≥1
+
+κj < 1 by Assumption 2.2. Moreover, since P 
+
+> j≥1
+
+gqj < ∞ for all q ≥ p, the second sum in (4.14) converges provided 2λ
+
+1 − λ (1 − p) ≥ p ⇐⇒ λ ≥ p
+
+2 − p .
+
+For p ∈ (0 , 2/3], we have 12 ≥ p 
+
+> 2−p
+
+. Choosing λp = 1 /(2 − 2δ) with δ ∈ (0 , 1/2) ensures p 
+
+> 2−p
+
+≤ 12 < λ p < 1. For p ∈ (2 /3, 1), we have 12 < p 
+
+> 2−p
+
+< 1, so we take λp = p/ (2 − p). Finally, for p = 1, set λ = 1. In this case, 
+
+ρ(1) = 2ζ(2) 2π2 = 16 .
+
+Using Lemma 4.7 and assumption (4.10), we obtain 
+
+K1 = 2C pCB
+
+ε
+
+X
+
+> |ν|<∞
+
+|ν|! Y
+
+> j∈ν
+
+ (2C pCB/ε )gj
+
+√6
+
+
+
+≤ 11 − P
+
+> j≥12C pCBgj
+> ε√6
+
+< ∞,
+
+which completes the proof. 
+
+# 5 Numerical Experiments 
+
+Since Theorem 4.8 represents our main novel theoretical contribution, we conduct several numerical tests to complement the analysis. We present results for the singularly perturbed convection–diffusion problem (2.1) in the domain D × U , with D = (0 , 1) 2. All computations were performed using MATLAB on an HPC system with 128 cores, each allocated 3GB of memory. The spatial domain D is discretized using a uniform triangular mesh Th, obtained by dividing the unit square into ( Nref − 1) 2 congruent squares with Nref = 64 (resulting in mesh width h = 1 /(Nref − 1)), and then bisecting each square into two right triangles. The deterministic problem is solved using the continuous piecewise linear finite element method (P1 elements). The finite element space is defined as 
+
+Vh := {v ∈ C(D) : v|K ∈ P1(K) ∀K ∈ T h, v |∂D = 0 }.
+
+Linear systems arising from the weak formulation of (2.1) are solved using a direct solver. 14 Uncertainty enters through the random velocity field b(x, y) constructed from the stream function 
+
+ϕ(x, y) = exp( a(x, y)). The random field a(x, y) is represented by the expansion (2.4) with mean a = 0, where the random variables {yj }j≥1 are taken to be i.i.d. uniform on [ − 12 , 12 ]. The expansion is truncated at s = 200 terms. The deterministic basis functions are defined as follows. Let integer pairs ( m, n ) ∈ N2 be indexed in non-decreasing order of m2 + n2, mapping the j-th pair to ( m(j), n (j)), and define 
+
+ψm,n (x1, x 2) := sin( mπx 1) sin( nπx 2)(m2 + n2)(ν+1) /2 , (x1, x 2) ∈ (0 , 1) 2,
+
+and set ψj := ψm(j),n (j). Since ∥ sin( mπ ·)∥C(D) ≤ 1 and ∥∇ sin( mπ ·)∥C(D) ≲ m, we obtain 
+
+∥ψj ∥C(D) ≲ (m(j)2 + n(j)2)−(ν+1) /2, ∥∇ ψj ∥C(D) ≲ (m(j)2 + n(j)2)−ν/ 2.
+
+In two dimensions, m(j)2 + n(j)2 ∼ j, so the sequence 
+
+gj := max {∥ ψj ∥C(D), ∥∇ ψj ∥C(D)}
+
+satisfies gj ≲ j−ν/ 2, which is consistent with the assumptions of our analysis. We consider numerical tests with varying perturbation parameter ε and smoothness parameter ν. For 
+
+x = ( x1, x 2), the source term is chosen as 
+
+f (x) = 2π2
+
+ε sin( πx 1) sin( πx 2).
+
+This choice yields numerical errors of size O(10 −5) for NQMC = 4001 sampling points, providing a more reliable error indicator compared to f = 1, where errors may approach machine precision. We use the component-by-component algorithm to generate the generating vector z ∈ Zs for the ran-domly shifted lattice rule (RSLR). The weighted Sobolev space is constructed with the norm induced by weights γν = γ∗ 
+
+> ν
+
+(λ) given in (4.11), using constants C p and C B from our analysis and ρ(λ) corresponding to the chosen λ. The sequence aj is set according to the theoretical construction. We take R = 32 independent random shifts ∆r ∈ [0 , 1] s, 1 ≤ r ≤ R. For each shift, the corresponding QMC points are given by 
+
+y(i,r ) = frac 
+
+ iz
+
+N + ∆r
+
+
+
+−   12 , . . . , 12
+
+ , i = 1 , . . . , N, 
+
+where z ∈ Zs is the generating vector and frac( ·) denotes the fractional part applied componentwise. For each fixed spatial mesh and truncation dimension s, we compute the finite element approximation 
+
+ush(·, y(i,r )) at all QMC sample points. We consider two bounded linear functionals defined by point evaluation: 
+
+G1(u) = u(1 /3, 3/4) , G2(u) = u(1 /4, 2/3) .
+
+For each shift, we compute 
+
+Qr := Qs,N (G(ush); ∆r) = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+G ush(·, y(i,r )) and ¯Q = 1
+
+R
+
+> R
+
+X
+
+> r=1
+
+Qr,
+
+and the standard error, which serves as an unbiased estimator of the root mean square error (RMSE): 
+
+eQMC := 1
+
+R(R − 1) 
+
+> R
+
+X
+
+> r=1
+
+(Qr − ¯Q)2
+
+!1/2
+
+.
+
+To obtain more reliable estimates, for each value of N we repeat the experiment ten times, each with a newly generated set of random shifts {∆r}Rr=1 . We report the corresponding standard errors e1 and e2 for the two functionals. Convergence rates and 90% confidence intervals are estimated via linear regression of − log( eQMC ) against log N based on these ten repetitions. 15 Comparison of QMC and MC Methods 
+
+For the first test, we compare the standard errors of the QMC and standard Monte Carlo (MC) methods with perturbation parameter ε = 0 .1. Through linear regression of | log gj | against log j for sufficiently large j, we empirically estimate the summability parameter in Assumption 2.2 to be p ≈ 0.4214, consistent with {j−2.5} ∈ ℓp for p > 0.4. According to Theorem 4.8, with p ∈ (0 , 2/3] we choose λ = 12−2δ , δ = 0 .1, yielding λ ≈ 0.5556. The corresponding theoretical prediction is a QMC convergence rate of O(N −(1 −δ)). The numerical results in Table 1 show that the QMC standard errors decay consistently with this prediction, while the MC estimator follows the expected O(N −1/2) behavior. Table 1: Comparison of standard errors for QMC and MC methods with G1 and G2 for ν = 5 and ε = 0 .1. 
+
+N QMC MC 
+
+e1 e2 e1 e2
+
+4001 1.62e-05 1.61e-05 8.91e-04 8.63e-04 8009 8.24e-06 8.44e-06 7.21e-04 7.24e-04 16001 4.14e-06 4.10e-06 5.21e-04 5.03e-04 32003 2.09e-06 2.16e-06 3.66e-04 3.56e-04 64007 1.08e-06 1.05e-06 2.45e-04 2.39e-04 120011 5.47e-07 5.45e-07 1.86e-04 1.81e-04 Rate 0.99 0.99 0.48 0.48 90% interval [0.97,1.01] [0.97,1.02] [0.43,0.52] [0.43,0.53] 
+
+Effect of Perturbation Parameter ε
+
+Table 2 examines the influence of the singular perturbation parameter ε on convergence rates. For 
+
+ε = 0 .05, the observed convergence behavior agrees well with the theoretical rate O(N −(1 −δ)). For the more singular case ε = 0 .025, the empirical rates are slightly reduced but remain comparable to theoretical predictions. This slowdown may relate to the prefactor (4.9) in the convergence rate, which increases monotonically with decreasing ε, thereby enlarging the pre-asymptotic region. Table 2: QMC standard errors for ν = 5 with two perturbation parameters ε.
+
+ε = 0 .05 ε = 0 .025 
+
+N e1 e2 e1 e2
+
+4001 1.38e-04 1.41e-04 1.47e-03 1.51e-03 8009 7.28e-05 7.66e-05 7.40e-04 7.93e-04 16001 3.49e-05 3.52e-05 3.91e-04 4.06e-04 32003 1.90e-05 1.97e-05 2.05e-04 2.15e-04 64007 1.02e-05 1.09e-05 1.07e-04 1.18e-04 120011 5.27e-06 5.54e-06 7.15e-05 7.55e-05 Rate 0.95 0.95 0.90 0.89 90% interval [0.93,0.98] [0.90,0.99] [0.85,0.95] [0.85,0.94] 16 Effect of Smoothness Parameter ν
+
+Table 3 shows the effect of increasing ν on QMC convergence rates for ε = 0 .05. Both error measures exhibit similar convergence behavior for ν = 6 and ν = 7, with empirical rates remaining close to the theoretical prediction O(N −(1 −δ)) with δ = 0 .1. Table 3: QMC standard errors for ε = 0 .05 with different smoothness parameters ν.
+
+ν = 6 ν = 7 
+
+N e1 e2 e1 e2
+
+4001 5.84e-05 5.87e-05 2.58e-05 2.51e-05 8009 3.05e-05 3.13e-05 1.30e-05 1.32e-05 16001 1.46e-05 1.46e-05 6.32e-06 6.27e-06 32003 7.69e-06 7.79e-06 3.37e-06 3.44e-06 64007 4.00e-06 3.89e-06 1.72e-06 1.66e-06 120011 2.02e-06 2.03e-06 8.53e-07 8.56e-07 Rate 0.98 0.99 0.99 0.99 90% interval [0.96,1.01] [0.97,1.01] [0.97,1.02] [0.96,1.02] 
+
+SUPG Formulation for Strong Convection 
+
+For the strongly convection-dominated regime with ε = 0 .001, we employ the Streamline Upwind Petrov-Galerkin (SUPG) formulation [14]. The SUPG discretization of (2.1) reads: find uSUPG  
+
+> h
+
+∈ Vh such that for all vh ∈ Vh,
+
+BSUPG (uSUPG  
+
+> h
+
+, v h) = FSUPG (vh),
+
+where 
+
+BSUPG (uh, v h) = e(uh, v h) + X 
+
+> T∈T h
+
+τT (b · ∇ uh, b · ∇ vh)T ,FSUPG (vh) = ( f, v h)D + X 
+
+> T∈T h
+
+τT (f, b · ∇ vh)T .
+
+The stabilization parameter is chosen as 
+
+τT = h
+
+2∥b∥L∞(T )
+
+,
+
+where ∥b∥L∞(T ) = max x∈T max( |bx(x)|, |by(x)|), following the simplified formula from [14] for linear elements in convection-dominated regimes. Table 4 reports QMC standard errors for ν = 10 and ν = 12 with ε = 0 .001 using SUPG. For 
+
+ν = 10, the observed convergence rate is lower than the theoretical prediction of 0 .9, while for ν = 12, the rates align with O(N −(1 −δ)) with δ = 0 .1. This discrepancy can be attributed to the strongly convection-dominated regime: for insufficiently large ν, the random field smoothness is inadequate to overcome pre-asymptotic effects induced by small ε, temporarily reducing convergence rates. When ν is sufficiently large, increased smoothness dominates and convergence recovers to theoretical expectations. In both cases, SUPG stabilization effectively handles strong convection while preserving favorable QMC convergence properties. Table 1 demonstrates that the QMC method achieves a convergence rate close to O(N −1), significantly faster than the MC rate of O(N −1/2), consistent with Theorem 4.8 for p ∈ (0 , 2/3]. Table 2 shows that the 17 Table 4: QMC standard errors for ε = 0 .001 with different ν using SUPG. 
+
+ν = 10 ν = 12 
+
+N e1 e2 e1 e2
+
+4001 5.79e-01 5.42e-01 4.36e-01 4.46e-01 8009 3.00e-01 2.97e-01 2.43e-01 2.13e-01 16001 1.62e-01 1.68e-01 3.18e-01 2.06e-01 32003 1.21e-01 1.30e-01 5.99e-02 6.21e-02 64007 6.43e-02 6.14e-02 3.93e-02 3.61e-02 120011 3.49e-02 3.49e-02 2.07e-02 2.21e-02 Rate 0.79 0.78 0.93 0.90 90% interval [0.71,0.87] [0.69,0.87] [0.62,1.25] [0.72,1.08] theoretical rate O(N −(1 −δ)) with δ = 0 .1 is observed for both ε = 0 .05 and ε = 0 .025, with slightly reduced rates for the more singular case. Table 3 confirms that increasing ν from 5 to 7 does not adversely affect convergence rates; indeed, rates improve slightly toward the optimal O(N −1). The SUPG framework demonstrates robust performance even for the strongly convection-dominated case ε = 0 .001 (Table 4). These results confirm that the proposed QMC method, with weights chosen according to our theory, effectively computes expectations of quantities of interest for singularly perturbed convection–diffusion problems with random velocity fields across a range of ε and smoothness parameters. 
+
+# 6 Conclusion 
+
+In this work, we developed an efficient quasi-Monte Carlo method for singularly perturbed convection– diffusion problems with a solenoidal random velocity field. The velocity field was constructed as the curl of a log-uniform random field, ensuring that it remains divergence-free for every realization, and we pro-posed a numerical framework that combines a finite element discretization, a truncated Karhunen–Lo` eve expansion, and a lattice-based QMC integration using randomly shifted lattice rules to approximate the expected value E[G(u)] of a linear functional of the solution. We proved that when the covariance kernel is sufficiently regular, the QMC method attains a nearly linear, almost optimal convergence rate with a constant independent of the integration dimension, and that this convergence rate is independent of the singular perturbation parameter ε. The numerical experiments support these theoretical predic-tions. The QMC method exhibited a convergence rate close to O(N −1), significantly faster than the 
+
+O(N −1/2) rate of standard Monte Carlo, and delivered stable performance across a range of values of 
+
+ε and the smoothness parameter ν. Moreover, in the strongly convection-dominated regime, incorpo-rating the SUPG stabilization technique allowed sharp boundary layers to be handled effectively while preserving the favorable QMC convergence properties. To the best of our knowledge, this is the first study to apply a QMC method to singularly perturbed convection–diffusion problems and to establish its 
+
+ε-independent convergence both theoretically and numerically, providing a foundation for future research such as extensions to multilevel QMC methods or applications to more general random velocity models. 
+
+# Acknowledgements 
+
+The authors thank Dr. Jiefei Yang for pointing out a potential issue with our initial approach, which helped complete the proof. 18 References 
+
+[1] G. K. Batchelor. An introduction to fluid dynamics . Cambridge university press, 2000. [2] G. Blatman and B. Sudret. Adaptive sparse polynomial chaos expansion based on least angle regression. Journal of Computational Physics , 230(6):2345–2367, 2011. [3] S. C. Brenner and R. Scott. The Mathematical Theory of Finite Element Methods . Springer Science & Business Media, New York, 2008. [4] R. E. Caflisch. Monte carlo and quasi-monte carlo methods. Acta Numerica , 7:1–49, 1998. [5] R. J. Cier, S. Rojas, and V. M. Calo. Automatically adaptive, stabilized finite element method via residual minimization for heterogeneous, anisotropic advection-diffusion-reaction problems. Comput. Methods Appl. Mech. Engrg. , 385:Paper No. 114027, 22, 2021. [6] A. Cohen, R. DeVore, and C. Schwab. Convergence rates of best n-term galerkin approximations for a class of elliptic spdes. Foundations of Computational Mathematics , 10(6):615–646, 2010. [7] R. Cools, F. Kuo, and D. Nuyens. Constructing embedded lattice rules for multivariable integration. 
+
+SIAM J. Sci. Comput. , 28(6):2162–2188, 2006. [8] T. Cui, H. De Sterck, A. D. Gilbert, S. Polishchuk, and R. Scheichl. Multilevel Monte Carlo methods for stochastic convection-diffusion eigenvalue problems. J. Sci. Comput. , 99(3):Paper No. 77, 34, 2024. [9] J. Dick. On the convergence rate of the component-by-component construction of good lattice rules. 
+
+J. Complexity , 20(4):493–522, 2004. [10] J. Dick, F. Kuo, and I. Sloan. High-dimensional integration: the quasi-Monte Carlo way. Acta Numer. , 22:133–288, 2013. [11] J. Dick, F. Pillichshammer, and B. J. Waterhouse. The construction of good extensible rank-1 lattices. Math. Comp. , 77(264):2345–2373, 2008. [12] A. Ern and J. L. Guermond. Finite Elements I: Approximation and Interpolation . Number 1 in Texts in Applied Mathematics. Springer International Publishing, 2021. [13] L. C. Evans. Partial differential equations . American Mathematical Society, Providence, R.I., 2010. [14] L. P. Franca, S. L. Frey, and T. J. R. Hughes. Stabilized finite element methods: I. Application to the advective-diffusive model. Computer Methods in Applied Mechanics and Engineering , 95(2):253–276, 1992. [15] G.-M. Gie, M. Hamouda, C.-Y. Jung, and R. M. Temam. Singular perturbations and boundary layers , volume 200 of Applied Mathematical Sciences . Springer, Cham, 2018. [16] I. Graham, F. Kuo, J. Nichols, R. Scheichl, C. Schwab, and I. Sloan. Quasi-Monte Carlo finite element methods for elliptic PDEs with lognormal random coefficients. Numer. Math. , 131(2):329–368, 2015. [17] M. Griebel and G. Li. On the decay rate of the singular values of bivariate functions. SIAM J. Numer. Anal. , 56(2):974–993, 2018. [18] M. Griebel and G. Li. On the numerical approximation of the Karhunen–Lo´ eve expansion for lognormal random fields. Preprint, arXiv:1908.00253, 2019. 19 [19] H. Harbrecht, M. Peters, and M. Siebenmorgen. Multilevel accelerated quadrature for PDEs with log-normally distributed diffusion coefficient. SIAM/ASA J. Uncertain. Quantif. , 4(1):520–551, 2016. [20] H. Harbrecht, M. Peters, and M. Siebenmorgen. On the quasi-Monte Carlo method with Halton points for elliptic PDEs with log-normal diffusion. Math. Comp. , 86(304):771–797, 2017. [21] T. J. R. Hughes. The Finite Element Method: Linear Static and Dynamic Finite Element Analysis .Dover Publications, 2000. [22] S. Ko, G. Li, and Y. Yu. Quasi-Monte Carlo finite element approximation of the Navier-Stokes equations with initial data modeled by log-normal random fields. IJUQ, to appear , 2025. [23] F. Kuo. Component-by-component constructions achieve the optimal rate of convergence for multi-variate integration in weighted Korobov and Sobolev spaces. volume 19, pages 301–320. 2003. [24] F. Kuo, R. Scheichl, C. Schwab, I. Sloan, and E. Ullmann. Multilevel quasi-Monte Carlo methods for lognormal diffusion problems. Math. Comp. , 86(308):2827–2860, 2017. [25] F. Kuo, C. Schwab, and I. Sloan. Quasi-Monte Carlo methods for high-dimensional integration: the standard (weighted Hilbert space) setting and beyond. ANZIAM J. , 53(1):1–37, 2011. [26] F. Kuo, C. Schwab, and I. Sloan. Quasi-Monte Carlo finite element methods for a class of elliptic partial differential equations with random coefficients. SIAM J. Numer. Anal. , 50(6):3351–3374, 2012. [27] F. Kuo, C. Schwab, and I. Sloan. Multi-level quasi-Monte Carlo finite element methods for a class of elliptic PDEs with random coefficients. Found. Comput. Math. , 15(2):411–449, 2015. [28] F. Kuo, I. Sloan, G. Wasilkowski, and B. Waterhouse. Randomly shifted lattice rules with the optimal rate of convergence for unbounded integrands. J. Complexity , 26(2):135–160, 2010. [29] F. Kuo, G. Wasilkowski, and B. Waterhouse. Randomly shifted lattice rules for unbounded inte-grands. J. Complexity , 22(5):630–651, 2006. [30] J. Nichols and F. Kuo. Fast CBC construction of randomly shifted lattice rules achieving O(n−1+ δ)convergence for unbounded integrands over Rs in weighted spaces with POD weights. J. Complexity ,30(4):444–468, 2014. [31] H. Niederreiter. Random Number Generation and Quasi-Monte Carlo Methods , volume 63 of CBMS-NSF Regional Conference Series in Applied Mathematics . Society for Industrial and Applied Math-ematics, Philadelphia, PA, 1992. [32] H. Schlichting and K. Gersten. Boundary-layer theory . springer, 2016. [33] I. Sloan, F. Kuo, and S. Joe. Constructing randomly shifted lattice rules in weighted Sobolev spaces. 
+
+SIAM J. Numer. Anal. , 40(5):1650–1665, 2002. [34] D. Xiu and G. E. Karniadakis. The wiener–askey polynomial chaos for stochastic differential equa-tions. SIAM Journal on Scientific Computing , 24(2):619–644, 2002. [35] O. C. Zienkiewicz and R. L. Taylor. The Finite Element Method: Its Basis and Fundamentals .Butterworth-Heinemann, 2000. 20
