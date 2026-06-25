@@ -1,0 +1,1859 @@
+Title: Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows
+
+URL Source: https://arxiv.org/pdf/2606.19731v1
+
+Published Time: Fri, 19 Jun 2026 00:27:41 GMT
+
+Number of Pages: 31
+
+Markdown Content:
+# Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 
+
+A Preprint 
+
+Yuta Iwatani ∗1, Kunihiko Taira 2, and  Soshi Kawai 11Department of Aerospace Engineering, Graduate School of Engineering, Tohoku University, Sendai, Miyagi, 980-8579, Japan 
+
+> 2
+
+Department of Mechanical and Aerospace Engineering, University of California, Los Angeles, CA 90095, USA June 19, 2026 
+
+# Abstract 
+
+We present a forcing-informed (FI) resolvent analysis framework to identify input-output relations for statistically stationary self-sustained unsteady flows. The central idea of this method is to inform the resolvent operator about the spatiotemporal structures of the nonlinear terms that act as exogenous forcing with respect to the mean flow. To construct the FI resolvent operator, we estimate the basis vectors for the input subspace spanned by forcing snapshots and, similarly, for the output subspace, from simulation data. The extracted FI response and forcing modes are expressed through the estimated bases of the output and input subspaces, respectively, and the singular values of the FI resolvent operator correspond to the actual output amplitudes. These properties ensure that the extracted modes are consistent with the actual self-sustained flow fields. Additionally, the forcing snapshots can be used to construct the linear operator, enabling a fully data-driven FI resolvent analysis. The proposed framework is validated using the Stuart-Landau oscillator and demonstrated for a two-dimensional cylinder wake and a three-dimensional transitional boundary layer. We successfully identify the gains and the corresponding pairs of forcing and response modes, even at frequencies where the nonlinear amplification mechanism is crucial. Furthermore, leveraging the balance between the time-averaged energy amplification/attenuation by the linear operator and nonlinear forcing, we introduce a nonlinear energy transfer map that identifies the spatial domains where the extracted forcing mode injects or removes fluctuation energy, thereby providing key physical insight into the self-sustaining mechanisms. 
+
+# 1 Introduction 
+
+Self-sustaining mechanisms underlying a wide range of unsteady flows have been one of the most fundamental questions in fluid mechanics due to their scientific and engineering importance. To date, numerous works have been performed to study the self-sustaining mechanisms, in wall turbulence (e.g., Jiménez and Moin 1991, Waleffe 1997, Hwang 2015, Motoori and Goto 2021), cavity flows (e.g., Rockwell and Naudascher 1978, Singh and Nair 2025), and transonic airfoil buffet flows (e.g., Lee 2001, Kojima et al. 2020, Iwatani et al. 2023). However, identifying such self-sustaining mechanisms is challenging due to the complex, multiscale nature of fluid dynamics, even with the knowledge of the governing equations and access to a high-fidelity dataset from large-eddy simulation (LES) or direct numerical simulation (DNS). To this end, this study proposes an input-output analysis framework that utilizes information on nonlinear forcing in the feedback mechanism for resolvent analysis and ultimately develops a fully data-driven formulation for statistically stationary flows, making full use of high-fidelity LES or DNS datasets. The motion of fluids is governed by an infinite-dimensional Navier-Stokes (NS) equation and is numerically solved on numerous grid points that sometimes exceed a billion, even for an industrial application as presented by Asada et al. [2023]. In such cases, the flow description is too high-dimensional to identify the physically important locations 
+
+> ∗
+
+Corresponding author:yuta.iwatani@tohoku.ac.jp 
+
+> arXiv:2606.19731v1 [physics.flu-dyn] 18 Jun 2026
+
+Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows and time scales, and the associated data analysis requires high computational cost. On the other hand, the essential dimensionality of the dynamics can be significantly reduced due to the dissipative nature of the NS equation, which is particularly useful for dimensionality reduction. In fact, many data-driven approaches have successfully constructed reduced-order models for a variety of seemingly high-dimensional and complicated flows, too numerous to list here, including modal analyses [Taira et al., 2017, 2020, Schmidt and Colonius, 2020], autoencoder machine learning models [Linot and Graham, 2023, Page et al., 2024, Fukami et al., 2025], spectral submanifold [Kaszás and Haller, 2024], phase-amplitude reduction [Fukami et al., 2024] and parametric reduced order model [Nakamura et al., 2024, Sato and Schmidt, 2025]. These studies motivate the use of data-driven approaches for extracting input-output relations in nonlinear self-sustaining flows. Resolvent analysis [Trefethen et al., 1993, Jovanović and Bamieh, 2005, McKeon and Sharma, 2010, Rolandi et al., 2024] is a powerful framework for uncovering input-output relations based on the linearized NS equations. The resolvent analysis can identify the pair of the input and corresponding output modes, called the forcing and response modes, respectively, via the singular value decomposition (SVD) of the resolvent of the linearised NS operator about the base flow of interest. The resolvent analysis can also be generalized by considering the input and output windows in analogy to the state-space model used in control theory [Jovanović and Bamieh, 2005, Jeun et al., 2016, Jovanović, 2021]. In the literature on resolvent analysis, the formulation based on the feedback mechanism [Farrell and Ioannou, 1993, McKeon and Sharma, 2010] has extended the utility of the resolvent analysis to turbulent base flows. In the feedback mechanism, the nonlinear terms with respect to the perturbation components are viewed as a self-induced feedback controller that sustains the flow oscillations, and this feedback forcing is regarded as the (harmonic) exogenous forcing for the linear system. With the formulation, the resolvent analysis has been used for flow control [Luhar et al., 2014, Yeh and Taira, 2019, Ribeiro and Taira, 2024], flow modeling [Gómez et al., 2016, Lesshafft et al., 2019], and elucidating the physics of the self-sustaining mechanism [Nogueira et al., 2021, Bae et al., 2021]. However, it is reported that the modes revealed by resolvent analysis are sometimes not observed in the actual nonlinear self-sustained flow field in numerical simulations or experiments due to the lack of full information on nonlinear forcing [Taira et al., 2017]; the linear operator holds the information of the mean flow distorted by the Reynolds stresses, but it does not hold the information on fluctuation components of the nonlinear forcing, often referred to as the colour of forcing [Zare et al., 2017]. The issue of inconsistency between the extracted modes and the actual flow is not limited to nonlinear self-sustained flows. Kamal et al. [2022] pointed out that the worst-case disturbance obtained in the linear receptivity analysis cannot be physically realizable, and proposed a framework that restricts the input forcing to a set of physically realizable disturbances. For statistically stationary flows, incorporating nonlinear forcing statistics enables us to obtain the response mode that appears in nonlinear flows [Zare et al., 2017, Towne et al., 2018] and also enhances the performance of resolvent-analysis-based flow control [Jung et al., 2025]. Recognizing the importance of nonlinear forcing information, recent efforts analyze the forcing statistics themselves [Chen et al., 2025] and attempt to incorporate the nonlinear forcing terms into the resolvent analysis formulation. Broadly speaking, these studies can be classified into four approaches. The first approach, which we will also adopt, is to directly compute all nonlinear forcing terms [Towne et al., 2020, Nogueira et al., 2021]. Nogueira et al. [2021] showed that the cross-spectral density (CSD) of the output is recovered from the resolvent operator and the CSD of the nonlinear forcing. They subsequently examined the essential forcing components in the minimum channel flow to understand its self-sustaining process. The second approach is to incorporate the nonlinear forcing effect into the linear operator via the eddy viscosity modeling [Hwang and Cossu, 2010, Morra et al., 2019, 2021, Pickering et al., 2021, Symon et al., 2021, Holford et al., 2023, Fan et al., 2024, Ying et al., 2024] as in the linear stability analysis of turbulent flows [del Álamo and Jiménez, 2006]. The third approach is to attempt to close the feedback-loop formulation using only the output modes by explicitly modeling the triadic interactions associated with the quadratic nonlinear forcing terms [Rosenberg et al., 2019, Barthel et al., 2021]. The last fourth approach is to incorporate the nonlinear forcing feedback as structured uncertainty [Liu and Gayme, 2021, Song et al., 2026]. In addition to the feedback-mechanism-based formulation for the treatment of the nonlinear forcing, there have been several attempts to directly incorporate the nonlinearity of the NS equation into input-output analysis, including harmonic resolvent analysis [Padovan et al., 2020, Padovan and Rowley, 2022] based on the harmonic transfer function defined for a linear time-periodic system [Wereley and Hall, 1991] and a nonlinear input-output analysis method based on harmonic-balanced NS equations [Rigas et al., 2021]. There is also the mean resolvent analysis [Leclercq and Sipp, 2023] based on the mean resolvent operator that describes the time-averaged linear response to any given forcing and can be viewed as an implicit extension of the resolvent operator manipulated, for instance, by eddy-viscosity modeling of nonlinear forcing (the second approach). As extensions of the resolvent analysis for transient growth, there are the nonlinear optimum perturbation analysis [Pringle and Kerswell, 2010, Huang and Hack, 2020] and its extension to external forcing [Taniguchi et al., 2026]. Although numerous input-output analysis methods that incorporate the 2Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 1. Collect snapshots of output and nonlinear forcing vectors in nonlinear fluctuation equations q′ f ′NL   
+
+> 2b. Estimate linear operator from data (optional)
+
+## d
+
+## d t q′ = Lq′ + f ′NL 
+
+> time
+> =
+
+F( j) [f ′ ( j )           
+
+> NL ,1 f′(j)
+> NL ,2 f′(j)
+> NL ,3 ⋯]
+
+Q( j) = [q′( j) 
+
+> 1
+
+q′( j) 
+
+> 2
+
+q′( j) 
+
+> 3
+
+⋯]
+
+## L ≈ Ldata  = [ ·
+
+## Q − F ] Q+    
+
+> time
+> 3. Build forcing-informed resolvent operator
+> (that maps to output subspace)
+
+G
+
+> 4. Recover optimal response and forcing modes
+
+## G = PΨ(iω I−L)−1TΦ
+
+> (SVD)
+
+˜G = U ˜G Σ ˜G V*
+
+> ˜G
+
+ω
+
+> feedback
+> for sustaining
+> oscillations
+
+max Σ ˜G    
+
+> 2a. Estimate input &ouput bases from data
+
+˜G = Ψ†(iω I−L)−1TΦ  
+
+> FI response modes
+> in
+
+𝒱 Ψ  
+
+> FI forcing modes
+> in
+
+𝒱 Φ
+
+> Gain
+
+ω1
+
+ΨU ˜G Σ ˜G : ΦΛΦV ˜G :
+
+2ω1 ω1 2ω1
+
+ω1
+
+2ω1      
+
+> Reduced operator
+> output input
+> PΨ=ΨΨ†TΦ=ΦΛ1/2
+> Φwhere
+
+𝒱 Φ = range (Φ) = ∑j range (F( j))
+
+𝒱 Ψ = range  (Ψ) = ∑j range (Q( j))
+
+Figure 1: Schematic of workflow of the present forcing-informed (FI) resolvent analysis, shown for an example of a two-dimensional cylinder case. Detailed mathematical formulations are presented in §2.3 and §3. nonlinear forcing have been developed, there is no method that simply extracts input-output relations that are theoretically grounded to exist in the actual self-sustained flow fields. Therefore, to identify the input-output relations in self-sustained unsteady flows, this study presents a forcing-informed (FI) resolvent analysis framework, based on the concept of feedback-mechanism formulation [Farrell and Ioannou, 1993, McKeon and Sharma, 2010], as summarized in Fig. 1. The central idea in this method is to inform the conventional resolvent operator of the spatio-temporal structure of the nonlinear forcing terms crucial for sustaining mechanisms. To do so, we collect snapshots of nonlinear forcing terms (step 1) and learn the basis vectors of the input subspace spanned by them (step 2a). These basis vectors are used to derive the FI resolvent operator (step 3), a core quantity of this method. The FI resolvent operator enables the extraction of the forcing and response modes, which always exist in the self-sustained flows, even at frequencies where the nonlinear amplification mechanism dominates and is not captured by conventional resolvent analysis. As shown in step 4, the modes at the second harmonic of vortex shedding behind a cylinder are extracted. Furthermore, the nonlinear forcing snapshots are used to estimate the linear operator in a data-driven manner (step 2b), thereby enabling a fully data-driven formulation of this method. We show that the present FI forcing resolvent analysis can also be viewed as an extension of the data-driven resolvent analysis [Herrmann et al., 2021] for the statistically stationary nonlinear flows. The rest of this paper is organized as follows. We describe the theoretical framework of the FI resolvent analysis in §2 and present the details of the numerical algorithms in §3. In §4, the proposed method is summarized briefly while revisiting Fig. 1. We demonstrate the capabilities of the present FI modes in §5. We begin with a proof-of-concept using the Stuart-Landau oscillator, then move to a simple two-dimensional cylinder wake exhibiting self-sustained vortex 3Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows shedding. Finally, we use the present approach to study the three-dimensional (3D) late stage of a transitional boundary layer, as a practical case. 
+
+# 2 Forcing-informed (FI) resolvent analysis 
+
+2.1 Nonlinear fluctuation equations for statistically stationary self-sustained flows 
+
+Let us consider the spatially discretised compressible Navier–Stokes equations for the state vector 𝑞 =
+
+[𝜌 1, 𝒎 𝑡 
+
+> 1
+
+, 𝐸 1, · · · , 𝒎 𝑡 𝑁 𝑔 , 𝐸 𝑁 𝑔 ]𝑇 ∈ R𝑁 𝑞 in a general form, 
+
+𝑑𝑞 𝑑𝑡 = 𝑁 (𝑞 ), (2.1) where 𝑡 is time, 𝜌 is density, 𝒎 = [𝑚 𝑥 , 𝑚 𝑦 , 𝑚 𝑧 ]𝑇 is momentum vector, 𝐸 is total energy, superscript 𝑇 denotes the transpose of a real vector, and 𝑁 𝑞 is the product of the number of total grid points 𝑁 𝑔 and the number of variables. Alongside, considering the Reynolds decomposition of the state vector, i.e., 𝑞 (𝑡 ) = ¯𝑞 + 𝑞 ′ (𝑡 ) with the time averaging operator being defined as 
+
+[·] = lim 
+
+> 𝑡 ′→∞
+
+1
+
+𝑡 ′
+
+∫ 𝑡 ′
+
+> 0
+
+[·] ( 𝑡 )𝑑𝑡, (2.2) we obtain the Reynolds-averaged governing equations: 
+
+0 = 𝑁 (𝑞 ) = 𝑁 (𝑞 ) + 𝐹 (𝑞 ′𝑛 ) ( 𝑛 ≥ 2). (2.3) For the second equality in (2.3), we have used the relation 
+
+𝑁 (𝑞 + 𝑞 ′) = 𝑁 ( ¯𝑞 ) + 𝐿 ¯𝑞 (𝑞 ′) + 𝐹 NL (𝑞 ′𝑛 ). (2.4) Here, 𝑁 ( ¯𝑞 ), 𝐿 ¯𝑞 (𝑞 ′), 𝐹 NL (𝑞 ′𝑛 ) collect the constant terms, linear terms, and nonlinear terms with respect to the fluctuation of the state vector 𝑞 ′, respectively. Only the linear terms 𝐿 ¯𝑞 (𝑞 ′) can be expressed in the form of a matrix-vector product as 𝐿 ¯𝑞 (𝑞 ′) = 𝑳 𝑞 ′ ( 𝑳 ∈ R𝑁 𝑞 × 𝑁 𝑞 ) and become zero by taking the time average. Subtracting the Reynolds-averaged equations (2.3) from the governing equations (2.1) yields the nonlinear fluctuation equation, written as 
+
+𝑑𝑞 ′
+
+𝑑𝑡 = 𝑳 𝑞 ′ + 𝑓 ′
+
+> NL
+
+, (2.5) where 
+
+𝑓 ′ 
+
+> NL
+
+= 𝐹 NL (𝑞 ′𝑛 ) − 𝐹 NL (𝑞 ′𝑛 ). (2.6) The components of vector 𝑓 ′ 
+
+> NL
+
+for compressible NSs are derived in appendix A. By definition, all the terms in (2.5) are zero mean (centered). The fluctuation equations (2.5) are applicable to the statistically stationary system or the linearised system around the equilibrium point ( 𝑓 ′ 
+
+> NL
+
+is negligibly small), but not applicable to cases where an appropriate mean flow 𝑞 cannot be defined. Importantly, the nonlinear fluctuation equation (2.5) is viewed as the linear system 𝑳 with the exogenous forcing 𝑓 ′ 
+
+> NL
+
+as a model of a feedback controller to sustain the oscillation of 𝑞 ′ [Farrell and Ioannou, 1993, McKeon and Sharma, 2010]. The forcing 𝑓 ′ 
+
+> NL
+
+should attenuate the fluctuation energy for an unstable linear system 𝑳 , while it should act as a driving force for a stable linear system 𝑳 . In either case, the nonlinear forcing terms are crucial for sustaining the oscillation 𝑞 ′.To consider the role of forcing term 𝑓 ′ 
+
+> NL
+
+for statistically stationary self-sustained flows, we consider the (time-averaged) evolution of disturbance energy 𝐸 𝑞 ′ , defined by a weighted inner product 𝐸 𝑞 ′ (𝑡 ) ≔ (1/2)⟨ 𝑞 ′, 𝑞 ′⟩𝑊 := (1/2)𝑞 ′∗ 𝑾 𝑞 ′
+
+with 𝑾 being positive semi-definite matrix. The evolution of the fluctuation energy 𝐸 𝑞 ′ is governed by 
+
+𝑑𝐸 𝑞 ′
+
+𝑑𝑡 = 12
+
+ 𝑑𝑞 ′
+
+𝑑𝑡 , 𝑞 ′
+
+
+
+> 𝑊
+
++ 12
+
+
+
+𝑞 ′, 𝑑𝑞 ′
+
+𝑑𝑡 
+
+
+
+> 𝑊
+
+=
+
+
+
+𝑞 ′, 𝑑𝑞 ′
+
+𝑑𝑡 
+
+
+
+> 𝑊
+
+= ⟨𝑞 ′, 𝑳 𝑞 ′⟩𝑊 + ⟨ 𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 (∵ (2.5) ). (2.7) Given that 𝑑𝐸 𝑞 ′ /𝑑𝑡 = 0 for statistically stationary flows, the time-averaged equation is obtained as 
+
+𝑑𝐸 𝑞 ′
+
+𝑑𝑡 = ⟨𝑞 ′, 𝑳 𝑞 ′⟩𝑊 + ⟨ 𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 = 0. (2.8) 4Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows This equation (2.8) describes the time-averaged energy balance between the linear amplification/attenuation mechanism 
+
+⟨𝑞 ′, 𝑳 𝑞 ′⟩𝑊 and the nonlinear mechanism ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 . In this balance relation, the term ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 is associated with the inter-scale nonlinear energy transfer [Jin et al., 2021]. This time-averaged energy balance is one of the key concepts in the proposed framework, which aids the physical interpretation of the extracted input-output modes, as discussed later. We are interested in how such a nonlinear forcing term 𝑓 ′ 
+
+> NL
+
+behaves in space and time to understand its role in the self-sustaining mechanisms. Therefore, this study aims to extract the important component in the nonlinear forcing term 
+
+𝑓 ′ 
+
+> NL
+
+and the corresponding response 𝑞 ′, with the aid of their time-series data from high-fidelity numerical simulations. 
+
+2.2 Conventional resolvent analysis 
+
+Before discussing the treatment of the nonlinear forcing terms, let us consider the conventional, particularly, Fourier-transform-based, resolvent analysis to clarify the necessity of information about the spatiotemporal correlation of the nonlinear forcing term 𝑓 ′
+
+> NL
+
+. For the statistically stationary system, the Fourier transform of (2.5) yields the relation at a frequency 𝜔 :
+
+ˆ𝑞 (𝜔 ) = 𝑹 (𝜔 ) ˆ𝑓 (𝜔 ), (2.9) where 𝑹 = [− i𝜔 𝑰 − 𝑳 ]−1 is the so-called resolvent operator and 𝑰 is the identity matrix. In the resolvent analysis, we consider the following maximization problem of the energy gain between the forcing and response as 
+
+𝐺 2 (𝜔 ) = max   
+
+> ˆ𝑓 (𝜔 )≠0
+
+∥ ˆ𝑞 (𝜔 )∥ 2
+
+> 𝑊
+
+∥ ˆ𝑓 (𝜔 )∥ 2
+
+> 𝑊
+
+= max   
+
+> ˆ𝑓 (𝜔 )≠0
+
+∥ 𝑹 (𝜔 ) ˆ𝑓 (𝜔 )∥ 2
+
+> 𝑊
+
+∥ ˆ𝑓 (𝜔 )∥ 2
+
+> 𝑊
+
+, (2.10) where ∥ · ∥ 𝑊 =√︁ ⟨· , ·⟩ 𝑊 is the energy norm. Although the use of different weighted norms for input and output (the denominator and numerator of (2.10) ) is possible, we consistently use the same weighted norm 𝑾 to define the inner product ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 in (2.8) . The maximization problem (2.10) is solved using the SVD of the resolvent operator 𝑹 ,expressed as 
+
+𝑹 (𝜔 ) =
+
+> 𝑁 𝑅
+
+∑︁ 
+
+> 𝑗 =1
+
+𝑢 𝑗 (𝜔 )𝜎 𝑗 (𝜔 )⟨ 𝑣 𝑗 (𝜔 ), · ⟩ 𝑊 , (2.11) where 𝑁 𝑅 is the rank of matrix 𝑹 , 𝜎 𝑗 ∈ R is the 𝑗 −th greatest singular value, i.e., 𝜎 1 ≥ 𝜎 2 ≥ · · · ≥ 𝜎 𝑁 𝑅 > 0, and 
+
+𝑢 𝑗 , 𝑣 𝑗 ∈ C𝑁 𝑞 are the corresponding left and right singular vectors, respectively. Here, the singular vectors satisfy the following orthogonal conditions: 
+
+⟨𝑢 𝑗 (𝜔 ), 𝑢 𝑘 (𝜔 )⟩ 𝑊 = ⟨𝑣 𝑗 (𝜔 ), 𝑣 𝑘 (𝜔 )⟩ 𝑊 = 𝛿 𝑗 𝑘 , (2.12) where 𝛿 𝑗 𝑘 is the Kronercker delta. In numerical computation, we may obtain such singular vectors as 𝑢 𝑘 = 𝒁 −1 
+
+> 𝑤
+
+𝑢 𝑤 𝑘 
+
+and 𝑣 𝑘 = 𝒁 −1 
+
+> 𝑤
+
+𝑣 𝑤 𝑘 . Here, 𝒁 𝑊 is the outcome of the Cholesky decomposition of the weight matrix 𝑾 = 𝒁 ∗ 
+
+> 𝑤
+
+𝒁 𝑤 and 𝑢 𝑤 𝑘 
+
+and 𝑣 𝑤 𝑘 are obtained by the SVD of 𝒁 𝑊 𝑹𝒁 −1 
+
+> 𝑊
+
+= Í 𝑗 𝑢 𝑤 𝑗 𝜎 𝑗 ⟨𝑣 𝑤 𝑗 , ·⟩ 2, where ⟨· , ·⟩ 2 denotes the Euclidean inner product. Once we obtain the SVD results, selecting ˆ𝑓 = 𝑣 1 in (2.10) leads to the maximum gain 𝐺 = 𝜎 1 and the corresponding response ˆ𝑞 = 𝑢 1𝜎 1. Not only the most amplified input-output pair, but the 𝑗 -th amplified pair can also be extracted by selecting ˆ𝑓 = 𝑣 𝑗 . In this sense, the left singular vector 𝑢 𝑗 and the right singular vector 𝑣 𝑗 are called the response mode and the forcing mode, respectively, and the singular value 𝜎 𝑗 is called the gain. However, the resolvent operator 𝑹 relies only upon the information of the linear operator 𝑳 , and hence does not possess the full information (spatiotemporal structure) of the fluctuating nonlinear forcing term 𝑓 ′ 
+
+> NL
+
+that plays a crucial role in the self-sustaining mechanism. The temporal structure of the nonlinear forcing term is reflected as the magnitude of the Fourier amplitude | ˆ𝑓 | while the spatial structure is reflected as the vector shape ˆ𝑓 . In what follows, we point out the issues with neglecting the forcing information from three perspectives, including discussions in previous studies. First, the cross-spectrum density (CSD) tensor of the output signal 𝑺 qq := 𝐸 [ ˆ𝑞 ˆ𝑞 ∗], where 𝐸 [·] is the expectation (ensemble averaging) operator, cannot be recovered [Zare et al., 2017, Towne et al., 2018, Morra et al., 2019, Towne et al., 2020, Nogueira et al., 2021]. From (2.9), we may derive 
+
+𝑺 qq (𝜔 ) = 𝑹 (𝜔 )𝑺 ff (𝜔 ) 𝑹 ∗ (𝜔 ), (2.13) where 𝑺 ff is the CSD tensor of the forcing term ˆ𝑓 𝜔 . This indicates that the 𝑺 qq cannot be estimated solely from the resolvent operator 𝑹 unless 𝑺 ff = 𝑰 , i.e., the forcing signal is the spatially and temporally uncorrelated (white noise) and has the unit-norm, but this is not true in general self-sustained nonlinear flows. This means that the resolvent response 5Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows mode and the spectral proper orthogonal (SPOD) mode [Lumley, 1967, Schmidt and Colonius, 2020] are identical only for the system perturbed by unit-norm white noise [Towne et al., 2018] since the eigendecomposition of 𝑺 qq results in the SPOD mode of ˆ𝑞 𝜔 .Second, although the conventional resolvent analysis ranks the most dominant forcing and response pair based on the gain (singular value), this ordering is no longer theoretically supported for the spatiotemporally correlated forcing. Combining (2.9) and (2.11) leads to 
+
+ˆ𝑞 (𝜔 ) =
+
+> 𝑁 𝑅
+
+∑︁ 
+
+> 𝑗 =1
+
+𝑢 𝑗 (𝜔 )𝜎 𝑗 (𝜔 )⟨ 𝑣 𝑗 (𝜔 ), ˆ𝑓 (𝜔 )⟩ 𝑊 , (2.14) which indicates that the product of the singular value 𝜎 𝑗 and the inner product ⟨𝑣 𝑗 , ˆ𝑓 ⟩𝑊 determines the expansion coefficient (amplitude) of 𝑢 𝑗 . This in turns means that the situation |𝜎 𝑗 ⟨𝑣 𝑗 , ˆ𝑓 ⟩𝑊 | ≤ | 𝜎 𝑗 +1 ⟨𝑣 𝑗 +1, ˆ𝑓 ⟩𝑊 | is possible especially at the frequency in which the linear amplification mechanism is inactive while the nonlinear one is active (i.e., 𝜎 1 is small while | ˆ𝑓 | is large). This property makes it less justifiable to examine the response and forcing modes associated with the leading gain under correlated forcing conditions. Third, in terms of linear algebra, the maximization problem (2.10) searches the entire vector space C𝑁 for the optimum forcing. This indicates that there is no theoretical guarantee that the optimum forcing (the right singular vector 𝑣 1)reflects the spatial coherence of the nonlinear forcing term. In addition, the search space is restricted onto the unit sphere due to the invariance of the Rayleigh quotient (2.10) with respect to the scaling of input ˆ𝑦 = 𝑐 ˜𝑦 . This means that the optimal forcing 𝑣 1 does not reflect the temporal coherence captured by the amplitude | ˆ𝑓 |. As such, the optimal forcing selected via the SVD of 𝑹 does not always lie in the vector subspace spanned by the nonlinear forcing term ˆ𝑓 ,and such possibly physically inconsistent optimal forcing can lead to the discrepancy between the response modes and actual flow field obtained from numerical simulations or experiments. Therefore, these concerns call for treatments of the spatiotemporally correlated forcing. In particular, to identify the input-output relations from self-sustained unsteady flows, the third statement necessitates choosing the optimal forcing from the vector subspace spanned by the actual correlated nonlinear forcing ˆ𝑓 , rather than from the entire space C𝑁 .This requirement provides the key insight behind the proposed framework, which is detailed in the next section. 
+
+2.3 Forcing-informed resolvent operator 
+
+Based on previous discussion, we propose a method to incorporate the information of the forcing term 𝑓 ′ 
+
+> NL
+
+into the resolvent operator. As in the previous section, the core idea of the proposed framework is to introduce input and, similarly, output subspaces, each spanned by snapshot data from numerical simulations, and to estimate their bases. The estimated basis of the input space is used to inform the forcing 𝑓 ′ 
+
+> NL
+
+of the conventional resolvent operator, so that the ‘forcing-informed’ resolvent operator, which we will derive as (2.22) in this section, captures the input-output relations in nonlinear self-sustained flows. Similarly, the basis of the output space is used to ensure that the response mode lies within the actual flow field obtained from numerical simulation. First, we define the input and output subspaces. To numerically obtain bases for the input and output spaces, we consider the time-series datasets of output 𝑞 ′ and input 𝑓 ′ obtained from multiple numerical simulation runs (or realizations). For statistically stationary flow, obtaining multiple realizations is equivalent to sampling time-series data from different time segments, as in Welch’s method [Welch, 2003]. The input subspace VΦ and output subspace VΨ spanned by their time-series datasets are introduced as 
+
+VΦ = span 
+
+n
+
+𝑓 ′( 𝑛 )
+
+> NL ,𝑚
+
+o𝑀, 𝑁 𝑝  
+
+> 𝑚 =1,𝑛 =1
+
+, (2.15 a)
+
+VΨ = span 
+
+n
+
+𝑞 ′ ( 𝑛 )
+
+> 𝑚
+
+o𝑀, 𝑁 𝑝  
+
+> 𝑚 =1,𝑛 =1
+
+, (2.15 b)where 𝑀 is the number of snapshots, 𝑁 𝑝 is the number of realizations, and 𝑞 ′( 𝑛 ) 
+
+> 𝑚
+
+and 𝑓 ′( 𝑛 ) 
+
+> NL ,𝑚
+
+indicate the 𝑚 -th output and nonlinear forcing snapshots of the 𝑛 -th realization, respectively. Performing the Fourier transform for each realization and collecting the outcome at each frequency 𝜔 , we construct the matrices written as 
+
+b𝑭 (𝜔 ) =  ˆ𝑓 (1) (𝜔 ) . . . ˆ𝑓 ( 𝑁 𝑝 ) (𝜔 ) ∈ C𝑁 𝑞 × 𝑁 𝑝 , , (2.16 a)
+
+b𝑸 (𝜔 ) =  ˆ𝑞 (1) (𝜔 ) . . . ˆ𝑞 ( 𝑁 𝑝 ) (𝜔 ) ∈ C𝑁 𝑞 × 𝑁 𝑝 , (2.16 b)where ˆ𝑓 ( 𝑗 ) and ˆ𝑞 ( 𝑗 ) are the Fourier coefficients of input and output obtained from the snapshots of 𝑗 -th realisation. The orientations of column vectors of b𝑭 and b𝑸 capture the spatial structures of the input 𝑓 ′ 
+
+> NL
+
+and the output 𝑞 ′. Such 6Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows column spaces of the matrices span the input and output subspaces at frequency of 𝜔 , respectively written as 
+
+VΦ𝜔 (𝜔 ) = Col (b𝑭 (𝜔 )) = span { ˆ𝑓 𝑗 (𝜔 )} 𝑁 𝑝 
+
+> 𝑗 =1
+
+, (2.17 a)
+
+VΨ𝜔 (𝜔 ) = Col (b𝑸 (𝜔 )) = span { ˆ𝑞 𝑗 (𝜔 )} 𝑁 𝑝 
+
+> 𝑗 =1
+
+, (2.17 b)where Col (·) denotes the column space of a matrix. The linear combinations of the basis vectors of VΦ𝜔 and VΨ𝜔 for all the scales 𝜔 recover VΦ and VΨ.In general, the choice of bases of input and output subspaces is not unique, considering the rank factorization of a matrix as detailed in Appendix B. For brevity, we here consider the orthonormal basis vectors of the column spaces of b𝑭 and b𝑸 
+
+as the basis vectors of the input and output subspaces, respectively. We introduce the basis vectors of input and output subspaces at frequency 𝜔 , respectively written as 
+
+𝚽 (𝜔 ) = 𝜙 1 (𝜔 ) 𝜙 2 (𝜔 ) · · · 𝜙 𝑁 𝜙 (𝜔 ) ∈ C𝑁 𝑞 × 𝑁 𝜙 , (2.18 a)
+
+𝚿 (𝜔 ) = 𝜓 1 (𝜔 ) 𝜓 2 (𝜔 ) · · · 𝜓 𝑁 𝑝 (𝜔 ) ∈ C𝑁 𝑞 × 𝑁 𝜓 . (2.18 b)Here, 𝑁 Φ and 𝑁 Ψ are the ranks of the matrices b𝑭 and b𝑸 , which are smaller than 𝑁 𝑝 (the number of the realizations) and 𝑁 𝑞 (the length of the state vector). They are equivalent to the number of the basis vectors of the output and input subspaces, respectively. These basis vectors satisfy the weighted orthonormal conditions 
+
+⟨𝜙 𝑖 (𝜔 ), 𝜙 𝑗 (𝜔 )⟩ 𝑊 = ⟨𝜓 𝑖 (𝜔 ), 𝜓 𝑗 (𝜔 )⟩ 𝑊 = 𝛿 𝑖 𝑗 . (2.19) Using these orthonormal basis vectors, the Fourier components in the learned input and output subspaces are expressed as follows: 
+
+ˆ𝑓 Φ (𝜔 ) = 𝚽 (𝜔 )𝚲 1/2 
+
+> Φ
+
+(𝜔 )
+
+| {z } 
+
+> =:𝑻 Φ
+
+ˆ𝑎 (𝜔 ), (2.20a) 
+
+ˆ𝑞 Ψ (𝜔 ) = 𝚿 (𝜔 )𝚲 1/2 
+
+> Ψ
+
+(𝜔 ) ˆ𝑏 (𝜔 ). (2.20b) Here, 𝚲 1/2 
+
+> Φ
+
+and 𝚲 1/2 
+
+> Ψ
+
+are the diagonal matrices, each element expresses the amplitude of the input and output basis vector (obtained by the inner product between the dual basis and the actual input and output), and ˆ𝑎, ˆ𝑏 are normalized coefficient vectors, i.e., ∥ ˆ𝑎 ∥2 = ∥ ˆ𝑏 ∥2 = 1, which determine the alignment among basis vectors. Now, the information about the spatiotemporal structure of the forcing term 𝑓 ′ 
+
+> NL
+
+is captured in 𝑻 Φ in (2.20a). Using the learned basis vectors of input and output subspaces, we derive the FI resolvent operator. By projecting (2.9) onto the output basis using the orthogonal projection matrix 𝑷 Ψ = 𝚿𝚿 †, where 𝚿 † = 𝚿 ∗𝑾 such that 𝚿 †𝚿 = 𝑰 , and subsequently substituting (2.20a), we obtain the following relation at a frequency 𝜔 :
+
+ˆ𝑞 Ψ (𝜔 ) = 𝑷 Ψ (𝜔 ) 𝑹 (𝜔 )𝑻 Φ (𝜔 ) ˆ𝑏 (𝜔 ). (2.21) Here, we refer to this newly defined matrix 
+
+𝑮 (𝜔 ) := 𝑷 Ψ (𝜔 ) 𝑹 (𝜔 )𝑻 Φ (𝜔 ) ∈ C𝑁 𝑞 × 𝑁 𝜓 , (2.22) as the forcing-informed (FI) resolvent operator. The FI resolvent operator maps the normalized vector ˆ𝑏 to the energized output ˆ𝑞 Ψ in the output subspace. Finally, the input-output relations are revealed by the SVD of the FI resolvent operator 
+
+𝑮 :
+
+𝑮 (𝜔 ) =
+
+> 𝑁 𝐺
+
+∑︁ 
+
+> 𝑗
+
+𝑢 𝐺, 𝑗 (𝜔 )𝜎 𝐺, 𝑗 (𝜔 )𝑣 ∗ 
+
+> 𝐺, 𝑗
+
+(𝜔 ) (𝜎 𝐺, 𝑗 ≥ 𝜎 𝐺, 𝑗 +1 > 0), (2.23) where 𝑁 𝐺 is the rank of the matrix 𝑮 . Using the SVD results, we may recover the 𝑗 -th most energized response mode and the associated forcing mode based on (2.20a) by selecting ˆ𝑏 = 𝑣 𝐺, 𝑗 in (2.21) as 
+
+ˆ𝑞 𝐺, 𝑗 (𝜔 ) = 𝑮 (𝜔 )𝑣 𝐺, 𝑗 (𝜔 ) = 𝑢 𝐺, 𝑗 (𝜔 )𝜎 𝐺, 𝑗 (𝜔 ), ˆ𝑓 𝐺, 𝑗 (𝜔 ) = 𝑻 Φ (𝜔 )𝑣 𝐺, 𝑗 (𝜔 ). (2.24 a, b)These response mode ˆ𝑞 𝐺, 𝑗 and forcing mode ˆ𝑓 𝐺, 𝑗 are what we seek. Hereafter, we refer to these response and forcing modes extracted via the FI resolvent operator as the FI response mode and FI forcing mode to distinguish from the conventional resolvent modes. The FI forcing modes ˆ𝑓 𝐺 extract the harmonic components of 𝑓 ′
+
+> NL
+
+, which is essential in sustaining the statistically stationary oscillatory flow motions of interest. By inserting the definition 𝑮 
+
+7Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows and 𝑻 Φ into (2.24 a, b), respectively, the FI response and forcing modes are also written as ˆ𝑞 𝐺, 𝑗 = 𝚿𝚿 † 𝑹𝑻 Φ𝑣 𝐺, 𝑗 and 
+
+ˆ𝑓 𝐺, 𝑗 = 𝚽𝚲 1/2 
+
+> Φ
+
+𝑣 𝐺, 𝑗 . These expressions clearly show that the FI response and forcing modes are expressed as linear combinations of the basis vectors 𝚽 of the input subspace and 𝚿 of the output subspaces, respectively. Therefore, the extracted modes always lie within the actual flow field obtained from the numerical simulation. In practice, when the number of output basis vectors is much smaller than the dimension of the state vector, i.e., 
+
+𝑁 𝜓 ≪ 𝑁 𝑞 , which is typically the case in numerical simulations, it is advantageous to rewrite the relation (2.21) by acting 𝚿 † from left as 
+
+𝚲 1/2 
+
+> Ψ
+
+(𝜔 ) ˆ𝑎 (𝜔 ) = e𝑮 (𝜔 ) ˆ𝑏 (𝜔 ) where e𝑮 (𝜔 ) = 𝚿 † (𝜔 ) 𝑹 (𝜔 )𝑻 Φ (𝜔 ) ∈ C𝑁 𝜙 × 𝑁 𝜓 , (2.25) for the reduced computational cost of the SVD of e𝑮 = Í𝑁 𝐺  
+
+> 𝑗
+
+𝑢 ′ 
+
+> 𝐺, 𝑗
+
+𝜎 𝐺, 𝑗 𝑣 𝐺, 𝑗 . We may recover the same response and forcing modes as ˆ𝑞 𝐺, 𝑗 = 𝚿 𝑢 ′ 
+
+> 𝐺, 𝑗
+
+𝜎 𝐺, 𝑗 and ˆ𝑓 𝐺, 𝑗 = 𝑻 𝚽 𝑣 𝐺, 𝑗 , respectively. Furthermore, by taking the inner product of both sides of (2.25), we obtain 
+
+ˆ𝑎 ∗ (𝜔 )𝚲 Ψ (𝜔 ) ˆ𝑎 (𝜔 ) = ˆ𝑏 ∗ (𝜔 )𝑽 ∗ 
+
+> 𝐺
+
+(𝜔 )𝚺 2 
+
+> 𝐺
+
+(𝜔 )𝑽 𝐺 (𝜔 ) ˆ𝑏 (𝜔 ). (2.26) Here, the original flow’s output energy 𝚲 Ψ is decomposed into the singular values of the FI resolvent operator 𝚺 𝐺 .Thus, we can examine the most dominant input-output relations by looking at the FI forcing and response modes for the maximum singular value. In addition, when the FI resolvent operator is a rank-1 matrix ( 𝑁 𝐺 = 1), the maximum singular value 𝜎 𝐺, 1 is expected to match the energy of the output ˆ𝑞 𝜔 , which will be shown in the results section. Thus far, we have described the backbone of the FI resolvent analysis framework, discussing how we construct the FI resolvent operator and extract the FI response and forcing modes. In the subsequent sections, we introduce key properties of the present FI resolvent analysis framework, including the theoretical connection to the input and output basis vectors to modal analysis methods, the physical interpretation of the FI response and forcing mode based on the energy balance in the statistically stationary self-sustained flows in (2.29) , and an alternative view of the FI resolvent operator from the perspective of the state space representation in control theory. 
+
+2.3.1 Use of modal analysis methods for basis vector estimation 
+
+We have introduced the orthogonal basis vectors 𝚽 and 𝚿 for the input and output subspaces, respectively. A natural choice of these basis vectors is the left singular vectors of the matrices b𝑭 and b𝑸 , corresponding to the SPOD modes for the input and output fields, respectively. This suggests that some modal analysis techniques are used to estimate the basis vectors of input and output subspaces. Based on (2.20) , the input and output components in the obtained subspaces are expressed as 
+
+𝑓 ′ 
+
+> Φ
+
+(𝑡 ) =
+
+∫ ∞−∞ 
+
+𝚽 (𝜔 )𝚲 1/2 
+
+> Φ
+
+(𝜔 ) ˆ𝑎 (𝜔 )𝑒 i𝜔𝑡 𝑑𝜔 ∈ V Φ, (2.27 a)
+
+𝑞 ′ 
+
+> Ψ
+
+(𝑡 ) =
+
+∫ ∞−∞ 
+
+𝚿 (𝜔 )𝚲 1/2 
+
+> Ψ
+
+(𝜔 ) ˆ𝑏 (𝜔 )𝑒 i𝜔𝑡 𝑑𝜔 ∈ V Ψ . (2.27 b)This is a general form of the standard modal decompositions in which the spatial coherence ( 𝚽 , 𝚿 ) and temporal coherence (harmonic component 𝑒 i𝜔𝑡 ) are considered separately [Taira et al., 2017]. This form can cover cases where the non-orthogonal basis vectors are considered as discussed in Appendix B. Therefore, modal analysis methods, such as SPOD (orthogonal) and DMD (typically non-orthogonal), are applicable for estimating the bases of the input and output subspaces. Regarding the DMD modes, those whose eigenvalues lie on the unit circle serve as candidate basis vectors for the Fourier-based formulation considered here. The data-driven resolvent analysis uses the DMD modes of the output 𝑞 ′ as the basis vectors, not only for the output subspace but also for the input subspace [Herrmann et al., 2021]. In this sense, the present FI resolvent analysis, which considers different bases for the input and output subspaces, offers a more general formulation. 
+
+2.3.2 Time-averaged energy balance for FI response and forcing modes 
+
+As discussed earlier in (2.8) , the time-averaged energy balance between the energy amplification/attenuation balance between the linear mechanism ⟨𝑞 ′, 𝑳 𝑞 ′⟩𝑊 and the nonlinear mechanism ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩𝑊 is the key property of the self-sustaining mechanisms. Using the identified response and forcing modes, we express 𝑞 ′ and 𝑓 ′ 
+
+> NL
+
+as their linear combinations, respectively written as 
+
+𝑞 ′ =
+
+∫ ∞
+
+> 0
+
+©«
+
+> 𝑁 𝐺
+
+∑︁ 
+
+> 𝑗 =1
+
+ˆ𝑞 𝐺, 𝑗 (𝜔 )ª®¬
+
+𝑒 𝑖 𝜔 𝑚 𝑡 𝑑𝜔 𝑚 + c.c., 𝑓 ′ 
+
+> NL
+
+=
+
+∫ ∞
+
+> 0
+> 𝑁 𝐺
+
+∑︁ 
+
+> 𝑘 =1
+
+ˆ𝑓 𝐺,𝑘 (𝜔 )
+
+!
+
+𝑒 i𝜔 𝑛 𝑡 𝑑𝜔 𝑛 + c.c., (2.28 a, b)8Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows where c.c. denotes the complex conjugate. By inserting these relations into (2.8) and using the orthogonality of the Fourier basis ⟨𝑒 𝑖 𝜔 𝑚 ,𝑡 , 𝑒 𝑖 𝜔 𝑛 𝑡 ⟩ = 𝛿 𝐷 (𝜔 𝑚 − 𝜔 𝑛 ), with 𝛿 𝐷 being the Dirac delta, we obtain the following relation at frequency 𝜔 :
+
+0 =
+
+> 𝑁 𝐺
+
+∑︁ 
+
+> 𝑗 =1
+> 𝑁 𝐺
+
+∑︁ 
+
+> 𝑘 =1
+
+
+
+ˆ𝑞 ∗ 
+
+> 𝐺, 𝑗
+
+(𝜔 )𝑾 𝑳 ˆ𝑞 𝐺,𝑘 (𝜔 ) + ˆ𝑞 ∗ 
+
+> 𝐺, 𝑗
+
+(𝜔 )𝑾 ˆ𝑓 𝐺,𝑘 (𝜔 )
+
+
+
++ c.c.. (2.29) In particular, when the rank-1 approximation of the FI resolvent operator is valid (i.e., 𝜎 𝐺, 1 ≫ 𝜎 𝐺, 2), the above relation (2.29) may be approximated by setting 𝑁 𝐺 = 1 as 
+
+0 ≈
+
+
+
+ˆ𝑞 ∗ 
+
+> 𝐺, 1
+
+(𝜔 )𝑾 𝑳 ˆ𝑞 𝐺, 1 (𝜔 ) + ˆ𝑞 ∗ 
+
+> 𝐺, 1
+
+(𝜔 )𝑾 ˆ𝑓 𝐺, 1 (𝜔 )
+
+
+
++ c.c.. 
+
+= Re 
+
+
+
+ˆ𝑞 ∗ 
+
+> 𝐺, 1
+
+(𝜔 )𝑾 𝑳 ˆ𝑞 𝐺, 1 (𝜔 )
+
+
+
++ Re 
+
+
+
+ˆ𝑞 ∗ 
+
+> 𝐺, 1
+
+(𝜔 )𝑾 ˆ𝑓 𝐺, 1 (𝜔 )
+
+
+
+. (2.30) Note that, before using (2.30) , the validity of the rank-1 approximation should be assessed by looking at the gap between the leading and secondary singular values. As shown later, this approximation is valid for the cases considered in this paper. When this approximation is valid, the dominant nonlinear energy amplification/attenuation mechanisms are expressed by the second term in (2.30) . Based on this term, we can locate the active spatial region where nonlinear energy amplification or attenuation is prevalent by visualizing the Hadamard (element-wise) product ⊙ of the leading response ˆ𝑞 𝐺, 1 and forcing ˆ𝑓 𝐺, 1, written as 
+
+T ( 𝜔 ) = Re (𝒁 𝑊 ˆ𝑞 𝐺, 1 (𝜔 )) ∗ ⊙ ( 𝒁 𝑊 ˆ𝑓 𝐺, 1 (𝜔 ))  ∈ R𝑁 𝑞 . (2.31) The summation over the elements of vector T reduces to the second term in (2.30) . Following Jin et al. [2021], we call T the nonlinear energy transfer map, because the inner product ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩ contains the triadic interaction of three waves that is responsible for the nonlinear inter-scale energy transfer. Since we directly compute 𝑓 ′ 
+
+> NL
+
+now, all possible combinations of the wavenumber triads (in the range of the scales resolved by the numerical simulation) are contained in ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩. Specifying the wavenumber triads in computing 𝑓 ′ 
+
+> NL
+
+is possible and may provide an opportunity to study inter-scale interactions and energy transfer among the modes (e.g., Yeung et al. 2026, Nakamura et al. 2026). 
+
+2.3.3 FI resolvent analysis in terms of state-space representation 
+
+The derived FI resolvent operator 𝑮 (𝜔 ) = 𝑷 Ψ (𝜔 ) 𝑹 (𝜔 )𝑻 Φ (𝜔 ) in (2.22) is the transfer function of the following state-space system: 
+
+
+
+𝜕𝑞 ′
+
+𝜕𝑡 = 𝑳 𝑞 ′ + 𝑓 ′
+
+> Φ𝜔
+
+𝑓 ′ 
+
+> Φ𝜔
+
+= 𝐵 Φ𝜔 𝑏 ′ ∈ V Φ𝜔 
+
+𝑞 ′ 
+
+> Ψ𝜔
+
+= 𝐶 Ψ𝜔 𝑞 ′ ∈ V Ψ𝜔 ,
+
+(2.32) where 𝐵 Φ𝜔 and 𝐶 Ψ𝜔 are the linear operators respectively defined as 
+
+𝐵 Φ𝜔 (𝜔 ) := F −1 ◦ 𝑻 Φ (𝜔 ) ◦ P ( 𝜔 ) ◦ F , 𝐶 Ψ𝜔 (𝜔 ) := F −1 ◦ 𝑷 Ψ (𝜔 ) ◦ P ( 𝜔 ) ◦ F . (2.33 a, b)Here, F and F −1 are the Fourier transform operator and its inverse, P ( 𝜔 ) is the projection operator onto a specific frequency 𝜔 of interest, and the operator ◦ indicates the composition. The input noise is defined as 𝑏 ′ := F −1 ˆ𝑏 . With this definition, the Fourier transform F of (2.32) yields ˆ𝑞 𝜔 = 𝑮 ˆ𝑏 𝜔 (2.21) . These linear operators 𝐵 Φ𝜔 and 𝐶 Ψ𝜔 act as spatiotemporal filters that express the component with the spatial coherence (prescribed by the bases of input subspace 
+
+𝚽 and output subspace 𝚿 ) and temporal dynamics (governed by 𝑒 i𝜔𝑡 ). As such, the present FI resolvent analysis is viewed as an extension of the input-output analysis [Jovanović and Bamieh, 2005, Jeun et al., 2016]. The present method constructs the windowing matrix from the numerical simulation data. This interpretation may provide opportunities to apply well-established control theory, such as observability, controllability, and balanced truncation, to the FI resolvent analysis. The noise 𝑏 ′ is the white noise vector, which is uncorrelated in terms of time, space, and variables such that 
+
+𝐸 [𝑏 ′ 
+
+> 𝑖
+
+(𝑡 )𝑏 ′ 
+
+> 𝑗
+
+(𝜏 )] = 𝛿 𝑖 𝑗 𝛿 𝐷 (𝑡 − 𝜏 ). The energy of the noise 𝑏 ′ is distributed uniformly across the all the frequency 𝜔 as 
+
+∥ ˆ𝑏 ∥2 = 1, and hence we may ensure that all the characteristics of nonlinear forcing at frequency 𝜔 arises only from the input filter 𝐵 Φ𝜔 and that the energy gain by transformation 𝑮 (i.e., the singular values of 𝑮 ) correspond to the amplitudes of the response mode. In light of the discussion of Towne et al. [2018], the conventional resolvent analysis corresponds to the case of 𝐵 Ψ = 𝐶 Φ = I(identity map). 9Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Let us mention in passing that it is possible to introduce a general integral transformation, such as the Laplace transformation, the wavelet transformation, instead of the Fourier transform of system (2.32) , as considered in the context of the resolvent analysis [Yeh et al., 2020, Ballouz et al., 2024, Lopez-Doriga et al., 2024]. The choice of kernel function in the integral transform directly characterizes the temporal structure of the FI response and forcing modes. For instance, the Fourier kernel considered here yields the harmonic modes. 
+
+# 3 Numerical Algorithms 
+
+The numerical algorithms employed to compute the FI resolvent operator and to obtain the response and forcing modes are described here. Here, we present two types of formulations depending on the computational approach for the linear operator 𝑳 , while the same algorithm is applied to estimate 𝑻 Φ and 𝑷 Ψ used to construct the FI resolvent operator. One is the fully data-driven approach, in which the linear operator 𝑳 is estimated in a data-driven manner utilizing the snapshots of nonlinear forcing 𝑓 ′
+
+> NL
+
+. We mainly use this fully data-driven approach in this paper. The other is the semi-data-driven approach, in which the linear operator 𝑳 is obtained via conventional algorithms developed in the context of global stability analysis (e.g., Chiba 1998, Mettot et al. 2014, and see also the reviews by Theofilis 2011 and Rolandi et al. 2024 for details). We denote the FI resolvent operator computed by the fully data-driven approach as 
+
+𝑮 FDD and that computed by the semi-data-driven approach as 𝑮 SDD .
+
+3.1 Estimations of 𝑻 Φ and 𝑷 Φ using SPOD 
+
+We use the SPOD method to estimate the bases of input and output subspaces. To obtain the SPOD modes, the CSD tensors of input ˆ𝑓 NL and output ˆ𝑞 are first estimated as 
+
+𝑺 ff = 𝜅 b𝑭 b𝑭 ∗, 𝑺 qq = 𝜅 b𝑸 b𝑸 ∗, (3.1a, b)where 𝜅 = Δ 𝑡 /( 𝛼𝑁 𝑝 ), Δ𝑡 is the sampling time step, and 𝛼 is a correction factor of a window function used in the discrete Fourier transform for mitigating spectral leakages. The SPOD modes are obtained by the eigenvalue decomposition of the CSD tensors: 
+
+𝑺 ff 𝑾 = 𝚽 SPOD 𝚲 ΦSPOD 𝚽 ∗
+
+> SPOD
+
+, 𝑺 qq 𝑾 = 𝚿 SPOD 𝚲 ΨSPOD 𝚿 ∗
+
+> SPOD
+
+, (3.2a, b)where 𝚲 ΦSPOD and 𝚲 ΨSPOD ∈ R𝑁 𝑝 × 𝑁 𝑝 are the eigenvalues of 𝑺 ff and 𝑺 qq . Also, 𝚽 SPOD and 𝚿 SPOD ∈ C𝑁 𝑞 × 𝑁 𝑝 are the corresponding 𝑁 𝑝 eigenvectors, respectively. The SPOD modes satisfy the weighted orthonormal conditions of 
+
+𝚽 ∗
+
+> SPOD
+
+𝑾 𝚽 SPOD = 𝑰 Np and 𝚿 ∗
+
+> SPOD
+
+𝑾 𝚿 SPOD = 𝑰 Np , respectively. Using these SPOD modes, the matrices 𝑻 Φ and 𝑷 Φ
+
+are expressed as 
+
+𝑻 Φ = 𝚽 SPOD 𝚲 1/2 
+
+> ΦSPOD
+
+, 𝑷 Ψ = 𝚿 SPOD 𝚿 †
+
+> SPOD
+
+. (3.3a, b)When the SPOD modes are used for the output bases, the output amplitude 𝚲 1/2 
+
+> Ψ
+
+becomes the square root of the SPOD gains. Hence, we will compare the gain of the FI resolvent operator and the square root of the output SPOD gain in the result section. 
+
+3.2 Fully data-driven approach with estimated 𝑳 
+
+As mentioned in the introduction, another objective of the present study is to estimate the FI resolvent operator 𝑮 in a data-driven manner, while reducing the dimensionality of the large-scale flow dataset. Here, we present a complete data-driven formulation, in which the linear operator 𝑳 is estimated from snapshot data of both output 𝑞 ′ and input 𝑓 ′
+
+> NL
+
+.To do so, we use the governing equation of fluctuations (2.5), which is rearranged as 
+
+𝜕𝑞 ′
+
+𝜕𝑡 − 𝑓 ′ 
+
+> NL
+
+= 𝑳 𝑞 ′. (3.4) Alongside, we define the snapshot matrices of output and input as 
+
+𝑭 =  𝑓 ′ 
+
+> NL ,1
+
+𝑓 ′ 
+
+> NL ,2
+
+· · · 𝑓 ′
+
+> NL ,𝑀
+
+ ∈ R𝑁 𝑞 ×𝑀 , (3.5) 
+
+𝑸 = 𝑞 ′ 
+
+> 1
+
+𝑞 ′ 
+
+> 2
+
+· · · 𝑞 ′
+
+> 𝑡 𝑀
+
+ ∈ R𝑁 𝑞 ×𝑀 , (3.6) respectively, and we also introduce the matrix of the time derivatives of output snapshots as 
+
+¤𝑸 = (𝑑𝑞 ′/𝑑𝑡 )1 (𝑑𝑞 ′/𝑑𝑡 )2 · · · (𝑑𝑞 ′/𝑑𝑡 )𝑀 
+
+ ∈ R𝑁 𝑞 ×𝑀 . (3.7) Since (3.4) holds at every snapshot, we may obtain the following relation 
+
+¤𝑸 − 𝑭 = 𝑳𝑸 . (3.8) 10 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Based on (3.8), the linear time invariant operator 𝑳 can be estimated by solving the following minimisation problem: 
+
+𝑳 ≈ 𝑳 data = arg min  
+
+> 𝑳
+
+∥ ¤ 𝑸 − 𝑭 − 𝑳𝑸 ∥𝐹 , (3.9) where ∥ · ∥ 𝐹 denotes the Frobenius norm. The solution to this problem is given as 
+
+𝑳 data = ( ¤ 𝑸 − 𝑭 )𝑸 +, (3.10) where 𝑸 + := 𝑽 𝑄 𝚺 −1 
+
+> 𝑄
+
+𝑼 ∗ 
+
+> 𝑄
+
+is the pseudo-inverse of 𝑸 , obtained using the SVD 𝑸 = 𝑼 𝑄 𝚺 𝑄 𝑽 ∗
+
+> 𝑄
+
+.In practice, to obtain 𝑳 data , a similar algorithm used in the projected DMD [Schmid, 2010], or its variants, such as exact DMD [Tu et al., 2014] and parallel algorithms for a large-scaled data [Asada and Kawai, 2025] are applicable, by dealing with the left-hand-side term ¤𝑸 − 𝑭 in (3.8) in the same way as the snapshot matrix of next time step in the projected DMD. Hence, as in the projected DMD, equation (3.8) is projected onto the first 𝑁 POD leading POD modes of 
+
+𝑸 , denoted as 𝑼 𝑁 POD  
+
+> 𝑄
+
+, which are the left singular vectors corresponding to the first 𝑁 POD leading singular values 𝚺 𝑁 POD 
+
+> 𝑄
+
+of 𝑸 . The reduced-sized linear operator on the projected equation is estimated as 
+
+e𝑳 data = (𝑼 𝑁 POD  
+
+> 𝑄
+
+)∗ ( ¤ 𝑸 − 𝑭 )𝑽 𝑁 POD  
+
+> 𝑄
+
+(𝚺 𝑁 POD  
+
+> 𝑄
+
+)−1 ∈ R𝑁 POD × 𝑁 POD , (3.11) where 𝑽 POD  
+
+> 𝑄
+
+collects the right singular vectors of 𝑸 corresponding to 𝚺 POD  
+
+> 𝑄
+
+. The original-sized linear operator is recovered as 
+
+𝑳 data = 𝑼 𝑁 pod  
+
+> 𝑄
+
+e𝑳 data (𝑼 𝑁 pod  
+
+> 𝑄
+
+)∗. (3.12) Finally, inserting 𝑳 = 𝑳 data into (2.25), the fully data-driven FI resolvent operator e𝑮 FDD is rewritten as 
+
+e𝑮 FDD = 𝚿 † (i𝜔 𝑰 − 𝑳 data )𝚽𝚲 Φ
+
+= 𝚿 †𝑼 𝑁 pod  
+
+> 𝑄
+
+(i𝜔 𝑰 𝑁 POD − e𝑳 data )−1 (𝑼 𝑁 pod  
+
+> 𝑄
+
+)∗
+
+𝚽𝚲 Φ, (3.13) where 𝑰 𝑁 POD is the 𝑁 POD × 𝑁 POD identity matrix. After the SVD of e𝑮 FDD , the FI response and forcing modes are recovered in the same way as in ( 2.24 a, b). It is also worth discussing that to obtain the linear time invariant operator 𝑳 , although one may want to use the dynamic mode decomposition (DMD) [Schmid, 2010] as in the data-driven resolvent analysis of linear flows [Herrmann et al., 2021], this approach does not work in this situation where the nonlinear forcing terms 𝑓 ′ 
+
+> NL
+
+have finite amplitude. This is because the DMD attempts to find a time evolution operator 𝑨 such that 𝑸 ′ ≈ 𝑨𝑸 ≈ ∫ 
+
+> Δ𝑡
+
+𝑳𝑸 + 𝑭 𝑑𝑡 (𝑸 ′ is the matrix collecting the snapshots of the next time steps with time increment Δ𝑡 ), which includes the effects of nonlinear forcing terms 𝑭 . Although the DMD is favorable for approximating a good time-evolution operator for nonlinear dynamics, it can face difficulty in finding 𝑳 , which will be shown for the Stuart-Landau oscillator in §5.1. 
+
+3.3 Semi-data-driven approach 
+
+Next, let us consider the situation where we have the linear operator 𝑳 obtained using one of several numerical algorithms developed for global stability analysis [Theofilis, 2011]. The algorithm for the input-output analysis based on the semi-data-driven 𝑮 SDD is shown in algorithm 1 below. The advantage of this algorithm is that we may avoid the direct inverse operation to have the resolvent operator 𝑹 by taking its action on the input 𝑻 Φ (in line 1) using a linear solver, which is cost-efficient and stable. The present algorithm is similar to the randomized resolvent analysis [Ribeiro et al., 2020], and thus achieves comparably reduced computational cost. 
+
+Algorithm 1 Semi-data-driven forcing-informed resolvent analysis 
+
+Input: Frequency 𝜔 , linear operator 𝑳 , and matrices 𝑻 Φ and 𝚽 †
+
+1: 𝑮 SDD ← [ i𝜔 𝑰 Nq − 𝑳 ]\ 𝑻 Φ ⊲ Solve linear system for 𝑮 SDD 
+
+2: e𝑮 SDD ← 𝚿 †𝑮 SDD ⊲ Projection onto the output (coefficient) space estimated from data 
+
+3: [𝑼 e𝐺 , 𝚺 e𝐺 , 𝑽 e𝐺 ] ← svd ( e𝑮 SDD ) ⊲ SVD of reduced-sized e𝑮 SDD 
+
+4: for all 𝑗 = 1 to 𝑁 𝐺 do 
+
+5: [ ˆ𝑞 𝐺, 𝑗 , ˆ𝑓 𝐺, 𝑗 ] ← [ 𝚿 𝑢 e𝐺, 𝑗 𝜎 e𝐺, 𝑗 , 𝚽𝚲 1/2 
+
+> Φ
+
+𝑣 e𝐺, 𝑗 ]
+
+6: end for ⊲ Recover 𝑗 −th leading FI response/forcing modes 
+
+Output: Pairs of FI forcing and response modes 11 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows For the linear solver on line 1, a direct sparse LU method is employed in this study. In the randomized resolvent analysis [Ribeiro et al., 2020], the sketch of the resolvent 𝑹 is first obtained using the random test matrix 𝛀 by solving the linear system 𝑹 −1 𝑺 𝑅 = 𝛀 for the sketch 𝑺 𝑅 . By this operation, we obtain the action of the resolvent operator 𝑹 . In the present method, the first line corresponds to this process; the action of 𝑹 is taken on 𝑻 Φ. Ribeiro et al. [2020] also introduced the physics-informed random test matrix 𝛀 physics instead the use of random matrix 𝛀 . The entries of 𝛀 physics are scaled by the velocity gradient of the base flow, magnifying the non-normality associated with the shear. It was reported that introducing a physics-informed random test matrix yields more accurate resolvent modes with fewer column vectors of the test matrix. In this way, 𝑻 Φ can be viewed as a physics-informed test matrix that yields the response excited by the nonlinear forcing. On the other hand, the projection onto the output coefficient space in the second line corresponds to the projection onto the column space of the sketch 𝑺 𝑅 in the randomized resolvent analysis. 
+
+# 4 Summary of the FI resolvent analysis 
+
+Before the results section, the overall workflow of the present FI resolvent analysis is summarized below again, with reference to Fig. 1. In step 1, we begin by collecting the output snapshots 𝑸 and computing the nonlinear forcing snapshots 𝑭 , which are necessary in self-sustaining mechanisms as discussed in §2.1. For compressible NSs considered here, the nonlinear forcing is given in Appendix A. In step 2, the basis vectors 𝚿 and 𝚽 of input and output subspaces are estimated from their data, respectively. Specifically, modal analysis methods can be used to estimate their basis vectors, as discussed in §2.3.1. This paper uses the SPOD modes as a natural choice for the Fourier-transform-based formulation of the resolvent operator, as detailed in §3.1. When choosing the fully data-driven implementation, the linear operator 𝑳 can also be estimated by leveraging the forcing snapshots, as explained in §3.2. In step 3, using the obtained nonlinear forcing information contained in 𝑻 Φ and projection operator onto the output subspace 𝑷 Ψ, the FI resolvent operator 𝑮 is constructed as in (2.22) . The computational cost of 𝑮 can be reduced using (3.13) for the fully data-driven approach in §3.2 or Algorithm 1 for the semi-data-driven approach as in §3.3. In step 4, the FI forcing and response modes are recovered via the SVD of the FI resolvent operator, as given by (2.24 a, b). This relation (2.24 a, b) ensures that these modes lie in the estimated input VΦ and output subspaces VΨ,respectively. In other words, the FI resolvent analysis identifies the FI forcing and response modes that exist in the actual flow field. This property holds even at frequencies where nonlinear amplification mechanisms dominate and thus are not revealed by conventional resolvent analysis, as indicated by the modes at 2𝜔 1 for the 2D cylinder example in Fig. 1. The details for the results of this 2D cylinder case are given in the subsequent section 5.2. 
+
+# 5 Results and discussion 
+
+5.1 Stuart-Landau oscillator 
+
+As a proof of concept for the proposed method, let us consider a model dynamical system of a third-order Stuart-Landau oscillator, which models dynamics near the supercritical Hopf bifurcation. The Hopf bifurcation can be found in several flow systems, including two-dimensional cylinder flow [Sipp and Lebedev, 2007] and transonic airfoil buffeting flow [Crouch et al., 2007]. This model can be expressed as 
+
+𝑑 𝑑𝑡 
+
+𝛼 𝛽 
+
+
+
+=
+
+ 𝜆 𝐿 𝜔 𝐿 
+
+−𝜔 𝐿 𝜆 𝐿 
+
+  𝛼 𝛽 
+
+
+
+− ( 𝛼 2 + 𝛽 2)
+
+𝛼 − 𝑐𝛽 𝑐𝛼 + 𝛽 
+
+
+
+, (5.1) for a state vector of 𝑞 ′ = [𝛼, 𝛽 ] ∈ R2 and parameters 𝜆 𝐿 , 𝜔 𝐿 , 𝑐 ∈ R. The nonlinear fluctuation equations (2.5) can be derived not only for the Navier–Stokes equations but also for a general nonlinear governing equation. In (5.1) , the first term in the right-hand side corresponds to the linear term 𝑳 𝑞 ′ while the second term to the nonlinear forcing term 𝑓 ′
+
+> NL
+
+.Here, we set the parameters as 𝜆 𝐿 = 0.10 , 𝜔 𝐿 = 2.0, and 𝑐 = 1.0 and consider an initial condition of [𝛼 (0), 𝛽 (0)] 𝑡 =
+
+0.01 [1/√2, 1/√2]𝑡 . With the parameters and the initial condition, the solution 𝑞 ′ and the nonlinear forcing term 𝑓 ′
+
+> NL
+
+are as shown in Fig. 2( a). The amplitude of the solution grows exponentially, and subsequently it reaches the limit cycle around 𝑡 = 60 . As shown in Fig. 2( b), the nonlinear forcing term 𝑓 ′ 
+
+> NL
+
+also varies in time periodically, similar to the output 𝑞 ′, with a fixed phase difference with 𝑞 ′. In the exponentially growing region, the solution oscillates at a frequency of 𝜔 = 𝜔 𝐿 = 2.0. On the other hand, the frequency of the limit-cycle oscillation (LCO) is analytically given as 𝜔 NL = 𝜔 𝐿 − 𝑐𝜆 𝐿 = 1.9. For this Stuart-Landau model, let us assess the performance of the proposed FI resolvent framework by checking if (1) the linear time-invariant matrix 𝑳 = [𝜆 𝐿 𝜔 𝐿 ; −𝜔 𝐿 𝜆 𝐿 ] is correctly estimated, (2) the 12 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows t
+
+0 20 40 60 80 100 120 
+
+−0.2 0.0 0.2 
+
+t
+
+152 154 156 158 160 
+
+(𝑎 ) (𝑏 )
+
+> q'  , f NL
+> '
+
+Figure 2: Time trajectories of the state vector 𝑞 ′ (blue) and the nonlinear forcing vector 𝑓 ′ 
+
+> NL
+
+(orange) of the Stuart–Landau oscillator. ( a) The first components 𝑞 ′ 
+
+> 1
+
+and 𝑓 ′ 
+
+> NL ,1
+
+from the initial condition to the limit cycle oscillation (LCO) at 
+
+0 ≤ 𝑡 ≤ 120 . ( b) All components at 152 ≤ 𝑡 ≤ 161 in the LCO domain. Solid lines, the first components of 𝑞 ′ and 𝑓 ′
+
+> NL
+
+;dashed lines, the second components. proposed FI resolvent operator 𝑮 can predict the nonlinear frequency 𝜔 NL = 1.9, and (3) the energy balance between linear and nonlinear amplification/attenuation mechanisms as in (2.8) holds. For the first point (1), we consider the four datasets with different time ranges 𝑡 ∈ [ 𝑡 𝑠 , 𝑡 𝑒 ], specifically, [𝑡 𝑠 , 𝑡 𝑒 ] = [0, 20 ]
+
+(linear growth domain), [0, 40 ], [0, 80 ] (linear growth and LOC domains are mixed to the same degree), and [0, 1500 ]
+
+(almost covered by the LCO), with a sufficiently small sampling interval Δ𝑡 = 1.0 × 10 −2. In this test case, time derivatives ¤𝑸 are evaluated using the second-order central differencing. For comparison, the DMD is used to estimate 𝑳 .With the DMD, 𝑳 can be recovered as 𝑽 DMD log (𝚲 DMD )/ Δ𝑡 𝑽 −1DMD where 𝑽 DMD and 𝚲 DMD are the eigenvectors (DMD modes) and eigenvalues of the linear time-evolution matrix. In figure 3( a), the eigenvalues of the estimated 𝑳 data by the proposed data-driven approach and the DMD are shown. Since the theoretical eigenvalues of 𝑳 are 𝜆 𝐿 ± i𝜔 𝐿 , the real part and imaginary part of the estimated eigenvalues should correspond to the diagonal ( 𝜆 𝐿 ) and off-diagonal elements (𝜔 𝐿 ) of 𝑳 , respectively. Thus, we can see if the linear operator is predicted or not by visualizing the eigenvalue (only one from the complex conjugate pair) as in Fig. 3( a). The present method well predicts 𝑳 robustly over the time range, as shown by the red points collapsing onto the reference black cross marker. In contrast, DMD is unable to predict 𝑳 
+
+when the LCO solution accounts for most of the time range. This is because the term 𝛼 2 + 𝛽 2 becomes constant in the LCO region of a constant amplitude, which simplifies the Stuart-Landau model (5.1) to a linear model, written as 
+
+𝑑 𝑑𝑡 
+
+𝛼 𝛽 
+
+
+
+=
+
+ (𝜆 𝐿 − 𝑑 ) 𝜔 𝐿 − 𝑐𝑑 
+
+−( 𝜔 𝐿 − 𝑐𝑑 ) 𝜆 𝐿 − 𝑑 
+
+| {z }
+
+> 𝑳 ′
+
+𝛼 𝛽 
+
+
+
+(5.2) where 𝑑 = 𝛼 2 + 𝛽 2 is the constant amplitude. The DMD predicts 𝑳 ′ that includes the forcing information, rather than the operator of interest 𝑳 . The solution to this linear system 𝑳 ′ has a growth rate of 𝜆 𝐿 − 𝑑 and a frequency of ±( 𝜔 𝐿 − 𝑐𝑑 ).Thus, 𝜆 𝐿 − 𝑑 = 0 is required so that the system maintains a constant amplitude, and the requirement yields the frequency of the LCO 𝜔 NL = 𝜔 𝐿 − 𝑐𝜆 𝐿 = 1.9. In Fig. 3( a), the erroneously estimated eigenvalues (𝜆 𝑟 , 𝜆 𝑖 ) ≈ ( 0.0, ±1.9) in case of 𝑡 ∈ [ 0, 1500 ] correspond to growth rate and frequency of system 𝑳 ′. This result demonstrates the necessity of the nonlinear forcing snapshots for obtaining 𝑳 .With regard to the second point (2), let us analyze the proposed FI resolvent operator 𝑮 . In figure 3( b), the leading singular values 𝜎 1 of the resolvent operator 𝑹 obtained analytically and the proposed data-driven estimation of the FI resolvent operator 𝑮 are compared. For computing 𝑮 , snapshots over 𝑡 ∈ [ 160 , 1500 ] in the LCO regime are used. Since the rank of this system is at most two, as anticipated from the governing equations for two variables (5.1) (though it is actually rank-1 since this model expresses a single oscillator expressed by a single complex variable), the snapshot data are divided into two segments. For this case, no explicit windowing function for the FFT is employed since the Stuart-Landau oscillator is perfectly periodic. As a result, as shown in Fig. 3( b), the peak of the leading gain of 𝑮 
+
+appears at 𝜔 = 𝜔 NL as expected, while that of the resolvent operator 𝑹 exists at the frequency of the exponentially growing region 𝜔 = 𝜔 𝐿 . The value of the leading gain at 𝜔 = 𝜔 NL matches the square root of the leading eigenvalue 
+
+𝜆 1/21 (𝑺 qq ) as expected by (2.25). 13 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜆 r
+
+0.00 0.05 0.10 
+
+> 𝜆  i
+
+1.90 1.95 2.00 t ∈ [0,20] 
+
+t ∈ [0,40] 
+
+t ∈ [0,80] 
+
+t ∈ [0,1500] 
+
+present 
+
+𝜔 
+
+1.50 1.75 2.00 
+
+> 𝜎  1
+
+10 −110 010 110 210 3
+
+𝜎 1 (G) 𝜎 1(R)
+
+𝜆 11/2 (S qq )
+
+> 𝜔  = 𝜔  NL
+> 𝜔  = 𝜔  L
+
+(𝑎 ) (𝑏 )
+
+Figure 3: Results for the Stuart-Landau oscillator. ( a) Eigenvalue 𝜆 𝑟 + i𝜆 𝑖 of 𝑳 data obtained by the proposed method (red circle) and by DMD (blue triangle) and the true eigenvalue (𝜆 𝑟 , 𝜆 𝑖 ) = (0.1, 2.0) (black cross). The red circles collapse onto the true eigenvalue regardless of the time ranges. ( b) Leading singular value 𝜎 1 of proposed fully data-driven FI resolvent operator 𝑮 FDD (orange circle) and conventional resolvent operator 𝑹 (gray plus), and square roots of the leading SPOD gains (red cross). t
+
+## 0 20 40 60 80 100 120 terms 
+
+## −0.01 0.00 0.01 
+
+## ⟨q' , Lq' ⟩ + ⟨q' , f NL 
+
+## ' ⟩⟨q' , f NL 
+
+## ' ⟩⟨q' , Lq' ⟩⟨q̂ G,1 , Lq ̂ G,1 ⟩ + ( c.c.) 
+
+## ⟨q̂ G,1 , f̂ G,1 ⟩ + ( c.c.) 
+
+Figure 4: Time evolutions of ⟨𝑞 ′, 𝑳 𝑞 ′⟩ (solid blue line), ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩ (solid orange line), and their sum (solid green line), for the Stuart-Landau system. The dashed blue/orange line is the time-averaged energy supply/removal due to the linear/nonlinear mechanisms during the LCO, evaluated using the leading FI response ˆ𝑞 𝐺, 1 and forcing modes ˆ𝑓 𝐺, 1.Finally, to assess the energy balance between the linear and nonlinear amplification/attenuation mechanisms for the third item (3), the time histories of the terms in (2.8) (before taking time-averaging) are shown in Fig. 4. For 𝑡 ≲ 60 , the amplification due to the linear term (positive ⟨𝑞 ′, 𝑳 𝑞 ′⟩ shown in blue line) exceeds the attenuation due to the nonlinear term (negative ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩ shown in orange line), resulting in the growth of the amplitude (see also figure 2). After the system settles into the LCO ( 𝑡 ≳ 60 ), these two terms are balanced, as indicated by a zero sum (green line). Thus, the amplitude 𝑑 is kept constant. Apparently, this plot indicates that the time-averaged values ⟨𝑞 ′, 𝑳 𝑞 ′⟩ and ⟨𝑞 ′, 𝑓 ′
+
+> NL
+
+⟩
+
+during the LCO also balance with each other during the LCO, as indicated by (2.8) . In addition, the balance between 
+
+⟨ ˆ𝑞 𝐺 , 𝑳 ˆ𝑞 𝐺 ⟩ + c.c. and ⟨ ˆ𝑞 𝐺, 1, ˆ𝑓 𝐺, 1⟩ + c.c. in Fig. 4 demonstrates that the energy amplification/attenuation balance for a rank-1 approximated FI resolvent operator in (2.30) holds. As expected, the proposed FI resolvent analysis works for the Stuart-Landau oscillator as an ideal low-dimensional model of oscillatory flow, serving as a foundation for subsequent analyses of actual self-sustained nonlinear flows. 14 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 
+
+5.2 Two-dimensional periodic cylinder flow 5.2.1 Numerical simulation set-up 
+
+The proposed framework is then applied to a two-dimensional (2D) cylinder flow at a Mach number 𝑀 ∞ = 𝑢 ∞/𝑎 ∞ = 0.2
+
+and a diameter-based Reynolds number 𝑅𝑒 𝐷 = 𝜌 ∞𝑢 ∞ 𝐷 /𝜇 ∞ = 150 , where 𝑎 ∞, 𝜌 ∞, 𝑢 ∞, and 𝜇 ∞, are the speed of sound, density, streamwise velocity, and the dynamic viscosity at freestream. At the Reynolds number, Kárman vortex shedding occurs in the cylinder wake. To obtain the snapshot data, we numerically solve the compressible Navier–Stokes equations in the conservative form. The computational domain is discretized on a two-dimensional body-fitted O-type grid. The domain extends to 𝑟 /𝐷 ≤ 100 , where 𝑟 is the radial distance from the center of the cylinder. Both radial and circumferential directions have 400 uniformly distributed grid points. The sixth-order kinetic energy and entropy preserving (KEEP) scheme [Kuya and Kawai, 2021] is employed for the convective fluxes, while the sixth-order central differencing is adopted for the viscous fluxes. The family of the KEEP schemes [Kuya et al., 2018, Tamaki et al., 2022, Kawai and Kawai, 2025] achieves non-dissipative while robust computation of compressible flows, and has demonstrated its capability for high-fidelity simulations of a range of self-sustaining nonlinear flows (e.g., Maejima and Kawai, 2025, Boldini et al., 2025). For the time integral, the three-stage total-value-diminishing Runge-Kutta method [Gottlieb and Shu, 1998] is employed, with a Courant number of 0.65. The no-slip adiabatic condition is imposed at the wall, while the freestream condition is applied for the outer boundary. 
+
+5.2.2 Input-output analysis set-up 
+
+From the numerical simulation, 𝑀 = 801 snapshots are obtained with a sampling interval of Δ𝑡 /( 𝐷 /𝑢 ∞) ≈ 0.27 
+
+after the solution reaches a statistically stationary limit cycle. The obtained snapshot matrix 𝑸 contains 40 cycles of the Kárman vortex shedding at a Strouhal number of 𝑆𝑡 = 𝑓 𝐷 /𝑢 ∞ ≈ 0.182 . Hereafter, let us denote the Strouhal number of the Kárman vortex shedding by 𝑆𝑡 𝐾 = 0.182 . Each vortex-shedding cycle contains exactly 20 snapshots. The nonlinear forcing snapshot matrix 𝑭 is then computed as a post-processing. In computing the nonlinear forcing terms, a second-order central difference scheme is used for the spatial derivatives. On the other hand, for the time derivatives ¤𝑸 , the sixth-order central differencing is applied. According to the modified wave number, the range of 
+
+0 ≤ 𝑆𝑡 ≤ 3.3𝑆𝑡 𝐾 ∼ 4𝑆𝑡 𝐾 is accurate with the sixth-order central differencing because 5 ∼ 6 snapshots per wave are required for resolving a wave with negligible dispersion errors. In this case, we discuss the results for the first three harmonics, 𝑆𝑡 = 𝑆𝑡 𝐾 , 2𝑆𝑡 𝐾 , and 3𝑆𝑡 𝐾 , which lie within the reliable wavenumber range and contain more than 99% of the fluctuation energy [Jin et al., 2021]. As in (3.12) , the linear operator is estimated using 𝑁 POD POD modes. We choose 𝑁 POD = 250 so that more than 99 .9% 
+
+energy of the original flow field can be recovered. On the other hand, to obtain the SPOD modes for the input and output bases, the snapshot datasets are divided into 3 sub-blocks with 50% overlap, yielding 𝑁 𝑝 = 3 SPOD modes at each frequency. To validate the proposed fully data-driven approach, the linear operator 𝑳 around the mean flow is also computed directly (operator-based approach). The eigenvalue with the greatest real component of 𝑳 is obtained using the implicitly restarted Arnold method combined with the shift-inverting method implemented in the Arpack library [Lehoucq et al., 1998]. The present eigenvalue is confirmed to be robust to the domain sizes from 𝑟 /𝐷 ≤ 12 .5 to 𝑟 /𝐷 ≤ 32 .5, and the tolerance values for terminating iteration from 10 −7 to 10 −12 . The linear operator 𝑳 obtained from direct computation is also used to construct 𝑮 SDD .
+
+5.2.3 Results of input-output analysis 
+
+Let us first look at the eigenvalues of the linear operator estimated from data 𝑳 data . The obtained eigenvalue with the greatest real part (magenta circle) agrees well with the one obtained by the operator-based approach (black cross), as shown in Fig. 5( a). The corresponding eigenvector in Fig. 5( b) indicates the physical mode associated with the Kárman vortex shedding. The results demonstrate that the linear operator 𝑳 is well estimated by the proposed method. The leading singular values 𝜎 1 of the FI resolvent operators 𝑮 FDD (orange) and 𝑮 SDD (blue) are shown in Fig. 6, along with the conventional resolvent gain 𝜎 1 ( 𝑹 ). The leading gains of both 𝑮 FDD and 𝑮 SDD possess the peaks not only at 𝑆𝑡 𝐾 but also its harmonics 2𝑆𝑡 𝐾 , 3𝑆𝑡 𝐾 , indicating that the present FI resolvent operator captures the nonlinear amplification mechanisms which the conventional resolvent 𝑹 does not predict. This result indicates that the output energy at each frequency near the gain peaks is successfully recovered from both the fully data-driven estimates e𝑮 FDD 
+
+and the semi-data-driven estimates e𝑮 SDD . The correspondence of the leading gains between e𝑮 FDD and e𝑮 SDD also supports the validity of the estimated linear operator 𝑳 data used in the fully data-driven framework. Moreover, near the gain peaks at the frequencies of interest ( 𝑆𝑡 𝐾 , 2𝑆𝑡 𝐾 , and 3𝑆𝑡 𝐾 ), the leading gains 𝜎 1 show a good agreement with the square root of the leading SPOD gains of output, i.e., 𝜎 1 (𝑮 ) ≈ 𝜆 1 (𝑺 𝑞𝑞 )1/2. This is consistent with (2.26) for a rank-1 15 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜆 rD/2 𝜋 u ∞
+
+−0.04 −0.03 −0.02 −0.01 0.00 
+
+> 𝜆  iD/2 𝜋 u ∞
+
+0.0 0.2 0.4 0.6 
+
+x/D
+
+−2 −1 0 1 2 3 4 5
+
+> y/D
+
+−2.5 0.0 2.5 Re( m̂ x)/|( m̂ x)| ∞
+
+(𝑎 ) (𝑏 ) 
+
+> -1.0 1.0
+
+Figure 5: Data-driven estimate of linear time-invariant operator 𝑳 data of two-dimensional cylinder flow. (a) Eigenvalues 
+
+𝜆 = 𝜆 𝑟 + i𝜆 𝑖 of the proposed 𝑳 data (green and magenta circles) and the most unstable eigenvalue of 𝑳 computed in operator-based approach (black cross), (b) real part of the streamwise momentum component of the eigenvector ˆ𝑚 𝑥 of 
+
+𝑳 data corresponding to the most unstable eigenvalue indicated by the magenta circle. St     
+
+> 0.1 0.3 0.5 Gain
+> 10 −210 010 210 4
+
+G FDD G SDD         
+
+> R
+> 𝜆 11/2 (Sqq )
+> St K2St K3St K
+
+Figure 6: Leading gains (singular values 𝜎 1) for 2D cylinder case, obtained from the fully data-driven 𝑮 FDD (orange circle), semi-data-driven 𝑮 SDD (blue triangle), and the ordinary resolvent operator 𝑹 (gray plus), along with the secondary leading gains of 𝜎 2 (𝑮 FDD )(orange cross). The square roots of the leading eigenvalues SPOD gains 𝑺 qq (red cross) are also shown. FI resolvent operator, which holds at the harmonics where the leading and secondary gains are separated by about two orders of magnitude. Slight differences between the FI resolvent and SPOD gains at frequencies other than the harmonics of 𝑆𝑡 𝐾 may be observed, but they are not the main concern of this analysis. The streamwise momentum component of the FI response and forcing modes obtained by the fully data-driven approach are shown in Fig. 7. Hereafter, we use ˆ𝑞 𝑚 𝑥 and ˆ𝑓 𝑚 𝑥 to denote the streamwise momentum component of the leading FI response and forcing modes ˆ𝑞 𝐺, 1 and ˆ𝑓 𝐺, 1, respectively. We first emphasize that these FI response and forcing modes are grounded in the actual flow field, thanks to the use of the basis vectors of the input and output subspaces, even at harmonics 2𝑆𝑡 𝐾 and 3𝑆𝑡 𝐾 , where the nonlinear amplification mechanism is crucial. For comparison, we also visualize the response and forcing modes obtained by the conventional resolvent analysis in Fig. 8. Looking at the FI response mode at 𝑆𝑡 𝐾 in Fig. 7, the spatial structure of the FI response mode resembles the conventional response mode shown in Fig. 8( a). In contrast, the FI forcing mode structure differs greatly from the conventional resolvent forcing mode 8( b): the FI forcing mode is confined to the cylinder wake, whereas the conventional forcing mode appears not only near the shear layer but also upstream of the cylinder. The FI forcing mode that sustains oscillation of ˆ𝑞 should be confined to the place where the output 𝑞 ′ appears because the 𝑓 ′NL is a function of 𝑞 ′. In this sense, the proposed FI forcing mode reveals the nonlinear forcing component that plays a crucial role in the self-sustaining mechanism, which is not captured well by the conventional forcing mode. In a similar manner, the FI forcing modes at the harmonics 2𝑆𝑡 𝐾 (middle) and 
+
+3𝑆𝑡 𝐾 (right) also appear in the wake where the FI response modes exist. 16 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Fully data-driven approach 
+
+## S tK 2S tK 3S tK
+
+x /D20 4
+
+y /D      
+
+> -1
+> 1
+> -1
+> 1
+> -1
+> 1
+> 0
+> -2
+> 2
+> 0
+> 2
+> 0
+> 2
+> 620462046
+> FI response FI forcing 𝒯 mx
+> -0.5
+> 0.5
+> -1
+> 1
+> -1
+> 1̂
+> qmx /∥̂qmx∥∞̂fmx /∥̂ fmx∥∞𝒯 mx /∥𝒯 mx∥∞
+
+Figure 7: Spatial distributions of the leading FI response and forcing modes in 2D cylinder wake extracted by the fully data-driven approach using 𝑮 FDD . Real parts of streamwise momentum components are shown for the FI response 
+
+ˆ𝑞 𝑚 𝑥 /∥ ˆ𝑞 𝑚 𝑥 ∥∞ (top) and forcing ˆ𝑓 𝑚 𝑥 /∥ ˆ𝑓 𝑚 𝑥 ∥∞ (middle). The nonlinear energy transfer map for the streamwise momentum component T𝑚 𝑥 := Re [𝒁 ˆ𝑞 ∗ 
+
+> 𝑚 𝑥
+
+⊙ 𝒁 ˆ𝑓 𝑚 𝑥 ], scaled by its infinity norm ∥T 𝑚 𝑥 ∥∞, is shown at the bottom. x/D         
+
+> −11357
+> y/D
+> −101
+> x/D
+> −11357
+> −101
+> -1 1(𝑎 )(𝑏 )
+
+Figure 8: Conventional resolvent modes obtained using 𝑹 : streamwise component of (a) response mode, (b) forcing mode. The real part of the momentum component scaled by its infinity norm is shown. To explore the role of the FI forcing mode at the fundamental frequency 𝑆𝑡 𝐾 in the self-sustaining mechanism, we visualize the streamwise momentum component of the nonlinear energy transfer map T𝑚 𝑥 := Re [𝒁 ˆ𝑞 ∗ 
+
+> 𝑚 𝑥
+
+⊙ 𝒁 ˆ𝑓 𝑚 𝑥 ] from (2.31) in Fig. 7(bottom). As discussed earlier, in the self-sustained flows, the time-averaged energy balance between the amplification/attenuation via the linear and nonlinear mechanisms (2.8) holds, and we can consider the nonlinear energy map T especially at the frequency where the rank-1 approximation of the FI resolvent operator is valid. In figure 7, the nonlinear energy transfer map T𝑚𝑥 identifies the local spatial domain where the energy amplification/attenuation mechanisms due to the nonlinear forcing term are prevalent, as indicated by the green region for amplification and by the purple region for attenuation. The purple region of T at 𝑆𝑡 𝐾 in Fig. 7 indicates that the streamwise momentum component of the FI forcing mode attenuates the fluctuation energy at the 𝑆𝑡 𝐾 scale in the cylinder wake, except for the green region, including near the recirculation region (gray line) right behind the cylinder and the interference region with the free stream. In contrast, at the harmonics ( 2𝑆𝑡 𝐾 , 3𝑆𝑡 𝐾 ), the FI forcing mode attenuates the energy near the recirculation region while supplying it to most other regions in the wake. These maps of T𝑚 𝑥 suggest that the fluctuation energy at 𝑆𝑡 𝐾 is generated near the recirculation region (green region at 𝑆𝑡 𝐾 ) and then transported downstream by convection, followed by the interscale energy transfer by the nonlinear forcing 𝑓 ′ that supplies the energy to the harmonics in the downstream of the cylinder wake ( 2 ≲ 𝑥 /𝐷 ≲ 6) (purple region at 𝑆𝑡 𝐾 whereas green regions at 2𝑆𝑡 𝐾 and 3𝑆𝑡 𝐾 ). Focusing on the positive energy transfer by the nonlinear forcing near the recirculation region at 
+
+𝑆𝑡 𝐾 , this result indicates that the nonlinear forcing associated with shear-layer roll-up dynamics at 𝑆𝑡 𝐾 continues to 17 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜃 = 0 𝜋 /4 𝜋 /2 3𝜋 /4                
+
+> 𝜃 = 0 𝜋 /4 𝜋 /2 3𝜋 /4
+> x/D
+> −101234
+> y/D
+> -1 01
+> x/D
+> −101234-1 01
+> (𝑎 )(𝑏 )(𝑐 )(𝑑 )
+
+Figure 9: Phase evolutions of the FI ( a) response and ( b) forcing modes at 𝑆𝑡 𝐾 , along with the (normalized) streamwise component of phase velocity of FI ( c) response and ( d) forcing modes. In ( b), the black arrows indicate the direction of the movement of the FI forcing mode structure. Spatial distributions of −∇ ∠ ˆ𝑞 𝐺,𝑚 𝑥 /∥∇ ∠ ˆ𝑞 𝐺,𝑚 𝑥 ∥ and −∇ ∠ ˆ𝑓 𝐺,𝑚 𝑥 /∥∇ ∠ ˆ𝑓 𝐺,𝑚 𝑥 ∥
+
+are shown in ( c) and ( d), respectively. The gray isoline of 𝑢 = 0 indicates the recirculation domain. supply energy to the streamwise momentum oscillation, through the mixing of the streamwise moment in the transverse direction 𝑦 as represented by the fluctuation component of −𝜌 −1𝜕 (𝑚 ′ 
+
+> 𝑥
+
+𝑚 ′ 
+
+> 𝑦
+
+)/ 𝜕𝑦 in the nonlinear forcing 𝑓 ′ 
+
+> NL
+
+(A.5) . As demonstrated here, the spatial distributions of the nonlinear energy transfer T locate the region where the FI forcing mode supplies/removes the fluctuation energy, which aids in the physical interpretation of the FI forcing mode. We note that a brief qualitative assessment of the nonlinear energy transfer map, including other variables, is provided in Appendix.C. In this assessment, we show that the FI response and forcing modes capture the nonlinear energy transfer component that is not captured by conventional resolvent analysis [Jin et al., 2021]. It is also interesting to note that, from the time (phase) evolution of the FI response and forcing modes in Fig. 9( a,b), we observe that only the FI forcing mode at 𝑆𝑡 𝐾 near the recirculation region propagates upstream (see black arrows). To quantitatively show that, we visualize the streamwise component of the normalized phase velocity in Fig. 9( c,d), as in Poplingher et al. [2019]. These figures indicate that the FI response mode convects downstream, whereas the FI forcing mode in the recirculation region travels upstream. In other words, the FI forcing mode transmits disturbances upstream and forms spatially localized feedback, which is a key feature of self-sustained flows according to Schmid and Sipp [2016], who noted that the strength of feedback can classify a self-sustained flow into oscillatory flow or amplifier flow. Since this spatially localized feedback never stops once it occurs, we argue that the nonlinear dynamics near the recirculation region are a core energy source of the self-sustained vortex shedding in the cylinder wake. Finally, we also show that the result obtained using the operator in a semi-data-driven approach 𝑮 SDD in Fig. 10. The obtained optimal response and forcing distributions are consistent with those in the fully data-driven case shown above. The consistent results support the validity of the results obtained by the fully data-driven approach, as well as the semi-data-driven approach. 
+
+5.3 Laminar-turbulent transition in boundary layer 5.3.1 Case description and numerical simulation set-up 
+
+Finally, we perform the fully data-driven FI resolvent analysis of the laminar-turbulent transition in the boundary layer, with particular focus on the late stage where the three-dimensional (3D) vortex structures evolve nonlinearly. The DNS data of the spatially developing boundary layer over a nominally zero-pressure-gradient, pseudo-adiabatic (isothermal) flat plate are prepared [Iwatani et al., 2025], as shown in Fig. 11 (the magenta rectangle domain is used for the FI resolvent analysis as detailed later). The DNS solves the entire process of the spatially developing transitional boundary layer, covering from the linear growth of the instability to the equilibrium turbulent boundary layer. The freestream Mach number is 0.8, and the reference Reynolds number is 𝑅𝑒 𝑥 0 ≡ 𝜌 ∞𝑢 ∞𝑥 0/𝜇 ∞ = 10 5, where 𝑥 0 is the reference 18 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Semi-data-driven approach                
+
+> StK2StK3StK
+> x/D
+> y/D
+> -1
+> 1
+> -1
+> 1
+> -1
+> 1
+> 0
+> -2
+> 2
+> 0
+> 2
+> 0
+> 2
+> 204620462046
+> FI response FI forcing 𝒯 mx
+> -0.5
+> 0.5
+> -1
+> 1
+> -1
+> 1̂
+> qmx /∥̂qmx∥∞̂fmx /∥̂ fmx∥∞𝒯 mx /∥𝒯 mx∥∞
+
+Figure 10: Same as figure 7 but for semi-data-driven approach using 𝑮 SDD .X3.4 4.0 4.6 5.2 5.8 6.4 7.0 Z3210
+
+00.05 0.1 Y
+
+Figure 11: Topview of the instantaneous iso-surfaces of Q criterion 𝑄 /( 𝑎 ∞/𝑥 0)2 = 25 colored by the height from the wall 𝑌 := 𝑦 /𝑥 0 of the DNS data [Iwatani et al., 2025], where 𝑥 0 is the reference length. The magenta rectangle domain is used for the FI resolvent analysis. Here, 𝑋 := (𝑥 − 𝑥 𝑑 )/ 𝑥 0 and 𝑍 := 𝑧 /Λ𝑧 , where 𝑥 𝑑 is the disturbance slot location and 𝜆 𝑧 is the wavelength of the subharmonic initial disturbance. streamwise location such that 𝑥 /𝑥 0 = 𝑅𝑒 𝑥 /10 5. The DNS employs the 6th-order compact differencing scheme [Lele, 1992] for the spatial discretization and the four-stage fourth-order Runge-Kutta method for the time discretization with a Courant number of 0.6. In the DNS, the initial blowing-suction type disturbances are introduced from the disturbance slot 𝑥 𝑑 /𝑥 0 = 3.4 on the wall to trigger instabilities following the prior DNS studies of controlled transition [Sayadi et al., 2013, Boldini et al., 2025]. This study considers the H-type transition, triggered by a planar (2D) Mack’s first mode [Mack, 1975] as the primary instability mode and a 3D subharmonic oblique mode [Herbert, 1988] as the secondary instability mode. The Mack’s first mode has frequency 𝜔 2𝐷 , whereas the subharmonic oblique mode has half the frequency of 
+
+𝜔 2𝐷 , i.e., 𝜔 2𝐷 /2 and spanwise wavelength 𝜆 𝑧 . With this DNS setup, Mack’s first mode exhibits linear growth, and its secondary instability arises from disturbance of the subharmonic oblique mode. As a result, the 3D vortices, such as Λ-vortex, hairpin vortex, and ring-vortex, emerge and form a staggered arrangement, appearing alternately at the spanwise locations of 𝑍 := 𝑧 /𝜆 𝑧 ≈ 𝑁 or 𝑍 ≈ 1/2 + 𝑁 (𝑁 = 0, 1, 2). The staggered arrangement of the 3D vortices is characteristic of the late stage of the transition triggered by the subharmonic secondary instability [Herbert, 1988], typically observed in the H-type transition. The focus here is on the nonlinear mechanism at this late stage of the H-type transition, rather than the linear amplification mechanism of Mack’s first mode and the subharmonic secondary instability mode. The reader is referred to Iwatani et al. [2025] for details of the DNS. 19 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows breakdown 
+
+> location
+> -vortex
+
+Λ
+
+> u /a∞
+> 0.0
+> 0.2
+> w/a∞ 0.2
+> −0.2
+
+Z
+
+X
+
+Y     
+
+> ()X=4.8
+> X=3.5
+> perpendicularly standing
+> ring-vortex (PSRV)
+
+(a) (b)
+
+Y
+
+> 0.0
+> 0.1
+
+Z0.0  1.0 
+
+Z
+
+> 0.0
+> 1.0
+
+(c)
+
+X4.2  4.8           
+
+> Z=0
+> Z=1.0
+> Y=0.1
+> X≈4.5
+> X≈4.5
+> -vortex
+
+Λ
+
+> PSRV
+
+Figure 12: Late stage of H-type transition, visualized by iso-surfaces of Q criterion ( 𝑄 /( 𝑎 ∞/𝑥 0)2 = 10 ) colored by spanwise velocity 𝑤 : ( a) oblique view of the whole analysis domain (copied once in the spanwise direction 𝑍 ), and ( b)front and ( c) top views near the perpendicularly standing ring-vortex (PSRV) denoted in black rectangle in ( a). 
+
+5.3.2 FI resolvent analysis set-up 
+
+For the fully data-driven FI resolvent analysis, spatially and temporally sub-sampled snapshot data are collected. The DNS volume data of 𝑀 = 1536 snapshots are collected with a sampling time interval of Δ𝑡 /( 𝑎 ∞/𝑥 0) = 0.018 ,corresponding to a sampling (angular) frequency of almost 16 𝜔 2𝐷 . This time-series dataset holds precisely 22 cycles of Mack’s first mode (11 cycles of the subharmonic oblique mode). Since the eighth-order central differencing method, requiring four snapshots for resolving a wave, is used for the computation of the time-derivative term, the reliable range of frequency is |𝜔 /𝜔 2𝐷 | ≤ 4.As shown in Fig. 12( a), the analysis domain is defined as follows. The streamwise range 𝑋 := (𝑥 − 𝑥 𝑑 )/ 𝑥 0 (𝑋 = 0 is the disturbance slot location) extends from the onset of the 3D Λ-vortices ( 𝑋 = 3.5) to the boundary-layer breakdown 
+
+𝑋 = 4.8. Here, we define the breakdown location as the streamwise station at which the broadband spanwise spectra of flow quantities first appear. The wall-normal domain 𝑌 := 𝑦 /𝑥 0 ranges from the wall to a point sufficiently far from the wall to involve all vortex dynamics. The spanwise domain 𝑍 is set to 0 ≤ 𝑍 ≤ 1, which is sufficiently wide to capture 3D vortices. Also, the original DNS data is spatially sub-sampled with every second grid point in the streamwise direction and every third point in both the wall-normal and spanwise directions, resulting in 408 × 105 × 100 ≈ 4 × 10 6 grid points. Nevertheless, the resultant grid spacings are fine enough to resolve the flow structures observed in the range of 
+
+|𝜔 /𝜔 2𝐷 | ≤ 4, using the employed six-order compact differencing scheme for computing the nonlinear forcing term. To obtain the SPOD modes for the input and output basis vectors, the time series data are subdivided into 10 blocks with 50% overlap, each block holding 4 cycles of Mack’s first mode 𝜔 2𝐷 . The number of POD modes for obtaining 𝑳 data is determined in the next section after checking the convergence. In the analysis domain, the ring vortices develop downstream and eventually stand perpendicular to the wall at 𝑋 ≈ 4.5
+
+(see closed-up view in Fig. 12( b,c)). This perpendicularly standing ring vortex (PSRV) is reported to be a key vortex structure in boundary layer breakdown [Lu and Liu, 2012] as it generates a high-shear region through intense momentum exchange induced by strong ejection and sweep motions under it. Because of its physical importance, we focus on the PSRV in the FI resolvent analysis later when discussing the mode distribution of the wall-normal–spanwise ( 𝑌 –𝑍 )cross-section. 
+
+5.3.3 Results of fully data-driven FI resolvent analysis 
+
+The eigenvalues 𝜆 𝑟 + i𝜆 𝑖 of the data-driven estimated linear operator 𝑳 data obtained using 𝑁 POD = 10 , 90 , 180 , 250 
+
+POD modes are shown in Fig. 13. All of those cases satisfies Í𝑁 POD  
+
+> 𝑗
+
+𝜎 2 
+
+> 𝑗
+
+(𝑋 )/ Í𝑀 𝑗 𝜎 2 
+
+> 𝑗
+
+(𝑋 ) ≥ 0.999 . In this figure, the convergence of the unstable eigenvalues with respect to the number of POD modes 𝑁 POD is confirmed for 𝑁 POD ≥ 10 .Hereafter, the 𝑁 POD = 90 case is discussed, at which a stable eigenvalue at (𝜆 𝑟 /𝜔 2𝐷 , 𝜆 𝑖 /𝜔 2𝐷 ) ≈ (− 0.08 , 2) is also converged. The eigenvalues with positive real part 𝜆 𝑟 of 𝑳 data indicate that the linear energy amplification mechanism is predominant at frequency 0 < |𝜆 𝑖 /𝜔 2𝐷 | ≲ 3/2. On the other hand, at frequencies |𝜆 𝑖 /𝜔 2𝐷 | ≥ 1.5, the real part of the eigenvalues 𝜆 𝑟 is negative, indicating that linear amplification mechanism inactive, and that is, the nonlinear 20 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜆 r/𝜔 2D
+
+−4 −3 −2 −1 0
+
+> 𝜆  i /𝜔  2D
+
+−50 050 
+
+𝜆 r/𝜔 2D
+
+−0.2 −0.1 0.0 0.1 0.2 
+
+> 𝜆  i /𝜔  2D
+
+01234
+
+(𝑎 ) (𝑏 )250 170 90 10 
+
+Figure 13: Eigenvalues 𝜆 𝑟 + i𝜆 𝑖 of the estimated linear operator 𝑳 data obtained using 𝑁 POD = 10 , 90 , 170 , 250 : ( a)overall view; ( b) enlarged view near unstable eigenvalues. X                  
+
+> Z
+> Ŷ
+> mx/∥̂mx∥∞̂my/∥̂my∥∞̂mz/∥̂mz∥∞
+> −0.38 0.38
+> −0.07 0.07 −0.02 0.02 −0.07 0.07
+> 0.0
+> 2.0
+> 0.0
+> 2.0
+> ZZ0.0
+> 2.0
+> Z
+> 4.8 4.8 4.8
+> 3.5 3.5 3.5
+> XXX
+> 0.1 0.1 0.1
+> YYY
+
+Figure 14: Isosurfaces of momentum components ˆ𝑚 for the most unstable eigenmodes of the H-type transitional boundary layer ( 𝜆 𝑖 /𝜔 2𝐷 ≈ 3/2), computed from the data-driven linear operator 𝑳 data with 𝑁 pod = 90 : (left) streamwise 
+
+ˆ𝑚 𝑥 , (middle) wall-normal ˆ𝑚 𝑦 , (right) spanwise ˆ𝑚 𝑧 momentum components. For visualization, the iso-surfaces are copied once in the spanwise direction. amplification mechanism is predominant. Note that the linear amplification mechanisms at the 𝜆 𝑖 /𝜔 2𝐷 ≈ 1, 1/2 are different from the growth mechanism of Mack’s first mode and subharmonic secondary instability mode, respectively. As shown in Fig. 14, the momentum components of the eigenvector that corresponds to the eigenvalue with the greatest real part at 𝜆 𝑖 /𝜔 2𝐷 ≈ 3/2 also exhibit physical staggered structures. The pairs of spanwise-aligned opposite-signed structures (red-blue, magenta-cyan, purple-green) appear and develop downstream, changing their signs alternately. These modal structures are reminiscent of the staggered alignment of the 3D vortices in the late stage of the H-type transition [Herbert, 1988]. As such, the data-driven estimation of the linear operator captures the flow physics well. Let us move on to the FI resolvent analysis using the estimated linear operator. First, looking at the leading gains shown in Fig. 15, the leading gains at harmonics of (𝜔 2𝐷 /2)𝑁 (𝑁 = 1, 2, . . . ) collapse well onto the corresponding leading SPOD gains 𝜆 1/21 (𝑺 qq ) (the output amplitudes), ensuring the validity of the fully data-driven FI-resolvent analysis of this case. The leading gains exhibit peaks not only at the frequencies 0 < |𝜔 /𝜔 2𝐷 | ≲ 1.5 where the linear amplification mechanism is active (as seen in the eigenvalues of 𝑳 data ), but also at the frequencies |𝜔 /𝜔 2𝐷 | ≥ 1.5 where the nonlinear linear amplification mechanism is predominant. The secondary leading gains (gray triangles) show a large gap between the first leading ones, especially at the frequencies (𝜔 2𝐷 /2)𝑁 where the high gain (amplitude) is obtained. This result indicates the rank-1 property of the FI resolvent operator at these dominant frequencies in the late stage of the H-type transition. Although the gain at 𝜔 /𝜔 2𝐷 = 1 is slightly overestimated, its order is still the same as the SPOD gain. Subsequently, we look at the FI response and forcing modes for the streamwise momentum component. In Fig. 16, we focus on the FI resolvent modes at 𝜔 /𝜔 2𝐷 = 1/2 and 2, as representative frequencies for the predominant linear and nonlinear amplification mechanisms, respectively. More specifically, at 𝜔 /𝜔 2𝐷 = 1/2, the linear instability mechanism is predominant and the nonlinear forcing suppresses the energy to maintain the energy balance (2.29) , whereas the roles 21 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜔 /𝜔 2D
+
+# 0 1 2 3Gain 0100 200 300 400 
+
+# 𝜎 1
+
+# 𝜎 2
+
+# 𝜆 11/2 (S qq )
+
+Figure 15: Gains, 𝜎 𝐺, 1 and 𝜎 𝐺, 2, of the FI resolvent operator 𝑮 FDD for the transition boundary layer case, compared with the square root of the leading SPOD gains 𝜆 1/21 (𝑺 qq ).X
+
+3.5 4.0 4.5 4.8 
+
+> Z
+
+𝜔 /𝜔 2D = 1/2 
+
+## q̂ mx (FI resp.) (FI forc.) (NL. energy trans. map) 
+
+## f̂ mx 
+
+## 𝓣 mx 
+
+101010 X ≈ 4.25 X ≈ 4.5 
+
+X
+
+3.5 4.0 4.5 4.8 
+
+> Z
+
+𝜔 /𝜔 2D = 2 
+
+## q̂ mx f̂ mx 
+
+## 𝓣 mx 
+
+101010 X ≈ 4.25 X ≈ 4.5 
+
+(𝑎 ) (𝑏 )
+
+Figure 16: Results of FI resolvent analysis of transitional boundary layer for streamwise momentum component at ( a)
+
+𝜔 /𝜔 2𝐷 = 1/2 and ( b) 2. Topviews of iso-surfaces of the FI response mode ˆ𝑞 𝑚 𝑥 /| ˆ𝑞 𝑚 𝑥 |∞ = ±0.25 (top), the FI forcing mode ˆ𝑓 𝑚 𝑥 /∥ ˆ𝑓 𝑚 𝑥 ∥∞ = ±0.25 (middle), and the nonlinear energy transfer map T𝑚 𝑥 /∥T 𝑚 𝑥 ∥∞ = ±0.25 in ( a) and 0.1 in (b)(bottom). Red and green indicate the positive iso-values, whereas blue and purple indicate the negative iso-values. of linear and nonlinear energy amplification/attenuation mechanisms switch at 𝜔 /𝜔 2𝐷 = 2. Observing Fig. 16, the FI response and forcing modes at these frequencies identify coherent structures that develop downstream into more complex geometries, associated with the downstream development of the transitional boundary layer. In particular, at both frequencies, the FI response and forcing modes evolve into complex structures near the breakdown region at 
+
+4.3 ≲ 𝑋 ≲ 4.8 (downstream of cyan dashed line), which contains the PSRV. The structures also become more complex in the spanwise direction. The FI response and forcing modes emerge simultaneously in the spanwise gap between the staggered 3D vortices (i.e., 𝑍 ≈ 1/4, 3/4), which reflects the fact that the FI forcing is a nonlinear function of the output 𝑞 ′.The maps of T𝑚 𝑥 uncover the coherent structure of the nonlinear energy transfer of the streamwise momentum component, latent in the late stage of the H-type transition, as shown by green (positive) and purple (negative) iso-surfaces in Fig. 16. The nonlinear energy transfer mechanisms at the two frequencies 𝜔 /𝜔 2𝐷 = 1/2 and 2 share similarities and differences, as explained below. A common feature is that the purple structures of T of both frequencies are observed at 𝑍 = 0, 1/2
+
+and 1, each aligns with the centerline between the legs of the staggered 3D Λ-shaped and ring-like vortices (see also figures 11 and 12. This indicates that the FI forcing at these spanwise locations attenuates the fluctuation energy of these 3D vortices, at least on the visible far-wall portion in this top view (we will see the near-wall structure later). On the other hand, the sign of the energy transfer map is opposite between the two frequencies in the spanwise gap between the staggered 3D vortices 𝑍 ≈ 1/4 and 3/4 near the breakdown region. The FI forcing at 𝜔 /𝜔 2𝐷 = 1/2 in Fig. 16( a)22 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Y      
+
+> 0.00
+> 0.05
+> 0.10
+> Z
+> 00.5 1
+> Y
+> 0.00
+> 0.05
+> 0.10
+> Z
+> 00.5 1
+> Z
+> 00.5 1
+
+ω /ω2D = 1/2 ω /ω2D = 2 snapshot                             
+
+> −11̂
+> qmx/∥̂qmx∥∞
+> −11̂
+> fmx/∥̂fmx∥∞
+> −11̂
+> qmx/∥̂qmx∥∞
+> −11̂
+> fmx/∥̂fmx∥∞
+> −11
+> m′x/∥m′x∥∞
+> −0.5 0.5
+> f′mx/∥f′mx∥∞
+> FI response FI response
+> FI forcing FI forcing
+> PSRV →
+
+Figure 17: Input-output relations at 𝑋 ≈ 4.5 where a perpendicularly standing ring-like vortex (PSRV) is observed. Streamwise momentum component of the FI response and forcing modes at 𝜔 /𝜔 2𝐷 = 1/2 (left) and 2 (middle). Snapshots of streamwise momentum component of the output 𝑚 ′ 
+
+> 𝑥
+
+and nonlinear forcing 𝑓 ′ 
+
+> 𝑚 𝑥
+
+(right). attenuates the energy at this region, whereas that at 𝜔 /𝜔 2𝐷 = 2 in Fig. 16( b) supplies the energy to this region. This result suggests that the nonlinear forcing at 𝜔 /𝜔 2𝐷 = 2 provides the energy for the formation of the spanwise complex structures in the boundary layer before the breakdown to turbulence. We further examine the extracted input-output relations at a streamwise location 𝑋 ≈ 4.5 (the magenta dashed line in Fig. 16), at which the PSRV is observed in 𝑌 ≳ 0.05 (see Fig. 12). As shown in Fig. 17, the streamwise momentum component of the FI response and forcing modes at both frequencies at 𝜔 /𝜔 2𝐷 = 1/2 and 2 extract the coherent structures under the PSRV ( 𝑌 ≲ 0.05 ). The FI response mode at 𝜔 /𝜔 2𝐷 = 1/2, which is a dominant component as indicated by a large amplitude 𝜎 1 (𝑮 ) in Fig. 15, shows similar structures to the instantaneous flow structures of streamwise momentum fluctuation 𝑚 ′ 
+
+> 𝑥
+
+around the PSRV and below it at 0.3 ≲ 𝑍 ≲ 0.7. This supports that the FI response extracts the flow structures present in the actual flow field. The FI forcing mode also isolates the key component for the self-sustaining mechanism from the region where the nonlinear forcing snapshot 𝑓 ′ 
+
+> 𝑚 𝑥
+
+(as a function of 𝑞 ′) is present. To gain further insights into the physical role of the extracted FI forcing modes, the nonlinear energy transfer maps at 
+
+𝜔 /𝜔 2𝐷 = 1/2 and 2 are shown in Fig. 18. In the same Fig. 18, the eigenmodes of these frequencies 𝜆 𝑖 /𝜔 2𝐷 ≈ 1/2 and 2
+
+are also shown, along with the corresponding eigenvalues, highlighted by the cyan circle and magenta cross, respectively. Hereafter, we use 𝜔 /𝜔 2𝐷 instead to denote the frequency of these eigenmodes. It is evident from the real part of these eigenvalues that the eigenmode at 𝜔 /𝜔 2𝐷 ≈ 1/2 (cyan circle) is linearly unstable, whereas that 𝜔 /𝜔 2𝐷 ≈ 1/2
+
+(magenta cross) is linearly stable. Comparing the structures of these eigenmodes and the nonlinear energy transfer map at 𝜔 /𝜔 2𝐷 = 1/2, some local peaks of T (dark purple regions) appears in the region where the eigenmode attains a large amplitude (dark red/green). This positional relationship indicates that the FI forcing attenuates the fluctuation energy amplified by the linear instability to prevent unlimited linear energy growth, thereby maintaining oscillation energy at a statistically stationary level. Conversely, at 𝜔 /𝜔 2𝐷 ≈ 2, the eigenmode is supposed to decay eventually in terms of the linear stability. However, as the energy transfer map in Fig. 18 reveals, the FI forcing mode injects the energy into the domain at 𝑍 ≈ 1/4 and 3/4 (the spanwise gap between the PSRV) and 𝑌 ≲ 0.02 (near the wall), which have been mentioned also in the iso-surface plot in Fig. 16( b). By supplying the fluctuation energy, the FI forcing allows the linearly stable eigenmode to persist, resulting in the FI response similar to the eigenmode (compare the FI response in Fig. 17 and the eigenmode in Fig. 18 at 𝜔 /𝜔 2𝐷 = 2). We also note that, as we observe the green region of T𝑚 𝑥 near the wall under the PSRV at 𝑍 ≈ 0.5 in Fig. 18, the FI forcing supplies the energy to the region at both 𝜔 /𝜔 2𝐷 = 1/2 and 
+
+2, which was obscured in the top view of the iso-surface visualization of T𝑚 𝑥 in Fig. 16 and is now evident from this cross-section view. Considering the discussion of the PSRV as a key structure for turbulent breakdown [Lu and Liu, 23 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows 𝜆 r/𝜔 2D          
+
+> -0.2 0.0 0.2
+> 𝜆 i/𝜔 2D
+> 0
+> 1
+> 2
+> 3
+> Z
+> 00.5 1
+> Y
+> 0.00
+> 0.05
+> 0.10
+> Z
+> 00.5 1
+> Z
+> 00.5 1
+> Y
+> 0.00
+> 0.05
+> 0.10
+> Z
+> 00.5 1
+
+eivenvalues of  Ldata  eivenvector of  Ldata ̂ mx
+
+ω /ω2D = 1/2 ω /ω2D = 2
+
+λi /ω2D ≈ 1/2 λi /ω2D ≈ 2
+
+nonlinear energy transfer map  𝒯 mx     
+
+> −11
+> −11
+> 𝒯 mx/∥𝒯 mx∥∞̂
+> mx/∥̂mx∥∞
+
+Figure 18: Comparison between the eigenmode 𝑚 𝑥 (global stability mode) of 𝑳 data using 𝑁 POD = 90 and nonlinear energy transfer map 𝑻 𝑚 𝑥 , for streamwise momentum component, at 𝜔 /𝜔 2𝐷 = 1/2 and 2. Eigenvalues 𝜆 𝑟 + i𝜆 𝑖 of 𝑳 data 
+
+indicate the stability of the corresponding eigenmodes. 2012], the positive nonlinear energy transfer near the wall suggests a possible connection between nonlinear, intense sweep motions under the PSRV and the fluctuation energy amplification associated with the turbulent breakdown. As demonstrated in the transitional boundary layer, the present FI resonant analysis and interpretation of the FI forcing and response modes, based on the nonlinear energy transfer map, provide key physical insights into practical complex self-sustained flows. We emphasize that the interpretability of the extracted FI response and forcing modes through the energy transfer map T is one of the strengths of the present FI resolvent analysis. 
+
+# 6 Conclusions 
+
+In this study, we proposed a forcing-informed (FI) resolvent analysis framework founded for statistically stationary unsteady flows, to aid in elucidating the underlying self-sustaining mechanisms. Our central focus is placed on the nonlinear forcing terms in the fluctuating component of the governing Navier–Stokes equations, which are crucial for sustaining flow oscillations. We derived the FI resolvent operator by informing the resolvent operator of the spatiotemporal property of the nonlinear forcing, specifically, the basis vectors of the input subspace spanned by the snapshots of the nonlinear forcing term, and simultaneously, the snapshots of the basis of the output subspace. We demonstrated the capability of the FI resolvent analysis through three cases: the Stuart-Landau oscillator model, a two-dimensional cylinder wake, and a three-dimensional transitional boundary layer. It was demonstrated that the FI resolvent operator enables the extraction of the input-output relations present in the actual flow field as the FI response and forcing modes, while the amplitudes of the output are recovered by the gain (singular values) of the FI resolvent operator. Furthermore, based on the time-averaged energy balance between linear/nonlinear amplification/attenuation mechanisms in statistically stationary flows, we introduced a nonlinear energy transfer map that identifies the spatial domain in which the FI forcing mode supplies or attenuates fluctuation energy. This map aids the physical interpretations of the FI forcing mode in self-sustained oscillations. In this paper, two numerical algorithms for computing the FI resolvent operator were proposed: a fully data-driven approach and a semi-data-driven approach. In the fully data-driven approach, the linear operator is estimated using the forcing snapshots, and the resulting matrix size of the FI resolvent is significantly reduced thanks to dimensionality reduction techniques widely used in the modal analysis methods. The fully data-driven approach makes resolvent analysis of statistically stationary flows more accessible by bypassing the construction of the linear operator in a conventional way, which sometimes suffers from numerical instabilities. Even with the proposed semi-data-driven approach for the already known linear operator, the computational cost is reduced to the same level as the randomized resolvent analysis. This provides an additional option to the conventional resolvent analysis for the self-sustained unsteady flows. 24 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows The basis vectors for the input and output subspaces used in the proposed FI resolvent analysis can be obtained using existing modal analysis techniques, such as spectral proper orthogonal decomposition (SPOD) and dynamic mode decomposition (DMD). The FI response and forcing modes are expressed as linear combinations of the basis vectors, thereby ensuring that the obtained FI response and forcing modes exist in the actual flow fields. At the same time, the temporal characteristics of the FI response and forcing modes inherit those of the basis vectors; for example, the use of the SPOD modes yields harmonic input-output modes. Although this study employed spectral proper orthogonal (SPOD) modes for the input and output bases because of their orthogonality in Fourier space, a different choice of basis vectors with the time characteristics, e.g., a wavelet basis to analyze time-local phenomena, may also be considered. The present FI resolvent provides key insights into self-sustaining mechanisms, whereas the conventional resolvent reveals a nontrivial linear amplification mechanism useful for flow control. These two methods are complementary and together enhance the capabilities of the resolvent analysis framework. 
+
+# Acknowledgments 
+
+Y.I. and S.K. acknowledge the support from the JSPS Grant-in-Aid for JSPS Fellows (JP23KJ0167) and JSPS KAKENHI Grant Number 26H02169. K.T. thanks the Vannevar Bush Faculty Fellowship (Grant Number N00014-22-1-2798). Computer resources of the Fugaku supercomputer were provided by the RIKEN Advanced Institute for Computational Science through the HPCI System Research project (project IDs: hp240083, hp250090, hp260108). 
+
+# A Nonlinear forcing terms in the compressible Navier–Stokes equations 
+
+The final form of the nonlinear forcing vector in this study is given by (A.5) . In the derivations of the nonlinear forcing terms, the 𝑓 ′ 
+
+> NL
+
+should be expressed as nonlinear terms with respect to the state vector 𝑞 ′; for instance, pressure is nonlinear with respect to the state vector of conservative variables in the compressible Navier–Stokes equations. Recalling that the nonlinear term is given by 𝑓 ′ 
+
+> NL
+
+= 𝐹 NL (𝑞 ′𝑛 ) − 𝐹 NL (𝑞 ′𝑛 ) in (2.6) , we here derive only 𝐹 NL (𝑞 ′𝑛 ) to obtain 𝑓 ′
+
+> NL
+
+.The compressible Navier–Stokes equations in the conservative form are written as 
+
+𝜕 𝜌 𝜕𝑡 = − 𝜕𝑚 𝑗 
+
+𝜕𝑥 𝑗 
+
+, (A.1) 
+
+𝜕𝑚 𝑖 
+
+𝜕𝑡 = − 𝜕𝑚 𝑖 𝑢 𝑗 
+
+𝜕𝑥 𝑗 
+
+− 𝜕 𝑝 𝜕𝑥 𝑖 
+
++ 𝜕𝜏 𝑖 𝑗 
+
+𝜕𝑥 𝑗 
+
+, (A.2) 
+
+𝜕𝐸 𝜕𝑡 = − 𝜕 (𝐸 + 𝑝 )𝑢 𝑗 
+
+𝜕𝑥 𝑗 
+
++ 𝜕𝜏 𝑖 𝑗 𝑢 𝑖 
+
+𝜕𝑥 𝑗 
+
+− 𝜕𝑞 𝑗 
+
+𝜕𝑥 𝑗 
+
+, (A.3) where 𝑚 𝑖 is the momentum vector 𝑢 𝑖 is the velocity vector, 𝑝 is the pressure, 𝜏 𝑖 𝑗 is the viscous stress tensor, and 𝑞 𝑗 is the heat flux vector. Here, the viscous stress tensor is given as 𝜏 𝑖 𝑗 = 𝜇 (𝑇 )𝑆 𝑖 𝑗 , where 𝜇 is the dynamic viscosity, determined by Sutherland’s law, and 𝑆 𝑖 𝑗 = 𝜕𝑢 𝑗 /𝜕𝑥 𝑖 + 𝜕𝑢 𝑖 /𝜕𝑥 𝑗 − ( 2/3)𝛿 𝑖 𝑗 𝜕𝑢 𝑘 /𝜕𝑥 𝑘 under the Stokes hypothesis. Sutherland’s law is given as 𝜇 (𝑇 ) = (𝑇 /𝑇 ∞)3/2 (𝑇 ∞ + 𝑐 1)/( 𝑇 + 𝑐 1), where 𝑇 ∞ is the free stream temperature and 𝑐 1 is a constant (specified as 𝑐 1 = 110 .4/256 .6 in this study). Thus, the viscosity is a nonlinear function of 𝑇 , and in turn, a nonlinear function of the state vector 𝑞 . The heat flux vector is expressed as 𝑞 𝑗 = −𝜅 (𝜕𝑇 /𝜕𝑥 𝑗 ) where 𝜅 is the heat conductivity. The system is closed by the ideal gas law 𝑝 = 𝜌𝑅𝑇 , where 𝑅 is the gas constant. Note that the mass conservation (A.1) does not yield any nonlinear forcing terms. Hence, we focus on the momentum conservation (A.2) and energy conservation (A.3). To obtain the nonlinear forcing terms, we assume for simplicity that the density-fluctuation-related nonlinear forcing terms are negligibly small, that is, 
+
+𝜌 ′𝑔 ′ ≈ 0. (A.4) where 𝑔 ′ expresses the applicable fluctuating variables that appear in the governing equations, for example, 𝜌 ′, 𝑚 ′ 
+
+> 𝑖
+
+, and 
+
+𝐸 ′. In addition, we further assume that the fluctuations of the dynamic viscosity 𝜇 ′ and heat conductivity 𝜅 ′, which are nonlinear functions of 𝑞 ′, are negligible. The assumptions appear reasonable for many compressible flows, including the flows considered in this paper. Nevertheless, these assumptions should be carefully assessed in flows with large fluctuations in density and thermophysical properties, including high-speed jets, shock-containing flows, supercritical flows, and extremely heated or cooled wall-bounded flows. 25 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Under the assumptions, we may obtain the nonlinear forcing terms, written as 
+
+𝐹 NL (𝑞 ′𝑛 ) ≈ 
+
+
+
+0
+
+− 1   
+
+> 𝜌 𝜕𝑚 ′
+> 𝑖 𝑚 ′
+> 𝑗
+> 𝜕𝑥 𝑗
+
+− 𝜕 𝑝 ′
+
+> NL
+> 𝜕𝑥 𝑖
+
+− 1  
+
+> 𝜌 𝜕 𝜕𝑥 𝑗
+
+(𝜌ℎ )′𝑚 ′ 
+
+> 𝑗
+
+− 1  
+
+> 𝜌 𝜕 𝜕𝑥 𝑗
+
+(𝜌𝑘 )′𝑚 ′ 
+
+> 𝑗
+
++ 𝜕 𝜕𝑥 𝑗 ( 1 
+
+> 𝜌
+
+𝜏 ′ 
+
+> 𝑖 𝑗
+
+𝑚 ′ 
+
+> 𝑖
+
+) + 𝜕 𝜕𝑥 𝑗 
+
+
+
+𝜅 𝜕𝑇 ′ 
+
+> NL
+> 𝜕𝑥 𝑗
+
+
+
+. (A.5) In (A.5), the fluctuation of enthalpy (𝜌ℎ )′ and kinetic energy (𝜌𝑘 )′ per unit volume are respectively given as, 
+
+(𝜌ℎ )′ = 𝛾 𝛾 − 1 𝑝 ′ + 𝐿 1 (𝜌 ′), (A.6) 
+
+(𝜌𝑘 )′ = 12𝜌 (2𝑚 𝑘 𝑚 ′ 
+
+> 𝑘
+
++ 𝑚 ′ 
+
+> 𝑘
+
+𝑚 ′ 
+
+> 𝑘
+
+) + 𝐿 2 (𝜌 ′), (A.7) where 𝐿 𝑖 (𝜌 ′) expresses the linear part with respect to 𝜌 ′, but they will be neglected after the multiplication with other fluctuating quantities following (A.4). In (A.6), 𝑝 ′ is rewritten as function of 𝑞 ′ as 
+
+𝑝 ′ = (𝛾 − 1)
+
+
+
+𝐸 ′ − 1
+
+𝜌 𝑚 𝑘 𝑚 ′
+
+> 𝑘
+
+| {z }
+
+> 𝑝 ′
+> 𝐿
+
+−( 𝛾 − 1)
+
+ 12𝜌 𝑚 ′ 
+
+> 𝑘
+
+𝑚 ′
+
+> 𝑘
+
+| {z }
+
+> 𝑝 ′
+> NL
+
++ 𝐿 3 (𝜌 ′). (A.8) As shown above, the pressure fluctuation can be decomposed into the linear part 𝑝 ′ 
+
+> L
+
+and the nonlinear part 𝑝 ′ 
+
+> NL
+
+with respect to 𝑞 ′. Using 𝑝 ′
+
+> NL
+
+, the nonlinear component of temperature fluctuation is given as 
+
+𝑇 ′ 
+
+> NL
+
+= 𝑝 ′
+
+> NL
+
+/𝜌𝑅. (A.9) Finally, the fluctuation of viscous stress tensor 𝜏 ′ 
+
+> 𝑖 𝑗
+
+is given as 
+
+𝜏 ′ 
+
+> 𝑖 𝑗
+
+= 𝜇𝑆 ′ 
+
+> 𝑖 𝑗
+
+= 𝜇 𝜌 
+
+𝜕𝑚 ′
+
+> 𝑗
+
+𝜕𝑥 𝑖 
+
++ 𝜕𝑚 ′
+
+> 𝑖
+
+𝜕𝑥 𝑗 
+
+− 23 𝛿 𝑖 𝑗 
+
+𝜕𝑚 ′
+
+> 𝑘
+
+𝜕𝑥 𝑘 
+
+!
+
+. (A.10) Using these quantities from (A.6) to (A.10), the components in the nonlinear forcing (A.5) can be computed. 
+
+# B Non-uniqueness of the basis vectors of input and output subspaces 
+
+To show the non-uniqueness of the choice of the basis vectors, let us consider the rank factorization of the forcing matrix 
+
+b𝐹 defined in ( 2.16 a): 
+
+b𝑭 (𝜔 ) = 𝚽 (𝜔 ) 𝑫 (𝜔 ) where 𝚽 ∈ C𝑁 𝑞 × 𝑁 Φ , 𝑫 ∈ C𝑁 Φ × 𝑁 𝑝 . (𝐵. 1)
+
+Here, 𝑁 Φ is the rank of the matrices b𝑭 , which is smaller than 𝑁 𝑝 (the number of the realizations) and 𝑁 𝑞 (the length of the state vector). This is equivalent to the number of the basis vectors of the input subspaces, respectively. From (B.1) ,we clearly find that Col (b𝑭 ) = Col (𝚽 ), indicating that column vectors of 𝚽 are the basis vectors of input subspaces. The non-uniqueness of the basis is proven by considering any non-singular transformation 𝑻 to define a different basis as 
+
+𝚽 ′ = 𝚽 𝑻 , while preserving the representation b𝑭 = 𝚽 𝑻𝑻 −1 𝑫 . The same argument applies to the basis vectors of output subspaces 𝚿 obtained via rank factorization of b𝑸 .Due to the non-uniqueness, the basis vectors can be either orthogonal or non-orthogonal. In general, the basis vectors satisfy the following weighted bi-orthonormal condition: 
+
+⟨𝜙 𝑖 , 𝜙 𝑗 ⟩𝑊 = ⟨𝜓 𝑖 , 𝜓 𝑗 ⟩𝑊 = 𝛿 𝑖 𝑗 , (B.2) where 𝜙 𝑗 , 𝜓 𝑗 are the basis vectors and 𝜙 𝑗 , 𝜓 𝑗 are the dual basis vectors. For orthonormal basis vectors, the dual basis vectors are considered the same as the basis vectors, i.e., 𝜙 𝑗 = 𝜙 𝑗 and 𝜓 𝑗 = 𝜓 𝑗 , which yields (2.19) . By introducing dual vectors, we may obtain the expansion coefficients (amplitudes) for these non-orthogonal basis vectors, which are used in 𝑻 Φ. This discussion extends the choice of modal decomposition methods for basis estimation, such as DMD, in which the modes are not always orthogonal, as discussed in §2.3.1. 26 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows StK 2StK 3StK
+
+Jin et al., (2021) 
+
+( )ReD = 100 
+
+Semi-data-driven 
+
+Fully data-driven 
+
+( )ReD = 150 
+
+( )ReD = 150 
+
+Figure 19: Comparison between the present nonlinear energy transfer maps computed from the most dominant FI response and forcing modes (top: fully data-driven approach; middle: semi-data-driven approach) and the map based on DNS data (bottom) in Jin et al. [2021] (Adapted with permission from Jin et al. [2021]. Copyright (2021) by American Physical Society). 
+
+# C Nonlinear energy transfer maps from FI response and forcing modes 
+
+We show that the nonlinear energy transfer maps correspond to the one proposed in Jin et al. [2021] in Fig. 19. In this figure, the nonlinear energy transfer map for summation of the all variables ( 𝜌 ′, 𝑚 ′ 
+
+> 𝑥
+
+, 𝑚 ′ 
+
+> 𝑦
+
+, 𝐸 ′), that is, T𝑎𝑙𝑙 = T𝑚 𝑥 + T 𝑚 𝑦 + T 𝜌 + T 𝐸 
+
+is shown, where we define T𝑚 𝑦 , T𝜌 , and T𝐸 in a same manner as T𝑚 𝑥 in Fig. 7(bottom). We have confirmed that T𝜌 = 0
+
+since no nonlinear forcing appears in the mass conservation as in (A.5) . We observe qualitative agreement among the nonlinear energy transfer maps from the preset fully data-driven approach, the map from the semi-data-driven approach, and the map computed using DNS data in Jin et al. [2021]. The differences may be attributed to the Reynolds number and the governing equations (we employ the compressible NSs, whereas Jin et al. [2021] consider the incompressible NSs). Jin et al. [2021] discussed that the conventional resolvent analysis fails to predict the nonlinear transfer map and pointed out the requirement of the information of the inter-scale nonlinear interactions for a better prediction using harmonic resolvent analysis [Padovan et al., 2020]. As the nonlinear interactions are considered, the present FI resolvent analysis successfully captures the nonlinear energy transfer map. 
+
+# References 
+
+J. Jiménez and P. Moin. The minimal flow unit in near-wall turbulence. J. Fluid Mech. , 225:213–240, 1 April 1991. doi: 10.1017/S0022112091002033. F. Waleffe. On a self-sustaining process in shear flows. Phys. Fluids , 9(4):883–900, 1 April 1997. doi: 10.1063/1.869185. Yongyun Hwang. Statistical structure of self-sustaining attached eddies in turbulent channel flow. J. Fluid Mech. , 767: 254–289, 2015. doi: 10.1017/jfm.2015.24. Y. Motoori and S. Goto. Hierarchy of coherent structures and real-space energy transfer in turbulent channel flow. J. Fluid Mech. , 911:A27, 25 March 2021. doi: 10.1017/jfm.2020.1025. D. Rockwell and E. Naudascher. Review—Self-sustaining oscillations of flow past cavities. J. Fluids Eng. , 100(2): 152–165, 1 June 1978. doi: 10.1115/1.3448624. A. N. Singh and V. Nair. Effects of harmonic forcing on self-sustained oscillations in cavity flows at low Mach numbers: experiments and modelling. J. Fluid Mech. , 1017:A4, 2025. B. H. K. Lee. Self-sustained shock oscillations on airfoils at transonic speeds. Prog. Aerosp. Sci. , 37(2):147–196, 1 February 2001. doi: 10.1016/S0376-0421(01)00003-3. Y. Kojima, C.-A. Yeh, K. Taira, and M. Kameda. Resolvent analysis on the origin of two-dimensional transonic buffet. 
+
+J. Fluid Mech. , 885:R1, February 2020. doi: 10.1017/jfm.2019.992. Y. Iwatani, H. Asada, C.-A Yeh, K. Taira, and S. Kawai. Identifying the self-sustaining mechanisms of transonic airfoil buffet with resolvent analysis. AIAA J. , 61(6):2400–2411, 1 May 2023. doi: 10.2514/1.J062294. 27 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows Hiroyuki Asada, Yoshiharu Tamaki, Ryoji Takaki, Takaaki Yumitori, Shun Tamura, Keita Hatanaka, Kazuhiro Imai, Hirotaka Maeyama, and Soshi Kawai. FFVHC-ACE: Fully automated Cartesian-grid-based solver for compressible large-eddy simulation. AIAA J. , 61(8):3466–3484, August 2023. doi: 10.2514/1.j062593. K. Taira, S. L. Brunton, S. T. M. Dawson, C. W. Rowley, T. Colonius, B. J. McKeon, O. T. Schmidt, S. Gordeyev, V. Theofilis, and L. S. Ukeiley. Modal analysis of fluid flows: An overview. AIAA J. , 55(12):4013–4041, 1 December 2017. doi: 10.2514/1.J056060. K. Taira, M.S. Hemati, S. L. Brunton, Y. Sun, K. Duraisamy, S. Bagheri, S. T. M. Dawson, and C-A. Yeh. Modal analysis of fluid flows: Applications and outlook. AIAA J. , 58(3):998–1022, 1 March 2020. doi: 10.2514/1.J058462. O T Schmidt and T Colonius. Guide to spectral proper orthogonal decomposition. AIAA J. , 2020. Alec J Linot and Michael D Graham. Dynamics of a data-driven low-dimensional model of turbulent minimal Couette flow. J. Fluid Mech. , 973(A42), 25 October 2023. doi: 10.1017/jfm.2023.720. Jacob Page, Joe Holey, Michael P Brenner, and Rich R Kerswell. Exact coherent structures in two-dimensional turbulence identified with convolutional autoencoders. J. Fluid Mech. , 991(A10):A10, 25 July 2024. doi: 10.1017/jfm.2024.552. K. Fukami, Y. Iwatani, S. Maejima, H. Asada, and S. Kawai. Compact representation of transonic airfoil buffet flows with observable-augmented machine learning. J. Fluid Mech. , 1021:A39, 25 October 2025. doi: 10.1017/jfm.2025.10741. Bálint Kaszás and George Haller. Capturing the edge of chaos as a spectral submanifold in pipe flows. J. Fluid Mech. ,979(A48):A48, 25 January 2024. doi: 10.1017/jfm.2023.956. K. Fukami, H. Nakao, and K. Taira. Data-driven transient lift attenuation for extreme vortex gust–airfoil interactions. J. Fluid Mech. , 992:A17, 2024. Y Nakamura, S Sato, and N Ohnishi. Application of proper orthogonal decomposition to flow fields around various geometries and reduced-order modeling. Comput. Methods Appl. Mech. Eng. , 432(117340), December 2024. doi: 10.1016/j.cma.2024.117340. S. Sato and O. T. Schmidt. Parametric reduced-order modelling and mode sensitivity of actuated cylinder flow from a matrix manifold perspective. J. Fluid Mech. , 1021:A44, 2025. doi: 10.1017/jfm.2025.10733. L N Trefethen, A E Trefethen, S C Reddy, and T A Driscoll. Hydrodynamic stability without eigenvalues. Science , 261 (5121):578–584, 30 July 1993. doi: 10.1126/science.261.5121.578. M Jovanović and Bassam Bamieh. Componentwise energy amplification in channel flows. J. Fluid Mech. , 534:145–183, 21 June 2005. doi: 10.1017/S0022112005004295. B J McKeon and A S Sharma. A critical-layer framework for turbulent pipe flow. J. Fluid Mech. , 658:336–382, September 2010. doi: 10.1017/S002211201000176X. L.V. Rolandi, J.H.M. Ribeiro, C.-A. Yeh, and K. Taira. An invitation to resolvent analysis. Theor. Comput. Fluid Dyn. ,38(5):603–639, October 2024. doi: 10.1007/s00162-024-00717-x. J. Jeun, J. W. Nichols, and M. R. Jovanović. Input-output analysis of high-speed axisymmetric isothermal jet noise. 
+
+Phys. Fluids , 28(4):047101, 1 April 2016. doi: 10.1063/1.4946886. Mihailo R Jovanović. From bypass transition to flow control and data-driven turbulence modeling: An Input–Output viewpoint. Annu. Rev. Fluid Mech. , 53(1):311–345, 5 January 2021. doi: 10.1146/annurev-fluid-010719-060244. B. F. Farrell and P. J. Ioannou. Stochastic forcing of the linearized Navier–Stokes equations. Phys. Fluids , 5(11): 2600–2609, 1 November 1993. doi: 10.1063/1.858894. M Luhar, A. S. Sharma, and B. J. McKeon. Opposition control within the resolvent analysis framework. J. Fluid Mech. ,749:597–626, June 2014. doi: 10.1017/jfm.2014.209. Chi-An Yeh and Kunihiko Taira. Resolvent-analysis-based design of airfoil separation control. J. Fluid Mech. , 867: 572–610, May 2019. doi: 10.1017/jfm.2019.163. J. H. M. Ribeiro and K. Taira. Triglobal resolvent-analysis-based control of separated flows around low-aspect-ratio wings. J. Fluid Mech. , 995:A13, 2024. doi: 10.1017/jfm.2024.580. F Gómez, H M Blackburn, M Rudman, A S Sharma, and B J McKeon. A reduced-order model of three-dimensional unsteady flow in a cavity based on the resolvent operator. J. Fluid Mech. , 798:R2, July 2016. doi: 10.1017/jfm.2016.339. L. Lesshafft, O. Semeraro, V. Jaunet, A. V. G. Cavalieri, and P. Jordan. Resolvent-based modeling of coherent wave packets in a turbulent jet. Phys. Rev. Fluids , 4(6):063901, 6 June 2019. doi: 10.1103/PhysRevFluids.4.063901. P. A. S. Nogueira, P. Morra, E. Martini, A. V. G. Cavalieri, and D. S. Henningson. Forcing statistics in resolvent analysis: application in minimal turbulent Couette flow. J. Fluid Mech. , 908:A32, February 2021. doi: 10.1017/jfm.2020.918. 28 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows H. J. Bae, A. Lozano-Duran, and B. J. McKeon. Nonlinear mechanism of the self-sustaining process in the buffer and logarithmic layer of wall-bounded flows. J. Fluid Mech. , 914:A3, 2021. A. Zare, M. R. Jovanović, and T. T. Georgiou. Colour of turbulence. J. Fluid Mech. , 812:636–680, February 2017. doi: 10.1017/jfm.2016.682. O Kamal, M. T. Lakebrink, and T Colonius. Global receptivity analysis: physically realizable input–output analysis. J. Fluid Mech. , 956:R5, 18 November 2022. doi: 10.1017/jfm.2023.48. A. Towne, O. T. Schmidt, and T. Colonius. Spectral proper orthogonal decomposition and its relationship to dynamic mode decomposition and resolvent analysis. J. Fluid Mech. , 847:821–867, July 2018. doi: 10.1017/jfm.2018.283. J. Jung, R. Bhagwat, and A. Towne. Resolvent-based estimation and control of a laminar airfoil wake. J. Fluid Mech. ,1016:A41, 10 August 2025. doi: 10.1017/jfm.2025.10423. X. Chen, A. Ying, J. Gan, and L. Fu. Uncovering the forcing statistics in stochastic linear models for compressible wall-bounded turbulence. J. Fluid Mech. , 1015(A40), 25 July 2025. doi: 10.1017/jfm.2025.10339. A. Towne, A. Lozano-Durán, and X. Yang. Resolvent-based estimation of space–time flow statistics. J. Fluid Mech. ,883:A17, January 2020. doi: 10.1017/jfm.2019.854. Y. Hwang and C. Cossu. Amplification of coherent streaks in the turbulent Couette flow: an input–output analysis at low Reynolds number. J. Fluid Mech. , 643:333–348, 25 January 2010. doi: 10.1017/s0022112009992151. P. Morra, O. Semeraro, D. S. Henningson, and C. Cossu. On the relevance of Reynolds stresses in resolvent analyses of turbulent wall-bounded flows. J. Fluid Mech. , 867:969–984, 25 May 2019. doi: 10.1017/jfm.2019.196. P. Morra, P. A. S. Nogueira, A. V G Cavalieri, and D. S. Henningson. The colour of forcing statistics in resolvent analyses of turbulent channel flows. J. Fluid Mech. , 907:A24, 25 January 2021. doi: 10.1017/jfm.2020.802. E. Pickering, G. Rigas, O. T. Schmidt, D Sipp, and T. Colonius. Optimal eddy viscosity for resolvent-based models of coherent structures in turbulent jets. J. Fluid Mech. , 917:A29, 25 June 2021. doi: 10.1017/jfm.2021.232. S. Symon, S. J. Illingworth, and I. Marusic. Energy transfer in turbulent channel flows and implications for resolvent modelling. J. Fluid Mech. , 911:A3, March 2021. doi: 10.1017/jfm.2020.929. J. J. Holford, M. Lee, and Y Hwang. Optimal white-noise stochastic forcing for linear models of turbulent channel flow. 
+
+J. Fluid Mech. , 961, 24 April 2023. doi: 10.1017/jfm.2023.234. Y. Fan, M. Kozul, W. Li, and R. D. Sandberg. Eddy-viscosity-improved resolvent analysis of compressible turbulent boundary layers. J. Fluid Mech. , 983:A46, March 2024. doi: 10.1017/jfm.2024.174. A. Ying, X. Chen, Z. Li, and L. Fu. Optimisation and modelling of eddy viscosity in the resolvent analysis of turbulent channel flows. J. Fluid Mech. , 1001:A20, 25 December 2024. doi: 10.1017/jfm.2024.1099. J. C. del Álamo and J. Jiménez. Linear energy amplification in turbulent channels. J. Fluid Mech. , 559:205–213, July 2006. doi: 10.1017/S0022112006000607. K. Rosenberg, S. Symon, and B. J. McKeon. Role of parasitic modes in nonlinear closure via the resolvent feedback loop. Phys. Rev. Fluids , 4(5):052601, 1 May 2019. doi: 10.1103/PhysRevFluids.4.052601. B. Barthel, X. Zhu, and B. McKeon. Closing the loop: nonlinear Taylor vortex flow through the lens of resolvent analysis. J. Fluid Mech. , 924:A9, 18 February 2021. doi: 10.1017/jfm.2021.623. C. Liu and D. F. Gayme. Structured input–output analysis of transitional wall-bounded flows. J. Fluid Mech. , 927:A25, November 2021. doi: 10.1017/jfm.2021.762. Jingzhou Song, Ting Wu, Chutian Wu, Chang Liu, and Guowei He. Structured input–output analysis of compliant wall turbulence. Journal of Fluid Mechanics , 1035:A7, 2026. A. Padovan, S. E. Otto, and C. W Rowley. Analysis of amplification mechanisms and cross-frequency interactions in nonlinear flows via the harmonic resolvent. J. Fluid Mech. , 900:A14, October 2020. doi: 10.1017/jfm.2020.497. A. Padovan and C. W. Rowley. Analysis of the dynamics of subharmonic flow structures via the harmonic resolvent: Application to vortex pairing in an axisymmetric jet. Phys. Rev. Fluids , 7(7):073903, 14 July 2022. doi: 10.1103/ PhysRevFluids.7.073903. N. M. Wereley and S. R. Hall. Linear time periodic systems: Transfer function, poles, transmission zeroes and directional properties. In 1991 American Control Conference , pages 1179–1184. IEEE, June 1991. doi: 10.23919/acc.1991. 4791563. G. Rigas, D. Sipp, and Tim Colonius. Nonlinear input/output analysis: application to boundary layer transition. J. Fluid Mech. , 911:A15, March 2021. doi: 10.1017/jfm.2020.982. 29 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows C. Leclercq and D. Sipp. Mean resolvent operator of a statistically steady flow. J. Fluid Mech. , 968:A13, August 2023. doi: 10.1017/jfm.2023.530. C. C. T. Pringle and R. R. Kerswell. Using nonlinear transient growth to construct the minimal seed for shear flow turbulence. Phys. Rev. Lett. , 105(15):154502, 8 October 2010. doi: 10.1103/PhysRevLett.105.154502. Z. Huang and M. J. P. Hack. A variational framework for computing nonlinear optimal disturbances in compressible flows. J. Fluid Mech. , 894:A5, 10 July 2020. doi: 10.1017/jfm.2020.189. N. Taniguchi, Y. Ohmichi, and K. Suzuki. Nonlinear optimal forcing analysis on subsonic flow around an airfoil. J. Fluid Mech. , 1031:A3, March 2026. doi: 10.1017/jfm.2026.11280. B. Herrmann, P. J. Baddoo, R Semaan, S. L. Brunton, and B. J. McKeon. Data-driven resolvent analysis. J. Fluid Mech. ,918:A10, July 2021. doi: 10.1017/jfm.2021.337. B Jin, S Symon, and S J Illingworth. Energy transfer mechanisms and resolvent analysis in the cylinder wake. Phys. Rev. Fluids , 6(2):024702, 18 February 2021. doi: 10.1103/PhysRevFluids.6.024702. J. L. Lumley. The structure of inhomogeneous turbulent flows. Atmospheric Turbulence and Radio Wave Propagation ,pages 166–178, 1967. P. Welch. The use of fast Fourier transform for the estimation of power spectra: A method based on time averaging over short, modified periodograms. IEEE Transactions on audio and electroacoustics , 15(2):70–73, 2003. B. Yeung, T. Chu, and O. T. Schmidt. Triadic orthogonal decomposition reveals nonlinearity in fluid flows. J. Fluid Mech. , 1031:A34, March 2026. Y. Nakamura, S. Sato, and N. Ohnishi. Uncovering triadic interaction relationships latent in mode a for the wake of a circular cylinder. J. Fluid Mech. , 1030:A12, 10 March 2026. doi: 10.1017/jfm.2026.11225. C.-A. Yeh, S. I. Benton, K. Taira, and D. J. Garmann. Resolvent analysis of an airfoil laminar separation bubble at Re=500000. Phys. Rev. Fluids , 5(8), 31 August 2020. doi: 10.1103/physrevfluids.5.083906. E Ballouz, B Lopez-Doriga, S. T. M. Dawson, and H.J. Bae. Wavelet-based resolvent analysis of non-stationary flows. J. Fluid Mech. , 999:A53, 25 November 2024. doi: 10.1017/jfm.2024.903. B Lopez-Doriga, E Ballouz, H. J. Bae, and S. T. M. Dawson. Sparse space–time resolvent analysis for statistically stationary and time-varying flows. J. Fluid Mech. , 999:A87, 25 November 2024. doi: 10.1017/jfm.2024.955. S. Chiba. Global stability analysis of incompressible viscous flow (in Japanese). J. Jpn. Soc. Comput. Fluid Dyn. , 7: 20–48, 1998. C. Mettot, F. Renac, and D. Sipp. Computation of eigenvalue sensitivity to base flow modifications in a discrete framework: Application to open-loop control. J. Comput. Phys. , 269:234–258, 15 July 2014. doi: 10.1016/j.jcp.2014.03.022. V. Theofilis. Global linear instability. Annu. Rev. Fluid Mech. , 43(1):319–352, 21 January 2011. doi: 10.1146/ annurev-fluid-122109-160705. P. J. Schmid. Dynamic mode decomposition of numerical and experimental data. J. Fluid Mech. , 656:5–28, 10 August 2010. doi: 10.1017/s0022112010001217. Jonathan H Tu, Clarence W Rowley, Dirk M Luchtenburg, Steven L Brunton, and J Nathan Kutz. On dynamic mode decomposition: Theory and applications. J. Comput. Dyn. , 1(2):391–421, 2014. doi: 10.3934/jcd.2014.1.391. H Asada and S Kawai. Exact parallelized dynamic mode decomposition with Hankel matrix for large-scale flow data. 
+
+Theor. Comput. Fluid Dyn. , 39(1):1–36, February 2025. doi: 10.1007/s00162-024-00730-0. J. H. M. Ribeiro, C.-A. Yeh, and K. Taira. Randomized resolvent analysis. Phys. Rev. Fluids , 5(3):033902, 18 March 2020. doi: 10.1103/PhysRevFluids.5.033902. D Sipp and A Lebedev. Global stability of base and mean flows: a general approach and its applications to cylinder and open cavity flows. J. Fluid Mech. , 593:333–358, 2007. J. D. Crouch, A. Garbaruk, and D. Magidov. Predicting the onset of flow unsteadiness based on global instability. J. Comput. Phys. , 224(2):924–940, 10 June 2007. doi: 10.1016/j.jcp.2006.10.035. Y. Kuya and S. Kawai. High-order accurate kinetic-energy and entropy preserving (KEEP) schemes on curvilinear grids. J. Comput. Phys. , 442:110482, 1 October 2021. doi: 10.1016/j.jcp.2021.110482. Y. Kuya, K. Totani, and S. Kawai. Kinetic energy and entropy preserving schemes for compressible flows by split convective forms. J. Comput. Phys. , 375:823–853, 15 December 2018. doi: 10.1016/j.jcp.2018.08.058. Y. Tamaki, Y. Kuya, and S. Kawai. Comprehensive analysis of entropy conservation property of non-dissipative schemes for compressible flows: KEEP scheme redefined. J. Comput. Phys. , 468:111494, 1 November 2022. 30 Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows S. Kawai and S. Kawai. Logarithmic mean approximation in improving entropy conservation in KEEP scheme with pressure equilibrium preservation property for compressible flows. J. Comput. Phys. , 530:113897, June 2025. doi: 10.1016/j.jcp.2025.113897. S Maejima and S Kawai. Unsupervised and supervised machine learning pipeline for super-resolution-based subgrid scale modelling in coarse-grid large-eddy simulations. J. Fluid Mech. , 1013:A28, 2025. P. C. Boldini, R. Hirai, P. Costa, J. W. R. Peeters, and R. Pecnik. CUBENS: A GPU-accelerated high-order solver for wall-bounded flows with non-ideal fluids. Comput. Phys. Commun. , 309:109507, April 2025. doi: 10.1016/j.cpc.2025.109507. S. Gottlieb and C.-W. Shu. Total variation diminishing Runge-Kutta schemes. Math. Comp. , 67(221):73–85, 1998. doi: 10.1090/S0025-5718-98-00913-2. R.B. Lehoucq, D. C. Sorensen, and C Yang. ARPACK users’ guide: solution of large-scale eigenvalue problems with implicitly restarted Arnoldi methods . SIAM, 1998. L. Poplingher, D. E. Raveh, and E. H. Dowell. Modal analysis of transonic shock buffet on 2D airfoil. AIAA Journal , 57 (7):2851–2866, 1 July 2019. doi: 10.2514/1.J057893. P. J. Schmid and D. Sipp. Linear control of oscillator and amplifier flows. Phys. Rev. Fluids , 1(4):040501, 30 August 2016. doi: 10.1103/PhysRevFluids.1.040501. Y. Iwatani, H. Asada, and S. Kawai. Direct numerical simulation of subharmonic transition in pseudo-adiabatic, heated and cooled boundary layers at Mach number 0.8. Int. J. Heat Fluid Flow , 116(109896), December 2025. doi: 10.1016/j.ijheatfluidflow.2025.109896. S. K. Lele. Compact finite difference schemes with spectral-like resolution. J. Comput. Phys. , 103(1):16–42, 1 November 1992. doi: 10.1016/0021-9991(92)90324-R. T. Sayadi, C. W. Hamman, and P. Moin. Direct numerical simulation of complete H-type and K-type transitions with implications for the dynamics of turbulent boundary layers. J. Fluid Mech. , 724:480–509, June 2013. doi: 10.1017/jfm.2013.142. L. M. Mack. Linear stability theory and the problem of supersonic boundary-layer transition. AIAA J. , 13(3):278–289, 1 March 1975. doi: 10.2514/3.49693. T Herbert. Secondary instability of boundary layers. Annu. Rev. Fluid Mech. , 20(1):487–526, 1 January 1988. doi: 10.1146/annurev.fl.20.010188.002415. P Lu and C Liu. DNS study on mechanism of small length scale generation in late boundary layer transition. Physica D ,241(1):11–24, 1 January 2012. doi: 10.1016/j.physd.2011.09.014. 31

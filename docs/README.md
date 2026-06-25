@@ -1,93 +1,91 @@
 ## 最新日报
-- 最新运行日期：2026-06-24
-- 运行时间：2026-06-24 22:13:30 UTC
+- 最新运行日期：2026-06-25
+- 运行时间：2026-06-25 22:18:37 UTC
 - 运行状态：成功
 - 本次总论文数：25
 - 精读区：12
 - 速读区：13
 
 ### 今日简报（AI）
-1) 今日精读2篇9.0分论文与3篇8.0分速读，聚焦逆物理信息神经网络与局部‑全局神经算子的前沿突破。  
-2) 最值得关注：逆PINN系统基准测试揭示曼宁摩擦估计的稀疏噪声鲁棒性；局部‑全局神经算子（LGNO）为双曲守恒律提供高效求解新范式。  
-3) 建议优先精读上述高分论文，再结合速读中的曲线网格过集方法和算子提升策略，拓展对物理约束与计算效率的全面理解。
-- 详情：[/202606/24/README](/202606/24/README)
+今日聚焦高超声速边界层流动与算子学习新方法，精读两篇高分论文揭示激波相互作用与声子稳定机制。最值得关注：高超声速三维扩张-压缩几何的激波/边界层相互作用，以及声子介导的第一、第二模态稳定化研究。建议后续关注结构导向随机神经网络与算子混合集成方法在复杂物理系统中的应用突破。
+- 详情：[/202606/25/README](/202606/25/README)
 
 ### 精读区论文标签
-1. [How Sparse and How Noisy? Systematic Benchmarking of Inverse Physics-Informed Neural Networks for Manning Friction Estimation in Shallow Water Equations](/202606/24/2606.18149v1-how-sparse-and-how-noisy-systematic-benchmarking-of-inverse-physics-informed-neural-networks-for-manning-friction-estimation-in-shallow-water-equations)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：用于浅水方程反演的物理信息神经网络
-2. [LGNO: A Local-Global Neural Operator for Hyperbolic Conservation Laws](/202606/24/2606.18221v1-lgno-a-local-global-neural-operator-for-hyperbolic-conservation-laws)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：用于含激波双曲守恒律的神经算子
-3. [Starter-Iterator Neural Operator: A Unified Architecture for High-Fidelity Forward and Inverse PDE Problems](/202606/24/2606.18305v1-starter-iterator-neural-operator-a-unified-architecture-for-high-fidelity-forward-and-inverse-pde-problems)  
-   标签：评分：9.0/10、query:flow-field
-   evidence：面向PDE的启动迭代神经算子
-4. [Phonon-mediated stabilization of first and second modes in hypersonic boundary-layer flows](/202606/24/2606.19673v1-phonon-mediated-stabilization-of-first-and-second-modes-in-hypersonic-boundary-layer-flows)  
+1. [Hypersonic Shock-Wave/Boundary-Layer Interaction on a Three-Dimensional Expansion-Compression Geometry](/202606/25/2606.19592v1-hypersonic-shock-waveboundary-layer-interaction-on-a-three-dimensional-expansion-compression-geometry)  
    标签：评分：9.0/10、query:q1
-   evidence：高超声速边界层流动控制; 热载荷缓解
-5. [Structure-Oriented Randomized Neural Networks for Poisson-Nernst-Planck and Poisson-Nernst-Planck-Navier-Stokes Systems](/202606/24/2606.19912v1-structure-oriented-randomized-neural-networks-for-poisson-nernst-planck-and-poisson-nernst-planck-navier-stokes-systems)  
+   evidence：马赫5和8高超声速激波/边界层相互作用的实验研究
+2. [Phonon-mediated stabilization of first and second modes in hypersonic boundary-layer flows](/202606/25/2606.19673v1-phonon-mediated-stabilization-of-first-and-second-modes-in-hypersonic-boundary-layer-flows)  
+   标签：评分：9.0/10、query:q1
+   evidence：高超声速边界层稳定化减少热载荷
+3. [State estimation of Rayleigh-Bénard convection with reduced-order models](/202606/25/2606.20511v2-state-estimation-of-rayleigh-bnard-convection-with-reduced-order-models)  
    标签：评分：9.0/10、query:flow-field
-   evidence：用于Navier-Stokes系统的物理信息神经网络框架
-6. [Emissivity of oxidizing titanium in simulated atmospheric entry flows](/202606/24/2606.20716v1-emissivity-of-oxidizing-titanium-in-simulated-atmospheric-entry-flows)  
+   evidence：结合ROM与EKF进行对流状态估计；流场降阶建模
+4. [Turbulence Physics Governs a Scaling Law for the Machine-Learning Predictability Ceiling in Chaotic Flow](/202606/25/2606.21538v1-turbulence-physics-governs-a-scaling-law-for-the-machine-learning-predictability-ceiling-in-chaotic-flow)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：混沌湍流中机器学习预测极限
+5. [Beyond classical similitude: group theoretic extrapolation of hypersonic stagnation-point boundary layers](/202606/25/2606.21747v1-beyond-classical-similitude-group-theoretic-extrapolation-of-hypersonic-stagnation-point-boundary-layers)  
    标签：评分：9.0/10、query:q1
-   evidence：模拟进入流中钛的发射率，与热防护相关
-7. [Beyond classical similitude: group theoretic extrapolation of hypersonic stagnation-point boundary layers](/202606/24/2606.21747v1-beyond-classical-similitude-group-theoretic-extrapolation-of-hypersonic-stagnation-point-boundary-layers)  
-   标签：评分：9.0/10、query:q1
-   evidence：群论外推高超声速驻点边界层
-8. [Physics-Preserving Latent Compression for Zero-Shot Resolution Transfer in 3D Turbulence](/202606/24/2606.21781v1-physics-preserving-latent-compression-for-zero-shot-resolution-transfer-in-3d-turbulence)  
+   evidence：高超声速驻点边界层外推用于热防护
+6. [Patched Flow Matching: Generative Wall-Pressure Reconstruction Beyond Training-Domain Scales from Sparse Sensors](/202606/25/2606.22084v1-patched-flow-matching-generative-wall-pressure-reconstruction-beyond-training-domain-scales-from-sparse-sensors)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：生成式稀疏传感器壁压重建
+7. [Attention mechanism for scalable mesh-based neural surrogates of free-surface fluids](/202606/25/2606.23251v1-attention-mechanism-for-scalable-mesh-based-neural-surrogates-of-free-surface-fluids)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：自注意力神经代理用于自由表面流体流动
+8. [Learning the Koopman Operator using Attention Free Transformers](/202606/25/2606.23957v1-learning-the-koopman-operator-using-attention-free-transformers)  
    标签：评分：9.0/10、query:pclso
-   evidence：物理保持的潜在压缩用于湍流
-9. [Patched Flow Matching: Generative Wall-Pressure Reconstruction Beyond Training-Domain Scales from Sparse Sensors](/202606/24/2606.22084v1-patched-flow-matching-generative-wall-pressure-reconstruction-beyond-training-domain-scales-from-sparse-sensors)  
+   evidence：潜在动力学与自编码器Koopman
+9. [A Physics-Informed Fourier-Wavelet Transformer for Multiscale Computational Fluid Dynamics Surrogate Modeling](/202606/25/2606.24696v1-a-physics-informed-fourier-wavelet-transformer-for-multiscale-computational-fluid-dynamics-surrogate-modeling)  
    标签：评分：9.0/10、query:flow-field
-   evidence：从稀疏传感器生成壁面压力重建
-10. [Efficient implementation of graph autoencoders for model-order reduction of systems with sharp gradients](/202606/24/2606.23834v1-efficient-implementation-of-graph-autoencoders-for-model-order-reduction-of-systems-with-sharp-gradients)  
-   标签：评分：9.0/10、query:pclso
-   evidence：图自编码器用于陡梯度系统的模型降阶
-11. [Neural Network-Based Parametric Model Reduction for Predicting Turbulent Flow for Different Vehicle Geometries](/202606/24/2606.24265v1-neural-network-based-parametric-model-reduction-for-predicting-turbulent-flow-for-different-vehicle-geometries)  
+   evidence：物理信息傅里叶小波变换器用于CFD
+10. [Real vs. Complex Spectral Bases for Neural Operators: The Role of Green's Function Alignment](/202606/25/2606.24851v1-real-vs-complex-spectral-bases-for-neural-operators-the-role-of-greens-function-alignment)  
    标签：评分：9.0/10、query:flow-field
-   evidence：神经网络参数化模型降阶预测湍流
-12. [Real vs. Complex Spectral Bases for Neural Operators: The Role of Green's Function Alignment](/202606/24/2606.24851v1-real-vs-complex-spectral-bases-for-neural-operators-the-role-of-greens-function-alignment)  
+   evidence：新颖的实值神经算子用于偏微分方程解算子学习
+11. [Dynamic masking for boundary-aware velocity reconstruction in volumetric particle tracking with moving solids](/202606/25/2606.25748v1-dynamic-masking-for-boundary-aware-velocity-reconstruction-in-volumetric-particle-tracking-with-moving-solids)  
    标签：评分：9.0/10、query:flow-field
-   evidence：哈特利神经算子作为FNO的实数值替代用于PDE
+   evidence：从稀疏PTV数据进行边界感知速度重建
+12. [G-PINNs: Gaussian-based spatially weighted formulation for PINNs: 1D low-viscous Burgers](/202606/25/2606.26013v1-g-pinns-gaussian-based-spatially-weighted-formulation-for-pinns-1d-low-viscous-burgers)  
+   标签：评分：9.0/10、query:flow-field
+   evidence：基于高斯权重的PINNs用于激波分辨率
 
 ### 速读区论文标签
-1. [Curvilinear Moving Overset Method for High-order Non-dissipative Schemes](/202606/24/2606.17448v1-curvilinear-moving-overset-method-for-high-order-non-dissipative-schemes)  
+1. [Structure-Oriented Randomized Neural Networks for Poisson-Nernst-Planck and Poisson-Nernst-Planck-Navier-Stokes Systems](/202606/25/2606.19912v1-structure-oriented-randomized-neural-networks-for-poisson-nernst-planck-and-poisson-nernst-planck-navier-stokes-systems)  
    标签：评分：8.0/10、query:flow-field
-   evidence：高精度移动重叠网格方法用于非定常可压缩流动
-2. [Operator Boosting Produces Pareto-Efficient PDE Surrogates](/202606/24/2606.17460v1-operator-boosting-produces-pareto-efficient-pde-surrogates)  
+   evidence：使用结构导向随机神经网络求解PNP-NS系统，一种物理信息神经网络方法
+2. [$Ω$: Operator-based Mixture Ensemble for Generative Assimilation](/202606/25/2606.20920v1--operator-based-mixture-ensemble-for-generative-assimilation)  
    标签：评分：8.0/10、query:flow-field
-   evidence：算子提升用于紧凑PDE替代模型
-3. [Geometry-Aware Post-Hoc Uncertainty Quantification in Operator Learning](/202606/24/2606.17513v1-geometry-aware-post-hoc-uncertainty-quantification-in-operator-learning)  
+   evidence：高维非线性系统的数据同化，从稀疏观测重建
+3. [TF-SNO: Time-Frequency Gated Spectral Neural Operators for Learning Non-Stationary Partial Differential Equations](/202606/25/2606.21189v1-tf-sno-time-frequency-gated-spectral-neural-operators-for-learning-non-stationary-partial-differential-equations)  
    标签：评分：8.0/10、query:flow-field
-   evidence：带不确定性的神经算子用于PDE
-4. [Operator Learning for PDE Backstepping Control of Parabolic Equations on Time-Varying Domains](/202606/24/2606.17766v1-operator-learning-for-pde-backstepping-control-of-parabolic-equations-on-time-varying-domains)  
+   evidence：非平稳PDE的频谱神经算子
+4. [Physics-Informed Neural Networks for coupled stiff transport systems](/202606/25/2606.21236v1-physics-informed-neural-networks-for-coupled-stiff-transport-systems)  
    标签：评分：8.0/10、query:flow-field
-   evidence：用于PDE反步控制的算子学习
-5. [A Fourth-order Conservative Adaptive Multiresolution Wavelet Upwind Scheme for Compressible Flows](/202606/24/2606.18026v1-a-fourth-order-conservative-adaptive-multiresolution-wavelet-upwind-scheme-for-compressible-flows)  
+   evidence：物理信息神经网络用于刚性输运方程，可迁移至流体动力学
+5. [Beyond Data-Driven: How Physics-Informed Neural Networks are Reshaping Multi-Physics Design and Discovery](/202606/25/2606.21945v1-beyond-data-driven-how-physics-informed-neural-networks-are-reshaping-multi-physics-design-and-discovery)  
    标签：评分：8.0/10、query:flow-field
-   evidence：使用计算方法预测流场
-6. [Generalization Guarantees for Multi-Input Neural Operator Learning in Sobolev Spaces](/202606/24/2606.17419v1-generalization-guarantees-for-multi-input-neural-operator-learning-in-sobolev-spaces)  
+   evidence：物理信息神经网络用于多物理设计
+6. [On the governing mechanism of unsteadiness in bow shock-induced three-dimensional separation](/202606/25/2606.18838v1-on-the-governing-mechanism-of-unsteadiness-in-bow-shock-induced-three-dimensional-separation)  
+   标签：评分：7.0/10、query:q6
+   evidence：研究马赫2.87弓形激波诱导三维分离的非定常性；与超声速气膜冷却中的激波边界层相互作用直接相关
+7. [Acceleration of an algebraic multigrid pressure solver using graph neural networks](/202606/25/2606.19251v1-acceleration-of-an-algebraic-multigrid-pressure-solver-using-graph-neural-networks)  
    标签：评分：7.0/10、query:flow-field
-   evidence：神经算子学习理论适用于流体动力学
-7. [Finite Difference Implementation of a High-order Space-Time Coupled Compact Gas-Kinetic Scheme](/202606/24/2606.17772v1-finite-difference-implementation-of-a-high-order-space-time-coupled-compact-gas-kinetic-scheme)  
+   evidence：图神经网络加速非结构流压力求解器
+8. [Advances in Scientific Machine Learning for Coupled Fluid Flow and Transport](/202606/25/2606.19562v1-advances-in-scientific-machine-learning-for-coupled-fluid-flow-and-transport)  
    标签：评分：7.0/10、query:flow-field
-   evidence：用于可压缩流模拟的高阶紧致有限差分气体动理学格式
-8. [APU-Accelerated Large Eddy Simulation with the Discontinuous Galerkin Solver GALÆXI](/202606/24/2606.18927v1-apu-accelerated-large-eddy-simulation-with-the-discontinuous-galerkin-solver-galxi)  
+   evidence：综述了用于流场预测的降阶模型、PINN和自编码器等SciML方法
+9. [Physics-Informed Neural Network with Squeeze-Excitation-like Attention](/202606/25/2606.19853v1-physics-informed-neural-network-with-squeeze-excitation-like-attention)  
    标签：评分：7.0/10、query:flow-field
-   evidence：GPU加速的大涡模拟求解器用于流体动力学
-9. [Locally Stable Neural ODEs with Characterized Region of Attraction](/202606/24/2606.19109v1-locally-stable-neural-odes-with-characterized-region-of-attraction)  
-   标签：评分：7.0/10、query:pclso
-   evidence：带Lyapunov约束的神经ODE用于局部稳定动力学，可应用于物理约束流体建模
-10. [Riemann invariant-based alternative WENO scheme for a two-layer thin film model](/202606/24/2606.17862v2-riemann-invariant-based-alternative-weno-scheme-for-a-two-layer-thin-film-model)  
+   evidence：带有注意力机制的物理信息神经网络
+10. [APU-Accelerated Large Eddy Simulation with the Discontinuous Galerkin Solver GALÆXI](/202606/25/2606.18927v1-apu-accelerated-large-eddy-simulation-with-the-discontinuous-galerkin-solver-galxi)  
    标签：评分：6.0/10、query:flow-field
-   evidence：基于黎曼不变量的WENO格式用于两层薄膜
-11. [Quasi-Monte Carlo finite element approximation for singularly perturbed convection-diffusion problems with random velocity](/202606/24/2606.18678v1-quasi-monte-carlo-finite-element-approximation-for-singularly-perturbed-convection-diffusion-problems-with-random-velocity)  
+   evidence：用于百亿亿次硬件上的高阶CFD大涡模拟求解器
+11. [INDEQS: Informed Neural controlled Differential EQuationS](/202606/25/2606.19138v1-indeqs-informed-neural-controlled-differential-equations)  
    标签：评分：6.0/10、query:flow-field
-   evidence：随机速度对流扩散问题的数值近似
-12. [On the governing mechanism of unsteadiness in bow shock-induced three-dimensional separation](/202606/24/2606.18838v1-on-the-governing-mechanism-of-unsteadiness-in-bow-shock-induced-three-dimensional-separation)  
-   标签：评分：6.0/10、query:q6
-   evidence：弓形激波诱导三维分离的非定常性
-13. [Acceleration of an algebraic multigrid pressure solver using graph neural networks](/202606/24/2606.19251v1-acceleration-of-an-algebraic-multigrid-pressure-solver-using-graph-neural-networks)  
+   evidence：带图先验的神经控制微分方程
+12. [Forcing-informed resolvent analysis: Identification of input-output relations in self-sustained flows](/202606/25/2606.19731v1-forcing-informed-resolvent-analysis-identification-of-input-output-relations-in-self-sustained-flows)  
    标签：评分：6.0/10、query:flow-field
-   evidence：图神经网络加速不可压缩流动的压力求解器
+   evidence：自持流动的输入输出关系识别
+13. [Learning universal approximations for partial differential equations with Physics-Informed Broad Learning System](/202606/25/2606.19754v1-learning-universal-approximations-for-partial-differential-equations-with-physics-informed-broad-learning-system)  
+   标签：评分：6.0/10、query:flow-field
+   evidence：适用于流体流动的物理信息PDE求解方法
 

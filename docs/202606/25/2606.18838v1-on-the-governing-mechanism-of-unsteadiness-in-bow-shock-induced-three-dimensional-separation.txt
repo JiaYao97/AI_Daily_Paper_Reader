@@ -1,0 +1,1579 @@
+Title: On the governing mechanism of unsteadiness in bow shock-induced three-dimensional separation
+
+URL Source: https://arxiv.org/pdf/2606.18838v1
+
+Published Time: Thu, 18 Jun 2026 00:46:11 GMT
+
+Number of Pages: 47
+
+Markdown Content:
+> This manuscript has been submitted to the Journal of Fluid Mechanics and is currently under peer review. The present version is an arXiv preprint.
+
+# On the governing mechanism of unsteadiness in bow shock-induced three-dimensional separation 
+
+Siva Vayala 1, K. Ramachandra 2, K. Abhishek 1, Nagabhushana Rao Vadlamani 1 and R. Sriram 1†  
+
+> 1Department of Aerospace Engineering, Indian Institute of Technology Madras, Chennai, India
+> 2Department of Engineering, University of Cambridge, Cambridge, United Kingdom
+> Corresponding author: †R. Sriram, r.sriram@iitm.ac.in (Received xx; revised xx; accepted xx)
+
+We investigate the driving mechanism of low-frequency unsteadiness in bow shock-turbulent boundary layer interactions due to protuberances. Wind tunnel experiments are conducted at a freestream Mach number of 2.87 with protuberances of different shapes and sizes. From time-resolved surface pressure measurements and schlieren imaging, the unsteadiness is characterized by low-frequency shock oscillations, with a Strouhal number of 𝑆𝑡 𝛿 ∼ 0.01 based on the boundary layer thickness ( 𝛿 ), while the separated region exhibits predominantly mid-frequency pressure oscillations, with 𝑆𝑡 𝛿 ∼ 0.1. Mid-span separation length, 𝐿 𝑠𝑒 𝑝 , is identified as a key parameter in determining time and length scales of shock oscillations. Further details of the interaction are examined through compressible adaptive detached eddy simulations for one particular case, viz.,the cubical protuberance of side 15 mm. A detailed modal analysis using proper orthogonal decomposition (POD) is performed with the 3-D data from computations. Flapping of shock-foot about mid-span was apparent, over and above the coherent to-and-fro oscillations, with the dominance of anti-symmetric mode in the POD of wall pressure fluctuations. The motion of the shock foot is initiated near mid-span, while the shock foot at other spanwise locations lags behind. The flap and asymmetries are related to the spanwise extent of reverse flow. From the reconstructed 3-D flow field using low-frequency modes, along with corroborating observations from the two-point correlations, it is inferred that the imbalance and time lag between the mass injected into the separated region at reattachment and the mass leaving spanwise at the horseshoe vortex core govern the observed shock motion. 
+
+Key words: High-speed flow, Compressible boundary layers, Boundary layer separation 
+
+1. Introduction 
+
+Shock wave boundary layer interactions (SBLI) could result in flow separation and unsteadi-ness, imposing unsteady pressure and heating loads, which in turn affect the performance of high-speed systems. At the turn of the century, Dolling (2001) identified unsteadiness as one of the two important unresolved issues in SBLI. The unsteadiness in discussion here is the often observed large-scale to-and-fro excursion of separation/reflected shock about the 
+
+> arXiv:2606.18838v1 [physics.flu-dyn] 17 Jun 2026
+
+S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+mean position, exhibiting low characteristic frequencies at least two orders of magnitude lower than the characteristic incoming turbulent boundary layer frequencies and one order of magnitude lower than the characteristic flapping frequencies in the separated shear layer. Such low-frequency shock oscillations can lead to structural catastrophe in high-speed flow applications by exposing vehicle surfaces to fatigue aero-thermal loads at frequencies close to their natural frequencies. The consequences can also include intake buzz, unstart, etc., issues in supersonic air-breathing systems, thereby affecting their operational efficiency. This situation has motivated the decades-long debate on the source of the low-frequency unsteadiness; some works have argued in favor of ‘upstream mechanism’, i.e., the incoming turbulent boundary layer being the source of unsteadiness, while others have attributed unsteadiness to ‘downstream mechanism’, i.e., from within the interaction region itself. The experimental reports by Andreopoulos & Muck (1987) and by Thomas et al. (1994) were among the earliest, speculating the role of upstream and downstream sources in driving the low-frequency unsteadiness, respectively. With advancements in flow diagnostics and computations, the aspect of unsteadiness in SBLI has received a significant resolution over the last two decades, at least in the case of nominally two-dimensional canonical configurations. Andreopoulos & Muck (1987) observed that large-scale shock motion occurs at velocities and frequencies similar to those of velocity fluctuations and turbulent bursts in the upstream boundary layer, thereby speculating that it may be the source of shock motion. Beresh et al. (2002), through their studies on compression ramps at Mach 5, suggested that the shock motions are strongly correlated with the velocity fluctuations in the upstream boundary layer. They showed that positive velocity fluctuations, having higher momentum, correlate with the downward movement of the separation shock, while negative fluctuations are correlated with the upstream motion of the separation shock. By means of wide field PIV and planar laser scattering measurements in streamwise-spanwise planes, Ganapathisubramani et al. 
+
+(2007, 2009) identified the presence of long coherent structures (superstructures) in the incoming boundary layer, 40 times the boundary layer thickness ( 𝛿 ), which affected the separated flow induced by a compression corner. Humble et al. (2009) too investigated the role of such incoming superstructures for the case of impinging shock interaction, using volumetric measurements rather than point/planar measurements, using tomographic PIV. Regarding superstructures, Touber & Sandham (2009) made interesting observations through large eddy simulations (LES) of oblique shock reflection case; even with relatively small turbulent streaks in the incoming boundary layer, the interaction exhibited low-frequency shock oscillations, suggesting that the origin of low-frequency unsteadiness is not necessarily from the coherent structures, although the structures can have some influence as a forcing. Recently, Porter & Poggie (2019) suggested that large-scale pulsations of the separation region are related to the selective influence of large-scale turbulent structures near the wall. Near-wall turbulent structures in the boundary layer act as a forcing mechanism, resulting in a global mode of separation bubble. A noteworthy feature in most works emphasizing the role of incoming turbulence on unsteadiness is the relatively small separation bubble, close to incipient separation. Many other works argue in favour of downstream mechanism. Through time-resolved pressure measurements in the interaction zone (for impinging shock interaction), and from interpreting the results from other reported experiments in the literature on interaction unsteadiness in different configurations, Dussauge et al. (2006) suggested the source of unsteadiness to be from within the interaction itself, speculating that the three-dimensional structure (viewed using streamwise-spanwise planar PIV) of the separated region may be a source of the unsteadiness; the shedding of vortices downstream of the shock could be the reason. In the spectra of unsteady surface pressures at the shock foot location, the peak  
+
+> 0X0-2
+
+Unsteadiness in bow shock-induced separation 
+
+energy was at Strouhal number, defined based on interaction length (L), 𝑆𝑡 𝐿 ∼ 0.02 − 0.06. Within the recirculation region, the peak energy was at 𝑆𝑡 𝐿 ∼ 0.5, which is also typically the orders of magnitude of the mixing layer oscillations (flapping). Further, the high coherence between these signals at the low frequency range (of shock oscillations) and low correlations of these signals with pressure fluctuations upstream of interaction zone, strongly pointed towards the ‘downstream mechanism’. Such spectra and coherences in surface pressure are typically reported over wide range of Mach numbers for any canonical 2-D SBLI with separation, such as with impinging shock (Erengil & Dolling 1993; Dussauge et al. 2006; Dupont et al. 2006; Ringuette et al. 2009) or compression corner (Erengil & Dolling 1991; Thomas et al. 1994; Pasquariello et al. 2017; Manisankar & Verma 2023). Direct numerical simulation (DNS) studies have also pointed towards the downstream causes for the (separation) shock unsteadiness. Pirozzoli & Grasso (2006) analyzed by means of DNS the case of impinging shock interaction at Mach 2.25, with mild separation. It was proposed that an acoustic resonance mechanism establishes in the interaction zone, very similar to the generation of tones in cavity flows and screeches in jets, which sustains the low-frequency large-scale shock unsteadiness. This mechanism was however refuted by Wu & Martin (2008) in their DNS analysis for the case of interaction in the compression ramp. The study of correlation and time lags between the shock oscillations and the motion of the separation and reattachment locations suggested that the separation bubble drives the shock motion. A feedback loop is established among the separation bubble, the separated shear layer, and the shock system; disturbance of the mass balance between shear layer entrainment from the bubble and injection into the bubble at reattachment was suggested as the mechanism driving the low-frequency shock motion. A simple model for the low-frequency unsteadiness of shock-induced separation, based on the relationship between successive contraction-dilatation of the separation bubble and the mass imbalance between shear layer entrainment and injection at reattachment, was proposed by Piponniau et al. (2009). Figure 1 shows a schematic of the shock-induced separated flow field in nominally 2-dimensional interactions.    
+
+> Figure 1. Schematic of the separated flow field downstream of reflected shock in nominally 2-dimensional SBLI (adapted from Piponniau et al. (2009))
+
+During the phases when the bubble is large, excess mass gets entrained through the divid-ing streamline in the relatively longer shear layer than the mass injection at reattachment. This drains the bubble, eventually causing it to collapse and shrink. As the bubble shrinks, the mass entrained in the shear layer reduces, and eventually excess mass gets injected at the reattachment, which tends to enlarge the bubble. The time scales estimated based on this ‘bubble breathing’ mechanism were consistent with the experimentally observed shock oscillation Strouhal numbers. The DNS analysis by Priebe & Mart´ ın (2012) also asserts the dependence of shock motion on the entrainment imbalances and the associated flapping of the separated shear layer, suggesting an inherent instability of the downstream 
+
+0 X0-3 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+separated flow. The review by Clemens & Narayanaswamy (2014) summarizes the present consensus on the shear layer entrainment-recharge mechanism behind the low-frequency dynamics. While spanwise wrinkling can be associated with the incoming turbulence (Ganapathisubramani et al. 2009), recent DNS studies by Zhang et al. (2025) established that the inherent instabilities associated with the low-frequency motion can also result in large-scale spanwise structures. Clemens & Narayanaswamy (2009) and Souverein 
+
+et al. (2010) suggest that both upstream and downstream mechanisms jointly affect the interactions; however, the relative dominance of a particular mechanism depends on the interaction strength. Weak interactions without separation are dominated by the structure of upstream turbulent flow; however, for the cases of severe interactions with large separated regions, the downstream mechanisms are dominant. While the unsteadiness associated with 2-D interactions has been widely investigated and resolved, the unsteadiness in 3-dimensional SBLI remains unclear for several 3-dimensional configurations. Due to the myriad 3-D configurations and qualitative differences in the flow field, achieving universality across them proved to be difficult. Among the 3-D configurations, swept shock interactions such as those due to sharp fins (Arora et al. 
+
+2018, 2019) and swept compression ramps (Vanstone & Clemens 2019; Adler & Gaitonde 2019, 2020) have received greater attention recently. Unlike 2-D interactions, which have a closed separation (bubble) with spanwise homogeneity, 3-D interactions involve open separation, which, in the case of swept ramps/sharp fins, can exhibit quasi-cylindrical or quasi-conical symmetries. Due to these qualitative differences in the structure of the interaction, Gaitonde & Adler (2023) argued that the mechanism responsible for the low-frequency unsteadiness in two-dimensional interactions, viz., the bubble breathing, may not be present for three-dimensional interactions. Rather, in swept ramp-induced three-dimensional interactions, the shock motions were reported as shear-layer-induced events with mid-frequencies, i.e., 𝑆𝑡 𝛿 ∼ 0.1. Apart from swept ramp interactions, the unsteady features in other 3-D interactions, particularly bow shock-induced interactions due to protuberances such as blunt fins, are not explored extensively. The bow shock-induced SBLI presents a curious case, in which, despite being a three-dimensional open separation, the separated flow is observed to exhibit low-frequency shock oscillations (Brusniak & Dolling 1994; Ramachandra et al. 2023), similar to those observed in 2-D SBLI, and in contrast to the mid-frequency small amplitude oscillations observed in swept shock interactions. In bow-shock induced separation, mean flow features have many qualitative differences with the 2-D SBLI. In 2-D interactions, the wall experiences a gradual pressure rise from interaction onset, followed by a plateau pressure in the separated region, and then another pressure rise due to flow reattachment. However, in bow-shock STBLI, the pressure distribution is qualitatively similar to two-dimensional interactions until some distance downstream of separation, with a wall pressure plateau after the pressure rise through separation, after which the pressure dips to a local minimum, before rising sharply to high peak values near the wall-protuberance junction (Dolling & Bogdonoff 1982; Lind¨ orfer 
+
+et al. 2020; Bhardwaj et al. 2022). This low-pressure region is a distinctive feature of bow shock-induced interaction and is attributed to the local supersonic flow linked to the presence of a horseshoe vortex around the protuberance (Voitenko et al. 1966). The dynamics of the horseshoe vortex, essentially a three-dimensional mechanism, can play a significant role in the overall unsteady dynamics of the SBLI, though this has not been addressed in the literature. Concerning unsteady aspects in bow-shock induced STBLI, interesting observations were made in the experimental work of Brusniak & Dolling (1994) on blunt fin-induced separation. Detailed unsteady wall pressure measurements were obtained along the span- 
+
+> 0X0-4
+
+Unsteadiness in bow shock-induced separation 
+
+wise centerline, upstream of the blunt fin in a Mach 5 flow on wind tunnel wall. The spectra in the intermittent zone (neighborhood of the shock foot/separation) were dominated by low frequencies, and those in the downstream separated flow were dominated by mid frequencies, which is strikingly similar to observations in nominally 2-D interactions exhibiting bubble breathing. However, marked differences with 2-D interactions are observed in the correlations between separation shock and various locations downstream. In 2-D interactions, the pressure fluctuations in the intermittent region are reported to exhibit a strong negative correlation with almost every other location inside the bubble (plateau pressure) and the reattachment. In contrast, for the bow shock-induced separation, the sense and the magnitude of correlation of pressure oscillations in the intermittent zone with those at downstream locations depended on the specific location. Strong negative correlations were observed with the pressure fluctuations in the plateau pressure zone as well as in the locations where the mean pressure decreases downstream up to the location of minimum mean pressure. Positive correlations were observed with the locations in the region of pressure rise from the minimum pressure point to the peak pressure point in the vicinity of fin-wall junction. The fluctuations at peak pressure point exhibited a negative correlation with the fluctuations in the intermittent zone. The magnitudes of correlation were relatively lower for downstream locations than those at the plateau pressure zone. At the locations between the zones exhibiting correlation peaks of opposite sense with the fluctuations at intermittent zone, both positive and negative peaks in correlation were observed. These observed trends in the correlations with shock foot pressure fluctuations were clearly linked to the distinct surface pressure distribution. t 1t 2t 3(a) (d) (b) (c) t 1 t 2 t 3    
+
+> 11
+> 111
+> 2233M∞
+> SOR PPR RPR
+> Figure 2. (a) Ensemble-averaged pressure distribution; pressure-time variation for upstream shock foot movement at (b) shock oscillation region (SOR); (c) plateau pressure region (PPR); (d) rising pressure region (RPR) (adapted from Brusniak & Dolling (1994))
+
+The wall pressures at a particular location, measured at all instances when the shock foot is at a given streamwise location, is averaged to give the ensemble average at the particular location corresponding to the given shock foot location. Figure 2(a) schematically shows 
+
+0 X0-5 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+the ensemble-averaged pressure distribution along the centerline for three progressive time instances as the shock moves upstream, viz., 𝑡 1, 𝑡 2 and 𝑡 3. The pressure-time variation at three probe locations: location 1 in the intermittent/shock oscillation region (SOR), location 2 in the plateau pressure region (PPR), and location 3 in the rising pressure region (RPR) between the local minimum and the peak pressure near the base of the cylinder- are traced in Figure 2(b),(c) and (d), respectively, based on the behaviour of the ensemble averaged from 𝑡 1 to 𝑡 3. Based on the observed trends, it can be inferred that the low-frequency wall pressure fluctuations at mean shock-foot must have a strong negative correlation with the fluctuations in the plateau pressure region due to both the stretching and flattening of the pressure profile, whereas shock-foot pressure fluctuations should have a positive correlation with those at location 3 due to the stretching of the profile. The flattening of peak pressure must also result in a negative correlation between fluctuations at mean shock and peak pressure location near cylinder base. The stretching and flattening of the ensemble-averaged pressure distribution as the shock foot moves upstream (and vice versa for downstream motion), thus explains the observed trends in the correlations in wall pressure fluctuations. Although this analysis explains the observed correlations in unsteady wall pressure at spanwise centerline, the mechanism sustaining the low-frequency unsteadiness in the bow shock-induced open separation remains unaddressed. The experimental investigations on transitional or turbulent SBLI over blunt fin (Combs 
+
+et al. 2019; Lind¨ orfer et al. 2020; Hoffman et al. 2022) also relied on centerline unsteady wall pressure measurements or time series of centerline shock foot position from schlieren visualizations. High-fidelity computational studies on these interactions are also limited. These interactions pose significant computational challenges in characterizing shock unsteadiness. RANS models lack the ability to capture low-frequency shock oscillations due to rapid distortion of the flow field (Marshall & Dolling 1992; Bhardwaj et al. 2022), whereas high-fidelity simulations (DNS/LES), although capable of resolving them, require prohibitively expensive grids and longer computational times. This necessitates the use of hybrid methods, such as detached eddy simulations (DES), especially for flows at high Reynolds numbers from an engineering perspective (Spalart 1997; Spalart et al. 2006). In these lines, a numerical work by Ngoh & Poggie (2022) employed DES for blunt fin-induced interactions. However, the reported spectra and correlations were only along the centerline; although the pressure oscillations at other spanwise planes could be accessible from the simulations, lack of experimental data for validation may be a reason for not looking into the spanwise aspects of oscillations. As mentioned before, the spectra along the spanwise centerline exhibit behavior similar to that in 2-D SBLI, which is perplexing, given that there is no trapped mass inside the separated region. It is not appropriate to argue in favor of the breathing mechanism merely on the basis of frequency ranges; the horseshoe vortex and three-dimensional relieving effects may have some contribution. Simultaneous measurements at various spanwise locations and exploration of space-time correlations are imperative. Essentially, a ‘three-dimensional’ view of the unsteady flow field needs to be carefully looked at to understand the mechanism. Only recently, a numerical work (Lind¨ orfer et al. 2025) has attempted to address this through LES on blunt fin-induced separation, reporting a limited observation that the intermittent length and the (low) frequency content were nearly the same across the span in the regions where the flow separation was present. In this context, the present work investigates the bow shock-induced interaction due to protuberances through experimental and computational approaches to resolve the mechanism. An emphasis is given to the correlations and spectra at different spanwise locations, in addition to the centerline span. Wind tunnel experiments are conducted at a Mach number of 2.87 and a Reynolds number of 4 .7 × 10 7 𝑚 −1, with protuberances of  
+
+> 0X0-6
+
+Unsteadiness in bow shock-induced separation 
+
+different shapes and sizes mounted on the tunnel wall. The unsteadiness was characterized using time-resolved schlieren visualizations and unsteady pressure measurements at various streamwise and spanwise locations, from which the scaling for frequency and amplitude of shock oscillations are obtained. Further, the interaction is investigated numerically using an enhanced version of DES, ‘adaptive DES (ADES)’, which strikes a balance between computational requirements and the desired level of accuracy. The simulations are conducted for the case of a cubical (square-faced) protuberance, whose results are validated against the experimental data. Computations are not intended to be used for a parametric study, but only for a finer resolution of flow physics. Therefore, we chose to perform simulations only with the cubical protuberance. Based on the insights from the experiments and computations, the mechanism sustaining the low-frequency shock motion is explored. The present article is organized as follows. Details of the experimental methodology and important findings obtained for various protuberances are provided in Section 2. Section 3 presents the computational methodology, including the flow configuration and the numerical methods used for the cubical protuberance case. Section 4 is devoted to computational results for cubical protuberances, including validation studies, spectral analyses, and insights from two- and three-dimensional POD analyses, leading to a final discussion on the governing mechanism for low-frequency shock oscillations. 
+
+> 2. Experimental Methodology and Observations
+
+The experimental investigation is conducted in the supersonic blowdown wind tunnel at the Gas Dynamics Laboratory at IIT Madras. The test section of the tunnel shown in figure 3(a), having a rectangular cross section of 100 mm × 114 mm and a length of 396 mm, is supplied with compressed dry air at a stagnation pressure of 6 bar. The stagnation temperature is the room temperature of 300 K. A contoured nozzle expands the flow from settling chamber to a freestream Mach number of 2.87 in the test section; the freestream pressure ( 𝑝 ∞) and temperature ( 𝑇 ∞) are 19200 Pa and 113 K, respectively. More details can be found in the works of Bhardwaj (2021) and Ramachandra (2023). In the current study, protuberances of different shapes and sizes (as shown in figure 3(b)) are employed to understand the universal features of protuberance-induced separations. The protuberances are mounted on the bottom wall of the test section at the spanwise centerline, the span of the test section being 100 mm. The square-faced (cubical) and the rectangle-faced (cuboidal) protuberances are positioned with one of their faces normal to the incoming flow. The elliptical protuberance is mounted with its major axis aligned with the streamwise direction, whereas cylindrical protuberances are fixed to the bottom plate with one of their flat sides. All the protuberances are positioned so that their mounting centers are 177.5 mm from the nozzle exit. The boundary layer thickness at the location of the protuberance is measured to be 7 mm (Bhardwaj 2021). The oil flow visualization was used to obtain surface streakline patterns that highlight mean interaction features, including the mean separation line. The oil mixture prepared from Titanium dioxide (Ti 𝑂 2) powder, Oleic acid, and SAE 30 oil was spattered on the base plate before the run. The centerline separation lengths ( 𝐿 𝑠𝑒 𝑝 ), defined as the streamwise distance between the protuberance leading edge and the separation line at spanwise center, are then measured from the images. The Z-type schlieren imaging technique was employed for the time-resolved visualization of the interaction using a high-speed camera (Photron FASTCAM SA4 Model 500K-M1). The collimated light is directed normal to the optical windows at spanwise ends of the tunnel, and thus the schlieren images present the density gradient information (line of sight integrated) in the planes normal to the spanwise direction. The snapshots were obtained at 30000 frames per second (fps), with a shutter speed of  
+
+> 0X0-7
+
+S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram M ∞           
+
+> 2.87 test section protuberance nozzle 460 mm 396 mm 177.5 mm 100 mm 100 mm 114 mm 100 mm xyz(a) 15 15 15 15 30 cuboid cube ellipse broad cylinder short cylinder long cylinder All the dimensions are in mm 15 15 15 30 15 30 30
+> (b)
+> Figure 3. Schematic of (a) experimental setup. (b) different protuberances considered in the experiments.
+
+1/35000 seconds and a spatial resolution of 384 × 288 pixels. A total of 8000 continuous snapshots corresponding to a time of 0.27 s with a time resolution of 33 μs were used for all the analyses presented in this work. Time-averaged surface pressures were measured through static pressure taps on the bottom wall and the front face of the protuberance. Scanivalve DSA 3217/16Px with a rated pressure of 50 psi was used to carry out these measurements. The device can measure pressures from 16 ports simultaneously. With a good spatial resolution of mean wall pressures, through taps at numerous streamwise and spanwise locations, various pressure zones in the interaction region could be clearly mapped. The unsteady surface pressure signals were extracted in critical interaction regions using unsteady pressure transducers, such as Kulite (XCQ-062) and Endevco (8530C). Three Kulite sensors with a rated pressure of 1.7 bar (abs) and a sensing head diameter of 1.7mm were used simultaneously per experimental run. For the experiments measuring pressure at reattachment, an Endevco sensor (8530C) with a relatively large sensing area (outer diameter of 3.86 mm) was used. The signals were acquired at 500 kHz for 2 seconds using the NI-cDAQ 9185 and NI-9222 data acquisition module. 2.1. Data processing techniques 
+
+2.1.1. power spectral density 
+
+Power spectral density (PSD), which represents the power or strength of the signal in the frequency domain, is calculated for all the signals using Welch ’s windowing method (Welch 1967). A MATLAB inbuilt function pwelch is utilized for this. Hamming windows having a size of 25000 samples with 50% overlap were used for the spectral estimations. The PSDs were premultiplied by frequency and normalized by the corresponding variance of the signal and are plotted against the Strouhal number based on boundary layer thickness, 
+
+𝑆𝑡 𝛿 .
+
+0 X0-8 Unsteadiness in bow shock-induced separation 
+
+2.1.2. cross correlation 
+
+The statistical relations between signals at different locations were analyzed through correlation and coherence coefficients. Correlation between two signals measures the similarity of the first signal with the second at various time lags ( 𝜏 ). For instance, consider two signals 𝑥 (𝑡 ) and 𝑦 (𝑡 ), then the correlation function ( 𝐶 𝑥 𝑦 ) and the correlation coefficient (𝑅 𝑥 𝑦 ) are defined as follows. 
+
+𝐶 𝑥 𝑦 (𝜏 ) = 1
+
+𝑁   
+
+> 𝑁 −𝜏
+
+∑︁ 
+
+> 𝑡 =1
+
+(𝑥 (𝑡 ) − 𝑥 )( 𝑦 (𝑡 + 𝜏 ) − 𝑦 ) (2.1) 
+
+𝑅 𝑥 𝑦 (𝜏 ) = 𝐶 𝑥 𝑦 (𝜏 )√︁ 
+
+𝐶 𝑥 𝑥 (0)√︁ 𝐶 𝑦𝑦 (0) (2.2) where 𝑥, 𝑦 are mean values of the corresponding signals. The magnitude of 𝑅 𝑥 𝑦 (𝜏 )
+
+tells the level of similarity between the signals at the corresponding time lag ( 𝜏 ), and sign signifies if they are ‘similar’ or ‘anti-similar’. For positive values of 𝜏 , 𝑥 (𝑡 ) leads 𝑦 (𝑡 ), and vice versa for negative 𝜏 .2.1.3. coherence 
+
+The coherence between the signals conveys how the two signals are linearly related to each other at a given frequency. It is estimated using magnitude-squared coherence, 𝛾 2 
+
+> 𝑥 𝑦
+
+( 𝑓 )
+
+defined as follows: 
+
+𝛾 2 
+
+> 𝑥 𝑦
+
+( 𝑓 ) = |𝑃 𝑥 𝑦 ( 𝑓 )| 2
+
+𝑃 𝑥 𝑥 ( 𝑓 )𝑃 𝑦𝑦 ( 𝑓 ) (2.3) where 𝑃 𝑥 𝑥 , 𝑃 𝑦𝑦 are PSD of signals 𝑥 (𝑡 ) and 𝑦 (𝑡 ), respectively. 𝑃 𝑥 𝑦 represents cross PSD of 𝑥 (𝑡 ) and 𝑦 (𝑡 ). 𝛾 2 
+
+> 𝑥 𝑦
+
+is always positive and ranges from 0 to 1. Higher the coherence value, higher the linear relation between signals at the corresponding frequency. 2.1.4. proper orthogonal decomposition 
+
+Proper orthogonal decomposition (POD) was employed to identify the dominant flow structures and the associated frequencies. POD is a method of decomposing the spatio-temporal flow field U(x,t) into a set of orthogonal spatial modes and temporal coefficients, whose sum reconstructs the original flow field. 
+
+𝑈 (𝑥, 𝑡 ) =
+
+> ∞
+
+∑︁ 
+
+> 𝑘 =1
+
+𝑎 𝑘 (𝑡 ) 𝛷 𝑘 (𝑥 ) (2.4) where 𝛷 𝑘 (𝑥 ) represents 𝑘 𝑡 ℎ spatial mode and 𝑎 𝑘 (𝑡 ) is corresponding time coefficient. These modes represent correlated spatial structures in the flow field. In POD of discrete time data, these modes are obtained by the singular value decomposition (SVD) of a matrix formed by the sequential arrangement of the vectors containing quantities of instantaneous spatial field. By arranging the singular values in decreasing orders of their magnitude, the corresponding modes too are arranged in the order of their energy. This is computed effectively using the snapshot POD algorithm (Sirovich 1987). In this method, the SVD is reduced to the eigenvalue problem of the correlation matrix 
+
+𝐶 = 𝑈 𝑇 𝑈 . Here each column vector of U contains the discrete spatial variation of fluctuations in quantities of interest at a given time instance, and column vectors are arranged in increasing order of time, as shown in figure 4. The fluctuations are essentially 
+
+0 X0-9 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+the instantaneous local values subtracted by the time-averaged local value of the quantity of interest. In the case of experimental schlieren images, the fluctuations in intensities in all the 𝑚 pixels in an instantaneous schlieren image constitute a particular column; and the columns corresponding to all 𝑛 instances are arranged sequentially to form the 𝑚 ×𝑛 matrix U. In the case of numerical data, two different planar data are analysed using POD– the density fluctuations at the spanwise centered wall-normal plane (which can be compared with the POD of experimental schlieren), and the pressure fluctuations at the bottom wall. In each of these cases the columns of the U matrix are made of instantaneous fluctuations of the respective quantities at all the grid points in the respective plane. The three-component velocity data from computations is also analyzed using 3-D POD, as illustrated in figure 4. The eigenvalues and eigenvectors of the correlation matrix are obtained from the following eigenvalue problem. 
+
+𝐶 𝐴 = 𝛬𝐴 (2.5) where eigenvectors 𝐴 𝑛 ×𝑛 = [𝑎 1 𝑎 2 𝑎 3 ... 𝑎 𝑛 ] represents the matrix of temporal coefficients, and 𝛬 represent diagonal matrix of eigen values. Eigenvalues are sorted and arranged in descending order ( 𝜆 1 > 𝜆 2 > 𝜆 3 > ....𝜆 𝑛 ), and the corresponding eigenvectors are also arranged accordingly. Subsequently, the spatial modes ( 𝛷 ) are computed by projecting the data ( 𝑈 ) onto the eigenvectors ( 𝐴 ) computed from the eigenvalue decomposition of the covariance matrix ( 𝐶 ). 
+
+𝛷 = 𝑈 𝐴 (2.6) u11 u12 u1n u22 u2n um2 u mn u 21 u m1 u 31 u32 u3n . . . . . . . . . . . . . . . . . . . . . . . .                                        
+
+> u21 v21 w21 um1 vm1 wm1
+> . . . . . . . . . . . . . . . . . . ... ... ...
+> u22 v22 w22 um2 vm2 wm2
+> ... ... ... ... ... ...
+> u2n u11 . . . u12 u1n v2n v11 . . . v12 v1n w2n w11 . . . w12 w1n umn vmn wmn
+> ... ... ...
+> t2t1tn
+> tnsnapshot n
+> t2snapshot 2 . . .
+> t1
+> snapshot 1 time
+
+U m x n time instances 
+
+> u-velocity
+> v-velocity
+> w-velocity
+> spatial points
+
+=
+
+U m x n =(density gradient field or 2D-pressure field, etc.) (3D-velocity vector) 
+
+Flow Data: U m x n 
+
+Figure 4. Fluctuating data matrix construction in snapshot POD 
+
+The original flow field can be reconstructed using the first few dominant spatial modes and time coefficients, rather than the total number ( 𝑛 ) of modes. Cumulative energy captured by the first ‘r’ number of modes, where 𝑟 < 𝑛 , gives us an estimate of how well the modes under consideration represent the flow field. As eigenvalues are arranged in decreasing order of their magnitudes, then the amount of energy captured by the first 𝑟 modes is given by: 
+
+𝐸 𝑟 =
+
+Í𝑟 𝑖 =1 𝜆 𝑖 
+
+Í𝑛 𝑖 =1 𝜆 𝑖 
+
+(2.7) 
+
+0 X0-10 Unsteadiness in bow shock-induced separation 
+
+Therefore, reduced-order modeling is performed to obtain the flow field using a few modes with high energy (information or variance) and corresponding time coefficients. The flow field reconstructed by the first 𝑟 modes is given by: 
+
+e𝑈 = e𝛷 e𝐴 𝑇 (2.8) where e𝛷 𝑚 ×𝑟 = [𝛷 1 𝛷 2 𝛷 3 ... 𝛷 𝑟 ] and e𝐴 𝑛 ×𝑟 = [𝑎 1 𝑎 2 𝑎 3 ... 𝑎 𝑟 ].2.2. Mean flow features 
+
+The time-averaged view of the interaction is examined for different protuberances based on separated-flow topology and static pressure measurements. The inviscid bow shock in front of the protuberances interacts with the boundary layer, resulting in 3-dimensional separation. Protuberances with varied geometric features resulted in different extents of separated regions, owing to the differences in the inviscid bow shock shape, and thus the differences in spanwise shock-imposed adverse pressure gradient. Figure 5(a) shows the streakline patterns obtained from the oil flow visualizations, for short cylinder and cuboid, observed in the current investigation. The respective separation lines are also traced on the figures. Despite the differences in the separation extents, i.e, small separation for cylinder and large separation for cuboid, the interaction features are found to be qualitatively similar. This is further illustrated through the time-averaged pressure field (see figure 5(b)) from RANS simulations (Bhardwaj et al. 2022), whose values compare well with the surface pressures measured using the electronic pressure scanner at various distinct locations. Distinct zones can be identified based on the surface pressure distribution, including freestream (FS), intermittent zone from which the mean shock (MS) foot can be traced, plateau pressure (PP), low-pressure (LP), and high-pressure (HP) zones. Although the extents of these zones are dependent on the protuberance geometry, the features of the interaction are qualitatively similar for all the protuberances. The pressure variation along the spanwise centerline ( 𝑧 /ℎ = 0) is qualitatively similar to the 2-D interactions in the upstream part of the separation zone. The pressure rises gradually across the separation shock foot, through the separation and reaches a plateau pressure. However, unlike the 2-D interactions in which the pressure rises monotonically after the plateau as the flow reattaches, in the present case, a fall in pressure is observed after the plateau, constituting the ‘low-pressure zone’, before it rises again to very high pressures near the protuberance base. The low-pressure zone is caused by locally accelerating reverse flow above the wall (which can be supersonic), forming a horseshoe vortex that spirals out and relieves the flow in the spanwise direction (Hung & Buning 1985; Bhardwaj et al. 
+
+2022). Based on the time-averaged characterization of the flow field, the locations for wall pressure measurements using fast response transducers was decided. The subsequent section discusses the characterization of the unsteady flow field. The experimental work by Ramachandra et al. (2023) had discussed some unsteady features for the case of square-faced/cubical protuberances, which are referred here to briefly describe the unsteady aspects, and to then establish the universal nature of those observations, applicable for various protuberance shapes. 2.3. Unsteady flow features 
+
+The unsteady aspects of the interaction are characterized from the time-resolved schlieren images and the wall pressure signals from the transducers. The bow shock-induced separation results in a separation shock, whose foot is upstream of the separation line, and the separated flow at the spanwise centerline reattaches on the protuberance face, resulting in the reattachment bow shock. Figure 6 presents two instantaneous schlieren snapshots  
+
+> 0X0-11
+
+S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram (a) z/h                 
+
+> HP PP FS LP
+> -1 -2 -3 1230
+> z/h
+> HP PP FS MS MS LP
+> 321-1 -2 -3 12300
+> x/h hh
+> Flow
+> 1.0 2.4 1.2 pw /p ∞
+> 1.0 3.0 1.5 pw /p ∞
+> mean shock foot
+> (b)
+> Figure 5. Mean flow fields of the interaction (a) oilflow streakline patterns (b) surface pressure from RANS simulations (Bhardwaj et al. 2022); FS - freestream, MS - mean shock foot, PP - plateau pressure zone, LP -low pressure zone, HP - high pressure zone
+
+when the shock foot is at its upstream and downstream-most positions, marked as 𝑋 𝑢 and 
+
+𝑋 𝑑 , respectively, during an oscillation cycle. The separation and reattachment shocks are marked as SS and RS, respectively. It is apparent from the snapshots that for the given cycle of shock motion, the intermittent region spans over a distance comparable to ℎ. However, the intermittent length can vary across different shock cycles and can be visualized using a space-time (x-t) plot of shock movements. This is obtained by scanning the pixel intensities along a scan line parallel to the bottom wall, which in this case is at 0 .92 𝛿 from the bottom wall. From the x-t variation (see figure 7(a)), the maximum shock excursion is estimated to be around 2 .5𝛿 or 1 .17 ℎ. The shock foot position as a function of time was also extracted from the scan line intensity values by tracing the jump in intensity. Figure 7(b) shows the PSD of shock-foot motion, from which it is evident that the low-frequencies– 𝑆𝑡 𝛿 ∼ 0.01– are dominant, i.e., the shock foot exhibits low-frequency oscillations. The spectra of shock motion with other protuberances too exhibit the dominance of similar frequency ranges, as illustrated with the PSD for the cuboid case in figure 7(b), though the extents of the separated region are different for different protuberances. From the POD analysis based on schlieren snapshots, as shown in figure 8 for the cubical protuberance, the first two energetically dominant modes represent low-frequency shock oscillations ( 𝑆𝑡 𝛿 ∼ 0.01) along with associated shear layer movements, accounting for approximately 22% of the energy. The higher modes show mid-frequency shear layer events. For example, in mode 20 exhibiting large scale structures in the shear layer, mid-frequencies ( 𝑆𝑡 𝛿 ∼ 0.1) are seen to be dominant. Further low-energetic modes are characterized by small-scale structures. Thus, while the region in the vicinity of the shock-foot is expected to be dominated by 
+
+0 X0-12 Unsteadiness in bow shock-induced separation 
+
+low-frequency oscillations in flow variables, within the separated region, mid-frequency shear layer oscillations are also expected to be felt. Flow    
+
+> h
+> xuxdscan line x y
+
+3 2 1 0
+
+𝑥 /ℎ 
+
+> Figure 6. Instances of upstream and downstream-most shock positions. Separation shock (SS), reattachment shock (RS), and scan lines are also marked in the figure.
+
+L ex, max ≈ 2.5 δ11.522.5
+
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 𝑥 /ℎ
+> 𝑡  (𝑚𝑠 )
+
+(a)    
+
+> 10 −310 −210 −1
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 𝑝  2
+> cube
+> cuboid
+
+(b)  
+
+> Figure 7. Separation shock unsteady characteristics along the scan line (a) space-time (x-t) variation (b) power spectral density.
+
+Having characterized the time-averaged picture and noting the different pressure zones, the transducers are strategically placed to resolve the spatio-temporal unsteady aspects. To characterize the 3-dimensional aspects and the mechanism, it is imperative to look at the relationship between wall pressure oscillations at different locations, not just along the spanwise centerline (as presented by Brusniak & Dolling (1994)), but also at various spanwise locations. Figure 9 shows a schematic of the transducer placement on the wall. The locations used for two of the protuberances, viz. cuboid and short cylinder, are particularly highlighted to illustrate the strategy of placement of the transducers in various spanwise and streamwise locations. For instance, the mean shock foot for those protuberances are marked, from which the transducer placements at different spanwise locations along the 
+
+0 X0-13 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram Mode 1 Mode 2 246                       
+
+> Mode 20 10 310 210 110 010 410 10 +
+> St δ
+> f . G( f )
+> 0.5 1.0 1.5
+> -1 01Mode 20 C.E ≈60%
+> Mode 1 C.E ≈12%
+> -1 01
+> -1 01Mode 2 C.E ≈22%
+> x/h
+> xy(a) (b)
+> y/h
+> 01231.0 0.5
+
+Figure 8. Centerline span POD of cubical protuberance (a) spatial modes. (b) PSD of corresponding temporal coefficients z/h 
+
+321-1 -2 -3 1 2 300-1 -2 -3 1 2 30
+
+> x/h h h
+
+456Flow cuboid others short cylinder 
+
+x z
+
+> mean shock foot
+
+Figure 9. Schematic of transducer locations strategized for the pressure measurements 
+
+mean shock foot can be noted; similarly in other pressure zones too, transducers were placed at different spanwise locations for the respective case. As noted by Brusniak & Dolling (1994), the correlations in surface pressure are highly sensitive to changes in the location, and it is desirable to have transducers with small sensing areas. The fast response Kulite (XCQ-062) sensors used in the current study have a relatively small sensing area (diameter ∼ 1.7 mm). However, the non-threaded arrangement of the sensors led to issues with flush mounting to the wall, due to concerns such as the limited number (three) of available transducers, which had to be moved to different locations for different experiments, and the safety of the transducers. Therefore, a 
+
+0 X0-14 Unsteadiness in bow shock-induced separation 
+
+recess/cavity mounting strategy was devised following the works of Verma & Manisankar (2019, 2025). With this strategy, the diameter of the sensing surface is further reduced to 0.5 mm, which is advantageous from the perspective of point measurements and consequently, for two-point correlations. Details about the recess mounting strategy can be found in Ramachandra (2023). Recess mounting can cut off higher frequencies but captures the frequencies associated with shock boundary layer interactions (Verma & Manisankar (2019, 2025)). Therefore, to present the complete spectra of wall pressure fluctuations across the different zones of interest, measurements with flush-mounted Endevco transducers (8530C) with larger sensing areas (diameter ∼ 3.86 mm) are used. Figure 10 shows the premultipled PSD of the wall pressures measured using flush-mounted Endevco transducers at locations in different zones along the spanwise centerline, for the case of the cubical protuberance. The pressure fluctuations in the intermittent zone (at MS) are dominated by low frequencies, whereas at other locations within the separated flow, mid-frequencies are dominant, though there is considerable energy in the low-frequency range corresponding to shock oscillations. However, the trends in correlations were similar for both flush and recess-mounted cases, despite the fact that higher frequencies are cut off by recess mounting. In fact, the magnitudes of the correlations are observed to be considerably enhanced in recess-mounted cases, as illustrated in figure 11(a), showing the correlations between MS and LP locations for the case of cubical protuberance obtained with different mounting strategies. This is because of high coherence in the low frequency range as given in figure 11(b). Therefore, since our primary interest is in correlations affecting low-frequency motion, we shall use data from the recess mounting. 10 −3 10 −2 10 −1 10 0  
+
+> 0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 𝑝  2
+> MS
+> PP
+> LP
+> HP
+> Figure 10. Power spectral densities of flush-mounted probes along the spanwise centerline for cubical protuberance.
+
+2.4. Correlation and coherence studies of shock oscillations 
+
+Regarding the centerline correlations among various zones of the interaction, the mean shock foot exhibits significant correlations with downstream regions, and the sense of correlation changes as the distance increases in the downstream direction towards the protuberance; a strong negative correlation is observed with the plateau pressure region, and a positive correlation with the low-pressure region, followed by a correlation switch to negative in the high-pressure region. Such trends in the correlation were already discussed for the cube in Ramachandra et al. (2023), and are qualitatively similar for other protuberances as well, and are similar to those reported by Brusniak & Dolling (1994), 
+
+0 X0-15 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram −2 −1 0 1 2 
+
+> ·10 −3
+> −0.4
+> −0.3
+> −0.2
+> −0.1
+> 0
+> 0.1
+> 𝜏 (sec )
+> 𝑅 𝑥 𝑦
+> flush-mounted
+> recess-mounted
+
+(a)     
+
+> 10 −410 −310 −210 −1
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 𝑆𝑡 𝛿
+> 𝛾 2
+> 𝑥 𝑦
+> flush-mounted
+> recess-mounted
+
+(b) 
+
+Figure 11. Statistical relations of signals between mean shock and low-pressure zone for cubical protuberance (a) cross correlation. (b) coherence. 
+
+which is discussed in detail in the introduction. A considerable negative correlation was also observed between separation shock foot (MS) and reattachment ( 𝑅 𝐴 𝑀 ) in the cuboid case as shown in figure 12. However, the same was not observed with the cube. This is because the transducer was not placed at the true reattachment 𝑅 𝐴 𝑇 location in the case of the cube, but at a location above the reattachment where a peak in mean pressure was observed in the preliminary static pressure measurements using the pressure scanner. There was a constraint in mounting the threaded Endevco transducers, with relatively larger diameters, at a lower height on the cubical protuberance, due to the interference with the threaded hole at the base used for mounting the protuberance on the bottom wall. Even in this case a small negative peak is observed in the correlation. MS RR (C)   
+
+> RA M
+> RA T
+
+−2 −1 0 1 2
+
+·10 −3
+
+−0.4
+
+−0.3
+
+−0.2
+
+−0.1
+
+0
+
+0.1
+
+Lag (s) 
+
+> 𝑅 𝑥 𝑦
+> cube
+> cuboid
+
+Figure 12. Correlation between separation shock and reattachment locations; MS - mean shock foot, 𝑅 𝐴 𝑀 -measured reattachment location, 𝑅 𝐴 𝑇 - true reattachment location. 
+
+To understand coherence in separation shock motion, the wall pressure signals are extracted at spanwise locations along the mean separation shock, as shown in the figure 9. Cross correlations between those locations are presented in figure 13 for short cylinder and cuboid cases. The correlation between two positions is expressed as 𝑆 𝐴 − 𝑆 𝐵 , where 
+
+0 X0-16 Unsteadiness in bow shock-induced separation 
+
+𝑆 𝐴 and 𝑆 𝐵 basically stand for the signals extracted (along the shock) at 𝑧 /𝑤 = 𝐴 , 𝑧 /𝑤 = 𝐵 ,respectively, where 𝑤 is the width or side of the cube. Significant positive peaks in correlation values are observed between the signals at all probed locations for all the protuberances, suggesting that the low-frequency back-and-forth motion of the shock is coherent along the span. Concerning the correlations between centerline probe with those away from the centerline, the peak correlations remain significant but decrease with increase in the distance from centerline. It is also noticed that the correlation values vary with the extent of separation, 𝐿 𝑠𝑒 𝑝 ; the correlation amplitudes are found to increase with 𝐿 𝑠𝑒 𝑝 ,showing higher values for the cuboid even between locations which are far apart, and relatively lower peaks for the short cylinder. This suggests that the shock motion tends to become more coherent along the span with an increase in 𝐿 𝑠𝑒 𝑝 , a trend that is expected with reference to the asymptotic limit of the 2-D SBLI dynamics. It is significant to note that the shock foot along the sides 𝑆 1.5 − 𝑆 0.9 is always highly correlated ( 𝑅 𝑥 𝑦 ≈ 0.75), thus coherent irrespective of the protuberance, thereby of 𝐿 𝑠𝑒 𝑝 at time lags close to zero. On the other hand, for all the locations in the intermittent region away from the centerline, for all cases, the peak value in correlation was observed at noticeable negative time lags with regard to the shock foot location at the centerline. This is indicative of a flapping motion of the shock foot, in which the upstream or downstream motion is initiated in the neighborhood of the centerline, and the corresponding movement of the portions of the shock foot away from the centerline are initiated with a time lag. Thus, despite a generally coherent to-and-fro oscillation, the shock foot experiences spanwise distortions too. −2 −1 0 1 2      
+
+> ·10 −3
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Lag (s)
+> 𝑅 𝑥 𝑦
+> 𝑆 0.9−𝑆 0
+> 𝑆 1.5−𝑆 0
+> 𝑆 1.5−𝑆 0.9
+
+(a) S 0.9 S 1.5 S 0    
+
+> −2−1012
+> ·10 −3
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> Lag (s)
+> 𝑅 𝑥 𝑦
+
+(b)  
+
+> Figure 13. Mean shock correlations (a) short cylinder (b) cuboid
+
+The observation that the motion of the shock foot in the neighborhood of the centerline initiates the overall shock foot motion is further explained by the streakline patterns of the interaction, as shown in the figure 14 for the cubical protuberance. The streaklines directed upstream from the high-pressure zone near the protuberance base can be classified qualitatively into three categories: the streakline A, which goes along the centerline all the way up to the separation line; the streaklines B, which start slightly off the centerline, and yet reach the separation line at locations away from the centerline; and the streaklines C which turn back without reaching the separation line. While the line A is normal to the separation line at the point of their intersection, the angles progressively decrease between lines B and the separation line as one moves away from the centerline. Any temporal changes in mass flow along lines A and B, especially for the lines that intersect the separation line 
+
+0 X0-17 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram ABC
+
+> recirculation affected shock portion (RASP) mean separation line mean shock streaklines travel along the centerline all the way up to the separation line.
+> A:streaklines start slightly off centerline, and yet reach the separation line away from centerline.
+> B:streaklines start off the centerline, turn back without reaching the separation line.
+> C:
+
+Figure 14. Streaklines affecting different regions of the interaction. 
+
+at larger angles, distort the separation line. Quantitatively, if a cut-off angle between lines B and the separation line may be fixed, it is possible to define the portion of the shock which is strongly affected by the reverse flow, referred to as ‘recirculation affected shock portion (RASP)’ as marked in figure 14. Indeed, significant peak correlations in surface pressures are observed between centerline location at high-pressure zone ( 𝐻 0) and shock foot/separation locations at both centerline as well as at nearly 2 𝛿 away from centerline, as shown for the cases of short cylinder and cuboid in figure 15. It can be noted that while for the short cylinder case, the peak is positive, for the case of the cuboid, it is negative. This is because, the transducer, placed at same location upstream of protuberance base, is at the region of rising pressure in the case of short cylinder whereas it is exactly at peak pressure point for the cuboid case due to larger extents of the zones with cuboid. In any case, the trends in magnitudes is the same for both cases. The observation of considerable correlations between 𝐻 0 and 𝑆 0.9 suggests that the fluctuations at high-pressure zone, in turn driven by fluctuations at the reattachment on protuberance face, influence directly the shock motion not just at centerline but a certain neighborhood of centerline. It is in this neighborhood that the shock motion is initiated by instantaneous fluctuations in mass flow injected from the reattachment, manifesting as pressure fluctuations near the protuberance base. −2 −1 0 1 2
+
+·10 −3
+
+−0.1
+
+0
+
+0.1
+
+0.2
+
+0.3
+
+0.4
+
+Lag (s)     
+
+> 𝑅 𝑥 𝑦
+> 𝑆 0−𝐻 0
+> 𝑆 0.9−𝐻 0
+
+(a) S 0.9 S 0 H 0
+
+−2 −1 0 1 2
+
+·10 −3
+
+−0.3
+
+−0.2
+
+−0.1
+
+0
+
+0.1
+
+Lag (s) 
+
+> 𝑅 𝑥 𝑦
+
+(b) 
+
+Figure 15. Mean shock and high pressure (centerline) correlations (a) short cylinder (b) cuboid 
+
+0 X0-18 Unsteadiness in bow shock-induced separation 
+
+The centerline separation length is thus a critical parameter in understanding the dynamics of the shock-induced open separation due to protuberances. Further, the 𝐿 𝑠𝑒 𝑝 
+
+is found to be the critical parameter in determining both the length and time-scales of oscillations. When the centerline shock foot pressure spectra (PSD) for all the protuberances were plotted against the Strouhal number based on 𝛿 , 𝑆𝑡 𝛿 , as presented in all the discussions so far, they were found to be exhibiting different ranges of dominant frequency values for different protuberances, although the dominant frequencies were of the same orders of magnitude ( 𝑆𝑡 𝛿 ∼ 0.01). However, when the spectra are plotted against Strouhal number based on centerline separation length ( 𝐿 𝑠𝑒 𝑝 ), 𝑆𝑡 𝐿 𝑠𝑒 𝑝 , they almost collapsed into a single band with peaks around a value of 𝑆𝑡 𝐿 𝑠𝑒 𝑝 ∼ 0.055 as shown in figure 16(a). This implies that, despite different statistical features such as mean separation length and magnitudes of correlations based on differences in the extent of three-dimensional relieving, 𝐿 𝑠𝑒 𝑝 is the key parameter in determining the time-scale of shock oscillations. Additionally, the shock oscillation amplitudes are found to vary proportionally with 𝐿 𝑠𝑒 𝑝 . It is clear from figure 16(b) that the average shock foot oscillation amplitude, i.e, root mean square (RMS) values extracted from the scan line shock positions from schlieren images, shares a linear relation with 𝐿 𝑠𝑒 𝑝 . With these important insights from the experiments on the 3-dimensional aspects of the interaction, further details of the flow field are probed through computations, which shall be discussed subsequently. Cube Short cylinder Long cylinder Cuboid Ellipse Broad cylinder 10 −3 10 −2 10 −1
+
+> 0.2
+> 0.4
+> 0.6
+> 𝑆𝑡 𝐿 𝑠𝑒 𝑝
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 𝑝  2
+
+(a)             
+
+> Δ𝑥𝑟 𝑚𝑠 𝛿 =0.032
+> (𝐿𝑠𝑒 𝑝 𝛿
+> )
+> +0.073
+> 23456789
+> 0.15
+> 0.2
+> 0.25
+> 0.3
+> 0.35
+> 0.4
+> 𝐿 𝑠𝑒 𝑝 /𝛿
+> Δ𝑥 𝑟 𝑚𝑠  /𝛿
+> short cylinder
+> long cylinder
+> cube
+> cuboid
+
+(b)  
+
+> Figure 16. Shock oscillation characteristics (a) frequency scaling based on separation length applied to various protuberances. (b) root-mean-square of shock oscillations with separation extent.
+
+3. Computational Methodology 
+
+The experimental data provide valuable insights into the dynamics of the 3-dimensional separated flow field. It establishes the centerline separation length, 𝐿 𝑠𝑒 𝑝 , as a key parameter in determining shock oscillation frequencies and amplitudes. The correlations in surface pressure fluctuations allow for some important inferences on the 3-dimensional aspects of shock motion and its relation to pressure oscillations within the separated region, which, in turn, are linked to 𝐿 𝑠𝑒 𝑝 through the RASP. However, the experiments provide a limited perspective of the flow field. A complete 3-dimensional resolution of the flow field is required to reveal the 3-dimensional nature of shock oscillation and its relation to the separated flow, especially the dynamics of the horseshoe vortex. In addition to the schlieren images (line-of-sight integration, as in experiments) providing information 
+
+0 X0-19 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+on shock motion in the mid-span plane, information from other planes, especially those parallel to the wall, can resolve the spanwise organization of the shock foot, which would also be beneficial for understanding the mechanism. Similarly, POD analysis based on information from the wall-parallel plane and further insights from 3-D POD would be invaluable and could be addressed using high-fidelity simulations. In the present work, an enhanced version of the DES, the ’adaptive DES’ (or simply ADES), is performed for the case of the cubical protuberance to resolve 3-dimensional unsteady flow features. The ADES method offers better predictions (closer to LES) than standard DES models, due to the dynamic calculation of model coefficients, in contrast to the latter, which use constant coefficients. While the ADES model was initially developed for incompressible flows by Yin et al. (2015) and Yin & Durbin (2016), we extended it to compressible flows by incorporating compressibility effects into the dynamic procedure and calculating the isotropic stress coefficient dynamically (Vayala et al. 2025). The compressible ADES model is briefly discussed in the following section. 3.1. Compressible ADES Model 
+
+Unsteady, three-dimensional, Favre-filtered compressible Navier-Stokes equations are given below in Cartesian coordinates system. 
+
+𝜕 ¯𝜌 𝜕𝑡 + 𝜕 ¯𝜌 ˜𝑢 𝑖 
+
+𝜕𝑥 𝑖 
+
+= 0 (3.1) 
+
+𝜕 ¯𝜌 ˜𝑢 𝑖 
+
+𝜕𝑡 + 𝜕 𝜕𝑥 𝑗 
+
+( ¯𝜌 ˜𝑢 𝑖 ˜𝑢 𝑗 + ¯𝑝𝛿 𝑖 𝑗 ) = 𝜕 ˜𝜎 𝑖 𝑗 
+
+𝜕𝑥 𝑗 
+
++ 𝜕𝜏 𝑖 𝑗 
+
+𝜕𝑥 𝑗 
+
+(3.2) 
+
+𝜕 ¯𝜌 𝜕𝑡 + 𝜕 𝜕𝑥 𝑗 
+
+[( ¯𝜌 ˜𝐸 + ¯𝑝 ) ˜𝑢 𝑗 ] = 𝜕 𝜕𝑥 𝑗 
+
+[( ˜𝜎 𝑖 𝑗 + 𝜏 𝑖 𝑗 ) ˜𝑢 𝑖 ] + 𝜕 𝜕𝑥 𝑗 
+
+( ˜𝑞 𝑗 + 𝑄 𝑗 ) (3.3) Here ˜(.) represents the Favre-filtered quantities. ¯𝜌, ˜𝑢 𝑖 , ¯𝑝 and ˜𝐸 are density, velocity vector, pressure, and total energy, respectively, and 𝛿 𝑖 𝑗 is the Kronecker delta. ˜ 𝜎 𝑖 𝑗 , ˜𝑞 𝑗 
+
+are molecular viscous stress and heat fluxes, respectively. The turbulent stress, heat flux quantities represented by 𝜏 𝑖 𝑗 , 𝑄 𝑗 , are defined as follows: 
+
+𝜏 𝑖 𝑗 = 𝜇 𝑡 
+
+ 𝜕 ˜𝑢 𝑖 
+
+𝜕𝑥 𝑗 
+
++ 𝜕 ˜𝑢 𝑗 
+
+𝜕𝑥 𝑖 
+
+− 23 𝛿 𝑖 𝑗 
+
+𝜕 ˜𝑢 𝑘 
+
+𝜕𝑥 𝑘 
+
+
+
+− 23 𝜏 𝑘𝑘 𝛿 𝑖 𝑗 (3.4) 
+
+𝑄 𝑗 = − 𝜇 𝑡 𝑐 𝑝 
+
+𝑃𝑟 𝑡 
+
+𝜕 ˜𝑇 𝜕𝑥 𝑗 
+
+(3.5) where 𝜇 𝑡 is turbulent viscosity, 𝑐 𝑝 is specific heat coefficient ( 𝑐 𝑝 = 1.005 kJ/kg.K for air), and 𝑃𝑟 𝑡 is turbulent Prandtl number ( 𝑃𝑟 𝑡 = 0.89 for air). 𝜇 𝑡 is modeled using turbulence closure models, which in the present case is using the ADES model. The ADES model behaves like a conventional RANS model in the attached boundary layer regions and switches to LES based on length-scale formulations. The RANS regions are modeled using the 𝑘 − 𝜔 model (Wilcox 1988), and the LES zones are treated with formulations equivalent to the dynamic Smagorinsky model in LES (Lilly 1992). In addition to the main governing equations, two transport equations are solved: one for turbulent kinetic energy ( 𝑘 ) and the other for the turbulent specific dissipation rate ( 𝜔 ), providing modeled quantities for RANS and LES (sub-grid). 
+
+0 X0-20 Unsteadiness in bow shock-induced separation 
+
+𝜕 ¯𝜌 ˜𝑘 𝜕𝑡 + 𝜕 ¯𝜌 ˜𝑘 ˜𝑢 𝑗 
+
+𝜕𝑥 𝑗 
+
+= 𝜏 𝑖 𝑗 
+
+𝜕 ˜𝑢 𝑖 
+
+𝜕𝑥 𝑗 
+
+− 𝛽 ∗ ¯𝜌 ˜𝑘 ˜𝜔 + 𝜕 𝜕𝑥 𝑗 
+
+
+
+(𝜇 + 𝜎 ∗ 𝜇 𝑡 ) 𝜕 ˜𝑘 𝜕𝑥 𝑗 
+
+
+
+(3.6) 
+
+𝜕 ¯𝜌 ˜𝜔 𝜕𝑡 + 𝜕 ¯𝜌 ˜𝜔 ˜𝑢 𝑗 
+
+𝜕𝑥 𝑗 
+
+= 𝛼 ˜𝜔 
+
+˜𝑘 𝜏 𝑖 𝑗 
+
+𝜕 ˜𝑢 𝑖 
+
+𝜕𝑥 𝑗 
+
+− 𝛽 ¯𝜌 ˜𝜔 2 + 𝜕 𝜕𝑥 𝑗 
+
+
+
+(𝜇 + 𝜎𝜇 𝑡 ) 𝜕 ˜𝜔 𝜕𝑥 𝑗 
+
+
+
+(3.7) The model coefficients are, 𝛼 = 59 , 𝛽 = 340 , 𝛽 ∗ = 9100 , 𝜎 𝑘 = 12 , 𝜎 𝜔 = 12 .When the model switches to LES approach in the separated or eddy regions, the turbulence is resolved by limiting modeled turbulent kinetic energy production through eddy viscosity formulations given below. 
+
+𝜇 𝑡 = ¯𝜌ℓ 2 
+
+> 𝐷𝐷𝐸𝑆
+
+˜𝜔 (3.8) 
+
+ℓ𝐷𝐷𝐸𝑆 = ℓ𝑅 𝐴𝑁 𝑆 − 𝑓 𝑑 𝑚𝑎𝑥 (0, ℓ 𝑅 𝐴𝑁 𝑆 − ℓ𝐿𝐸𝑆 ) (3.9) 
+
+ℓ𝑅 𝐴𝑁 𝑆 =√︁ ˜𝑘 
+
+˜𝜔 ; ℓ𝐿𝐸𝑆 = 𝐶 𝐷𝐸𝑆 𝛥 ; 𝐶 𝐷𝐸𝑆 = 0.12 (3.10) 
+
+𝛥 = 𝑓 𝑑 𝑉 𝑐 1/3 + ( 1 − 𝑓 𝑑 )ℎ𝑚𝑎𝑥 ; ℎ𝑚𝑎𝑥 = 𝑚𝑎𝑥 (𝛥𝑥, 𝛥𝑦, 𝛥𝑧 ) (3.11) where ℓ𝐷𝐷𝐸𝑆 , ℓ 𝑅 𝐴𝑁 𝑆 , and ℓ𝐿𝐸𝑆 are length scales corresponding to delayed DES (DDES), RANS, and LES models, respectively. 𝐶 𝐷𝐸𝑆 is DES model constant. 𝑓 𝑑 is a shielding parameter, 𝛥 is a measure of grid, and 𝑉 𝑐 is cell volume. Isotropic stress contribution (especially for compressible flows), 𝜏 𝑘𝑘 is modeled as 
+
+𝜏 𝑘𝑘 = 𝜇 𝑡 𝐼 ˜𝜔 (3.12) where 𝜇 𝑡 𝐼 is isotropic stress viscosity, which is determined in similar fashion to 𝜇 𝑡 with appropriate length scales. 
+
+𝜇 𝑡 𝐼 = ¯𝜌ℓ 2 
+
+> 𝐷𝐷𝐸𝑆 𝐼
+
+˜𝜔 (3.13) 
+
+ℓ𝐷𝐷𝐸𝑆 𝐼 = ℓ𝑅 𝐴𝑁 𝑆 𝐼 − 𝑓 𝑑 𝑚𝑎𝑥 (0, ℓ 𝑅 𝐴𝑁 𝑆 𝐼 − ℓ𝐿𝐸𝑆 𝐼 ) (3.14) 
+
+ℓ𝑅 𝐴𝑁 𝑆 𝐼 =√︁ ˜𝑘 
+
+˜𝜔 ; ℓ𝐿𝐸𝑆 𝐼 = 𝐶 𝐼 𝛥 (3.15) In LES zones ( 𝑓 𝑑 = 1; ℓ𝐿𝐸𝑆 < ℓ 𝑅 𝐴𝑁 𝑆 ), the model constants, 𝐶 𝐷𝐸𝑆 , is calculated dynamically, i.e, 𝐶 𝐷𝐸𝑆 = 𝐶 𝑑𝑦𝑛 , using 
+
+𝐶 2 
+
+> 𝑑𝑦𝑛
+
+= 𝑚𝑎𝑥 0, 0.50 ⟨ 𝐿 ∗ 
+
+> 𝑖 𝑗
+
+𝑀 𝑖 𝑗 ⟩⟨ 𝑀 𝑖 𝑗 𝑀 𝑖 𝑗 ⟩
+
+!
+
+(3.16) 
+
+𝐿 ∗ 
+
+> 𝑖 𝑗
+
+= 𝐿 𝑖 𝑗 − 13 𝐿 𝑘𝑘 𝛿 𝑖 𝑗 (3.17) 
+
+𝐿 𝑖 𝑗 = 𝜌 e𝑢 𝑖 e𝑢 𝑗 −
+
+d𝜌 e𝑢 𝑖 d𝜌 e𝑢 𝑗 
+
+b𝜌 ; 𝑀 𝑖 𝑗 = 
+
+𝛥 2 𝜌 e𝜔 f𝑆 ∗ 
+
+> 𝑖 𝑗
+
+− e𝛥 2 b𝜌 be𝜔 cf𝑆 ∗ 
+
+> 𝑖 𝑗
+
+(3.18) 
+
+0 X0-21 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+𝐿 𝑘𝑘 = 𝜌 f𝑢 𝑘 f𝑢 𝑘 − d𝜌 f𝑢 𝑘 d𝜌 f𝑢 𝑘 
+
+b𝜌 ; 𝑆 ∗ 
+
+> 𝑖 𝑗
+
+= 𝑆 𝑖 𝑗 − 13 𝑆 𝑘𝑘 𝛿 𝑖 𝑗 (3.19) where 𝐿 ∗ 
+
+> 𝑖 𝑗
+
+, 𝑀 𝑖 𝑗 , are resolved test-filtered stress quantities, 𝑆 𝑖 𝑗 is the strain rate. The quantities in c(.. ) are test-filtered quantities and the quantities in ⟨ ⟩ represents the spatial-averaged quantities in the homogeneous direction if available. Test-filtering is handled using Explicit Gaussian filtering by Cook & Cabot (2004), with the test-filter width to be twice the grid measure, i.e, b𝛥 = 2𝛥 .Accurate calculation of 𝐶 𝑑𝑦𝑛 requires a sufficient portion of the inertial sub-range resolved. On coarser meshes, as this is not feasible, a lower bound, 𝐶 𝑙𝑖𝑚 , is set. Hence, on finer grids, the model works as dynamic DES with 𝐶 𝐷𝐸𝑆 attaining the 𝐶 𝑑𝑦𝑛 value, while on coarser meshes, the model works as standard DDES model with 𝐶 𝐷𝐸𝑆 approaching 𝐶 𝐷𝐸𝑆 = 0.12 through 𝐶 𝑙𝑖𝑚 formulations given below. Therefore, the model is adaptive to the mesh, and thus called ‘adatpive DES (ADES)’. 
+
+𝐶 𝐷𝐸𝑆 = 𝑚𝑎𝑥 (𝐶 𝑙𝑖𝑚 , 𝐶 𝑑𝑦𝑛 ) (3.20) 
+
+𝐶 𝑙𝑖𝑚 = 𝐶 0
+
+> 𝐷𝐸𝑆
+
+
+
+1 − tanh 
+
+
+
+𝛼 exp 
+
+ −𝛽ℎ 𝑚𝑎𝑥 
+
+𝜂 
+
+ 
+
+(3.21) where 𝐶 0 
+
+> 𝐷𝐸𝑆
+
+= 0.12, 𝛼 = 25, 𝛽 = 0.05, 𝜂 =
+
+ 𝜈 3
+
+> 𝜖
+
+1/4
+
+, 𝜖 = 2(𝐶 0 
+
+> 𝐷𝐸𝑆
+
+ℎ𝑚𝑎𝑥 )2 ˜𝜔 | 𝑆 |2 + 𝛽 ∗ ˜𝑘 ˜𝜔 .The coefficients 𝛼 and 𝛽 are obtained from the calibration studies of channel flows. Isotropic stress constant, 𝐶 𝐼 , also computed dynamically using 
+
+𝐶 2 
+
+> 𝐼
+
+= 𝑚𝑎𝑥 0, 0.50 ⟨ 𝐿 𝑘𝑘 ⟩⟨ b𝛥 2 b𝜌 ce𝜔 2 − 𝛥 2 𝜌 e𝜔 2 ⟩
+
+!
+
+(3.22) The present compressible ADES model is implemented in a finite-difference-based in-house solver, COMP-SQUARE (Vadlamani et al. 2018), and validated for impinging SBLI, demonstrating its ability to capture low- and mid-frequency phenomena. The detailed model formulations (written in a curvilinear coordinate system) and validation details can be found in Vayala et al. (2025). Given the model’s validation with nominal two-dimensional SBLI, the present study extends this to the three-dimensional protuberance-induced SBLI. As mentioned earlier, the computations are intended to provide a finer resolution of the flow physics rather than parametrization, and are thus carried out only for the cubical protuberance. 3.2. Flow configuration 
+
+Three-dimensional shock wave boundary layer interaction due to the cubical protuberance at a freestream Mach number, 𝑀 ∞ = 2.89, is investigated numerically using adaptive detached eddy simulations (ADES). The freestream conditions provided in Table 1 are the same as those of the experiments reported in the previous section (Ramachandra et al. 
+
+2023; Ramachandra 2023), which are utilized as references to validate the predictions from the current study. Reynolds number based on boundary layer thickness ( 𝛿 ) at the location of protuberance, 𝑅𝑒 𝛿 , is approximately 3 .3 × 10 5. A computational domain, shown in figure 17, is set up with dimensions of 𝐿 𝑥 × 𝐿 𝑦 × 𝐿 𝑧 = 17 𝛿 × 8𝛿 × 12 𝛿 in the streamwise, wall-normal, and spanwise directions, respectively. The cubical protuberance with a side of 15 mm ( ≈ 2.14 𝛿 ) is positioned at the spanwise center ( 𝑧 /𝛿 = 6.0), and at a streamwise location of 𝑥 /𝛿 = 10 from the inlet boundary. Concerning the boundary conditions, turbulent mean profiles (without fluctuations) obtained from the precursor RANS simulations are provided 
+
+0 X0-22 Unsteadiness in bow shock-induced separation                           
+
+> Parameters 𝑃 0𝑇 0𝑀 ∞𝑢 ∞𝑃 ∞𝜌 ∞𝛿
+> Experiment (Ramachandra et al. 2023) 6 bar 300 K 2.87 612 𝑚𝑠 −119200 Pa 0.598 kg 𝑚 −37 mm Computation 6 bar 300 K 2.89 614 𝑚𝑠 −119193 Pa 0.596 kg 𝑚 −37 mm
+> Table 1. Free stream flow parameters.
+
+at the inlet, while at the outlet, all the quantities are extrapolated from interior points. The bottom wall is treated with non-slip, adiabatic conditions, whereas the top boundary is employed with outflow conditions. At the spanwise boundaries, two different conditions are specified, resulting in two different cases: slip wall (R1 SPSW) and outflow (R2 SPOF). They are also simply referred to as R1 and R2, respectively. Slip wall conditions are specified to avoid a finer resolution of side walls, thereby minimizing computational cost. Importantly, as observed in the experimental oil flow patterns, the separation bow shock becomes weak when it reaches the side walls and does not result in a strong reflected wave, and consequently, no corner separation. Therefore, the objective of having side walls is only to ensure that the confinement in experiments is replicated. Additionally, the current study explored the nature of the flow in the absence of confinement, or in other words, the effect of wall confinement by simulating the spanwise ends as outflow conditions.       
+
+> Figure 17. Computational domain with boundary conditions. Numerical schlieren on slices ( 𝑦 /𝛿 =0, 𝑧 /𝛿 =0)
+> are shown to illustrate the essential instantaneous flow features.
+
+3.3. Numerical method 
+
+Compressible Navier-Stokes equations are solved in conservative form in a generalized coordinate system. The compressible version of the adaptive DES model, discussed in Section 3.1, is employed to model turbulence. The governing equations are discretized spatially using explicit fourth-order, while the temporal evolution of the flow is achieved through the Runge-Kutta fourth-order (RK4). The cube zone in the computational domain is handled using the boundary data immersion method (BDIM) (Schlanderer et al. 2017); 
+
+0 X0-23 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+boundary conditions on the cube region are obtained via a meta equation that relates the Navier-Stokes equations in the fluid region to the governing equations in the solid region. An implicit Pade-type filter with low-dissipation characteristics is applied after each timestep to minimize instabilities that arise during flow evolution. An eighth-order filtering (F8) with a filtering coefficient, 𝛼 𝑓 , of 0.45 is provided, except in the neighborhood of domain boundaries, where the filtering orders are reduced towards the boundaries, leaving boundary points unfiltered. Turbulent quantities ( 𝑘, 𝜔 ) are filtered using second-order (F2) filtering, owing to their stiffness towards the higher-order schemes. A shock-capturing method based on the adaptive filtering approach with a fifth-order WENO sensor is used to capture shock waves and other discontinuities (Visbal & Gaitonde 2005). The computational domain as mentioned earlier, 𝐿 𝑥 × 𝐿 𝑦 × 𝐿 𝑧 = 17 𝛿 × 8𝛿 × 12 𝛿 , is discretized with 𝑁 𝑥 × 𝑁 𝑦 × 𝑁 𝑧 =255 × 175 × 337 grids in streamwise, wall-normal, and spanwise directions, respectively. In the streamwise direction, the grid is distributed non-uniformly, with finer resolution in the interaction region. Streamwise resolution of 𝛥𝑥 + 
+
+> 𝑚𝑖𝑛
+
+≈ 45 occurs near the cube, while 
+
+𝛥𝑥 + 
+
+> 𝑚𝑎𝑥
+
+≈ 200 exists at the outflow boundary due to gradual stretching. Near-wall resolution of 𝛥𝑦 + ≈ 1.20 is ensured, and the grids are further distributed using hyperbolic stretching within the boundary layer, transitioning to uniform stretching at the boundary layer edge and continuing to the top boundary. A uniform meshing is applied in the spanwise directions with 𝛥𝑧 + ≈ 45. The grid resolutions used in the current study meet the requirements of LES, as mentioned in literature (Georgiadis et al. 2010). The simulations are carried out with a time resolution, 𝛥𝑡𝑢 ∞/𝛿 = 1×10 −3, which corresponds to Courant-Friedrichs-Lewy (CFL) number of 0.8. After flushing out the initial transients for six flow-through times (FTT), the simulations are continued for an additional 17 FTTs to achieve statistical steady state, after which the data are recorded for post-processing. Data probes are employed (based on time-averaged flow field) in the critical flow regions, including the pressure measurement locations on the wall in the experiments, to facilitate the comparison. The signals are extracted at 1 MHz for another 120 FTTs, yielding an ensemble sample size of 24000. 
+
+> 4. Observations from computations
+
+4.1. Mean flow organization 
+
+The mean (averaged) flow field is firstly explained by means of velocity field shown in figure 18(a) extracted in the x-y plane at centerline span. From the averaged velocity field, it is evident that the current computations capture the critical flow features such as shocks, separated zones, etc., which are qualitatively comparable to the mean flow features seen in the present experiments as well as those reported in literature (Hung & Buning 1985; Lakshmanan & Tiwari 1994). The separation point S and the reattachment point R are also marked on the figure, and the mean shock foot on the wall can be seen upstream of S. Point R is roughly at the mid-point of the protuberance face for the present case. Figure 18(b) shows the spatial evolution of a few streamlines in the mean flow field, starting from the inlet at mid-span, illustrating the open separation in which, the mass entering the separated region escape sideways (spanwise) through the horseshoe vortex core. Further, a spanwise view of the interaction is illustrated through the mean surface (wall) pressure field in figure 19. The qualitative similarities with the experiments are apparent with the wall pressure distribution too. As discussed earlier, the interaction is characterized by distinct pressure zones such as freestream, plateau pressure, low-pressure, and high-pressure zones. It must be added that, despite exhibiting spatial asymmetry about the span centerline for most instances, all the time averaged flow features such as the mean shock foot and the wall pressure distribution are symmetric about the span centerline.  
+
+> 0X0-24
+
+Unsteadiness in bow shock-induced separation R
+
+0 224
+
+46810 46810 12 
+
+> M∞
+
+(a) (b) horseshoe vortex core mass escape 
+
+Figure 18. Mean flow patterns of (a) streamwise velocity (b) streamlines originating at mid-span from the upstream (inflow) boundary. 0.20 0.15 0.10 0.05 
+
+high pressure zone mean shock freestream low pressure zone plateau pressure zone        
+
+> 246810 12 2046810 014 16
+
+Figure 19. Contours of surface pressure. Distinct pressure zones of the interaction are marked. 
+
+0 X0-25 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+4.2. Instantaneous flow organization 
+
+The extent to which the instantaneous flow is resolved or modeled depends on the mode (RANS/LES) of the ADES model that operates in the flow domain. Regions where the model operates in RANS mode result in averaged flow, while the zones with LES mode can resolve the motion of various scales including turbulence. Figure 20 shows an instantaneous field of a parameter, 𝐿 𝑅 , depicting RANS ( 𝐿 𝑅 = 0) and LES ( 𝐿 𝑅 = 1) zones. Two different planar slices (x-z, x-y), one at 𝑦 /𝛿 = 0.30 and another at 𝑧 /𝛿 = 6.0, are chosen to demonstrate the RANS/LES switching of the ADES model. It is observed that in the upstream region ( 𝑥 /𝛿 < 4.30) ahead of the interaction, the boundary layer is primarily modeled using RANS equations, although it includes bands of LES regions. Downstream of the interaction onset or separation shock, the model switches to LES mode and resolves turbulent eddies. The LES mode remains active in almost all downstream regions, except in the wake region behind it. The coherent structures resolved by the present model are visualized using the Q-criterion, and one such instantaneous realization is shown in figure 21. Numerical schlieren at one of the spanwise boundaries ( 𝑧 /𝛿 = 0) is also shown in the figure. As the inflow is provided with turbulent mean profiles, no turbulent scale generation is observed until the separation region commences. Following the separation, the model activates the LES mode, thereby resolving the different flow scales in almost the entire domain downstream of separation, including the interaction zone and further downstream of the cube face. The separation shock from the numerical schlieren slice at 𝑧 /𝛿 = 0 also indicates the onset of the LES mode as the interaction starts. 82462004 6 8 10 246810 12 14 16 x-y plane                 
+
+> y/ δ= 0.30
+> z/ δ= 6.0 x-z plane
+> Figure 20. Fields of 𝐿 𝑅 representing RANS ( 𝐿 𝑅 =0,𝑏𝑙𝑢𝑒 ) and LES ( 𝐿 𝑅 =1,𝑟𝑒𝑑 ) zones extracted along
+> 𝑦 /𝛿 =0.3 and 𝑧 /𝛿 =6.0
+
+4.3. Validation of computational results with experiments 
+
+To assess the efficacy of the current numerical methodology, the computational results are validated against experiments under similar flow conditions, as listed in Table 1. The results from both R1 and R2 computational cases are compared with the experiments. In 
+
+0 X0-26 Unsteadiness in bow shock-induced separation 0246810 246814  16 2 4 6 8 10  12    
+
+> -0.5 0.0 0.5 1.0
+> 0.0  0.2  0.4  0.6  0.8
+
+separation shock horseshoe vortex          
+
+> Figure 21. Iso-surfaces of Q-criterion (Q = 0.1) coloured with streamwise velocity. A numerical schlieren on a slice ( 𝑧 /𝛿 =0) is also included, where |∇ 𝜌 |∗=0.80 ×𝑒 −15 | ∇ 𝜌 |/| ∇ 𝜌 |𝑚𝑎𝑥 .
+
+addition to mean flow features, the unsteady characteristics of the separation shock are also compared to corroborate the agreement between computations and experiments. 4.3.1. Mean flow features 
+
+The topology of the mean flow is examined relative to experiments using streaklines on the wall. For this purpose, surface streaklines from the numerical results are constructed and compared with oil flow visualization from the experiments. From the figure 22, it is clear that the flow patterns from the simulations are consistent with experimental oil flow patterns. However, slight variations in the directions of streak lines near the spanwise edges are observed in the simulations with the spanwise outflow (R2) case. Such minimal deviations are attributed to the difference in the conditions applied at the spanwise boundaries. Nonetheless, such disparities are found to have a negligible effect on the interaction characteristics, as discussed in the later sections. From the comparison of separation extent with experiments, the near-accurate prediction of mean separation length along the spanwise centerline ( 𝐿 𝑠𝑒 𝑝 = 2.66 ℎ, where h is the height of the cubical protuberance) is apparent from the numerical surface streak lines (for R1) in comparison with oil flow visualization ( 𝐿 𝑠𝑒 𝑝 = 2.6ℎ) of experiments. Interestingly, the simulations with spanwise outflow conditions results marginally smaller separation ( 𝐿 𝑠𝑒 𝑝 = 2.62 ℎ), which can be attributed to the three-dimensional relieving effects. 
+
+0 X0-27 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram M∞               
+
+> Lsep = 2.66 h
+> 246810 246810 12 0separation line
+> Lsep = 2.6 h  M∞
+> 246810 0
+> Lsep = 2.62 h  M∞
+> 246810 0
+> (a) (b) (c)
+> 0.20 0.15 0.10 0.05
+> Figure 22. Topology of the mean flow (a) surface streaklines (R1) (b) oil flow visualization (experiments) (c) surface streaklines (R2)
+
+Figure 23 compares the streamwise distribution of mean wall pressure extracted at four different spanwise sections. It is clear that the numerical outcomes (R1 and R2) are very much consistent with experimental data along the centerline and vicinity regions, whereas in distant regions, some discrepancies are observed. In most spanwise locations, the pressure distribution is nearly the same for both R1 and R2 cases. However, at locations close to the spanwise boundary, the pressures were lower with the outflow condition (R2) when compared to that with the slip wall confinement (R1). 4.3.2. Separation shock oscillations 
+
+Instantaneous schlieren snapshots from simulation R1, which constitutes one (low-frequency) oscillation cycle, are presented in figure 24. The flow instances at every 70 μs are provided along with two instances (at 𝑡 = −140 μs, −70 μs) corresponding to the culmination phase of the previous cycle. At the initial stage, 𝑡 = 0 μs, the shock foot is at the downstream-most position (closest to the protuberance) and starts moving upstream in subsequent instances ( 𝑡 = 70 μs, 140 μs & 210 μs), reaching the upstream-most position at 280 μs, completing approximately half a cycle. Following this, the shock undergoes rearward/downstream motion, eventually reaching the downstream-most position, roughly where it initiated its upstream motion, thereby completing the cycle. Three dotted lines denote the upstream-most, approximate mean, and downstream-most positions of the separation shock foot, respectively. Corresponding to the time taken for completing this cycle, the non-dimensional frequency (Strouhal number based on boundary layer thickness ( 𝛿 ), 𝑆𝑡 𝛿 ) is calculated to be 0.018, thereby confirming the low-frequency nature of oscillations ( 𝑆𝑡 𝛿 ∼ 0.01). To quantify the extent of shock oscillations, space-time (x-t) variation of the density gradient (schlieren) snapshots is plotted along the centerline span. Pixel intensities are extracted (for each snapshot) along a scanline at a height of y = 0 .92 𝛿 from the base plate, similar to experiments. Schlieren snapshots are collected at a rate of 100 kHz for the duration of 2100 𝛿 /𝑢 ∞ (24 ms), resulting in 2400 data samples. Figure 25(a) illustrates that the shock motions from computations (R1 and R2) are qualitatively similar to each other, with a similar magnitude of shock excursions. These shock oscillations are qualitatively similar to those observed in experiments. However, the maximum excursion of shock, 
+
+𝐿 𝑒𝑥,𝑚𝑎𝑥 = 1.75 𝛿 , is under-predicted by computations, when compared with experiments where it was observed to be around 2 .50 𝛿 . However, the standard deviation of shock foot position is found to be 𝛥𝑥 𝑟 𝑚𝑠 /𝛿 ≈ 0.27 with the computations, which matches with the experimentally determined value (see figure 16(b)). The noted maximum excursions are based on shock foot positions at certain instances, and a longer observation time in the computations could possibly result in larger maxima in shock excursions. The 
+
+0 X0-28 Unsteadiness in bow shock-induced separation 0                  
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> z/𝛿 =6.0
+> 𝑝 𝑤
+> 0
+> 1
+> 2
+> 3
+> 4
+> z/𝛿 =7.071
+> 𝑝 𝑤
+> 0
+> 1
+> 2
+> 3
+> z/𝛿 =9.214
+> 𝑝 𝑤
+> 12345678910
+> 0.5
+> 1
+> 1.5
+> 2
+> z/𝛿 =11 .357
+> 𝑥 /𝛿
+> 𝑝 𝑤
+> Figure 23. Comparison of mean surface pressure distributions at various span locations: filled circle -experiments; solid line - computations (R1); dotted line - computations (R2).
+
+standard deviations of pixel intensities, showing the extent of shock oscillations, from both experiments and computations are also compared and found to be in good agreement, as shown in the figure 25(b). It is clear that the type of boundary condition at the span edges has a negligible effect on the statistical aspects of the interaction along the spanwise centerline. 4.4. Spectral analysis 
+
+The unsteady aspects of the interaction are characterized by performing spectral analysis of signals probed at various locations (including experimentally measured locations) spanning the interaction zone. A set of pressure signals is extracted at the spanwise centerline to characterize spectra as well as the correlations of pressure fluctuations in the intermittent zone (in the vicinity of the mean shock foot location) with those in other zones of the interaction. Signals are also extracted over different spanwise locations along the mean shock foot, as with the experiments, to establish the existence of spanwise coherence in shock motion. Additionally, data probes are deployed at the reattachment location along the centerline span ( 𝑧 /𝛿 = 6.0). Figure 26 shows the selected probe locations used in computations. The locations on the bottom wall are the same as those in the experiments with cubical protuberance (Ramachandra et al. 2023). It is worth noting that the reattachment location considered in the present experiments, 𝑅 𝐴 𝐸 , differs from the 
+
+0 X0-29 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram l) 630 μs
+
+-140 μs
+
+d) e) 140 μs f) 
+
+h) 350 μs i) 420 μs
+
+210 μs
+
+j)  
+
+> b) c)
+
+490 μs k) 560 μs
+
+-70 μs 0 μs70 μs280 μsa) g) 
+
+Figure 24. Instantaneous numerical schlieren snapshots illustrating the temporal excursions of the separation shock along the centerline span. Three dotted lines denote the upstream-most, approximate mean, and downstream-most positions of the shock foot, respectively. 246810 0t (ms)       
+
+> xt
+> Lex, max ≈1.75 δ
+> t (ms)
+> 23456x / δ
+> 246810 0
+> xt
+> Lex, max ≈1.75 δ
+
+(a) (b)     
+
+> R2_SPOF R1_SPSW
+> Computations: R1_SPSW
+> Computations: R2_SPOF
+> x
+> 4h 3h 2h h0
+> Experiments
+
+Figure 25. Centerline shock characteristics (a) space-time (x-t) variation (b) standard deviation of pixel intensities in numerical schlieren. 
+
+computational one, 𝑅 𝐴 𝐶 , and is located at a relatively larger height. The experimental probe 
+
+0 X0-30 Unsteadiness in bow shock-induced separation 
+
+location was chosen as the peak pressure point (at 𝑦 /𝛿 = 1.72) based on preliminary mean surface pressure measurements, and due to the constraint in mounting the threaded Endevco transducer; however, from the computations (which enable precise characterization of reattachment point using the skin friction value), the reattachment was found to be at 
+
+𝑦 /𝛿 = 1.14, considerably below the peak pressure location. The signals are recorded during the simulation at a rate of 1 MHz, yielding a total of 24000 samples, for a computational time of 2100 𝛿 /𝑢 ∞. Power spectral density is computed using the Welch algorithm with a Hamming window of size 24000 and 50% overlap. PSD and coherence values are plotted against the non-dimensional frequency, i.e, Strouhal number ( 𝑆𝑡 𝛿 ), based on 𝛿 . The spectra and correlations at locations similar to those in experiments are chosen to facilitate comparison and reinforce the findings. 2 4 6 8 10 12 0 14 16                
+
+> M∞
+> z/w = 0.9 z/w = 1.5 z/w = 2.5 z/w = 0 w
+> MS PP LP HP 246810
+> 0
+> 0.20 0.15 0.10 0.05 0.90 0.60 0.35 0.10
+> MS RA CRA E
+> 46810 12 24680
+> M∞
+> Figure 26. Distribution of data probes in the interaction zone ( MS - mean shock, PP - plateau pressure, LP -low pressure, HP - high pressure, 𝑅 𝐴 𝐸 - reattachment (experiments), 𝑅 𝐴 𝐶 - reattachment (computations) )
+
+Regarding the centerline ( 𝑧 /𝛿 = 6.0) shock characteristics, the pressure signals are extracted at the mean shock foot (MS), plateau pressure (PP), low-pressure (LP), and high-pressure (HP) zones, as indicated in the figure 27, which shows the PSD of signals at these locations on the centerline. The spectra, for both R1 and R2, at the respective points, are qualitatively similar to the experimental observations, with the dominance of low frequencies, i.e., 𝑆𝑡 𝛿 ∼ 0.01, at the mean shock location, and mid-frequencies, i.e., 
+
+𝑆𝑡 𝛿 ∼ 0.1, dominating the other regions. There is no appreciable energy in the mid- or high-frequency ( 𝑆𝑡 𝛿 ∼ 1) ranges at the mean shock location, but at other regions, noticeable energy is apparent in the low-frequency ranges. While the PSDs are qualitatively similar for both slip wall and outflow cases, some differences in amplitude at some distinct frequencies can be observed at the mean shock foot location. Nonetheless, this does not affect the trends in correlations or coherence of pressure fluctuations between different locations. Hence, we present and discuss only the R1 SPSW results subsequently, unless any considerable difference observed between the cases in some aspect needs to be mentioned. In correlations and coherences too, the computations capture the trends observed in the experiments (see figures 11 and 12). Figure 28 shows the cross-correlations and coherences between the signal at the mean shock foot location (MS) and other regions (PP, HP, and 𝑅 𝐴 𝐶 ). A large negative correlation peak at a negative time lag (denoted as P1) is observed in the correlation between signals at MS and PP as well as LP (MS - LP correlation is not shown in the figure), which is consistent with the 
+
+0 X0-31 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram MS LP HP PP 10 −3 10 −2 10 −1 10 0 
+
+> 0
+> 1
+> 2
+> 3
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 𝑝  2
+
+(a)     
+
+> 10 −310 −210 −110 0
+> 0
+> 1
+> 2
+> 3
+> 𝑆𝑡 𝛿
+> MS
+> PP
+> LP
+> HP
+
+(b)  
+
+> Figure 27. Power spectral densities of probes along the centerline span (a) R1 SPSW (b) R2 SPOF
+
+experimental observations at corresponding locations. High coherences are observed for lower frequencies ( 𝑆𝑡 𝛿 ∼ 0.01), suggesting a high degree of linear relationship between the low-frequency shock oscillations and the pressure fluctuations at PP and LP. At other locations too significant coherences with the signal at MS are observed in the low-frequency ranges. The following two deviations in the correlations are noteworthy. The MS-HP correlation has a considerable positive peak (denoted as P2) at a negative time lag of about 130 μs, and a comparable negative peak (denoted as P3) at a smaller positive time lag. In the experiments (reported in Ramachandra et al. (2023)) though, for the same MS and HP locations, the positive peak at negative time lag was relatively larger, and the negative peak was negligibly smaller. This could be due to the fact that the HP location is not precisely at the peak pressure point (due to experimental constraints), but is rather at a location in the region of pressure rise from the pressure minimum (at the low-pressure region) to the peak pressure point. In the region of rising pressure, the correlation trends are highly sensitive to the location, since it is a region where a shift in the sense of correlation peak (from positive to negative) occurs, due to the stretching/compression of the centerline pressure profile as explained by Brusniak & Dolling (1994). Therefore, the observed differences in MS-HP correlation could either be due to small differences in the extent of the high-pressure zone between experiments and computations, or possibly because of the finite sensing area of the transducer in experiments as opposed to the computations in which the data is collected at a single grid point. The fluctuations at the peak pressure point (downstream of HP) in computations exhibited negative correlation with the fluctuations at MS, which was observed for the cuboid case having a larger extent of high-pressure region (refer to figure 15(b)). Nonetheless, the trends in correlations between MS and other regions on the wall at the centerline are consistent with the expected trends based on the pressure profile distortions due to shock motion. The second discrepancy is with regard to the correlation between mean shock foot (MS) and reattachment ( 𝑅 𝐴 ). In computations, a negative peak correlation (denoted as P4) of around 0.2 can be noted between MS and 𝑅 𝐴 𝐶 in figure 28, whereas the MS - 𝑅 𝐴 𝐸 
+
+correlations were shown to be negligible. Understandably, it is due to the experimental limitation in mounting the transducer at the precise reattachment point for the cubical protuberance. For the cuboid case, a large negative peak correlation of ∼ 0.35 was observed in the experimental MS - 𝑅 𝐴 𝐸 correlations (see figure 12), which is consistent with the observation between MS and precise reattachment point in the computations. The other 
+
+0 X0-32 Unsteadiness in bow shock-induced separation 
+
+noteworthy aspect in the MS - 𝑅 𝐴 𝐶 correlation is the small peak at 𝑆𝑡 𝛿 of ∼ 0.7 − 0.9, suggesting the relation between the two locations through the vortices being shed. The trends in spectra, correlations and coherence along the mean shock foot at different spanwise locations are again similar to the experimental observations (see figure 13). The PSD of signals at different spanwise locations along the mean shock foot is shown in figure 29 for both slip wall and outflow cases. At all locations, the low frequencies are found to be dominant. Significant two-point correlations are observed between all locations, as shown in figure 30(a), and the values are especially high between the pairs that are away from the spanwise centerline ( 𝑆 1.5 − 𝑆 0.9 and 𝑆 0.9 − 𝑆 0.5). Negative time lags are observed in the correlations of pressure fluctuations between the centerline and other locations away from it, as was also observed in experiments, suggesting a flapping motion of the shock foot. Significant coherences are observed between all locations at low frequency ranges (figure 30(b)), suggesting that the shock foot exhibits a coherent to-and-fro motion at low frequencies ( 𝑆𝑡 𝛿 ∼ 0.01), along with a flap about the spanwise center. Trends in correlation between pressure fluctuations at HP and at different spanwise mean shock foot locations is also similar to those observed in experiments. The complex shock foot motion shall be discussed further in the following section. P3 P4 P1 MS PP             
+
+> P2 P3: (+38 μs, -0.15) P2: (-128 μs, 0.17) P4: (-105 μs, -0.20) P1: (-32 μs, -0.49)
+> HP RR (C)
+> RA CRA E−2−1012
+> ·10 −3
+> −0.6
+> −0.4
+> −0.2
+> 0
+> 0.2
+> 𝜏 (sec )
+> 𝑅 𝑥 𝑦
+
+(a)      
+
+> 10 −310 −210 −110 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 𝑆𝑡 𝛿
+> 𝛾 𝑥 𝑦  2
+> MS - PP
+> MS - HP
+> MS -𝑅 𝐴 𝐶
+
+(b)  
+
+> Figure 28. Statistical relations between mean shock and other locations (a) cross correlation. (b) coherence.
+
+4.5. Visualization of spanwise shock motion 
+
+From the top view ( 𝑥 − 𝑧 plane), the separation shock foot was observed to exhibit complex movements which are asymmetric about the spanwise centerline in most instances, rather than a simple back and forth motion as a whole with its mean shape intact. Such a motion is illustrated in the figure 31 through a sequence of instantaneous snapshots ( 𝑥 −𝑧 plane) taken at 𝑦 /𝛿 = 0.5. The snapshots constitute three consecutive cycles, with the first two rows of snapshots corresponding to the first cycle (C-I), while the subsequent rows correspond to the second (C-II) and third cycles (C-III), respectively. The two dotted lines represent the upstream-most and downstream-most positions corresponding to those three cycles. The streamwise distance between the separation shock position at the spanwise center and the shock positions at the spanwise ends is shown in red and green color lines, respectively. The instantaneous distance between the spanwise ends of the shock and any one of the two dotted lines may also be referred to follow the local shock foot motion. In the first snapshot, figure 31(a), the separation shock foot is at the downstream-most position. The shock foot is asymmetric about the spanwise center, with the shock foot 
+
+0 X0-33 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram S 0.9 S 0.5 S 1.5 S 010 −3 10 −2 10 −1 10 0 
+
+> 0.5
+> 1
+> 1.5
+> 2
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 𝑝  2
+
+(a)     
+
+> 10 −310 −210 −110 0
+> 0.5
+> 1
+> 1.5
+> 2
+> 𝑆𝑡 𝛿
+
+(b) 
+
+Figure 29. Power spectral densities of probes along the mean shock (a) R1 SPSW (b) R2 SPOF S 0.9 S 0.5 S 1.5 S 0−2 −1 0 1 2
+
+> ·10 −3
+> −0.2
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> Lag (s)
+> 𝑅 𝑥 𝑦
+
+(a)             
+
+> 10 −310 −210 −110 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> 𝑆𝑡 𝛿
+> 𝛾 𝑥 𝑦  2
+> 𝑆 0.9−𝑆 0
+> 𝑆 1.5−𝑆 0
+> 𝑆 0.9−𝑆 0.5
+> 𝑆 1.5−𝑆 0.9
+
+(b) 
+
+Figure 30. Statistical relations among probes along the mean shock foot (a) cross correlation. (b) coherence. 
+
+position at the right end of the spanwise centerline (the upper end of the figure) significantly downstream of the shock foot positions at the left side of the centerline. The shock foot is relatively flat, especially to the left side of the centerline. In the next instance (figure 31(b)), the upstream motion of the shock is initiated in the vicinity of the centerline. The shock foot can be seen to reach the upstream-most position close to the centerline in the next instance, shown in figure 31(c). The shock foot exhibits a relatively larger curvature near the centerline, which is aided by the inertia of shock foot locations considerably away from the centerline, as apparent from the relatively fixed shock foot positions at the spanwise ends. In the subsequent instance (figure 31(d)), the shock foot tends to flatten, especially in the right half of the span aided by the upstream movement of the shock foot in the right half. At this instance too, the shock foot is asymmetric, but with the right half relatively upstream of the left half, in contrast to the sense of asymmetry in the very first snapshot. The next instance (figure 31(e)) marks the initiation of the downstream retreat of the shock foot. Although the shock foot near the centerline starts to move downstream, it is worth noting that the shock foot at the right end continues its upstream movement from the previous instances, whereas the shock foot at the left end moves downstream. In the subsequent instance (figure 31(f)), which marks the end of the first cycle, the centerline shock foot 
+
+0 X0-34 Unsteadiness in bow shock-induced separation 
+
+can be seen to have reached the downstream-most position. The shock foot is again flatter, and is relatively symmetric at this instance. In the next cycle C-II (figure 31(g)-(i)), during both upstream and downstream movements, the shock foot is apparently symmetric about the centerline for most instances in this cycle, but towards the end of the cycle, when the shock foot reaches the downstream-most position, it exhibits asymmetry when the next cycle C-III is initiated. The cycle C-III (figure 31(j)-(l)) exhibits asymmetrical motion of the shock foot similar to C-I, but the asymmetries in this cycle are in the opposite sense to that in C-I. l)          
+
+> i)
+> f)
+> k)
+> e)
+> h)
+> j)
+> C-III C-III C-III
+> d)
+> g)
+> C-I
+> a)
+> C-I C-I C-I C-I C-I C-II C-II C-II
+> b) c)
+> Figure 31. Instantaneous picture of spanwise shock motion at different instances. The dotted lines represent upstream-most and downstream-most positions corresponding to three cycles.
+
+The following are the common features in all the cycles: 1. The upstream or downstream motion of the shock foot is initiated in the neighborhood of spanwise centerline, followed by 
+
+0 X0-35 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+shock foot at locations away from centerline, and 2. Due to this lag, the upstream movements are marked by larger curvatures of shock near the centerline, and the downstream movements are marked by flattening of the shock foot. Thus, in addition to the to-and-fro motion, the shock foot also exhibits a flapping motion about the centerline, which is often asymmetric, even anti-symmetric, considering that the sense of asymmetry gets swapped between the cycles. Due to this swap, as well as the presence of some cycles exhibiting relatively symmetrical shock motion, the frequencies associated with the anti-symmetry can be expected to be lower (roughly one third) of the frequencies associated with the to-and-fro motion. This will be evident when we present the spectra associated with POD modes of wall pressure fluctuations. The observation that the upstream/downstream motion of the shock is initiated in the neighborhood of the centerline can be related to the spanwise extent of the reverse flow above the wall in the separated region, since the motion is associated with the reverse flow mass excess/deficit. Figure 32(a) shows the mean reverse flow region ( 𝑑𝑢 /𝑑𝑦 < 0), marked by a dotted curve, extending approximately 1 .5ℎ on either side of the centerline. Therefore, unsteady flow fields in this zone directly influence the dynamics of the separation shock. The asymmetries are caused by the instantaneous skewness in the reverse flow direction about the mean. The intermittency of the separation shock position at different spanwise locations is also shown in figure 32(b). While the intermittent length scales are not very different near the centerline for a spanwise extent of about ±0.5ℎ, it increases with spanwise distance as we go further away from the centerline, which is indicative of the flapping motion of the shock foot about the centerline. For the simulations with outflow boundary conditions at the spanwise ends (R2 SPOF), the observations with regard to shock motion are similar, but the motion was often symmetric, and the anti-symmetries were relatively less dominant. It is interesting to note that the skewness and anti-symmetry are more pronounced in the presence of wall confinement. These observations shall be examined further by means of modal analysis. 4.6. Proper orthogonal decomposition 
+
+Modal analysis of the flow field is conducted through proper orthogonal decomposition (POD) to identify the energetically dominant structures (modes) and corresponding frequencies. Numerical density gradients (schlieren) along the mid-span plane, and pressure fields on the bottom wall are used to explore the most energetic activities occurring in the in the respective plane. Additionally, POD based on three-dimensional velocity data is also performed to get more insights about the dominant phenomena. POD features derived from numerical schlieren data in the mid-span plane are qualita-tively similar to those observed in experiments. The first two modes, both in experiments and in computations, exhibit low-frequency separation shock oscillations as the dominant phenomenon, whereas higher modes are characterized by smaller structures at mid- and higher frequency ranges. Therefore, the mid-span POD from the computations does not offer new insights than those from the experimental results, and only serves as a further validation. However, with the computational data, a comprehensive understanding of interaction dynamics can be obtained by looking at the dominant phenomena at other planes, which cannot be accessed from experiments. 4.6.1. Two-dimensional POD: wall pressure 
+
+POD based on wall pressure data helps in understanding the shock foot motion along the span and its statistical relations with pressure fluctuations in other zones in the interaction. The dominant structures and corresponding frequencies associated with spatial modes are shown in figures 33(a) and (b). The first mode presents a nearly antisymmetric (rather than asymmetric) shock foot motion, while the coherent and symmetrical to-and-fro shock  
+
+> 0X0-36
+
+Unsteadiness in bow shock-induced separation -140 0 140            
+
+> h
+> separated zone 1234567
+> −2
+> −1
+> 0
+> 1
+> 2
+> 𝑥 /ℎ
+> 𝑧 /ℎ
+> (a)
+> 00.51
+> 0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1
+> (𝑥 −𝑥 0)/ ℎ
+> 𝛾
+> z/h = 0.0
+> z/h = 0.5
+> z/h = 0.9
+> z/h = 1.5
+> z/h = 2.5
+> (b)
+> Figure 32. Distribution of (a) mean streamwise velocity gradient at the wall (dotted curve indicates the separated zone). (b) Intermittency ( 𝛾 ) of separation shock
+
+oscillations are apparent only in the second mode. Both the modes have comparable energies and exhibit dominant amplitudes in low-frequency bands. It is noteworthy that the dominant frequency in the first mode, corresponding to anti-symmetric oscillations, is 𝑆𝑡 𝛿 ∼ 0.005, which is considerably lower than the frequencies ( 𝑆𝑡 𝛿 ∼ 0.01 − 0.02) associated with the second mode, corresponding to the to-and-fro motion of shock foot. This is consistent with the remarks concerning the different phases made earlier in reference to Figure 31. The mean shock foot sweep in both these modes exhibit a considerable relation with the wall pressure oscillations in the vicinity of protuberance base. In the second mode, it is observed that the separation shock exhibits an alternating sense of correlation with other regions of the interaction, a trend which was discussed earlier in connection with the correlations in pressure fluctuations along the centerline. To begin with, a strong negative correlation is observed between the shock and plateau pressure regions, and the correlation switches to positive values, albeit weak in the region of pressure rise downstream of the pressure minima locations, and again turns negative in the high-pressure region. The seventh mode presents organized large scale spanwise distortions in shock foot and related structures in the separated region. The mid-frequencies start becoming prominent from this mode, suggesting that mid-frequency phenomena could partly be associated with large-scale spanwise oscillations, apart from shear layer shedding. Higher modes are characterized with frequencies ranging from mid-level ( 𝑆𝑡 𝛿 ∼ 0.1) to high-level ( 𝑆𝑡 𝛿 ∼ 1) as the associated scales of the activities become smaller and smaller. For the R2 SPOF simulations too (with outflow conditions at spanwise boundaries), qualitatively similar features are generally observed in the POD of surface pressure fluctuations, except that the first two modes are swapped. In the R2 SPOF case, the first mode corresponds to the to-and-fro symmetric shock motion while the second mode corresponds to the anti-symmetric flap with relatively lower frequencies than the to-and-fro oscillations. It is interesting to note that the relieving effects at spanwise ends with the outflow boundary condition seem to weaken the anti-symmetric movements. A related noteworthy aspect in the POD of the R2 SPOF case was that third mode presents a symmetric flapping of the shock foot about the centerline, as shown in figure 34, with a considerable correlation between the fluctuations in the high-pressure zone and the shock foot away from centerline. Such large scale symmetrical flaps were not apparent in any dominant POD mode with slip wall conditions. 
+
+0 X0-37 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+It may be recalled from section 2.4 (with reference to figure 15), that the correlations with the fluctuations at high-pressure zone near protuberance base were significant, not just for fluctuations at the mean shock foot location at centerline, but also for other spanwise locations along mean shock foot. Particularly, for the case of cubical protuberance at similar flow conditions, Ramachandra (2023) reported that the correlations with pressure fluctuations near protuberance base for the mean shock locations at other spanwise locations (as far as 1 .5ℎ from centerline) had peak values which were even higher than the peak value for centerline mean shock foot location. The observations from the POD corroborate the trends observed in correlations in surface pressure between high-pressure zone and the mean shock foot, suggesting that the fluctuations near the protuberance base is related to both the to-and-fro motion and the flapping motion (symmetric as well as anti-symmetric) of the shock foot. -5 0 5×10 – 3Mode 1                                      
+
+> 46810 12 14
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 𝑥 /𝛿
+> 𝑧 /𝛿
+> (a) -5 05×10 –3
+> Mode 2
+> 46810 12 14
+> 𝑥 /𝛿 -5 05×10 –3
+> Mode 7
+> 46810 12 14
+> 𝑥 /𝛿
+> 10 −410 −310 −210 −110 0
+> 0.5
+> 1
+> 1.5
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 2
+> (b)
+> 10 −410 −310 −210 −110 0
+> 𝑆𝑡 𝛿
+> 10 −410 −310 −210 −110 0
+> 𝑆𝑡 𝛿
+> Figure 33. POD based on wall pressure corresponding to mode 1, 2 and 7 (R1 SPSW). (a) spatial mode. (b) PSD of temporal coefficients of the respective mode
+
+4.6.2. Three-dimensional POD: velocity field 
+
+The computational data also facilitate a detailed analysis of the three-dimensional picture. A three-dimensional POD of the velocity data is conducted to resolve the dominant three-dimensional flow structures that are associated with the low-frequency shock motion. Three-component (u, v, w) velocity data is used to obtain the modes and corresponding frequencies. Few selected modes and their spectra for the R2 SPOF case are presented in figure 35. As discussed earlier, the interaction features from both simulations (R1 SPSW and R2 SPOF) are qualitatively similar and agree well in several aspects. Nonetheless, simulations with spanwise-slip wall conditions (R1 SPSW) resulted in more complex in-teraction features due to spanwise confinement, leading to skewing of the horseshoe vortex towards one side, along with pronounced anti-symmetric effects. Therefore, to understand the essential features of the interaction and the underlying mechanism responsible for shock unsteadiness, the 3-D POD and reduced-order reconstruction with dominant modes based 
+
+0 X0-38 Unsteadiness in bow shock-induced separation -5 0 5×10 – 3Mode 3 (R2)      
+
+> 46810 12 14
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 𝑥 /𝛿
+> 𝑧 /𝛿
+
+(a)      
+
+> 10 −410 −310 −210 −110 0
+> 0.5
+> 1
+> 1.5
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 2
+
+(b)  
+
+> Figure 34. POD based on wall pressure (R2 SPOF). (a) spatial mode. (b) PSD of temporal coefficients
+
+on simulations with spanwise-outflow (R2 SPOF) conditions is considered. In the 3-D POD with the velocity data, the first six modes represent separation shock and horseshoe vortex as dominant events exhibiting low frequencies, i.e., 𝑆𝑡 𝛿 ∼ 0.01; the first and second modes capture anti-symmetric shock oscillation, while the third mode presents the to-and-fro motion. It is observed that beyond mode six, mid-frequency ( 𝑆𝑡 𝛿 ∼ 0.1) events start to appear and become dominant at higher modes, for instance, mode 100 showing a clear peak centered at 𝑆𝑡 𝛿 ∼ 0.1. Further higher modes are related to finer scales of turbulence-like structures at 𝑆𝑡 𝛿 ∼ 1. 4.7. Flow reconstruction with low-frequency modes 
+
+Owing to the complexities of interaction, a reduced-order modeling and reconstruction of the flow field is performed using the first six 3-D POD modes, which constitute low-frequency events, to narrow down the focus on the source of shock motion. An instantaneous snapshot of the reconstructed flow field is shown in the figure 36; the directions of motion of different features, such as shock and horseshoe vortex are also marked. The temporal evolution of the reconstructed flow field reveals that the central portion of the horseshoe vortex undergoes to-and-fro motions, influencing the movements of the separation shock. The horseshoe vortex exhibits spanwise wagging (sideway) motions around the protrusion, which is essentially inferred from the intercept of the ends of the vortex at the (downstream) outlet plane. It is observed that the spanwise movements of the horseshoe vortex are linked to the activities of the horseshoe vortex at the central portion, especially the radius of curvature (ROC) of the horseshoe vortex at the spanwise centerline upstream of the protuberance. To illustrate this, a sequence of instantaneous reconstructed views of the flow during a cycle of oscillation is shown in figure 37. The left side of these figures shows the Q-criterion iso surfaces, while the right side presents the streamwise velocity field in the wall-parallel plane at 𝑦 /𝛿 = 0.4 to elucidate the explanation. To begin with, an instance (t = 0.45 ms) where the radius of curvature of the horseshoe vortex at the central portion is large is provided. At this instance, the separation shock is at its downstream-most position, and the horseshoe vortex ends are far apart from each other. In the next instance, the radius of curvature of the central portion decreases, as the separation shock is pushed upstream and the ends of the horseshoe vortex at the outlet plane move towards each other. In the subsequent instances, the radius of curvature of the central horseshoe vortex decreases further and becomes minimum at 𝑡 = 0.91 ms 
+
+0 X0-39 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 242046810 12 46810 Mode 1 
+
+(a)      
+
+> 10 −410 −310 −210 −110 0
+> 0.5
+> 1
+> 1.5
+> 2
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 2
+
+(b) 242046810 12 46810           
+
+> Mode 3
+> 10 −410 −310 −210 −110 0
+> 0.5
+> 1
+> 1.5
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 2242046810 12 46810
+> Mode 100
+> 10 −410 −310 −210 −110 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 𝑆𝑡 𝛿
+> 𝑓  · 𝐺  ( 𝑓  )/ 𝜎 2
+
+Figure 35. Three-dimensional POD: (a) spatial mode (b) PSD 
+
+(see figure 37). During this time period, the separation shock moves forward and assumes its upstream-most position, whereas the horseshoe vortex ends came closer and closer, eventually reaching a position where they are closest to each other. This completes half a cycle. It may be noted that while the shock foot moves upstream in the neighborhood of the centerline, at spanwise locations away from the centerline, the shock foot does not move upstream considerably, distorting the shape of the shock. The instances after 𝑡 = 0.91 ms show the retraction/downstream moving phase of the separation shock. At 𝑡 = 1.06 ms, when the centerline shock foot is seen to start moving downstream, it may also be noted that the shock is seen to have moved upstream near the spanwise ends. As the shock moves 
+
+0 X0-40 Unsteadiness in bow shock-induced separation  
+
+> Figure 36. Reconstructed flow field with low-frequency modes.
+
+downstream, the radius of curvature of the horseshoe vortex at the spanwise center is seen to increase, with the front portion (upstream of protuberance) of the horseshoe vortex becoming flatter, and the downstream ends of the horseshoe vortex in the outlet plane moving away from each other. The last instance shows the scenario where the radius of curvature becomes large (similar to the first instance). At this instance, the separation shock reaches its downstream-most position, and the horseshoe vortex ends are at the farthest position from each other, before the next cycle begins. 4.8. Discussion: Mechanism of low-frequency dynamics 
+
+From the discussions in the previous section, two important and related observations give some valuable insights on the mechanism sustaining the low-frequency unsteadiness. First, the shock foot motion (both upstream and downstream) is initiated in the vicinity of the spanwise centerline, and the motion of the shock foot away from the centerline initiates after the centerline shock foot gets displaced. Second, associated with shock motion, the horseshoe vortex exhibits a complex dynamics, involving to-and-fro motion and distortions. Particularly, the radius of curvature of the horseshoe vortex upstream of the protuberance changes, decreasing or increasing as the centerline shock foot moves upstream or downstream, respectively. Along with that, the trailing ends of the horseshoe vortex (in the outlet plane) move closer to or away from each other, respectively with decrease or increase in the centerline radius of curvature. These low-frequency oscillations relate to other important observations in experiments and computations, which were discussed in the earlier sections. The pressure oscillations near the protuberance base (which are below the reattachment point on the protrusion face) exhibit good correlation with the shock foot motion all along the span, even influencing the symmetric and anti-symmetric motion of the shock about the spanwise centerline. The reverse flow emanates from the high-pressure zone near the protuberance base, and it directly impacts the shock foot for a certain spanwise extent in the neighborhood of the centerline, depending on the spanwise extent of the reverse flow along the separation line. When the shock foot is in its downstream-most position during a cycle, i.e., when the instantaneous (centerline) separation length is the shortest for the cycle, the reattachment pressure as well as the peak pressure near the protuberance base are high, assuming the maximum value for the particular cycle. This results in an excess mass getting injected into the separated region from the reattachment location. The mass  
+
+> 0X0-41
+
+S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 242046810 12 46810 larger ROC HSV ends maximally apart 𝑡  = 0.45 ms 
+
+(a) flatter shock 𝑡 = 0.45 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+> 𝑧 /𝛿 HSV ends are closer
+> 242046810 12 46810
+> decreasing ROC
+> 𝑡  = 0.79 ms curved shock
+
+𝑡 = 0.79 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+> 𝑧 /𝛿
+
+(b) smaller ROC 
+
+> 242046810 12 46810 HSV ends minimally apart
+> 𝑡  = 0.91 ms more curved shock shock distortions
+
+𝑡 = 0.91 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+𝑥 /𝛿 
+
+> 𝑧 /𝛿
+
+-0.8 -0.4 0 0.4 0.9 
+
+u/u ∞-0.1 0.2 0.4 0.6 0.9 u/u ∞
+
+Figure 37. Evolution of reconstructed flow field. (a) Q-criterion. (b) streamwise velocity at 𝑦 /𝛿 = 0.4. 
+
+flow rate at different time instances shown in figure 37 are estimated in a plane parallel to the wall at a height of 0 .5𝛿 above the wall, the span of the plane aligning with the span of the protuberance, with the plane upstream from protuberance base for a length of 0 .8𝛿 
+
+(just downstream of the core of horseshoe vortex in the mean flow). At 𝑡 = 0.45 ms, when 
+
+0 X0-42 Unsteadiness in bow shock-induced separation 242046810 12 46810 𝑡  = 1.06 ms 
+
+(a) 𝑡 = 1.06 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+> 𝑧 /𝛿
+
+(b) 242046810 12 46810 
+
+> 𝑡  = 1.20 ms
+
+𝑡 = 1.20 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+> 𝑧 /𝛿 242046810 12 46810 larger ROC HSV ends maximally apart
+> 𝑡  = 1.27 ms flatter shock
+
+𝑡 = 1.27 ms 
+
+4 6 8 10 12 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+> 𝑧 /𝛿
+
+-0.8 -0.4 0 0.4 0.9 
+
+u/u ∞-0.1 0.2 0.4 0.6 0.9 u/u ∞
+
+Figure 37. Evolution of reconstructed flow field (continued). (a) Q-criterion. (b) streamwise velocity at 𝑦 /𝛿 =
+
+0.4. 
+
+the shock foot is in its downstream-most position, the downward mass flow rate on the plane is 0.0092 𝑘𝑔 /𝑠 . As the shock foot moves upstream, the pressure profile stretches and the pressure at the reattachment as well as near the protuberance base drops based on correlation trends (which was evident from the trends in the correlations), and the mass 
+
+0 X0-43 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+flow rate through the plane is observed to reduce. When the shock is at its upstream-most position ( 𝑡 = 0.91 ms - 1 .06 ms), mass flow rate is observed to be the minimum for the cycle, which is 0.0077 𝑘𝑔 /𝑠 . As the shock foot at the centerline moves downstream, the mass flow rate through the plane is also observed to increase, reaching a value of 0.0093 
+
+𝑘𝑔 /𝑠 when the shock foot reaches the downstream-most position again before the next cycle. This excess or deficit mass in the reverse flow is directly related to the shock foot motion close to the centerline. However, in the 2-D separation which consists of a closed separation bubble, entrainment is the only means other than injection at reattachment by which the bubble transacts mass with the outer flow. In the present case of open separation, the mass that is injected at the reattachment goes around the horseshoe vortex, and eventually escapes out spanwise through the horseshoe vortex. This is illustrated in figure 38 by means of a streamline along the spanwise center in the mean flow field. Thus, any excess mass that is injected will eventually relieve out of the separated region through the horseshoe vortex, and for the excess mass to reach the horseshoe vortex core it takes a certain time delay after it is injected at the reattachment. The flow speeds along the streamline are shown using a color map in the figure. The time taken by a particle moving along the streamline is determined from the total distance travelled along the streamline and the corresponding velocity (averaged over the streamline). The average velocity is calculated by integrating the velocity values along the path and then dividing by the total length. From these, the time scale associated with the particle motion along the streamline is estimated to be around 0.312 ms, which corresponds to 𝑆𝑡 𝛿 ∼ 0.0365, which is in the same orders of the low-frequency shock motion. Reattachment location horseshoe vortex core mass escape mass injection      
+
+> 0 0.3  0.6  0.9
+> 468 10  12  14 2046810
+> Figure 38. A streamline in the mean flow field representing the mean path of a particle moving along the separated shear layer.
+
+Further, one could split the path into roughly two equal parts- one, from reattachment to the separation line; and two, from the shock foot to the horseshoe vortex core. The excess mass after reaching the separation line turns back towards the horseshoe vortex core. As the excess mass reaches the core, the spanwise outward mass flow is large, resulting in stretching of the horseshoe vortex at the centerline, which in turn increases the radius or curvature of the horseshoe vortex, pushing the trailing ends of the horseshoe vortex away. It may be recalled from figure 37 that when the centerline separation length is shortest, the radius of curvature of the horseshoe vortex at the centerline is also the largest for the cycle. At the same time, when there is an excess mass injection at reattachment, the excess mass from the previous cycle gets drained through the horseshoe vortex core. On the other 
+
+0 X0-44 Unsteadiness in bow shock-induced separation 
+
+hand, when the centerline separation is in its upstream-most position, the excess mass is turned back upstream; the excess mass from the previous cycle has drained, and the mass flow through the horseshoe vortex core is lesser, which in turn results in a smaller radius of curvature due to reduced spanwise stretching. Since the distance that the excess mass must travel from reattachment to the horseshoe vortex core is of the orders of the separation length, the centerline separation length is the appropriate scale for the low-frequency dynamics, as observed from the scaling for spectra of shock foot pressure oscillations from experiments with various protuberances. In summary, it is inferred that the mechanism sustaining the low-frequency shock oscillations for the three-dimensional SBLI due to protuberances is essentially an imbalance and time lag between the mass injection at the reattachment on the protuberance face and the mass escaping (relieving) spanwise through the horseshoe vortex. The spanwise extent of reverse flow, which in turn is related to the centerline separation length, determines the amplitude and spanwise coherence of the to-and-fro motion. Since it is the spanwise extent of the reverse flow that the to-and-fro motion is driven, a flap of the shock foot about the centerline is generated, which results in larger amplitudes of shock foot oscillations away from the centerline. 
+
+Acknowledgements 
+
+The authors would like to acknowledge the National Supercomputing Mission (NSM) for providing access to computing resources of PARAM RUDRA at P G Senapathy Center, Play Field Avenue, Indian Institute of Technology Madras (IIT Madras), Tamil Nadu 600036, which is implemented by C-DAC and supported by the Ministry of Electronics and Information Technology (MeitY) and Department of Science and Technology (DST), Government of India. The authors are also grateful to G. Rajesh and his group at the Department of Aerospace Engineering, IIT Madras, for helping with some equipment for experiments. The experimental work was supported by the Science and Engineering Research Board (SERB) of the Department of Science and Technology, Government of India, SERB Grant No. SRG/2019/001793. 
+
+Declaration of interests 
+
+The authors report no conflict of interest                            
+
+> REFERENCES
+> Adler, Michael C & Gaitonde, Datta V 2019 Flow similarity in strong swept-shock/turbulent-boundary-layer interactions. AIAA Journal 57 (4), 1579–1593.
+> Adler, Michael C & Gaitonde, Datta V 2020 Dynamics of strong swept-shock/turbulent-boundary-layer interactions. Journal of Fluid Mechanics 896 , A29.
+> Andreopoulos, J & Muck, KCt 1987 Some new aspects of the shock-wave/boundary-layer interaction in compression-ramp flows. Journal of Fluid Mechanics 180 , 405–428.
+> Arora, Nishul, Ali, Mohd Y, Zhang, Yang & Alvi, Farrukh S 2018 Flowfield measurements in a mach 2 fin-generated shock/boundary-layer interaction. AIAA Journal 56 (10), 3963–3974.
+> Arora, Nishul, Mears, Lee & Alvi, Farrukh S 2019 Unsteady characteristics of a swept-shock/boundary-layer interaction at mach 2. AIAA Journal 57 (10), 4548–4559.
+> Beresh, SJ, Clemens, NT & Dolling, DS 2002 Relationship between upstream turbulent boundary-layer velocity fluctuations and separation shock unsteadiness. AIAA journal 40 (12), 2412–2422.
+> Bhardwaj, Sourabh 2021 Experimental and computational investigations on 3-dimensional shock-induced separation due to protuberances. Master’s thesis, Indian Institute of Technology Madras, Chennai, India.
+> Bhardwaj, S, Hemanth Chandra Vamsi, K & Sriram, R 2022 On the scaling of three-dimensional shock-induced separated flow due to protuberances. Physics of Fluids 34 (7).
+
+0 X0-45 S. Vayala, K. Ramachandra, K. Abhishek, N. R. Vadlamani and R. Sriram 
+
+Brusniak, Leon & Dolling, David S 1994 Physics of unsteady blunt-fin-induced shock wave/turbulent boundary layer interactions. Journal of Fluid Mechanics 273 , 375–409. 
+
+Clemens, Noel & Narayanaswamy, Venkataswaran 2009 Shock/turbulent boundary layer interactions: review of recent work on sources of unsteadiness. In 39th AIAA Fluid Dynamics Conference , p. 3710. 
+
+Clemens, Noel T & Narayanaswamy, Venkateswaran 2014 Low-frequency unsteadiness of shock wave/turbulent boundary layer interactions. Annual Review of Fluid Mechanics 46 (1), 469–492. 
+
+Combs, Christopher S, Schmisseur, John D, Bathel, Brett F & Jones, Stephen B 2019 Unsteady analysis of shock-wave/boundary-layer interaction experiments at mach 4.2. AIAA journal 57 (11), 4715–4724. 
+
+Cook, Andrew W & Cabot, William H 2004 A high-wavenumber viscosity for high-resolution numerical methods. Journal of Computational Physics 195 (2), 594–601. 
+
+Dolling, DS & Bogdonoff, SM 1982 Blunt fin-induced shock wave/turbulent boundary-layer interaction. 
+
+AIAA journal 20 (12), 1674–1680. 
+
+Dolling, David S 2001 Fifty years of shock-wave/boundary-layer interaction research: what next? AIAA journal 
+
+39 (8), 1517–1531. 
+
+Dupont, Pierre, Haddad, Christian & Debieve, Jean-Franc ¸ois 2006 Space and time organization in a shock-induced separated boundary layer. Journal of fluid Mechanics 559 , 255–277. 
+
+Dussauge, Jean-Paul, Dupont, Pierre & Debi` eve, Jean-Francois 2006 Unsteadiness in shock wave boundary layer interactions with separation. Aerospace science and Technology 10 (2), 85–91. 
+
+Erengil, ME & Dolling, DS 1993 Effects of sweepback on unsteady separation in mach 5 compression ramp interactions. AIAA journal 31 (2), 302–311. 
+
+Erengil, Mehmet E & Dolling, David S 1991 Unsteady wave structure near separation in a mach 5 compression rampinteraction. AIAA journal 29 (5), 728–735. 
+
+Gaitonde, Datta V & Adler, Michael C 2023 Dynamics of three-dimensional shock-wave/boundary-layer interactions. Annual Review of Fluid Mechanics 55 (1), 291–321. 
+
+Ganapathisubramani, Bharathram, Clemens, NT & Dolling, DS 2007 Effects of upstream boundary layer on the unsteadiness of shock-induced separation. Journal of fluid Mechanics 585 , 369–394. 
+
+Ganapathisubramani, B, Clemens, NT & Dolling, DS 2009 Low-frequency dynamics of shock-induced separation in a compression ramp interaction. Journal of Fluid Mechanics 636 , 397–425. 
+
+Georgiadis, Nicholas J, Rizzetta, Donald P & Fureby, Christer 2010 Large-eddy simulation: current capabilities, recommended practices, and future research. AIAA journal 48 (8), 1772–1784. 
+
+Hoffman, Eugene NA, Rodriguez, Jose M, Cottier, Stephanie M, Combs, Christopher S, Bathel, Brett F, Weisberger, Joshua M, Jones, Stephen B, Schmisseur, John D & Kreth, Phillip A 2022 Modal analysis of cylinder-induced transitional shock-wave/boundary-layer interaction unsteadiness. AIAA journal 60 (5), 2730–2748. 
+
+Humble, RA, Elsinga, GE, Scarano, F & Van Oudheusden, BW 2009 Three-dimensional instantaneous structure of a shock wave/turbulent boundary layer interaction. Journal of Fluid Mechanics 622 , 33–62. 
+
+Hung, Ching-Mao & Buning, Pieter G 1985 Simulation of blunt-fin-induced shock-wave and turbulent boundary-layer interaction. Journal of Fluid Mechanics 154 , 163–185. 
+
+Lakshmanan, B & Tiwari, SN 1994 Investigation of three-dimensional separation at wing/body junctions in supersonic flows. Journal of aircraft 31 (1), 64–71. 
+
+Lilly, Douglas K 1992 A proposed modification of the germano subgrid-scale closure method. Physics of Fluids A: Fluid Dynamics 4 (3), 633–635. 
+
+Lind ¨ orfer, SA, Combs, CS, Kreth, PA, Bond, RB & Schmisseur, JD 2020 Scaling of cylinder-generated shock-wave/turbulent boundary-layer interactions. Shock Waves 30 (4), 395–407. 
+
+Lind ¨ orfer, Stefen A, Kreth, Phillip A & Schmisseur, John D 2025 Characterizing spanwise dynamics of a blunt-fin-generated shock-wave/turbulent boundary-layer interaction. Physics of Fluids 37 (10). 
+
+Manisankar, C & Verma, SB 2023 Control of separation shock unsteadiness in an incident-shock-induced interaction. Shock Waves 33 (2), 81–97. 
+
+Marshall, TA & Dolling, DS 1992 Computation of turbulent, separated, unswept compression ramp interactions. AIAA journal 30 (8), 2056–2065. 
+
+Ngoh, Haryl & Poggie, Jonathan 2022 Detached eddy simulation of blunt-fin-induced shock-wave/boundary-layer interaction. AIAA Journal 60 (4), 2097–2114. 
+
+Pasquariello, Vito, Hickel, Stefan & Adams, Nikolaus A 2017 Unsteady effects of strong shock-wave/boundary-layer interaction at high reynolds number. Journal of Fluid Mechanics 823 , 617–657. 
+
+Piponniau, S´ ebastien, Dussauge, Jean-Paul, Debieve, Jean-Franc ¸ois & Dupont, Pierre 2009 A simple model for low-frequency unsteadiness in shock-induced separation. Journal of Fluid Mechanics 629 , 87–108. 
+
+Pirozzoli, Sergio & Grasso, Francesco 2006 Direct numerical simulation of impinging shock wave/turbulent boundary layer interaction at m= 2.25. Physics of fluids 18 (6), 065113. 
+
+0 X0-46 Unsteadiness in bow shock-induced separation 
+
+Porter, Kevin M & Poggie, Jonathan 2019 Selective upstream influence on the unsteadiness of a separated turbulent compression ramp flow. Physics of Fluids 31 (1). 
+
+Priebe, Stephan & Mart´ ın, M Pino 2012 Low-frequency unsteadiness in shock wave–turbulent boundary layer interaction. Journal of Fluid Mechanics 699 , 1–49. 
+
+Ramachandra, K 2023 Experimental investigations on unsteadiness in curved shock induced boundary layer separation. Master’s thesis, Indian Institute of Technology Madras, Chennai, India. 
+
+Ramachandra, K, Bhardwaj, Sourabh, Murugan, JN & Sriram, R 2023 Study of unsteadiness due to 3-d shock–boundary layer interaction in flow over a square-faced protuberance. Shock Waves 33 (7), 569–583. 
+
+Ringuette, Matthew J, Bookey, Patrick, Wyckham, Christopher & Smits, Alexander J 2009 Experimental study of a mach 3 compression ramp interaction at re {theta }= 2400. AIAA journal 47 (2), 373–385. 
+
+Schlanderer, Stefan C, Weymouth, Gabriel D & Sandberg, Richard D 2017 The boundary data immersion method for compressible flows with application to aeroacoustics. Journal of computational Physics 333 , 440–461. 
+
+Sirovich, Lawrence 1987 Turbulence and the dynamics of coherent structures. i. coherent structures. Quarterly of applied mathematics 45 (3), 561–571. 
+
+Souverein, Louis J, Dupont, Pierre, Debieve, Jean-Francois, Dussauge, Jean-Paul, Van Oudheusden, Bas W & Scarano, Fulvio 2010 Effect of interaction strength on unsteadiness in shock-wave-induced separations. AIAA journal 48 (7), 1480–1493. 
+
+Spalart, Philippe R 1997 Comments on the feasibility of les for wings and on the hybrid rans/les approach. In 
+
+Proceedings of the First AFOSR International Conference on DNS/LES, 1997 , pp. 137–147. 
+
+Spalart, Philippe R, Deck, Shur, Shur, Michael L, Squires, Kyle D, Strelets, M Kh & Travin, Andrei 
+
+2006 A new version of detached-eddy simulation, resistant to ambiguous grid densities. Theoretical and computational fluid dynamics 20 (3), 181–195. 
+
+Thomas, FO, Putnam, CM & Chu, HC 1994 On the mechanism of unsteady shock oscillation in shock wave/turbulent boundary layer interactions. Experiments in Fluids 18 (1), 69–81. 
+
+Touber, Emile & Sandham, Neil D 2009 Large-eddy simulation of low-frequency unsteadiness in a turbulent shock-induced separation bubble. Theoretical and Computational Fluid Dynamics 23 (2), 79–107. 
+
+Vadlamani, Nagabhushana Rao, Tucker, Paul G & Durbin, Paul 2018 Distributed roughness effects on transitional and turbulent boundary layers. Flow, Turbulence and Combustion 100 , 627–649. 
+
+Vanstone, Leon & Clemens, Noel T 2019 Proper orthogonal decomposition analysis of swept-ramp shock-wave/boundary-layer unsteadiness at mach 2. AIAA Journal 57 (8), 3395–3409. 
+
+Vayala, Siva, Vadlamani, Nagabhushana Rao & Sriram, R 2025 Adaptive detached eddy simulations of incident shock-induced separation. Physics of Fluids 37 (1). 
+
+Verma, SB & Manisankar, C 2019 Control of compression-ramp-induced interaction with steady microjets. 
+
+AIAA Journal 57 (7), 2892–2904. 
+
+Verma, Shashi Bhushan & Manisankar, Chidambaranathan 2025 Normal shock/boundary-layer interaction control using sub-boundary-layer vortex generators. AIAA Journal 63 (10), 4296–4307. 
+
+Visbal, Miguel & Gaitonde, Datta 2005 Shock capturing using compact-differencing-based methods. In 
+
+43rd AIAA Aerospace Sciences Meeting and Exhibit , p. 1265. 
+
+Voitenko, DM, Zubkov, AI & Panov, Yu A 1966 Supersonic gas flow past a cylindrical obstacle on a plate. 
+
+Fluid dynamics 1 (1), 84–88. 
+
+Welch, Peter 1967 The use of fast fourier transform for the estimation of power spectra: A method based on time averaging over short, modified periodograms. IEEE Transactions on audio and electroacoustics 15 (2), 70–73. 
+
+Wilcox, David C 1988 Reassessment of the scale-determining equation for advanced turbulence models. AIAA journal 26 (11), 1299–1310. 
+
+Wu, Minwei & Martin, M Pino 2008 Analysis of shock motion in shockwave and turbulent boundary layer interaction using direct numerical simulation data. Journal of Fluid Mechanics 594 , 71–83. 
+
+Yin, Zifei & Durbin, Paul A 2016 An adaptive des model that allows wall-resolved eddy simulation. 
+
+International Journal of Heat and Fluid Flow 62 , 499–509. 
+
+Yin, Zifei, Reddy, KR & Durbin, Paul A 2015 On the dynamic computation of the model constant in delayed detached eddy simulation. Physics of Fluids 27 (2), 025105. 
+
+Zhang, Zhen, Li, Xin & Hao, Jiaao 2025 Analysis of large-scale spanwise motions in shock wave–turbulent boundary-layer interactions. Journal of Fluid Mechanics 1018 , A2. 
+
+0 X0-47

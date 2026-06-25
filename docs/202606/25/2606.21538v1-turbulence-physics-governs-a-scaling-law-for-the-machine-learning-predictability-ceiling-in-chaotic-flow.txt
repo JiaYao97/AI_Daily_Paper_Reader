@@ -1,0 +1,523 @@
+Title: Turbulence Physics Governs a Scaling Law for the Machine-Learning Predictability Ceiling in Chaotic Flow
+
+URL Source: https://arxiv.org/pdf/2606.21538v1
+
+Published Time: Tue, 23 Jun 2026 01:05:26 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# Turbulence Physics Governs a Scaling Law for the Machine-Learning Predictability Ceiling in Chaotic Flow 
+
+# Jiashun Guan, 1,2,3,* Haoyang Hu, 2 Yunxiao Ren, 4, † Michael S. Triantafyllou, 5 and Dixia Fan 3, ‡
+
+# June 23, 2026  
+
+> 1
+
+School of Aeronautics, Universidad Polit´ ecnica de Madrid, Madrid 28040, Spain  
+
+> 2
+
+School of Mechanics and Engineering Science, Peking University, Beijing 100871, China  
+
+> 3
+
+School of Engineering, Westlake University, Hangzhou 310024, China  
+
+> 4
+
+College of Engineering, Peking University, Beijing 100871, China  
+
+> 5
+
+Department of Mechanical Engineering, Massachusetts Institute of Technology, Cambridge, MA 02139, USA To whom correspondence should be addressed: Email:  
+
+> ∗
+
+jiashun.guan@upm.es;  
+
+> †
+
+renyx@pku.edu.cn;  
+
+> ‡
+
+fandixia@westlake.edu.cn 1
+
+> arXiv:2606.21538v1 [physics.flu-dyn] 19 Jun 2026
+
+For centuries, the intrinsic chaos of unsteady fluid motion has stood as a formidable barrier to long-term forecasting. While machine learning (ML) has recently emerged as a transformative paradigm for predicting flow evolution, it encounters a pervasive yet unexplained “performance wall”: an inevitable deterioration in accuracy as the forecast horizon extends. Here, we demonstrate that this deterioration is not a deficiency of model architecture, no matter how state-of-the-art, but a fundamental constraint imposed by the underlying system, which can be understood through turbulence theory established decades ago. In the setting of bluff body flow, a canonical phenomenon for spatiotemporal complexity in fluid mechanics, we reveal a scaling law governing the deterioration of ML predictability, derived from a Kolmogorov-inspired framework and validated through high-fidelity simulations. Our findings establish a closed loop between the predictability ceiling and its interpretation, bridging the gap between transparent physical theories and modern black-box inference. More broadly, this work provides a theoretical compass for constructing trustworthy ML in complex dynamical systems across the physical sciences. 
+
+# Introduction 
+
+In the development of human societies, predicting unsteady flow has long been a fundamental challenge, sometimes even influencing critical decisions that shape civilizations. The ability to predict fluid flows also has broad implications for natural and engineered systems, spanning scales from the microscopic flow within our arteries 1 to the large-scale organization in the universe 2,3 . Heraclitus said that “No man ever steps in the same river twice,” reflecting the unsteadiness of flow, whose multiscale, multifractal, and even multiphase characteristics introduce difficulties in prediction. To address these challenges, theories established since the early nineteenth century 4,5 , together with observations that include experiments 6,7 and simulations 8,9 , have been developed as the two primary approaches for understanding and predicting the chaotic behavior of fluid flow. With the advent of the machine learning era 10–13 , notable advances have been achieved using these nonlinear and high-dimensional tools 14–16 . Machine learning offers a pathway for linking present and future states by capturing the nonlinear dynamical evolution in phase space, whose inherently fractal nature lies beyond our intuitive understanding 17–20 . Despite the remarkable 2progress driven by machine learning in chaotic flows, a rigorous return to first principles is required to establish the theoretical boundaries of these methods. Deepening our understanding of where ML meets classical physics is a key path toward deriving the insights necessary for the next generation of robust, physics-consistent models. A sobering precedent can be found in numerical weather prediction: despite a century of paradigm shifts and exponential growth in computing power, the practical forecast horizon remains limited to roughly 1–2 weeks 21 . This barrier underscores that predictability is an inherent dynamical behavior of the nonlinear system, rather than a mere reflection of algorithmic sophistication. This fundamental limit was revealed by Lorenz’s pioneering work 22 ,which demonstrated, in an extremely simple form of math model, that the deterministic system can exhibit sensitivity to infinitesimal uncertainties (widely known as the butterfly effect). Lorenz’s legacy shifted the scientific focus from the pursuit of computational brute force to the recognition of a hard physical ceiling that no algorithm can transcend. In this spirit, we adopt the flow past a circular cylinder as an ideal laboratory for probing system predictability. This configuration, though geometrically simple, harbors rich physical complexity. As a canonical phenomenon in fluid mechanics for symmetry breaking and spatiotemporal chaos, its dynamics are universal and ubiquitous, governing phenomena ranging from planetary-scale island wakes to the aerodynamics of skyscrapers and launch vehicles 23 .Here, we predict the temporal evolution of the drag coefficient, Cd, in cylinder flow by utilizing surface pressure signals as inputs to a deep learning architecture. By identifying the most informative spatial locations on the cylinder surface, our models reveal an exponential scaling law governing the deterioration of prediction performance as the forecast horizon extends. We demonstrate that this scaling is theoretically rooted in the linear growth of errors within the underlying fluid system, driven by an inverse-cascade process that transfers errors from small to large scales. To understand this behavior, we develop a top-down theory inspired by Kolmogorov scaling analysis and validate it through extensive direct numerical simulations (DNS) involving O(10 6) central processing unit (CPU) hours and over 8 TB of data. Our results establish a closed loop between observation and theory, defining the predictability ceilings of 3Figure 1: Drag prediction for the cylinder flow. a) An instantaneous visualization of cylinder wake at Re = 4000 . The yellow and blue isopleths represent the vortex criterion Q = ±1U 2/D 2,respectively. The streamwise velocity is shown by the contour plot, where the color ranges from blue for low speeds, through white (corresponding to the free stream speed, U = 1 ), to yellow for high speeds. The first two best-performing locations are marked with red and orange symbols. Circle, diamond, asterisk, cross, and square symbols denote the results at Reynolds numbers from 2000 to 
+
+4000 , respectively (details in Methods). The inset is the zoomed-in view of the first best-performing locations. The first two best-performing locations align with the key physical characteristic of the cylinder wake: they are symmetrically positioned 45 ◦ (relative to the X-axis) upstream of the separation points ( ≈ 90 ◦)18,24 , corresponding to the most informative locations in cylinder wake dynamics. b) 
+
+Performance approaches the ceiling value R2 
+
+> b
+
+exponentially with increasing Ni. R2 
+
+> b
+
+is estimated by the fit 
+
+R2 = R2 
+
+> b
+
+− C1 exp( C2Ni), where C1 and C2 are parameters of linear regression on the semi-logarithmic axes. Symbols represent the mean values averaged over five predictions. c) Prediction ( tp = 1 D/U )versus DNS time series of Cd in the testing set at Re = 4000 (prediction: blue line; DNS: black line). The R2 metric reached 0.887 ±1.4×10 −3 (mean ± standard deviation over five independent predictions). 
+
+chaotic fluid systems and providing a physics-tethered foundation for the reliability of black-box machine learning in complex dynamics. 
+
+# Results 
+
+Drag Prediction for the Cylinder Flow 
+
+We consider the prototypical chaotic fluid system (Fig. 1a): the flow passes a circular cylinder at a moderate Reynolds number Re = U D/ν , where U , D, and ν are the free stream velocity, cylinder diameter, and kinematic viscosity, respectively. At moderate Reynolds numbers (specifically 2000 ≤ Re ≤ 4000 , as considerated in this paper), the cylinder flow exhibits complex dynamics: boundary layer separation gives rise to shear-layer instabilities that 4amplify disturbances and generate a sequence of chaotic vortices 23,25 . The three-dimensional velocity vector u = ( u, v, w ) and pressure p of the flow are governed by the incompressible Navier–Stokes equations (NS equations): 
+
+∂u
+
+∂t + ( u · ∇ )u = −∇ p + 1
+
+Re ∇2u, (1a) 
+
+∇ · u = 0 , (1b) and the DNSs are implemented by the open source spectral element code Nek5000 26 . The computational domain ( 30 D × 20 D × 3D in the X, Y , and Z directions) is discretized into 22,740 spectral elements with 7th -order accuracy (for numerical details, see Methods). A circular array of 32 equally spaced sensors was positioned on the cylinder surface within the 
+
+Z = 0 plane, recording the pressure signal at a sampling rate of 100 per time unit ( U/D ). Pressure signals are processed using the discrete wavelet transform (DWT) 27 , with the 7th -level coefficients (corresponding to the frequency band f ∈ (100 /28, 100 /27], see Methods) selected for the following training. For the time-series prediction of drag coefficient Cd, we employed a deep learning approach, in which a fully connected neural network with five hidden layers constructs the complicated mapping from the processed pressure signals to the drag value at a forecast horizon tp, serving as the input and output, respectively. The prediction performance is quantified by the R2 metric: 
+
+R2 = 1 − 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+( ˆCd − Cd)2
+
+Var( Cd) , (2) where ˆCd and Cd represent the predicted and true (DNS) drag coefficient, respectively; N
+
+denotes the size of the testing set used for training; and Var( ·) denotes the variance operator. In physical terms, R2 reflects how much better the model performs than simply using the mean values as predictions. Details about the prediction model are provided in the Methods. The optimized combination of pressure signals is probed by a greedy algorithm. Fixing tp =1( D/U ), we initialize the input with a single signal and then add the best-performing signal (ranked by R2) at each optimization iteration. As the number of signals in the input Ni increases, the prediction performance exponentially approaches its ceiling R2 
+
+> b
+
+(a fitted value; see Fig.1b). This exponential convergence to R2 
+
+> b
+
+indicates that the global dynamic of the cylinder wake can be captured from only a few locations 18 ; specifically, using merely three optimized pressure 5Figure 2: The exponential scaling law. Error bars represent the mean ± standard deviation from five independent predictions. Solid lines are fitted by Eq. 3. The inset shows the dependence between the standard deviation σ, the timescale τ , and Reynolds number Re . Error bars on τ /σ 2 denote the 99% 
+
+confidence interval, where the uncertainty in σ is estimated by subsampling with a subsample size of 
+
+Ndata ∆ts, and the uncertainty in τ is estimated from the exponential fit. Here, Ndata and ∆ts represent the number of data points and data sampling interval (see Methods), respectively. The gray line in the insert is a linear fit to τ /σ 2, with a regression R2 
+
+> f it
+
+= 0 .96 .
+
+signals as input approaches about 90% of the R2 
+
+> b
+
+performance (Fig.1b). These locations of optimized signals are also consistent with the most informative locations identified by mutual information 28 (see Methods). As shown in Fig. 1c for an example drag prediction at Re = 4000 ,
+
+Ni is set to 3. This value is maintained for all subsequent predictions to keep consistency in this study. 
+
+Exponential Scaling Law for Predictability 
+
+Originating from the nonlinear term in the NS equations (Eq. 1), the dynamics of cylinder flow at moderate Reynolds numbers is chaotic, and can be conceptually associated with an intricate set of the dynamical system, i.e., a chaotic attractor 29 . Consequently, the pronounced sensitivity of such systems to perturbations fundamentally limits the accuracy ceiling of time-series prediction, which results in progressively deteriorating prediction performance as tp increases. We observed this deterioration both qualitatively and quantitatively: the prediction performance 6with optimized inputs follows an exponential scaling law across a range of Reynolds numbers (Fig. 2), 
+
+R2 = exp( −tp/τ ), (3) where the slope of the scaling laws determines the timescale τ , characterizing how long the predictability is retained. Larger τ corresponds to a slower loss of predictability. The exponential scalings at different Reynolds numbers in Fig.2 do not collapse onto a single curve, indicating a Reynolds number dependence of the timescale τ . Moreover, the timescale τ is directly influenced by σ = pVar( Cd), which acts as a normalization factor in the definition of R2
+
+(Eq.2). To account for this intrinsic dependence, the normalized timescale τ /σ 2 is considered, enabling a consistent comparison across different fluctuation levels of the system. The results show that this normalized timescale decreases with increasing Reynolds number, as illustrated in the inset of Fig.2. Even with variations in τ /σ 2, the exponential scaling law exhibits robustness and captures the characteristic behavior of prediction deterioration in a chaotic fluid system. Furthermore, this exponential scaling has an asymptotic limit at large tp, indicating that long-term predictability of chaos becomes infeasible, reminiscent of Poincar´ e’s findings in the three-body problem 30 .
+
+Does the Observed Scaling Originate from Lyapunov Growth? 
+
+The exponential form of the observed scaling at first glance seems to echo Lyapunov growth. From a dynamical systems perspective, a chaotic attractor exhibits exponential divergence of nearby trajectories under infinitesimal perturbations, usually termed Lyapunov growth. This mechanism arises from the linearized dynamics around a trajectory. In contrast, the observed exponential scaling law describes the deterioration of prediction accuracy, which arises in part from finite errors introduced by the neural network; their finite amplitudes involve nonlinear mechanisms that cannot be neglected. Therefore, despite the apparent similarity in exponential behavior, the observed scaling does not originate from Lyapunov growth. The exponential scaling law of machine learning performance can be interpreted in terms of two complementary asymptotic limits corresponding to small and large values of tp. Following the definition of R2 (see Eq. 2), we write R2 = 1 − δ, where δ denotes a scaled error term. In practice, R2 may become negative; however, negative values only indicate performance worse 7than the known strategy, the mean-value predictor ( R2 = 0 ), which can simply improve any negative-R2 results. Thus, in the large-tp limit, the asymptotic behavior of the exponential scaling is consistent with R2 → 0, corresponding to the state in which the fluid fields become totally uncorrelated, and the energy of their difference reaches a saturated upper bound (δ = 1 )31,32 . In the opposite limit δ ∼ 0, a Taylor expansion of ln(1 − δ) gives: 
+
+ln( R2) = −δ − δ2
+
+2 − δ3
+
+3 − · · · . (4) Neglecting the higher-order terms, we obtain the linear approximation ln( R2) ≃ − δ. Therefore, if δ grows approximately linearly with tp at early times, ln( R2) becomes proportional to tp,explaining the observed exponential scaling. To mimic the error term δ introduced by neural networks and trace its influence, we intervene in the statistically stationary state of the fluid system u0 = ( u0, v 0, w 0) by an infinitesimal perturbation u′. In the DNS implementation, the perturbation field u′ is impossible to be infinitesimal 33 . Therefore, we maintain it at a low amplitude, with energy || u′|| 2 ≪ 10 −8. To eliminate the stochastic influence of the perturbation’s specific flow structure, u′ is constructed in two ways: the Gaussian noise and the scaled velocity field, i.e., u′ = (0 , 10 −5v0, 0) ,or (0 , 0, 10 −5w0). Considering the spatially anisotropic behavior of the cylinder wake, 10 independent DNS realizations are implemented for ensemble averaging to reduce statistical variability. We track the temporal evolution of the velocity field u = u0 + u′ and also the ensemble averaged perturbation energy ∆Ek(t) = ⟨|| u − u0|| 2⟩, as shown in Fig. 3. The perturbation initially undergoes exponential growth (Fig. 3a), a process explained by linear stability theory 34 and quantitatively characterized by the Lyapunov exponent λ (the inset of Fig. 3a) 35 . These low-amplitude perturbations have insufficient energy to instantaneously break the correlation between u(t) and u0(t) within large-scale flow structures. Nevertheless, once amplified to a finite magnitude through exponential growth, the perturbation energy saturates at small scales and proceeds with ‘inverse-cascade’ 31,36 to large scales, triggering the transition to linear growth (Fig. 3b). The growth rates of linear growth are observed to be constant across the Reynolds numbers in this study. Notably, a finite initial perturbation, mimicking the prediction error introduced by a neural network, causes the system to bypass exponential growth and 8Figure 3: The exponential growth (linear mechanism) and linear growth (nonlinear mechanism) of error. a) Temporal evolution of perturbation energy ∆Ek (U 2D3) in semi-logarithmic coordinates. The inset shows the Lyapunov exponent λ, obtained from the slope of ln(∆ Ek) in the exponential growth regime, with the red line indicating a linear regression. Data in the panel a and the inset correspond to different initial perturbations: solid lines (panel a) and black symbols (inset) for u′ = (0 , 0, 10 −7N ),where N is the standard Gaussian operator; dash-dotted lines and blue squares for u′ = (0 , 10 −5v0, 0) ;the dotted line and yellow plus sign for u′ = (0 , 0, 10 −5w0). The dashed line represents a finite-amplitude perturbation with energy || u′|| 2 > 10 −2. Horizontal gray lines demarcate four growth regimes: initial modulation ( ∆Ek < 10 −8), exponential growth ( 10 −8 < ∆Ek < 10 −1), transition ( 10 −1 < ∆Ek <
+
+10 0, and linear growth ( 10 0 < ∆Ek). b) Temporal evolution of perturbation energy ∆Ek in linear-linear coordinates. Arrows in this figure mark the two growth regimes: the solid arrow denotes exponential growth, while the dashed arrow indicates linear growth. 
+
+transition directly to linear growth with the same growth rate (dashed lines in Fig. 3). This indicates that the linear error accumulation is insensitive to how the error is introduced, and instead represents a robust feature at finite error amplitudes. This linear growth leads to the observed exponential scaling law and establishes a predictability ceiling for the underlying fluid system. To reinforce the interpretation of the observed exponential scaling law, we introduce a counterexample here. As the Reynolds number decreases to Re < 1000 , the wake transitions toward quasi-periodic shedding, i.e., the disordered three dimensionalities regime 23 , where the abrupt onset of linear error growth gives way to a more gradual progression. Consequently, the prediction performance will no longer follow the exponential scaling law (see an example at 
+
+Re = 500 in Methods); in turn, this supports the interpretation that the exponential scaling of ML prediction performance stems from the linear error growth. 9Figure 4: The inverse-cascade of error. a) Temporal evolution of the error spectra at Re = 4000 :energy spectrum of the Y -dependent perturbation velocity w′ = w − w0 on the X = 2D plane (X = 1 D, 3D also examined for robust validation), averaged along the Z-direction and 10 independent DNS realizations. In exponential growth (purple lines), the spectra begin at t = 0.4D/U with a time interval of 0.8D/U ; in linear growth (orange lines), they begin at t = 4 .8D/U with the same interval. This temporal evolution corresponds to that of ∆Ek(t) in Fig. 3a. The black line represents 
+
+E∆(k, t )/E (k) = η = 0 .8 for numerically estimating ks (η = 0 .9 has also been checked for robustness). The Kolmogorov energy spectra for u, v, and w on the X = 2 D plane are shown in the inset as blue, red, and black lines, respectively, ensemble-averaged along the Z-direction over 750 velocity fields from 10 independent DNS realizations. b) Temporal evolution of critical wavenumber kc at moderate Reynolds numbers. The function kc(t) are scaled by ka = kc(ti + 2 .8) , where ti is the initial time when kc
+
+becomes detectable once reaching ηE (k). The black dash-dotted line denotes the theoretical scaling result kc(t) = αε −1/2t−3/2.
+
+A Top-down Interpretation of the Linear Growth 
+
+The predictability ceiling imposed by linear growth of error is rooted in the dynamics of turbulent flow described by the NS equations. To uncover this phenomenon from a first-principles perspective, we trace back to the intervened DNS experiments but analyze them through the evolution of perturbation energy in spectral–temporal space. Initially, in the exponential growth regime, the error spectra exhibit self-similar growth, exemplified by the purple lines at Re = 4000 in Fig. 4a. However, the Kolmogorov energy spectrum bounds this self-similar growth 37 : the error spectrum first reaches the Kolmogorov −5/3 scaling in the high wavenumber (small scales) and propagates to the low wavenumber (large scales), as illustrated by orange lines in Fig. 4a. The wavenumber kc(t) is identified as the value at which 
+
+E∆(k, t )/E (k) = η ∼ 1, denoting a critical value below which the error spectrum is saturated and velocity fields u and u0 are uncorrelated. This decorrelation process at an inertial-range scale L = 1 /k occurs over a characteristic time proportional to the eddy turnover time τe at that scale 38 : τe ∼ ε−1/3L2/3, where ε is the turbulent energy dissipation rate. From this scaling 10 analysis, the critical wavenumber is derived to evolve as kc(t) = αε −1/2t−3/2, with α as a proportional coefficient. The DNS results in Fig. 4b validate this theoretical derivation. The perturbation energy, dominantly constituted by energy from wavenumbers exceeding the critical value kc, is calculated by integrating the Kolmogorov energy spectrum E(k) = 
+
+Cε 2/3k−5/3:
+
+∆Ek =
+
+Z +∞
+
+> kc
+
+Cε 2/3k−5/3dk = Aεt, (5) where A is a dimensionless constant describing the linear growth rate and C is the Kolmogorov constant. This linear growth is sustained while the critical wavenumber kc lies within the inertial range, where the integrand in Eq.5 remains valid. Once the inverse cascade reaches large scales, the Kolmogorov −5/3 scaling no longer holds for the integrand, at which stage the perturbed field becomes decorrelated from the original field 31,32 .
+
+# Discussion 
+
+The numerically validated derivation of linear growth provides a first-principles understanding of the exponential scaling law observed in machine learning prediction performance. This exponential deterioration indicates a predictability ceiling that remains invariant regardless of algorithmic sophistication. Instead, it is a fingerprint of the underlying high-dimensional chaotic system, whose dynamics actively amplify errors, perturbations, and uncertainties 39 .Consequently, although the governing dynamics remain deterministic, future phase-space trajectories cannot be reliably resolved by finite-dimensional prediction approaches and are better described through probability density distributions 40,41 .By rigorously closing this observation–theory loop, we move beyond the traditional criticism of ML as “black boxes” and the debate between those seeking interpretable architectures and those favoring explainable outcomes 42 . We propose that ML performance is tightly “physics-tethered” to the inherent dynamical properties of the underlying system. This tethering perspective provides a diagnostic lens through which to build theory-constrained trust and gain deeper insight into the conceptual foundations of next-generation physics-consistent ML that is grounded in the governing principles of nature 13,43,44 .11 Crucially, this synergy is not a one-way constraint but opens a reciprocal gateway for exploring systems whose emergent behaviors remain inscrutable. This reciprocity can be framed in the context of complex dynamical systems – from turbulent flows to plasma and astrophysical dynamics – where ML can extend the reach of empirical, numerical, and theoretical exploration by revealing high-dimensional relationships that are difficult to access directly, while established physical theories, in turn, endow learning systems with structure, constraints, and interpretive depth 11 . By pinpointing exactly where the model’s performance ceiling lies, our findings do more than delineate the epistemic boundaries of ML; they serve as a compass for guiding human intellectual effort toward the underlying physical bedrock, where our scientific intuition can work in concert with increasingly artificial-intelligence-driven discovery 14,45–47 .
+
+# Acknowledgements 
+
+Computational resources are supported by superserver@js. The support from the National Natural Science Foundation of China is acknowledged (Grant No. 12572280). We thank Prof. Javier Jim´ enez, Prof. Bernd R. Noack, and Prof. Themistoklis Sapsis for insightful and fruitful discussions. 12 Methods 
+
+# Setup of Direct Numerical Simulations 
+
+Direct numerical simulations (DNS) of the incompressible Navier-Stokes equations (Eq.1) are performed by the open source spectral element code Nek5000 26 . The computational domain is established in Cartesian coordinates, taking a space of 30 D × 20 D × 3D in the X, Y ,and Z directions, respectively. The mesh (Fig. S1) is locally refined near the cylinder and discretized into 22,740 spectral elements. A fixed inlet velocity (dirichlet-type) and an open (outflow) boundary conditions 26 are applied in the X direction to ensure a time-invariant Reynolds number. Periodic conditions are applied in the Y and Z directions. The time stepping 
+
+Figure S1: Computational mesh. a) Full-domain view for 4548 spectral elements in the X–Y plane. The region outlined in red is magnified in panel b) . b) Detailed view of the mesh near the cylinder. The red points represent the locations of pressure sensors. The index pt of pressure signals begins at the top position (where pt = 1 ) and increases in the clockwise direction. 
+
+Figure S2: Validation of numerical results. The present numerical results are compared with the experimental data 48 at Re = 4000 , the highest Reynolds number considered in this study. P (θ) denotes the pressure averaged over the total simulation time Tmax .
+
+13 is set to 0.0005 D/U for Re > 500 and 0.001 D/U for Re = 500 , resulting in a CFL (Courant-Friedrichs-Lewy) number of approximately 0.5 to ensure numerical stability. The numerical results are validated against the experimental data 48 at the highest Reynolds number considered in this study, Re = 4000 , as shown in Fig. S2. Pressure signals at locations shown in Fig.S1b are sampled every ∆ts = 0 .01 D/U . The total simulation interval (Tab.S1) for each Reynolds number covers hundreds of vortex shedding cycles to generate adequate data for the following training. The numerical intervention experiments are conducted as summarized in Tab.S2, providing the data used for the theoretical analysis in Fig.3 and Fig.4. 
+
+Re Tmax (D/U ) Training Set, Ttrain (D/U ) Testing Set ( D/U )4000 2500 0∼2000 Tmax − 500 ∼ Tmax 
+
+3500 3000 0∼2500 Tmax − 500 ∼ Tmax 
+
+3000 3500 0∼3000 Tmax − 500 ∼ Tmax 
+
+2500 3500 0∼3000 Tmax − 500 ∼ Tmax 
+
+2000 4000 0∼3500 Tmax − 500 ∼ Tmax 
+
+500 6000 0∼5500 Tmax − 500 ∼ Tmax 
+
+Table S1: Total simulation intervals Tmax and train-test data splitting. 
+
+Re The formation of u′ Ncase Tmax (D/U ) Saved Fields 
+
+4000 (0 , 0, 10 −7N ); (0 , 10 −5v0, 0) 20 15 ; 15 . 75 ; 75 .
+
+3500 (0 , 0, 10 −7N ) 10 15 75 3000 (0 , 0, 10 −7N ) 10 16 80 2500 (0 , 0, 10 −7N ) 10 19 95 2000 (0 , 0, 10 −7N ); (0 , 10 −5v0, 0) ;
+
+(0 , 0, 10 −5w0); (0 , 0.05 v0, 0) .
+
+40 22 ; 20 ; 20 ; 10 . 110 ; 100 ; 100 ; 50 .
+
+500 (0 , 0, 10 −7N ) 10 60 300 
+
+Table S2: The initial conditions and statistical parameters of numerical intervention experiments. 
+
+Tmax here denotes the simulation intervals for each of the Ncase cases. 
+
+# Details of Drag Prediction 
+
+Setup of the Machine Learning Model 
+
+14 Figure S3: Architecture diagram of the fully connected neural network (FCNN). Ri represents the neuron count of each fully connected layer. 
+
+Figure S4: Verification of Training Set Adequacy. Ttrain represents the temporal length of the training set, and the testing set remains consistent during different Ttrain . Three forecast horizons tp = 1 , 5, and 
+
+10 D/U are shown by red, blue, and green symbols. 
+
+A fully connected neural network (FCNN) is employed for Cd prediction. The FCNN architecture is structured with hidden layers of size 16-24-18-12-4 between the input and output layers (Fig.S3). The input is linearly normalized between −1 and 1 by a min-max scaler before the training to stabilize the training process. After each hidden layer, a hyperbolic tangent function f (x) = tanh( x) is applied to provide nonlinearity to the network. The output of this network is the prediction of the drag coefficient after tp time units: Cd(t + tp). For each Reynolds number, the dataset is divided into training and testing sets: the last 50,000 samples (corresponding to the final 500 time units shown in Tab. S1) are used as the testing set. The 15 Figure S5: Continuous wavelet transform processed Cd signal. The contours represent amplitudes of the frequencies f , linearly spanning the range [0 , 0.025] . Regions outlined by red dashed lines represent the frequency band corresponding to the 7th -level coefficients in the discrete wavelet transform used for training. 
+
+AdamW optimizer 49 is employed with an initial learning rate of 10 −3 and a weight decay parameter of 5 × 10 −4. A cosine annealing learning rate scheduler with warmup is adopted to prevent overfitting. The total number of training epochs is 30, of which the first 3 are used for warmup. We adopt the mean absolute error (MAE) as the loss function: 
+
+M AE = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+| ˆCd(t) − Cd(t)|, (S1) where ˆCd denotes the predicted drag coefficient. The model performance is evaluated via the R2
+
+metric (Eq.2), and the results in this study correspond to the average R2 over five independent training runs with identical model settings. The adequacy of the training set is verified at all 16 Reynolds numbers for three forecast horizons: tp = 1 , 5, and 10 D/U (Fig.S4). 
+
+Data Processing for Input 
+
+To analyze the time-frequency dynamics of the drag coefficient Cd, the continuous wavelet transform (CWT) using the Morse wavelet 50 is performed on the time series of Cd obtained via DNS, as shown in Fig.S5. These time-frequency contours (Fig.S5) indicate that peaks at high frequency f = 0 .4 ∼ 0.5 are dominant over the entire time period for all Reynolds numbers. Based on the CWT analysis, a more computationally efficient method, the discrete wavelet transform (DWT) 27 , is applied to decompose the pressure signals to the 7th -level corresponding to the dominant frequency range. The time window Tw required by the 7th level DWT decomposing is given as Tw = 2 n∆ts = 1 .28 D/U , where n denotes the nth -level DWT. The processed 7th -level DWT coefficients γ of every pressure signal and their time derivative 
+
+dγ/dt ≈ (γ(t) − γ(t − ∆ts)) /∆ts are combined to construct the input column vector of size 
+
+2 × Ni, where Ni is the number of pressure signals used (e.g. Fig.1b).    
+
+> Figure S6: Optimization iterations across 32 pressure signals. The darkest blue symbols represent the first iteration. The azimuthal direction and radial direction denote the pressure signal index pt and
+> R2, respectively.
+
+17 Re pt with Ttrain pt with Ttrain − 500 4000 20 , 29 , 22 , 28 , 21 23 , 27 , 29 3500 30 , 21 , 28 , 22 , 29 30 , 21 , 23 3000 21 , 29 , 23 , 27 , 30 21 , 30 , 23 2500 29 , 21 , 26 , 31 , 24 29 , 21 , 27 2000 21 , 30 , 24 , 3, 18 21 , 30 , 24 500 30 , 21 , 28 30 , 21 , 28     
+
+> Table S3: Optimization iteration results. The optimized signal locations are also validated by a shorter training set with Ttrain −500 .
+
+Optimization Iteration for the Input 
+
+The number of possible combinations of the input column vector reaches 232 > 10 9 types, making it practically infeasible to acquire a global optimum in prediction performance. Therefore, a greedy algorithm is applied to identify an optimized input combination at each Reynolds number. In each iteration, the pressure signal that provides the largest improvement in prediction performance among the 32 candidates is added to the input. The max iteration number is set to 5 in this study. The optimization results are shown in Fig.S6, where two notable features can be observed: (1) the 3rd -5th iterations are almost collapsed, consistent with the exponential convergence of prediction performance shown in Fig.1b; (2) the first iteration (shown by the darkest blue symbols) exhibits a pigeon-shaped distribution at all Reynolds numbers, especially at higher Reynolds numbers. This pigeon-shaped distribution reflects the underlying cylinder wake dynamics 23 : the trailing edge interacts with the chaotic wake and is therefore associated with strong temporal gradients in the input signals, while the leading edge experiences a developing laminar state, where the fluctuations are relatively weak and less informative. The optimized combinations of pressure signals at each Reynolds number are summarized in Tab.S3 and validated by using a shorter training set. The robustness of the optimized sensor locations (also shown in Fig.1a) indicates that these results are physics-driven rather than dependent on the specific setup of the prediction model. Note that the best-performing locations shown in Fig.1a are mirrored for clarity, taking advantage of the cylinder’s symmetry. The procedure of drag prediction is outlined in Fig. S7. 18 Figure S7: Diagram showing the drag prediction in this study. Data processing for input and optimization iterations are included. 
+
+The mutual information 28 quantifies the overlap in information content between signals, defined as: 
+
+M I (X; Y ) = H(X) − H(X|Y ), (S2) where H(X) = − P
+
+> x∈X
+
+p(x) log p(x) and H(X|Y ) represent the Shannon entropy and the conditional entropy, respectively, for variable sets X and Y . The probability density function of x is denoted by p(x). The conditional entropy can be estimated by the joint entropy: 
+
+H(X|Y ) = H(X, Y )−H(Y ), where H(X, Y ) = − P
+
+> x∈X
+
+P
+
+> y∈Y
+
+p(x, y ) log p(x, y ). For the discrete signals generated by DNS in this study, the Shannon entropy is numerically calculated by the 
+
+k-nearest-neighbour entropy estimator (Kozachenko-Leonenko estimator) 51 , with k = 3 and the 
+
+L∞-norm metric (Chebyshev distance). The dataset at each Reynolds number is divided into ten subsets, and the calculation results are averaged. The mutual information M I ([ γ dγ/dt ], C d) is normalized by its maximum at every Reynolds number, as shown in Fig.S8. The variable set 
+
+[γ dγ/dt ] corresponds to the FCNN input during the optimization iterations. The optimized results of FCNN’s input (black symbols in Fig.S8) nearly overlap with the most informative locations, demonstrating that the model captures physically meaningful information in the flow. Consequently, the observed scaling law is not a limitation of the predictive model, but a direct reflection of the intrinsic dynamics in the underlying system. 19 Figure S8: The mutual information between drag coefficient Cd and DWT processed pressure signals ( γ  
+
+> and dγ/dt )at different Reynolds numbers. The colorbar represents the normalized mutual information by its maximum at every Reynolds number. The black symbols show the first two best-performing locations for FCNN’s inputs by the greedy algorithm.
+
+# A Counterexample 
+
+The optimization of pressure signals, the prediction at different forecast horizons, and numerical intervention experiments are implemented again at Re = 500 , and results are shown in Fig. S9. Corresponding to the weak chaotic dynamics in the disordered three dimensionalities regime 23 ,the Lyapunov exponent at Re = 500 is relatively small yet positive (Fig.S9a). The transition from the exponential growth to the linear growth is obviously slower than that indicated by the green-blue series curves in Fig.S9b, indicating the absence of an abrupt onset of linear growth. The prediction performance at Re = 500 initially decreases more slowly than the exponential scaling law would suggest, but followed by a rapid drop (Fig.S9c). This difference is reminiscent of the contrast between Weibull and exponential distributions. The former exhibits memory effects, corresponding to the dynamics observed at relatively low Reynolds numbers 52 .      
+
+> Figure S9: A counterexample at Re = 500 .The data at Re = 500 are shown as red symbols, while the definitions of the remaining symbols are consistent with those in Fig.2 and Fig.3.
+
+20 References  
+
+> 1
+
+Scarselli, D., Lopez, J. M., Varshney, A. & Hof, B. Turbulence suppression by cardiac-cycle-inspired driving of pipe flow. Nature 621 , 71–74 (2023).  
+
+> 2
+
+Alexakis, A. et al. Large-scale self-organization in dry turbulent atmospheres. Science 383 ,1005–1009 (2024).  
+
+> 3
+
+Bi, K. et al. Accurate medium-range global weather forecasting with 3D neural networks. 
+
+Nature 619 , 533–538 (2023).  
+
+> 4
+
+Navier, C.-L. M. H. M´ emoire sur les lois du mouvement des fluides. M´ emoires de l’Acad´ emie des Sciences de l’Institut de France 6, 389–440 (1823).  
+
+> 5
+
+Stokes, G. G. On the theories of the internal friction of fluids in motion and of the equilibrium and motion of elastic solids. Transactions of the Cambridge Philosophical Society 8,287–341 (1845).  
+
+> 6
+
+Poiseuille, J. M. L. Recherches exp´ erimentales sur le mouvement des liquides dans les tubes de tr` es petits diam` etres. M´ emoires des Savants ´ Etrangers, Acad´ emie des Sciences de Paris 
+
+9, 435 (1846).  
+
+> 7
+
+Reynolds, O. An experimental investigation of the circumstances which determine whether the motion of water shall be direct or sinuous, and of the law of resistance in parallel channels. Philosophical Transactions of the Royal Society of London 174 , 935–982 (1883).  
+
+> 8
+
+Rogallo, R. S. & Moin, P. Numerical simulation of turbulent flows. Annual Review of Fluid Mechanics 16 , 99–137 (1984).  
+
+> 9
+
+Chen, S. & Doolen, G. D. Lattice boltzmann method for fluid flows. Annual Review of Fluid Mechanics 30 , 329–364 (1998).  
+
+> 10
+
+LeCun, Y., Bengio, Y. & Hinton, G. Deep learning. Nature 521 , 436–444 (2015).  
+
+> 11
+
+Brunton, S. L., Noack, B. R. & Koumoutsakos, P. Machine learning for fluid mechanics. 
+
+Annual Review of Fluid Mechanics 52 , 477–508 (2020).  
+
+> 12
+
+Vinuesa, R., Brunton, S. L. & McKeon, B. J. The transformative potential of machine learning for experiments in fluid mechanics. Nature Reviews Physics 5, 536–545 (2023).  
+
+> 13
+
+Karniadakis, G. E. et al. Physics-informed machine learning. Nature Reviews Physics 3,422–440 (2021). 21 14 Raissi, M., Yazdani, A. & Karniadakis, G. E. Hidden fluid mechanics: Learning velocity and pressure fields from flow visualizations. Science 367 , 1026–1030 (2020).  
+
+> 15
+
+Bae, H. J. & Koumoutsakos, P. Scientific multi-agent reinforcement learning for wall-models of turbulent flows. Nature Communications 13 , 1443 (2022).  
+
+> 16
+
+Fan, D., Yang, L., Wang, Z., Triantafyllou, M. S. & Karniadakis, G. E. Reinforcement learning for bluff body active flow control in experiments and simulations. Proceedings of the National Academy of Sciences 117 , 26091–26098 (2020).  
+
+> 17
+
+Pathak, J., Hunt, B., Girvan, M., Lu, Z. & Ott, E. Model-free prediction of large spatiotemporally chaotic systems from data: a reservoir computing approach. Phys. Rev. Lett. 120 , 024102 (2018).  
+
+> 18
+
+Guan, J. et al. Vortex-induced drag forecast for cylinder in non-uniform inflow. Physics of Fluids 37 , 071708 (2025).  
+
+> 19
+
+Kim, D. & Sapsis, T. Forecasting lift of airfoil randomly maneuvering under dynamic stall conditions. AIAA Journal 63 , 5502–5511 (2025).  
+
+> 20
+
+Barthel, B. & Sapsis, T. P. Harnessing Instability Mechanisms in Airfoil Flow for Data-Driven Forecasting of Extreme Events. AIAA Journal 61 , 4879–4896 (2023).  
+
+> 21
+
+Bauer, P., Thorpe, A. & Brunet, G. The quiet revolution of numerical weather prediction. 
+
+Nature 525 , 47–55 (2015).  
+
+> 22
+
+Lorenz, E. N. Deterministic nonperiodic flow. Journal of the Atmospheric Sciences 20 ,130–141 (1963).  
+
+> 23
+
+Williamson, K. Vortex dynamics in the cylinder wake. Annual Review of Fluid Mechanics 
+
+28 , 477–539 (1996).  
+
+> 24
+
+Jiang, H. Separation angle for flow past a circular cylinder in the subcritical regime. Physics of Fluids 32 , 014106 (2020).  
+
+> 25
+
+Wei, T. & Smith, C. R. Secondary vortices in the wake of circular cylinders. Journal of Fluid Mechanics 169 , 513–533 (1986).  
+
+> 26
+
+Paul, F., Fischer, J. W. L. & Kerkemeier, S. G. Nek5000 webpage. http://nek5000.mcs. anl.gov (2008).  
+
+> 27
+
+Sundararajan, D. Discrete Wavelet Transform: A Signal Processing Approach (John Wiley 22 & Sons, Singapore Pte. Ltd., 2015).  
+
+> 28
+
+Shannon, C. E. & Weaver, W. The Mathematical Theory of Communication (University of Illinois Press, Urbana, IL, 1949).  
+
+> 29
+
+Lanford, O. E. The Strange Attractor Theory of Turbulence. Annual Review of Fluid Mechanics 14 , 347–364 (1982).  
+
+> 30
+
+Poincar´ e, H. Sur le probl` eme des trois corps et les ´ equations de la dynamique. Acta Mathematica 13 , A3–A270 (1890).  
+
+> 31
+
+Boffetta, G. & Musacchio, S. Predictability of the inverse energy cascade in 2D turbulence. 
+
+Physics of Fluids 13 , 1060–1062 (2001).  
+
+> 32
+
+Ge, J., Rolland, J. & Vassilicos, J. C. The production of uncertainty in three-dimensional Navier–Stokes turbulence. Journal of Fluid Mechanics 977 , A17 (2023).  
+
+> 33
+
+Liao, S. & Qin, S. Noise-expansion cascade: an origin of randomness of turbulence. Journal of Fluid Mechanics 1009 , A2.  
+
+> 34
+
+Schmid, P. J. & Henningson, D. S. Stability and Transition in Shear Flows (Springer, 2001).  
+
+> 35
+
+Nastac, G., Labahn, J. W., Magri, L. & Ihme, M. Lyapunov exponent as a metric for assessing the dynamic content and predictability of large-eddy simulations. Physical Review Fluids 2,094606 (2017).  
+
+> 36
+
+Boffetta, G. & Musacchio, S. Chaos and Predictability of Homogeneous-Isotropic Turbulence. Physical Review Letters 119 , 054102 (2017).  
+
+> 37
+
+Kolmogorov, A. N. The local structure of turbulence in incompressible viscous fluid for very large reynolds’ numbers. Doklady Akademii Nauk SSSR 30 , 301–305 (1941).  
+
+> 38
+
+Frisch, U. Turbulence (Cambridge University Press, Cambridge, England, 1995).  
+
+> 39
+
+Vela-Mart´ ın, A. The uncertainty cascade in isotropic turbulence. Journal of Fluid Mechanics 
+
+1021 , A8 (2025).  
+
+> 40
+
+Jim´ enez, J. A Perron–Frobenius analysis of wall-bounded turbulence. Journal of Fluid Mechanics 968 , A10 (2023).  
+
+> 41
+
+Guan, J. & Tao, J. The onset of metastable turbulence in pipe flow. arXiv:2504.14465 (2025).  
+
+> 42
+
+Rudin, C. Stop explaining black box machine learning models for high stakes decisions and use interpretable models instead. Nature Machine Intelligence 1, 206–215 (2019). 23 43 Liang, W. et al. Advances, challenges and opportunities in creating data for trustworthy AI. 
+
+Nature Machine Intelligence 4, 669–677 (2022).  
+
+> 44
+
+Li, B. et al. Trustworthy AI: From principles to practices. ACM Computing Surveys 55 , 1–46 (2023).  
+
+> 45
+
+Davies, A. et al. Advancing mathematics by guiding human intuition with AI. Nature 600 ,70–74 (2021).  
+
+> 46
+
+Klowden, T. & Tao, T. Mathematical methods and human thought in the age of AI. 
+
+arXiv:2603.26524 (2026).  
+
+> 47
+
+Lu, C. et al. Towards end-to-end automation of AI research. Nature 651 , 914–919 (2026).  
+
+> 48
+
+Norberg, C. An experimental investigation of the flow around a circular cylinder: Influence of aspect ratio. J. Fluid Mech. 258 , 287–316 (1994).  
+
+> 49
+
+Loshchilov, I. & Hutter, F. Decoupled weight decay regularization. In 7th International Conference on Learning Representations (ICLR) (2019).  
+
+> 50
+
+Olhede, S. C. & Walden, A. T. Generalized Morse wavelets as a superfamily of analytic wavelets. IEEE Transactions on Signal Processing 60 , 6036–6041 (2012).  
+
+> 51
+
+Kozachenko, L. F. & Leonenko, N. N. Sample estimate of the entropy of a random vector. 
+
+Problemy Peredachi Informatsii 23 , 9–16 (1987).  
+
+> 52
+
+Mukund, V., Paranjape, C. S., Sitte, M. P., Yalnız, G. & Hof, B. Aging and memory of transitional turbulence. Nature Communications 16 , 8447 (2025). 24
