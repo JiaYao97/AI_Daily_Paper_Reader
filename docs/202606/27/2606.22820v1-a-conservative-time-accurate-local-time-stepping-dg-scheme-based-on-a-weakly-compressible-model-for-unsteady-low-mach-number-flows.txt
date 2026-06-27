@@ -1,0 +1,1814 @@
+Title: A Conservative Time-Accurate Local Time-Stepping DG Scheme Based on a Weakly Compressible Model for Unsteady Low-Mach-Number Flows
+
+URL Source: https://arxiv.org/pdf/2606.22820v1
+
+Published Time: Tue, 23 Jun 2026 02:38:05 GMT
+
+Number of Pages: 53
+
+Markdown Content:
+# A Conservative Time-Accurate Local Time-Stepping DG Scheme Based on a Weakly Compressible Model for Unsteady Low-Mach-Number Flows 
+
+Shihao Liu 1, Keli Zhang 2, Yuning Luan 3, Kai Liu 4
+
+Abstract: This paper presents a conservative high-order discontinuous Galerkin (DG) method with time-accurate local time stepping for the accurate simulation of low-Mach-number unsteady flows based on a weakly compressible formulation. In this model, pressure is prescribed solely as a function of density, which avoids the solution of a global pressure Poisson equation required in traditional incompressible approaches, while retaining the locality and conservation properties of compressible formulations. This for-mulation is suitable for the numerical simulation of low-speed unsteady flows and related aeroacoustic problems. The spatial discretization is constructed in a strong-form nodal DG spectral element method (DGSEM) framework based on Gauss–Lobatto–Legendre (GLL) points, in which inviscid interface coupling is realized through numerical fluxes designed for the weakly compressible system, while viscous terms are discretized by the incomplete interior penalty Galerkin (IIPG) method. For the convective part, in ad-dition to the local Lax–Friedrichs flux, a two-rarefaction approximate Riemann flux is formulated for the present constant-sound-speed barotropic equation of state by spe-cializing the Riemann-invariant relations to the local normal direction. For temporal discretization, the method adopts a CERK continuous extension to obtain a cell-local predictor polynomial for continuous-in-time reconstruction of the volume terms. The face correction is split into a purely interior contribution and a common-flux contribu-tion: the former is integrated with the same temporal quadrature as the volume term, whereas the latter is integrated by face-wise piecewise Gaussian quadrature using inter-face states evaluated from the continuous predictors. This split treatment preserves the discrete summation-by-parts cancellation in the nodal DGSEM formulation and keeps the common-flux exchange conservative across element interfaces. Across the numerical 
+
+> 1Digital Twin Research Center, Institute of Engineering Thermophysics, Chinese Academy of Sci-ences, Beijing 100190, PR China. Supported by the Strategic Priority Research Program of the Chinese Academy of Sciences, Grant No. XDA0390501 E-mail: liushihao@iet.cn.
+> 2School of Aeronautic Science and Engineering, Beihang University, 100191 Beijing, PR China. Rankyee Technology Beijing, 100036 Beijing, PR China. E-mail: zkl70@buaa.edu.cn.
+> 3School of Mechanical Engineering, Tianjin University, 300072 Tianjin, PR China. E-mail: luanyun-ing@163.com
+> 4Rankyee Technology Beijing, 100036 Beijing, PR China. E-mail: liukai@rankyee.com.
+
+1
+
+> arXiv:2606.22820v1 [physics.flu-dyn] 22 Jun 2026
+
+examples, periodic tests verify roundoff-level mass conservation, the cylinder test indi-cates weaker far-field pressure fluctuations with the TR flux, and the cavity and 30P30N cases demonstrate viscous-flow resolution and applicability to complex three-dimensional configurations. The proposed method combines high-order accuracy, geometric flexibil-ity, temporal accuracy for unsteady simulations, support for local time stepping, and conservation under local time stepping, and provides a conservative LTS-DG framework for high-fidelity simulations of complex low-Mach-number unsteady flows. 
+
+Key Words: low-Mach-number unsteady flows; weakly compressible model; discon-tinuous Galerkin method; local time stepping; high-order methods 
+
+# 1 Introduction 
+
+Low-Mach-number flows arise in a wide range of engineering applications, including aeroacoustic prediction, flow control, and complex unsteady vortex-dominated flows. High-fidelity numerical simulation of such problems usually requires not only accurate resolution of local fine-scale flow structures, but also long-time accuracy in the evolution of both hydrodynamic and acoustic fields. However, conventional compressible flow solvers often suffer from pronounced numerical stiffness in the low-Mach-number regime, because the acoustic wave speed is much larger than the characteristic flow velocity. As a result, the stable time step of explicit schemes is severely restricted by both the smallest mesh size and the largest local wave speed, leading to substantial computational cost, especially for high-order simulations on nonuniform meshes. For low-speed flow computation, traditional approaches more commonly rely on in-compressible models together with pressure-velocity coupling algorithms. Typical ex-amples include SIMPLE-type methods based on pressure correction [1,2] and projection methods based on Helmholtz decomposition [3, 4]. These methods have been widely used in incompressible flow simulations and are well known for their maturity, robust-ness, and clear physical interpretation. However, a common feature of such approaches is that they require the solution of a pressure Poisson equation, or an equivalent global elliptic problem, in order to enforce the divergence constraint on the velocity field. For large-scale unsteady simulations, complex geometries, and high-order local discretiza-tions, this global coupling step often introduces considerable algorithmic complexity and communication overhead, and may partially offset the locality and parallel efficiency of explicit methods. To improve the applicability of compressible-type numerical methods to low-speed flows, weakly compressible models have attracted continued attention in recent years. By introducing a barotropic equation of state in which pressure depends only on density, such models retain the conservative form and the implementation convenience of com-1pressible formulations, while improving their suitability for low-Mach-number unsteady flow simulations. Compared with traditional incompressible models, one direct advan-tage of weakly compressible formulations is that no additional pressure Poisson equation needs to be solved. Instead, pressure evolution is obtained through local updates of the conservative variables together with the equation of state, which makes it easier to construct locally dependent numerical algorithms. Furthermore, this formulation is compatible with explicit time integration, thereby avoiding large-scale matrix assembly and the solution of global linear systems. As a consequence, it reduces global-coupling overhead and preserves locality, which is important for parallel implementation, local time stepping, and discretization on complex unstructured meshes. In addition, weakly compressible models can be naturally coupled with aeroacoustic post-processing tech-niques, which has motivated their use in the prediction of low-speed flows and sound generation. Among numerical approaches based on weakly compressible formulations, the lat-tice Boltzmann method (LBM) has been widely used for low-Mach-number flow simu-lations [5–7]. Owing to its explicit streaming-collision structure, LBM possesses strong locality, high parallel efficiency, and advantages for local time advancement. However, LBM generally relies on structured lattice arrangements and imposes relatively strict requirements on mesh regularity, lattice connectivity, and the compatibility between dis-crete velocity directions and the underlying grid. Consequently, it is less flexible for strongly nonuniform meshes, local mesh refinement, curved boundaries, and general un-structured discretizations. Moreover, boundary treatment in LBM is often nontrivial. The accurate implementation of no-slip walls, curved boundaries, inflow/outflow con-ditions, and coupled boundary physics usually requires specially designed bounce-back, interpolation, or reconstruction procedures [8–11], whose robustness and accuracy may depend sensitively on the local lattice arrangement. Another representative approach is the smoothed particle hydrodynamics (SPH) method, which also often adopts a weakly compressible formulation in order to avoid solving a pressure Poisson equation [12–15]. As a meshfree Lagrangian framework, SPH is attractive for problems involving large deformation, free surfaces, and moving boundaries, but it also faces challenges related to particle disorder, numerical dissipation, kernel consistency, and reduced boundary accuracy. Meanwhile, high-order discontinuous Galerkin (DG) methods have become an impor-tant tool for high-fidelity flow computation because of their high-order accuracy, compact stencil, geometric flexibility, and favorable parallel performance [26, 27]. For multiscale unsteady problems with local mesh refinement, local time-stepping (LTS) strategies can effectively alleviate the efficiency bottleneck caused by the globally smallest allowable time step. In recent years, several LTS frameworks have been developed for DG meth-ods [29,30,32]. In particular, continuous explicit Runge–Kutta (CERK) methods provide 2a natural continuous-in-time predictor for one-step formulations and time-accurate local time stepping [29, 31]. For weakly compressible low-Mach-number flows, it is of interest to incorporate the corresponding physical model, spatial discretization, numerical flux treatment, and time integration strategy effectively into a high-order DG framework with local time stepping. Motivated by these considerations, this paper studies a weakly compressible DG method with local time stepping for low-Mach-number flows. First, a weakly compress-ible model is incorporated into a high-order DG framework with local time stepping, so as to combine the suitability of the model for low-Mach-number flows with the flexibility of high-order discretization. Second, the viscous terms are discretized by the incomplete interior penalty Galerkin (IIPG) method [33, 34, 36] to obtain a stable viscous treat-ment. For the inviscid part, a two-rarefaction approximate Riemann flux is formulated according to the characteristics of the weakly compressible system and the philosophy of approximate Riemann solvers [37], so that interfacial information can be transmitted in a consistent and robust manner. Since the present spatial discretization is a nodal DGSEM based on GLL points, conservation under local time stepping also requires the discrete summation-by-parts cancellation between the volume term and the purely inte-rior part of the strong-form face correction to be retained. For this reason, the surface contribution is split into a purely interior part and a common-flux part: the former is integrated together with the volume term using element-local quadrature, whereas only the common-flux part is integrated by face-wise time matching. The methodology developed here has already been integrated into the commercial software DIMAXER, and has been extended to the flux reconstruction (FR) framework and applied to aeroacoustic simulations [41]. The present paper focuses on a description of its original DG formulation. Therefore, the main contributions of this work are to incorporate a weakly compress-ible model into a high-order DG framework with local time stepping, to adopt the IIPG treatment for viscous terms, to formulate a two-rarefaction approximate Riemann flux specialized to the weakly compressible system, and to construct a CERK-based time-accurate local time-stepping formulation with a conservation-preserving split treatment of the face contribution. With these ingredients, the resulting method retains high-order accuracy while supporting local time stepping and preserving the conservative interface exchange of the underlying nodal DG discretization. A series of numerical experiments are carried out to assess the accuracy, conservation behavior, robustness, and applica-bility of the proposed method. 32 Governing Equations 
+
+We consider a weakly compressible model for low-Mach-number flows. In two space dimensions, the governing equations are written in conservative form as 
+
+∂ρ ∂t + ∂(ρu )
+
+∂x + ∂(ρv )
+
+∂y = 0 , (2.1) 
+
+∂(ρu )
+
+∂t + ∂(ρu 2 + p)
+
+∂x + ∂(ρuv )
+
+∂y = μ
+
+∂2u∂x 2 + ∂2u∂y 2
+
+
+
+, (2.2) 
+
+∂(ρv )
+
+∂t + ∂(ρuv )
+
+∂x + ∂(ρv 2 + p)
+
+∂y = μ
+
+ ∂2v∂x 2 + ∂2v∂y 2
+
+
+
+, (2.3) where ρ is the density, ( u, v )T is the velocity vector, p is the pressure, and μ is the dy-namic viscosity. When a reference density is used, the corresponding reference kinematic viscosity is μ/ρ 0. The pressure is assumed to satisfy a barotropic equation of state, 
+
+p = p(ρ),
+
+with 
+
+p′(ρ) > 0, ρ > 0,
+
+so that the convective subsystem remains hyperbolic. Introducing the conservative variable vector 
+
+U =
+
+
+
+ρρu ρv 
+
+ =
+
+
+
+ρm1
+
+m2
+
+ ,
+
+where m1 = ρu and m2 = ρv denote the momentum components in the x- and y-directions, respectively, the system can be expressed in a compact form as 
+
+∂U ∂t + ∂F c(U )
+
+∂x + ∂G c(U )
+
+∂y = ∂F d(U, ∇U )
+
+∂x + ∂G d(U, ∇U )
+
+∂y , (2.4) where the convective fluxes are 
+
+Fc(U ) = 
+
+
+
+ρu ρu 2 + pρuv 
+
+ , Gc(U ) = 
+
+
+
+ρv ρuv ρv 2 + p
+
+ ,
+
+and the diffusive fluxes are 
+
+Fd(U, ∇U ) = 
+
+
+
+0
+
+μ u x
+
+μ v x
+
+ , Gd(U, ∇U ) = 
+
+
+
+0
+
+μ u y
+
+μ v y
+
+ .
+
+4Since the numerical flux construction relies on the characteristic structure of the hyper-bolic part, we next consider the corresponding one-dimensional convective subsystem in the x-direction. Neglecting the y-derivative and viscous terms, the governing equations reduce to 
+
+∂ρ ∂t + ∂(ρu )
+
+∂x = 0 ,∂m 1
+
+∂t +
+
+∂
+
+m21
+
+ρ + p
+
+
+
+∂x = 0 ,∂m 2
+
+∂t +
+
+∂
+
+m1m2
+
+ρ
+
+
+
+∂x = 0 .
+
+To derive the Riemann invariants, it is convenient to rewrite the one-dimensional system in primitive variables ( ρ, u, v ). Expanding the governing equations yields 
+
+ρt + uρ x + ρu x = 0 ,ut + uu x + 1
+
+ρp′(ρ)ρx = 0 ,vt + uv x = 0 .
+
+Equivalently, one has 
+
+ρuv
+
+
+
+> t
+
++ B(ρ, u, v )
+
+
+
+ρuv
+
+
+
+> x
+
+= 0 ,
+
+with 
+
+B(ρ, u, v ) = 
+
+
+
+u ρ 0
+
+p′(ρ)
+
+ρ u 00 0 u
+
+ .
+
+Proposition 2.1. Let 
+
+c = pp′(ρ).
+
+Then the characteristic speeds of the one-dimensional barotropic system are 
+
+λ1 = u − c, λ2 = u, λ3 = u + c. (2.5) 
+
+Moreover, a corresponding set of Riemann invariants is given by 
+
+w1 = u −
+
+Z pp′(ρ)
+
+ρ dρ, w2 = v, w3 = u +
+
+Z pp′(ρ)
+
+ρ dρ. (2.6) 
+
+In smooth regions, these quantities satisfy 
+
+(wi)t + λi(wi)x = 0 , i = 1 , 2, 3.
+
+5Proof. We verify the statement directly. The characteristic polynomial of B(ρ, u, v ) is det( B − λI ) = ( u − λ) (u − λ)2 − p′(ρ) .
+
+Thus, with c = pp′(ρ), the characteristic speeds are 
+
+λ1 = u − c, λ2 = u, λ3 = u + c. 
+
+It remains to verify the stated Riemann invariants. Define 
+
+H(ρ) = 
+
+Z pp′(ρ)
+
+ρ dρ, H′(ρ) = cρ.
+
+For w2 = v, the third primitive equation gives immediately (w2)t + λ2(w2)x = vt + uv x = 0 .
+
+For w1 = u − H(ρ), using the first two primitive equations yields (w1)t + ( u − c)( w1)x = ut + ( u − c)ux − cρ
+
+ ρt + ( u − c)ρx
+
+
+
+= ut + uu x + c2
+
+ρ ρx
+
+= 0 .
+
+Similarly, for w3 = u + H(ρ), (w3)t + ( u + c)( w3)x = ut + ( u + c)ux + cρ
+
+ ρt + ( u + c)ρx
+
+
+
+= ut + uu x + c2
+
+ρ ρx
+
+= 0 .
+
+Therefore the quantities in (2.6) satisfy ( wi)t +λi(wi)x = 0 in smooth regions, as claimed. In the present work, the equation of state is specified as 
+
+p(ρ) = c20(ρ − ρ0) + p0, (2.7) where c0 is a prescribed artificial sound speed, and ρ0 and p0 denote the reference density and pressure, respectively. This weakly compressible relation is also widely used in SPH-type formulations to avoid solving a pressure Poisson equation [13, 15]. Following common weakly compressible SPH practice, the artificial sound speed is usually chosen sufficiently larger than the characteristic flow speed, often about ten times the maximum 6velocity scale, so that the artificial Mach number remains small and density fluctuations are limited [13–15]. From (2.7), one has 
+
+p′(ρ) = c20, c = pp′(ρ) = c0.
+
+Therefore, the integral in (2.6) can be evaluated explicitly: 
+
+Z pp′(ρ)
+
+ρ dρ =
+
+Z c0
+
+ρ dρ = c0 ln 
+
+ ρρ0
+
+
+
++ C. 
+
+The Riemann invariants therefore reduce to 
+
+w1 = u − c0 ln 
+
+ ρρ0
+
+
+
+, w2 = v, w3 = u + c0 ln 
+
+ ρρ0
+
+
+
+. (2.8) Compared with a general barotropic law, this constant-sound-speed barotropic equation of state yields an explicit logarithmic form of the characteristic relations, which consid-erably simplifies the formulation of interface relations and the construction of numerical fluxes. For a general barotropic law satisfying p′(ρ) > 0, the characteristic structure u − c,
+
+u, and u + c remains unchanged. The difference is that the sound speed c = pp′(ρ) now depends on ρ, and the integral in (2.6) cannot, in general, be expressed in closed form. In such cases, the characteristic relations may still be formulated through the integral representation (2.6). In contrast, for the present constant-sound-speed barotropic equa-tion of state, the explicit form (2.8) is available and will be exploited in the numerical flux construction presented in the next section. 
+
+# 3 Formulation 
+
+In this section, the numerical formulation of the proposed method is presented. We first describe the spatial discretization framework on curved quadrilateral and hexahe-dral elements, with emphasis on the strong-form nodal DGSEM formulation and the associated elemental semi-discrete system. The common-flux treatment for the weakly compressible convective terms and the IIPG discretization for the viscous terms are then introduced. These ingredients together provide the basis for the subsequent time-accurate local time-stepping strategy. 
+
+## 3.1 Nodal DGSEM spatial discretization on curved quadrilat-eral and hexahedral elements 
+
+Since only quadrilateral and hexahedral meshes are considered in the present work, the spatial discretization is formulated within a tensor-product nodal DG spectral ele-ment method (DGSEM) framework on reference elements. In this work, DGSEM de-notes the strong-form nodal DG discretization in which the interpolation, quadrature 7rules, and discrete derivative operators are built from Gauss–Lobatto–Legendre (GLL) points. For curved quadrilateral or hexahedral elements, the geometric treatment is based on a reference-element mapping: each physical element is mapped to a standard reference element, and the basis functions, quadrature rules, and discrete operators are constructed in the computational coordinates. For quadrilateral and hexahedral ele-ments, this strategy not only provides a natural representation of curved boundaries and curved geometries, but also fully exploits the efficiency and locality associated with tensor-product structures. The basic geometric treatment adopted here is consistent with the spectral-element DG idea used by Min and Lee [43]. Let Ω e denote a physical element. In two dimensions, the corresponding reference element is 
+
+I = [ −1, 1] 2,
+
+while in three dimensions it is 
+
+I = [ −1, 1] 3.
+
+For a two-dimensional quadrilateral element, a mapping from the reference coordinates (ξ, η ) ∈ I to the physical coordinates ( x, y ) ∈ Ωe is introduced as 
+
+x = xe(ξ, η ), y = ye(ξ, η ).
+
+The associated Jacobian matrix and determinant are 
+
+Je(ξ, η ) = 
+
+xξ xη
+
+yξ yη
+
+
+
+, |Je| = xξyη − xηyξ.
+
+Accordingly, an integral over the physical element can be transformed to the reference element as Z
+
+> Ωe
+
+q(x, y ) dΩ = 
+
+Z
+
+> I
+
+q xe(ξ, η ), y e(ξ, η ) |Je(ξ, η )| dξdη. 
+
+Meanwhile, the differential operators in the physical coordinates are computed from the reference-space derivatives through the geometric mapping as 
+
+∇xq = J−T ∇ξq, 
+
+where the two-dimensional Jacobian matrix is 
+
+J =
+
+xξ xη
+
+yξ yη
+
+
+
+.
+
+The extension to the three-dimensional hexahedral case is completely analogous. For notational convenience, define the total flux by 
+
+F (U, ∇U ) = Fc(U ) − Fd(U, ∇U ),
+
+8where Fc denotes the convective flux and Fd denotes the diffusive flux. The governing equations may then be written as 
+
+∂U ∂t + ∇ · F (U, ∇U ) = 0 .
+
+Here, the flux F corresponds to the full flux operator introduced in the governing equa-tions, namely, the combined contribution of the convective and diffusive parts. In the DG discretization, however, the convective and diffusive parts will be treated separately in order to account for their different numerical properties. On each element, a local approximation is introduced using tensor-product inter-polation at Gauss–Lobatto–Legendre (GLL) points. In the two-dimensional case, the approximate solution is written as 
+
+U eh(ξ, η, t ) = 
+
+> k
+
+X
+
+> i=0
+> k
+
+X
+
+> j=0
+
+ˆU eij (t) ℓi(ξ)ℓj (η),
+
+where k is the polynomial degree, and ℓi(ξ) and ℓj (η) are one-dimensional Lagrange basis functions. The same tensor-product construction can be extended naturally to three-dimensional hexahedral elements. Here, ˆU eij denotes the local degree of freedom coefficient associated with the corresponding nodal basis function. By stacking these coefficients at all interpolation nodes in the element according to a fixed ordering, one obtains the elemental degree of freedom vector ˆU e. In other words, ˆU e is the column vector formed by all coefficients associated with the nodal basis functions on Ω e, and it contains all local unknowns of the discrete solution on that element. A key property of this nodal GLL construction is the summation-by-parts (SBP) relation between the GLL quadrature matrix and the nodal derivative matrix, which provides the discrete analogue of integration by parts and will be used in the conservation discussion below. Let ϕeh be an arbitrary local test function. The elemental weak form reads 
+
+Z
+
+> Ωe
+
+∂U eh
+
+∂t ϕeh dΩ −
+
+Z
+
+> Ωe
+
+F (U eh, ∇U eh) · ∇ ϕeh dΩ + 
+
+Z
+
+> ∂Ωe
+
+( bF · n)ϕeh dS = 0 .
+
+Applying integration by parts yields the corresponding strong form 
+
+Z
+
+> Ωe
+
+∂U eh
+
+∂t + ∇ · F (U eh, ∇U eh)
+
+
+
+ϕeh dΩ + 
+
+Z
+
+> ∂Ωe
+
+ bF − F −
+
+
+
+· n ϕeh dS = 0 ,
+
+where F − denotes the physical flux evaluated from the interior trace of the element solution. To obtain the semi-discrete system corresponding to all local degrees of freedom in the element, we further collect the nodal basis functions in the same ordering as ˆU e
+
+and denote the resulting basis-function vector by φe. Weighting the above strong form 9componentwise by φe and integrating over the element then gives the elemental semi-discrete system 
+
+M e d ˆU e
+
+dt = Re
+
+> vol
+
+( ˆU e) + Re 
+
+> surf
+
+( ˆU −, ˆU +),
+
+where M e is the elemental mass matrix, and the volume residual and interface correction are defined by 
+
+Re
+
+> vol
+
+( ˆU e) = −
+
+Z
+
+> Ωe
+
+∇ · F (U eh, ∇U eh) φe dΩ,Re 
+
+> surf
+
+( ˆU −, ˆU +) = −
+
+Z
+
+> ∂Ωe
+
+ bF − F −
+
+
+
+· n φ e dS. 
+
+Here, both the volume residual and the interface correction are vector-valued residuals associated with all local degrees of freedom of the element. Therefore, their weighting object is no longer an arbitrary scalar test function, but rather the basis-function vec-tor φe formed by the nodal basis functions in an ordering consistent with ˆU e. With this definition, every term in the semi-discrete system is dimensionally and structurally consistent with the elemental degree of freedom vector ˆU e, which is convenient for the subsequent construction of time integration schemes. We now explain the treatment of the mass matrix. If the elemental L2 inner product is retained in its standard form, the general mass matrix is defined by (M e)αβ =
+
+Z
+
+> Ωe
+
+φeα φeβ dΩ,
+
+where {φeα} denotes the local nodal basis functions on the element. In the present work, the mass matrix is evaluated by numerical quadrature on the GLL points instead of exact integration, which yields a diagonal mass matrix, referred to here as the lumped mass matrix. Accordingly, it is written as 
+
+M eL = diag( M eα),
+
+where M eα denotes the diagonal mass coefficient associated with the α-th local degree of freedom. The elemental semi-discrete system therefore becomes 
+
+M eL
+
+d ˆU e
+
+dt = Re
+
+> vol
+
+( ˆU e) + Re 
+
+> surf
+
+( ˆU −, ˆU +).
+
+The main purpose of this treatment is to simplify the inversion of the mass matrix in time integration, improve the compactness and data locality of the semi-discrete system, and provide a convenient algebraic structure for future extensions to implicit–explicit hybrid time integration. Under the present nodal GLL discretization, the interface cor-rection acts directly on the corresponding boundary degrees of freedom. Based on this unified spatial-discretization framework, the following subsections spec-ify the numerical treatment of the weakly compressible convective flux, the IIPG dis-cretization of the viscous terms, and the semi-discrete formulation compatible with local time stepping. 10 3.2 Numerical flux evaluation 
+
+In the present DG discretization, the coupling between adjacent elements is realized through numerical fluxes defined on the common interfaces. For the convective part, two different Riemann-type numerical fluxes are implemented, namely the local Lax– Friedrichs (local LF) flux and an approximate Riemann flux based on the two-rarefaction-wave assumption. The former introduces interfacial dissipation through a unified local wave-speed estimate, whereas the latter makes use of the characteristic structure of the weakly compressible model and evaluates the numerical flux through an interfacial star state. For the viscous part, an IIPG-type numerical diffusive flux is employed to enhance the stability of the diffusion discretization. Before introducing the specific flux formulas, a local normal–tangential coordinate system is first established on the interface. Let the unit normal and tangential vectors be 
+
+n = ( nx, n y)T , t = ( −ny, n x)T , (3.1) respectively. For any velocity u = ( u, v )T , the normal velocity and tangential velocity are defined as 
+
+q = u · n, s = u · t, (3.2) so that 
+
+u = qn + st.
+
+For convenience, once the face normal is fixed, the interior and exterior traces on the interface are also denoted by the left and right states, respectively, i.e. UL = U − and 
+
+UR = U +. Accordingly, the normal velocities on the two sides of the interface are denoted by 
+
+qL = uL · n, qR = uR · n,
+
+and the tangential velocities are denoted by 
+
+sL = uL · t, sR = uR · t.
+
+(1) Local LF convective numerical flux 
+
+Let U denote the conservative variables and Fc(U ) the convective flux tensor. The normal convective flux is defined as 
+
+Fc,n (U ) = Fc(U ) · n. (3.3) For the left and right states UL and UR, the local LF numerical flux is written as 
+
+bF LF c,n = 12
+
+
+
+Fc,n (UL) + Fc,n (UR)
+
+
+
+− 12α(UR − UL), (3.4) 11 where α is a local estimate of the maximum characteristic speed on the interface. For the present weakly compressible model, α is taken as 
+
+α = max  |qL| + c0, |qR| + c0
+
+, (3.5) where c0 is the prescribed artificial sound speed. 
+
+(2) Convective numerical flux based on the two-rarefaction-wave assumption 
+
+In addition to the local LF flux, a two-rarefaction approximate Riemann flux is also employed. This assumption is motivated by the fact that the present work mainly concerns low-Mach-number flows, for which strong shock structures are generally absent. Therefore, the local interfacial Riemann problem can be reasonably approximated by a wave pattern composed of two rarefaction waves. The cylinder-flow results presented later suggest that, compared with the local LF flux, this flux produces weaker far-field pressure fluctuations in the present open-boundary test. The two-rarefaction approximation is a standard approximate-state Riemann-solver idea in compressible-flow computations [37], and related two-rarefaction or exact Rie-mann solvers have also been used in artificial-compressibility, artificial-equation-of-state, and weakly compressible formulations [38–40]. In the present work, this idea is spe-cialized to the constant-sound-speed barotropic equation of state (2.7). Owing to the explicit logarithmic Riemann invariants of this model, the interfacial star density and normal velocity can be written in closed form. These closed-form interfacial states are used to define a low-dissipation flux for smooth weakly compressible low-Mach-number flows within the conservative LTS-DG framework. The present specialization considers a local one-dimensional Riemann problem in the interface-normal direction and determines the interfacial star state from the invariance of the Riemann invariants across rarefaction waves. Since the present model is weakly compressible, the artificial sound speed c0 is much larger than the characteristic flow velocity, namely 
+
+c0 ≫ | u|. (3.6) As a result, for the local normal system the acoustic characteristic speeds satisfy 
+
+λ1 = q − c0 < 0, λ3 = q + c0 > 0. (3.7) This implies that, under the present weakly compressible assumption, the interface lo-cation ˆ x/t = 0 lies between the left- and right-running acoustic waves, i.e. within the star region, where ˆ x denotes the local coordinate along the interface-normal direction. Accordingly, under the present weakly compressible assumption, the interfacial state at ˆx/t = 0 is identified with the star state, and the numerical convective flux is evaluated 12 Figure 3.1. Schematic of the local two-dimensional Riemann problem under the two-rarefaction-wave assumption. Under the present weakly compressible assumption, the interfacial state at ˆ x/t = 0 is identified with the star state located between the left- and right-running acoustic waves. from that state. Figure 3.1 illustrates the corresponding local two-dimensional Riemann structure in the ˆ x–t plane. In the above local normal coordinate system, the weakly compressible convective subsystem is treated as a one-dimensional hyperbolic system in terms of ( ρ, q, s )T , with characteristic speeds 
+
+λ1 = q − c0, λ2 = q, λ3 = q + c0. (3.8) A set of Riemann invariants can then be chosen as 
+
+w1 = q − c0 ln 
+
+ ρρ0
+
+
+
+, w2 = s, w3 = q + c0 ln 
+
+ ρρ0
+
+
+
+, (3.9) where ρ0 is the reference density. These invariants are related to the three characteristic fields as follows: across a 1-wave, w2 and w3 remain invariant; across a 2-wave, w1 and w3 remain invariant; across a 3-wave, w1 and w2 remain invariant. Therefore, under the two-rarefaction-wave ap-proximation, with a 1-rarefaction wave connecting the left state to the star region and a 3-rarefaction wave connecting the right state to the star region, one has 
+
+q∗ + c0 ln 
+
+ρ∗
+
+ρ0
+
+
+
+= qL + c0 ln 
+
+ρL
+
+ρ0
+
+
+
+, (3.10) and 
+
+q∗ − c0 ln 
+
+ρ∗
+
+ρ0
+
+
+
+= qR − c0 ln 
+
+ρR
+
+ρ0
+
+
+
+. (3.11) 13 For convenience, define 
+
+rL = qL + c0 ln 
+
+ρL
+
+ρ0
+
+
+
+, rR = qR − c0 ln 
+
+ρR
+
+ρ0
+
+
+
+.
+
+Star-state normal velocity and density. Adding the above two relations yields the star-state normal velocity 
+
+q∗ = 12(rL + rR). (3.12) Subtracting them gives 2c0 ln 
+
+ρ∗
+
+ρ0
+
+
+
+= rL − rR, (3.13) from which the star-state density is obtained as 
+
+ρ∗ = ρ0 exp 
+
+rL − rR
+
+2c0
+
+
+
+. (3.14) 
+
+Star-state tangential velocity and velocity reconstruction. Once the star-state normal velocity q∗ is obtained, the tangential velocity is selected according to the upwind rule, 
+
+s∗ =
+
+(
+
+sL, q∗ > 0,sR, q∗ ≤ 0. (3.15) The star-state velocity is then reconstructed as 
+
+u∗ = q∗n + s∗t.
+
+Remark. For additional transported variables such as temperature, no separate in-termediate state is constructed from the acoustic Riemann relations. Instead, they are taken according to the upwind direction of the interfacial mass transport, i.e. the left state is used when q∗ > 0, and the right state is used when q∗ ≤ 0. This treatment re-mains consistent with the convective transport direction at the interface while avoiding the introduction of additional approximate wave structures for non-dominant variables. 
+
+Star-state variables and numerical convective flux. The star-state conservative variables U ∗ are then constructed from ρ∗ and u∗, while the corresponding pressure is evaluated from the equation of state, 
+
+p∗ = p(ρ∗).
+
+The numerical convective flux under the two-rarefaction-wave approximation is finally defined as the physical normal flux evaluated at the star state, 
+
+bF T R c,n = Fc,n (U ∗). (3.16) 14 Compared with the local LF flux, this flux evaluates the interfacial state from an ap-proximate solution of the local Riemann problem and thereby more naturally represents acoustic propagation, density variation, and pressure coupling in weakly compressible flows. 
+
+Remark. The two-rarefaction flux used here is designed for smooth weakly compress-ible low-Mach-number flows, for which c0 ≫ | u| and density fluctuations remain small. It is not intended as a general-purpose shock-capturing Riemann solver for strongly compressible, transonic, or near-vacuum flows. 
+
+Proposition 3.1 (Consistency and interface-orientation consistency of the TR flux) .
+
+Let bF T R c,n (UL, U R; n) denote the TR numerical flux evaluated with unit normal n pointing from the left state to the right state. For any admissible state U ,
+
+bF T R c,n (U, U ; n) = Fc(U ) · n.
+
+Moreover, if the same interface is viewed from the opposite side, namely the normal is changed to −n and the left and right states are exchanged, then 
+
+bF T R c,n (UR, U L; −n) = − bF T R c,n (UL, U R; n).
+
+Proof. When UL = UR = U , one has qL = qR = q, ρL = ρR = ρ, and sL = sR = s. Hence 
+
+rL = q + c0 ln 
+
+ ρρ0
+
+
+
+, rR = q − c0 ln 
+
+ ρρ0
+
+
+
+,
+
+which gives q∗ = q and ρ∗ = ρ. The upwind selection also gives s∗ = s, and therefore 
+
+U ∗ = U . The consistency relation follows directly from the definition of the flux. For the orientation property, let n′ = −n and t′ = −t, and exchange the left and right states. The corresponding normal and tangential velocities satisfy 
+
+q′ 
+
+> L
+
+= −qR, q′ 
+
+> R
+
+= −qL, s′ 
+
+> L
+
+= −sR, s′ 
+
+> R
+
+= −sL.
+
+Consequently, 
+
+r′ 
+
+> L
+
+= −rR, r′ 
+
+> R
+
+= −rL,
+
+and thus q′∗ = −q∗ and ρ′∗ = ρ∗. For q∗̸ = 0, the upwind rule gives s′∗ = −s∗, so the reconstructed physical velocity is unchanged: 
+
+u′∗ = q′∗ n′ + s′∗ t′ = q∗n + s∗t = u∗.
+
+If q∗ = 0, the advective part of the normal convective flux is proportional to q∗, and the remaining pressure contribution is independent of the tangential velocity; hence the same conclusion holds at the level of the normal flux. Therefore the star-state physical flux is the same while the normal direction is reversed, which yields 
+
+Fc(U ∗) · (−n) = −Fc(U ∗) · n.
+
+This proves the stated interface-orientation consistency. 15 (3) Boundary treatment 
+
+Only solid-wall and far-field boundaries are considered in the present computations. Boundary faces are treated within the same numerical-flux framework as interior faces by constructing a ghost-neighbor state and a ghost-neighbor derivative value at each bound-ary quadrature point. Let U − and ( ∇U )− denote the interior trace and its derivative on a boundary face. For a far-field boundary, the exterior boundary state is prescribed by the far-field state, 
+
+U + 
+
+> b
+
+= U∞, (3.17) while the derivative value used in the diffusive flux is extrapolated from the interior element, (∇U )+ 
+
+> b
+
+= ( ∇U )−. (3.18) For a solid wall with wall velocity uw, the exterior density is copied from the interior trace and the exterior velocity is reflected with respect to the wall velocity, 
+
+ρ+ 
+
+> b
+
+= ρ−, u+ 
+
+> b
+
+= 2 uw − u−. (3.19) Thus, for a stationary wall, u+ 
+
+> b
+
+= −u−. The conservative exterior state is then assembled from ρ+ 
+
+> b
+
+and u+ 
+
+> b
+
+, and the derivative value on the exterior side is again taken from the interior derivative unless additional wall-gradient data are prescribed. After these ghost-neighbor values are constructed, the convective Riemann flux and the IIPG diffusive flux are evaluated in exactly the same way as on an interior face. 
+
+(4) IIPG diffusive numerical flux 
+
+For the diffusive part, an IIPG-type numerical diffusive flux is adopted. Let the normal diffusive physical flux be 
+
+Fd,n (U, ∇U ) = Fd(U, ∇U ) · n. (3.20) Since the diffusive flux has a zero mass component and acts only on the momentum equations, the penalty term is also applied only to the momentum components. For the two-dimensional system considered above, with the same idea extending to three dimensions, define 
+
+Dm = diag(0 , 1, 1) ,
+
+where the first entry corresponds to the mass-conservation equation. The numerical diffusive flux on the interface is written as 
+
+bFd,n = {{Fd,n }} − τ Dm[[ U ]] , (3.21) where {{·} } denotes the average of the two traces, [[ U ]] the jump of the solution, and τ
+
+the penalty parameter. 16 For a polynomial approximation of degree k, the penalty parameter is taken as 
+
+τ = CIP 
+
+μρ0
+
+(k + 1) 2
+
+hf
+
+, (3.22) where hf is the characteristic length associated with the interface, and CIP is a dimen-sionless constant depending on the mesh type and the stability requirement. For nonuniform meshes, let hL and hR denote the local characteristic lengths of the left and right elements in the interface-normal direction. One may further choose 
+
+hf = min( hL, h R),
+
+so that 
+
+τ = CIP 
+
+μρ0
+
+(k + 1) 2
+
+min( hL, h R). (3.23) Here, hL and hR represent the local mesh sizes of the two adjacent elements measured along the interface-normal direction. Taking the smaller one helps provide sufficient penalization on the finer side of the interface, which is beneficial for maintaining the stability of the diffusive discretization. The above penalty term weakly suppresses inter-element jumps in the momentum equations and thereby improves the stability of the diffusion discretization without adding a penalty contribution to the mass equation. Therefore, the interfacial numerical-flux treatment adopted in the present work can be summarized as follows: for the con-vective part, either the local LF flux or the two-rarefaction-wave approximate Riemann flux is used; for the diffusive part, the IIPG numerical diffusive flux is employed. 
+
+## 3.3 Time-Accurate Local Time-Stepping Formulation 
+
+To support long-time integration accuracy for weakly compressible low-Mach-number flows together with element-local time advancement on nonuniform meshes, a time-accurate local time-stepping method is constructed on the semi-discrete DG system, following the predictor–corrector philosophy of time-accurate local time stepping devel-oped by Gassner and co-workers [29, 30]. The algorithm proceeds as follows. For each element, a local time step is selected independently. Inside the element, a continuous explicit Runge–Kutta method is used to construct a continuous-in-time predictor driven by the volume residual. In the subsequent correction, the face contribution is split into a purely interior part and a common-flux part. The purely interior face contribution is local to the element and is integrated with the same temporal quadrature as the volume contribution, whereas the common-flux contribution is integrated face by face using piecewise temporal quadrature based on the time matching between neighboring elements. Once the element reaches its target time, these integrated contributions are combined to obtain the updated elemental degrees of freedom. 17 Based on the spatial discretization introduced above, the semi-discrete equation on element Ω e is written as 
+
+M eL
+
+d ˆU e
+
+dt = Re
+
+> vol
+
+( ˆU e) + Re 
+
+> surf
+
+( ˆU e, −, ˆU e, +). (3.24) Here M eL is the lumped mass matrix, Re 
+
+> vol
+
+denotes the elemental volume residual, and 
+
+Re 
+
+> surf
+
+denotes the surface residual assembled from the interface correction terms. For convenience, the semi-discrete operators associated with the volume and surface terms are defined by 
+
+Le( ˆU e) = ( M eL)−1Re
+
+> vol
+
+( ˆU e), (3.25) 
+
+Ce( ˆU e, −, ˆU e, +) = ( M eL)−1Re 
+
+> surf
+
+( ˆU e, −, ˆU e, +). (3.26) Then the ordinary differential equation on element Ω e can be written as 
+
+d ˆU e
+
+dt = Le( ˆU e) + Ce( ˆU e, −, ˆU e, +). (3.27) If the boundary of the element is decomposed into individual faces f ⊂ ∂Ωe, the surface operator can be further written as 
+
+Ce( ˆU e, −, ˆU e, +) = X 
+
+> f⊂∂Ωe
+
+h
+
+Cef, int ( ˆU e, −) + Cef, cf ( ˆU e, −, ˆU e, +)
+
+i
+
+, (3.28) where Cef, int denotes the purely interior contribution on face f , associated with the inte-rior physical flux, and Cef, cf denotes the common-flux contribution, associated with the numerical flux shared by the two elements adjacent to the face. Each element Ω e is assigned an independent local time step ∆ te, whose value is deter-mined by the local mesh scale, the flow state, and the stability constraints. Accordingly, the current local time interval of element Ω e is denoted by 
+
+Ien = [ ten, t en+1 ], ten+1 = ten + ∆ te. (3.29) Since neighboring elements may use different local time steps, the common-flux contri-bution generally requires the reconstruction of neighboring states at requested times. Therefore, a continuous-in-time predictor plays a key role in the local time-stepping procedure. On the interval Ien, the normalized local time variable is introduced as 
+
+θ = t − ten
+
+∆te , 0 ≤ θ ≤ 1. (3.30) For element Ω e, an s-stage continuous explicit Runge–Kutta predictor is constructed as in the CERK-based local predictor framework [29–31] 
+
+Pe(t) = ˆU e,n + ∆ tesX
+
+> i=1
+
+bi(θ) Kei , t ∈ Ien. (3.31) 18 Here bi(θ) are the continuous extension weights, and Kei are the stage residuals. In the predictor step, the stage residuals are generated only by the volume operator, namely, 
+
+Kei = Le ˆU e,n + ∆ tei−1X
+
+> j=1
+
+aij Kej
+
+!
+
+, i = 1 , 2, . . . , s. (3.32) The resulting continuous predictor Pe(t) describes the local temporal evolution of the elemental degree of freedom vector driven by the volume term. In the present formulation, the volume contribution and the purely interior face contribution are both local to element Ω e, and are therefore evaluated with the same Gaussian quadrature over the local time interval [ ten, t en+1 ]. The common-flux contribution on a given face, however, depends on the neighboring predictor state. Its temporal integration interval is therefore partitioned into subintervals according to the local time levels of the two adjacent elements, and Gaussian quadrature is applied separately on each subinterval. When element Ω e reaches the target time ten+1 , its updated degrees of freedom are obtained from the time-integrated volume and surface contributions as ˆU e,n +1 = ˆU e,n +
+
+Z ten+1 
+
+> ten
+
+Le(Pe(t)) dt 
+
++ X 
+
+> f⊂∂Ωe
+
+Z ten+1 
+
+> ten
+
+Cef, int 
+
+ Pe, −(t) dt 
+
++ X 
+
+> f⊂∂Ωe
+
+Z ten+1 
+
+> ten
+
+Cef, cf 
+
+ Pe, −(t), Pe, +(t) dt. 
+
+(3.33) Accordingly, the accumulated local contribution over the interval [ ten, t en+1 ], consisting of the volume term and the purely interior face terms, can be written as 
+
+Z ten+1 
+
+> ten
+
+"
+
+Le(Pe(t)) + X 
+
+> f⊂∂Ωe
+
+Cef, int (Pe, −(t)) 
+
+#
+
+dt. 
+
+Using the same temporal quadrature points as for the volume term, one obtains 
+
+Z ten+1 
+
+> ten
+
+"
+
+Le(Pe(t)) + X 
+
+> f⊂∂Ωe
+
+Cef, int (Pe, −(t)) 
+
+#
+
+dt 
+
+≈ 
+
+> Ne
+> vol
+
+X
+
+> m=1
+
+ω em
+
+"
+
+Le Pe(t em) + X 
+
+> f⊂∂Ωe
+
+Cef, int 
+
+ Pe, −(t em)#
+
+,
+
+where t em and ω em denote the temporal quadrature points and weights used for the volume contribution in element Ω e. The same points and weights are used for Cef, int because this term involves only the interior trace of the same element. 19 For any face f ⊂ ∂Ωe of element Ω e, let 
+
+Cef, cf ( ˆU e, −, ˆU e, +)denote the common-flux contribution to the surface operator. At time t, the states on the two sides of the interface are reconstructed from the continuous predictors of the neighboring elements as 
+
+Pe, −(t), Pe, +(t),
+
+which gives the common-flux contribution at time t in the form 
+
+Cef, cf 
+
+ Pe, −(t), Pe, +(t).
+
+Since the temporal matching relations are generally different from face to face, the temporal quadrature points for the common-flux contribution are, in general, not iden-tical on different faces. Therefore, the temporal integration of the common-flux term must be carried out separately on each face, which is consistent with the face-wise time-accurate LTS treatment advocated in [29]. For face f , if the interval associated with that face is partitioned into N f 
+
+> sub
+
+subintervals, [ten, t en+1 ] =  
+
+> Nf
+> sub
+
+[
+
+> k=1
+
+[t fk, L, t fk, R],
+
+then the common-flux contribution is evaluated in a piecewise manner as 
+
+Z ten+1 
+
+> ten
+
+Cef, cf 
+
+ Pe, −(t), Pe, +(t) dt = 
+
+> Nf
+> sub
+
+X
+
+> k=1
+
+Z t fk, R 
+
+> tfk, L
+
+Cef, cf 
+
+ Pe, −(t), Pe, +(t) dt. 
+
+Applying Gaussian quadrature on each subinterval gives 
+
+Z ten+1 
+
+> ten
+
+Cef, cf 
+
+ Pe, −(t), Pe, +(t) dt ≈ 
+
+> Nf
+> sub
+
+X 
+
+> k=1
+> Nf,k t
+
+X
+
+> g=1
+
+w f,k g Cef, cf 
+
+ Pe, −(t f,k g ), Pe, +(t f,k g ),
+
+where t f,k g and w f,k g are the Gaussian quadrature points and weights on the kth subinterval of face f .Figure 3.2 illustrates the temporal quadrature points used in a one-dimensional lo-cal time-stepping setting. The blue circles indicate the Gaussian quadrature points t em
+
+employed for both the volume contribution and the purely interior face contribution of el-ement Ω e over its local interval [ ten, t en+1 ], whereas the red triangles indicate the Gaussian quadrature points t f,k g used for the piecewise temporal integration of the common-flux contribution. Owing to the mismatch between the local time step of Ω e and those of its neighboring elements, the common-flux integrals are evaluated over several subintervals, and each subinterval is equipped with its own set of quadrature points. 20 Figure 3.2. Schematic illustration of temporal quadrature points for the volume and face contributions in a one-dimensional local time-stepping procedure. The blue circles denote the quadrature points t em used for the volume contribution and the purely interior face contribution of element Ω e, while the red triangles denote the quadrature points t f,k g
+
+used for the common-flux contribution on the piecewise subintervals induced by the time-step mismatch across neighboring elements. Accordingly, the total surface contribution over the local time interval is obtained by summing the purely interior and common-flux contributions from all faces, namely, 
+
+Z ten+1 
+
+> ten
+
+Ce Pe, −(t), Pe, +(t) dt = X 
+
+> f⊂∂Ωe
+
+Z ten+1 
+
+> ten
+
+Cef, int 
+
+ Pe, −(t) + Cef, cf 
+
+ Pe, −(t), Pe, +(t) dt. 
+
+Substituting the two temporal quadrature rules gives 
+
+Z ten+1 
+
+> ten
+
+Ce Pe, −(t), Pe, +(t) dt ≈ X  
+
+> f⊂∂Ωe
+> Ne
+> vol
+
+X
+
+> m=1
+
+ω em Cef, int 
+
+ Pe, −(t em)
+
++ X  
+
+> f⊂∂Ωe
+> Nf
+> sub
+
+X 
+
+> k=1
+> Nf,k t
+
+X
+
+> g=1
+
+w f,k g Cef, cf 
+
+ Pe, −(t f,k g ), Pe, +(t f,k g ).
+
+The complete integral update has been given in (3.33). If these terms are written in quadrature form, the update formula becomes ˆU e,n +1 ≈ ˆU e,n + 
+
+> Ne
+> vol
+
+X
+
+> m=1
+
+ω em
+
+"
+
+Le Pe(t em) + X 
+
+> f⊂∂Ωe
+
+Cef, int 
+
+ Pe, −(t em)#
+
++ X  
+
+> f⊂∂Ωe
+> Nf
+> sub
+
+X 
+
+> k=1
+> Nf,k t
+
+X
+
+> g=1
+
+w f,k g Cef, cf 
+
+ Pe, −(t f,k g ), Pe, +(t f,k g ).
+
+(3.34) This update formula shows that the local right-hand-side contributions are separated according to their data dependence. The volume term and the purely interior face 21 contribution are evaluated with the element-local quadrature points t em, whereas only the common-flux contribution requires face-wise temporal matching and reconstruction of neighboring predictor states. The updated state at time ten+1 is therefore obtained by combining the integrated volume contribution, the integrated purely interior face contribution, and the face-wise integrated common-flux contribution. 
+
+## 3.4 Conservation of the split time integration 
+
+We next verify that, even when different elements use different local time intervals, the split integration described above preserves discrete conservation by pairing the volume term with the purely interior face contribution and treating the common-flux contribu-tion through face-wise time matching. Let 1e denote the vector corresponding to the constant test function on element Ω e. The discrete conserved quantity in this element is 
+
+Qe(t) = ( 1e)T M eL ˆU e(t) ≈
+
+Z
+
+> Ωe
+
+U eh(t) dΩ, (3.35) where the relation is understood componentwise for the conservative variables. Acting with ( 1e)T M eL on the volume operator and the purely interior face contribution gives (1e)T M eL
+
+"
+
+Le( ˆU e) + X 
+
+> f⊂∂Ωe
+
+Cef, int ( ˆU e, −)
+
+#
+
+= −
+
+Z
+
+> Ωe
+
+∇ · F (U eh, ∇U eh) dΩ + X 
+
+> f⊂∂Ωe
+
+Z
+
+> f
+
+F − · ne dS = 0 .
+
+(3.36) For the nodal DGSEM introduced in Section 3.1, the interpolation nodes and quadrature nodes coincide. In one spatial direction, let W = diag( ω0, ω 1, . . . , ω k) be the diagonal GLL quadrature matrix and let D be the derivative matrix of the Lagrange basis evalu-ated at the GLL nodes. These operators satisfy the SBP identity 
+
+W D + DT W = B, B = diag( −1, 0, . . . , 0, 1) , (3.37) which is the discrete analogue of integration by parts for the nodal GLL collocation form of DGSEM [27]. After tensor-product assembly in multiple dimensions, this identity implies that, for a constant test function, the discrete volume divergence and the interior physical-flux part of the strong-form surface correction cancel elementwise, leaving only boundary or common-flux contributions. In the fully discrete implementation, (3.36) is precisely this SBP cancellation. It holds at each element-local temporal quadrature point because the same temporal quadrature is used for the volume term and the purely interior face contribution. Thus, over any local interval Ier = [ ter, t er+1 ] of element Ω e, the change of the element conserved quantity is due only to the common-flux contributions: 
+
+Qe,r +1 − Qe,r = − X 
+
+> f⊂∂Ωe
+
+Z
+
+> Ier
+
+Z
+
+> f
+
+bF ef,n (t) dS dt, (3.38) 22 where bF ef,n denotes the normal common flux on face f with the outward normal of element Ω e. Equation (3.38) is local in time; no global time interval is assumed in its definition. To show global conservation, consider a synchronization window [ T N , T N +1 ] that contains several element-local intervals. For an interior face f = ∂Ωe ∩ ∂Ωe′
+
+, form a face-time partition by taking the ordered union of all local time levels of the two adjacent elements within this window, 
+
+T N = τ f 
+
+> 0
+
+< τ f 
+
+> 1
+
+< · · · < τ fMf = T N +1 . (3.39) On each face-time slab f × [τ fℓ , τ fℓ+1 ], both adjacent continuous predictors are available, and the common flux is integrated once with the physical quadrature associated with that slab. With the outward normal of Ω e, define Φef,ℓ =
+
+Z τ fℓ+1  
+
+> τfℓ
+
+Z
+
+> f
+
+bF ef,n (t) dS dt ≈ 
+
+> Nf,ℓ t
+
+X
+
+> g=1
+
+w f,ℓ g
+
+Z
+
+> f
+
+bF ef,n (t f,ℓ g ) dS. (3.40) Because the same numerical flux is used on the same physical face and the two outward normals are opposite, 
+
+bF e′
+
+> f,n
+
+(t) = − bF ef,n (t), Φe′ 
+
+> f,ℓ
+
+= −Φef,ℓ . (3.41) The face-wise LTS quadrature therefore assigns equal and opposite contributions to the two elements for every face-time slab. These two contributions may be applied during different local element updates, or one of them may be stored until the neighboring ele-ment reaches the corresponding local time level, but the algebraic contribution associated with the slab is antisymmetric: Φef,ℓ + Φ e′ 
+
+> f,ℓ
+
+= 0 . (3.42) Summing (3.38) over all local intervals of all elements contained in [ T N , T N +1 ], every interior face-time slab appears exactly twice with opposite signs. Hence all interior common-flux contributions cancel pairwise, and the total discrete conserved quantity at synchronization times satisfies 
+
+X
+
+> e
+
+Qe(T N +1 ) − X
+
+> e
+
+Qe(T N ) = − X  
+
+> f⊂∂Ω
+> Mf−1
+
+X
+
+> ℓ=0
+
+Z τ fℓ+1  
+
+> τfℓ
+
+Z
+
+> f
+
+bF bf,n (t) dS dt, (3.43) where the right-hand side contains only physical boundary faces. For periodic bound-aries, the boundary faces are paired in the same way as interior faces; for closed bound-aries with zero normal flux, the boundary contribution vanishes. Therefore, even though 
+
+ter and ter+1 are local quantities and differ from element to element, the split evaluation of the volume, purely interior face, and common-flux contributions is conservative over each synchronization window. 23 Proposition 3.2 (Conservation of the split local time integration) . For the split LTS update described above, define the total discrete conserved quantity by 
+
+Qtot (T ) = X
+
+> e
+
+(1e)T M eL ˆU e(T ).
+
+Over any synchronization window [T N , T N +1 ], the change of this quantity is produced only by the physical boundary faces, 
+
+Qtot (T N +1 ) − Qtot (T N ) = − X 
+
+> f∈F b
+
+Z T N +1  
+
+> TN
+
+Z
+
+> f
+
+bF bf,n (t) dS dt, 
+
+where Fb denotes the set of physical boundary faces. In particular, in the absence of phys-ical boundary fluxes, for example under periodic boundary conditions, the total discrete conserved quantity is unchanged. 
+
+Remark. The split treatment used here should be distinguished from the CERK-based LTS formulation of Gassner and co-workers [29, 30]. In their modal DG setting, the volume contribution is incorporated into the element-local CERK predictor, while the face contribution is advanced as an unsplit surface term. Reusing the notation introduced above, this can be written schematically as ˆU e,n +1 = Pe(ten+1 ) + 
+
+Z ten+1 
+
+> ten
+
+Ce Pe, −(t), Pe, +(t) dt. (3.44) Here Pe(ten+1 ) is the continuous predictor defined in (3.31), evaluated at the end of the local interval. For a modal DG discretization, this form is natural because the cell-average equation is associated directly with the constant modal coefficient, and the surface term represents the conservative exchange across element interfaces. In the nodal GLL DG discretization used in this work, however, the cancellation between the volume divergence and the interior physical-flux part of the strong-form surface correction is a discrete summation-by-parts cancellation. If the unsplit surface term in (3.44) is applied directly together with face-wise LTS quadrature, the purely interior part Cef, int in (3.28) is no longer evaluated at the same temporal quadrature points as the volume term, and the cancellation in (3.36) is generally lost. Therefore, the present formulation separates the purely interior face contribution from the common-flux contribution: the former is integrated together with the volume term using element-local quadrature, while only the latter is integrated with face-wise temporal matching. This modification is introduced to preserve the discrete conservation property of the nodal DG scheme under local time stepping. 24 3.5 Algorithmic organization for CPU–GPU execution 
+
+The CPU–GPU implementation follows the data-dependence structure of the local time-stepping algorithm rather than introducing a separate numerical formulation. Dur-ing each advancement stage, the CPU maintains mesh and geometric data, identifies the active element groups, builds the face-time tasks required by the common-flux quadra-ture, and dispatches batches of element-local or face-local work. The GPU evaluates the tensor-product interpolation, differentiation, volume residuals, predictor stages, purely interior face contributions, and common-flux quadrature for the dispatched batches. This organization allows CPU-side task preparation and GPU-side numerical evaluation to overlap, while keeping the device-resident working set limited to the active computa-tional units [44]. The resulting algorithm is naturally split into two types of kernels. Element-local ker-nels require only data from a single element and cover the predictor construction, modal decomposition when used, volume-residual evaluation, and the purely interior part of the face correction. Face-local kernels require data from the two adjacent predictors and are used only for the common-flux contribution on each face-time slab. This separation mirrors the split residual formulation and reduces the amount of neighbor-dependent communication. For tensor-product discretizations on quadrilateral and hexahedral elements, the mul-tidimensional operations are further evaluated by applying one-dimensional operators successively in each coordinate direction. Thus derivatives, interpolations, modal trans-forms, quadrature evaluations, and related operator applications are assembled from one-dimensional data rather than full multidimensional matrices. This is the compu-tational form used by the GPU kernels and reduces both memory traffic and storage requirements for operator data. 
+
+# 4 Numerical Experiments 
+
+In this section, a series of numerical experiments are carried out to assess the ac-curacy, robustness, and applicability of the proposed weakly compressible DG method with time-accurate local time stepping. The tests include a one-dimensional weakly compressible simple wave and a two-dimensional weakly compressible shear wave for accuracy and conservation verification, the Re = 100 flow past a circular cylinder for numerical-flux comparison, the lid-driven cavity flow, and a three-dimensional 30P30N slat noise benchmark case. These examples are chosen to examine different aspects of the method, including formal order of accuracy, conservation under local time stepping, pressure-field behavior of the numerical fluxes in the cylinder test, viscous-flow resolu-tion, and applicability to a complex three-dimensional flow configuration. 25 Unless otherwise stated, the weakly compressible equation of state (2.7) is used in all computations. The spatial discretization is based on the strong-form nodal DGSEM formulation described in Section 3, and the temporal advancement is performed by the proposed CERK-based time-accurate local time-stepping procedure. The element-local time step is selected to satisfy ∆te ≤ CFL min 
+
+ he
+
+(2 k + 1) max Ωe (∥u∥ + c), h2
+
+> e
+
+(2 k + 1) 2(μ/ρ 0)
+
+
+
+,
+
+where he is the characteristic size of element Ω e, and c = pp′(ρ) = c0 for the equa-tion of state (2.7); the second term is omitted for inviscid cases. All numerical exam-ples use CFL = 0 .8. In each example, the degree of the temporal predictor polyno-mial constructed by the CERK continuous extension is chosen to match the spatial DG polynomial degree k. For viscous flows, the IIPG method is employed with a penalty constant CIP = 1 .0. Unless otherwise specified, the convective flux is handled by the two-rarefaction approximate Riemann flux. 
+
+## 4.1 One-dimensional weakly compressible simple wave 
+
+The first verification problem is a one-dimensional periodic calculation on x ∈ [0 , 2π]with conservative state U = ( ρ, ρu )T . The initial condition is 
+
+ρ(x, 0) = ρ0(1+ ϵ sin x), u(x, 0) = u0 +c0 ln ρ(x, 0) 
+
+ρ0
+
+, p(x, 0) = c20(ρ(x, 0) −ρ0)+ p0.
+
+Thus the Riemann invariant u − c0 ln( ρ/ρ 0) = u0 is constant, and the smooth right-running exact solution is obtained from the characteristic footpoint ξ satisfying 
+
+x = ξ +  u(ξ, 0) + c0
+
+t (mod 2 π).
+
+The exact state is 
+
+ρ(x, t ) = ρ(ξ, 0) , u(x, t ) = u(ξ, 0) , p(x, t ) = c20(ρ(x, t ) − ρ0) + p0.
+
+The parameters are 
+
+c0 = 5 , p0 = 25 , ρ0 = 1 , ϵ = 0 .02 , u0 = 0 .05 , tf = 0 .2,
+
+and the viscous coefficient is set to zero for this inviscid simple-wave test. The reported accuracy quantity is the density error evaluated at the DG solution/quadrature points. This test uses nonuniform one-dimensional meshes. The coarsest line is generated by 
+
+xi = xmin + ( xmax − xmin )
+
+
+
+si + 0.16 2π sin(2 πs i) − 0.04 4π sin(4 πs i)
+
+
+
+, si = in0
+
+,
+
+26 Table 4.1. Density errors and mass variation for the one-dimensional simple wave on nonuniform meshes. 
+
+Flux k nx L2 error Order L∞ error Order ∆M
+
+LF 1 4 1.571 ×10 −2 – 1.065 ×10 −2 – 0.000 ×10 0
+
+LF 1 8 4.580 ×10 −3 1.778 3.691 ×10 −3 1.529 2.665 ×10 −15 
+
+LF 1 16 1.247 ×10 −3 1.877 9.807 ×10 −4 1.912 −1.776 ×10 −15 
+
+LF 1 32 3.182 ×10 −4 1.971 2.620 ×10 −4 1.904 1.776 ×10 −15 
+
+LF 1 64 8.006 ×10 −5 1.991 6.662 ×10 −5 1.975 −8.882 ×10 −16 
+
+TR 1 4 1.576 ×10 −2 – 1.071 ×10 −2 – −8.882 ×10 −16 
+
+TR 1 8 4.606 ×10 −3 1.774 3.706 ×10 −3 1.530 1.776 ×10 −15 
+
+TR 1 16 1.255 ×10 −3 1.876 9.865 ×10 −4 1.910 −8.882 ×10 −16 
+
+TR 1 32 3.205 ×10 −4 1.970 2.632 ×10 −4 1.906 5.329 ×10 −15 
+
+TR 1 64 8.065 ×10 −5 1.991 6.709 ×10 −5 1.972 −2.665 ×10 −15 
+
+LF 2 4 2.010 ×10 −3 – 2.707 ×10 −3 – −8.882 ×10 −16 
+
+LF 2 8 2.329 ×10 −4 3.109 3.018 ×10 −4 3.165 −8.882 ×10 −16 
+
+LF 2 16 3.079 ×10 −5 2.919 4.172 ×10 −5 2.855 0.000 ×10 0
+
+LF 2 32 3.841 ×10 −6 3.003 5.320 ×10 −6 2.971 −8.882 ×10 −16 
+
+LF 2 64 4.858 ×10 −7 2.983 6.625 ×10 −7 3.006 −5.329 ×10 −15 
+
+TR 2 4 2.017 ×10 −3 – 2.729 ×10 −3 – −1.776 ×10 −15 
+
+TR 2 8 2.332 ×10 −4 3.112 3.016 ×10 −4 3.178 −1.776 ×10 −15 
+
+TR 2 16 3.077 ×10 −5 2.922 4.171 ×10 −5 2.854 1.776 ×10 −15 
+
+TR 2 32 3.837 ×10 −6 3.003 5.320 ×10 −6 2.971 0.000 ×10 0
+
+TR 2 64 4.850 ×10 −7 2.984 6.627 ×10 −7 3.005 1.776 ×10 −15 
+
+LF 3 4 1.937 ×10 −4 – 2.538 ×10 −4 – −8.882 ×10 −16 
+
+LF 3 8 1.110 ×10 −5 4.126 1.323 ×10 −5 4.262 −1.776 ×10 −15 
+
+LF 3 16 7.006 ×10 −7 3.986 9.374 ×10 −7 3.819 −1.776 ×10 −15 
+
+LF 3 32 4.199 ×10 −8 4.060 5.461 ×10 −8 4.102 2.665 ×10 −15 
+
+LF 3 64 2.633 ×10 −9 3.995 3.389 ×10 −9 4.010 −2.665 ×10 −15 
+
+TR 3 4 1.937 ×10 −4 – 2.523 ×10 −4 – 0.000 ×10 0
+
+TR 3 8 1.117 ×10 −5 4.117 1.341 ×10 −5 4.234 8.882 ×10 −16 
+
+TR 3 16 7.053 ×10 −7 3.985 9.420 ×10 −7 3.831 8.882 ×10 −16 
+
+TR 3 32 4.229 ×10 −8 4.060 5.506 ×10 −8 4.097 3.553 ×10 −15 
+
+TR 3 64 2.652 ×10 −9 3.995 3.403 ×10 −9 4.016 −5.329 ×10 −15 
+
+27 with xmin = 0, xmax = 2 π, and n0 = 4. The finer nx = 8 , 16 , 32 , 64 meshes are obtained by midpoint insertion on every existing cell. This produces nested nonuniform periodic grids. To assess conservation, the mass variation is computed as ∆ M = Mh(tf ) − Mh(0). The results show the expected convergence behavior for the one-dimensional simple wave. Both LF and TR fluxes produce essentially the same density errors. The observed orders on the finest levels are approximately two, three, and four for k = 1 , 2, 3, respec-tively. The mass variation remains at roundoff level, demonstrating that the conservative LTS implementation preserves the total mass for this periodic one-dimensional test. 
+
+## 4.2 Two-dimensional weakly compressible shear wave 
+
+The second exact-solution test is a two-dimensional diagonal shear wave on the pe-riodic domain [0 , 1] × [0 , 1]. Let 
+
+θ = 2 π(x + y) − 2π(Uc + Vc)t + ϕ. 
+
+The parameters are 
+
+c0 = 1 .5, p0 = 2 .25 , ρ0 = ρ∗ = 1 , A = 0 .05 , Uc = 0 .1, Vc = 0 .05 ,
+
+with μ = 0 .1, ϕ = 0 .3, and tf = 0 .05. The initial condition is the exact state at t = 0, and the full exact solution is 
+
+ρ(x, y, t ) = ρ∗, p(x, y, t ) = c20(ρ∗ − ρ0) + p0,u(x, y, t ) = Uc − A
+
+√2 exp( −8π2μt/ρ ∗) sin θ, v(x, y, t ) = Vc + A
+
+√2 exp( −8π2μt/ρ ∗) sin θ. 
+
+The reported error is the velocity-vector error 
+
+eu = p(uh − uexact )2 + ( vh − vexact )2.
+
+All rows use the nonuniform midpoint quadrilateral mesh family with nx = ny =4, 8, 16 , 32. The coarse 4 × 4 grid is formed from tensor-product vertex lines. The 
+
+x vertex line uses the same smooth perturbation as the one-dimensional mesh, with coefficients (0 .16 , −0.04), while the y vertex line uses coefficients ( −0.12 , 0.03). The finer levels are generated by midpoint subdivision of every coarse cell edge in both coordinate directions, so the nonuniform grids remain nested and the periodic faces are connected by unit translations. The mass variation is computed as ∆ M = Mh(tf ) − Mh(0). The results show the expected convergence behavior and roundoff-level mass con-servation for the proposed split LTS treatment. The LF and TR fluxes remain close in accuracy. The k = 1 and k = 3 cases recover approximately second- and fourth-order behavior, respectively. For k = 2, the observed order is close to two rather than 28 Table 4.2. Velocity errors and mass variation for the two-dimensional weakly compress-ible shear wave on nonuniform meshes. 
+
+Flux k Grid L2 error Order L∞ error Order ∆M
+
+LF 1 4 × 4 1.766 ×10 −3 – 3.487 ×10 −3 – −2.220 ×10 −16 
+
+LF 1 8 × 8 6.822 ×10 −4 1.372 1.482 ×10 −3 1.235 −2.665 ×10 −15 
+
+LF 1 16 × 16 1.738 ×10 −4 1.973 3.856 ×10 −4 1.942 4.108 ×10 −15 
+
+LF 1 32 × 32 4.428 ×10 −5 1.973 1.085 ×10 −4 1.829 1.876 ×10 −14 
+
+TR 1 4 × 4 2.001 ×10 −3 – 3.926 ×10 −3 – −1.110 ×10 −16 
+
+TR 1 8 × 8 8.950 ×10 −4 1.161 1.851 ×10 −3 1.085 −1.998 ×10 −15 
+
+TR 1 16 × 16 2.480 ×10 −4 1.852 5.306 ×10 −4 1.803 4.108 ×10 −15 
+
+TR 1 32 × 32 5.626 ×10 −5 2.140 1.411 ×10 −4 1.911 1.776 ×10 −14 
+
+LF 2 4 × 4 9.873 ×10 −4 – 3.428 ×10 −3 – 2.220 ×10 −16 
+
+LF 2 8 × 8 2.308 ×10 −4 2.097 6.865 ×10 −4 2.320 1.998 ×10 −15 
+
+LF 2 16 × 16 5.711 ×10 −5 2.015 1.281 ×10 −4 2.422 −4.885 ×10 −15 
+
+LF 2 32 × 32 1.489 ×10 −5 1.939 2.708 ×10 −5 2.242 −1.910 ×10 −14 
+
+TR 2 4 × 4 1.268 ×10 −3 – 4.643 ×10 −3 – 2.220 ×10 −16 
+
+TR 2 8 × 8 2.796 ×10 −4 2.181 8.694 ×10 −4 2.417 1.998 ×10 −15 
+
+TR 2 16 × 16 6.394 ×10 −5 2.128 1.453 ×10 −4 2.581 −6.772 ×10 −15 
+
+TR 2 32 × 32 1.584 ×10 −5 2.013 2.901 ×10 −5 2.325 −1.998 ×10 −14 
+
+LF 3 4 × 4 5.284 ×10 −5 – 2.527 ×10 −4 – 9.992 ×10 −16 
+
+LF 3 8 × 8 3.578 ×10 −6 3.884 1.583 ×10 −5 3.996 −2.887 ×10 −15 
+
+LF 3 16 × 16 2.409 ×10 −7 3.893 1.029 ×10 −6 3.943 −3.553 ×10 −15 
+
+LF 3 32 × 32 1.606 ×10 −8 3.907 6.410 ×10 −8 4.005 1.112 ×10 −13 
+
+TR 3 4 × 4 5.849 ×10 −5 – 2.904 ×10 −4 – 1.443 ×10 −15 
+
+TR 3 8 × 8 3.718 ×10 −6 3.976 1.633 ×10 −5 4.153 −2.220 ×10 −15 
+
+TR 3 16 × 16 2.447 ×10 −7 3.926 1.040 ×10 −6 3.972 1.554 ×10 −15 
+
+TR 3 32 × 32 1.617 ×10 −8 3.920 6.496 ×10 −8 4.002 1.090 ×10 −13 
+
+29 the optimal k + 1 = 3, which is attributed to the IIPG viscous discretization: for even polynomial degrees it typically yields only k-th order accuracy, consistent with the known parity-dependent behavior of incomplete or nonsymmetric interior-penalty DG discretizations [34, 36]. To highlight the role of the split treatment in the nodal DG discretization, an ad-ditional comparison is performed on the same two-dimensional nonuniform shear-wave problem with k = 1 on the 16 × 16 grid. The comparison directly uses the Gassner-type unsplit surface update represented by (3.44) instead of the conservative split update used in the present method. Table 4.3 compares the result with the conservative formulation. 
+
+Table 4.3. Conservation comparison for the two-dimensional nonuniform shear wave with k = 1 on the 16 × 16 grid.                       
+
+> Update Flux L2error L∞error ∆M
+> Conservative split update LF 1.738 ×10 −43.856 ×10 −44.108 ×10 −15
+> Gassner-type unsplit update LF 1.398 ×10 −44.194 ×10 −48.345 ×10 −8
+> Conservative split update TR 2.480 ×10 −45.306 ×10 −44.108 ×10 −15
+> Gassner-type unsplit update TR 2.098 ×10 −45.537 ×10 −48.160 ×10 −8
+
+The comparison shows that directly applying the unsplit Gassner-type update to the nodal DGSEM discretization destroys the roundoff-level mass conservation: the mass drift increases from about 10 −15 to about 10 −8. This behavior is consistent with the discussion in Section 3.4: in the nodal GLL setting, the purely interior face contribution must be integrated together with the volume term in order to retain the discrete SBP cancellation and hence the conservation property. 
+
+## 4.3 Flow past a circular cylinder at Re = 100 
+
+The flow past a circular cylinder at Re = 100 is used to compare the pressure-field behavior of different inviscid numerical fluxes in the weakly compressible formulation. The free-stream velocity is 
+
+U∞ = 1 .0 m s −1,
+
+the artificial sound speed is set to 
+
+c0 = 10 m s −1,
+
+and the cylinder diameter is 
+
+D = 0 .012 m .
+
+The reference kinematic viscosity is therefore μ/ρ 0 = U∞D/Re = 1 .2 × 10 −4 m2 s−1. The polynomial degree is k = 3, and the computation is advanced to the final time tf = 3 .0 s. 30 (a) Computational mesh 6.1e-07 1.6e-05 2e-6 4e-6 6e-6 8e-6 1e-5 1.2e-5 1.4e-5 current_elem_dt (b) Local time-step size at t = 3 .0 s 
+
+Figure 4.3. Mesh and instantaneous local time-step distribution for the Re = 100 cylinder-flow computation. Figure 4.3 shows the computational mesh and the local time-step distribution at 
+
+t = 3 .0 s. The smallest local time steps are concentrated near the cylinder and in the refined wake region, where the mesh size and local gradients impose the strongest stability constraint. Away from the body, the larger elements allow larger local steps, which is consistent with the intended local time-stepping behavior. Figure 4.4 gives the aerodynamic-coefficient histories after the periodic shedding state has developed. The drag coefficient oscillates around nearly identical mean levels, with 
+
+CD = 1 .3464 for the LF flux and CD = 1 .3466 for the TR flux. The lift coefficient is approximately periodic with a small mean value for both fluxes, and the corresponding rms lift coefficients are C′ 
+
+> L
+
+= 0 .227 for LF and C′ 
+
+> L
+
+= 0 .233 for TR. The shedding frequency extracted from the lift histories gives St = 0 .166 for both LF and TR. 
+
+Table 4.4. Comparison of force statistics and Strouhal number for flow past a circular cylinder at Re = 100. Source CD C′ 
+
+> L
+
+St 
+
+Present, LF flux 1.3464 0.227 0.166 Present, TR flux 1.3466 0.233 0.166 Aarnes et al. [16] 1.346 0.234–0.235 0.166 Li et al. [17] 1.336 – 0.164 Posdziech and Grundmann [18] 1.350 0.234 0.167 Pan [19] 1.32 0.23 0.16 Qu et al. [20] 1.326 0.219 0.166 Table 4.4 compares the present force statistics with the overset-grid result of Aarnes 31 (a) Drag coefficient, LF flux (b) Drag coefficient, TR flux 
+
+(c) Lift coefficient, LF flux (d) Lift coefficient, TR flux 
+
+Figure 4.4. Time histories of the drag and lift coefficients for the Re = 100 cylinder flow. 32 et al. [16] and the reference data summarized therein. The present mean drag coefficients are essentially identical to the large-domain overset-grid value of Aarnes et al. The TR rms lift coefficient agrees closely with the Aarnes and Posdziech–Grundmann values, while the LF value is slightly lower but still within the range of published results. The computed Strouhal number agrees exactly with the Aarnes and Qu et al. values while remaining within the spread of the other published data. This confirms that the force histories are consistent with established Re = 100 cylinder-flow benchmarks. 2.8e-07 1.3e+00 0.2 0.4 0.6 0.8 11.2 Velocity Magnitude 
+
+(a) LF flux 2.8e-07 1.3e+00 0.2 0.4 0.6 0.8 11.2 Velocity Magnitude (b) TR flux 
+
+Figure 4.5. Velocity-magnitude fields, in m s −1, at t = 3 .0 s for the Re = 100 cylinder flow. The velocity-magnitude fields in Fig. 4.5 show that the LF and TR fluxes produce comparable near-cylinder acceleration and wake development at the final time. The pressure contours in Fig. 4.6 show a visible difference between the two fluxes. Compared with LF, the TR result exhibits weaker far-field pressure fluctuations, espe-cially close to the downstream outflow boundary. In the present cylinder-flow test, this suggests a potential benefit of the two-rarefaction approximate flux for reducing spurious boundary reflections in this open-boundary setting. To further compare the pressure response near the far-field boundary, Fig. 4.7 shows the pressure sampled along a horizontal line passing through the cylinder centerline. The pressure curve shows weaker pressure fluctuations for the TR flux near the upstream far-field boundary. Together with the pressure-contour comparison, this suggests a potential benefit of the TR flux in the present cylinder-flow test: it retains the near-body solution quality while producing a weaker far-field pressure response than the LF flux. 33 -6.8e-01 5.4e-01 -0.4 -0.2 00.2 0.4 p(a) LF flux -6.8e-01 5.4e-01 -0.4 -0.2 00.2 0.4 p (b) TR flux 
+
+Figure 4.6. Pressure fields at t = 3 .0 s for the Re = 100 cylinder flow. 
+
+(a) Sampling line 0.30 0.25 0.20 0.15 0.10 0.05 0.00 
+
+> x
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> p
+
+pressure      
+
+> p(LF)
+> p(TR)
+> 0.30 0.29 0.28 0.27 0.26
+> 0.0060
+> 0.0075
+> 0.0090
+> 0.0105
+> 0.0120
+
+(b) Pressure along the sampling line 
+
+Figure 4.7. Pressure sampling line through the cylinder centerline and the correspond-ing pressure comparison at t = 3 .0 s. 34 4.4 Lid-driven cavity flow 
+
+The lid-driven cavity flow is considered next to examine the capability of the proposed method for incompressible-like viscous recirculating flows. The computational domain is a square cavity with side length L = 1 m, (x, y ) ∈ [0 , 1] m × [0 , 1] m .
+
+No-slip boundary conditions are imposed on all walls, and the top lid moves with a constant horizontal velocity 
+
+u = Ulid = 1 .0 m s −1, v = 0 m s −1.
+
+The Reynolds number is defined as 
+
+Re = Ulid Lμ/ρ 0
+
+,
+
+The computations are performed at Re = 1000 with polynomial degree k = 3. A100 × 100 nonuniform grid is used, as shown in Fig. 4.8. To examine the sensitivity to the artificial sound speed in the weakly compressible model, three values are considered: 
+
+c0 = 5 m s −1, 10 m s −1, and 20 m s −1.
+
+Figure 4.8. Computational grid for the lid-driven cavity calculation; coordinate lengths are in meters. 35 The main post-processing results for the representative case with c0 = 10 m s −1
+
+are shown first in Fig. 4.9. The streamline plot colored by velocity magnitude clearly identifies the primary recirculating vortex and the two lower-corner secondary vortices. The pressure contour shows the high-pressure region near the upper-right corner and the corresponding low-pressure region near the upper-left corner, while the vorticity contour highlights the thin shear layers generated by the moving lid and no-slip side walls.   
+
+> (a) Streamlines and velocity mag-nitude (m s −1)
+> (b) Dimensionless pressure con-tour
+> (c) Vorticity contour (s −1)
+
+Figure 4.9. Post-processed flow fields for the lid-driven cavity at Re = 1000 with 
+
+c0 = 10 m s −1.For quantitative validation, Fig. 4.10 compares the horizontal velocity along the ver-tical centerline and the vertical velocity along the horizontal centerline with benchmark data from Ghia et al. [23] and Botella and Peyret [21]. The plotted velocities are normal-ized by Ulid ; since Ulid = 1 .0 m s −1, the numerical values are identical to the corresponding SI velocities in m s −1. The three values of c0 give very similar velocity profiles on the global scale, and the agreement with the benchmark profiles is close near the extrema and near-wall turning regions. The pressure profiles provide a more sensitive view of the influence of c0. Figure 4.11 plots the dimensionless pressure along both centerlines and includes local enlarged views. Although the full-scale curves remain close, the enlarged plots show visible differences among c0 = 5 m s −1, 10 m s −1, and 20 m s −1. The c0 = 5 m s −1 curve shows the largest deviation in the local pressure extrema, whereas the c0 = 10 m s −1 and 20 m s −1 curves are closer to each other and to the Botella–Peyret reference data. This behavior is consistent with the role of the artificial sound speed in the weakly compressible equation of state: the velocity solution is already well converged for all three values, while the pressure field is more sensitive to the compressibility parameter. Table 4.5 lists the velocity extrema extracted from the centerline profiles and com-36 (a) u on the vertical centerline (b) v on the horizontal centerline 
+
+Figure 4.10. Centerline velocity profiles normalized by Ulid for the lid-driven cavity at 
+
+Re = 1000. pares them with representative benchmark values from the literature. The velocity extrema are normalized by Ulid . Compared with the spectral benchmark of Botella and Peyret, the c0 = 10 m s −1 and 20 m s −1 results reproduce the velocity extrema closely, while the c0 = 5 m s −1 result remains within the spread of the reference data. The instantaneous element time-step distributions in Fig. 4.12 illustrate the local time-stepping behavior for the three artificial sound speeds, with the local time step reported in seconds. For all three cases, smaller time steps are concentrated near the walls and corner regions where viscous layers and stronger gradients appear, whereas the interior of the cavity permits larger local steps. The distribution also reflects the dependence of the acoustic time scale on c0: increasing c0 reduces the admissible local step, so the c0 = 20 m s −1 case is globally more restrictive than the c0 = 5 m s −1
+
+case. The spatial pattern, however, remains consistent, confirming that the local time-step allocation follows the flow and mesh constraints rather than introducing irregular numerical artifacts. Overall, the cavity-flow computation confirms that the weakly compressible DG for-mulation with the proposed local time-stepping treatment can reproduce the canonical 
+
+Re = 1000 cavity solution, including the primary recirculation, secondary corner vor-tices, centerline velocity extrema, pressure variation. The velocity profiles are already nearly insensitive to the tested values of c0, while the pressure profiles and local time-step distributions retain visible and physically consistent differences among c0 = 5 m s −1,10 m s −1, and 20 m s −1.37 (a) Vertical centerline (b) Horizontal centerline 
+
+(c) Vertical centerline, zoom I (d) Horizontal centerline, zoom I 
+
+(e) Vertical centerline, zoom II (f) Horizontal centerline, zoom II 
+
+Figure 4.11. Dimensionless centerline pressure profiles and local enlarged views for the lid-driven cavity at Re = 1000. 38 Table 4.5. Velocity extrema normalized by Ulid on the cavity centerlines at Re = 1000. Reference Grid umin /U lid vmax /U lid vmin /U lid 
+
+Present, c0 = 5 m s −1 100 × 100 -0.386911 0.375245 -0.525427 Present, c0 = 10 m s −1 100 × 100 -0.389368 0.377974 -0.527792 Present, c0 = 20 m s −1 100 × 100 -0.388598 0.377014 -0.527080 Botella and Peyret [21] N = 48 -0.388527 0.376899 -0.527017 Botella and Peyret [21] N = 64 -0.388570 0.376944 -0.527076 Botella and Peyret [21] N = 96 -0.388570 0.376945 -0.527077 Botella and Peyret [21] N = 128 -0.388570 0.376945 -0.527077 Botella and Peyret [21] N = 160 -0.388570 0.376945 -0.527077 Deng et al., CPI [22] 64 × 64 -0.37436 0.36364 -0.51015 Deng et al., CPI [22] 96 × 96 -0.38233 0.37109 -0.51947 Deng et al., CPI [22] 128 × 128 -0.38511 0.37369 -0.52280 Deng et al., CPI [22] extrap. -0.38867 0.37702 -0.52724 Deng et al., staggered [22] 64 × 64 -0.375726 0.34556 -0.48858 Deng et al., staggered [22] 96 × 96 -0.37441 0.36271 -0.50982 Deng et al., staggered [22] 128 × 128 -0.38050 0.36884 -0.51727 Deng et al., staggered [22] extrap. -0.38855 0.37705 -0.52690 Ghia et al. [23] 129 × 129 -0.38289 0.37095 -0.51550 Bruneau and Jouron [24] 256 × 256 -0.3764 0.3665 -0.5208 Vanka [25] 321 × 321 -0.387 – –        
+
+> (a) c0= 5 m s −1(b) c0= 10 m s −1(c) c0= 20 m s −1
+
+Figure 4.12. Instantaneous element time-step distributions, in seconds, for the lid-driven cavity calculation. 39 4.5 Three-dimensional 30P30N high-lift benchmark 
+
+Finally, the proposed method is evaluated using the 30P30N high-lift benchmark to validate its performance in complex geometries and unsteady low-speed environments. This classic three-element configuration (slat, main element, and flap), developed by McDonnell Douglas, is widely used to study slat noise [41, 42, 45]. It provides a rigorous test for high-fidelity CFD methods due to its complex flow physics, characterized by strong shear-layer interactions and multiple separation zones [46]. The present study employs the modified 30P30N configuration developed by the Japan Aerospace Exploration Agency (JAXA) [47, 48], as illustrated in Fig. 4.13. The stowed chord length is cs = 0 .4572 m. Both slat and flap are deflected at 30 ◦ with chord lengths of 0 .15 cs and 0 .3cs, respectively. The computational setup follows the 3 rd 
+
+AIAA Workshop on Benchmark Problems for Airframe Noise Computations (BANC-III) conditions in terms of inflow parameters [45]. The free-stream Mach number, Reynolds number (based on cs), and incidence angle are set to M a = 0 .17, Re = 1 .71 × 10 6, and 5.5◦, respectively, corresponding to the nominal BANC-III case. The artificial sound speed is set to c0 = 341 m s −1.
+
+Figure 4.13. Geometric profile of the JAXA-modified 30P30N high-lift airfoil. The three-dimensional mesh contains 250,784 elements / 31.3 million degrees of free-dom under polynomial degree k = 4, with a boundary layer and geometric mesh growth rate of 1.3. Figure 4.14 illustrates the computational mesh and representative surface details. The same mesh from [41], validated for FR method simulations, is utilized here. The computational domain extends 50 cs in both forward and vertical directions, reaching 60 cs aftward. The z-axis spans 1 /9cs, following BANC-III guidelines [45]. Starting from a steady-RANS solution, the simulation is advanced until the flow reaches statistical convergence. The simulation spans a total of 30 flow pass times (FPTs, based on cs), requiring 252 hours on four RTX 4090D GPUs. Samples are collected during the final 10 FPTs at 100 kHz. Spectra are obtained via the periodogram method with a Hanning window and 50% overlap, giving a frequency resolution of 100 Hz. Figure 4.15 presents the instantaneous iso-surfaces of the Q criterion within the slat cove region. The method successfully captures the main features of the multielement configuration: a shear layer originates at the slat cusp and transitions from a two-dimensional transverse vortex state to a three-dimensional vortical system, driven by Kelvin–Helmholtz instability; this system subsequently impinges on the slat lower sur-40 (a) Overview (b) Around the slat 
+
+(c) Around the main wing (d) Around the flap 
+
+Figure 4.14. Computational mesh of the 30P30N high-lift airfoil. 41 face, while a fraction of the large vortices breaks down into smaller structures within the slat cove. The majority are advected and stretched by the high-speed gap flow, eventually bursting towards the slat trailing edge. 
+
+Figure 4.15. Instantaneous Q-criterion iso-surface ( Q = 2 ×10 7) in the slat cove region, colored by velocity magnitude. For quantitative validation, the surface pressure coefficient ( Cp) distributions on the airfoil midplane are presented in Fig. 4.16 alongside experimental data. It should be noted that the angle of attack was corrected to account for wall interference inherent in the closed test section, due to the significant blockage effect induced by the high-lift devices; thus, the free-stream value of 5 .5◦ corresponds to 7 ◦ and 10 ◦ in the JAXA [48] and Florida State University (FSU) [49] tests, respectively. The computed distributions are in good agreement with the measurements, although the suction pressures on the upper surface are slightly underestimated. The predicted lift coefficient CL = 2 .654 is consistent with the BANC-III workshop mean of 2.643 [45, 50, 51], with a relative difference of merely 0.42%. Figure 4.17 presents the wall surface pressure probes used in this study. Wall pressure spectra are compared with experimental datasets [47–49,52] in Fig. 4.18. The numerical results reproduce the broadband spectrum characteristics at the S3 location. At the other three probe locations, the numerical simulation accurately captures the discrete tones in the mid-low frequency ranges, while the predicted broadband levels and hump amplitudes fall between the two experimental datasets. Overall, the comparison with the measured spectra is favorable. The time step distribution is shown in Fig. 4.19. Local time stepping assigns larger admissible time steps to most mesh cells, while critical small time steps persist only within boundary layers and locally refined regions. The two-order-of-magnitude spread 42 0 0.2 0.4 0.6 0.8 1
+
+x/c s
+
+-2 0246
+
+> -Cp
+
+(a) All three elements -0.1 0 0.1 0.2 0.3 
+
+x/c s
+
+-1 012 
+
+> -Cp
+> JAXA Kevlar-wall 7° FSU Kevlar-wall 10° Present
+
+(b) Around the slat 
+
+Figure 4.16. Time-averaged Cp distributions on the airfoil midplane. 
+
+Figure 4.17. Schematic of the wall surface pressure probes used in this study. 43 10 3 10 4
+
+f (Hz) 
+
+70 80 90 100 110 120 
+
+> PSD (dB/Hz)
+
+FSU Kevlar-wall 10° JAXA Kevlar-wall 7° Present (a) S3 10 3 10 4
+
+f (Hz) 
+
+20 40 60 80 
+
+> PSD (dB/Hz)
+
+FSU Kevlar-wall 10° JAXA Kevlar-wall 7° Present (b) S10 10 3 10 4
+
+f (Hz) 
+
+50 60 70 80 90 
+
+> PSD (dB/Hz)
+
+FSU Hard-wall 5.5° JAXA Hard-wall 6° Present 
+
+(c) S13 10 3 10 4
+
+f (Hz) 
+
+30 40 50 60 70 80 90 
+
+> PSD (dB/Hz)
+
+JAXA Kevlar-wall 7° Present (d) M7 
+
+Figure 4.18. Wall pressure spectra compared with experimental datasets. 44 between extreme time steps illustrates the motivation for local time stepping, although no wall-clock speedup is quantified in the present study. 
+
+Figure 4.19. Instantaneous time step distribution for the 30P30N high-lift benchmark. The present three-dimensional computation highlights two important features of the proposed method. First, the weakly compressible DG framework remains robust on a geometrically complex multielement configuration. Second, the local time-stepping strategy is compatible with the strongly nonuniform time-step distribution induced by the near-wall layers and inter-element gaps. Therefore, the 30P30N benchmark simu-lation further confirms the practical potential of the proposed method for high-fidelity simulations of realistic low-Mach-number aerodynamic flows. 
+
+## 4.6 Summary of numerical findings 
+
+From the above numerical experiments, several observations can be made. First, the one-dimensional weakly compressible simple wave and the two-dimensional weakly compressible shear-wave exact-solution tests verify the expected convergence behavior on nonuniform meshes, while the mass variation remains at roundoff level for the con-servative split LTS formulation. In the two-dimensional shear-wave test, the additional comparison also shows that directly applying the Gassner-type unsplit update to the nodal DG discretization destroys this conservation property, increasing the mass drift from about 10 −15 to about 10 −8. Second, the Re = 100 circular-cylinder case shows that the force statistics agree with established benchmark data, while the TR flux used here produces weaker far-field pressure fluctuations than the LF flux in the present cylinder-flow test. Third, the lid-driven cavity flow shows that the method can accurately predict canonical viscous low-speed flows with strong wall effects. Finally, the three-dimensional 30P30N benchmark confirms the robustness and practical applicability of the method to a realistic complex configuration. Overall, the numerical results indicate that the proposed weakly compressible DG 45 method with time-accurate local time stepping preserves conservation and maintains the expected accuracy on the tested nonuniform meshes, while retaining robustness and local time-step flexibility for low-Mach-number flow simulations. 
+
+# 5 Conclusions and Future Work 
+
+This paper has developed a time-accurate local time-stepping DG method for un-steady low-Mach-number flows based on a weakly compressible formulation. The method combines a strong-form nodal DGSEM discretization on quadrilateral and hexahedral elements, IIPG treatment of viscous terms, a two-rarefaction approximate Riemann flux specialized to the weakly compressible convective system, and a CERK-based continuous predictor for local time stepping. For the nodal DGSEM discretization, the face contri-bution is split into a purely interior part and a common-flux part so that the volume term and the purely interior face contribution are integrated at the same element-local quadrature points, while the conservative exchange across interfaces is handled by face-wise time matching of the common flux. The numerical results show that the proposed method achieves the expected con-vergence behavior on nonuniform meshes for the one-dimensional simple wave and the two-dimensional weakly compressible shear wave, while preserving mass to roundoff ac-curacy in the periodic verification problems. The comparison with the Gassner-type unsplit update further confirms the need for the split treatment in the present nodal DG formulation. For the Re = 100 cylinder-flow case, the TR flux used here gives force statistics consistent with reference data and produces weaker far-field pressure fluctua-tions than the LF flux in the present test. The lid-driven cavity calculation confirms that the method can resolve canonical viscous low-speed flow features, including centerline velocity extrema, and pressure variation. The three-dimensional 30P30N computation further demonstrates the applicability of the method to realistic complex geometries and large-scale unsteady low-Mach-number flow simulations. Several directions remain for future work. First, more systematic performance studies will be carried out on large CPU–GPU heterogeneous platforms to quantify the wall-clock performance and possible gains of the local time-stepping strategy for different mesh nonuniformities and polynomial degrees. Second, implicit–explicit (IMEX) hybrid time integration will be investigated within the present conservative LTS-DG framework. This extension can be considered from two complementary viewpoints. Equation-based splitting will emphasize implicit treatment of stiff source terms, while convective fluxes and other nonstiff contributions remain under explicit local time stepping. In terms of spatial-region splitting, near-wall, small-cell, or strongly refined regions may be advanced by implicit or locally implicit treatments, while the remaining regions continue to use ex-plicit LTS. Key issues include conservative common-flux exchange across explicit–implicit 46 interfaces, time matching between different temporal treatments, and consistency with the CERK continuous predictor. Third, the LTS treatment of viscous terms will be ex-tended from the present IIPG discretization to a broader IPDG family, in particular the SIPG and NIPG variants. A key issue is to formulate the time integration of the symmet-ric or nonsymmetric consistency terms, penalty terms, and viscous numerical fluxes so that the element-local quadrature, face-wise time matching, stability, and conservation requirements remain mutually consistent. This will also allow systematic comparisons of IIPG, SIPG, and NIPG in terms of accuracy, robustness, and computational cost under local time stepping for viscous weakly compressible flows. 
+
+# A CERK Coefficients 
+
+Following the continuous explicit Runge–Kutta notation of Owren and Zennaro [31], the stage values and the continuous predictor are written as 
+
+Yi = yn + ∆ t
+
+> i−1
+
+X
+
+> j=1
+
+aij Kj , Ki = f (Yi),
+
+and 
+
+P (tn + θ∆t) = yn + ∆ t
+
+> s
+
+X
+
+> i=1
+
+bi(θ)Ki, 0 ≤ θ ≤ 1.
+
+The first- to fourth-order CERK coefficients used in the local predictor are listed below. For p = 1 , 2, the standard minimal continuous extensions are used; for p = 3 , 4, the coefficients are those reported by Owren and Zennaro [31]. 
+
+First order. 
+
+c1 = 0 , b(1) 1 (θ) = θ. 
+
+Second order. 
+
+01 1 b(2) 1 (θ) = θ − 12θ2, b(2) 2 (θ) = 12θ2.
+
+Third order. 
+
+0 
+
+> 12 23 12 23 45
+
+− 68 375 368 375 
+
+1 31 144 529 1152 125 384 
+
+b(3) 1 (θ) = 41 72 θ3 − 65 48 θ2 + θ, 
+
+47 b(3) 2 (θ) = − 529 576 θ3 + 529 384 θ2,b(3) 3 (θ) = − 125 192 θ3 + 125 128 θ2,b(3) 4 (θ) = θ3 − θ2.
+
+Fourth order. 
+
+0 
+
+> 161611 37 44 1369 363 1369 11 17 3388 4913
+
+− 8349 4913 8140 4913 13 15 − 36764 408375 767 1125 − 32708 136125 210392 408375 
+
+1 1697 18876 0 50653 116160 299693 1626240 3375 11648 
+
+b(4) 1 (θ) = − 866577 824252 θ4 + 1806901 618189 θ3 − 104217 37466 θ2 + θ, b(4) 2 (θ) = 0 ,b(4) 3 (θ) = 12308679 5072320 θ4 − 2178079 380424 θ3 + 861101 230560 θ2,b(4) 4 (θ) = − 7816583 10144640 θ4 + 6244423 5325936 θ3 − 63869 293440 θ2,b(4) 5 (θ) = − 624375 217984 θ4 + 982125 190736 θ3 − 1522125 762944 θ2,b(4) 6 (θ) = 296 131 θ4 − 461 131 θ3 + 165 131 θ2.
+
+# References 
+
+[1] S. V. Patankar and D. B. Spalding, A calculation procedure for heat, mass and momentum transfer in three-dimensional parabolic flows , International Journal of Heat and Mass Transfer, 15 (1972), 1787–1806. [2] S. V. Patankar, Numerical Heat Transfer and Fluid Flow , Hemisphere, Washington, D.C., 1980. [3] A. J. Chorin, Numerical solution of the Navier–Stokes equations , Mathematics of Computation, 22 (1968), 745–762. [4] R. Temam, Sur l’approximation de la solution des ´ equations de Navier–Stokes par la m´ ethode des pas fractionnaires (I) , Archive for Rational Mechanics and Analysis, 32 (1969), 135–153. [5] S. Chen and G. D. Doolen, Lattice Boltzmann method for fluid flows , Annual Review of Fluid Mechanics, 30 (1998), 329–364. 48 [6] S. Succi, The Lattice Boltzmann Equation for Fluid Dynamics and Beyond , Oxford University Press, Oxford, 2001. [7] C. K. Aidun and J. R. Clausen, Lattice-Boltzmann method for complex flows , Annual Review of Fluid Mechanics, 42 (2010), 439–472. [8] Q. Zou and X. He, On pressure and velocity flow boundary conditions and bounceback for the lattice Boltzmann BGK model , Physics of Fluids, 9 (1997), 1591–1598. [9] M. Bouzidi, M. Firdaouss and P. Lallemand, Momentum transfer of a Boltzmann-lattice fluid with boundaries , Physics of Fluids, 13 (2001), 3452–3459. [10] Z. L. Guo, C. G. Zheng and B. C. Shi, Non-equilibrium extrapolation method for velocity and pressure boundary conditions in the lattice Boltzmann method , Chinese Physics, 11 (2002), 366–374. [11] S. Ansumali and I. V. Karlin, Kinetic boundary conditions in the lattice Boltzmann method , Physical Review E, 66 (2002), 026311. [12] J. J. Monaghan, Smoothed particle hydrodynamics , Annual Review of Astronomy and Astrophysics, 30 (1992), 543–574. [13] J. J. Monaghan, Simulating free surface flows with SPH , Journal of Computational Physics, 110 (1994), 399–406. [14] J. P. Morris, P. J. Fox and Y. Zhu, Modeling low Reynolds number incompressible flows using SPH , Journal of Computational Physics, 136 (1997), 214–226. [15] X. Y. Hu and N. A. Adams, A multi-phase SPH method for macroscopic and meso-scopic flows , Journal of Computational Physics, 213 (2006), 844–861. [16] J. R. Aarnes, N. E. L. Haugen and H. I. Andersson, High-order overset grid method for detecting particle impaction on a cylinder in a cross flow ,International Journal of Computational Fluid Dynamics, 33 (2019), 43–58. doi:10.1080/10618562.2019.1593385. [17] Y. Li, R. Zhang, R. Shock and H. Chen, Prediction of vortex shedding from a circular cylinder using a volumetric lattice-Boltzmann boundary approach , European Physical Journal: Special Topics, 171 (2009), 91–97. [18] O. Posdziech and R. Grundmann, A systematic approach to the numerical calcula-tion of fundamental quantities of the two-dimensional flow over a circular cylinder ,Journal of Fluids and Structures, 23 (2007), 479–499. 49 [19] D. Pan, An immersed boundary method on unstructured Cartesian meshes for in-compressible flows with heat transfer , Numerical Heat Transfer, Part B: Fundamen-tals, 49 (2006), 277–297. [20] L. Qu, C. Norberg, L. Davidson, S.-H. Peng and F. Wang, Quantitative numerical analysis of flow past a circular cylinder at Reynolds number between 50 and 200 ,Journal of Fluids and Structures, 39 (2013), 347–370. [21] O. Botella and R. Peyret, Benchmark spectral results on the lid-driven cavity flow ,Computers & Fluids, 27 (1998), 421–433. [22] G. B. Deng, J. Piquet, P. Queutey and M. Visonneau, Incompressible flow calcula-tions with a consistent physical interpolation finite volume approach , Computers & Fluids, 23 (1994), 1029–1047. [23] U. Ghia, K. N. Ghia and C. T. Shin, High-Re solutions for incompressible flow us-ing the Navier–Stokes equations and a multigrid method , Journal of Computational Physics, 48 (1982), 387–411. [24] C.-H. Bruneau and C. Jouron, An efficient scheme for solving steady incompressible Navier–Stokes equations , Journal of Computational Physics, 89 (1990), 389–413. [25] S. P. Vanka, Block-implicit multigrid solution of Navier–Stokes equations in primi-tive variables , Journal of Computational Physics, 65 (1986), 138–158. [26] B. Cockburn and C.-W. Shu, Runge–Kutta discontinuous Galerkin methods for convection-dominated problems , Journal of Scientific Computing, 16 (2001), 173– 261. [27] J. S. Hesthaven and T. Warburton, Nodal Discontinuous Galerkin Methods: Algo-rithms, Analysis, and Applications , Springer, New York, 2008. [28] H. T. Huynh, A Flux Reconstruction Approach to High-Order Schemes Including Discontinuous Galerkin Methods , 18th AIAA Computational Fluid Dynamics Con-ference, AIAA Paper 2007-4079, 2007. [29] G. J. Gassner, F. Hindenlang and C.-D. Munz, A Runge–Kutta Based Discontinuous Galerkin Method with Time Accurate Local Time Stepping , in Adaptive High-Order Methods in Computational Fluid Dynamics , World Scientific, Singapore, 2011, pp. 95–118. [30] G. Gassner, M. Dumbser, F. Hindenlang and C.-D. Munz, Explicit One-Step Time Discretizations for Discontinuous Galerkin and Finite Volume Schemes Based on Local Predictors , Journal of Computational Physics, 230 (2011), 4232–4247. 50 [31] B. Owren and M. Zennaro, Derivation of Efficient, Continuous, Explicit Runge– Kutta Methods , SIAM Journal on Scientific and Statistical Computing, 13 (1992), 1488–1501. [32] M. Dumbser, D. S. Balsara, E. F. Toro and C.-D. Munz, A unified framework for the construction of one-step finite volume and discontinuous Galerkin schemes on unstructured meshes , Journal of Computational Physics, 227 (2008), 8209–8253. [33] D. N. Arnold, An interior penalty finite element method with discontinuous elements ,SIAM Journal on Numerical Analysis, 19 (1982), 742–760. [34] D. N. Arnold, F. Brezzi, B. Cockburn and L. D. Marini, Unified analysis of discontin-uous Galerkin methods for elliptic problems , SIAM Journal on Numerical Analysis, 39 (2002), 1749–1779. [35] F. Bassi and S. Rebay, A high-order accurate discontinuous finite element method for the numerical solution of the compressible Navier–Stokes equations , Journal of Computational Physics, 131 (1997), 267–279. [36] B. Rivi` ere, Discontinuous Galerkin Methods for Solving Elliptic and Parabolic Equa-tions: Theory and Implementation , SIAM, Philadelphia, 2008. [37] E. F. Toro, Riemann Solvers and Numerical Methods for Fluid Dynamics: A Prac-tical Introduction , 3rd ed., Springer, Berlin, 2009. [38] D. T. Elsworth and E. F. Toro, Riemann Solvers for Solving the Incompressible Navier–Stokes Equations Using the Artificial Compressibility Method , College of Aeronautics, Cranfield Institute of Technology, Report No. 9208, 1992. [39] F. C. Massa, L. Ostrowski, F. Bassi and C. Rohde, An artificial Equation of State based Riemann solver for a discontinuous Galerkin discretization of the incompress-ible Navier–Stokes equations , Journal of Computational Physics, 448 (2022), 110705. [40] C. Zhang, X. Y. Hu and N. A. Adams, A weakly compressible SPH method based on a low-dissipation Riemann solver , Journal of Computational Physics, 335 (2017), 605–620. [41] K. Zhang, P. Liu, S. Lin, K. Liu and Y. Lu, Sweep Effects on Slat Tonal Noise ,AIAA Journal, 64 (2026), 3399–3420. doi:10.2514/1.J066362. [42] K. Zhang, Z. Zhang, S. Lin, P. Liu and S. Liu, Multiple Deep Learning Sur-rogate Models for Aeroacoustic Prediction of the 30P30N High-Lift Airfoil , 32nd AIAA/CEAS Aeroacoustics Conference, AIAA Paper 2026-3450, 2026. 51 [43] M. Min and T. Lee, A spectral-element discontinuous Galerkin lattice Boltzmann method for nearly incompressible flows , Journal of Computational Physics, 230 (2011), 245–259. [44] K. Liu and Y. Lu, Ultra-fast high order unsteady simulations on GPUs based on a new computational model , AIAA Aviation 2019 Forum, AIAA Paper 2019-3525, 2019. [45] M. M. Choudhari and D. P. Lockard, Assessment of slat noise predictions for 30P30N high-lift configuration from BANC-III workshop , 21st AIAA/CEAS Aeroa-coustics Conference, AIAA Paper 2015-2844, 2015. [46] Y. Zhang, L. N. Cattafesta, K. A. Pascioni and M. M. Choudhari, Slat noise in high-lift systems , Progress in Aerospace Sciences, 146 (2024), 100996. doi:10.1016/j.paerosci.2024.100996. [47] M. Murayama, K. Nakakita, K. Yamamoto, H. Ura, Y. Ito and M. M. Choud-hari, Experimental study on slat noise from 30P30N three-element high-lift airfoil at JAXA Hard-Wall Low-Speed Wind Tunnel , 20th AIAA/CEAS Aeroacoustics Con-ference, AIAA Paper 2014-2080, 2014. [48] M. Murayama, Y. Yokokawa, H. Ura, K. Nakakita, K. Yamamoto, Y. Ito, T. Takaishi, R. Sakai, K. Shimoda, T. Kato and T. Homma, Experimental study of slat noise from 30P30N three-element high-lift airfoil in JAXA Kevlar-Wall Low-Speed Wind Tunnel , 24th AIAA/CEAS Aeroacoustics Conference, AIAA Paper 2018-3460, 2018. [49] K. A. Pascioni and L. N. Cattafesta, Aeroacoustic measurements of leading-edge slat noise , 22nd AIAA/CEAS Aeroacoustics Conference, AIAA Paper 2016-2960, 2016. [50] G. Chen, X. Tang, X. Yang, P. Weng and J. Ding, Noise control for high-lift devices by slat wall treatment , Aerospace Science and Technology, 115 (2021), 106820. [51] J. Xie, X. Yang, J. Ding, P. Weng and L. Wang, Noise control of swept high-lift devices using slat cove wavy wall , Aerospace Science and Technology, 175 (2026), 111971. [52] K. A. Pascioni, L. N. Cattafesta and M. M. Choudhari, An experimental investiga-tion of the 30P30N multi-element high-lift airfoil , 20th AIAA/CEAS Aeroacoustics Conference, AIAA Paper 2014-3062, 2014. 52

@@ -1,0 +1,2484 @@
+Title: A semi-Lagrangian method for the polyatomic ESBGK model
+
+URL Source: https://arxiv.org/pdf/2606.21191v1
+
+Published Time: Tue, 23 Jun 2026 00:39:33 GMT
+
+Number of Pages: 25
+
+Markdown Content:
+# A semi-Lagrangian method for the polyatomic ESBGK model 
+
+## Klaas Willems ∗1, 2 , Erik Arlemark †3, Giovanni Samaey ‡1, and Axel Klar §21Department of Computer Science, KU Leuven, Leuven, Belgium 
+
+2Faculty of Mathematics, RPTU Kaiserslautern-Landau, Kaiserslautern, Germany 
+
+3ASML 
+
+Abstract 
+
+Polyatomic kinetic models are essential for accurately capturing the thermodynamic behavior of real gases, as internal energy modes significantly influence transport coefficients, relaxation processes, and non-equilibrium effects that cannot be represented by monoatomic models. The polyatomic ESBGK model describes molecular collisions as a relaxation towards a generalized Gaussian distribution with an anisotropic covariance matrix and an exponentially decaying internal energy distribution. We present a new semi-Lagrangian scheme for the polyatomic Ellipsoidal Statistical BGK (ESBGK) model of the Boltzmann equation. The semi-Lagrangian framework, being deterministic and grid-based, removes the time-step restriction associated with the linear transport term by following the method of characteristics. The potentially stiff relaxation term is treated using an implicit A-stable linear multistep method which, owing to the structure of the BGK operator, can be reformulated into a cheap time-stepping scheme. This yields a highly efficient and numerically stable method. The numerical method is asymptotic preserving and stiffly accurate, meaning the scheme asymptotically converges to a scheme for the Euler equations in the vanishing Knudsen limit. In addition, we prove that the first-order scheme, asymptotically converges to the compressible Navier-Stokes equation with correct transport coefficients. Finally, we propose inflow and outflow boundary conditions suitable for BGK-type kinetic equations. We perform simulations of the Fourier and Couette test case to compare the BGK model with Direct Simulation Monte Carlo (DSMC). To conclude, we demonstrate the method on a challenging orifice flow test case with moving boundaries. 
+
+Keywords. Ellipsoidal Statistical BGK model, semi-Lagrangian scheme, polyatomic gas, kinetic theory of gases, asymptotic preserving 
+
+# 1 Introduction 
+
+Rarefied gas dynamics concerns flows in which non-equilibrium molecular effects play a significant role. The degree of rarefaction is characterized by the Knudsen number Kn = λL ,
+
+where λ denotes the mean free path and L is a characteristic macroscopic length. When Kn ≪ 1, particle collisions are frequent and continuum models such as the Euler or Navier–Stokes–Fourier equations accurately describe the evolution of density, momentum, and energy. For Kn = O(1), however, the continuum hypothesis breaks down and kinetic models become necessary. Such conditions arise naturally in applications including high-altitude aerodynamics and micro-electromechanical systems (MEMS) [1], either due to low pressure (yielding a large mean free path λ ) or due to small geometric scales L.The Boltzmann equation provides a fundamental statistical description of rarefied gases, but its collision operator contains a five-fold integral, making direct numerical solution expensive. For this reason, relaxation-type kinetic models—beginning with the BGK model—have been developed to simplify computations while retaining key physical 
+
+> ∗
+
+Corresponding author: klaas.willems@kuleuven.be 
+
+> †
+
+erik.arlemark@asml.com 
+
+> ‡
+
+giovanni.samaey@kuleuven.be 
+
+> §
+
+axel.klar@rptu.de 
+
+1
+
+> arXiv:2606.21191v1 [math.NA] 19 Jun 2026
+
+properties such as conservation laws, entropy dissipation, and correct asymptotic behavior. The ESBGK model extends BGK by enabling correct Prandtl number matching. Since many gases of practical interest are polyatomic, further extensions are required to incorporate internal energy and additional degrees of freedom. A range of numerical methods exists for kinetic equations. The Direct Simulation Monte Carlo (DSMC) method [2] provides a robust particle-based approximation of the Boltzmann equation, particularly in high-Mach or highly non-equilibrium regimes, but may suffer from statistical noise or high cost for low-speed or transient flows. Determin-istic methods, known as discrete velocity methods, provide for accurate alternatives [3]. They rely on a discretised velocity space, after which the advection and collision operators can be advanced separately using a time-splitting procedure. For the Boltzmann equation, the collision step can be computed efficiently by exploiting the convolution structure of the collision operator [4]. In contrast, for BGK-type models, the collision term is typically treated im-plicitly in time to circumvent the stiffness that arises in the small-Knudsen-number regime [5]. This idea has been explored in the context of finite volume schemes [6, 7, 8]. A particularly well-known deterministic numerical method for BGK-type equations is the so-called semi-Lagrangian method [9], which uses the method of characteristics to rewrite the equation as an ODE along characteristics. By tracing characteristics backwards to previous timesteps, a scheme is obtained that is not restricted by a CFL condition. The semi-Lagrangian framework has been extended to conservative reconstructions [10, 11], to the ESBGK model [12], to adaptive velocity grids [13, 14], and to BGK models for gas mixtures [15]. 
+
+Contributions. The goal of this work is to extend the semi-Lagrangian methodology to the polyatomic ESBGK model. The main contributions are: 1. A new semi-Lagrangian discretisation of the polyatomic ESBGK model, including an explicit treatment of the collision operator. We follow the procedure from [16], in which higher-order moments of the local equilibrium distribution at the next time step are formulated explicitly as a function of moments of a known distribution at the previous time step. In contrast to [16], in the polyatomic setting, we obtain a nonlinear system of equations for two temperatures which can be solved using a Newton method. For the velocity covariance matrix, we obtain an explicit expression that simplifies to the case of [16] for monoatomic particles. 2. A proof that the first-order scheme converges to a consistent discretisation of the Navier–Stokes–Fourier equa-tions with correct transport coefficients. We thereby generalize the proof from [12] for the ESBGK model, to the polyatomic setting. The proof follows a Chapman–Enskog expansion of the numerical scheme, but is more involved due to the presence of additional additional higher-order moments of the distribution function. 3. An implementation of physically relevant boundary conditions, including diffusive–reflective walls and pressure-driven inflow/outflow conditions. For the diffuse–reflective boundary conditions, we avoid the use of iterative procedures or extrapolation to the boundaries as in [17]. Instead, the boundary conditions are imposed directly after the reconstruction step, prior to the collision step, resulting in a simple and efficient explicit treatment. This approach is then naturally extended to pressure-driven inflow/outflow boundary conditions. To the best of our knowledge, such inflow/outflow boundary conditions for deterministic solvers of BGK-type equations have not yet been reported in the literature. 4. A comprehensive comparison of BGK, ESBGK, polyatomic ESBGK, DSMC, and Navier–Stokes models for canonical test cases such as Fourier and Couette flow [18]. This provides a consistent reference framework to assess how these models relate to each other and to benchmark results within the same numerical setting. We thereby aim to complement existing comparisons of polyatomic models using stochastic particle methods for more complex geometries [19, 20]. We also note that preliminary polyatomic Couette flow simulations using a UGKS scheme have recently been reported in [21]. 5. Simulations of stationary and moving orifice configurations, demonstrating the performance of the method in non-trivial geometries across continuum and transitional flow regimes. The results include comparisons with Navier–Stokes and DSMC reference data. The moving orifice case further illustrates the ability of the method to handle time-dependent geometries and capture complex flow behaviour such as expansion, recirculation, and shock structures. The remainder of this paper is organized as follows. Section 2 presents the mathematical background, describing the Boltzmann equation, BGK, ESBGK, and polyatomic ESBGK models. Section 3 introduces the semi-Lagrangian discretisation. First, we introduce the relevant notation in Section 3.1. Then, in Section 3.2, we derive the first-order scheme. The implicit time integration of the polyatomic ESBGK collision operator is complicated by its dependence on higher-order moments of the distribution function, such as the internal temperature. To address this, we express these moments in terms of known quantities from previous time steps, which yields nonlinear equations for the two temperatures as well as an explicit expression for the velocity covariance matrix. The extension of the scheme to 
+
+2higher-orders, and a model order reduction technique known as a Chu-reduction are then subsequently discussed in Sections 3.3 and 3.5. In Section 3.4, we present the diffuse-reflective, and inflow-outflow boundary conditions that can be used for all deterministic methods for BGK-type equations. We then prove in Section 4, as a generalization of the monoatomic case, that the first-order semi-Lagrangian scheme asymptotically converges to a consistent scheme for the Navier-Stokes equations. Section 5 provides the Fourier and Couette flow test cases, as well as the orifice simulations with moving boundaries. Finally, in section 6, the conclusion is presented. 
+
+# 2 Mathematical Background 
+
+This section outlines the kinetic models that form the basis of the polyatomic ESBGK formulation used in this study. 
+
+## 2.1 The Boltzmann Equation 
+
+The foundational kinetic model for rarefied gases is the Boltzmann equation [22], 
+
+∂f ∂t + v · ∇ xf = Q(f ), (1) which governs the evolution of the distribution f (t, x, v ) of monoatomic particles with velocity v ∈ R3, through time 
+
+t ∈ R+ and space x ∈ R3. The Boltzmann collision operator Q(f ) is bilinear and contains a five-fold integral. The macroscopic quantities such as the density ρ(t, x ), bulk velocity U (t, x ) and total energy E(t, x ) are then obtained by taking moments of the particle distribution, (ρ(t, x ), ρ (t, x )U (t, x ), E (t, x )) ⊤ =
+
+Z
+
+> R3
+
+ϕ(v)f (t, x, v )dv with ϕ(v) = 
+
+
+
+1, v, 12 |v| 2
+
+⊤
+
+. (2) The temperature of the gas is related to the total energy in the following way 
+
+E(t, x ) = 12 ρ(t, x )|U (t, x )|2 + 32 RsT (t, x ), (3) where Rs is the specific gas constant. The elements of ϕ(v) (2), are referred to as collision invariants, because they are conserved by the Boltzmann collision operator in the sense that 
+
+Z
+
+> R3
+
+ϕ(v)Q(f )dv = 0 . (4) Hydrodynamic equations, including the Euler and Navier–Stokes formulations, can be systematically obtained from the Boltzmann equation by applying the Chapman–Enskog expansion [23]. This procedure involves expanding the distribution function in the Knudsen number, f = f 0 + Kn f 1 + Kn 2f 2 + · · · . At the zero-th order, the Euler equations are obtained. The first-order approximation gives the Navier-Stokes equations 
+
+∂ρ ∂t + div x (ρU ) = 0 ,∂ρU ∂t + div x (ρU ⊗ U + pI 3) = Kn div x [μσ (u)] ,∂E ∂t + div x (( E + p)U ) = Kn div x (μσ (U )U + κ∇xT ) ,
+
+(5) with the pressure p = ρR sT , the viscosity μ = μ(T ), the heat conduction κ, and the stress tensor σ(U ). An important quantity, the Prandtl number, Pr = 52
+
+Rsμκ , (6) quantifies the main mode of diffusion. For Pr ≪ 1, thermal diffusion dominates, whereas for Pr ≫ 1, momentum diffusion dominates. Monoatomic gases typically have a Prandtl number of 23 . An important requirement for kinetic models is their ability to reproduce this physically correct Prandtl number. A final property of the Boltzmann equation, is the so-called H-theorem. For space-homogeneous functions, we define the negative entropy 
+
+H(t) = 
+
+Z
+
+> R3
+
+f log f dv. (7) 
+
+3It can be shown that solutions to the space-homogeneous Boltzmann equation satisfy the so-called H-theorem dH
+
+dt =
+
+Z
+
+> R3
+
+Q(f ) log f dv ≤ 0. (8) Since the quantity f log f is bounded from below, and H(t, x ) must decrease, the Boltzmann equation describes the evolution towards a state of minimum H, known as thermodynamic equilibrium. At thermodynamic equilibrium, the distribution f (t, x, v ) is the Maxwellian distribution 
+
+M(t, x, v ) = ρ(t, x )(2 πR sT (t, x )) 3/2 exp 
+
+
+
+− |v − U (t, x )|2
+
+2RsT (t, x )
+
+
+
+. (9) 
+
+## 2.2 The Classical BGK Model 
+
+The observation that the distribution f tends to a Maxwellian distribution is the main motivation for BGK-type models, where the Boltzmann collision operator is replaced by a relaxation operator 
+
+QBGK (f ) = 1
+
+τ (M(t, x, v ) − f (t, x, v )) , (10) with τ = μ(T )/p the mean free time. Due to the definition of the density, mean velocity (2) and temperature (3), the BGK equation is highly nonlinear. Nevertheless, due of the specific structure of its relaxation operator, the model admits to efficient numerical schemes and retains many essential properties of the Boltzmann equation. Analogous to the Boltzmann equation (1), the BGK model conserves mass, momentum and energy. Furthermore, a H-theorem for the BGK equation can be proven, dH
+
+dt = ddt
+
+Z
+
+> R3
+
+QBGK (f ) (log f + log M − log M) dv = − ddt
+
+Z
+
+> R3
+
+QBGK (f ) (log M − log f ) dv + 0 ≤ 0, (11) by adding a zero under the integral and using the conservation of mass property. The main deficit of the BGK model is that it fails to reproduce the correct Prandtl number. Indeed, a Chapman-Enskog expansion of the BGK model to first-order yields a Prandtl number of 1. 
+
+## 2.3 The ESBGK Model for Monoatomic Gases 
+
+To treat the issue of the BGK model related to the Prandtl number, several solutions exist. In [24], a velocity-dependent collision frequency is considered. Alternatively, a correct Prandtl number can also be obtained by correcting thermodynamic equilibrium in (10) with a term proportional to the heat flux. This model is known as the Shakhov model [25]. However, in this text, we consider the generalized BGK model that was introduced in [26, 27], known as the Ellipsoidal Statistical or Gaussian BGK model (ESBGK). This collision model, which is still a relaxation, replaces the local Maxwellian in the BGK model (10) with an anisotropic Gaussian, 
+
+G(t, x, v ) = ρ
+
+pdet(2 πT ) exp 
+
+
+
+− 12 (v − U (t, x )) ⊤ T −1 (v − U (t, x )) 
+
+
+
+, (12) with covariance matrix T and stress tensor Θ 
+
+T = (1 − νES )RsT I 3 + νES Θ, (13) 
+
+ρ(t, x )Θ = 
+
+Z
+
+> R3
+
+(v − U (t, x )) ⊗ (v − U (t, x )) f (t, x, v )dv, (14) and free parameter −0.5 ≤ νES < 1. The collision operator now becomes 
+
+QESBGK (f ) = 1
+
+τ (1 − νES ) (G(t, x, v ) − f (t, x, v )) . (15) Note that for νES = 0, the ESBGK model (15) reduces to the BGK model (10). The ESBGK model preserves the same collision invariants as the previous models, and the H-theorem was established in [28]. Moreover, a first-order Chapman-Enskog expansion yields a Prandtl number of Pr = 11−νES , which for νES = −0.5, yields the physically-correct value of Pr = 2 /3. Extensions of both the BGK and ESBGK model to gas mixtures have been developed, see [29, 30] and references therein. All models discussed so far are in principle only valid for monoatomic gases. 
+
+42.4 Polyatomic ESBGK Model 
+
+Since monoatomic gases constitute only a narrow subset of those encountered in practical applications, more general formulations applicable to polyatomic gases are required. In this work, we therefore consider the polyatomic extension of the ESBGK model from [31]. In the polyatomic case, the distribution function f (t, x, v, I ) is extended to include the internal energy distribution I2/δ of gas particles, where δ is the number of additional degrees of freedom. For example, for a diatomic gas, δ = 2. The collision invariants and associated macroscopic quantities (2) are now defined as 
+
+ρ(t, x ) = ⟨⟨ f (t, x, v, I )⟩⟩ (16) 
+
+ρ(t, x )U (t, x ) = ⟨⟨ vf (t, x, v, I )⟩⟩ (17) 
+
+E(t, x ) = 
+
+ 12 |v|2 + I2/δ 
+
+
+
+f (t, x, v, I )
+
+ 
+
+= 12 ρ(t, x )|U (t, x )|2 + ρ(t, x )e(t, x ), (18) under the new notation 
+
+⟨⟨•⟩⟩ =
+
+Z
+
+> v∈R3
+
+Z
+
+> I∈R+
+
+• dvdI. (19) The specific internal energy e(t, x ) and associated equilibrium temperature Teq consist of two parts, a translational energy mode, and a internal (rotational) energy mode 
+
+e(t, x ) = etr (t, x ) + eint (t, x ) = 3 + δ
+
+2 Rs Teq (t, x ),etr (t, x ) = 1
+
+ρ(t, x )
+
+DD 12 |v − U (t, x )|2f (t, x, v, I )
+
+EE 
+
+= 32 Rs Ttr (t, x ),eint (t, x ) = 1
+
+ρ(t, x )
+
+DD 
+
+I2/δ f (t, x, v, I )
+
+EE 
+
+= δ
+
+2 Rs Tint (t, x ),
+
+(20) where the translational temperature Ttr is used to define the pressure p = ρR sTtr . The polyatomic model introduces two relaxation parameters, −0.5 ≤ νpES < 1, and 0 ≤ θ ≤ 1, which relate to the relaxation temperature Trel 
+
+Trel (t, x ) = θT eq (t, x ) + (1 − θ)Tint (t, x ), (21) and the covariance matrix TT = (1 − θ) [(1 − ν)RsTtr (t, x )I3 + νΘ] + θR sTeq (t, x )I3. (22) Using these definitions, we can define the polyatomic Maxwellian M and Gaussian GM(t, x, v, I ) = ρ(t, x )Λ δ
+
+(2 πR sTeq (t, x )) 3/2 (RsTeq )δ/ 2 exp 
+
+
+
+− |v − U (t, x )|2
+
+2RsTeq (t, x ) − I2/δ 
+
+RsTeq (t, x )
+
+
+
+, (23) 
+
+G(t, x, v, I ) = ρ(t, x )Λ δ
+
+pdet(2 πT )( RsTrel (t, x )) δ/ 2 exp 
+
+
+
+− 12 (v − U (t, x )) ⊤ T −1 (v − U (t, x )) − I2/δ 
+
+RsTrel (t, x )
+
+
+
+. (24) The constant Λ δ = Γ( δ 
+
+> 2
+
++ 1) serves the purpose of normalising the term in the exponential related to the internal energy. Finally, we can define the ESBGK model for polyatomic gases 
+
+QpESBGK (f ) = 1
+
+ε (G(t, x, v, I ) − f (t, x, v, I )) , (25) with ε = μ (1 − νpES + θν pES ) /p . When the deriving the scheme, we allow the viscosity function to depend on the translational temperature μ = μ(Ttr ) as in [19]. Note that for δ = 0 and θ = 0, we have Teq = Ttr , and the polyatomic ESBGK model reduces to the monoatomic ESBGK model. The polyatomic ESBGK model conserves mass, momentum and energy, and admits to a H-theorem that was proven in [31]. As before, for vanishing Knudsen numbers, the model reduces to the Navier-Stokes-Fourier equations with correct Prandtl number. Moreover, the additional free parameter in the polyatomic model enables matching a further transport coefficient, known as the second viscosity. 
+
+53 The semi-Lagrangian method and its properties 
+
+In this Section, we derive the semi-Lagrangian method for polyatomic ESBGK model. First, we introduce the notation. Then, in Section 3.2, we derive the first-order method. In Section 3.3, we extend the scheme to second-order in time and space using implicit linear multistep methods. In Section 3.4, we discuss how diffuse-reflective and pressure driven inflow and outflow boundary conditions are applied. Finally, in Section 3.5, we give a reduced order model of the polyatomic ESBGK equation for two-dimensional simulations in space. 
+
+## 3.1 Notation 
+
+For simplicity, we consider a one-dimensional spatial domain [ xL, x R], with uniform grid spacing ∆ x = xR−xL 
+
+> Nx
+
+such that 
+
+xi = xL +
+
+
+
+i + 12
+
+
+
+∆x, i = 0 . . . N x − 1. (26) The velocity grid v ∈ R3 is first truncated to [ −vvmax , v vmax ] and subsequently discretised with mesh spacing ∆ v = 
+
+> 2vvmax
+> Nv
+
+in each direction: 
+
+vj = −vvmax (1 , 1, 1) ⊤ + ( j1∆v, j 2∆v, j 3∆v)⊤ , 0 ≤ j1, j 2, j 3 ≤ Nv . (27) For more involved velocity discretisations, see [13, 14]. Finally, we consider a fixed time step ∆ t, such that 
+
+tn = n∆t, n = 0 . . . N t, Nt∆t = tf . (28) We keep the internal energy variable I ∈ R+ continuous, but we omit it from the following sections, as it can be completely eliminated through a so-called Chu reduction [32, 31]. Further details are provided in Section 3.5. The numerical solution of f at ( tn, x i, v j ) is denoted by f ni,j . Macroscopic quantities are approximated by discretising integrals over velocity space with the composite midpoint rule, e.g., (ρni , ρ ni U ni , E ni )⊤ =
+
+*X
+
+> j
+
+
+
+(1 , v j , 12 |v|2) + I2/δ 
+
+⊤
+
+f ni,j ∆v3
+
++
+
+> I
+
+, ρni Θni = X
+
+> j
+
+(vj − U ni ) ⊗ (vj − U ni ) f ni,j I ∆v3 (29) 
+
+T ni = (1 − θ) (1 − ν)RsT ntr,i I3 + νΘni
+
+ + θR sT neq,i I3, Σni = X
+
+> j
+
+vj ⊗ vj f ni,j I ∆v3 (30) 
+
+T ntr,i = 23ρni Rs
+
+X
+
+> j
+
+12 |vj − U ni |2 f ni,j I ∆v3, T nint,i 
+
+2
+
+δρ ni Rs
+
+X
+
+> j
+
+D
+
+I2/δ f ni,j 
+
+E
+
+> I
+
+∆v3 (31) 
+
+T neq,i = 13 + δ
+
+ 3T ntr,i + δT nint,i 
+
+ , T nrel,i = θT neq + (1 − θ)T nint,i . (32) This procedure yields spectral accuracy in velocity, as long as the velocity vvmax is taken sufficiently large such that distribution f is small near the boundary of the velocity domain [33, 9]. In the next section, we derive the first-order method. 
+
+## 3.2 The first-order method 
+
+x
+
+t
+
+tn
+
+tn+1 
+
+xi−2 xi−1 xi xi+1 ˜xi
+
+˜f nij 
+
+f n+1 
+
+> ij
+
+vj > 0
+
+Figure 1: The characteristic is traced back to the previous time step. The foot of the characteristic does not necessarily lie on the grid, thus interpolation is required [9]. 6Using the method of characteristics, the kinetic equation (1), with polyatomic ESBGK collision operator QpESBGK ,can be rewritten as an ordinary differential equation along characteristics df
+
+dt = 1
+
+ε (G − f ) , f (0 , x, v, I ) = f 0(x, v, I ), (33) dx
+
+dt = v, x(0) = ˜ x. (34) The characteristics, given by Equation (34), define lines through space along which the distribution f only changes to collisions (33). To treat the potentially stiff collision operator, we use an implicit first-order method in time 
+
+f n+1  
+
+> i,j
+
+= ˜f ni,j + ∆tεn+1 
+
+> i
+
+ Gn+1  
+
+> i,j
+
+− f n+1 
+
+> i,j
+
+ , (35) where ˜f ni,j is the approximation of the solution at ˜ x = xi − vj ∆t at time tn, see Figure 1. It is sufficient to use linear interpolation to obtain a first-order scheme. Equation (35) constitutes a highly nonlinear system of equations in 
+
+f n+1  
+
+> i,j
+
+, due to the dependence of Gn+1  
+
+> i,j
+
+on ρn+1  
+
+> i
+
+, U n+1  
+
+> i
+
+, T n+1  
+
+> i
+
+and T n+1  
+
+> rel,i
+
+. In addition, the relaxation time εn+1 depends on the pressure p = ρn+1  
+
+> i
+
+RsT n+1  
+
+> tr,i
+
+and viscosity function μ  T n+1 
+
+> tr,i
+
+. Nonetheless, using a trick analogous to [12, 16], we show that implicit scheme can be evaluated cheaply without the need for a large nonlinear system solver. In the following three subsections, we progressively reduce the complexity of the nonlinear system. First, in Section 3.2.1, we show that ρn+1  
+
+> i
+
+and U n+1  
+
+> i
+
+can be computed explicitly. Next, in Section 3.2.2, we derive a nonlinear system for 
+
+T n+1  
+
+> tr,it
+
+and T n+1 
+
+> int,it
+
+. Once these quantities are determined, the covariance matrix T n+1  
+
+> i
+
+can also be evaluated explicitly, as demonstrated in Section 3.2.3. 
+
+3.2.1 Explicit expressions for ρn+1  
+
+> i
+
+and U n+1 
+
+> i
+
+By multiplying Equation (35) by the collision invariants ϕ(v, I ) = 
+
+
+
+1, v, 12 |v|2 + I2/δ 
+
+
+
+, taking the summation over velocity index j, and integrating over I, we obtain 
+
+*X
+
+> j
+
+ϕ(vj , I )
+
+
+
+f n+1  
+
+> i,j
+
+− ˜f ni,j 
+
+
+
+∆v3
+
++
+
+> I
+
+= ∆tεn+1 
+
+> i
+
+*X
+
+> j
+
+ϕ(vj , I )  Gn+1  
+
+> i,j
+
+− f n+1 
+
+> i,j
+
+ ∆v3
+
++
+
+> I
+
+. (36) Assuming the velocity domain [ −vvmax , v vmax ] is chosen large enough, the right hand side in Equation (36) vanishes. Consequently, by conservation properties, we obtain, 
+
+ρn+1  
+
+> i
+
+= ˜ ρni , U n+1  
+
+> i
+
+= ˜U ni , En+1  
+
+> i
+
+= ˜Eni , (37) where the tilde denotes macroscopic quantities derived from ˜f .
+
+3.2.2 Nonlinear system for the temperatures T n+1  
+
+> tr,i
+
+and T n+1 
+
+> int,i
+
+Next, we multiply Equation (35) with vj − U n+1  
+
+> i
+> 2
+
+and with I2/δ . We integrate the resulting equations with respect to I and sum over the velocities to obtain, 32 ρn+1  
+
+> i
+
+Rs
+
+h
+
+T n+1  
+
+> tr,i
+
+− ˜T n+1 
+
+> tr,i
+
+i
+
+= ∆tεi(T n+1  
+
+> tr,i
+
+)
+
+ 32 ρn+1  
+
+> i
+
+RsT n+1  
+
+> eq,i
+
+− 32 ρn+1  
+
+> i
+
+RsT n+1 
+
+> tr,i
+
+
+
+, (38) 
+
+δ
+
+2 ρn+1  
+
+> i
+
+Rs
+
+h
+
+T n+1  
+
+> int,i
+
+− ˜T n+1 
+
+> int,i
+
+i
+
+= ∆tεi(T n+1  
+
+> tr,i
+
+)
+
+ δ
+
+2 ρn+1  
+
+> i
+
+RsT n+1  
+
+> rel,i
+
+− δ
+
+2 ρn+1  
+
+> i
+
+RsT n+1 
+
+> int,i
+
+
+
+(39) Since the translational energy and rotational energy are not conserved, the right hand side in Equations (38) and (39) do not vanish. Instead, after applying the definitions for T n+1  
+
+> rel,i
+
+and T n+1  
+
+> eq,i
+
+, we obtain two coupled nonlinear equations for the translational and internal temperature, 
+
+T n+1  
+
+> tr,i
+
+− ˜T ntr,i − θ∆tεn+1  
+
+> i
+
+(T n+1  
+
+> tr,i
+
+)
+
+δ
+
+3 + δ
+
+T n+1  
+
+> int,i
+
+− T n+1 
+
+> tr,i
+
+ = 0 , (40) 
+
+T n+1  
+
+> int,i
+
+− ˜T nint,i − θ∆tεn+1  
+
+> i
+
+(T n+1  
+
+> tr,i
+
+)33 + δ
+
+T n+1  
+
+> tr,i
+
+− T n+1 
+
+> int,i
+
+ = 0 . (41) Equations (40) and (41) are solved using a Newton iteration. We note that this is a two-dimensional nonlinear system that must be solved at every spatial grid point, and is thus very cheap compared to the interpolations that are required to compute ˜f ni . Given the temperatures T n+1  
+
+> tr,i
+
+and T n+1 
+
+> int,i
+
+, the relaxation temperature T n+1  
+
+> rel,i
+
+and equilibrium temperature T n+1  
+
+> eq,i
+
+can be computed, see Equation (32). 
+
+73.2.3 Explicit expression for the covariance matrix T n+1 
+
+> i
+
+Next, we obtain an explicit expression for the covariance matrix T n+1  
+
+> i
+
+. First, we multiply Equation (35) by vi ⊗ vj
+
+and integrate Σn+1  
+
+> i
+
+= ˜Σni + ∆tεn+1 
+
+> i
+
+ρn+1 
+
+> i
+
+(1 − θ) (1 − ν)RsT n+1  
+
+> tr,i
+
+I3 + νΘn+1 
+
+> i
+
+ + θR sT n+1  
+
+> eq,i
+
+I3 + U n+1  
+
+> i
+
+⊗ U n+1  
+
+> i
+
+− ∆tεn+1 
+
+> i
+
+Σn+1  
+
+> i
+
+(42) = ˜Σni + Rs∆tεn+1 
+
+> i
+
+ρn+1 
+
+> i
+
+(1 − θ)(1 − ν)RsT n+1  
+
+> tr,i
+
+I3 + θR sT n+1  
+
+> eq,i
+
+I3 + (1 − (1 − θ)ν)U n+1  
+
+> i
+
+⊗ U n+1  
+
+> i
+
++ (43) Σn+1 
+
+> i
+
+∆tεn+1 
+
+> i
+
+((1 − θ)ν − 1) ,
+
+where we have used the identity 
+
+ρn+1  
+
+> i
+
+Θn+1  
+
+> i
+
+= Σ n+1  
+
+> i
+
+− ρn+1  
+
+> i
+
+U n+1  
+
+> i
+
+⊗ U n+1  
+
+> i
+
+. (44) Equation (43) is trivially solved for Σ n+1  
+
+> i
+
+. Finally, using Equation (44) and the definition of the covariance matrix 
+
+T n+1  
+
+> i
+
+, see Equation (30), we obtain the following expression 
+
+T n+1  
+
+> i
+
+=
+
+
+
+(1 − θ)(1 − ν)RsT n+1  
+
+> tr,i
+
++ (1 − θ)∆ t ωn+1 
+
+> i
+
+ε
+
+ (1 − θ)(1 − ν)RsT n+1  
+
+> tr,i
+
++ θR sT n+1 
+
+> eq,i
+
+
+
+I3 (45) +(1 − θ)ωn+1 
+
+> i
+
+ ˜Σni
+
+ρn+1 
+
+> i
+
+− U n+1  
+
+> i
+
+⊗ U n+1 
+
+> i
+
+
+
+,
+
+with 
+
+ωn+1  
+
+> i
+
+= νε n+1 
+
+> i
+
+εn+1  
+
+> i
+
++ ∆ t(1 − (1 − θ)ν) . (46) The Gaussian Gn+1  
+
+> i
+
+can now be evaluated fully explicitly using the macroscopic quantities derived from ˜f ni and the expressions derived above. Then, Equation (35) can be solved for f n+1 
+
+> i,j
+
+f n+1  
+
+> i,j
+
+=˜f ni,j εn+1  
+
+> i
+
++ ∆ tG n+1 
+
+> i,j
+
+εn+1  
+
+> i
+
++ ∆ t . (47) 
+
+## 3.3 Extension to higher orders 
+
+We extend the first-order scheme from Section 3.2 to second-order in time using a BDF2 method 
+
+f n+1  
+
+> i,j
+
+− 43 f n, 1 
+
+> i,j
+
++ 13 f n, 2 
+
+> i,j
+
+= 231
+
+εn+1 
+
+> i
+
+ Gn+1  
+
+> i,j
+
+− f n+1 
+
+> i,j
+
+ , (48) where f n,k i,j is an approximation for f (tn, x i − kv j ∆t, v j , I )). The quantities f n,k i,j are interpolated from the grid at the previous time steps using a third-order bicubic reconstruction routine. For more involved reconstruction procedures, see [9, 10, 11]. The scheme (48) can be written in the following way 
+
+f n+1  
+
+> i,j
+
+= ˜f ni,j + 231
+
+εn+1 
+
+> i
+
+ Gn+1  
+
+> i,j
+
+− f n+1 
+
+> i,j
+
+ , with ˜f ni,j = 43 f n, 1 
+
+> i,j
+
+− 13 f n, 2 
+
+> i,j
+
+. (49) Using the procedure outlined in Section 3.2, the quantity Gn+1  
+
+> i,j
+
+can again be computed explicitly, this time from the lin-ear combination of moments of f n, 1 
+
+> i,j
+
+and f n, 2 
+
+> i,j
+
+through ˜f ni,j . Furthermore, because BDF methods are asymptotic-preserving (AP) and stiffly accurate (SA), they recover, in the limit ε → 0, a scheme of the same order for the Euler equations. 
+
+Remark 1. We note that the central bicubic reconstruction proposed here will yield oscillations at shocks in the 
+
+ε → 0 limit. Since our investigation is restricted to the slip and transition regime, where such features do not develop, central higher-order reconstructions are safe and efficient. 
+
+8x
+
+t
+
+tn
+
+tn+1 
+
+x0 x1 x2 x3
+
+Figure 2: At a boundary, characteristics for which vj · n ≥ 0 require a boundary condition. 
+
+## 3.4 Boundary conditions 
+
+At a point boundary point, the characteristic feet for which vj · ˆn ≤ 0, with ˆ n the inward-pointing normal, lie inside the gas domain. The solution at these points can be reconstructed in the usual way. The characteristics satisfying 
+
+vj · ˆn ≥ 0 fall outside the gas domain, see Figure 2, and hence require a boundary condition. After applying the boundary condition, the full distribution ˜f ni is known and the collision step can be performed, e.g. for the first order scheme see Equation (47). In this text, we consider three types of boundary conditions: specular reflection, diffuse-reflection and subsonic inflow/outflow. In the case of specular reflection, the distribution function ˜f ni,j is mapped onto ˜f ni,k , where vk is the velocity with the same tangential velocity and opposite normal velocity 
+
+vk = vj − 2ˆ n (vj · ˆn) . (50) We note that at a specular boundary, the internal energy remains unchanged. In the case of diffuse-reflective boundary conditions, the distribution of particles striking the wall is reflected back inside the domain as a Maxwellian with wall velocity Uw and wall temperature Tw . The boundary condition reads ˜f ni,j = Mnw,i,j = ρw Λδ
+
+(2 πR sTw )3/2 (RsTw )δ/ 2 exp 
+
+
+
+− |vj − Uw |2
+
+2RsTw
+
+− I2/δ 
+
+RsTw
+
+
+
+, vj · ˆn ≥ 0. (51) The density of the gas that is reflected is such that the flux at the boundary is zero, or in other words, mass is conserved across the boundary, 
+
+* X  
+
+> j, (vj−Uw)·ˆn> 0
+
+Mnw,i,j (vj − Uw ) · ˆn
+
++
+
+> I
+
++
+
+* X  
+
+> j, (vj−Uw)·ˆn≤0
+
+˜f ni,j (vj − Uw ) · ˆn
+
++
+
+> I
+
+= 0 . (52) Equation (52) can be solved for the density ρw after reconstructing the distribution at the characteristic feet for all velocities that satisfy vj · ˆn ≤ 0. Then, the distribution for the outgoing characteristics is obtained from Equation (51). Finally, we consider the subsonic inflow and outflow boundary condition. We assume the distribution of the gas flowing in/out of the domain is in thermodynamic equilibrium. In other words, we assume the distribution ˜f ni,j , v j · ˆn ≥ 0is a Maxwellian with some density ρf , velocity Uf and temperature Tf . The quantities ρf , Uf and Tf are then determined from boundary conditions for the Euler equations. First, the density, mean velocity, and temperature are extrapolated from inside the domain to the boundary. We denote these values with subscript e. Then, we define the extrapolated speed of sound and extrapolated pressure 
+
+pe = ρeRsTe (53) 
+
+ce =
+
+r δ + 5 
+
+δ + 3 TeRs. (54) Then, for the subsonic inflow boundary condition, given the inflow pressure pin and inflow temperature Tin , the inflow quantities are defined as 
+
+ρf = pin 
+
+Tin Rs
+
+, Uf = Ue + pin − pe
+
+ρece
+
+ˆn, Tf = pin 
+
+Rsρf
+
+. (55) 
+
+9In the case of subsonic outflow boundary conditions, we prescribe the outflow pressure po, and set the outflow quantities to 
+
+ρf = ρe + po − pe
+
+cece
+
+, Uf = Ue + po − pe
+
+ρece
+
+ˆn, Tf = pin 
+
+Rsρf
+
+. (56) For a derivation of boundary conditions for the Euler equations, see [34]. We note that inflow/outflow boundary conditions based on the Euler equations are also used in DSMC simulations [35, 36]. 
+
+Remark 2. It may happen that characteristics from points that do not lie on the boundary fall outside the gas domain. For simplicity, we limit the time step so that this does not occur. However, through the use of ghost points and additional interpolation, the procedure above can be generalised [17]. 
+
+Remark 3. At a boundary, in the case of the higher-order method, it is not possible to use a central third-order reconstruction. Instead, we resort to one-sided stencils. The use of different stencils breaks the translation invari-ance property of the scheme and may introduce conservation errors, especially in the ε → 0 limit [10]. Since our investigation is restricted to slip and transition flows, this is not an issue. 
+
+## 3.5 Chu-reduction 
+
+In the numerical examples in Section 5 we will restrict ourselves two-dimensional simulations in space. Consider the velocity component orthogonal to the spatial domain v3, with v = ( v1, v 2, v 3)⊤, and consider the internal energy variable I. Although the simulations should include effects due to motion in three dimensions and internal energy modes, the full distribution in v3 or I is irrelevant. Ultimately, some specific moments, such as the mean velocity U or the internal temperature Tint are the quantities of interest. In addition, it is expensive to discretise the dimensions v3
+
+and I. It turns out that for BGK-type models it is not necessary to consider the distribution f (t, x, v, I )’s dependence on v3 and I. Instead, the same result can be achieved using reduced distributions. This procedure is known as a Chu-reduction [32, 31]. We define three reduced distribution functions 
+
+f1(t, x, v ) = 
+
+Z
+
+> R×R+
+
+f (t, x, v, I )dv 3dI, f2(t, x, v ) = 
+
+Z
+
+> R×R+
+
+v23 f (t, x, v, I )dv 3dI, (57) 
+
+f3(t, x, v ) = 
+
+Z
+
+> R×R+
+
+Iδ/ 2f (t, x, v, I )dv 3dI, (58) with v = ( v1, v 2)⊤. We assume the mean velocity in the direction orthogonal to the two-dimensional space x is zero. In addition, we assume the distribution function f (t, x, v, I ) is symmetric in v3. The conserved quantities defined in Section 2.4 now become 
+
+ρ(t, x ) = ⟨f1⟩ , ρ(t, x )U (t, x ) = ⟨f1⟩ , E(t, x ) = 
+
+ 12 |v|2f1
+
+
+
++
+
+ 12 f2
+
+
+
++ ⟨f3⟩ . (59) The two internal energy components become 
+
+etr (t, x ) = 1
+
+ρ(t, x ) 
+
+> 12
+
+|v − U (t, x )|2f1 +
+
+ 12 f2
+
+
+
+= 32 Rs Ttr (t, x ), (60) 
+
+eint (t, x ) = 1
+
+ρ(t, x ) ⟨f3⟩ = δ
+
+2 Rs Tint (t, x ). (61) Finally, we define the reduced stress tensor Θ ∈ R2×2 and reduced covariance matrix T ∈ R2×2 as 
+
+ρ(t, x )Θ = 
+
+ρ(t, x )Θ 00 ⟨f2⟩
+
+
+
+with ρ(t, x )Θ = ⟨(v − U (t, x )) ⊗ (v − U (t, x )) f1⟩ (62) 
+
+T = (1 − θ) [(1 − ν)RsTtr (t, x )I3 + νΘ] + θR sTeq (t, x )I3 =
+
+T 00 T33 
+
+
+
+. (63) The reduced distribution functions f1 and f2 contain all mass and momentum, and the distribution function f3
+
+only contributes to the internal energy. By multiplying the polyatomic ESBGK equation with 1, v23 and I2/δ , and integrating over v3 and I, we obtain three BGK-type equations for the reduced distribution functions 
+
+∂f 1
+
+∂t + v · ∇ xf1 = 1
+
+ε (G1 − f1), ∂f 2
+
+∂t + v · ∇ xf2 = 1
+
+ε (T33 G1 − f2), ∂f 3
+
+∂t + v · ∇ xf3 = 1
+
+ε ( δ
+
+2 RT rel G1 − f3). (64) The attractor in Equation (64) is defined by 
+
+G1 = ρ(t, x )√T33 
+
+2πpdet( Ti) exp 
+
+
+
+− 12 (v − U (t, x )) ⊤ T −1 (v − U (t, x )) 
+
+
+
+. (65) Thus, we have reduced the dimension of the equation from eight to five, thereby significantly speeding up simulations. 
+
+10 4 Asymptotic preserving property and Navier-Stokes limit 
+
+In this section, we study several properties of the first-order scheme (35). The properties below are generalisations of the ESBGK model [16, 12]. 
+
+Proposition 1. For τ > 0 and ∆t > 0, the solution of (35) satisfies 
+
+0 ≤ f n+1  
+
+> i,j
+
+≤ max 
+
+> i,j
+
+ f ni,j , Gn+1  
+
+> i,j
+
+. (66) 
+
+Proof The solution f n+1  
+
+> i,j
+
+is a convex combination of Gni,j and ˜f ni,j . The value ˜f ni,j is the result of linear interpolation of values f n 
+
+> :,j
+
+. This implies the desired result. The following proposition concerns the asymptotic-preserving (AP) property of the scheme. A numerical scheme is said to be AP if, in the limit as the Knudsen number tends to zero, it naturally reduces to a consistent discretisation of the Euler equations. Before this limit is reached, the underlying kinetic equation converges asymptotically to the Navier-Stokes equations with well-defined transport coefficients. The scheme under consideration can be shown to possess this property as well. 
+
+Proposition 2. Let f n = f (tn, x, v, I ) be a time-discretised solution of the polyatomic ESBGK equation. Then, assuming that the following quantities are bounded by positive constants C1, C 2, C 3 and C4 independent of n,
+
+X
+
+> 0≤α≤2
+
+sup 
+
+> x,v,I
+
+∂αx f n(x, v, I )  1 + |v|24 < C 1, X
+
+> 0≤α≤2
+
+sup 
+
+> x,v,I
+
+∂2
+
+> x
+
+f n(x, v, I )|v|2I2/δ < C 2 (67) 
+
+X
+
+> 0≤α≤2
+
+sup 
+
+> x,v,I
+
+∂αx Mα(x, v, I )  1 + |v|24 < C 3, X
+
+> 0≤α≤2
+
+sup 
+
+> x,v,I
+
+∂2
+
+> x
+
+Mα(x, v, I )|v|2I2/δ < C 4, (68) 
+
+the first-order semi-Lagrangian scheme (35) asymptotically becomes a consistent approximation of the Navier-Stokes system (5) .
+
+Proof We consider the first order scheme (35), and leave the space, velocity and internal energy variable continuous. We then take the moments with respect to the polyatomic collision invariants ϕ(v, I )
+
+Z
+
+> R3×R+
+
+ϕ(v, I )f n+1 dvdI =
+
+Z
+
+> R3×R+
+
+ϕ(v, I ) ˜f ndvdI, (69) with ˜f n = f (x − v∆t, v, I ). Using a Taylor expansion, we expand the right hand side of Equation (69), 
+
+Z
+
+> R3×R+
+
+ϕ(v, I )f n+1 dvdI =
+
+Z
+
+> R3×R+
+
+ϕ(v, I ) [ f n(x, v, I ) − ∆tv · ∇ xf n(x, v, I )] dvdI + R, (70) where R is the remainder term in integral form. Using similar techniques from [12], it is possible to bound the remainder term 
+
+∥R∥∞ ≤ 3π∆t2
+
+8 sup 
+
+> x,v,I
+
+∂2
+
+> x
+
+f n(x − v∆t, v, I )  1 + |v|24 + ∆t2
+
+2 sup 
+
+> x,v,I
+
+∂2
+
+> x
+
+f n(x, v, I )|v|2I2/δ (71) = O  ∆t2 . (72) We now treat the relaxation time ε as independent of f n(x, v, I ) and formally expand both the distribution function and the Gaussian in powers of ε,
+
+f n = Mn + εf n 
+
+> 1
+
++ O(ε2), Gn = Mn + εGn 
+
+> 1
+
++ O(ε2). (73) By plugging these expansions in the definition of a collision invariant (4), we obtain the so-called compatibility conditions 
+
+** 
+
+f n
+
+> 1
+
+
+
+1, v, 12 |v|2 + I2/δ 
+
+⊤++ 
+
+=
+
+** 
+
+Gn
+
+> 1
+
+
+
+1, v, 12 |v|2 + I2/δ 
+
+⊤++ 
+
+= 0 . (74) Additionally, we expand the translational temperature, the internal temperature and the stress tensor like such 
+
+T ntr = T neq + εT ε,n tr + O(ε2), (75) 
+
+T nint = T neq + εT ε,n int + O(ε2), (76) Θn = Rs
+
+ T neq + εT ε,n tr 
+
+ I3 + εΘn 
+
+> 1
+
++ O(ε2). (77) 
+
+11 A necessary condition to satisfy the compatibility conditions (74) is that tr Θ n 
+
+> 1
+
+= 0. Due to the definition of the internal energies and the stress tensor, we find that 32 ρnRsT ε,n tr =
+
+ |v − U |2
+
+2 f1
+
+ 
+
+, (78) 
+
+δ
+
+2 ρnRsT ε,n int =
+
+DD 
+
+I2/δ f1
+
+EE 
+
+, (79) 
+
+ρnRsT ε,n tr + ρnΘn 
+
+> 1
+
+= ⟨⟨ (v − U n) ⊗ (v − U n)f1⟩⟩ . (80) By substituting a zero-th order expansion f n = Mn into Equation (70), we obtain a consistent scheme for the Euler equations 
+
+ρn+1 − ρn
+
+∆t + ∇x · (ρnU n) = O(∆ t) + O(ε),ρn+1 U n+1 − ρnU n
+
+∆t + ∆ t∇x · (ρnU n ⊗ U n + pI 3) = O(∆ t) + O(ε),En+1 − En
+
+∆t + ∇x · (U nEn) = O(∆ t) + O(ε).
+
+(81) Inserting the first-order expansion of the distribution function f n = Mn + εf n 
+
+> 1
+
+into Equation (70) yields a consistent discretisation of the Navier–Stokes equations 
+
+ρn+1 − ρn
+
+∆t + ∇x · (ρnU n) = O(∆ t) + O(ε2),ρn+1 U n+1 − ρnU n
+
+∆t + ∆ t∇x · (ρnU n ⊗ U n + pI 3) = −ε∇x · (ρnΘn 
+
+> 1
+
+) + O(∆ t) + O(ε2),En+1 − En
+
+∆t + ∇x · (U nEn) = −ε∇x (qn 
+
+> 1
+
+− ρnΘn 
+
+> 1
+
+U n) + O(∆ t) + O(ε2).
+
+(82) where 
+
+qn 
+
+> 1
+
+=
+
+Z
+
+> R3×R+
+
+|v − U n|2
+
+2 (v − U n)f n 
+
+> 1
+
+dvdI, (83) is the heat flux, and ρΘn 
+
+> 1
+
+the viscosity tensor. In the text below, we apply a Chapman-Enskog expansion to obtain expressions for f n 
+
+> 1
+
+and Gn 
+
+> 1
+
+. We then use these expressions to explicitly compute the transport coefficients in the Navier-Stokes equation (82). The first step is to fill in the expansions (73) into (35), which yields 
+
+Mn+1 − ˜Mn
+
+∆t = Gn+1 1 − f n+1 1 − ε f n+1 1 − ˜f n
+
+> 1
+
+∆t + O  ε2 . (84) We Taylor-expand the terms with a tilde and solve the resulting equation for f n 
+
+> 1
+
+. For brevity, we drop all higher-order terms in ∆ t and ε, and obtain 
+
+f n+1 1 = Gn+1 1 − Mn+1 − M n
+
+∆t − v · ∇ xMn. (85) Below, all three terms in the right hand side of Equation (85) are approximated. It is the zero-th order term in ε
+
+that we require. Next, we expand Gn+1 1 in terms of ε. We note that the covariance matrix T n and relative temperature T nrel both have contributions on the order ε due to the definitions of the translational temperature (78), internal temperature (79) and stress tensor (80). Consequently, the prefactor and the exponent of Gn+1 1 (24) must be expanded in ε. We start with the covariance matrix Tn (22) 
+
+T n = I3[RsT neq + (1 − θ)εR sT ε,n tr ] + (1 − θ)νε Θn 
+
+> 1
+
++ O(ε2). (86) The determinant and inverse of T n can be approximated as follows det( T n) = ( RsT neq )3 + 3 ε(1 − θ)RsT ε,n tr (RsT neq )2 + O(ε2), (87) (T n)−1 = 1
+
+RsT neq 
+
+I3 − ε(1 − θ)(RsT neq )2 [I3RsT ε,n tr + νΘn 
+
+> 1
+
+] + O(ε2), (88) 
+
+12 where in the last line, we have used the Woodbury matrix identity. Using Equation (79), we can write the relaxation temperature as 
+
+T nrel = θT neq + (1 − θ)T nint = T neq + ε(1 − θ)T ε,n int + O(ε2). (89) Then, by filling (89), (88) and (87) into (24), and applying further Taylor expansions, we obtain an approximation for 
+
+Gn 
+
+> 1
+
+= Gn − M n
+
+ε = M [f n] (1 − θ)2
+
+
+
+− 3T εtr 
+
+Teq 
+
++ 1(RT eq )2 (v − U )T [RT εtr I3 + νΘ1] + 2RT εint I2/δ 
+
+(RT eq )2 − δT εint 
+
+Teq 
+
+
+
+. (90) It remains to obtain an expression for the final two terms in (85). The differential of the Maxwellian Mn is given by 
+
+dMn = Mnd ln Mn = Mn
+
+ dρ ρ + dT eq 
+
+T neq 
+
+
+
+− 3 + δ
+
+2 + |v − U |2
+
+2RT eq 
+
++ I2/δ 
+
+RT eq 
+
+
+
++ (v − U )
+
+RT eq 
+
+dU 
+
+
+
+(91) Then, we can approximate the final two terms in (85) as 
+
+Mn+1 − M n
+
+∆t = Mn
+
+ ρn+1 − ρn
+
+∆t
+
+1
+
+ρn + T neq − T neq 
+
+∆t
+
+1
+
+T neq 
+
+
+
+− 3 + δ
+
+2 + I2/δ 
+
+RT neq 
+
++ |v − U n|2
+
+2RT neq 
+
+
+
++ (v − U n)
+
+RT neq 
+
+· U n+1 − U n
+
+∆t
+
+
+
+(92) and 
+
+v · M n = Mn
+
+ v · ∇ xρn
+
+ρn + v · ∇ xT neq 
+
+T neq 
+
+
+
+− 3 + δ
+
+2 + I2/δ 
+
+RT neq 
+
++ |v − U n|2
+
+2RT neq 
+
+
+
++ (v − U n)
+
+RT neq 
+
+v · ∇ xU n
+
+
+
+. (93) By gathering (90), (92) and (93), the first-order contribution in ε to the distribution function f n is 
+
+f n 
+
+> 1
+
+= (1 − θ)2
+
+
+
+− 3T ε,n tr 
+
+T neq 
+
++ 1(RsT neq )2 (v − U n)T [RsT ε,n tr I3 + νΘn 
+
+> 1
+
+] ( v − U n) + 2RsT ε,n int 
+
+(RsT neq )2 − δT ε,n int 
+
+T neq 
+
+
+
+− Mn
+
+RsT neq 
+
+(v − U n)∇xU n(v − U n) − M n
+
+
+
+− 3 + δ + 2 2 + I2/δ 
+
+RsT neq 
+
++ |v − U n|2
+
+2RsT neq 
+
+  1
+
+T neq 
+
+(v − U n) · ∇ xT neq 
+
+
+
++
+
+ I2/δ 
+
+RsT neq 
+
++ |v − U n|2
+
+2RsT neq 
+
+ 23 + δ ∇x · U n.
+
+(94) The expression for the perturbation f n 
+
+> 1
+
+still depends on the translational and internal perturbation temperatures T ε,n tr 
+
+and T ε,n int . These can now both be computed from their definitions (78) and (79). Since the computations involve only standard algebraic manipulations and higher-order moments of Maxwellians, we omit the details. We find for the perturbation temperatures 
+
+T ε,n tr = −2δ
+
+(3 + δ)3 1
+
+θ T neq ∇x · U n, T ε,n int = 23 + δ
+
+1
+
+θ T neq ∇x · U n. (95) It is straightforward to check that f n 
+
+> 1
+
+satisfies the compatibility conditions (74) with these expressions for the per-turbation temperatures. It remains to explicitly compute the stress tensor and heat flux, 
+
+ρnΘn = ρnRsT neq I3 − μ
+
+
+
+∇xU n + ( ∇xU n)⊤ − 2I3
+
+3 + δ ∇x · U n − (1 − θ)
+
+θ (1 − ν) 2δI 3
+
+3(3 + δ) ∇x · U n
+
+
+
+, (96) 
+
+qn 
+
+> 1
+
+= − 5 + δ
+
+2 μ(1 − ν + θν )Rs∇xT neq . (97) By comparing the stress tensor and heat flux obtained via a Chapman–Enskog expansion of the continuous-in-time polyatomic ESBGK model [31], we find identical transport coefficients. This demonstrates that the first-order scheme asymptotically converges to a discretization of the Navier–Stokes equations, and concludes the proof. 
+
+# 5 Numerical simulations 
+
+In this section, we present several numerical examples to illustrate the performance of our numerical method in comparison with existing tools, and to examine how the polyatomic ESBGK model contrasts with simpler BGK formulations, DSMC simulations, and the Navier–Stokes equations. We have implemented the first-order and second-order scheme for the Chu-reduced formulation, see Section 3.5, for the BGK, ESBGK and polyatomic ESBGK models. 
+
+13 All simulations are performed in 2D on a Cartesian mesh with mesh spacing ∆ x and ∆ y. Time steps are quantified using a CFL number defined as CFL = min (∆ x, ∆y) /v vmax . The code is available at [37]. All simulations below are performed for Hydrogen gas, with gas constant Rs = 4124 .2 J /kgK. For all three BGK-type models, we use a temperature-dependent viscosity function that is fitted using experimental data [38] 
+
+μ(T ) = 8 .9324 × 10 −6
+
+ T
+
+299 .9878 
+
+0.6998 
+
+Pa . (98) For the ESBGK and polyatomic ESBGK models, we set the Prandtl number to the physically-correct value of 0.69. For the ESBGK model, this yields ν = −0.4493. For the polyatomic ESBGK model, we have two free parameters, θ
+
+and ν. We again fix the Prandtl number to 0.69, and set θ = 1 /174. This is due to the interpretation of the θ as the inverse of the relaxation collision number. These choices lead to ν = −0.4519, for the polyatomic ESBGK model. We compare are results to (polyatomic) DSMC simulations performed with OpenFOAM v2406. For simulations in which the Knudsen number is small and DSMC simulations are infeasible, we compare our results to simulations performed with Simcenter STAR-CCM+ 2506 Build 20.04.007. Star-CCM is a commercial computational fluid dynamics tool that implements a steady-state Navier-Stokes solver. The remainder of this section is organised as follows. In section 5.1, we perform a convergence analysis to verify the order of the semi-Lagrangian scheme. Section 5.2 examines the Fourier and Couette flow test cases [18], which use simplified geometries and boundary conditions to isolate the heat-conduction and shear-stress behavior of the models. We perform simulations across the free-molecular, transition, slip, and continuum regimes, and compare the results with DSMC and analytical solutions. In Section 5.3, we consider a more challenging orifice geometry and benchmark our method against DSMC and Navier–Stokes simulations. Finally, Section 5.4 investigates the same orifice configuration with a time-dependent opening. 
+
+## 5.1 Convergence test 
+
+In this section, we perform a non-physical simulation to verify the accuracy of our method. Since the method is the same for all three BGK models, we perform this simulation with the BGK model only. Consider a two-dimensional periodic domain [ −1, 1] 2, with a gas with gas constant Rs = 1 and fixed relaxation time τ = 1 × 10 −1. Initially, the gas is in local thermodynamic equilibrium with mean velocity U0(x, y ) = ( U0, U 0, 0) ⊤ with 
+
+U0 = 110 
+
+
+
+exp 
+
+
+
+−
+
+
+
+10 p(x − 0.2) 2 + y2 − 1
+
+2
+
+− 2 exp 
+
+
+
+−
+
+
+
+10 p(x + 0 .2) 2 + y2 − 1
+
+2 
+
+. (99) The initial temperature and pressure are set to unity. The velocity variable is discretised uniformly on the domain [−1, 1] 2 using 30 2 points. The simulation is performed up to time 1 × 10 −1 with CFL number 0 .45 such that only the spatial discretisation error is visible. The simulation is performed with the first-order in time method from Section 3.2 and with the second-order in time method from Section 3.3, for increasingly fine grids. In figure 3, we report the L1
+
+error, computed with the higher-order method on a grid with 624 grid points. We observe that both methods achieve their order as advertised. In the following test cases, simulations are performed with the higher-order method. 
+
+## 5.2 Fourier and Couette flow 
+
+L Tref ∆T ∆U
+
+1 mm 273 .15 K 70 K 100 m /sTable 1: Simulation parameters for the Fourier and Couette flow simulations. 
+
+We consider a square 2D domain [0 , L ]2 with periodic boundaries in the vertical direction and diffuse-reflective walls on the sides, see Figure 4. In the case of a Fourier flow, the left and right walls are stationary and have temperatures 
+
+T1 = Tref − ∆T 
+
+> 2
+
+and T2 = Tref + ∆T 
+
+> 2
+
+. In the case of the Couette flow, the left and right walls have a temperature 
+
+Tref , and velocities −∆U 
+
+> 2
+
+and ∆U 
+
+> 2
+
+respectively. All parameters are given in Table 1. We perform simulations for ten pressure values: 0 .1 Pa, 0 .26 Pa, 0 .66 Pa, 1 .71 Pa, 4 .41 Pa, 11 .35 Pa, 29 .24 Pa, 75 .33 Pa, 194 .08 Pa and 500 Pa. This yields Knudsen numbers between 10 2 and 10 −2. Below, we investigate the theoretical temperature profile and heat flux for the Fourier flow, and the theoretical velocity profile and shear stress for the Couette flow. After, we compare with numerical simulations of the BGK models and DSMC. 
+
+14 10 23 × 10 1 4 × 10 1 6 × 10 1 2 × 10 2   
+
+> Nx
+> 10 5
+> 10 4
+> 10 3
+> L1 Error
+> BDF2
+> Implicit Euler
+> First-order reference
+> Second-order reference
+
+Figure 3: Convergence in the L1-norm of the first-order scheme from Section 3.2 and the second-order scheme from Section 3.3. 
+
+T1 T2
+
+x = 0 x = L
+
+Fourier Flow 
+
+U1 U2
+
+x = 0 x = L
+
+Couette Flow 
+
+Figure 4: Illustration of the Fourier and Couette flow. 
+
+Continuum regime: The temperature profile for the Fourier flow, and the velocity profile for the Couette flow are [18] 
+
+Tc =
+
+r
+
+T 21 + ( T 22 − T 21 ) xL , (100) 
+
+Uc = ∆ U
+
+ xL − 12
+
+
+
+. (101) Then, the shear stress, which is the (1 , 2)-element of the stress tensor Θ, is given by 
+
+τxy,c = −μ (∂xUy + ∂y Ux) = −μ ∆UL . (102) For the Fourier flow, the heat flux is given by 
+
+qx,c = − 5 + δ
+
+2 μ (1 − ν + θν ) Rs∇xT (x) = − 5 + δ
+
+2 μ (1 − ν + θν ) Rs
+
+ T 22 − T 21
+
+
+
+2L
+
+q
+
+T 21 + ( T 22 − T 21 ) xL
+
+. (103) When plotting the heat flux, we will do so at x = L 
+
+> 2
+
+.
+
+Free molecular regime: The distribution function of the gas inside the channel is given by two half Maxwellians propagating from the left and right wall 
+
+f (x, v, t, I ) = 
+
+(
+
+M(ρ1, U 1, T 1) if v1 > 0,
+
+M(ρ2, U 2, T 2) if v1 < 0, (104) 
+
+15 where M(ρ, U, T ) is the M is the Maxwellian distribution with density ρ, mean velocity U and temperature T . At the left and right wall, we have that the flux across the wall should be zero, therefore, 
+
+Z
+
+> vx>0
+
+v · nM(ρ1, U 1, T 1)dvdI +
+
+Z
+
+> vx<0
+
+v · nM(ρ2, U 2, T 2)dvdI = 0 , (105) which simplifies to, 
+
+ρ1
+
+√T1 = ρ2
+
+√T2. (106) The theoretical temperature and velocity profile for the Fourier and Couette flow are [18] 
+
+Tf m = √T1T2, (107) 
+
+Uf m = 0 . (108) Using Equation (104) and (106), we find for the shear stress 
+
+τxy,f m =
+
+Z
+
+> R3×R+
+
+v1v2f (t, x, v, I )dvdI = −p∆U
+
+√2πR sT . (109) For the heat flux in the horizontal direction, we find 
+
+qx,f m =
+
+Z
+
+> R3×R+
+
+v1
+
+ |v|2
+
+2 + I2/δ 
+
+
+
+f (t, x, v, I )dvdI =
+
+r 2RsT1
+
+π p
+
+ δ
+
+4 + 1 
+
+  
+
+1 − Tr
+
+Tl
+
+
+
+. (110) We perform the Fourier and Couette flow simulation for all ten pressure values with the BGK, ESBGK and polyatomic ESBGK models. The simulations are performed with 210 grid points in the horizontal direction and CFL number 0.45. The velocity variable is discretised on [ −6√RsT2, 6√RsT2]2 with N 2 
+
+> v
+
+= 40 2 points. Initially, the gas is stationary and in thermodynamic equilibrium with temperature ( T1 + T2) /2 and a constant pressure profile. We perform time-dependent simulations until equilibrium has been reached. We compare the results due to the BGK models with DSMC simulations. In Figure 5a, the velocity profile for the Couette flow is plotted for several pressure values. All models yield profiles that match the theoretical values in the continuum regime (101) and free molecular regime (108) because those results are independent of the collision model. Also for intermediate values of the pressure, all models yield very similar velocity profiles to DSMC. The departure from linearity in the continuum limit, is due to temperature-dependent viscosity [18]. The temperature profile for the Fourier flow case is plotted in Figure 5b. The theoretical limits were derived in (100) and (107). As expected, all models yield the same results in the continuum limit and in the free molecular regime. The departure from linearity in the continuum limit, is due to temperature-dependent heat conduction [18]. For intermediate pressures, the standard BGK model gives the worst results. This is because the relaxation time in the BGK model was chosen to match the viscosity coefficient in the continuum regime. The ESBGK and diatomic ESBGK model yield results close to DSMC, although for pressure 0 .441 Pa, we do observe a significant difference with the DSMC result. This is to be expected, as for this pressure, the gas is in the transition regime, and the BGK approximation is known to provide a crude approximation. In conclusion, the velocity profile for the Couette flow is well approximated by all three BGK models. It is more difficult to obtain a temperature field in the Fourier flow close to that of DSMC, however, the ESBGK model and diatomic ESBGK obtain good results. In Figure 6a, the shear stress for the Couette flow is plotted as a function of the pressure. All three BGK models obtain the same result by design, which also agrees well with the DSMC result. In Figure 6b, the heat flux is plotted for the Fourier flow. We have included the theoretical limits of the heat flux for a monoatomic gas and a polyatomic gas, which were derived in Equation (103) and (110). We see that the ESBGK and polyatomic ESBGK models approach the correct values in the continuum and free molecular limit. The BGK model does not approach the correct value in the continuum limit due to its limitation that the Prandtl number is fixed to one. It can either produce the correct shear stress, or the correct heat conduction, but not both. The polyatomic ESBGK result agrees well with the DSMC result. This test also shows the necessity of a polyatomic model when the heat conduction is an important quantity of interest. 
+
+Remark 4. The Fourier and Couette flow simulations were carried out for multiple values of θ using the polyatomic ESBGK model. Since no significant differences were observed, we use θ = 1 /174 for the remainder of the simulations. 
+
+## 5.3 Orifice simulation 
+
+We consider a rectangular 2D domain [0 , L ] × [0 , H ] with an orifice of width ow and height oh, similar to [35]. Hydrogen gas flows in the domain from the left with pressure pin , and temperature Tw . The gas exists the domain on the right, where the pressure is set to po. The top and bottom walls, as well as the walls of the orifice, have 
+
+16 0.0 0.2 0.4 0.6 0.8 1.0 
+
+x [mm] 
+
+40 
+
+20 
+
+0
+
+20 
+
+40 
+
+> Uy [m/s]
+
+Free molecular solution 
+
+Continuum solution 
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK (a) Velocity profile for the Couette flow. 0.0 0.2 0.4 0.6 0.8 1.0 
+
+x [mm] 
+
+240 
+
+250 
+
+260 
+
+270 
+
+280 
+
+290 
+
+300 
+
+310 
+
+> T [K]
+
+Free molecular solution 
+
+Continuum solution 
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK (b) Temperature profile for the Fourier flow. 
+
+Figure 5: Temperature and velocity along a horizontal slice for several pressure values 0 .1 Pa , 4.41 Pa , 29 .24 Pa and 500 Pa (horizontal line to line with positive slope). The associated Knudsen numbers are 2 ×10 2, 4 .6×10 0,7.0 × 10 −1 and 4 .1 × 10 −2.10 1 10 0 10 1 10 2
+
+Pressure [Pa] 
+
+10 2
+
+10 1
+
+10 0
+
+10 1
+
+> Shear Stress [Pa]
+
+Free molecular solution 
+
+Continuum solution 
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK 
+
+(a) Shear stress for the Couette flow. 10 1 10 0 10 1 10 2
+
+Pressure [Pa] 
+
+10 2
+
+10 3
+
+10 4
+
+10 5
+
+> Heat flux [W/m^2]
+
+Free molecular (diatomic) 
+
+Free molecular (monoatomic) 
+
+Continuum (diatomic) 
+
+Continuum (monoatomic) 
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK (b) Heat flux for the Fourier flow. 
+
+Figure 6: Heat flux and shear stress for the Fourier and Couette flow as a function of the pressure. 17 L
+
+H dd
+
+oh
+
+ow
+
+Tw
+
+pin 
+
+po
+
+Figure 7: Basic structure and boundary conditions for the orifice flow. ∆x ∆y L H ow oh d/H Tw
+
+6.1350 × 10 −1 μm 6.0241 × 10 −1 μm 0.5 mm 0.1 mm 12∆ x 71∆ y 14 .46% 300 K Table 2: Simulation parameters for the Fourier and Couette flow simulations. The quantities ∆ x and ∆ y
+
+are the grid size of the Cartesian grid for the semi-Lagrangian method. 
+
+temperature Tw . To reduce the computational time, we impose a specular boundary condition along the horizontal centreline of the geometry and only simulate the bottom half of the geometry. All relevant simulation parameters are given in table 2. We perform the simulation with two outflow pressures po, 50 kPa and 2 .5 kPa. For both outflow pressures, we perform the simulation with four inflow pressures: 2po, 7 po/4, 6 po/4, 5 po/4. For the high and low outflow pressure and pin = 2 po, we obtain a Knudsen number of 4 × 10 −3 and 9 × 10 −2 at the outflow boundary. At the orifice, the Knudsen number goes up to 3 × 10 −2 and 6 × 10 −1. In all simulations, the CFL number is set to 0.49. The simulations are run until time 2 × 10 −6, at which point the solution as converged to a steady state. The translational temperature, mean velocity and pressure along centreline of the orifice for po = 50 kPa are plotted in figure 8. Before the orifice, the temperature, pressure and velocity are nearly constant. At the orifice, the pressure decreases sharply, overshoots the outflow pressure and then slowly reaches outflow pressure. Due to the constriction, the gas accelerates through the orifice, after which the gas purges into the chamber behind the orifice. Due to the increased velocity at the orifice, some of the internal energy of the gas is converted to kinetic energy. As a result, the translational temperature of the gas decreases at the orifice. The decrease in pressure and temperature, and the increase in velocity, increases with the inflow pressure. We also observe a recirculation of the flow behind the orifice, see figure 9. The BGK models agree well pressure and velocity profile obtained with starccm. We attribute the difference in the temperature profile to the different model (BGK-type vs Navier-Stokes), different grid (Cartesian vs unstructured and locally refined) and the method (higher-order vs first-order). Although, it is worth noting that of all three BGK models, the polyatomic ESBGK model yields results closest to the starcmm profile. The translational temperature, mean velocity and pressure along centreline of the orifice for po = 2500 Pa are plotted in figure 10. For this pressure, the gas is in the transition regime, and comparing with Navier-Stokes is fruitless. Instead, we compare our result to DSMC simulations. Compared to the case with large outflow, we immediately observe a more smooth pressure, temperature and mean velocity profiles, as one would expect from a larger Knudsen number flow. The pressure is well approximated by the BGK models. The BGK models overestimate the velocity along the centre line slightly. In the temperature plot, we observe significant statistical noise in the DSMC simulations. For the lower pressure simulations, we do not observe the recirculation in these simulation as is observed for the larger pressure in figure 9. In figure 11, the mass flow rate is plotted as a function of the pressure for the two outflow pressures. In both cases, all three BGK models yield very similar results and agree with the DSMC/Navier-Stokes simulations. 
+
+18 0.0 0.1 0.2 0.3 0.4 0.5 
+
+> x [mm]
+> 220
+> 230
+> 240
+> 250
+> 260
+> 270
+> 280
+> 290
+> 300
+> T [K]
+> starccm
+> BGK
+> ESBGK
+> diESBGK
+
+(a) Translational temperature Ttr .0.0 0.1 0.2 0.3 0.4 0.5  
+
+> x [mm]
+> 200
+> 400
+> 600
+> 800
+> 1000
+> 1200
+> 1400
+> U [m/s]
+> starccm
+> BGK
+> ESBGK
+> diESBGK
+
+(b) Mean velocity U .0.0 0.1 0.2 0.3 0.4 0.5 
+
+> x [mm]
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> P [kPa]
+> starccm
+> BGK
+> ESBGK
+> diESBGK
+
+(c) Pressure p = ρR sTtr .
+
+Figure 8: The orifice simulation for outflow pressure po = 50 kPa, and inflow pressures 100 kPa, 75 kPa and 62 .5 kPa. 0.0 0.1 0.2 0.3 0.4 0.5 
+
+## x [mm] 
+
+## 0.00 
+
+## 0.05 
+
+## 0.10 
+
+> y [mm]
+
+Figure 9: The horizontal velocity of the diatomic ESBGK model for po = 50 kPa and pin = 2 po. A vortex is observed behind the orifice. 19 0.0 0.1 0.2 0.3 0.4 0.5 
+
+x [mm] 
+
+285 
+
+290 
+
+295 
+
+300 
+
+> T [K]
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK (a) Translational temperature Ttr .0.0 0.1 0.2 0.3 0.4 0.5 
+
+x [mm] 
+
+0
+
+100 
+
+200 
+
+300 
+
+400 
+
+500 
+
+600 
+
+> U [m/s]
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK (b) Mean velocity U .0.0 0.1 0.2 0.3 0.4 0.5 
+
+x [mm] 
+
+2.5 
+
+3.0 
+
+3.5 
+
+4.0 
+
+4.5 
+
+5.0 
+
+> P [kPa]
+
+DSMC 
+
+BGK 
+
+ESBGK 
+
+diESBGK 
+
+(c) Pressure p = ρR sTtr .
+
+Figure 10: The orifice simulation for outflow pressure po = 2500 Pa, and inflow pressures 5000 Pa, 4375 Pa, 3750 kPa and 3125 Pa. 65 70 75 80 85 90 95 100 
+
+p [kPa] 
+
+2.0 
+
+2.5 
+
+3.0 
+
+3.5 
+
+> Mass flow rate [kg/s]
+
+1e 4
+
+BGK 
+
+ESBGK 
+
+diESBGK 
+
+starccm 
+
+(a) Outflow pressure po = 50000 Pa .3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00 
+
+p [kPa] 
+
+0.2 
+
+0.3 
+
+0.4 
+
+0.5 
+
+0.6 
+
+0.7 
+
+0.8 
+
+0.9 
+
+1.0 
+
+> Mass flow rate [kg/s]
+
+1e 5
+
+BGK 
+
+ESBGK 
+
+diESBGK 
+
+DSMC (b) Outflow pressure po = 2500 Pa ..
+
+Figure 11 20 0.0 0.1 0.2 0.3 0.4 0.5      
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 20 30 40 50 60 70
+> p [kPa]
+
+(a) 0.0 0.1 0.2 0.3 0.4 0.5        
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 250 0250 500 750 1000 1250
+> U [m/s]
+
+(b) 0.0 0.1 0.2 0.3 0.4 0.5      
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 20 30 40 50 60 70
+> p [kPa]
+
+(c) 0.0 0.1 0.2 0.3 0.4 0.5        
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 250 0250 500 750 1000 1250
+> U [m/s]
+
+(d) 0.0 0.1 0.2 0.3 0.4 0.5      
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 20 30 40 50 60 70
+> p [kPa]
+
+(e) 0.0 0.1 0.2 0.3 0.4 0.5        
+
+> x [mm]
+> 0.00
+> 0.05
+> 0.10
+> y [mm]
+> 250 0250 500 750 1000 1250
+> U [m/s]
+
+(f) 
+
+Figure 12: The pressure (left) and the horizontal velocity (right) for the moving orifice simulation at times 3.11372 × 10 −6 s (top), 4 .10444 × 10 −6 s (centre) and 4 .52904 × 10 −6 s (bottom). 
+
+## 5.4 Moving orifice simulation 
+
+We consider the same orifice boundary as before, see figure 7, but make the height of the oriface time-dependent, 
+
+oh(t) = 
+
+(2∆ y if t < 2 μs2∆ y + H 
+
+> 213
+
++ H 
+
+> 213
+
+sin 
+
+ 2π 
+
+> 3×10 −6
+
+(t − 2 × 10 −6) + 3π
+
+> 2
+
+
+
+if t ≥ 2 μs. (111) We set the inflow pressure to pin = 2 po, and we set the outflow pressure to po = 50000 Pa. The simulation is performed using the polyatomic ESBGK model up to time t = 1 × 10 −6. The moving boundaries are implemented using a rudimentary immersed boundary method: the solid wall advances by ‘snapping’ it to the closest grid cell. We plot the pressure and horizontal velocity at several time steps in figure 12. At first, the orifice height is small compared to the size of the domain H. The flow then effectively behaves like a pressure-driven Poiseuille flow, see for example [39, 35]. In this regime, for the large pressure, the horizontal velocity along a vertical slice has a parabolic profile, the pressure along the centreline decreases linearly, and the velocity along the centreline increases linearly. As the pressure decreases, slip at the boundaries and nonlinear pressure and velocity profiles indicate departure from continuum conditions. As the orifice height increases, the geometry changes to two chambers connected by a small channel. The gas then expands into the chamber behind the orifice, potentially causing recirculation behind the orifice. In Figure 12c, we observe shock diamonds behind the orifice. 
+
+# 6 Conclusion 
+
+In this work, we developed a semi-Lagrangian numerical scheme for the polyatomic Ellipsoidal Statistical BGK (ESBGK) model of the Boltzmann equation. By combining a characteristic-based treatment of the transport term 
+
+21 with an implicit A-stable linear multistep discretization of the relaxation operator, the proposed method eliminates the restrictive time-step constraint typically associated with kinetic transport while efficiently handling the stiffness of the collision term. Owing to the structure of the BGK operator, the implicit formulation can be reformulated into a computationally inexpensive update, resulting in a numerically stable and efficient scheme. The method is asymptotic preserving and stiffly accurate, ensuring that in the vanishing Knudsen number limit the scheme naturally transitions to a consistent discretization of the Euler equations. Moreover, we established that the first-order version of the scheme asymptotically converges to the compressible Navier–Stokes equations with the correct transport coefficients. Suitable inflow and outflow boundary conditions for BGK-type kinetic models were also introduced, enabling the treatment of open-domain problems. Numerical experiments, including Fourier and Couette flow tests, demonstrated good agreement between the ESBGK model and Direct Simulation Monte Carlo (DSMC) results, confirming the physical fidelity of the approach. Finally, the method was successfully applied to a challenging orifice flow with moving boundaries, illustrating its robustness and flexibility for complex rarefied gas dynamics problems. These results indicate that the proposed scheme provides an effective deterministic framework for simulating polyatomic kinetic models across a wide range of flow regimes. 
+
+Acknowledgments: This work was supported by the European Union’s Framework Program for Research and Innovation Horizon Europe under the Marie Sklodowska-Curie Doctoral Networks action (HORIZON-MSCA-2021-DN-01), Grant Agreement No. 101072546 (DATAHYKING). 
+
+22 References 
+
+[1] Ching Shen. Rarefied gas dynamics: fundamentals, simulations and micro flows . eng. Springer e-books. Berlin New York, NY: Springer, 2005. isbn : 978-3-540-27230-4. [2] G. A. Bird. The DSMC method . en. Version 1.2. S.l.: G. A. Bird, 2013. isbn : 978-1-4921-1290-7. [3] Luc Mieussens. “Discrete velocity model and implicit scheme for the BGK equation of rarefied gas dynamics”. en. In: Mathematical Models and Methods in Applied Sciences 10.08 (Nov. 2000), pp. 1121– 1149. issn : 0218-2025, 1793-6314. doi : 10.1142/S0218202500000562 . url : https://www.worldscientific. com/doi/abs/10.1142/S0218202500000562 (visited on 10/19/2023). [4] Lorenzo Pareschi and Benoit Perthame. “A Fourier spectral method for homogeneous boltzmann equa-tions”. en. In: Transport Theory and Statistical Physics 25.3-5 (Apr. 1996), pp. 369–382. issn : 0041-1450, 1532-2424. doi : 10.1080/00411459608220707 . url : http://www.tandfonline.com/doi/abs/ 10.1080/00411459608220707 (visited on 04/30/2025). [5] Lorenzo Pareschi and Giovanni Russo. “Implicit–Explicit Runge–Kutta Schemes and Applications to Hyperbolic Systems with Relaxation”. en. In: Journal of Scientific Computing 25.1 (Oct. 2005), pp. 129–155. issn : 0885-7474, 1573-7691. doi : 10.1007/s10915-004-4636-4 . url : https://link. springer.com/10.1007/s10915-004-4636-4 (visited on 10/19/2023). [6] Walter Boscheri and Giacomo Dimarco. “High order central WENO-Implicit-Explicit Runge Kutta schemes for the BGK model on general polygonal meshes”. en. In: Journal of Computational Physics 
+
+422 (Dec. 2020), p. 109766. issn : 00219991. doi : 10 . 1016 / j . jcp . 2020 . 109766 . url : https : / / linkinghub.elsevier.com/retrieve/pii/S0021999120305404 (visited on 07/04/2024). [7] G. Dechrist´ e and L. Mieussens. “A Cartesian cut cell method for rarefied flow simulations around moving obstacles”. en. In: Journal of Computational Physics 314 (June 2016), pp. 465–488. issn :00219991. doi : 10.1016/j.jcp.2016.03.024 . url : https://linkinghub.elsevier.com/retrieve/ pii/S0021999116001765 (visited on 10/30/2023). [8] Kun Xu and Juan-Chen Huang. “A unified gas-kinetic scheme for continuum and rarefied flows”. en. In: Journal of Computational Physics 229.20 (Oct. 2010), pp. 7747–7764. doi : 10.1016/j.jcp.2010. 06.032 . url : https://www.sciencedirect.com/science/article/abs/pii/S0021999110003475? via%3Dihub .[9] M. Groppi, G. Russo, and G. Stracquadanio. High order semi-Lagrangian methods for the BGK equa-tion . en. arXiv:1411.7929 [math]. Nov. 2014. doi : 10.48550/arXiv.1411.7929 . url : http://arxiv. org/abs/1411.7929 (visited on 07/12/2025). [10] Seung Yeon Cho et al. “Conservative semi-Lagrangian schemes for kinetic equations Part I: Reconstruc-tion”. en. In: Journal of Computational Physics 432 (May 2021). arXiv:2007.13167 [cs, math], p. 110159. 
+
+issn : 00219991. doi : 10.1016/j.jcp.2021.110159 . url : http://arxiv.org/abs/2007.13167 (vis-ited on 10/11/2023). [11] Seung Yeon Cho et al. “Conservative semi-Lagrangian schemes for kinetic equations Part II: Ap-plications”. en. In: Journal of Computational Physics 436 (July 2021). arXiv:2007.13166 [cs, math], p. 110281. issn : 00219991. doi : 10.1016/j.jcp.2021.110281 . url : http://arxiv.org/abs/2007. 13166 (visited on 10/11/2023). [12] Sebastiano Boscarino et al. “A conservative semi-Lagrangian scheme for the ellipsoidal BGK model of the Boltzmann equation”. en. In: Journal of Scientific Computing 105.1 (Oct. 2025), p. 9. issn :0885-7474, 1573-7691. doi : 10.1007/s10915-025-03033-6 . url : https://link.springer.com/10. 1007/s10915-025-03033-6 (visited on 09/29/2025). [13] S. Brull and L. Mieussens. “Local discrete velocity grids for deterministic rarefied flow simulations”. en. In: Journal of Computational Physics 266 (June 2014), pp. 22–46. issn : 00219991. doi : 10.1016/ j.jcp.2014.01.050 . url : https://linkinghub.elsevier.com/retrieve/pii/S0021999114001016 
+
+(visited on 02/03/2026). [14] Sebastiano Boscarino, Seung Yeon Cho, and Giovanni Russo. “A local velocity grid conservative semi-Lagrangian schemes for BGK model”. en. In: Journal of Computational Physics 460 (July 2022), p. 111178. issn : 00219991. doi : 10.1016/j.jcp.2022.111178 . url : https://linkinghub.elsevier. com/retrieve/pii/S0021999122002406 (visited on 07/05/2024). [15] Seung Yeon Cho et al. “Conservative semi-Lagrangian schemes for a general consistent BGK model for inert gas mixtures”. en. In: Communications in Mathematical Sciences 20.3 (2022), pp. 695–725. 23 issn : 15396746, 19450796. doi : 10.4310/CMS.2022.v20.n3.a4 . url : https://link.intlpress.com/ JDetail/1806261544969261058 (visited on 04/18/2025). [16] Francis Filbet and Shi Jin. “An Asymptotic Preserving Scheme for the ES-BGK Model of the Boltz-mann Equation”. en. In: Journal of Scientific Computing 46.2 (Feb. 2011), pp. 204–224. issn : 0885-7474, 1573-7691. doi : 10.1007/s10915-010-9394-x . url : http://link.springer.com/10.1007/ s10915-010-9394-x (visited on 09/29/2025). [17] Maria Groppi, Giovanni Russo, and Giuseppe Stracquadanio. “Boundary conditions for semi-Lagrangian methods for the BGK model”. en. In: Communications in Applied and Industrial Mathematics 7.3 (Sept. 2016), pp. 138–164. issn : 2038-0909. doi : 10.1515/caim- 2016- 0025 . url : https://www. sciendo.com/article/10.1515/caim-2016-0025 (visited on 03/20/2024). [18] M. A. Gallis and J. R. Torczynski. “Investigation of the ellipsoidal-statistical Bhatnagar–Gross–Krook kinetic model applied to gas-phase transport of heat and tangential momentum between parallel walls”. en. In: Physics of Fluids 23.3 (Mar. 2011), p. 030601. issn : 1070-6631, 1089-7666. doi : 10.1063/1. 3558869 . url : https://pubs.aip.org/pof/article/23/3/030601/257269/Investigation- of-the-ellipsoidal-statistical (visited on 10/01/2025). [19] Pierre Andries et al. “Numerical comparison between the Boltzmann and ES-BGK models for rarefied gases”. en. In: Computer Methods in Applied Mechanics and Engineering 191.31 (May 2002), pp. 3369– 3390. issn : 00457825. doi : 10.1016/S0045-7825(02)00253-0 . url : https://linkinghub.elsevier. com/retrieve/pii/S0045782502002530 (visited on 10/17/2025). [20] Marcel Pfeiffer, Paul Nizenkov, and Stefanos Fasoulas. “Extension of particle-based BGK models to polyatomic species in hypersonic flow around a flat-faced cylinder”. In: AIP Conference Proceedings 
+
+2132.1 (Aug. 2019). eprint: https://pubs.aip.org/aip/acp/article-pdf/doi/10.1063/1.5119596/7676068/100001 1 online. p. 100001. issn : 0094-243X. doi : 10.1063/1.5119596 . url : https://doi.org/10.1063/1.5119596 .[21] C´ eline Baranger, Alexis Co¨ epeau, and Luc Mieussens. “Adaptation of the Unified Gas-Kinetic Scheme to ES-BGK Models”. en. In: Rarefied Gas Dynamics . Ed. by Martin Grabe, Georgii Oblapenko, and Manuel Torrilhon. Series Title: Springer Aerospace Technology. Cham: Springer Nature Switzerland, 2026, pp. 391–400. isbn : 978-3-032-00093-4 978-3-032-00094-1. doi : 10.1007/978-3-032-00094-1_37 .
+
+url : https://link.springer.com/10.1007/978-3-032-00094-1_37 (visited on 04/04/2026). [22] Carlo Cercignani. The Boltzmann Equation and Its Applications . en. Ed. by F. John, J. E. Marsden, and L. Sirovich. Vol. 67. Applied Mathematical Sciences. New York, NY: Springer New York, 1988. 
+
+isbn : 978-1-4612-6995-3 978-1-4612-1039-9. doi : 10.1007/978-1-4612-1039-9 . url : https://link. springer.com/10.1007/978-1-4612-1039-9 (visited on 10/13/2023). [23] Henning Struchtrup, ed. Macroscopic Transport Equations for Rarefied Gas Flows: Approximation Methods in Kinetic Theory . en. Interaction of Mechanics and Mathematics. Berlin, Heidelberg: Springer-Verlag Berlin Heidelberg, 2005. isbn : 978-3-540-24542-1 978-3-540-32386-0. doi : 10 . 1007 / 3 - 540 -32386-4 .[24] Luc Mieussens and Henning Struchtrup. “Numerical comparison of Bhatnagar–Gross–Krook models with proper Prandtl number”. en. In: Physics of Fluids 16.8 (Aug. 2004), pp. 2797–2813. issn : 1070-6631, 1089-7666. doi : 10.1063/1.1758217 . url : https://pubs.aip.org/pof/article/16/8/2797/ 255889/Numerical-comparison-of-Bhatnagar-Gross-Krook (visited on 08/28/2025). [25] E. M. Shakhov. “Generalization of the Krook kinetic relaxation equation”. en. In: Fluid Dynamics 
+
+3.5 (1972), pp. 95–96. issn : 0015-4628, 1573-8507. doi : 10.1007/BF01029546 . url : http://link. springer.com/10.1007/BF01029546 (visited on 02/02/2026). [26] Lowell H. Holway Jr. “Kinetic Theory of Shock Structure Using an Ellipsoidal Distribution Function”. In: Proceedings of the fourth international symposium on rarefied gas dynamics . Vol. 1. Conference Name: Rarefied Gas Dynamics, Volume 1 ADS Bibcode: 1965rgd1.conf..193H. Toronto, Jan. 1965, p. 193. url : https://ui.adsabs.harvard.edu/abs/1965rgd1.conf..193H (visited on 03/18/2025). [27] St´ ephane Brull and Jacques Schneider. “A new approach for the ellipsoidal statistical model”. en. In: 
+
+Continuum Mechanics and Thermodynamics 20.2 (May 2008), pp. 63–74. issn : 0935-1175, 1432-0959. 
+
+doi : 10.1007/s00161-008-0068-y . url : http://link.springer.com/10.1007/s00161-008-0068-y (visited on 02/02/2026). [28] Pierre Andries. “The ES-BGK model equation with correct Prandtl number”. en. In: AIP Conference Proceedings . Vol. 585. Sydney (Australia): AIP, 2001, pp. 30–36. doi : 10 . 1063 / 1 . 1407539 . url :
+
+https://pubs.aip.org/aip/acp/article/585/1/30-36/577706 (visited on 07/31/2025). 24 [29] St´ ephane Brull. “An ellipsoidal statistical model for gas mixtures”. en. In: Communications in Mathe-matical Sciences 13.1 (2015), pp. 1–13. issn : 15396746, 19450796. doi : 10.4310/CMS.2015.v13.n1.a1 .
+
+url : https://link.intlpress.com/JDetail/1806264400858271745 (visited on 10/01/2025). [30] Alexander V. Bobylev et al. “A general consistent BGK model for gas mixtures”. en. In: Kinetic & Related Models 11.6 (2018), pp. 1377–1393. issn : 1937-5077. doi : 10 . 3934 / krm . 2018054 . url :
+
+http://aimsciences.org//article/doi/10.3934/krm.2018054 (visited on 10/13/2023). [31] Pierre Andries et al. “The Gaussian-BGK model of Boltzmann equation with small Prandtl number”. en. In: European Journal of Mechanics - B/Fluids 19.6 (Nov. 2000), pp. 813–830. issn : 09977546. doi :
+
+10.1016/S0997- 7546(00)01103- 1 . url : https://linkinghub.elsevier.com/retrieve/pii/ S0997754600011031 (visited on 12/13/2024). [32] C. K. Chu. “Kinetic-Theoretic Description of the Formation of a Shock Wave”. en. In: The Physics of Fluids 8.1 (Jan. 1965), pp. 12–22. issn : 0031-9171. doi : 10.1063/1.1761077 . url : https://pubs. aip.org/pfl/article/8/1/12/957838/Kinetic-Theoretic-Description-of-the-Formation-of 
+
+(visited on 11/13/2023). [33] Lloyd N. Trefethen and J. A. C. Weideman. “The Exponentially Convergent Trapezoidal Rule”. en. In: 
+
+SIAM Review 56.3 (Jan. 2014), pp. 385–458. issn : 0036-1445, 1095-7200. doi : 10.1137/130932132 .
+
+url : http://epubs.siam.org/doi/10.1137/130932132 (visited on 03/20/2025). [34] D. Whitfield. “Three-dimensional unsteady Euler equations solution using flux vector splitting”. en. In: 17th Fluid Dynamics, Plasma Dynamics, and Lasers Conference . Snowmass,CO,U.S.A.: American Institute of Aeronautics and Astronautics, June 1984. doi : 10 . 2514 / 6 . 1984 - 1552 . url : https : //arc.aiaa.org/doi/10.2514/6.1984-1552 (visited on 09/26/2025). [35] Moran Wang and Zhixin Li. “Simulations for gas flows in microgeometries using the direct simulation Monte Carlo method”. en. In: International Journal of Heat and Fluid Flow 25.6 (Dec. 2004), pp. 975– 985. issn : 0142727X. doi : 10.1016/j.ijheatfluidflow.2004.02.024 . url : https://linkinghub. elsevier.com/retrieve/pii/S0142727X04000426 (visited on 10/21/2025). [36] Robert Nance et al. “Role of boundary conditions in Monte Carlo simulation of MEMS devices”. en. In: 35th Aerospace Sciences Meeting and Exhibit . Reno,NV,U.S.A.: American Institute of Aeronautics and Astronautics, Jan. 1997. doi : 10.2514/6.1997- 375 . url : https://arc.aiaa.org/doi/10. 2514/6.1997-375 (visited on 09/26/2025). [37] Klaas Willems. SL4BGK . 2026. url : https://gitlab.kuleuven.be/numa/public/sl4bgk# .[38] James B. Mehl, Marcia L. Huber, and Allan H. Harvey. “Ab Initio Transport Coefficients of Gaseous Hydrogen”. en. In: International Journal of Thermophysics 31.4-5 (May 2010), pp. 740–755. issn :0195-928X, 1572-9567. doi : 10.1007/s10765-009-0697-9 . url : http://link.springer.com/10. 1007/s10765-009-0697-9 (visited on 01/28/2026). [39] Jianping Meng et al. “Assessment of the ellipsoidal-statistical Bhatnagar–Gross–Krook model for force-driven Poiseuille flows”. en. In: Journal of Computational Physics 251 (Oct. 2013), pp. 383–395. issn :00219991. doi : 10.1016/j.jcp.2013.05.045 . url : https://linkinghub.elsevier.com/retrieve/ pii/S0021999113004129 (visited on 10/01/2025). 25

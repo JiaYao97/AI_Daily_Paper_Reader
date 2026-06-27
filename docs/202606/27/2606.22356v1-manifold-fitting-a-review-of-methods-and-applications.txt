@@ -1,0 +1,724 @@
+Title: Manifold Fitting: A Review of Methods and Applications
+
+URL Source: https://arxiv.org/pdf/2606.22356v1
+
+Published Time: Tue, 23 Jun 2026 02:01:47 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Manifold Fitting: A Review of Methods and Applications 
+
+Zhigang Yao 1,* , Jiaji Su 1 
+
+> 1
+
+National University of Singapore 
+
+Abstract 
+
+With data growing in scale and complexity, traditional linear dimension reduction techniques are becoming inadequate in some settings. Manifold fitting offers an important alternative by capturing low-dimensional latent geometric structures within high-dimensional spaces. This capability allows it to support downstream analysis in complex data settings. In this review, we explore the development and applications of manifold fitting. First, we introduce the basic concepts of manifold fitting and distinguish it from related techniques such as manifold embedding and denoising. We review the development of manifold fitting with three distinct stages: early nonparametric statistical methods, insights from mathematical analysis, and contemporary practical statistical approaches. Furthermore, we present diverse applications of manifold fitting, particularly in neural networks and bioinformatics, which illustrate its utility in complex data scenarios. Despite considerable progress, manifold fitting remains a fertile area for research. Many theoretical and practical questions remain unanswered, and ongoing investigations will further clarify its role in modern data science as a geometric tool for a wide range of data analysis challenges. 
+
+Keywords: Manifold fitting, nonlinear dimension reduction, reach, geometric analysis 
+
+# Media Summary 
+
+Researchers have developed a powerful new technique called manifold fitting that is revolutionizing the way we analyze and understand complex high-dimensional data. This method improves on traditional linear-based techniques by offering more precise ways to reduce and simplify large data sets into understandable forms. Manifold fitting is particularly useful in fields with low signal-to-noise ratio, where efficient management of vast amounts of data can lead to faster progress and deeper insights. This review traces the evolution of this technique from its early statistical roots to its modern applications, which now incorporate sophisticated mathematical tools and practical methods. Examples show how manifold fitting is already helping scientists better understand the underlying structure of images and genetic data from individual cells. Despite its success, manifold fitting still has enormous untapped potential. The researchers encourage continued exploration to fully integrate and expand this tool into data science. Their work points to a future where manifold fitting could become a standard tool, aiding countless scientific and technological endeavors by making complex data more accessible and useful. 
+
+# 1 Introduction 
+
+Over the last few decades, data dimensionality has increased significantly. Traditionally, to manage such high-dimensional data, methods like Principal Component Analysis (PCA) have been commonly used. PCA simplifies data representation by projecting data points onto a lower-dimensional linear subspace through the computation of eigenvectors from the sample covariance matrix. This process facilitates easier visualization and analysis. However, linear methods like PCA are limited to capturing only linear relationships and often fail to adequately represent complex, nonlinear patterns. To address these limitations, more advanced nonlinear techniques are necessary, particularly those involving the concept of a manifold. 
+
+> *
+
+Corresponding author: zhigang.yao@nus.edu.sg. 
+
+> arXiv:2606.22356v1 [stat.ME] 21 Jun 2026
+
+In mathematics, a manifold is a topological space that resembles Euclidean space locally around each point. The concept of manifold is fundamental to many areas of geometry and modern mathematical physics, as it describes complex structures through the well-understood properties of simpler spaces. In high-dimensional data analysis, this idea appears through the manifold hypothesis. Interpreted carefully, the hypothesis is not that all data sets lie exactly on a low-dimensional manifold, but rather that in some problems the data-generating distribution may be well approximated by observations supported on, or concentrated near, a class of smooth low-dimensional manifolds with controlled geometric complexity. Under this view, the key claim is that the ambient dimension can be much larger than the intrinsic dimension needed to describe the dominant variability of the data. Such a perspective is plausible when a system is governed by relatively few latent degrees of freedom, so that its dominant variability is effectively low-dimensional even though it is recorded in a high-dimensional form, but it should be understood as a problem-dependent modeling assumption rather than a universal fact. Classical embedding results, such as the Whitney and Nash embedding theorems, provide background for representing smooth manifolds in Euclidean space. Throughout this review, we restrict attention to smooth embedded submanifolds of Euclidean space, excluding immersed or self-intersecting objects; orientability is not assumed unless explicitly needed. This statistical viewpoint is made particularly explicit by Fefferman et al. [19] . In plain terms, one may ask whether the observed distribution is well approximated by some manifold in an admissible class characterized by intrinsic quantities such as dimension, reach, and overall size or volume. At a high level, there are then two possible answers: either there exists such a manifold that yields small approximation error, or no manifold in the admissible class achieves comparably small error. Framed in this way, the manifold hypothesis becomes a question of model adequacy, which naturally leads to the basic statistical problem of how many samples are needed to decide, with high confidence, whether a low-dimensional manifold model provides a satisfactory explanation of the data. Once the question is posed in this way, a natural next step is to move from testing adequacy to explicitly constructing a manifold that explains the data well. This leads directly to manifold fitting, where the goal is to estimate a smooth manifold object in the ambient space from sampled observations, typically by minimizing or approximately minimizing a suitable distance-based loss. From this perspective, manifold fitting is a central paradigm within the broader manifold-learning landscape, complementing methods that instead seek either a low-dimensional representation in another space or a pointwise correction of noisy observations. As suggested by Yao et al. [58] , based on the overall target, these techniques can be broadly classified into three categories: manifold embedding, manifold denoising, and manifold fitting. To orient the reader before the detailed review, Table 1 places manifold fitting within a broader manifold-learning landscape and also includes a neighboring line of PCA-type nonlinear extensions. It highlights how these related directions differ in target, output, and relation to the latent-manifold-plus-noise viewpoint. 
+
+Figure 1: Manifold Embedding: This illustration shows observed data points (black) distributed around a latent manifold (gray surface). Manifold embedding seeks a low-dimensional representation in another space (light red parallelogram), producing embedded points (red points) intended to reflect intrinsic-coordinate-like information or other geometric or spectral structure. 
+
+Manifold embedding , a technique for discovering low-dimensional representations of high-dimensional data sets that lie close to unknown low-dimensional manifolds, has been central to the development of dimensionality reduction, visualization and clustering methods since the early 21st century. Rather than pursuing a single notion of fidelity, manifold embedding methods are designed to preserve different structures of the data. Depending on the method, the target may be geodesic or intrinsic-distance-motivated structure, local linear or local tangent structure, neighborhood structure, or spectral structure associated with graph Laplacians and the Laplace–Beltrami operator. The output is therefore a low-dimensional representation in another space that is useful for visualization, clustering, or subsequent analysis, but it is not itself an estimated manifold in the original ambient space. Extensive research has been conducted on manifold embedding algorithms such as Isomap [ 50 ], Locally Linear Embedding [ 46 ], Hessian Eigenmaps [ 15 ], Laplacian Eigenmaps [ 4 ], Diffusion Maps [ 11 ], Local Tangent Space Alignment [ 63 ], and Uniform Manifold Approximation and Projection [ 38 ]. These methods emphasize different recovered structures: Isomap is motivated by geodesic distance, Locally Linear Embedding and Local Tangent Space Alignment use local 
+
+2Table 1: Compact comparison of related manifold-learning paradigms and neighboring PCA-type nonlinear extensions. The representative references are included only to highlight a few characteristic contributions in each direction and are not meant to be exhaustive. 
+
+Paradigm Goal Output Relation to Eq. (1) Representative references Hypothesis testing Model adequacy Test; admissible class Explicit latent-manifold model class Fefferman et al. [19] Embedding Low-dimensional representation Coordinates; embedding map Usually not explicit ambient-space recovery Tenenbaum et al. [50] Roweis and Saul [46] Zhang and Zha [63] Regularization Geometry-aware learning Regularized predictor; classifier Uses manifold structure as inductive bias; not explicit manifold estimation Belkin et al. [5] Meil˘ a and Zhang [39] Diffusion geometry Diffusion-based geometric analysis Diffusion coordinates; operator May encode intrinsic geometry without explicit recovery under Eq. (1) Coifman and Lafon [11] Nadler et al. [41] Singer [47] Denoising Noise reduction near a manifold Denoised points; local summaries Directly aligned with latent manifold plus noise; mainly pointwise recovery Wang and Carreira-Perpin´ an [51] Sober and Levin [48] Luo and Hu [37] Fitting Ambient-space manifold estimation Manifold estimator 
+
+cM Direct latent manifold plus noise recovery Genovese et al. [24] Mohammed and Narayanan [40] Yao and Xia [56] Yao et al. [58] Nonlinear / intrinsic PCA PCA-type summary of dominant variation Principal curve / flow; geodesic principal components or subspaces Typically assumes the ambient or intrinsic space is already given and seeks PCA-like summaries of variation Hastie and Stuetzle [28] Huckemann et al. [30] Jung et al. [31] Panaretos et al. [44] Yao et al. [62] Su and Yao [49] 
+
+3linear or tangent information, Hessian Eigenmaps uses local second-order structure, Laplacian Eigenmaps and Diffusion Maps recover spectral structure, and UMAP emphasizes neighborhood relations. Thus, methods such as UMAP are not intended to preserve geodesic distance in the same sense as Isomap, but rather to retain neighborhood or graph-based structure. Their theoretical guarantees are therefore method-dependent and concern different notions of recovery under different assumptions; see, for example, Hein et al. [29] for graph Laplacian convergence and Meil˘ a and Zhang [39] for a recent review. Accordingly, although both embedding and fitting are motivated by low-dimensional structure, embedding targets coordinates in a representation space whereas fitting targets an estimated manifold in the ambient space. Moreover, these embeddings usually represent a one-way transformation: operations performed in the lower-dimensional space cannot easily be translated back to the original high-dimensional ambient space. 
+
+Figure 2: Manifold Denoising: This illustration shows observed data points (black) distributed around a latent manifold (gray surface). Manifold denoising aims to adjust these points to the denoised positions (red points), bringing them closer to the latent manifold. 
+
+Manifold denoising targets the correction of noisy observations that are distributed around a low-dimensional manifold. A simple statistical setup is 
+
+Yi = Xi + εi, Xi ∈ M ,
+
+where Xi denotes an unobserved signal point on the latent manifold M, εi is a noise term, and only the noisy observation Yi is observed. The goal of denoising is to estimate corrected points ˜Xi from the observations Yi so that ˜Xi is closer to the latent manifold and better approximates Xi. In this sense, manifold denoising primarily targets pointwise recovery rather than direct estimation of the full manifold itself. There are two principal approaches to manifold denoising: feature-based and expectation-based methods. Feature-based methods involve extracting features using techniques such as wavelet transformations [ 13 , 55 ]or neural networks [ 37 ]. These methods eliminate non-informative features and employ inverse transformations to produce denoised data points. Expectation-based methods, on the other hand, achieve denoising by adjusting the local sample mean [ 51 ] or fitting a local mean function [ 48 ]. Although these approaches can effectively reduce noise, their theoretical guarantees are often method-specific or developed under restrictive assumptions. More importantly for the present review, they mainly target pointwise recovery and are less directly suited to reconstructing a smooth manifold object with explicit geometric regularity. 
+
+Figure 3: Manifold Fitting: This illustration shows observed data points (black) distributed around a latent manifold (gray surface). Manifold fitting seeks to construct a smooth manifold estimator (light red surface) that captures the essential properties of the latent manifold, enabling the projection of observations onto it (red points) for enhanced downstream analysis. 
+
+Manifold fitting is a crucial yet challenging aspect of learning the latent manifold. This method aims to estimate a smooth manifold cM within the same ambient space that faithfully reflects the geometry and topology of an unknown low-dimensional manifold using data located on or near it. Unlike manifold embedding, which outputs coordinates in another space, or manifold denoising, which directly targets corrected points, manifold fitting first targets the manifold object itself. A fitted point bXi is then obtained only after estimating cM, typically by projecting an observation onto 
+
+4the estimated manifold. The primary objective is therefore the recovery of cM, together with desirable geometric properties such as smoothness and accurate local structure. One significant benefit of manifold fitting is its ability to disclose the shape of the concealed manifold through the estimator cM, after which one may project data samples onto the fitted manifold to obtain fitted points for downstream analysis. For instance, in biochemistry, manifold fitting is employed to reconstruct the three-dimensional structure of protein molecules from multiple cryo-electron microscopy (cryo-EM) images taken at various angles. Despite the high-dimensional noise in these images due to pixel scale, manifold fitting successfully recovers the underlying low-dimensional Lie group that corresponds to the molecules’ orientations. Additionally, manifold fitting is useful in other areas, such as light detection and ranging [ 32 ] and wind direction detection [ 12 ], where it aids in uncovering complex data patterns. Furthermore, manifold fitting can generate manifold-valued data with specific distributions, which is especially beneficial in developing generative machine learning models like Generative Adversarial Networks [27]. 
+
+# 2 Preliminary 
+
+# 2.1 Notations and mathematical concepts 
+
+Throughout this review, we utilize both upper- and lower-case C to denote absolute constants. Upper-case C typically represents constants greater than one, while c denotes constants less than one. The values of these constants may change depending on the context. In our notation, x denotes a point on the latent manifold M, y represents a point associated with the observation, and z indicates an arbitrary point of interest in the ambient space. The symbol r is used to specify the radius in certain contexts. Mathematical entities related to sets are denoted using capitalized calligraphy letters, such as M for the manifold, Y for the observation set, and BD (z, r ) for a D-dimensional Euclidean ball centered at z with radius r.The distance between a point a and a set A is given by d (a, A) = min a′∈A ∥a − a′∥2, where ∥ · ∥ 2 is the Euclidean norm. To measure the discrepancy between two sets, we employ the Hausdorff distance , which is frequently used in the assessment of estimator accuracy. This metric is particularly useful in evaluating the distance between the latent manifold M and its estimate cM. The Hausdorff distance is defined as follows: 
+
+Definition 2.1 (Hausdorff distance) . Let A and B be two non-empty subsets of RD . Their Hausdorff distance 
+
+dH(A, B) induced by Euclidean distance is defined as 
+
+dH(A, B) = max {sup 
+
+> a∈A
+
+inf  
+
+> b∈B
+
+∥a − b∥2, sup 
+
+> b∈B
+
+inf  
+
+> a∈A
+
+∥a − b∥2}.
+
+Remark. For any A, B ⊂ RD , dH(A, B) < ϵ is equivalent to the fact that, for ∀a ∈ A and ∀b ∈ B , d (a, B) < ϵ and 
+
+d( b, A) < ϵ. 
+
+In the context of geometry, the Hausdorff distance provides a measure of the proximity between two manifolds. It is commonly acknowledged that a small Hausdorff distance implies a high level of alignment between the two manifolds, with controlled discrepancies. We also require some essential geometrical concepts pertinent to the study of manifold fitting. A d-dimensional topological manifold is defined as a second-countable, Hausdorff topological space that is locally Euclidean of dimension 
+
+d. Specifically, this implies that every point has a neighborhood homeomorphic to an open subset of Rd. The tangent space at a point x in a manifold M, denoted TxM, is a d-dimensional affine space comprising all vectors tangent to M at x. A Riemannian metric g on M is a smoothly varying collection of inner products on the tangent spaces, with each inner product gx : TxM × TxM → R at x ∈ M . Therefore, a Riemannian manifold is a pair ( M, g ), where 
+
+M is a smooth manifold and g is a Riemannian metric. In our context, we assume M ⊂ RD with g induced by the Euclidean metric of RD , thereby simplifying M to a d-dimensional Riemannian manifold. Projection matrices Π − 
+
+> x
+
+and Π ⊥ 
+
+> x
+
+project any vector v ∈ RD onto the tangent space TxM and its orthogonal complement, respectively. These matrices satisfy the relation Π ⊥ 
+
+> x
+
+= ID − Π− 
+
+> x
+
+, where ID is the identity matrix in RD ,and we denote estimators for these projections as bΠ⊥ 
+
+> z
+
+and bΠ− 
+
+> z
+
+. For an arbitrary point z̸ ∈ M , its projection onto the manifold is defined by z∗ = arg min x∈M ∥x − z∥2.The curvature of M is described by the reach of M. The concept of reach, as introduced by Federer [16] , is pivotal in assessing the regularity of manifolds embedded in Euclidean space and finds extensive applications in signal processing and machine learning. It can be defined as follows: 
+
+Definition 2.2 (Reach) . Let A be a closed subset of RD . The reach of A, denoted by reach (A), is the largest number 
+
+τ to have the following property: any point at a distance less than τ from A has a unique nearest point in A.
+
+5Remark. The value of reach (M) can be interpreted as a second-order differential quantity if M is treated as a function. Namely, let γ be an arc-length parameterized geodesic of M; then, according to Niyogi et al. [42] ,
+
+∥γ′′ (t)∥2 ≤ reach( M)−1 for all t.
+
+Positive reach guarantees a tubular neighborhood around M in which the nearest-point projection is uniquely defined and stable for points sufficiently close to the manifold. Consequently, it excludes sharp folds, self-near-intersections, and corner-type singularities. This makes reach especially useful in manifold fitting, where one often needs not only setwise closeness but also reliable projection and tangent-space approximation in the ambient space. In particular, positive reach is stronger than mere Hausdorff closeness: a set may be close to a smooth manifold in Hausdorff distance while still developing nonsmooth edges or vertices, and many piecewise linear approximations have zero reach at such locations. Reach is also an extrinsic geometric regularity quantity in Euclidean space, so it differs from intrinsic curvature notions such as Alexandrov, Ricci, or sectional curvature. For example, the reach of a circle is its radius, and the reach of a linear subspace is infinite. Intuitively, a large reach implies that the manifold is locally close to the tangent space. This phenomenon can be explained by the following lemma given by Federer [16]: 
+
+Lemma 2.3 (Federer’s reach condition) . Let M be an embedded submanifold of RD . Then, 
+
+reach( M)−1 = sup 
+
+ 2d( b, Ta M)
+
+∥a − b∥22
+
+| a, b ∈ M , a̸ = b
+
+
+
+.
+
+Calculating the average of a group of points on a manifold is not straightforward. To address this, we introduce the concept of the Fr´ echet mean , which generalizes the idea of centroids to metric spaces, providing a representative point or central tendency for a cluster of points. 
+
+Definition 2.4 (Fr´ echet Mean) . Let {x1, . . . , x N } be a collection of points on a manifold M. For any point z on M,define the Fr´ echet function to be the sum of squared distances from z to each xi:
+
+Ψ( z) = 
+
+> N
+
+X
+
+> i=1
+
+g2(z, x i).
+
+The set of points {μF ∈ M : Ψ( μF ) = arg min z∈M Ψ( z)}, where Ψ( z) is minimized, is called the Fr´ echet mean set. If the minimizer is unique, μF is simply called the Fr´ echet mean of the set {x1, . . . , x N } on M.
+
+# 2.2 Model setting of manifold fitting 
+
+The primary goal of manifold fitting is to construct a smooth manifold estimator from a set of noisy observations in the ambient space. This estimator aims to not only approximate the true manifold with a bounded geometric error but also to preserve its inherent geometric properties. To facilitate the development of a corresponding theoretical framework, we employ a widely recognized model setting, detailed in this subsection. Throughout this review, we consider a random vector Y ∈ RD modeled as 
+
+Y = X + ξ, (1) where X ∈ RD is an unobserved random vector whose law ω is supported on the unknown latent manifold M,and ξ ∼ ϕσ denotes the ambient-space observation noise, independent of X, characterized by a noise level σ. The distribution of Y can be viewed as the convolution of ω and ϕσ , with the density at a point y given by 
+
+ν(y) = 
+
+Z
+
+> M
+
+ϕσ (y − x) d ω(x). (2) Equation (1) should therefore be read not only as a geometric statement that data lie near a manifold, but also as a statistical generative model. The unknown latent manifold M carries a measure or distribution ω describing how the clean points are distributed along it, and the observed sample is informative only through the noisy law of Y
+
+induced by ω and ϕσ . In this sense, manifold fitting seeks recovery of an ambient-space manifold under an unknown latent-manifold-plus-noise generative model. The latent manifold is also typically unknown in manifold denoising, but denoising primarily targets cleaned points or local geometric summaries rather than a global smooth manifold estimator. This perspective also clarifies the taxonomy in Table 1: manifold embedding and regularization need not rely on the explicit generative interpretation of Equation (1) , whereas denoising and fitting are more directly tied to it, and manifold diffusion may lie between these viewpoints depending on formulation. Assume Y = {yi}Ni=1 ⊂ RD represents the collection of observed data points, each in the form of 
+
+yi = xi + ξi, for i = 1 , · · · , N, (3) 
+
+6with ( yi, x i, ξ i) being N independent and identically distributed realizations of ( Y, X, ξ ). Utilizing Y, manifold fitting aims to construct an estimator cM for M and provides theoretical justification for cM under the following primary assumptions: 
+
+• The latent manifold M is a compact, twice-differentiable d-dimensional submanifold, embedded within the ambient space RD . Its volume, with respect to the d-dimensional Hausdorff measure, is upper bounded by V ,and its reach is lower bounded by a fixed constant τ .
+
+• The distribution ω is assumed to be supported on M, and the density with respect to the d-dimensional Hausdorff measure is lower and upper bounded by non-zero constants. 
+
+• The intrinsic dimension d of M and the noise level σ are known parameters. In many theoretical studies, the intrinsic dimension d is treated as known. In practice, however, it often must be estimated from the observed data, and this task becomes substantially more difficult in the presence of noise. For users of manifold fitting methods, this issue is important because the estimated dimension directly influences neighborhood selection, local PCA or tangent-space estimation, bandwidth or scale choices, and therefore the stability of the final manifold estimator. Consequently, dimension estimation should often be regarded as a meaningful preliminary step in practical fitting pipelines rather than as a fixed input supplied in advance. 
+
+# 3 Manifold fitting methods 
+
+# 3.1 Inspirations from traditional non-parametric methods 
+
+The idea of fitting the latent manifold has significantly evolved since the 1980s, with one foundational approach being the Delaunay triangulation [ 33 ]. In this technique, a mesh is created such that no sample points lie inside the circumcircle of any triangle in the triangulation. Early methods, as described by Cheng et al. [10] and Boissonnat et al. [6] , rely on dense samples free of noise, effectively creating an ( ϵ, δ )-net of the hidden manifold. These approaches typically produce a piecewise linear manifold that is geometrically and topologically similar to the hidden manifold but lack smoothness. Moreover, the assumption of a noise-free and densely distributed dataset limits the widespread application of these algorithms. This ambient-space objective differs from the classical manifold embedding literature, including Isomap, Locally Linear Embedding, Hessian Eigenmaps, Laplacian Eigenmaps, Diffusion Maps, Local Tangent Space Alignment, and UMAP, which instead construct low-dimensional coordinates adapted to different geometric, neighborhood, or spectral structures. Additionally, a neighboring line of work seeks nonlinear or intrinsic extensions of PCA. In Euclidean space, Donnell et al. [14] study smallest additive principal components. For a random vector Y = ( Y1, . . . , Y D ), they consider centered componentwise transformations ϕi(Yi) and minimize Var {P 
+
+> i
+
+ϕi(Yi)} subject to a normalization constraint on the individual variances. The resulting level set P 
+
+> i
+
+ϕi(yi) = 0 defines a co-dimension one additive manifold, which can be viewed as removing variation along a smallest nonlinear principal component. Around the same period, Hastie and Stuetzle [28] introduce principal curves, a nonlinear analogue of the first principal component: a smooth one-dimensional curve passing through the middle of the data cloud and summarizing its dominant mode of variation. Their construction starts from the linear PCA direction through the sample mean and iteratively updates the curve by conditional expectation until a self-consistent mean curve is obtained. These methods are important precursors because they move beyond linear subspaces, but they remain primarily PCA-type summaries of variation in Euclidean data rather than general ambient-space manifold estimators. Related ideas also appear when the relevant manifold structure is already known. Panaretos et al. [44] propose principal flow, which constructs a smooth curve on a given Riemannian manifold by following the leading direction obtained from local tangent-space PCA, starting from the sample Fr´ echet mean; see Figure 4. In this sense, principal flow summarizes dominant variation on a known manifold rather than estimating an unknown manifold from noisy ambient observations. This viewpoint has led to several further developments, including principal boundary for manifold classification [ 57 ], fixed boundary flow with prescribed endpoints [ 61 ], and principal submanifolds obtained by varying the initial tangent direction so that a family of principal-flow trajectories forms a higher-dimensional object [62 ]. Other PCA-type generalizations on known nonlinear spaces include geodesic PCA and intrinsic shape analysis on Riemannian manifolds or quotient spaces [ 30 ], as well as principal nested spheres for spherical data [ 31 ]. Moving from fixed nonlinear spaces toward data-adaptive nested hierarchies, principal nested submanifolds [ 49 ] extend the nested-PCA idea to a sequence of smooth submanifolds embedded in the ambient space, thereby providing a PCA-like decomposition that is closer in spirit to manifold fitting. Compared with the main manifold-fitting methods reviewed below, however, these PCA-type methods primarily aim to summarize dominant variation through curves, flows, geodesic components, or nested submanifold structures, rather than to solve the general problem of recovering an unknown latent manifold under the additive noise model. 
+
+7Figure 4: Left panel: principal flow on a known manifold, starting from the sample Fr´ echet mean and evolving along the leading principal direction obtained from tangent-space PCA. Right panel: principal submanifold, obtained by varying the initial tangent direction so that a family of principal-flow trajectories forms a higher-dimensional object capturing multiple directions of variation. 
+
+Moreover, some work focuses on local covariance structures and can perform on known manifolds. Panaretos et al. [44] propose a method named principal flow, fitting a 1-dimensional subspace on a known manifold. The curve 
+
+γ(t) starts from the sample Fr´ echet mean, and its derivative ˙γ(t) aligns with the principal direction of the tangent space PCA along the curve. This method effectively represents the main variations of the samples on the manifold by leveraging PCA information from the tangent space of the known manifold. This technique has spurred further developments, such as principal boundary [ 57 ] for classifying samples on the manifold by utilizing smaller eigenvalue boundaries, and fixed boundary flow [ 61 ] with designated starting and ending points on the manifold. Furthermore, by altering the starting direction of the principal flow within the tangent space, different trajectories can be obtained, and the collection of these trajectories forms what is known as the principal submanifold [ 62 ]. By exploiting the local covariance structure of the samples, these methods offer the flexibility to modify the portrayal of sample variations. However, their reliance on predefined manifold structures and the iterative computation of tangent space PCA limits their broader applicability. In recent years, the methodology for fitting the latent manifold has been refined to accommodate various types of noise and sample distributions, improving the smoothness of the resulting manifolds and broadening the scope of practical applications. 
+
+# 3.2 Origins of manifold fitting 
+
+A series of influential studies by Genovese et al. [24 , 25] explore manifold estimation through the lens of minimax risk under the Hausdorff distance, utilizing Le Cam’s method. Their foundational paper [ 25 ] models noisy sample points as a combination of latent variables from a hidden manifold and additive noise, where the noise norm is bounded by a constant σ > 0 and is assumed perpendicular to the manifold. By constructing extreme cases, they establish that the optimal minimax estimation rate is lower bounded by O(N −2/(2+ d)), and that the minimax risk is upper bounded by 
+
+O (N/ log N )−2/(2+ d) through a sieve maximum likelihood estimator. This leads to the conclusion that the estimation rate is tightly bound, up to logarithmic factors, with an optimal rate of O(N −2/(2+ d)). Remarkably, this rate depends only on the intrinsic dimension d, rather than the ambient dimension D. However, the noise assumption in their model is somewhat unrealistic, and the sieve maximum likelihood estimator lacks computational tractability. Subsequent work by Genovese et al. [24] extends the analysis to include noiseless, clutter noise, and additive noise models. In the additive model, noise is modeled more realistically as a general Gaussian distribution with isotropic standard deviation σ. They treat the sample distribution as a convolution of a manifold-valued distribution and a noise distribution, framing the fitting problem as one of deconvolution. They establish a lower bound for the optimal estimation rate at O ( log N )−1, and an upper bound that is a polynomial function of ( log N )−1 using a standard deconvolution density estimator. However, the resulting output is not necessarily a manifold, and this approach relies on a known noise distribution, which is often impractical. Moreover, ensuring a small minimax risk necessitates an exponentially large sample size, which is not feasible in many applications. Alongside these minimax analyses, earlier work in computational geometry and statistics had already clarified several ingredients that later became central to manifold fitting. In particular, Chazal and Lieutier [7] and Aizenbud and Sober [3] study reconstruction or estimation of manifolds from noisy observations under geometric regularity and neighborhood control, while related work such as Aamari and Levrard [2] develops nonasymptotic estimation of local geometric quantities, especially tangent spaces. These contributions provide important background for later manifold 
+
+8fitting methods that explicitly target smooth manifold estimation in ambient space, even though they do not formulate exactly the same fitting problem in the sense considered by the later smooth ambient-space estimators reviewed here. To circumvent the requirement of large sample sizes for consistent manifold estimation, Genovese et al. [26] propose studying the ridge of the sample distribution as a proxy. They demonstrate that the Hausdorff distance between the ridge of the kernel density estimator (KDE) and the sample density’s ridge is OP
+
+ (N/ log N )−2/(8+ D). Further, they show that the ridge of the sample density is within O(σ2 log (1 /σ )) of the true manifold in Hausdorff distance. They subsequently implement the mean-shift algorithm [ 43 ] to estimate the KDE ridge. Similar approaches are taken in [9, 40], where ridge estimation techniques are further refined with guaranteed convergence. While these manifold fitting approaches effectively manage minimax risk, ensuring sufficient smoothness of the estimators poses a significant challenge. The applicability of KDE-based methods in high-dimensional settings remains questionable. Moreover, these kernel-based methods require a progressively decreasing kernel bandwidth as the sample size increases, which may lead to inadequate capture of local geometric features. This problem often results in suboptimal convergence rates that are influenced more by the ambient dimensionality D than by the intrinsic dimensionality d. Furthermore, the manifolds generated by these methods may exhibit small, complicated twists that do not match the true local geometry of the latent manifold. To overcome these limitations, substantial recent research focuses on ensuring that the output manifold exhibits a lower bounded reach, thereby improving the smoothness and geometric fidelity of the estimators. This emphasis reflects the fact that manifold fitting typically requires a regular ambient-space geometry with stable local projection behavior, not merely a set that is close in Hausdorff distance. 
+
+# 3.3 Insights from mathematical analysis 
+
+From the mathematical perspective, the task of defining a smooth manifold from discrete sample points has been a focal point of interest, largely spurred by advancements in the generalization of the Whitney extension theorem. Originating from Whitney [52] , this theorem asserts that any smooth function on a closed subset of a manifold can be extended across the entire manifold. Recent solutions to the Whitney extension problem by Fefferman [17 , 18] have not only refined our approaches to data interpolation but also led to the formulation of the geometric Whitney problem [ 21 , 22 ]. This problem examines under what conditions a smooth d-dimensional submanifold cM ⊂ RD
+
+can approximate a set A, assessing the accuracy in terms of distance and smoothness. To tackle these challenges, various mathematical approaches have been proposed, pushing the boundaries of geometric analysis and manifold reconstruction. 
+
+# M
+
+# Tz∗ M
+
+# z r
+
+# xi xj
+
+Figure 5: Illustration of the ridge-based manifold recovery of Mohammed and Narayanan [40] . The black curve denotes the latent manifold M, z is an evaluation point near M, and the dotted circle marks its local neighborhood of radius r. The colored sample points xi and xj contribute local tangent approximations (colored dotted lines), and the colored arrows indicate the corresponding normal-distance terms used to build the smooth surrogate function f (z). The fitted manifold is then recovered as the ridge set of this aggregated function. 
+
+An early work without noise 
+
+An important early contribution to manifold fitting in the absence of noise is presented by Mohammed and Narayanan [40] , which focuses exclusively on noiseless samples X = {xi ∈ M} Ni=1 . In this work, the authors devise a method to reconstruct an estimator cM using X by constructing a function f (z) that approximates the squared distance from any point z to M. The ridge set of f (z) is then utilized as an estimator of M. The procedure is illustrated in Figure 5. Figure 5 emphasizes that nearby samples contribute through local tangent-based distance surrogates, and the manifold is recovered as a ridge of their weighted aggregate. 
+
+9For any point z close to M, its neighborhood index set within radius r is defined as: 
+
+Iz = {i : ∥xi − z∥2 ≤ r}.
+
+For each index i ∈ Iz , bΠ⊥ 
+
+> xi
+
+is calculated using the smallest D − d eigenvectors derived from local PCA. The squared distance from z to the tangent space Txi M at xi is approximated by: 
+
+fi(z) = ∥bΠ⊥ 
+
+> xi
+
+(z − xi)∥22.
+
+Then, f (z) is designed as the weighted average of fi(z)’s; that is, 
+
+f (z) = X
+
+> i∈Iz
+
+αi(z)fi(z),
+
+where the weights αi(z) are determined by bump functions: ˜αi(z) = θ(
+
+pfi(z)2r ), ˜α(z) = X
+
+> i∈Iz
+
+˜αi(z), αi(z) = ˜αi(z)˜α(z) ,
+
+and θ(t) is a cutoff function such that θ(t) = 1 for t ≤ 1/4 and θ(t) = 0 for t ≥ 1. The estimator cM is given as the ridge set of f (z); that is, 
+
+cM = {z ∈ RD : d( z, M) ≤ cr, Πhi (Hf (z)) ∂f (z) = 0 },
+
+where Hf (z) is the Hessian matrix of f at z, and Π hi (A) projects matrix A onto the span of the eigenvectors corresponding to its largest D − d eigenvalues. This cM is purported to have a reach bounded below by cr and to be 
+
+O(r2)-close to M in terms of Hausdorff distance. The intuition behind this Hessian-based decomposition is simple. If f behaves like an approximate squared distance to a manifold, then f should curve sharply in directions normal to the manifold and much less in tangent directions. Accordingly, the large-eigenvalue eigenspace of Hf (z) plays the role of a candidate normal space, and Π hi projects onto that subspace; the complementary low-eigenvalue directions, which one may denote by Π lo , are therefore tangent-like directions. In this way, the Hessian separates ambient directions into normal-like and tangent-like components, which is the basic geometric mechanism behind the ridge viewpoint used here and in related putative-manifold formulations; see also Mohammed and Narayanan [40] . At a high level, this is also the intuition behind Fefferman-style putative-manifold constructions: second-order behavior identifies candidate normal directions, and the fitted manifold is then characterized by vanishing of the corresponding normal component of the gradient. The condition Π hi (Hf (z)) ∂f (z) = 0 then means that the gradient has no component along the candidate normal directions, so z lies on the central ridge-like set of f that serves as the putative manifold. Although this approach does not consider ambient space noise and depends significantly on accurately estimated projection directions bΠ⊥ 
+
+> xi
+
+, the method of approximating the distance function using projection matrices is innovative and sets a promising direction for future research. In particular, the method already moves beyond rough set approximation by constructing a smooth surrogate whose ridge defines the fitted object, and the lower bound on reach gives an explicit form of geometric regularity rather than mere Hausdorff closeness alone. 
+
+An attempt with noise 
+
+In a follow-up work, Fefferman et al. [20] incorporate Gaussian noise from the ambient space into their analysis of manifold fitting. This study, building on the foundations laid by Mohammed and Narayanan [40] , aims to estimate the bias from an arbitrary point to the hidden manifold, with the collection of all zero-bias points serving as an estimator for M.To construct the bias function f (z), the authors start with a sample set Y0 = {yi}Ni=1 , ensuring the sample size meets specific criteria: N
+
+log( N ) > CV ωmin βd(r2/τ )d , N ≤ eD ,
+
+where V represents the volume of M, βd is the volume of a Euclidean unit ball in Rd, and ωmin is the minimum value of ω on M. Under these conditions, Y0 is Cr 2/τ -close to M in Hausdorff distance with a probability of 1 − N −C .From Y0, a subset Y1 = {pi} is selected greedily to form a minimal cr/d -net of Y0.For each point pi in Y1, the authors define a D-dimensional ball Ui = BD (pi, r ) and a d-dimensional ball 
+
+Di = Bd(pi, r ) centered at pi. Di represents a disc cut from Ui, with its orientation determined by the FindDisc 
+
+algorithm developed by the authors. Ideally, Di should align parallel to Tp∗ 
+
+> i
+
+M. The algorithm then estimates the basis of Di using sample points within Ui, which leads to an estimator bΠ⊥ 
+
+> pi
+
+for the orthogonal projection. 
+
+10 M
+
+# Tz∗ M
+
+# z∗
+
+# z r
+
+# pi
+
+# pj
+
+Figure 6: Illustration of the patching strategy proposed by Fefferman et al. [20] . The black curve is the latent manifold M, z∗ is the nearest point on M to the query point z, the horizontal dotted line is the tangent space 
+
+Tz∗ M, and the dotted circle marks a local neighborhood of radius r. The colored points pi and pj are nearby centers of sample-based local discs, the colored dotted lines indicate the orientations of these local geometric patches, and the arrows from z represent their local bias contributions. The global estimator is obtained by patching these discs together through a smooth bias function, with reach used to control regularity. 
+
+For a point z near M, let Iz = {i : ∥pi − z∥2 ≤ r}, and define: 
+
+fi(z) = bΠ⊥ 
+
+> pi
+
+(z − pi), for i ∈ Iz .
+
+The bias function f (z) is constructed as: 
+
+f (z) = X
+
+> i∈Iz
+
+αi(z)( bΠ⊥ 
+
+> z
+
+bΠ⊥ 
+
+> pi
+
+)( z − pi), (4) with bΠ⊥ 
+
+> z
+
+= Π hi 
+
+P 
+
+> i∈Iz
+
+αi(z)bΠ⊥
+
+> pi
+
+
+
+, and the weights defined as ˜αi(z) = 
+
+
+
+1 − ∥z − pi∥22
+
+r2
+
+d+2 
+
+, ˜α(z) = X
+
+> i∈Iz
+
+˜αi(z), αi(z) = ˜αi(z)˜α(z) ,
+
+for z satisfying ∥z − pi∥2 ≤ r and 0 otherwise. The resulting estimator cM is defined as: 
+
+cM = {z ∈ RD : d( z, M) ≤ cr, f (z) = 0 }.
+
+Setting r = O(√σ), the authors demonstrate that cM is O(σ)-close to M and its reach is bounded below by cτ with probability 1 − N −C . Notably, the algorithm for estimating disc orientation is not theoretically analyzed in the paper, and the accuracy of f (z) is constrained by the successive projections bΠ⊥ 
+
+> z
+
+bΠ⊥ 
+
+> pi
+
+and the limited accuracy in estimating 
+
+bΠ⊥ 
+
+> y
+
+. Additionally, due to the constraints on the sample size N , the manifold estimation error retains a non-zero lower bound, limiting practical applications. Relative to earlier rougher approximations, the main contribution here is the explicit patching of local discs into a smooth ambient-space manifold together with projection stability encoded through the reach bound. 
+
+An attempt to combine fitting with denoising 
+
+Expanding on previous results, the error in fitting M is typically upper bounded by two components: the distance from the sample to M, which can generally be considered O(σ) as Gaussian noise tends to dissipate within several standard deviations, and the distance from cM to the sample, which currently aligns tightly with the first component. Since the sampling bias dH(Y, M) = O(σ) inhibits closer approximation to M, denoising becomes essential to refine 
+
+cM.Building on Fefferman et al. [20] , subsequent work by Fefferman et al. [23] offers enhanced results through the refinement of points and the construction of a mesh grid on each disc Di. As depicted in Figure 7, each hyper-cylinder in the mesh extends significantly longer in the direction perpendicular to the manifold than parallel. Within these hyper-cylinders, a subset of Y0 is selected through a complex design, and their average is denoted by ey . The aggregate of such ey across all hyper-cylinders forms Y1, which demonstrates proximity to M with a distance of Cdσ 2/τ .These refined points in Y1 are then used as input for the subsampling algorithm from Fefferman et al. [20] to construct a new series of discs {D′
+
+> i
+
+}. Utilizing both the refined points and discs, the same function f (z) yields an cM
+
+11 M
+
+Tz∗ M
+
+Vz
+
+r1
+
+r2
+
+z
+
+ez
+
+Figure 7: Illustration of the noisy refinement strategy proposed by Fefferman et al. [23] . The black curve denotes M, the dotted horizontal line indicates the local tangent direction, and the red elongated rectangle 
+
+Vz represents an anisotropic hyper-cylinder-type neighborhood with widths r1 and r2. Red points denote noisy observations, dotted red arrows indicate their local refinement within these regions, and the blue point 
+
+ez is the resulting averaged or refined point associated with z. In contrast to Figure 6, this step inserts a local denoising refinement before the final manifold patches are reconstructed. 
+
+that is O(σ2)-close to M and maintains a reach of at least cτ with a probability of 1 − N −C . Thus, the denoising step is used not merely to improve pointwise accuracy, but to support a smoother and more geometrically stable fitted manifold with the same regularity target as in the patching construction. To date, the results presented by Fefferman et al. [23] represent a state-of-the-art error bound for manifold fitting. However, there are several challenges in implementing the described method: The refinement step for ez requires sampling directly from the latent manifold, which violates the initial assumption of noisy data. In addition, the procedures for point refinement and disk orientation determination are only briefly outlined and may not be readily applicable to real-world data sets. Furthermore, similar to [ 20 ], the requirement for an upper bound on the sample size limits the practical application and asymptotic behavior of this algorithm. 
+
+# 3.4 More practicable statistical methods 
+
+Recently, statisticians have renewed their attention to improving the practicality of manifold fitting methods. They aim to eliminate the constraints imposed by the upper bound on the sample size while maintaining the smoothness of the manifold estimator. In addition, there is a growing interest in integrating manifold fitting techniques into traditional data analysis procedures. This integration is intended to provide more accurate and widely applicable nonlinear dimensionality reduction, thereby extending the utility of manifold fitting to various data-intensive domains. 
+
+# M
+
+# Tz∗ M
+
+# z∗
+
+# z r
+
+# yi
+
+# yj
+
+Figure 8: Illustration of the local bias construction proposed by Yao and Xia [56] . The point z is a query point in the ambient space, z∗ is its nearest point on the latent manifold M, the horizontal dotted line is the tangent space Tz∗ M, the vertical dotted line indicates the normal direction through z, and the dotted circle marks the local neighborhood of radius r. The colored observations yi and yj are nearby noisy samples; the colored dotted lines represent their local tangent estimates, while the colored arrows from z illustrate the sample-based contributions used to estimate the normal projection and define the local bias function f (z)that characterizes the fitted manifold. 12 A more stable estimation for noisy data 
+
+To address limitations related to sample size and tangent space estimation encountered in the work of Fefferman et al. [20] , Yao and Xia [56] introduce an improved method that simplifies the estimation process. This method foregoes continuous projections, offering a more effective estimation of Π ⊥ 
+
+> z∗
+
+. The authors argue that accurately fitting the manifold is sufficient to estimate both the projection direction and the local mean effectively, as the manifold can be approximated as a linear subspace locally, with the local sample mean serving as a reliable reference point for the hidden manifold. They start with a sample set Y = {yi}Ni=1 . For each yi, bΠ⊥ 
+
+> yi
+
+is derived using local PCA within a radius 
+
+r = O(√σ), which has been demonstrated to produce satisfactory estimation errors. For any arbitrary point z, with 
+
+Iz = {i : ∥yi − z∥2 ≤ r}, the bias function is constructed as: 
+
+f (z) = bΠ⊥ 
+
+> z
+
+z − X
+
+> i∈Iz
+
+αi(z)yi
+
+!
+
+, (5) where bΠ⊥ 
+
+> z
+
+= Π hi 
+
+P 
+
+> i∈Iz
+
+αi(z)bΠ⊥
+
+> yi
+
+
+
+. The weights are defined as: ˜αi(z) = 
+
+
+
+1 − ∥z − yi∥22
+
+r2
+
+β
+
+, ˜α(z) = X
+
+> i∈Iz
+
+˜αi(z), αi(z) = ˜αi(z)˜α(z) ,
+
+for z satisfying ∥z − yi∥2 ≤ r and 0 otherwise, with β ≥ 2, a fixed integer that ensures second-order derivability of 
+
+f (z). This bias function defines the output manifold as: 
+
+cM = {z ∈ RD : d( z, M) ≤ cr, f (z) = 0 },
+
+which is demonstrated to be O(σ)-close to M in terms of Hausdorff distance and maintains a reach of at least cτ with a probability of 1 − c exp( −Cr d+2 N ). Although the theoretical error bound remains consistent with that proved by Fefferman et al. [20] , the method proposed by Yao and Xia [56] significantly simplifies the computational process and shows favorable numerical performance in many scenarios. Its main strength is that the fitted manifold is still characterized through a projection-based local bias function, so the method continues to target a smooth geometric object with stable local normal directions rather than only a denoised collection of points. 
+
+M
+
+z∗
+
+z F (z)
+
+r0 M
+
+z∗
+
+z
+
+G(z)
+
+bVz
+
+2r1
+
+2r2
+
+yi
+
+vi
+
+ui
+
+Figure 9: Illustration of the denoising construction proposed by Yao et al. [58] . Left panel: z is the current point, z∗ is the latent target point on M, the dotted circle of radius r0 is the local neighborhood used to compute the weighted average F (z) (red), and the direction of F (z) − z estimates the direction from z toward 
+
+z∗. Right panel: the estimated direction from F (z) − z is used to define the elongated anisotropic region bVz
+
+with widths 2 r1 and 2 r2; a nearby observation yi is decomposed into the directional component ui and the orthogonal component vi, and the resulting weighted contraction produces the denoised point G(z) (cyan). 
+
+A more flexible denoising module 
+
+Building on the hyper-cylinder region concept introduced by Fefferman et al. [23] , Yao et al. [58] propose a specially designed method to enhance denoising, making it more practical and efficient. The method relies on an explicit geometric operator, known as the Yao–Yau estimator (Theorem 4.5, Yao et al. [58] ). While it follows the general 
+
+13 framework of [ 56 ], it simplifies the process by focusing on estimating a main direction rather than the entire projection matrix. Compared with Yao and Xia [56] , the key geometric simplification is that the method estimates only the dominant direction from z toward z∗ and then uses it to build an anisotropic denoising region. Specifically, the projection matrix onto z∗ − z is defined as: 
+
+U = ( z∗ − z)( z∗ − z)⊤/∥z∗ − z∥22.
+
+A narrow region can be constructed based on it as 
+
+Vz = BD−1(z, r 1) × B 1(z, r 2), (6) where the second term is an interval in the direction of z∗ − z with r2 = Cσ plog(1 /σ ) , and the first term is in the span of the orthogonal complement of z∗ − z in RD with r1 = cσ . The conditional expectation of Y within Vz serves as a denoised version of z.To construct smooth estimators for these denoised points, the authors first use a local weighted average at point z
+
+as the reference of z∗:
+
+F (z) = X
+
+> i
+
+αi(z)yi, (7) with the weights being defined as ˜αi(z) = 
+
+(  
+
+1 − ∥z−yi∥22
+
+> r20
+
+k
+
+, ∥z − yi∥2 ≤ r0;0, otherwise; ˜α(z) = X
+
+> i∈Iz
+
+˜αi(z), αi(z) = ˜αi(z)˜α(z) , (8) with k > 2 being a fixed integer to ensure F (z) is twice-differentiable. The direction of F (z)−z is shown to approximate the vector from z to z∗ effectively. Consequently, a smooth estimator for U is defined as: 
+
+bU = (F (z) − z)( F (z) − z)⊤
+
+∥F (z) − z∥22
+
+.
+
+For a data point yi, the decomposition into orthogonal components is: 
+
+ui = bU (yi − z), vi = yi − z − ui. (9) The contracted point of z is given by: 
+
+G(z) = X
+
+> i
+
+βi(z)yi, (10) with the weights given by 
+
+wu(ui) = 
+
+
+
+1, ∥ui∥2 ≤ r2 
+
+> 2
+
+;
+
+
+
+1 − ( 2∥ui∥2−r2 
+
+> r2
+
+)2
+
+k
+
+, ∥ui∥2 ∈ ( r2 
+
+> 2
+
+, r 2); 0, otherwise ,wv (vi) = 
+
+(  
+
+1 − ∥vi∥22
+
+> r21
+
+k
+
+, ∥vi∥2 ≤ r1;0, otherwise ,βi(z) = wu(ui)wv (vi), ˜β(z) = X ˜βi(z), βi(z) = ˜βi(z)˜β(z) ,
+
+(11) where k ≥ 2 ensures that G(z) is also a C2-continuous map from RD to RD . The accuracy of G(z) is shown to be upper bounded as ∥G(z) − z∗∥2 ≤ Cσ 2log(1 /σ ) with high probability. The functions F and G significantly push the noisy points towards the latent manifold, which is the target of denoising. Moreover, if there exists a d-dimensional preliminary estimation fM approximately O(σ) close to M, G( fM)forms a d-dimensional manifold with an approximate error of O(σ2 log (1 /σ )) and a reach no less than cσ reach ( fM)with high probability. This approach effectively exploits the geometric information inherent in the underlying manifolds by strategically selecting neighborhood radii and creating both spherical and rectangular neighborhoods. Building on the foundation established by Yao and Xia [56] , it also avoids the computational challenges associated with performing local PCA, thereby broadening the practical applicability of the method. This enhancement not only simplifies the computational process, but also broadens the circumstances where the method can be used effectively. Compared with the earlier patching-based methods, the emphasis here is more indirect: geometric regularity is promoted through anisotropic denoising and the smooth maps F and G, while control of reach is inherited through the improvement of a preliminary manifold estimator rather than through an explicit curvature construction from the outset. 
+
+14 Figure 10: Illustration of fitting the latent manifold using the CycleGAN framework [64]. In the real world, data, such as the images shown in panel (a), are often treated as high-dimensional vectors. These vectors typically reside around a low-dimensional latent manifold, depicted by the black dotted curve in panel (b). The CycleGAN framework, detailed in panel (c), effectively learns to estimate this latent manifold (illustrated as the red curve in panel (b)). This construction supports nonlinear interpolation and projection-based denoising in the high-dimensional ambient space (panel (d)), with the aim of producing cleaner generated samples and smoother traversal along the learned latent structure. 
+
+# 3.5 Scientific applications 
+
+In addition to theoretical research in manifold fitting, statisticians have integrated manifold fitting concepts into broader data science applications, such as generative neural networks and bioinformatics. This integration enhances the information processing capabilities of the original pipelines while reducing the computational demands traditionally associated with manifold fitting methods. 
+
+Combination with generative neural networks 
+
+Figure 10 illustrates the overview of the method proposed by Yao et al. [60] , which innovates by integrating manifold fitting with generative adversarial networks (GANs). A GAN is a deep learning architecture that involves two competing neural networks. One network, the generator, creates new data instances from the input features, attempting to mimic the real data as closely as possible. The other network, the discriminator, evaluates whether the output from the generator is authentic, meaning it could plausibly be part of the original data set. The process continues until the discriminator cannot reliably distinguish between real and generated data. This setup allows for the generation of increasingly realistic data, such as new images or audio compositions. Cycle Generative Adversarial Networks (CycleGAN) [ 64 ] extend this approach by simultaneously training two pairs of generators and discriminators to learn mappings between two different spaces. This capability makes it particularly useful for tasks such as photo conversion between different styles. The approach proposed by Yao et al. [60] uses the CycleGAN framework of Zhu et al. [64] , but introduces innovations in combining it with the concept of manifold fitting. Specifically, they use the low-dimensional feature space to control manifold dimensionality and introduce an additional noise component in the high-dimensional space. This modification helps to reduce the risk of overfitting. The generated data are then refined using a manifold fitting method proposed by Yao et al. [58] , which acts as a denoising and projection step for generated samples and supports nonlinear interpolation along the learned manifold. The integration of manifold fitting with CycleGAN provides two benefits. First, it allows the manifold dimensionality to be controlled using neural network architectures rather than traditional PCA, simplifying the computational process and enabling more efficient parallel computations. Second, it addresses the challenge of high noise levels in data generated by low signal-to-noise neural networks. Within this framework, manifold fitting is used to project generated 
+
+15 samples back toward the learned manifold, thereby supporting noise reduction and smoother interpolation between latent representations. The reported experiments therefore point more specifically to favorable empirical performance in denoising noisy generated images and in nonlinear interpolation tasks, rather than to an undifferentiated gain in image quality. 
+
+Figure 11: Overview of the scAMF framework for scRNA-seq data analysis. The schematic depicts the scAMF pipeline, which consists of three critical steps: raw data transformation, manifold fitting, and unsupervised clustering with subsequent validation. This methodology targets denoising, refinement of neighborhood structure, and more informative clustering by exploiting the latent manifold structure inherent in the data. 
+
+Application in single-cell RNA sequencing data 
+
+Single-cell RNA sequencing (scRNA-seq) is critical to genomic research, providing detailed insights into cellular diversity and disease mechanisms. However, inherent noise from biological variability and technical factors complicates data analysis. Traditional methods struggle to accurately characterize cellular relationships due to this noise. The scAMF framework, presented in Figure 11 and proposed by Yao et al. [59] , is designed to denoise scRNA-seq data, recover more biologically meaningful neighborhood structure, and support more reliable clustering by fitting a low-dimensional manifold into the ambient gene expression data space. This approach reduces noise while preserving essential biological information. scAMF denoises scRNA-seq data by unfolding its distribution to reconstruct a smooth manifold that captures the underlying structure of the data with limited distortion of biologically relevant variation. Central to the effectiveness of scAMF is its ability to reshape the spatial distribution of gene expression vectors so that cells of the same type lie closer together while different cell types are more clearly separated. This improved geometry supports more reliable clustering and clearer low-dimensional visualization. In the reported comparisons, scAMF was evaluated through clustering metrics such as ARI, NMI, and ACC, together with neighborhood- and visualization-oriented criteria such as neighborhood purity, intra/interclass distance, and silhouette index, and was found to perform favorably across diverse datasets. These features make scAMF a useful tool for single-cell analysis, with the potential to reveal cellular heterogeneity and rare cell populations more clearly. A related downstream development, CellScope [ 35 ], further highlighted the biological interpretability of this line of work by identifying disease-associated states in PBMC data from COVID-19 patients. In particular, it distinguished disease-related states within the monocyte–dendritic cell system and identified eight marker genes with progressive expression changes across healthy, moderate, and severe conditions, providing additional insight into antiviral immune responses. 
+
+Application in privacy-preserving analysis of sensitive data. 
+
+In many modern applications, the data sets that exhibit low-dimensional manifold structure are also highly sensitive, as in genomics, biomedicine, and finance. This creates a tension between geometric learning and privacy protection: manifold-based methods seek to exploit local geometric structure, whereas formal privacy guarantees require limiting the influence of any individual record on the released output. Recent work has begun to address this tension by 
+
+16 incorporating differential privacy into manifold-based denoising and geometric estimation. In particular, Wu et al. [53] study a private-reference, public-query setting in which a sensitive reference data set is used to denoise new noisy query points without exposing the underlying private data. The key idea is to privatize local geometric summaries rather than the raw observations themselves. Their framework estimates local means and tangent-space information under calibrated ( ε, δ )-differential privacy, and then uses these privatized summaries to guide iterative denoising toward the latent manifold. From a statistical perspective, this leads to an explicit interplay among geometric bias, sampling variability, and privacy-induced perturbation. Theoretical analysis provides non-asymptotic utility guarantees that quantify how privacy noise affects geometric recovery, while simulations illustrate clear privacy–utility trade-offs under varying privacy budgets. Beyond theory, this line of work also demonstrates that privacy-aware manifold methods can remain useful in realistic scientific settings. Case studies on UK Biobank biomarker data and single-cell RNA sequencing data show that important local geometric features, such as neighborhood structure and tangent information, can still be retained under moderate privacy budgets, allowing downstream analyses such as clustering and risk modeling to remain informative. These results suggest that manifold-based methodology can be extended in a principled way to regulated environments where direct access to individual-level data is restricted. 
+
+# 4 Outlook 
+
+In this review, we have traced the development of manifold fitting from early nonparametric ideas to mathematically grounded constructions and more practicable statistical methods, and we have highlighted several applications in modern data analysis. Compared with related techniques such as manifold embedding and manifold denoising, manifold fitting is distinguished by its explicit geometric target: it seeks to recover a smooth manifold object in the ambient space together with useful local and global geometric structure. As the literature continues to expand, it is natural to ask not only how current methods differ, but also what the next major problems for the field should be. We close by highlighting several open problems and future directions that, in our view, arise naturally from the current state of manifold fitting. 
+
+• Problem 1 (Flow-based fitting and the use of prior geometric structure). 
+
+Most current manifold fitting methods are essentially static: they estimate a single geometric object from an observed cloud of points. However, many important data sets are generated by trajectories, flows, or other forms of structured geometric evolution. This suggests a need for manifold fitting procedures that interact more directly with dynamical information, rather than treating the sample only as an unordered set. Relatedly, in some applications one may already possess partial geometric information, such as symmetry, reference geometry, boundary constraints, or known local directions, and it remains unclear how such prior structure should be incorporated in a principled way. More broadly, connections with geometry-aware low-dimensional representation and nested geometric modeling, such as Su and Yao [49] , as well as recent principal-submanifold-based approaches to clustering and multiscale RNA correction [ 54 ], suggest that future work may move beyond estimating a single fitted set toward richer structured descriptions of variation on or near manifolds. 
+
+• Problem 2 (Statistical limits under curvature and unbounded noise). 
+
+Another central question concerns the statistical limits of manifold fitting under realistic geometric and stochastic regimes. Throughout this review, quantities such as smoothness, reach, and projection stability appear repeatedly, but much remains unknown about how these interact sharply with sampling scale, ambient dimension, and noise level. In particular, high curvature, near-self-intersection, and unbounded-noise settings raise basic questions about what geometric features remain identifiable and what rates are fundamentally achievable. A representative example is the limiting accuracy of local PCA and related tangent-space recovery procedures under unbounded noise, since these directly constrain downstream fitting accuracy. Clarifying such sharp lower and upper bounds would substantially deepen the theoretical foundation of manifold fitting. 
+
+• Problem 3 (Geometric inference beyond set recovery). 
+
+A further direction is to move beyond estimating the manifold only as a set and instead estimate geometric quantities carried by the manifold. Tangent spaces, intrinsic dimension, second fundamental form, curvature-related objects, and more generally quadratic or second-order local structure are often the quantities most directly connected to scientific interpretation. Recent work has begun to explore this broader program of geometric inference beyond set recovery; examples include curvature-driven manifold fitting under unbounded isotropic noise [ 36 ] and the estimation of Riemannian quantities from noisy data via density derivatives [ 8]. These developments suggest that second-order structure may become an increasingly important target in its own right, linking manifold fitting more directly to questions of curvature, local approximation, and geometric interpretability. 
+
+• Problem 4 (Manifold fitting beyond Euclidean ambient spaces and transformed representations). 
+
+Most current manifold fitting methods are formulated for data embedded in Euclidean ambient spaces. In practice, 
+
+17 however, many modern analyses are carried out only after substantial feature transformation, representation learning, or embedding into another space, and some data objects are intrinsically non-Euclidean from the outset. This raises basic questions about how manifold fitting should interact with embedding transforms, how geometric meaning can be preserved after such transformations, and how low-dimensional manifold ideas can be extended to more general ambient spaces. The challenge is not simply technical generalization, but also interpretability: one would like fitted geometric structure in the transformed or non-Euclidean setting to remain meaningful for the original scientific problem. 
+
+• Problem 5 (Manifold-constrained generative modeling and diffusion on unknown manifold spaces). 
+
+Recent advances in score-based generative models and diffusion processes have shown strong performance for high-dimensional data, which are often believed to concentrate near low-dimensional manifolds. This suggests a natural connection with manifold fitting: rather than evolving isotropically in the ambient space, generative mechanisms could in principle be constrained by an estimated manifold and its local geometry. In particular, one may ask whether diffusion should be defined intrinsically on the manifold, with stochastic evolution adapted to tangent directions rather than unconstrained ambient perturbations. Recent theoretical work Potaptchik et al. [45] suggests that, under the manifold hypothesis, the convergence behavior of diffusion models may depend primarily on the intrinsic rather than ambient dimension. However, such analyses typically assume that the underlying manifold is known or that the geometric setting is idealized. In statistical applications, the manifold itself must first be estimated from noisy data, after which the diffusion process must be constructed on the fitted manifold. Understanding how manifold estimation error propagates into diffusion dynamics, generative accuracy, and intrinsic-dimension-dependent efficiency remains largely open. More broadly, this points toward a unified framework combining manifold fitting, stochastic processes on manifolds, and modern generative modeling, in which geometric structure plays a central role in both theory and computation. 
+
+• Problem 6 (Stratified and multi-manifold structure). 
+
+Another emerging direction concerns manifold fitting under stratified or multi-manifold structure, where data arise from a union of multiple manifolds, possibly of different intrinsic dimensions and with nontrivial intersections. Such settings naturally arise in many applications, including heterogeneous populations, branching dynamical systems, and multi-state biological processes, where a single manifold assumption may fail to capture the underlying structure. Recent theoretical work, such as [ 1 ], has begun to study the statistical limits of such problems, establishing minimax rates and identifiability conditions for recovering stratified geometric structure. However, these results are largely of a theoretical nature, and it remains unclear how to translate them into practically scalable and robust algorithms, particularly in high-dimensional or noisy settings. Moreover, standard local methods may break down near regions of overlap, where multiple tangent structures coexist. From a statistical perspective, this setting introduces an additional layer of complexity through the interaction between geometric estimation and latent structure assignment. Overall, stratified manifold models represent a promising but still largely undeveloped extension of current manifold fitting methodology. 
+
+• Problem 7 (Global parametrization and coordinate representations for manifold fitting). 
+
+A largely unexplored direction in manifold fitting concerns the systematic construction and statistical exploitation of explicit global coordinate systems. Most existing fitting procedures either operate intrinsically on the manifold or embed it into a high-dimensional ambient Euclidean space, without exploiting the possibility of nearly global parametrizations that cover almost all of the manifold while excluding only a negligible singular set. Recent work of Li and Yao [ 34 ] develops a systematic theory of approximate parametrization for smooth manifolds, providing explicit diffeomorphisms from open dense subsets of classical manifolds—including Lie groups, Stiefel manifolds, Grassmannians, flag manifolds, and symmetric spaces—onto Euclidean domains, together with closed-form inverse maps. The excluded parametrization singular set is shown to be a null set whose codimension is controlled by the first non-trivial Betti number of the manifold, and this bound is sharp across all classical examples. This raises natural and largely open questions for manifold fitting: whether proximity to the singular set induces bias or variance inflation in geometric estimators, how the non-trivial Jacobian weight induced by the parametrization map affects minimax estimation rates, and how coordinate-based fitting methods can be designed to remain statistically well-behaved near the singular boundary. More broadly, understanding how approximate parametrizations interact with curvature estimation, goodness-of-fit testing, and the interpretability of fitted geometric structure—particularly when the ambient space is itself non-Euclidean or obtained through a representation transform—represents a promising direction for future work. 
+
+• Problem 8 (Privacy-aware geometric inference). 
+
+As manifold-based methods move toward increasingly sensitive domains, an important open direction is how to preserve useful geometric structure while enforcing rigorous privacy protection. Recent work has shown that differential privacy can be incorporated into manifold denoising and related geometric estimation problems by privatizing local geometric summaries such as means and tangent information. A central challenge for future work is to understand more sharply how privacy constraints affect geometric recovery, both statistically and 
+
+18 computationally, and how such methods can be extended from denoising to broader forms of manifold fitting and geometric inference. Taken together, these open problems suggest that manifold fitting is evolving from a method for geometric reconstruction toward a broader framework for structured geometric inference. Future progress will likely depend on combining geometric insight, statistical optimality, computational tractability, and application-specific considerations in a more unified way. We hope that the present review provides a useful foundation for these developments. 
+
+# Disclosure Statement 
+
+The authors have no conflicts of interest to declare. 
+
+# Acknowledgments 
+
+Zhigang Yao has received support from the Singapore Ministry of Education through the Tier 2 grants (A-0008520-00-00 and A-8001562-00-00) and Tier 1 grants (A-8004146-00-00 and A-8002931-00-00) at the National University of Singapore. Jiaji Su is a postdoctoral researcher supported by the grant A-8001562-00-00. Zhigang Yao also acknowledges the support of the Center for Mathematical Sciences and Applications (CMSA) at Harvard University since 2022. This work originated from the Harvard Conference on Geometry and Statistics, hosted by CMSA and held from February 27 to March 1, 2023. A substantial portion of the survey work, including the two manifold-based applications, was completed during Zhigang Yao’s visit to Tsinghua University in 2023. The project was completed during Zhigang Yao’s recent visit to the Shanghai Institute of Mathematics and Interdisciplinary Sciences (SIMIS) in 2024. The authors thank Xiao-Li Meng, the founding editor of Harvard Data Science Review , for the invitation to contribute to this special theme. 
+
+# References 
+
+[1] Eddie Aamari and Cl´ ement Berenfeld. A theory of stratification learning. arXiv preprint arXiv:2405.20066 , 2024. [2] Eddie Aamari and Cl´ ement Levrard. Nonasymptotic rates for manifold, tangent space and curvature estimation. 
+
+The Annals of Statistics , 47(1):177–204, 2019. [3] Yariv Aizenbud and Barak Sober. Non-parametric estimation of manifolds from noisy data. arXiv preprint arXiv:2105.04754 , 2021. [4] Mikhail Belkin and Partha Niyogi. Laplacian eigenmaps for dimensionality reduction and data representation. 
+
+Neural Computation , 15(6):1373–1396, 2003. [5] Mikhail Belkin, Partha Niyogi, and Vikas Sindhwani. Manifold regularization: A geometric framework for learning from labeled and unlabeled examples. Journal of machine learning research , 7(11), 2006. [6] Jean-Daniel Boissonnat, Leonidas J Guibas, and Steve Y Oudot. Manifold reconstruction in arbitrary dimensions using witness complexes. Discrete & Computational Geometry , 42(1):37–70, 2009. [7] Fr´ ed´ eric Chazal and Andr´ e Lieutier. Smooth manifold reconstruction from noisy and non-uniform approximation with guarantees. Computational Geometry , 40(2):156–170, 2008. [8] Junhao Chen, Ruowei Li, and Zhigang Yao. Estimation of Riemannian quantities from noisy data via density derivatives. arXiv preprint arXiv:2603.27171 , 2026. [9] Yen-Chi Chen, Christopher R Genovese, and Larry Wasserman. Asymptotic theory for density ridges. The Annals of Statistics , 43(5):1896–1928, 2015. [10] Siu-Wing Cheng, Tamal K Dey, and Edgar A Ramos. Manifold reconstruction from point samples. In Proceedings of the 16th Annual ACM-SIAM Symposium on Discrete Algorithms , pages 1018–1027, 2005. [11] Ronald R Coifman and St´ ephane Lafon. Diffusion maps. Applied and computational harmonic analysis , 21(1): 5–30, 2006. [12] Chinh Dang, Ammar Safaie, Mantha Phanikumar, and Hayder Radha. Wind speed and direction estimation using manifold approximation. In Proceedings of the 14th International Conference on Information Processing in Sensor Networks , pages 328–329, 2015. 
+
+19 [13] Shay Deutsch, Antonio Ortega, and Gerard Medioni. Manifold denoising based on spectral graph wavelets. In 
+
+2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP) , pages 4673–4677. IEEE, 2016. [14] Deborah J Donnell, Andreas Buja, and Werner Stuetzle. Analysis of additive dependencies and concurvities using smallest additive principal components. The Annals of Statistics , 22(4):1635–1668, 1994. [15] David L. Donoho and Carrie Grimes. Hessian eigenmaps: Locally linear embedding techniques for high-dimensional data. Proceedings of the National Academy of Sciences , 100(10):5591–5596, 2003. [16] Herbert Federer. Curvature measures. Transactions of the American Mathematical Society , 93(3):418–491, 1959. [17] Charles Fefferman. A sharp form of Whitney’s extension theorem. Annals of Mathematics , 161(1):509–577, 2005. [18] Charles Fefferman. Whitney’s extension problem for cm. Annals of Mathematics , 164(1):313–359, 2006. [19] Charles Fefferman, Sanjoy Mitter, and Hariharan Narayanan. Testing the manifold hypothesis. Journal of the American Mathematical Society , 29(4):983–1049, 2016. [20] Charles Fefferman, Sergei Ivanov, Yaroslav Kurylev, Matti Lassas, and Hariharan Narayanan. Fitting a putative manifold to noisy data. In Conference on Learning Theory , pages 688–720. PMLR, 2018. [21] Charles Fefferman, Sergei Ivanov, Yaroslav Kurylev, Matti Lassas, and Hariharan Narayanan. Reconstruction and interpolation of manifolds I: The geometric Whitney problem. Foundations of Computational Mathematics ,20(5):1035–1133, 2020. [22] Charles Fefferman, Sergei Ivanov, Matti Lassas, Jinpeng Lu, and Hariharan Narayanan. Reconstruction and interpolation of manifolds II: Inverse problems for Riemannian manifolds with partial distance data. arXiv preprint arXiv:2111.14528 , 2021. [23] Charles Fefferman, Sergei Ivanov, Matti Lassas, and Hariharan Narayanan. Fitting a manifold of large reach to noisy data. arXiv preprint arXiv:1910.05084 , 2021. [24] Christopher R Genovese, Marco Perone-Pacifico, Isabella Verdinelli, and Larry Wasserman. Manifold estimation and singular deconvolution under Hausdorff loss. The Annals of Statistics , 40(2):941–963, 2012. [25] Christopher R Genovese, Marco Perone-Pacifico, Isabella Verdinelli, and Larry Wasserman. Minimax manifold estimation. Journal of Machine Learning Research , 13(43):1263–1291, 2012. [26] Christopher R Genovese, Marco Perone-Pacifico, Isabella Verdinelli, and Larry Wasserman. Nonparametric ridge estimation. The Annals of Statistics , 42(4):1511–1545, 2014. [27] Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio. Generative adversarial nets. Advances in Neural Information Processing Systems , 27, 2014. [28] Trevor Hastie and Werner Stuetzle. Principal curves. Journal of the American Statistical Association , 84(406): 502–516, 1989. [29] Matthias Hein, Jean-Yves Audibert, and Ulrike von Luxburg. Graph laplacians and their convergence on random neighborhood graphs. Journal of Machine Learning Research , 8(6), 2007. [30] Stephan Huckemann, Thomas Hotz, and Axel Munk. Intrinsic shape analysis: Geodesic PCA for Riemannian manifolds modulo isometric Lie group actions. Statistica Sinica , pages 1–58, 2010. [31] Sungkyu Jung, Ian L. Dryden, and J. S. Marron. Analysis of principal nested spheres. Biometrika , 99(3):551–568, 07 2012. ISSN 0006-3444. doi: 10.1093/biomet/ass022. URL https://doi.org/10.1093/biomet/ass022 .[32] Inki Kim, Renato Juliano Martins, Jaehyuck Jang, Trevon Badloe, Samira Khadir, Ho-Youl Jung, Hyeongdo Kim, Jongun Kim, Patrice Genevet, and Junsuk Rho. Nanophotonics for light detection and ranging technology. 
+
+Nature Nanotechnology , 16(5):508–524, 2021. [33] Der-Tsai Lee and Bruce J Schachter. Two algorithms for constructing a Delaunay triangulation. International Journal of Computer & Information Sciences , 9(3):219–242, 1980. [34] Bingjie Li and Zhigang Yao. Approximate global parametrization of manifolds. Technical Report , 2026. 
+
+20 [35] Bingjie Li, Runyu Lin, Tianhao Ni, Guanao Yan, Mannix Burns, Jingyi Jessica Li, and Zhigang Yao. CellScope: High-performance cell atlas workflow with tree-structured representation. Nature Communications , 2025. [36] Ruowei Li and Zhigang Yao. Curvature-driven manifold fitting under unbounded isotropic noise. arXiv preprint arXiv:2601.10133 , 2026. [37] Shitong Luo and Wei Hu. Differentiable manifold reconstruction for point cloud denoising. In Proceedings of the 28th ACM International Conference on Multimedia , pages 1330–1338, 2020. [38] Leland McInnes, John Healy, and James Melville. UMAP: Uniform manifold approximation and projection for dimension reduction. arXiv preprint arXiv:1802.03426 , 2018. [39] Marina Meil˘ a and Hanyu Zhang. Manifold learning: What, how, and why. Annual Review of Statistics and Its Application , 11(1):393–417, 2024. [40] Kitty Mohammed and Hariharan Narayanan. Manifold learning using kernel density estimation and local principal components analysis. arXiv preprint arXiv:1709.03615 , 2017. [41] Boaz Nadler, St´ ephane Lafon, Ronald R Coifman, and Ioannis G Kevrekidis. Diffusion maps, spectral clustering and reaction coordinates of dynamical systems. Applied and Computational Harmonic Analysis , 21(1):113–127, 2006. [42] Partha Niyogi, Stephen Smale, and Shmuel Weinberger. Finding the homology of submanifolds with high confidence from random samples. Discrete & Computational Geometry , 39(1):419–441, 2008. [43] Umut Ozertem and Deniz Erdogmus. Locally defined principal curves and surfaces. The Journal of Machine Learning Research , 12:1249–1286, 2011. [44] Victor M Panaretos, Tung Pham, and Zhigang Yao. Principal flows. Journal of the American Statistical Association , 109(505):424–436, 2014. [45] Peter Potaptchik, Iskander Azangulov, and George Deligiannidis. Linear convergence of diffusion models under the manifold hypothesis. In Nika Haghtalab and Ankur Moitra, editors, Proceedings of Thirty Eighth Conference on Learning Theory , volume 291 of Proceedings of Machine Learning Research , pages 4668–4685. PMLR, 2025. [46] Sam T Roweis and Lawrence K Saul. Nonlinear dimensionality reduction by locally linear embedding. Science ,290(5500):2323–2326, 2000. [47] Amit Singer. From graph to manifold laplacian: The convergence rate. Applied and Computational Harmonic Analysis , 21(1):128–134, 2006. [48] Barak Sober and David Levin. Manifold approximation by moving least-squares projection (MMLS). Constructive Approximation , 52(3):433–478, 2020. [49] Jiaji Su and Zhigang Yao. Principal decomposition with nested submanifolds. arXiv preprint arXiv:2502.10010 ,2025. [50] Joshua B Tenenbaum, Vin de Silva, and John C Langford. A global geometric framework for nonlinear dimensionality reduction. Science , 290(5500):2319–2323, 2000. [51] Weiran Wang and Miguel A Carreira-Perpin´ an. Manifold blurring mean shift algorithms for manifold denoising. In 2010 IEEE Computer Society Conference on Computer Vision and Pattern Recognition , pages 1759–1766. IEEE, 2010. [52] Hassler Whitney. Analytic extensions of differentiable functions defined in closed sets. Transactions of the American Mathematical Society , 36(1):63–89, 1934. [53] Jiaqi Wu, Yiqing Sun, and Zhigang Yao. Differentially private manifold denoising. arXiv preprint arXiv:2604.00942 ,2026. [54] Menghao Wu and Zhigang Yao. A principal submanifold-based approach for clustering and multiscale rna correction. arXiv preprint arXiv:2503.20513 , 2026. [55] Tao Yang and Jintao Meng. Manifold fitting algorithm of noisy manifold data based on variable-scale spectral graph. Soft Computing , 27(1):471–482, 2023. 
+
+21 [56] Zhigang Yao and Yuqing Xia. Manifold fitting under unbounded noise. Journal of Machine Learning Research ,26(45):1–55, 2025. [57] Zhigang Yao and Zhenyue Zhang. Principal boundary on Riemannian manifolds. Journal of the American Statistical Association , 115(531):1435–1448, 2020. [58] Zhigang Yao, Jiaji Su, Bingjie Li, and Shing-Tung Yau. Manifold fitting. arXiv preprint arXiv:2304.07680 , 2023. [59] Zhigang Yao, Bingjie Li, Yukun Lu, and Shing-Tung Yau. Single-cell analysis via manifold fitting: A framework for RNA clustering and beyond. Proceedings of the National Academy of Sciences , 121(37):e2400002121, 2024. [60] Zhigang Yao, Jiaji Su, and Shing-Tung Yau. Manifold fitting with CycleGAN. Proceedings of the National Academy of Sciences , 121(5):e2311436121, 2024. [61] Zhigang Yao, Yuqing Xia, and Zengyan Fan. Random fixed boundary flows. Journal of the American Statistical Association , 119(547):2356–2368, 2024. [62] Zhigang Yao, Benjamin Eltzner, and Tung Pham. Principal sub-manifolds. Statistica Sinica , 36(3):1–41, 2026. [63] Zhenyue Zhang and Hongyuan Zha. Principal manifolds and nonlinear dimensionality reduction via tangent space alignment. SIAM Journal on Scientific Computing , 26(1):313–338, 2004. [64] Jun-Yan Zhu, Taesung Park, Phillip Isola, and Alexei A. Efros. Unpaired image-to-image translation using cycle-consistent adversarial networks. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) , 2017. 
+
+22
