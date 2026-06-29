@@ -1,0 +1,1338 @@
+Title: Geometry-Preserving Reduced-Order Modeling via Immersed Tensor Decomposition (ITD)
+
+URL Source: https://arxiv.org/pdf/2606.27674v1
+
+Published Time: Mon, 29 Jun 2026 00:23:32 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# Geometry-Preserving Reduced-Order Modeling via Immersed Tensor Decomposition (ITD) 
+
+Lei Zhang a,1 , Jiachen Guo b,c,1 , Guowei He a, Thomas J.R. Hughes d, Wing Kam Liu b,c 
+
+> aSchool of Engineering Science, University of Chinese Academy of Sciences, Beijing 100049, China
+> bDepartment of Mechanical Engineering, Northwestern University, 2145 Sheridan Road, Evanston, 60201, IL, USA
+> cHIDENN-AI, Inc, 1801 Maple Ave, Evanston, 60201, IL, USA
+> dOden Institute for Computational Engineering and Sciences, University of Texas at Austin, 201 E 24th St, Austin, 78712, TX, USA
+
+Abstract 
+
+Body-fitted finite-element methods deliver high-order accuracy but hinge on a clean, watertight, conforming mesh, a requirement that breaks down for the geometrically imperfect CAD assemblies, image-based volumetric data, and voxel-native designs that pervade biomedical engineering and additive manufacturing, where mesh generation has become the dominant cost of the analysis cycle. Immersed methods on regular background Cartesian grids sidestep body-fitted meshing, but classical implementations integrate over irregular cut subdomains, destroying the tensor-product structure that enables separable, reduced-order methods such as tensor decomposition. In this paper we pro-pose the Immersed Tensor Decomposition (ITD) framework, which couples a mesh-free geometric representation via body-fitted function with the separable C-HiDeNN-TD reduced-order solver to enable large-scale simulation directly on regular background voxel meshes. The geometry is encoded in three steps: a signed-distance function represents the boundary, a body-fitted function Φ approximates it with controllable error, and a low-rank Tucker decomposition provides model-order reduction; for a fixed grid spacing h, accuracy is improved by raising the approximation order of C-HiDeNN interpolation up to degree p with a linear background mesh. The central contribution is an exact Dirichlet formulation that enforces the boundary condition strongly by multiplying the trial function with Φ, so that u = g holds by construction without any variational penalty or interface quadrature. We derive the corresponding transformed weak form, and establish an a priori error estimate for the formulation and assess it on canonical 2D /3D domains, demonstrating optimal convergence and robustness on non-Cartesian geometries discretized by regular voxel meshes. 
+
+Keywords: Immersed method, Tensor decomposition, Exact Dirichlet formulation, Reduced-order tensor decomposition modeling, Geometry-preserving analysis 
+
+Highlights: 
+
+• Geometry-Preserving ITD Framework: Enables large-scale simulation on voxel-native datasets by coupling mesh-free geometric representation with C-HiDeNN-TD solvers. 
+
+• Exact Dirichlet Enforcement: Strong boundary condition satisfaction via body-fitted functions eliminates the need for variational penalties or complex interface quadrature. 
+
+• Optimized Numerical Performance: Optimal O(hp+1) convergence is established through a priori error analysis 
+
+1. Introduction 
+
+Body-fitted finite-element methods (FEM) deliver high-order accuracy on smooth Computer-Aided Design (CAD) geometries, achieving the optimal O(hp+1) convergence rate in the L2 norm for polynomials of degree p[1]. This accuracy, however, is predicated on the availability of a clean, watertight, conforming mesh. In modern computational-mechanics workflows, generating such a mesh has become the dominant cost: industrial CAD assemblies routinely 
+
+> 1These authors contributed equally to this work.
+> arXiv:2606.27674v1 [math.NA] 26 Jun 2026
+
+contain slivers, gaps, and overlapping features, and the associated geometric clean-up and mesh generation consume the majority of the analysis cycle rather than the solution itself [2]. The pursuit of analysis frameworks that relax the conforming-mesh requirement is therefore a central theme of contemporary numerical analysis. In several application areas the very premise of a clean parametric CAD file no longer holds. In biomedical engineering and geophysics, geometries such as trabecular bone microstructures, soft-tissue organs, and porous rock formations are acquired by Computed Tomography (CT) or Magnetic Resonance Imaging (MRI), which produce volumetric density fields rather than boundary representations (B-reps) [3]. In additive manufacturing—particularly multi-material printing and topology optimization—the design space is intrinsically voxelated, with spatially varying material properties and lattice infills that resist a clean B-rep description[4]. Converting such volumetric or voxel-native data into smooth NURBS surfaces is both computationally expensive and information-lossy. These trends motivate analysis frameworks that operate directly on volumetric representations, bypassing surface reconstruction altogether. Immersed (or embedded) methods sidestep body-fitted meshing by discretizing the governing partial di ff erential equations on a regular Cartesian background mesh, on which the physical domain Ω is defined implicitly—most often through a level-set or signed-distance function. This idea underlies the finite cell method and its higher-order and image-based extensions [5, 6, 3], among other fictitious-domain techniques. On the immersed Dirichlet boundary ∂Ω,the constraint u = g can be imposed either weakly, through Nitsche-type penalization of the boundary residual [7, 8, 9, 10], or strongly , through trial-function multiplication. The latter is exemplified by the ϕ-FEM approach [11, 12], in which the trial function is constructed to vanish on ∂Ω by multiplication with a level-set function, so that the boundary condition is satisfied exactly by construction rather than enforced variationally. Classical implementations of these strategies share a common di ffi culty: they require numerical integration over geometrically irregular cut subdomains, and often along the immersed interface, typically via cut-cell or shifted-boundary quadrature [13]. This integration complicates assembly and, crucially, breaks the tensor-product structure of the underlying Cartesian mesh—the very structure that makes regular grids attractive for large-scale computation in the first place. Preserving the tensor-product structure of the background grid is especially valuable because it is the prerequisite for reduced-order tensor methods. Fields defined on a regular Cartesian grid admit accurate low-rank Tucker and Canonical-Polyadic (CP) representations, and the trial space itself can be built in a separable format such as Proper Generalized Decomposition (PGD) [14, 15] or the more recent Convolution Hierarchical Deep-learning Neural Net-work with tensor decomposition (C-HiDeNN-TD) [16, 17, 18], which together turn d-dimensional problems into a sequence of one-dimensional ones and break the curse of dimensionality. Such separable solvers, however, require every operator in the weak form to retain a tensor-product form—precisely what cut-cell quadrature destroys. A natural route to reconcile the two is to represent the geometry by a smooth implicit field [19, 20] and to enforce the Dirichlet condition by multiplying the trial space with a body-fitted mask that vanishes on ∂Ω and itself admits a low-rank tensor representation. All integrals then remain volume integrals over the regular grid and reduce to tensor-product Gauss quadrature, with no cut-cell bookkeeping. Yet, despite this apparent compatibility, a systematic integration of strong, body-fitted immersed enforcement with separable tensor-decomposition solvers has not, to our knowledge, been reported. Several practical issues remain open, including the robust evaluation of the mask and its derivatives from voxelated signed-distance data and the control of conditioning in the fictitious (void) region. In this paper we propose the Immersed Tensor Decomposition (ITD) framework, which couples a body-fitted function with the C-HiDeNN-TD reduced-order solver [16, 17, 18] to enable large-scale simulation on non-Cartesian domains using regular voxel meshes. The specific contributions are as follows. 
+
+• An exact Dirichlet immersed C-HiDeNN-TD formulation. The trial function is multiplied by a body-fitted function Φ (BFF) based on the signed distance function (SDF) that vanishes on ∂Ω, yielding strong , exact enforcement of the Dirichlet condition without any variational penalty or interface quadrature. We derive the corresponding transformed weak form, in which a key algebraic cancellation reduces the geometric coe ffi cients that arise naively (five in 2D, six in 3D) to only three Tucker-decomposable fields, Φ, Φ2, and Φ ∇2Φ. This reduction is what makes the formulation tractable in a separable tensor-decomposition setting. 
+
+• An a priori error analysis. We establish an a priori error estimate for the formulation (Theorem 1), character-izing its convergence behavior on immersed domains. 2• Numerical study. The formulation is evaluated on canonical 2D circular and annular domains, a 3D spherical domain, and complex starfish- and gear-shaped domains, demonstrating optimal convergence and robustness on non-Cartesian geometries discretized by regular voxel meshes. The remainder of the paper is organized as follows. Section 3 develops the exact Dirichlet immersed C-HiDeNN-TD, which constitutes the main contribution of this work. Section 5 presents numerical examples, Section 6 contains a discussion, and Section 7 outlines conclusions and future work. The proof of Theorem 1 is given in Appendix Ap-pendix A. 
+
+2. Geometric Representation using mesh-free body-fitted functions 
+
+Di ff erent geometric representations have been widely adopted across various computational domains based on their specific application requirements. In computer graphics and geometric modeling, researchers have extensively leveraged the signed distance function (SDF) as an e ffi cient, continuous mathematical representation of shapes. By definition, an SDF calculates the shortest Euclidean distance from any spatial point x to the domain boundary ∂Ω,with the sign designating whether the point resides inside (typically negative) or outside the domain. This implicit formulation is highly advantageous for parametric modeling in the latent space; a notable example is DeepSDF, which utilizes deep auto-decoders to learn continuous SDFs for high-fidelity 3D shape generation and completion [21]. 
+
+> Figure 1: The definition of signed distance function[21]
+
+Despite these useful mathematical characteristics, SDFs cannot be directly utilized as geometric descriptors for rigorous physics-based simulation, particularly in the field of Computer-Aided Engineering (CAE). In CAE, spatial fields such as material density or structural compliance possess distinct, conserved physical meanings within the domain Ω. Because the SDF strictly describes relative proximity to the boundary ∂Ω without capturing interior field physics, it fundamentally lacks physical interpretation across the problem domain. To bridge this gap, we propose a new geometric representation termed body-fitted functions (BFF), whose support is precisely the computational domain Ω, defined by 
+
+Φ(x) =
+
+
+
+= 0, exterior 
+
+= 0, on ∂Ω
+
+> 0, interior (1) with a constraint of non-vanishing interior boundary gradient lim  
+
+> x∈∂Ω,η →0+
+
+|∇ Φ(x − ηn)| ≥ a > 0, (2) where n is the unit outward normal vector, and a is a positive lower bound constant. The BFF thus acts as a smooth indicator of the physical domain: it is positive within the phyical domain, identically zero outside and on the boundary, and possesses a non-vanishing normal gradient at the boundary. Specifically, we develop a formulation in which Dirichlet boundary conditions are enforced strongly by multi-plying the trial function vh with a body-fitted mask Φ(x) that strictly vanishes on ∂Ω there regardless of the discrete 3representation of vh. Historically, meshfree methods and physics-informed machine learning have relied on approx-imate distance functions to satisfy kinematic admissibility a priori [22]. Our approach guarantees exact geometric enforcement, entirely eliminating the boundary-residual penalty terms, and the associated hyperparameter tuning, which are required by traditional Nitsche-type methods. This geometric enforcement is achieved at the price of an additional pre-computation e ff ort to assemble the geometric tensors that arise in the bilinear form. 
+
+2.1. SDF-based construction of body-fitted functions 
+
+Importantly, the definition of the BFF does not prescribe a specific functional form: any su ffi ciently smooth function meeting these conditions qualifies as a body-fitted function. Di ff erent applications may call for di ff erent constructions, for instance, a polynomial level-set, a tanh-based phase field, or a data-driven neural implicit. While the general definition admits multiple constructions, a particularly convenient route exploits the SDF, which is often already available from the geometry. Here, we adopt the following SDF-based exponential mask as the BFF: 
+
+Φβ(x) =
+
+
+
+1 − e SDF( x)/β , x ∈ Ω,
+
+0, x < Ω, (3) which decays exponentially toward the boundary at a rate set by a scaling parameter β. By operating on the standard convention where SDF( x) ≤ 0 inside the domain, this formulation guarantees that Φ(x) smoothly approaches zero at the boundary while avoiding the gradient singularities often introduced by absolute distance fields. The parameter 
+
+β controls how sharply Φ transitions from 0 to approximately 1. The proposed body-fitted geometry is illustrated in Figure 2. 
+
+> Figure 2: Body-fitted function transforms SDF into a geometric descriptor that can automatically satisfy the Dirichlet boundary condition.
+
+2.2. Tucker decomposition of body-fitted functions 
+
+Building upon the proposed body-fitted geometric representation, we next seek to solve the governing partial di ff erential equations (PDEs) through a reduced-order model (ROM) constructed in a purely data-free manner. Tra-ditional ROM techniques, such as Proper Orthogonal Decomposition (POD), typically require an expensive o ffl ine phase to generate high-fidelity snapshot data to form a reduced basis. To circumvent this computational bottleneck, we leverage Tucker decomposition to formulate a low-rank representation of the BFF Φ(x) using C-HiDeNN Tucker Decomposition as shown in Eq. 4. 
+
+Φ(x, y, z) ≈
+
+> P
+
+∑
+
+> p=1
+> Q
+
+∑
+
+> q=1
+> K
+
+∑
+
+> k=1
+
+Gpqk Φ(p) 
+
+> x
+
+(x) Φ(q) 
+
+> y
+
+(y) Φ(k) 
+
+> z
+
+(z), (4) where P, Q, K are the number of Tucker modes; Φ(p) 
+
+> xi
+
+(xi) refers to the Tucker factor in each mode p and dimension xi;
+
+Gpqk is the core tensor that has a reduced dimension of P × Q × K. Each factor is interpolated using C-HiDeNN shape function ˜N(xi) [18]. 4uh(xi) =
+
+> nnode
+
+∑
+
+> k=1
+
+˜Nk(xi; ak, sk, pk, Ak)uk (5) where uh(xi) is the approximated function; nnode is the total number of nodes and k is the nodal index; ˜Nk(xi) is the C-HiDeNN shape function at the k-th node in dimension xi; ak, sk, pk, Ak are the node-wise hyperparameters in the C-HiDeNN shape function, which controls the smoothness of the interpolation. It should be noted that these hyperparameters can vary across di ff erent nodal patches since C-HiDeNN can optimize these hyperparameters like machine learning parameters, rendering an adaptable functional space without altering the number of global nodes or hidden layers. Detailed formulation of C-HiDeNN shape function can be found in [16, 23]. 
+
+> Figure 3: The body-fitted function is compressed using C-HiDeNN Tucker Decomposition
+
+As shown in Fig 3, by expressing the high-dimensional discretized space as a compact core tensor multiplied by corresponding factor matrices along each spatial mode, Tucker decomposition systematically reduces the geometric complexity. Operating directly within this low-rank tensor format allows us to evaluate and solve the governing equations in the low-rank representation. Most importantly, projecting the formulation into this latent space drastically reduces the total number of unknowns required to solve the system, yielding significant computational savings while preserving the rigorous enforcement of boundary conditions and the underlying physics. 
+
+3. Exact Dirichlet immersed method 
+
+With the body-fitted geometric representation established, we now construct the exact Dirichlet immersed formu-lation. The trial solution is built by multiplying the unknown field with Φ, thereby satisfying the Dirichlet condition by construction. The weak form is then derived, and a key algebraic cancellation drastically reduces the number of geometric coe ffi cients. We consider the following Poisson equation defined in an arbitrary domain Ω:
+
+∇2u(x) + b(x) = 0 in Ω, (6) which is subjected to the Dirichlet boundary condition: 
+
+u(x) = g(x) on ∂Ω, (7) where u(x) is the solution; b(x) is the forcing term; g(x) is the boundary condition. 53.1. Strong Dirichlet enforcement using body-fitted function 
+
+We introduce a Cartesian background region D that covers the computational domain Ω, as illustrated in Fig. 4. A structured Cartesian mesh is laid over D, independent of the geometry of Ω. The mesh nodes do not necessarily lie on ∂Ω, and the elements are in general incompatible with the geometry. This incompatibility is resolved by the BFF 
+
+Φ, which encodes Ω exactly as defined in Section 2. Using a regular Cartesian grid o ff ers two principal advantages: (1) it eliminates mesh generation at essentially zero cost, since the grid is constructed by tensor-product subdivision of D; and (2) the tensor-product structure is naturally compatible with the Tucker-decomposition-based reduced-order formulation developed in Section 4, where the separation of variables along each Cartesian direction enables significant computational savings.     
+
+> Figure 4: An arbitrary domain Ωis embedded into a Cartesian background region Dand covered by a structured Cartesian mesh.
+
+The trial solution defined on the Cartesian background mesh is constructed as 
+
+uh(x) = Φ (x) vh(x) + gh(x), (8) where gh is a su ffi ciently smooth extension of the Dirichlet boundary condition into the background domain D, and 
+
+Φ is a BFF satisfying Φ(x) > 0 in Ω, Φ = 0 on ∂Ω, and Φ ≡ 0 in the void D \ Ω. Equation (8) therefore enforces 
+
+uh = gh = g exactly on ∂Ω, regardless of the discrete representation of vh, even though the background Cartesian mesh may not conform to the geometry Ω.
+
+3.1.1. Weak form 
+
+Substituting Eq. (8) into Eq. (6), the auxiliary variable v satisfies 
+
+∇2(Φvh) = −(∇2gh + b) in Ω, (9) where ∇2gh + b become a new source term. Using Φwh as the test function (so that Φwh = 0 on ∂Ω and the boundary contributions on ∂Ω vanish), multiplying Eq. (9) by Φwh and integrating over D yields, after integration by parts, 
+
+∫
+
+> D
+
+∇(Φwh) · ∇ (Φvh) d D =
+
+∫
+
+> D
+
+Φ wh (∇2gh + b) dD. (10) Expanding the bilinear form, 
+
+∇(Φwh) · ∇ (Φvh) = Φ 2 (∇wh · ∇ vh) + Φ wh (∇vh · ∇ Φ) + Φ vh (∇wh · ∇ Φ) + |∇ Φ|2 wh vh. (11) The two cross terms combine via Φwh(∇vh · ∇ Φ) + Φ vh(∇wh · ∇ Φ) = 12 ∇(Φ2) · ∇ (whvh), and a further integration by parts, together with cancellation with the |∇ Φ|2whvh term, yields 
+
+∫
+
+> D
+
+Φ2 (∇wh · ∇ vh) d D − 
+
+∫
+
+> D
+
+(Φ ∇2Φ) wh vh dD =
+
+∫
+
+> D
+
+Φ wh (∇2gh + b) dD. (12) The transformed weak form (12) is algebraically equivalent to the standard weak form obtained by substituting (8) into the Poisson equation; both describe exactly the same continuum problem. The di ff erence lies in the structure of 6the bilinear form. In a naive expansion of the bilinear form (11), five (2D) or six (3D) distinct geometric coe ffi cient fields appear: Φ2, Φ ∇Φ (two or three vector components), |∇ Φ|2, and Φ on the right-hand side, each requiring an independent low-rank Tucker approximation in the reduced-order setting. After the algebraic cancellation, the bilinear form involves only three geometric fields, and vh couples to the geometry through only two bilinear integrals: a weighted sti ff ness term ( Φ2∇wh · ∇ vh) and a weighted mass-like term ( Φ ∇2Φ whvh). The right-hand side involves a single geometric coe ffi cient Φ. Consequently, in the subsequent tensor-decomposition ROM (Section 4), only three coe ffi cient fields must be Tucker-approximated, directly reducing the o ffl ine pre-computation and the per-mode assembly cost by nearly a half. 
+
+3.1.2. Stabilization in the void 
+
+In the void D \ Ω, both Φ and Φ2 vanish, so the bilinear form in Eq. (12) is degenerate and yields a singular sti ff ness matrix. To stabilize the discrete system, we add an isotropic sti ff ness in D \ Ω:
+
+∫
+
+> D
+
+(Φ2 + γ(x)) (∇wh · ∇ vh) d D − 
+
+∫
+
+> D
+
+(Φ ∇2Φ) wh vh dD =
+
+∫
+
+> D
+
+Φ wh (∇2gh + b) dD, (13) where γ(x) ≪ 1 is a small stabilization function. Compared with existing immersed methods that enforce Dirichlet conditions through boundary terms, the stabi-lization strategy in Eq. (13) is structurally simpler. Nitsche-type methods [7, 8, 9, 10, 24], in both their sharp-interface and di ff use-interface forms, require a consistency term, an adjoint consistency term, and a penalty term. Each of these involves the boundary measure and each demands a separate Tucker compression in the reduced-order setting. The ϕ-FEM approach [11, 12], while sharing the idea of trial-function multiplication with the present work, still relies on a boundary stabilization to control the normal-flux mismatch across the immersed interface, introducing additional surface-localized integrals. In contrast, the proposed formulation stabilizes the system entirely through the volumetric sti ff ness shift γ(x) in the void. Since the Dirichlet condition is satisfied strongly by construction, no boundary residual, no penalty parameter, and no interface quadrature are needed. This has two practical consequences for tensor-decomposition reduced-order models: (1) only volume fields are Tucker-compressed, rather than multiple boundary-localized fields; (2) the global domain decomposition in TD proceeds uniformly across the entire back-ground D without partitioning at the immersed interface, and the 1D sub-problems inherit only smooth volumetric coe ffi cient fields. 
+
+3.2. Error estimate 
+
+The exact Dirichlet formulation (13) admits the following a priori error analysis. A sketch of the proof is referred to Appendix A. We emphasize that Eq. (3) is merely one concrete realization of the BFF concept. The theoretical framework developed in this Subsection is independent of such construction, requiring only the defining properties and su ffi cient regularity of Φ.To facilitate the analysis we recall two extension operators. The Stein extension [25, 26] is a total extension operator E : Hs(Ω) → Hs(Rd) that extends Sobolev functions from a Lipschitz domain Ω to the whole space while preserving the Hs regularity. For the error estimate we require a Stein extension ˜ v ∈ Hp+1(D) that coincides with v on 
+
+Ω and possesses the same smoothness as the exact solution across the background domain. The harmonic extension ˆv
+
+of v into the void D \ Ω is defined as the solution of ∆ˆv = 0 in D \ Ω with ˆ v = v on ∂Ω, and ˆ v = v in Ω, whose weak form is precisely the stabilization term with the weighting coe ffi cient γ(x). While the harmonic extension exactly maintains the Laplacian of the interior solution in the void that di ff ers from the original equation, it is generally only 
+
+C0 across ∂Ω, whereas the Stein extension preserves the full Hp+1 regularity at the expense of not satisfying any PDE in the void. The mismatch ∥ˆv − ˜v∥H1(D\ Ω) appearing in the error bound quantifies this regularity gap. 
+
+Theorem 1. Let D ⊂ Rd be a bounded Lipschitz-continuous Cartesian background domain, and let Ω ⊂ D be the physical domain with a C 2-smooth boundary ∂Ω. Let the exact solution be u = Φ v ∈ Hp+1(Ω). There exist a Stein extension ˜v ∈ Hp+1(D) and a harmonic extension ˆv such that ˜v|Ω = ˆv|Ω = v|Ω. Let the exact solution outside Ω be u = Φ ˆv. Let u h = Φ vh + gh be the discrete C-HiDeNN approximation obtained from Eq. (13) with mesh size h, polynomial order p, stabilization function γ(x) ≥ 0. Then there exist constants C 1, C2, C3 > 0, independent of h, such 
+
+7that the following error estimate holds 
+
+∥u − uh∥γ ≤ C1hp ∥˜v∥Hp+1(D) + C2 sup 
+
+> x∈Ω
+
+γ(x) sup 
+
+> ηh∈V h\{ 0}
+
+∥∇ ηh/Φ∥L2(Ω)
+
+∥∇ ηh∥L2(Ω)
+
+· ∥ u∥H1(Ω) + C3
+
+√
+
+sup 
+
+> x∈D\ Ω
+
+γ(x) ∥ˆv − ˜v∥H1(D\ Ω), (14) 
+
+where the norm ∥ · ∥ γ is defined by 
+
+∥w∥γ =
+
+√∫
+
+> Ω
+
+(∇w)2dΩ + 
+
+∫
+
+> D
+
+γ(x) [ ∇(w/Φ)] 2 dD. (15) In Eq. (14), the first term represents the C-HiDeNN interpolation error. The second and third terms both arise from the stabilization: the second term accounts for the deviation from the original governing equation inside the computational domain Ω, while the third term captures the smoothness issue across the boundary ∂Ω caused by the harmonic extension outside Ω.
+
+Corollary 1. Let γ(x) = 0 in Ω, the second term in inequality (14) vanishes, the error estimate becomes 
+
+∥u − uh∥γ ≤ C1hp ∥˜v∥Hp+1(D) + C3
+
+√
+
+sup 
+
+> x∈D\ Ω
+
+γ(x) ∥ˆv − ˜v∥H1(D\ Ω). (16) Corollary 1 shows that setting γ = 0 inside Ω eliminates the second term of (14) entirely, leaving only the C-HiDeNN interpolation error (first term) and the extension mismatch from the void stabilization (third term). This is the most natural choice for the exact Dirichlet formulation: since the BFF already enforces the boundary condi-tion strongly, there is no need for interior stabilization to restore coercivity, and the error is dictated solely by the approximation properties of the trial space and the regularity gap across ∂Ω.
+
+Corollary 2. Let γ(x) ∼ O(h2p), the error estimate becomes 
+
+∥u − uh∥γ ≤ C1hp ∥˜v∥Hp+1(D) + C3hp ∥ˆv − ˜v∥H1(D\ Ω). (17) Corollary 2 provides a practical guideline for choosing the void stabilization. When γ scales as O(h2p), the third error term, which arises from the smoothness issue of the harmonic extension, converges at the same rate O(hp) as the interpolation term. Balancing the two sources of error in this way recovers the overall h-convergence rate of the un-derlying C-HiDeNN approximation and prevents the void stabilization from becoming the accuracy bottleneck. The requirement that the fictitious-domain stabilization parameter be mesh-dependent to preserve high-order convergence is not specific to the present formulation; it is a general constraint across immersed and fictitious-domain methods. The ϕ-FEM framework [11, 12], though enforcing Dirichlet conditions strongly through trial-function multiplica-tion, requires a boundary stabilization whose magnitude must be adapted to the mesh size to control the normal-flux mismatch across the immersed interface. Similarly, in CutFEM [9, 10], the ghost-penalty form carries an intrinsic 
+
+h-dependent scaling as well. In the finite cell method [5, 6, 3], the void sti ff ness parameter α is chosen su ffi ciently small (between 10 −5 and 10 −10 ) for high-order basis functions. In practice, setting γ to a small constant (10 −10 in our numerical experiments, Section 5) satisfies this scaling for all mesh sizes of interest, since γ1/2 ≪ hp for moderate h.
+
+3.3. Regularity of the body-fitted function 
+
+Theorem 1 assumes the BFF Φ to be su ffi ciently smooth on D, so that the geometric coe ffi cients Φ2 and Φ ∇2Φ
+
+appearing in the weak form (13) are well-defined and the interpolation estimates used in the proof are valid. In practice, however, the signed distance function from which Φ is constructed is typically only C0 continuous, as the SDF is continuous everywhere but its gradient is discontinuous across the medial axis (the skeleton of Ω), where the nearest point on ∂Ω jumps between distinct boundary segments [27]. The exponential map defined in Eq. (3) serves as a regularization of the original SDF as well. To see this, compute the gradient of Φβ:
+
+∇Φβ = − 1
+
+β eSDF /β ∇SDF = 1
+
+β (1 − Φβ) ∇SDF , (18) 8where we have used |∇ SDF | = 1 almost everywhere. At any point where |SDF | ≫ β, the factor 1 − Φβ = eSDF /β is exponentially small, so ∇Φβ ≈ 0 regardless of the direction of ∇SDF. Consequently, if the parameter β is chosen small enough that the medial-axis locus lies deep in the interior where |SDF | ≫ β, then Φβ ≈ 1 and ∇Φβ ≈ 0 at those points, and the C0 irregularity of the SDF is exponentially attenuated in Φβ and its derivatives. A practical guideline is to set 
+
+β ≪ dmed , where dmed is the minimum distance from ∂Ω to the medial axis, so that the kinks of the SDF are e ff ectively invisible to the body-fitted formulation. This regularization property is a key practical advantage of the exponential construction over, e.g., a linear ramp Φ = max( −SDF , 0), for which ∇Φ inherits the full derivative discontinuity of the SDF. 
+
+4. Immersed C-HiDeNN-TD using exact Dirichlet immersed form 
+
+For large-scale problems, the computational cost can be reduced by model order reduction. The C-HiDeNN-Tensor Decomposition (TD) method, that leverages a special form of tensor decomposition called canonical polyadic decomposition, can be applied directly to the Cartesian background D.The discrete trial and test functions follow the same TD structure as in the C-HiDeNN-TD framework [16, 18]: 
+
+vh(x, y, z) =
+
+> M
+
+∑
+
+> m=1
+
+v(m) 
+
+> x
+
+(x) v(m) 
+
+> y
+
+(y) v(m) 
+
+> z
+
+(z), wh = δvh, (19) with the boundary lift gh represented as a rank-Mg TD approximation 
+
+gh(x, y, z) =
+
+> Mg
+
+∑
+
+> m=1
+
+g(m) 
+
+> x
+
+(x) g(m) 
+
+> y
+
+(y) g(m) 
+
+> z
+
+(z), (20) where each factor v(m) 
+
+> ξ
+
+, g(m) 
+
+> ξ
+
+(ξ ∈ { x, y, z}) is represented using 1D C-HiDeNN shape functions. To improve the e ffi ciency of multi-dimensional integrals in the weak form, the key coe ffi cients Φ, Φ2, and Φ ∇2Φ
+
+are also approximated by Tucker forms: 
+
+Φ ≈ ˆΦ(1) =
+
+> P1
+
+∑
+
+> p=1
+> Q1
+
+∑
+
+> q=1
+> K1
+
+∑
+
+> k=1
+
+H(1)  
+
+> pqk
+
+ϕ(p) 
+
+> x
+
+(x) ϕ(q) 
+
+> y
+
+(y) ϕ(k) 
+
+> z
+
+(z), (21) 
+
+Φ2 ≈ ˆΦ(2) =
+
+> P2
+
+∑
+
+> p=1
+> Q2
+
+∑
+
+> q=1
+> K2
+
+∑
+
+> k=1
+
+H(2)  
+
+> pqk
+
+φ(p) 
+
+> x
+
+(x) φ(q) 
+
+> y
+
+(y) φ(k) 
+
+> z
+
+(z), (22) 
+
+Φ ∇2Φ ≈ ˆΦ(3) =
+
+> P3
+
+∑
+
+> p=1
+> Q3
+
+∑
+
+> q=1
+> K3
+
+∑
+
+> k=1
+
+H(3)  
+
+> pqk
+
+θ(p) 
+
+> x
+
+(x) θ(q) 
+
+> y
+
+(y) θ(k) 
+
+> z
+
+(z). (23) It is important to note that ˆ Φ(1) , ˆ Φ(2) and ˆ Φ(3) are decomposed independently using separate Tucker factorizations with distinct factor matrices and core tensors. Consequently, the algebraic relations ˆ Φ(2) = ( ˆ Φ(1) )2 and ˆ Φ(3) = ˆΦ(1) ∇2 ˆΦ(1) 
+
+that hold for the exact geometric fields are generally not preserved in the Tucker-compressed representation. This deviation introduces an additional geometric consistency error. Enforcing these transformation relations by deriving ˆΦ(2) and ˆ Φ(3) directly from ˆ Φ(1) would eliminate this source of error but may increase the tensor rank required to represent the derived fields. Substituting (19) into (13) and contracting against the Tucker cores (23) produces three contributions to the as-sembled 1D operator K[ξ] in each PGD direction ξ ∈ { x, y, z}: a sti ff ness term from Φ2 + γ, a mass-like term from 
+
+Φ ∇2Φ, and a coupling term contributing to the right-hand side from Φ and gh.To circumvent the curse of dimensionality, the trial space is enriched mode by mode using PGD. At enrichment step M, the solution is split into a known part (the first M − 1 modes) and an unknown rank-1 increment, 
+
+vh(x, y, z) =
+
+> M−1
+
+∑
+
+> m=1
+
+v(m) 
+
+> x
+
+(x) v(m) 
+
+> y
+
+(y) v(m) 
+
+> z
+
+(z)
+
+︸ ︷︷ ︸
+
+> v<(x)
+
++ ¯vx(x) ¯ vy(y) ¯ vz(z), (24) 9and the three 1D factors ¯ vx, ¯vy, ¯vz are computed by an alternating fixed-point iteration. Restricting the variation to the 
+
+x component, δvh = δ¯vx(x) ¯ vy(y) ¯ vz(z), and substituting into (13) yields a 1D linear system 
+
+K[x]vx = q[x], (25) in which the operator K[x] and right-hand side q[x] are assembled by contracting the Tucker cores (23) against scalars obtained from 1D quadrature in the fixed directions y and z. The procedure is repeated cyclically over x → y → z
+
+until the relative change in the rank-1 mode falls below a prescribed tolerance; the new mode is then appended to v<
+
+and the next enrichment step is initiated. 
+
+4.1. Error estimate for immersed TD 
+
+In the immersed TD formulation, the BFF Φ and its derived fields Φ2 and Φ ∇2Φ are approximated respectively by independent Tucker decompositions ˆ Φ(1) , ˆ Φ(2) and ˆ Φ(3) as defined in Eq. (23). This geometric compression introduces additional deviations whose impact is quantified by the following error estimate. Define the Tucker perturbation fields 
+
+δ1 = ˆΦ(1) − Φ, δ2 = ˆΦ(2) − Φ2, δ3 = ˆΦ(3) − Φ ∇2Φ. (26) 
+
+Theorem 2. Let δ1, δ 2, δ 3 be the Tucker perturbation fields defined in (26) . Under the same assumptions as Theorem 1, the discrete C-HiDeNN solution u h obtained from Eq. (13) with the Tucker-compressed coe ffi cients satisfies 
+
+∥u − uh∥γ ≤ C1hp ∥˜v∥Hp+1(D)
+
++ C2
+
+(sup 
+
+> x∈Ω
+
+γ(x) + ∥δ2∥L∞(Ω)
+
+) sup 
+
+> ηh∈V h\{ 0}
+
+∥∇ ηh/Φ∥L2(Ω)
+
+∥∇ ηh∥L2(Ω)
+
+· ∥ u∥H1(Ω)
+
++ C3
+
+√
+
+sup 
+
+> x∈D\ Ω
+
+γ(x) + ∥δ2∥L∞(D\ Ω) + ∥δ3∥L∞(D\ Ω) ∥ˆv − ˜v∥H1(D\ Ω)
+
++ C4∥δ3∥L∞(D) sup 
+
+> ηh∈V h\{ 0}
+
+∥ηh/Φ∥L2(D)
+
+∥ηh∥γ
+
+· ∥ ˆv∥L2(D)
+
++ C5∥δ1∥L∞(D) sup 
+
+> ηh∈V h\{ 0}
+
+∥ηh/Φ∥L2(D)
+
+∥ηh∥γ
+
+· ∥∇ 2gh + b∥L2(D),
+
+(27) 
+
+where C 1, C2, C3, C4, C5 > 0 are constants independent of h and of the Tucker rank. 
+
+Comparing Theorem 2 with Theorem 1, the perturbation δ2 enters the estimate in exactly the same manner as the void stabilization parameter γ (second and third terms). This reveals a fundamental structural analogy: the Tucker compression error in ˆ Φ(2) acts as an eff ective additional stabilization whose L∞-norm combines additively with γ.Consequently, the accuracy of the Tucker-compressed formulation is controlled by the total stabilization magnitude 
+
+γ + δ2, and the Tucker rank must be chosen such that ∥δ2∥L∞ remains commensurate with γ to avoid degrading the convergence rate. The δ3 perturbation, arising from the independent compression of Φ ∇2Φ, contributes a mass-like error term (fourth term) that scales with ∥δ3∥L∞ . The δ1 perturbation propagates directly through the right-hand side (fifth term). A complete proof is given in Appendix Appendix B. 
+
+Remark 1 (Generality of the geometric error terms) . The perturbation fields δ1, δ 2, δ 3 in Theorem 2 are not restricted to Tucker decomposition errors. They accommodate any source of inaccuracy in the BFF and its derived geometric coe ffi cients, making the estimate applicable to a broad class of geometric approximation strategies: 
+
+• Voxel-based SDF discretization. When the signed distance function is computed on a finite-resolution voxel grid, the resulting Φ constructed via Eq. (3) inherits a discretization error proportional to the voxel spacing. This error propagates into the geometric coe ffi cients and is captured by the δ1 (fifth) and δ2 (second /third) terms. 
+
+• Interpolation-based approximations. When Φ is approximated by interpolation from a set of sample points (e.g., using radial basis functions, neural-network implicit representations, or spline fitting), the interpolation error enters the estimate through the same mechanisms. 
+
+10 • SDF regularization or smoothing. Any post-processing of the SDF prior to constructing Φ (e.g., Gaussian filtering to suppress noise in image-derived geometries) introduces perturbations to Φ, Φ2, and Φ ∇2Φ whose eff ects are likewise bounded by the three perturbation channels. In each case, provided the approximation errors ∥δ1∥L∞(D), ∥δ2∥L∞(D), and ∥δ3∥L∞(D) can be estimated, either analyti-cally or numerically, Theorem 2 yields a quantitative bound on the resulting solution error. 
+
+5. Numerical examples 
+
+In immersed methods, the di ff use interface (the narrow band where 0 < Φ < 1) requires higher-order quadrature to resolve the sharp gradients of the BFF and its derivatives. Applying uniformly dense Gauss quadrature over all elements is unnecessarily expensive: elements deep inside Ω (where Φ ≈ 1 and its derivatives are smooth) and elements in the void (where Φ = 0) do not benefit from the extra integration points. We adopt a two-level adaptive Gauss quadrature strategy. A pre-classification step evaluates the nodal values of 
+
+Φ on each element and labels elements intersecting the transition zone (those with at least one node satisfying εext <
+
+Φ < ε int ) as boundary elements; all others are non-boundary elements. The implementation follows Algorithm 1. 
+
+Algorithm 1 Element classification for adaptive Gauss quadrature  
+
+> 1:
+
+Input: nodal coordinates, mesh topology, Φ(x), thresholds εext , εint  
+
+> 2:
+
+Evaluate Φ at all mesh nodes: Φi ← Φ(xi) 
+
+> 3:
+
+for each element e with nodes Ne do  
+
+> 4:
+
+Φ(e)min ← min i∈N e Φi, Φ(e)max ← max i∈N e Φi 
+
+> 5:
+
+if Φ(e)max > ε ext and Φ(e)min < ε int then  
+
+> 6:
+
+Mark e as boundary  
+
+> 7:
+
+else  
+
+> 8:
+
+Mark e as non-boundary  
+
+> 9:
+
+end if  
+
+> 10:
+
+end for  
+
+> 11:
+
+Output: boundary element set EB, non-boundary element set EN
+
+In the assembly of the sti ff ness matrix and force vector, elements in EB are integrated with nbnd  
+
+> g
+
+Gauss points per direction (20 × 20 in the present computations), while elements in EN use a coarser nint  
+
+> g
+
+rule (6 × 6). The error computation employs a slightly enriched rule ( nbnd  
+
+> g
+
++ 2, nint  
+
+> g
+
++ 2) to avoid quadrature-dominated error estimates. For the multiply-connected void domain, the boundary element set EB typically accounts for approximately 10–15% of the total elements; the adaptive strategy therefore reduces the quadrature cost by roughly a factor of 5–7 compared with a uniform 20 × 20 rule, with no measurable loss of accuracy. Table 1 summarizes the quadrature configuration. 
+
+> Table 1: Adaptive Gauss quadrature configuration
+
+Element type Criterion Gauss points 
+
+Boundary Φmax > ε ext and Φmin < ε int 20 × 20 Non-boundary Otherwise 6 × 6
+
+5.1. 2D circular / annular computational domain 
+
+The exact Dirichlet immersed formulation is evaluated on two 2D Poisson benchmark problems using the BFF 
+
+Φβ defined in Eq. (3), embedded in the square background domain D = [−1, 1] × [−1, 1]. The void stabilization is set to γ(x) = 10 −10 in D, which is su ffi ciently small to be considered negligible within the range of mesh resolutions of interest and does not a ff ect the observed convergence rates. The C-HiDeNN radial basis expansion parameter is 
+
+ra = 50 throughout. 11 5.1.1. 2D circular computational domain 
+
+The first benchmark is the Poisson equation on a circular domain Ω = {(x, y) | √x2 + y2 < R} of radius R = 0.7, subject to homogeneous Dirichlet boundary conditions. The signed distance function for this geometry admits the closed form SDF( x, y) =
+
+√
+
+x2 + y2 − R, (28) with the sign convention illustrated in Fig. 1 (negative inside Ω, positive outside). The BFF Φβ is then constructed from Eq. (3). Figure 5 shows the SDF and the resulting BFF Φβ for the circular domain. SDF              
+
+> -1 -0.5 00.5 1
+> x
+> -1 -0.5 00.5 1
+> y
+> -0.6 -0.4 -0.2 00.2 0.4 0.6 Body-fitted function
+> -1 -0.5 00.5 1
+> x
+> -1 -0.5 00.5 1
+> y
+> 00.2 0.4 0.6 0.8 1
+> Figure 5: SDF and BFF Φβfor the 2D circular domain ( R=0.7). The black solid line marks the domain boundary ∂Ω.
+
+The exact solution is chosen as 
+
+uExt (x, y) = R2 − x2 − y2, (29) which vanishes on ∂Ω and yields a constant source term b(x, y) = 4. Figure 6 shows the convergence of the relative L2 and energy errors for p = 1, 2, 3 with β = 0.01, under uniform mesh refinement ( nx = 8, 16 , 32 , 64 , 128 , 256). The estimated convergence rates are summarized in Table 2.   
+
+> Table 2: Estimated convergence rates for the circular domain ( β=0.01)
+
+L2 rate (last 4 points) Energy rate (last 4 points) Theoretical optimum 
+
+p = 1 2.2 1.2 2.0 / 1.0
+
+p = 2 2.9 1.8 3.0 / 2.0
+
+p = 3 3.4 2.5 4.0 / 3.0For p = 1 and p = 2, the estimated rates are close to their respective theoretical optima. For p = 3, the rates are O(h3.4) in L2-norm and O(h2.5) in energy-norm, below the nominal O(h4) and O(h3). This suboptimality is attributed to the combined e ff ects of the reduced regularity of Φβ in the transition layer, the finite accuracy of the adaptive boundary-integration quadrature, and the fact that, on the finer meshes, the error is su ffi ciently small that these previously subdominant error sources become visible. We isolate the role of the void stabilization parameter γ by fixing the mesh (128 × 128) and sweeping γ over nine decades, from 10 −2 to 10 −12 . All other parameters are held constant ( p = 3, s = 3, adaptive Gauss quadrature with 20 × 20 boundary points and 6 × 6 interior points). Figure 7 plots the relative L2 and energy errors as functions of γ on a log-log scale. Two regimes are evident: (1) Stabilization-dominated regime (γ ≳ 10 −7). For large γ, the void stabilization distorts the solution throughout the physical domain Ω. The energy error grows as O(γ0.5), consistent with the √γ scaling of the third term in 12 10 1 10 2
+
+# of grid points in each direction 
+
+10 -8 
+
+10 -6 
+
+10 -4 
+
+10 -2 
+
+10 0
+
+> Relative L2 error
+> 2.0
+> 3.0
+> 4.0
+
+p=1, s=1 
+
+p=2, s=2 
+
+p=3, s=3 10 1 10 2
+
+# of grid points in each direction 
+
+10 -5 
+
+10 0
+
+> Relative energy error
+> 1.0
+> 2.0
+> 3.0
+
+Figure 6: Convergence of the relative L2 error (left) and relative energy error (right) for the 2D circular domain ( β = 0.01). Triangles indicate the theoretical optimal convergence rates. 
+
+Figure 7: Relative L2 error (left) and relative energy error (right) versus void stabilization parameter γ on a fixed 128 × 128 mesh ( p = 3). The fitted slope over points 2-5 ( γ = 10 −3 to 10 −6) is annotated on each panel. The red-shaded region indicates the Discretization-dominated regime (γ ≲ 10 −7). , in which the total error saturates. 
+
+13 Corollary 2, where a linear regression over points 2-5 (corresponding to γ = 10 −3 through 10 −6) yields a fitted slope of approximately 0 .5 for the energy norm. The L2 error exhibits a fitted slope of approximately 1 over the same interval. (2) Discretization-dominated regime ( γ ≲ 10 −7). As γ is further reduced, both the L2 and energy errors saturate to a plateau. In this regime the γ-induced error has fallen below the intrinsic discretization error of the 128 × 128 mesh, so further reduction of γ yields no improvement in accuracy. This shows that choosing γ = 10 −10 is appropriate in the above convergence study. 
+
+5.1.2. 2D annular domain with an eccentric hole 
+
+The second benchmark introduces a non-convex, multiply-connected geometry: a circular outer boundary of radius R1 = 0.7 containing an eccentric circular hole of radius R2 = 0.2 centered at ( x0, y0) = (0 .15 , 0). For a multiply-connected domain defined by the set di ff erence of an outer and an inner region, the signed distance function combines the individual distance fields via the maximum operator: SDF( x, y) = max ( √
+
+x2 + y2 − R1, R2 −
+
+√
+
+(x − x0)2 + y2), (30) which is negative when both √x2 + y2 < R1 (inside the outer circle) and √(x − x0)2 + y2 > R2 (outside the inner hole) are satisfied. See Fig. 1 for the sign convention. The BFF follows from Eq. (3). Figure 8 shows the SDF and the resulting BFF Φβ for the annular domain. SDF                      
+
+> -1 -0.5 00.5 1
+> x
+> -1 -0.5 00.5 1
+> y
+> -0.2 00.2 0.4 0.6 Body-fitted function
+> -1 -0.5 00.5 1
+> x
+> -1 -0.5 00.5 1
+> y
+> 00.2 0.4 0.6 0.8 1
+> Figure 8: SDF and BFF Φβfor the 2D annular domain with eccentric hole ( R1=0.7, R2=0.2, x0=0.15, β=0.01). The black solid lines mark the outer boundary and the inner hole.
+
+The exact solution, 
+
+uExt (x, y) = −(R21 − x2 − y2) (R22 − (x − x0)2 − y2), (31) is constructed to vanish on both the outer boundary and the inner hole, satisfying the homogeneous Dirichlet condition. The corresponding source term b(x, y) = −∆uExt is obtained analytically. The key challenge in this example is the accurate resolution of the narrow ligament between the outer boundary and the eccentric hole, which tests the geometric fidelity of the body-fitted description under aggressive mesh refinement. Figure 9 shows the convergence of the relative L2 and energy errors for polynomial orders p = 1, 2, 3, all using the adaptive Gauss quadrature of Table 1. The mesh size is defined as h = 2/nx, where nx is the number of elements in the x-direction. For p = 1, the L2 error converges approximately as O(h2.2) and the energy error as O(h1.2), matching the expected optimal rates O(hp+1) and O(hp) respectively. For p = 2, the L2 error decays as O(h2.8) and the energy error as O(h1.7), again in agreement with the theory. For p = 3, the L2 rate is approximately O(h3.4) and the energy rate is O(h2.5); the slight suboptimality relative to the nominal O(h4) and O(h3) rates is attributed to the narrow-ligament geometry, 14 where the element size must be su ffi ciently small to resolve the curvature of both the outer and inner boundaries simultaneously; this condition is met only on the finest meshes. The convergence rates are summarized in Table 3. 
+
+> Table 3: Estimated convergence rates for the annular domain (last three mesh refinements)
+
+L2 rate (last 4 points) Energy rate (last 4 points) Theoretical optimum 
+
+p = 1 2.2 1.2 2.0 / 1.0
+
+p = 2 2.8 1.7 3.0 / 2.0
+
+p = 3 3.4 2.5 4.0 / 3.010 1 10 2 10 3
+
+# of grid points in each direction 
+
+10 -6 
+
+10 -4 
+
+10 -2 
+
+10 0
+
+> Relative L2 error
+> 2.0
+> 3.0 4.0
+> p=1, s=1
+> p=2, s=2
+> p=3, s=3
+
+10 1 10 2 10 3
+
+# of grid points in each direction 
+
+10 -5 
+
+10 0                
+
+> Relative energy error
+> 1.0
+> 2.0
+> 3.0
+> Figure 9: Convergence of the relative L2error (left) and relative energy error (right) for the 2D annular domain with eccentric hole ( R1=0.7,
+> R2=0.2, x0=0.15, β=0.01). The dashed lines indicate the theoretical optimal convergence rates O(hp+1) for L2and O(hp) for the energy norm.
+
+5.2. 2D complex geometries 5.2.1. 2D starfish computational domain with a central hole 
+
+The next benchmark considers the Poisson equation on a more complex geometry: a 7-petaled starfish domain with a central hole. The domain is embedded within a square background box D = [0 , 2] × [0 , 2] centered at c = (1 , 1). Using local polar coordinates ρ = √(x − 1) 2 + (y − 1) 2 and θ = atan2( y−1, x−1), the computational domain is defined as 
+
+Ω = {(x, y) | rhole ≤ ρ ≤ R(θ)}, (32) where the outer boundary is given by R(θ) = rbase + α cos(7 θ). The geometric parameters are set to a mean petal radius 
+
+rbase = 0.70, petal amplitude α = 0.24, and a central hole radius rhole = 0.16. Consequently, the domain boundary ∂Ω
+
+consists of two distinct components: the outer wavy curve and the inner circular void. Homogeneous Dirichlet boundary conditions ( u = 0) are prescribed on all of ∂Ω, with constant body force b = 1.0as in Eq. (6). The Dirichlet conditions are enforced geometrically through the BFF Φ, utilizing the ansatz uh = Φ vh (homoge-neous case) with vh pinned to 0 on the boundary of the background box. The BFF is defined via Eq. (3) with transition parameter β = 0.002. The immersed weak form follows Eq. (13): 
+
+Aγ(wh, vh) =
+
+∫
+
+> D
+
+(Φ2 + γ)∇wh · ∇ vh − Φ∇2Φ whvh dD, (33) with the corresponding load functional L(wh) = ∫ 
+
+> D
+
+Φwhb dD. The void stabilization parameter is set to γ = 10 −10 .15 Unlike the circular benchmark, this problem does not possess a closed-form exact solution. Instead, the numerical results are compared against a high-fidelity reference solution obtained using a body-fitted P1 finite element solve on an identical triangulated starfish domain via FEniCSx. Figure 10 visualizes this comparison, displaying the reference field, the immersed C-HiDeNN solution, and the point-wise absolute error.  
+
+> Figure 10: Solution fields for the 2D starfish domain with a central hole. Left: Body-fitted FEniCSx reference solution. Middle: Immersed C-HiDeNN solution ( uh= Φ vh). Right: Point-wise absolute error between the immersed and reference solutions.
+
+5.2.2. 2D gear computational domain with a central hole 
+
+To further evaluate the framework’s capability in resolving sharp geometric features, the third benchmark consid-ers the Poisson equation on a 20-tooth gear domain with a central hole. The domain is embedded within the same square background box D = [0 , 2] × [0 , 2] centered at c = (1 , 1). Using the local polar coordinates ρ and θ defined previously, the computational domain is defined as 
+
+Ω = {inside the 20-tooth gear polygon } \ {ρ < rhole 
+
+}. (34) The outer boundary is defined as a piecewise-linear polygon constructed from 80 vertices located at angles θi =
+
+2πi/80. The corresponding radii cycle with a period of 4 in the sequence [ rin , rout , rout , rin ]. This generates square-like teeth, where each tooth rises from the root radius to a flat tip at the tooth radius and back via straight segments. The geometric parameters are set to a tooth-tip radius rout = 0.90, a tooth-root radius rin = 0.70, and a central hole radius 
+
+rhole = 0.50. Thus, the domain boundary ∂Ω consists of the outer 20-tooth gear polygon and the inner circular void. In direct contrast to the smooth analytic curve of the starfish domain, the gear’s outer edge introduces multiple sharp, re-entrant corners at the 80 polygon vertices. These discontinuities present a significantly more stringent geometric challenge for resolving the BFF Φ.The physical problem remains identical to the starfish benchmark (constant body force b = 1.0, homogeneous Dirichlet boundary conditions), with the BFF, immersed weak form, and stabilization parameters ( γ = 10 −10 , β =
+
+0.002) retained from the previous examples. Similar to the starfish benchmark, the numerical results are compared against a high-fidelity reference solution obtained via a body-fitted P1 finite element solve on an identical triangulated gear domain using FEniCSx. Figure 11 displays the reference solution, the immersed C-HiDeNN solution, and the point-wise absolute error, illustrating the framework’s performance around the sharp polygonal features. 
+
+5.2.3. 3D sphere with a concentric spherical void 
+
+The final benchmark extends the immersed body-fitted formulation to three dimensions on a multiply-connected solid: a spherical shell formed by an outer sphere of radius R1 = 0.7 with a concentric spherical void of radius 
+
+R2 = 0.3, both centered at xc = (1 , 1, 1) inside the background box [0 , 2] 3. Writing r = ∥x − xc∥, the signed distance function again combines the outer and inner fields through the maximum operator, SDF( x) = max (r − R1, R2 − r), (35) 16 Figure 11: Solution fields for the 2D gear domain with a central hole. Left: Body-fitted FEniCSx reference solution. Middle: Immersed C-HiDeNN solution ( uh = Φ vh). Right: Point-wise absolute error between the immersed and reference solutions. 
+
+which is negative precisely in the shell R2 < r < R1. The BFF Φβ follows from Eq. (3). The exact solution, 
+
+uExt (x) = (R21 − r2)( r2 − R22
+
+), (36) vanishes on both the outer sphere and the inner void, enforcing the homogeneous Dirichlet condition, and the source term b = −∆uExt is obtained analytically. Figure 12 shows the relative L2 and energy errors for s = p = 1 and s = p = 2, with mesh size h = 2/nx. The measured rates over the finest meshes, summarized in Table 4, recover the expected optimal orders O(hp+1) in L2 and 
+
+O(hp) in energy, confirming that the body-fitted description retains full accuracy in three dimensions. 
+
+> Table 4: Estimated convergence rates for the 3D spherical shell (finest mesh refinements)
+
+L2 rate Energy rate Theoretical optimum 
+
+s = p = 1 2.14 1.10 2.0 / 1.0
+
+s = p = 2 2.89 1.89 3.0 / 2.0
+
+6. Discussions 
+
+The Immersed Tensor Decomposition (ITD) framework successfully integrates non-conforming geometries into reduced-order models by intertwining a continuous body-fitted representation with a separable C-HiDeNN-TD solver. This approach introduces several key advantages and practical considerations: Strong Boundary Enforcement without Interface Quadrature: Unlike classical immersed methods that rely on weak Nitsche-type enforcement, ITD satisfies Dirichlet conditions strongly via the BFF Φ. This eliminates penalty parameter tuning and complex interface quadratures, preserving the purely Cartesian tensor-product structure required for e ffi cient reduced-order modeling. Algebraic Complexity Reduction: A direct substitution of the body-fitted trial function into the weak form would generate six distinct geometric coe ffi cient fields in 3D (five in 2D). Our exact algebraic cancellation reduces this to just three scalar fields ( Φ, Φ2, and Φ ∇2Φ). This reduction cuts the tensor compression overhead by nearly a half. Balancing Hyperparameters ( β and γ): Practical implementation requires balancing the exponential transition scaling βwhich must smooth the SDF without demanding excessively dense quadratureagainst the void stabilization γ.As established numerically and theoretically, γ must scale as O(h2p) to e ff ectively stabilize the void without polluting the solution in the physical domain. 17 Figure 12: Convergence of the relative L2 error (left) and relative energy error (right) for the 3D sphere with a concentric spherical void ( R1 = 0.7,        
+
+> R2=0.3, xc=(1 ,1,1)). The triangles indicate the fitted slopes.
+
+7. Conclusions and Future Work 
+
+This paper presented the Immersed Tensor Decomposition (ITD) framework, which successfully integrates mesh-free geometric representations with the separable C-HiDeNN-TD reduced-order solver. By utilizing a BFF ( Φ) derived from a signed-distance field, the formulation achieves strong, exact enforcement of Dirichlet boundary conditions on regular Cartesian background grids. This approach circumvents the need for conforming body-fitted meshes, varia-tional penalty parameters, and irregular interface quadratures.A central mathematical contribution of this work is the algebraically transformed weak form, which collapses the geometric complexity from six initial geometric coe ffi cients in 3D (five in 2D) into just three volume fields ( Φ, Φ2, and Φ ∇2Φ). This reduction is critical for maintaining the ef-ficiency of the low-rank Tucker decomposition and avoiding the curse of dimensionality. We established a rigorous a priori error estimate demonstrating that the ITD formulation preserves the optimal O(hp+1) convergence rate of the underlying high-order C-HiDeNN interpolation, provided the void stabilization parameter and the Tucker compres-sion perturbations are properly scaled. Numerical evaluations on canonical 2D domains and 3D geometries confirmed these theoretical bounds, demonstrating robust sub-domain resolution and optimal energy norm convergence. Future research will focus on extending the ITD framework in the following directions: Vector-field and non-linear PDEs: While the current framework was derived and validated for the scalar Poisson equation, extending the formulation to coupled vector-field problems, such as linear elasticity, is necessary for broader computational mechanics and computer-aided engineering applications. Direct ingestion of voxel-native data: We intend to deploy the ITD framework directly on raw volumetric datasets, such as medical imaging (CT /MRI) and additive manufacturing lattice structures. In these scenarios, the generation of signed-distance fields and subsequent tensor compression can completely bypass traditional, information-lossy CAD surface reconstruction workflows. Adaptive rank selection: The derived error estimates indicate that Tucker perturbation fields act as an e ff ective ad-ditional stabilization. Developing an adaptive rank-selection algorithm to dynamically balance the tensor compression error against the intrinsic discretization error will further optimize o ffl ine pre-computation costs. 
+
+Appendix A. Proof of Theorem 1 
+
+For simplicity, we consider homogeneous Dirichlet boundary condition ( gh = 0); the nonhomogeneous case follows by a standard lifting argument. The stabilized weak form can be written as 
+
+Aγ(Wh, uh) = L(Wh, b), (A.1) 18 where the bilinear form Aγ(·, ·) and the linear functional L(·, b) in Eq. (13) are defined by 
+
+Aγ(Wh, uh) =
+
+∫
+
+> D
+
+∇Wh · ∇ uh dD +
+
+∫
+
+> D
+
+γ(x)∇(Wh/Φ) · ∇ (uh/Φ) d D, (A.2) 
+
+=
+
+∫
+
+> D
+
+(Φ2 + γ(x)) (∇(Wh/Φ) · ∇ (uh/Φ)) d D − 
+
+∫
+
+> D
+
+(∇2Φ/Φ) Wh uh dD, (A.3) 
+
+L(Wh, b) =
+
+∫
+
+> D
+
+Wh b dD. (A.4) The test and trial spaces coincide: 
+
+Vh = Sh = {Wh = Φ wh : wh = Ihw, w ∈ Hp+1(D), w|∂D = 0}, (A.5) where Ih denotes the CHiDeNN interpolation operator. The energy norm is ∥w∥γ = √Aγ(w, w). 
+
+Lemma 1 (Strang’s first lemma) . Let u be the exact solution and u h the discrete solution satisfying A γ(Wh, uh) =
+
+L(Wh, b) for all W h ∈ V h. Then 
+
+∥u − uh∥γ ≤ 2 inf 
+
+> zh∈S h
+
+∥u − zh∥γ + sup 
+
+> ηh∈V h\{ 0}
+
+∣∣∣Aγ(ηh, u) − L(ηh, b)∣∣∣
+
+∥ηh∥γ
+
+. (A.6) 
+
+Proof. For any zh ∈ S h, set eh = zh − uh. Using the weak form, 
+
+∥eh∥2 
+
+> γ
+
+= Aγ(eh, zh − uh) = Aγ(eh, zh) − L(eh, b)
+
+= Aγ(eh, zh − u) + Aγ(eh, u) − L(eh, b).
+
+By the CauchySchwarz inequality, 
+
+Aγ(eh, zh − u) ≤ ∥ eh∥γ∥zh − u∥γ.
+
+Hence, 
+
+∥eh∥γ ≤ ∥ zh − u∥γ + |Aγ(eh, u) − L(eh, b)|∥eh∥γ
+
+≤ ∥ zh − u∥γ + sup 
+
+> ηh∈V h\{ 0}
+
+|Aγ(ηh, u) − L(ηh, b)|∥ηh∥γ
+
+.
+
+The triangle inequality ∥u − uh∥γ ≤ ∥ u − zh∥γ + ∥zh − uh∥γ yields 
+
+∥u − uh∥γ ≤ 2∥u − zh∥γ + sup 
+
+> ηh∈V h\{ 0}
+
+|Aγ(ηh, u) − L(ηh, b)|∥ηh∥γ
+
+.
+
+Taking the infimum over zh gives (A.6). 
+
+Proof of Theorem 1. Let the exact solution be extended to the whole background domain by u = Φ ˆv, where ˆ v is the harmonic extension. Since ˆ v may have limited smoothness across ∂Ω, we introduce a Stein extension ˜ v ∈ Hp+1(D)with ˜ v|Ω = v|Ω. Using (A.6), we estimate the two terms separately. 
+
+Approximation error. 
+
+2 inf 
+
+> zh∈S h
+
+∥u − zh∥γ ≤ 2∥u − Φ˜v∥γ + 2 inf 
+
+> zh
+
+∥Φ˜v − zh∥γ
+
+= 2(∫
+
+> D\ Ω
+
+γ ∣∣∣∇(ˆ v − ˜v)∣∣∣2 dD)1/2
+
++ C1hp∥˜v∥Hp+1(D)
+
+≤ C3
+
+√
+
+sup 
+
+> x∈D\ Ω
+
+γ(x) ∥ˆv − ˜v∥H1(D\ Ω) + C1hp ∥˜v∥Hp+1(D),
+
+where the first term reflects the mismatch between the harmonic and smooth extensions in the void, and the second term follows from the approximation properties of CHiDeNN. 19 Consistency error. The exact solution satisfies the unstabilized weak form A0(Wh, u) = L(Wh, b). Consequently, 
+
+Aγ(ηh, u) − L(ηh, b) =
+
+∫
+
+> D
+
+γ ∇(ηh/Φ) · ∇ (ˆ v) d D.
+
+As ∫ 
+
+> D\ Ω
+
+∇w · ∇ (ˆ v) d D for any weighting function w ∈ H1(D \ Ω) and w|∂Ω = 0, this residual reduces to 
+
+Aγ(ηh, u) − L(ηh, b) =
+
+∫
+
+> Ω
+
+γ ∇(ηh/Φ) · ∇ (ˆ v) d Ω. (A.7) By the CauchySchwarz inequality and the definition of the γnorm, 
+
+∣∣∣Aγ(ηh, u) − L(ηh, b)∣∣∣ ≤ sup 
+
+> x∈Ωγ(x)
+
+∥∥∥∇(ηh/Φ)∥∥∥L2(Ω)
+
+∥∥∥∇(ˆ v)∥∥∥L2(Ω).
+
+Using the inequality 
+
+∥ηh∥2 
+
+> γ
+
+≥ A0(ηh, η h) = ∥∇ ηh∥2
+
+> L2(Ω)
+
+, (A.8) we obtain sup 
+
+> ηh∈V h\{ 0}
+
+|Aγ(ηh, u) − L(ηh, b)|∥ηh∥γ
+
+≤ C2 sup 
+
+> x∈Ω
+
+γ(x) sup 
+
+> ηh∈V h\{ 0}
+
+∥∇ ηh/Φ∥L2(Ω)
+
+∥∇ ηh∥L2(Ω)
+
+· ∥ u∥H1(Ω).
+
+Combining the two bounds in (A.6) gives 
+
+∥u − uh∥γ ≤ C1hp ∥˜v∥Hp+1(D) + C2 sup 
+
+> x∈Ω
+
+γ(x) sup 
+
+> ηh∈V h\{ 0}
+
+∥∇ ηh/Φ∥L2(Ω)
+
+∥∇ ηh∥L2(Ω)
+
+· ∥ u∥H1(Ω) + C3
+
+√
+
+sup 
+
+> x∈D\ Ω
+
+γ(x) ∥ˆv − ˜v∥H1(D\ Ω),
+
+which is precisely the statement of Theorem 1. 
+
+Appendix B. Proof of Theorem 2 
+
+We follow the structure of the proof of Theorem 1 (Appendix Appendix A), treating the Tucker perturbation fields 
+
+δ1, δ 2, δ 3 as additional stabilization-like terms. For simplicity, we consider homogeneous Dirichlet boundary condition (gh = 0); the non-homogeneous case follows by a standard lifting argument. Substituting the Tucker-compressed geometric coe ffi cients ˆ Φ(1) , ˆΦ(2) , ˆΦ(3) into the exact Dirichlet weak form (13) yields the Tucker-perturbed bilinear form and linear functional: ˆAγ(w, v) =
+
+∫
+
+> D
+
+( ˆΦ(2) + γ(x)) (∇w · ∇ v) d D − 
+
+∫
+
+> D
+
+ˆΦ(3) w v dD, (B.1) ˆL(w, b) =
+
+∫
+
+> D
+
+ˆΦ(1) w b dD. (B.2) Using the perturbation fields δ1 = ˆΦ(1) − Φ, δ2 = ˆΦ(2) − Φ2, δ3 = ˆΦ(3) − Φ ∇2Φ, the Tucker forms relate to the exact forms (A.1) as ˆAγ(w, v) = Aγ(w, v) +
+
+∫
+
+> D
+
+δ2 (∇w · ∇ v) d D − 
+
+∫
+
+> D
+
+δ3 w v dD, (B.3) ˆL(w, b) = L(w, b) +
+
+∫
+
+> D
+
+δ1 w b dD. (B.4) The discrete Tucker solution uh satisfies ˆAγ(ηh, uh) = ˆL(ηh, b) for all ηh ∈ V h, while the exact solution u satisfies 
+
+A0(η, u) = L(η, b) for all η ∈ V h.Define the Tucker energy norm ∥w∥ˆγ =
+
+√
+
+ˆAγ(w, w). From (B.3), 
+
+∣∣∣∥w∥2ˆγ − ∥ w∥2
+
+> γ
+
+∣∣∣ ≤ ∥ δ2∥L∞(D)∥∇ w∥2 
+
+> L2(D)
+
++ ∥δ3∥L∞(D)∥w∥2
+
+> L2(D)
+
+. (B.5) 20 Since Φ ∈ [0 , 1] and w = Φ ˜w for some ˜ w ∈ H1(D), the L2 term is controlled by the gradient term via the Poincaré– Friedrichs inequality. Assuming the Tucker compression is su ffi ciently accurate that ∥δ2∥L∞ and ∥δ3∥L∞ are small, the two norms are equivalent: there exist constants c0, c1 > 0 independent of h and of the Tucker rank such that 
+
+c0∥w∥γ ≤ ∥ w∥ˆγ ≤ c1∥w∥γ, ∀ w ∈ V h. (B.6) In the estimates below, we absorb c−10 and c1 into the generic constants C2, . . . , C5.Applying Strang’s first lemma (Lemma 1) to the Tucker form ˆ Aγ:
+
+∥u − uh∥ˆγ ≤ 2 inf 
+
+> zh∈S h
+
+∥u − zh∥ˆγ + sup 
+
+> ηh∈V h\{ 0}
+
+∣∣∣ ˆAγ(ηh, u) − ˆL(ηh, b)∣∣∣
+
+∥ηh∥ˆγ
+
+. (B.7) We estimate the approximation error and the consistency error separately. Let u = Φ ˆv be the exact solution extended harmonically to D, and let ˜ v ∈ Hp+1(D) be the Stein extension. Decompose the approximation error: 2 inf 
+
+> zh∈S h
+
+∥u − zh∥ˆγ ≤ 2∥u − Φ˜v∥ˆγ + 2 inf 
+
+> zh
+
+∥Φ˜v − zh∥ˆγ.
+
+For the first term, using the definition of ˆ Aγ and noting that u − Φ˜v = Φ (ˆ v − ˜v) vanishes on Ω:
+
+∥u − Φ˜v∥2ˆγ =
+
+∫
+
+> D\ Ω
+
+(Φ2 + δ2 + γ)∣ ∣∣∇(ˆ v − ˜v)∣∣∣2 dD − 
+
+∫
+
+> D\ Ω
+
+(Φ ∇2Φ + δ3) |ˆv − ˜v|2 dD≤ ( sup 
+
+> x∈D\ Ω
+
+γ(x) + ∥δ2∥L∞(D\ Ω)
+
+)∥ˆv − ˜v∥2 
+
+> H1(D\ Ω)
+
++ ∥δ3∥L∞(D)∥ˆv − ˜v∥2
+
+> L2(D)
+
+≤ ( sup 
+
+> x∈D\ Ω
+
+γ(x) + ∥δ2∥L∞(D\ Ω) + ∥δ3∥L∞(D)
+
+)∥ˆv − ˜v∥2
+
+> H1(D\ Ω)
+
+.
+
+For the second term, the C-HiDeNN interpolation estimate in the ˆ γ-norm is identical to that in Theorem 1 up to the perturbation of the norm, which is controlled by (B.6). Hence, 2 inf 
+
+> zh
+
+∥Φ˜v − zh∥ˆγ ≤ C1hp ∥˜v∥Hp+1(D). (B.8) Decompose the consistency residual using (B.3)–(B.4): ˆAγ(ηh, u) − ˆL(ηh, b) = [Aγ(ηh, u) − L(ηh, b)] (B.9) 
+
++
+
+∫
+
+> D
+
+δ2 ∇wh · ∇ ˆv dD (B.10) 
+
+−
+
+∫
+
+> D
+
+δ3 wh ˆv dD (B.11) 
+
+−
+
+∫
+
+> D
+
+δ1 wh ˜b dD, (B.12) where wh = ηh/Φ, ˆ v = u/Φ, and ˜ b = ∇2gh + b (with b the body force). 
+
+Term (B.9) : γ-stabilization. From the proof of Theorem 1 ( Appendix A), the exact stabilized consistency error satisfies ∣∣∣Aγ(ηh, u) − L(ηh, b)∣∣∣ ≤ sup 
+
+> x∈Ω
+
+γ(x) ∥∇ wh∥L2(Ω) ∥∇ ˆv∥L2(Ω). (B.13) Dividing by ∥ηh∥ˆγ and using the norm equivalence (B.6) together with the inequality ∥ηh∥γ ≥ ∥∇ ηh∥L2(Ω) proved in Lemma 1 yields the bound with sup Ω γ(x) as in the second term of Eq. (27). 21 Term (B.10) : δ2 sti ff ness perturbation. The perturbation δ2 enters as a coe ffi cient of the sti ff ness integral, exactly as 
+
+γ does. Splitting the integral over Ω and D \ Ω:
+
+∫
+
+> D
+
+δ2 ∇wh · ∇ ˆv dD =
+
+∫
+
+> Ω
+
+δ2 ∇wh · ∇ ˆv dΩ + 
+
+∫
+
+> D\ Ω
+
+δ2 ∇wh · ∇ ˆv d( D \ Ω).
+
+In the interior Ω, the Cauchy–Schwarz inequality gives 
+
+∣∣∣∣∣∫
+
+> Ω
+
+δ2 ∇wh · ∇ ˆv dΩ
+
+∣∣∣∣∣ ≤ ∥ δ2∥L∞(Ω) ∥∇ wh∥L2(Ω) ∥∇ ˆv∥L2(Ω).
+
+In the void D\ Ω, the harmonic extension satisfies ∇2 ˆv = 0. Integrating by parts and using wh|∂Ω = 0 (since wh = ηh/Φ
+
+and ηh|∂D = 0), the void integral vanishes under the same argument as the γ term in Theorem 1: 
+
+∫
+
+> D\ Ω
+
+δ2 ∇wh · ∇ ˆv d( D \ Ω) = 0.
+
+Thus, the δ2 contribution combines additively with γ in the interior bound, yielding the term ∥δ2∥L∞(Ω) inside the second line of (27). 
+
+Term (B.11) : δ3 mass perturbation. By the Cauchy–Schwarz inequality, 
+
+∣∣∣∣∣∫
+
+> D
+
+δ3 wh ˆv dD
+
+∣∣∣∣∣ ≤ ∥ δ3∥L∞(D) ∥wh∥L2(D) ∥ˆv∥L2(D)
+
+≤ ∥ δ3∥L∞(D) ∥ηh/Φ∥L2(D) ∥ˆv∥L2(D).
+
+Dividing by ∥ηh∥ˆγ, taking the supremum over ηh, we obtain the fourth term of (27). 
+
+Term (B.12) : δ1 right-hand side perturbation.. 
+
+∣∣∣∣∣∫
+
+> D
+
+δ1 wh ˜b dD
+
+∣∣∣∣∣ ≤ ∥ δ1∥L∞(D) ∥wh∥L2(D) ∥˜b∥L2(D)
+
+≤ ∥ δ1∥L∞(D) ∥ηh/Φ∥L2(D) ∥˜b∥L2(D).
+
+Combining the approximation error and the four consistency error contributions into the Strang decomposi-tion (B.7) and converting from ∥ · ∥ ˆγ to ∥ · ∥ γ via (B.6), we obtain the error estimate given in Eq. (27). □
+
+References 
+
+[1] Thomas JR Hughes. The finite element method: linear static and dynamic finite element analysis . Courier Corporation, 2003. [2] T. J. R. Hughes, J. A. Cottrell, and Y. Bazilevs. Isogeometric analysis: CAD, finite elements, NURBS, exact geometry and mesh refinement. Computer Methods in Applied Mechanics and Engineering , 194(39–41):4135– 4195, 2005. doi: 10.1016 /j.cma.2004.10.008. [3] Dominik Schillinger and Martin Ruess. The finite cell method: A review in the context of higher-order structural analysis of CAD and image-based geometric models. Archives of Computational Methods in Engineering , 22 (3):391–455, 2015. doi: 10.1007 /s11831-014-9115-y. [4] Sourav Saha, Jiachen Guo, Chanwook Park, Reza Batley, and Wing Kam Liu. E ffi cient calibration strategy for crystal plasticity constitutive law to model additively manufactured alloys. Integrating Materials and Manufac-turing Innovation , 14(4):679–694, 2025. 22 [5] Jamshid Parvizian, Alexander Düster, and Ernst Rank. Finite cell method: h- and p-extension for embed-ded domain problems in solid mechanics. Computational Mechanics , 41(1):121–133, 2007. doi: 10.1007 /
+
+s00466-007-0173-y. [6] A. Düster, J. Parvizian, Z. Yang, and E. Rank. The finite cell method for three-dimensional problems of solid mechanics. Computer Methods in Applied Mechanics and Engineering , 197(45–48):3768–3782, 2008. doi: 10.1016 /j.cma.2008.02.036. [7] J. Nitsche. Über ein variationsprinzip zur lösung von dirichlet-problemen bei verwendung von teilräumen, die keinen randbedingungen unterworfen sind. Abhandlungen aus dem Mathematischen Seminar der Universität Hamburg , 36(1):9–15, 1971. doi: 10.1007 /BF02995904. [8] Anand Embar, John Dolbow, and Isaac Harari. Imposing Dirichlet boundary conditions with Nitsche’s method and spline-based finite elements. International Journal for Numerical Methods in Engineering , 83(7):877–898, 2010. doi: 10.1002 /nme.2863. [9] Erik Burman and Peter Hansbo. Fictitious domain finite element methods using cut elements: I. A stabilized Lagrange multiplier method. Computer Methods in Applied Mechanics and Engineering , 199(41–44):2680– 2686, 2010. doi: 10.1016 /j.cma.2010.05.011. [10] Erik Burman and Peter Hansbo. Fictitious domain finite element methods using cut elements: II. A stabilized Nitsche method. Applied Numerical Mathematics , 62(4):328–341, 2012. doi: 10.1016 /j.apnum.2011.01.008. [11] Michel Duprez and Alexei Lozinski. ϕ-FEM: A finite element method on domains defined by level-sets. SIAM Journal on Numerical Analysis , 58(2):1008–1028, 2020. doi: 10.1137 /19M1248947. [12] Michel Duprez, Vanessa Lleras, and Alexei Lozinski. ϕ-FEM: An optimally convergent and easily imple-mentable immersed boundary method for particulate flows and Stokes equations. ESAIM: Mathematical Mod-elling and Numerical Analysis , 57(3):1111–1142, 2023. doi: 10.1051 /m2an /2023010. [13] A. Main and G. Scovazzi. The shifted boundary method for embedded domain computations. Part I: Poisson and Stokes problems. Journal of Computational Physics , 372:972–995, 2018. doi: 10.1016 /j.jcp.2017.10.026. [14] A. Ammar, B. Mokdad, F. Chinesta, and R. Keunings. A new family of solvers for some classes of multidi-mensional partial di ff erential equations encountered in kinetic theory modeling of complex fluids. Journal of Non-Newtonian Fluid Mechanics , 139(3):153–176, 2006. doi: 10.1016 /j.jnnfm.2006.07.007. [15] Francisco Chinesta, Amine Ammar, and Elías Cueto. Recent advances and new challenges in the use of the proper generalized decomposition for solving multidimensional models. Archives of Computational Methods in Engineering , 17(4):327–350, 2010. doi: 10.1007 /s11831-010-9049-y. [16] Ye Lu, Hengyang Li, Lei Zhang, Chanwook Park, Satyajit Mojumder, Stefan Knapik, Zhongsheng Sang, Shao-qiang Tang, Daniel W. Apley, Gregory J. Wagner, and Wing Kam Liu. Convolution hierarchical deep-learning neural networks (C-HiDeNN): finite elements, isogeometric analysis, tensor decomposition, and beyond. Com-putational Mechanics , 72(2):333–362, 2023. doi: 10.1007 /s00466-023-02336-5. [17] Jiachen Guo, Chanwook Park, Xiaoyu Xie, Zhongsheng Sang, Gregory J. Wagner, and Wing Kam Liu. Convo-lutional hierarchical deep learning neural networks-tensor decomposition (C-HiDeNN-TD): a scalable surrogate modeling approach for large-scale physical systems, 2024. arXiv:2409.00329. [18] Jiachen Guo, Gino Domel, Chanwook Park, Hantao Zhang, Ozgur Can Gumus, Ye Lu, Gregory J. Wagner, Dong Qian, Jian Cao, Thomas J. R. Hughes, and Wing Kam Liu. Tensor-decomposition-based a priori surrogate (TAPS) modeling for ultra large-scale simulations. Computer Methods in Applied Mechanics and Engineering ,444:118101, 2025. doi: 10.1016 /j.cma.2025.118101. [19] X. Li, J. Lowengrub, A. Rätz, and A. Voigt. Solving PDEs in complex geometries: a di ff use domain approach. 
+
+Communications in Mathematical Sciences , 7(1):81–107, 2009. doi: 10.4310 /CMS.2009.v7.n1.a4. 23 [20] Martin Burger, Ole Løseth Elvetun, and Matthias Schlottbom. Analysis of the di ff use domain method for second order elliptic boundary value problems. Foundations of Computational Mathematics , 17(3):627–674, 2017. doi: 10.1007 /s10208-015-9292-6. [21] Jeong Joon Park, Peter Florence, Julian Straub, Richard Newcombe, and Steven Lovegrove. DeepSDF: Learning continuous signed distance functions for shape representation. In Proceedings of the IEEE /CVF Conference on Computer Vision and Pattern Recognition , pages 165–174, 2019. [22] N Sukumar and Ankit Srivastava. Exact imposition of boundary conditions with distance functions in physics-informed deep neural networks. Computer Methods in Applied Mechanics and Engineering , 389:114333, 2022. [23] Chanwook Park, Ye Lu, Sourav Saha, Tianju Xue, Jiachen Guo, Satyajit Mojumder, Daniel W Apley, Gregory J Wagner, and Wing Kam Liu. Convolution hierarchical deep-learning neural network (c-hidenn) with graphics processing unit (gpu) acceleration. Computational Mechanics , 72(2):383–409, 2023. [24] Lam H Nguyen, Stein KF Stoter, Martin Ruess, Manuel A Sanchez Uribe, and Dominik Schillinger. The di ff use nitsche method: Dirichlet constraints on phase-field boundaries. International Journal for Numerical Methods in Engineering , 113(4):601–633, 2018. [25] Elias M Stein, M Bachvan, and A Somen. Intégrales singulières et fonctions di ff érentiables de plusieurs vari-ables . Fac. des Sciences, 1967. [26] Elias M Stein. Singular integrals and di ff erentiability properties of functions . Number 30. Princeton university press, 1970. [27] James A Sethian et al. Level set methods and fast marching methods , volume 98. Cambridge Cambridge UP, 1999. 24
