@@ -1,0 +1,568 @@
+Title: Extended pseudo-spectral physics-informed neural networks for phase-field models
+
+URL Source: https://arxiv.org/pdf/2606.24660v1
+
+Published Time: Wed, 24 Jun 2026 01:08:40 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+EXTENDED PSEUDO-SPECTRAL PHYSICS-INFORMED NEURAL NETWORKS FOR PHASE-FIELD MODELS ∗
+
+CALLUM MARSH † , RADEK ERBAN † , AND ANDREAS M ¨UNCH †
+
+Abstract. Phase-field models play a central role in the continuum description of phase sep-aration, in which the bulk free-energy density and the interfacial thickness parameter determine pattern formation and microstructural evolution. In practice, these constitutive quantities are rarely known a priori and must be inferred from limited dynamical observations. In this work, an extended pseudo-spectral physics-informed neural network (ESPINN) framework is developed for the inverse identification of phase-field models from transient snapshot data. It enables the simultaneous recov-ery of both the bulk chemical potential and unknown gradient coefficients. Numerical experiments on the one-dimensional Cahn–Hilliard equation demonstrate accurate and statistically stable recon-struction in the noiseless regime, with substantial constitutive information recoverable from even a single snapshot pair. In the presence of noise, reconstruction accuracy degrades gracefully, and increasing the number of snapshots improves robustness by reducing variance across runs. These re-sults establish ESPINN as a data-efficient and physically consistent approach for learning free-energy structure in continuum models of phase separation. 
+
+Key words. phase separation, phase-field models, Cahn-Hilliard equation, inverse problem, free-energy identification, physics-informed neural networks, pseudo-spectral methods 
+
+AMS subject classifications. 35R30, 68T07, 35K55 
+
+1. Introduction. Phase separation is a fundamental physical mechanism under-lying pattern formation in a wide range of material systems. Classic examples include alloys [21, 11] and polymer mixtures [26, 2], where phase separation has been stud-ied extensively using continuum models such as the Cahn-Hilliard equation [4, 5, 16]. More recently, liquid-liquid phase separation has emerged as a key organising principle in cell biology, where it has been proposed as a mechanism for the formation of mem-braneless organelles composed of proteins and nucleic acids [3]. In these biological systems, the spatial organisation, internal microstructure, and dynamical behaviour of the resulting phases are closely linked to cellular function. A central theoretical framework for describing phase separation across such sys-tems is provided by phase-field models. These models introduce using one or more continuous order parameters that evolve along a direction of descent of the free en-ergy functional. They can describe both spatially heterogeneous equilibrium states and the transient dynamics of phase separation. The Cahn-Hilliard model was intro-duced for non-uniform binary mixtures and has since been extended to a wide variety of settings [4, 5, 16]. Related models include the Flory-Huggins type free energies for polymer solutions [10, 17], as well as extensions that include additional physical effects such as steric constraints or long-range interactions, for example, in Ohta-Kawasaki models for diblock copolymers [22, 18]. In biological contexts, Flory-Huggins poly-mer solution models and their generalisations, including charged mixture models such as the Voorn-Overbeek model [23], have provided an important theoretical basis for studying biomolecular phase separation. 
+
+> ∗
+
+Submitted to the SIAM Journal on Scientific Computing (June 24, 2026) 
+
+Funding: This paper was funded by The Martingale Foundation. For the purpose of open access, the author has applied a CC BY public copyright licence to any author accepted manuscript arising from this submission. 
+
+> †
+
+Mathematical Institute, University of Oxford, Radcliffe Observatory Quarter, Woodstock Road, Oxford OX2 6GG, United Kingdom (callum.marsh@maths.ox.ac.uk, radek.erban@maths.ox.ac.uk, andreas.muench@maths.ox.ac.uk). 1
+
+> arXiv:2606.24660v1 [q-bio.QM] 23 Jun 2026
+
+2 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+Despite their widespread use, the predictive capability of phase field models de-pends critically on the specification of constitutive inputs, in particular the homo-geneous (or bulk) free energy density, the interfacial thickness parameter and the mobility coefficient. Among these, the homogeneous free energy density and the in-terfacial thickness parameter play a central role in determining phase behaviour and microstructure, and will therefore form the primary focus of this paper. These quanti-ties encode information about microscopic interactions and ultimately determine the locations of phase boundaries, interfacial structures, and characteristic length scales of the emerging macrostructure. In materials science, free energy functions are often inferred from extensive experimental measurements using approaches such as CAL-PHAD [27]. However, the effort required to acquire experimental data across the parameter space of interest is substantial or may be unavailable, for example, when designing materials. For biological macromolecules, free energy is highly sensitive to microscopic structure and varies with protein amino acid sequence. The problem of inferring free energy structure from simulation data or experimen-tal observations of phase evolution has motivated a broad range of inverse approaches. Classical methods based on optimisation and inverse-problem theory have been ap-plied to phase-field models with varying degrees of success. Zhao et al. [30, 29] identify the bulk chemical potential (the derivative of the homogeneous free energy density) and non-linear mobility in Cahn–Hilliard and Allen–Cahn models from a small num-ber of noisy snapshots of pattern evolution. In that setting, treating the mobility, bulk chemical potential and interfacial thickness parameter as unknowns leads to in-herent non-identifiability of the inverse problem. Due to scaling degeneracy, these are not uniquely recovered independently. Only particular combinations that determine the dynamics are identifiable. In the present work, we fix the mobility and focus on identifying the remaining constitutive quantities, which can be inferred from transient dynamics but are not recoverable from equilibrium profiles alone, since a rescaling of space can eliminate the interfacial thickness parameter. Related optimisation-based inference approaches are studied by Glasner [13], who considers parameter identifica-tion for parabolic partial differential equations (PDEs), including phase-field models for tri-phase diblock copolymer systems. Against this background, recent work has increasingly explored whether data-driven methods can be used to infer constitutive structure in phase-field models. Re-cently, attention has been directed towards using neural networks to learn the phase separation in material systems. This development has been driven in particular by the introduction of physics-informed neural networks (PINNs) by Raissi et al. [24]. In this framework, the governing physical laws, typically expressed as PDEs, are in-corporated directly into the training objective [8]. Raissi et al. [24] demonstrate the viability of this approach for both forward prediction of system dynamics and inverse identification of unknown model components from data. An example of the forward problem is provided by An et al. [1], who encode the density and chemical potential fields of a Cahn–Hilliard type model for a polymer blend within a neural network. By enforcing the governing equations and initial and boundary conditions through the loss function, the trained network can predict the subsequent evolution of the system. Compared to purely data-driven neural network approaches that aim to learn solu-tions directly from observations, PINNs retain explicit physical constraints, which can reduce data requirements and mitigate overfitting when training data are limited. An extension of the PINN framework to a spectral discretisation has led to the develop-ment of pseudo-spectral PINNs (SPINNs). Using this approach, Zhao [31] identified the bulk chemical potential for the Cahn–Hilliard and Allen–Cahn equations, similar ESPINNS FOR PHASE-FIELD MODELS 3to earlier inverse studies [30, 29], from noiseless simulation data, while fixing both the mobility and the interfacial thickness parameter a priori. In this paper, we present an extension to the SPINN method proposed by Zhao [31] for the inverse identification of constitutive quantities of a phase-field model from lim-ited observations of the evolving structure. We now assume that the coefficients of the gradient terms (linear or non-linear) are unknown. For the Cahn-Hilliard and Allen-Cahn equations, this amounts to an unknown interfacial thickness parameter 
+
+ε. In this paper, we extend the SPINN framework to learn all of these parameters, as well as the bulk chemical potential from dynamically evolving snapshot data. To this end, we perform a systematic numerical investigation of architectural choices, optimisation strategies, and, most importantly, the framework’s robustness to noise. The paper is organised as follows. In Section 2, we introduce phase-field models and highlight two key models: the Cahn-Hilliard equation and Allen-Cahn equation. In Section 3, we briefly cover multilayer perceptrons (MLPs), a scalar trainable pa-rameter, and previous work in PINNs before introducing the extended pseudo-spectral physics-informed neural networks (ESPINN) framework for retrieving the free energy function and physical parameters from seen data. In Section 4, we systematically assess how the ESPINN framework performs on smooth and noisy data, and investi-gate its sensitivity to architectural and optimisation hyper-parameters, including the learning rate. We finish in Section 5 by concluding that the ESPINN framework per-forms remarkably well on data that is not too noisy and is very flexible in architectural choices and optimisation strategies. We also discuss the limitations of the numerical tests and provide suggestions for further investigation. 
+
+2. Phase-field models. We consider phase-field models of the form (2.1) ∂ϕ ∂t = G δE δϕ , where ϕ = ϕ(x, t ), for x ∈ Ω and t ∈ [0 , T ] .δE/δϕ is the functional derivative of the Helmholtz free energy, E, with respect to the order parameter, ϕ and Ω ⊂ Rd with spatial dimension d while G is a differential operator. The Helmholtz free energy has the form 
+
+E =
+
+Z
+
+> Ω
+
+ ε2
+
+2 |∇ ϕ|2 + F (ϕ)
+
+
+
+dx ,
+
+where the first term is the gradient energy (penalising sharp spatial variations using an interfacial thickness parameter ε) and F (ϕ) is the homogeneous free energy density. Therefore, we have that 
+
+δE δϕ = f (ϕ) − ε2∆ϕ, 
+
+with f (ϕ) = F ′(ϕ) being the bulk chemical potential. In our illustrative simulations, the homogeneous free energy density F (ϕ) will be chosen to be either a symmetric double well (polynomial free energy) (2.2) F (ϕ) = (ϕ2 − 1) 2
+
+4 ,
+
+or logarithmic free energy [4] (2.3) F (ϕ) = ϕ log( ϕ) + (1 − ϕ) log(1 − ϕ) + 5 ϕ (1 − ϕ)2 ,4 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+with both choices (2.2) and (2.3) having two stable equilibrium phases. The homo-geneous free energy (2.2) has two minima at ±1 and a maximum at ϕ = 0 while the logarithmic form (2.3) has a maximum at ϕ = 0 .5 with minima at ϕ ≈ 0.145 and 
+
+ϕ ≈ 0.855. Possibly the simplest example of (2.1) is the Allen-Cahn equation in which we let 
+
+G = −M with constant mobility M > 0, resulting in (2.4) ∂ϕ ∂t = M  ε2∆ϕ − f (ϕ) .
+
+This is a fundamental phase-field model used to describe the evolution of interfaces in systems that undergo phase transitions, such as the transformation between ice and liquid water. In this framework, the state of the material is represented by an order parameter, denoted here by ϕ(x, t ), which serves as a continuous indicator of the local phase. In the case of ice-water transitions, if using the polynomial free energy (2.2) as a modelling assumption, we could assign ϕ = 1 to denote regions of solid ice and 
+
+ϕ = −1 to regions of liquid water. The intermediate values −1 < ϕ < 1 correspond to the diffuse interface, where the material undergoes a continuous transition between the two phases. Since our research focuses on phase separation, we will primarily study the Cahn-Hilliard equation. In this case, we have G = M ∆ in equation (2.1), with M > 0 a constant, and so (2.5) ∂ϕ ∂t = M ∆ f (ϕ) − ε2∆ϕ .
+
+Using the Cahn-Hilliard equation, we provide a thermodynamically consistent frame-work for describing phase separation in systems where the order parameter is con-served, such as the segregation of biomolecular components within a biological cell. In this context, the order parameter ϕ(x, t ) represents a normalised local concen-tration difference of two chemical species or phases, say chemical I and chemical II. Essentially, in the case of assuming a polynomial free energy (2.2), the regions where 
+
+ϕ = 1 represent regions populated solely by chemical I, while regions with ϕ = −1represent regions populated solely by chemical II. From an initially perturbed homoge-nous mixture, the temporal evolution of ϕ follows the Cahn-Hilliard equation (2.5), which captures how small fluctuations in the concentration can spontaneously amplify when the mixture is thermodynamically unstable. This leads to phase separation into dense regions of chemical I and chemical II, respectively. Both the Allen-Cahn equation (2.4) and the Cahn-Hilliard equation (2.5) can be cast within a unified gradient-flow framework. Recall that the evolution of the order parameter ϕ(x, t ) is given by (2.1). Assuming that G is self-adjoint and negative semidefinite and imposing the vanishing boundary contributions, the time derivative of the Helmholtz free energy satisfies dE
+
+dt =
+
+Z
+
+> Ω
+
+δE δϕ G δE δϕ dx ≤ 0 .
+
+Stationary states occur when we have equality, which corresponds to δE/δϕ ≡ 0 for the Allen-Cahn equation (2.4) and ∇δE/δϕ ≡ 0 for the Cahn-Hilliard equation (2.5). Figure 1 shows snapshots from the time evolution of one-dimensional simula-tions (i.e., d = 1 and Ω = [0 , 1]) of the Allen-Cahn equation (2.4) and the Cahn-Hilliard (2.5) equation, starting from identical initial conditions. Although the two models share the same free-energy functional, their dynamics differ markedly. First, ESPINNS FOR PHASE-FIELD MODELS 5 
+
+> (a) Allen-Cahn (b) Cahn-Hilliard
+
+Fig. 1: Time evolution of the Allen-Cahn equation (2 .4) and Cahn-Hilliard equa-tion (2 .5) from identical initial conditions in one spatial dimension, i.e. we have 
+
+d = 1 with Ω = [0 , 1] . Both simulations use time step dt = 10 −4, space discretization 
+
+dx = 10 −2, ε = 0 .05 and f (ϕ) = ϕ3 − ϕ.
+
+the Allen-Cahn solution evolves more slowly than the Cahn-Hilliard solution. Since Allen–Cahn dynamics do not conserve mass, interfaces are not constrained to persist, and the solution gradually relaxes toward a single uniform phase without the forma-tion of sharp transition layers, as shown in Figure 1a. In contrast, the Cahn–Hilliard solution undergoes rapid phase separation, as evidenced by the emergence of steep in-terfaces and extended plateaus near the stable states in Figure 1b. Mass conservation enforces phase coexistence, while gradients in the chemical potential drive sustained interfacial motion and coarsening. Consequently, the Cahn–Hilliard dynamics ex-hibit a more pronounced spatial structure and faster evolution than the Allen–Cahn dynamics over the same time interval. 
+
+3. Extended SPINN framework. In this section, we first introduce the back-ground theory of feed-forward neural networks, i.e. networks that map inputs to outputs by propagating information through a sequence of weighted layers without feedback or recurrence [14]. We then present the ESPINN framework in Section 3.4. 
+
+3.1. Multilayer perceptrons (MLPs). MLPs are feed-forward neural net-works where adjacent layers are fully connected, each with non-linear activation func-tions. Notably, these neurons are organised into layers, comprising an input layer, hidden layers, and an output layer. The depth of an MLP is defined as the number of hidden layers. Given an input x ∈ Rn1 , then, for each subsequent layer, we define 
+
+a[ℓ] ∈ Rnℓ as the output of the ℓ-th layer where nℓ is the number of neurons in such layer [15]. More formally, an L-layer MLP is defined by 
+
+a[1] = x ∈ Rn1 ,(3.1) 
+
+a[ℓ] = ω[ℓ]
+
+W [ℓ]a[ℓ−1] + b[ℓ]
+
+∈ Rnℓ , ℓ = 2 , 3, · · · L, (3.2) where W [ℓ] ∈ Rnℓ−1×nℓ and b[ℓ] are the weights and biases of the ℓ-th layer, respec-tively, and ω[ℓ] : Rnℓ → Rnℓ is given by (3.3) ω[ℓ](z) = [ ω(z1), ω (z2), . . . , ω (znℓ )] , for z = [ z1, z 2, . . . , z nℓ ] .6 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+(Input layer) 
+
+a[1] 
+
+x
+
+a[2] a[3] 
+
+(Output layer) 
+
+a[4] 
+
+ˆy
+
+W [2] , b[2] 
+
+W [3] , b[3] 
+
+W [4] , b[4] 
+
+a[ℓ] = ω[ℓ]
+
+
+
+W [ℓ]a[ℓ−1] + b[ℓ]
+
+
+
+, ℓ = 2 , 3, 4. 
+
+Fig. 2: Schematic example of an MLP with a single input-output and two hidden layers with five neurons in each layer. 
+
+ω : R → R is the activation function. In our computational explorations, we test the following activation functions ω:sigmoid( z) = σ(z) = ez
+
+1 + ez , Tanh( z) = ez − e−z
+
+ez + e−z ,
+
+ReLU( z) = 
+
+(
+
+z, z > 0,
+
+0, z ≤ 0, SiLU( z) = z · σ(z).
+
+ELU( z) = 
+
+(
+
+z, z > 0,ez − 1, z ≤ 0, GELU( z) = z
+
+2
+
+
+
+1 + erf 
+
+ z
+
+√2
+
+ 
+
+.
+
+3.2. Trainable scalar parameter. As shown in Figure 3, to represent an un-known coefficient γ ∈ R, we parametrise it by a single trainable scalar θ and a sigmoid based reparametrisation that enforces the bounds γlb and γub :(3.4) γ = γlb + ( γub − γlb )σ(θ).
+
+The coefficient θγ is optimised concurrently with the network for f (ϕ). This joint opti-misation allows the parameter to be learned through the same gradient-based updates that drive the training of f (ϕ), ensuring that both components adapt consistently to the data. The derivative that the optimiser sees is 
+
+dγ dθ = ( γub − γlb )σ(θ)(1 − σ(θ)) so the gradient magnitudes are proportional to the interval width ( γub − γlb ) and are largest when σ(θ) ≈ 0.5. In practice, we start with a physically reasonable prior guess 
+
+γ0. From the mapping 
+
+γ0 = γlb + ( γub − γlb )σ(θ0),ESPINNS FOR PHASE-FIELD MODELS 7
+
+γlb 
+
+γub 
+
+γ0
+
+θ
+
+γ
+
+Fig. 3: Sigmoid reparameterisation used for bounded scalar parameters. Initialisation at θ0 = 0 places the parameter in the linear regime of the sigmoid, ensuring non-vanishing gradients during early optimisation. 
+
+we solve for the initial θ0:
+
+θ0 = ln p
+
+1 − p where p = γ0 − γlb 
+
+γub − γlb 
+
+.
+
+For our simulations, we choose γ0 to lie in the middle of the range [ γlb , γ ub ]. We therefore have p = 0 .5 and so θ0 = 0, precisely the linear region of the sigmoid function giving strong, non-vanishing gradients. 
+
+3.3. Physics-informed Neural Networks. The Physics-Informed Neural Net-work (PINN) framework, initially proposed by Raissi et al. [24], provides a flexible, mesh-free approach to solving PDEs by embedding the underlying physical laws di-rectly into the loss function of a neural network. In this approach, a deep neural network uΘ(x, t ) is parametrised by weights Θ and serves as a surrogate model for the unknown solution of the governing equation. The training process of a PINN involves minimising a composite loss function that balances the network’s accuracy on known data with its adherence to the physical model. For a PDE of the general form 
+
+ut + N [u] = 0 , t ∈ [0 , T ] x ∈ Ω,
+
+with initial and boundary conditions 
+
+u(x, t ) = g(x) x ∈ Ω
+
+B[u] = 0 , t ∈ [0 , T ] x ∈ ∂Ω,
+
+the unknown solution u(x, t ) is represented by the neural network uΘ(x, t ), where Θ represents the hyper parameters of the network. Using weighted loss function formulation [6, 7, 28], the goal is to train the subsequent model by minimising 
+
+L(Θ) = λic Lic (Θ) + λbc Lbc (Θ) + λr Lr (Θ) ,
+
+where 
+
+Lic (Θ) = 1
+
+Nic Nic X
+
+> i=1
+
+uΘ(xiic , 0) − g(xiic ) 2 ,8 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+Lbc (Θ) = 1
+
+Nbc Nbc X
+
+> i=1
+
+B[uΘ]( xibc , t ibc ) 2 ,
+
+and 
+
+Lr (Θ) = 1
+
+NrNrX
+
+> i=1
+
+∂uΘ
+
+∂t (xir , t ir ) + N [uΘ]( xir , t ir )
+
+> 2
+
+.
+
+The latter is computed by applying automatic differentiation to the neural net-work output, thereby enabling efficient evaluation of derivatives of arbitrary order. PINNs are trained using standard stochastic gradient descent or adaptive optimisa-tion algorithms such as Adam. Rathore et al. [25] showed that the combination of Adam training followed by the quasi-Newton method L-BFGS was found to be supe-rior compared to using Adam or L-BFGS alone. Collocation points are sampled in the domain to evaluate the PDE residual, while separate points on the boundary and initial surfaces are used to enforce the boundary and initial conditions. This approach allows PINNs to generalise across complex geometries and high-dimensional problems without requiring an explicit mesh or discretisation scheme. Zhao [31] introduced the SPINN framework, designed to directly infer the bulk chemical potential f (ϕ) of phase-field models from image data, without the need for densely sampled spatio-temporal datasets. The method combines the approximation capabilities of PINNs with the computational efficiency of pseudo-spectral discretisa-tion schemes. A significant feature is that instead of using a neural network to approx-imate the field variables, the non-linear bulk chemical potential f (ϕ) is approximated by a neural network. A limitation of Zhao’s method is that model parameters, such as the interfacial thickness parameter, must be known to apply it. We now propose a Pseudo-spectral framework in which these physical parameters are unknown and can be simultaneously learned with the free energy function. 
+
+3.4. Extended SPINN methodology. We now propose a problem in which we have the data from a phase-field simulation. We assume we know the general form of the data-generating equation with constant mobility. Beyond that, the free energy function and other physical parameters are unknown. Now, our goal is to discover the bulk chemical potential f (ϕ) and parameters associated with the derivatives of ϕ
+
+within a phase-field system. This problem arose from the goal of deriving constitutive properties of coarse-grained systems from stochastic systems that exhibit behaviour similar to that of a phase-field model. In these systems, we do not know the associ-ated parameters and are essentially proposing that they describe the same underlying physics as a phase-field model. Consider a general phase-field PDE problem for ϕ(x, t ) of the form (3.5) ∂ϕ ∂t = G
+
+X
+
+> j
+
+μj gj (ϕ, ∇ϕ, ∆ϕ) + f (ϕ)
+
+ , for ( x, t ) ∈ Ω × (0 , T ]with periodic boundary conditions. Here, the operators G and gj are known, but the function f and parameters μj are unknown. Let Φ be the approximation of ϕ on a discrete spatial equidistant grid with a fixed number of grid points. Then, the collected data is in the form (3.6) D =
+
+n
+
+(Φ (1)  
+
+> i
+
+, Φ(2)  
+
+> i
+
+, (∆ t)i
+
+oNi=1 
+
+⊂ Ω × Ω × R+,ESPINNS FOR PHASE-FIELD MODELS 9where we have N pairs of snapshots (Φ (1)  
+
+> i
+
+, Φ(2)  
+
+> i
+
+) each separated with a time of (∆ t)i.Similarly, we let Gh be a matrix operator that approximates the operator G on the discrete spatial equidistant grid. By splitting the μj gj terms, we write the spatially discrete form as 
+
+∂Φ
+
+∂t = Gh
+
+X
+
+> j
+
+αj Lj (Φ) + X
+
+> j
+
+βj Nj (Φ) + f (Φ) 
+
+ ,
+
+where Lj (Φ) are linear terms and Nj (Φ) are the rest. αj and βj represent the pa-rameter coefficients of the linear operators and non-linear terms, respectively. The goal of this section is to use the data of the form (3.6) to find the function f and the values of the parameters αj and βj . To do this, we require a loss function for training the neural networks. For one time step, ∆ t, we use the semi-implicit linear stabilised scheme Φt+∆ t − Φt
+
+∆t = Gh
+
+X
+
+> j
+
+αj Lj (Φ t+∆ t) + X
+
+> j
+
+βj Nj (Φ t) + f (Φ t) + C(Φ t+∆ t − Φt)
+
+ .
+
+Therefore, our time-stepping scheme looks as follows Φt+∆ t =
+
+1 − ∆t Gh
+
+C + X
+
+> j
+
+αi Lj
+
+
+
+> −1
+
+Φt + ∆ t Gh
+
+X
+
+> j
+
+βj Nj (Φ t) + f (Φ t) − CΦt
+
+ .
+
+We define our function and parameter estimators as 
+
+Nf : Φ → N f (Φ; θf ), Nαj (θαj ), Nβj (θβj ),
+
+where Nf (Φ; θf ) is an MLP (3.1)–(3.3) meant to reconstruct f (Φ) while each Nαj (θαj )and Nβj (θβj ) are single parameter estimators (3.4) for the corresponding αj or βj . θk
+
+represents the free parameters of the corresponding model neural network. We define the extended linear SPINN loss function by: Given the data (Φ (1) , ∆t), we define 
+
+NR : (Φ (1) , ∆t) →
+
+1 − ∆tGh
+
+C + X
+
+> j
+
+Nαj (θαj ) Lj
+
+
+
+> −1
+
+Φ(1) + ∆ tGh
+
+X
+
+> j
+
+Nβj (θβj ) Nj (Φ (1) ) + Nf (Φ (1) ; θf ) − CΦt
+
+ .
+
+Then the loss function is defined by (3.7) L(Θ) = C0
+
+N
+
+> N
+
+X
+
+> i=1
+
+∥Φ(2)  
+
+> i
+
+− N R(Φ (1)  
+
+> i
+
+, (∆ t)i ; Θ) ∥22,10 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+where Θ = {θf , θ α1 , · · · , θ β1 , · · · } is the set of all trainable parameters in all MLPs (3.1)–(3.3) and trainable scalar parameters (3.4) in NR. By minimising this loss func-tion, we can identify f (Φ) by the neural network Nf (Φ; θj ) and parameters, αj and 
+
+βj , by the estimators Nαj (θαj ) and Nβj (θβj ), respectively. All networks/estimators are trained simultaneously. The parameter C0 is a key hyperparameter that prevents our loss function from reducing to a point where vanishing gradients prevent further improvement. The choice of C0 is not unique, does not alter the minimiser of the loss, and serves primarily to improve numerical conditioning. In practice, we adjust 
+
+C0 such that the final loss after training is approximately O(10 −4) by performing a small initial test run. The adjustable nature of C0 allows us to optimise the training procedure based on the noise observed in the data. A higher C0 is therefore used on smooth data, while a lower C0 is used on noisy data to reduce the risk of the training overfitting to the noise, especially in the reconstruction of f (ϕ). Our goal is to find a deterministic smooth f (ϕ) even in noisy data. We model the bulk chemical potential f using an MLP (as described in 3.1). For the approximation of the interfacial thickness parameter ε, we first define γ = ε2, i.e. the gradient coefficient, which is then parameterised by Nγ (θγ ), a single parameter estimator ( as described in 3.2). For smooth data, we train the networks using Adam [19] followed by L-BFGS [20], whereas for noisy data, we perform only Adam. 
+
+4. Cahn- Hilliard numerical experiments. To acquire the data, we simulate a 1D Cahn-Hilliard system using a linear semi-implicit pseudo-spectral time stepping method with x ∈ [0 , 1], ∆ x = 10 −2 and ∆ t = 10 −4 saving the state of Φ( x, t ) at each time step. We use an initial condition of Φ( x, 0) = c + δξ (x)where δ = 10 −4 with c = 0 for the polynomial free energy (2.2) and c = 0 .5 for the logarithmic free energy (2.3). ξ(x) is sampled from a uniform distribution in the range [ −1, 1] for each x ∈ [0 , 1]. We run this until the system has reached a stable equilibrium. We return to the phase-field models of the form 3.5 and let M = 1, since this adjusts the speed at which phase separation occurs (and so is somewhat arbitrary). We introduce the subscript h to denote the discrete spatial operator arising from the chosen spatial discretisation; in this case, we choose 100 equally spaced points in 
+
+x ∈ [0 , 1]. By discretising the equations and parametrising the gradient coefficient γ
+
+as Nγ (θγ ), we have that 
+
+X
+
+> j
+
+αj Lj (Φ) = −N γ (θγ ) · (∂xx Φ) h, X
+
+> j
+
+βj Nj (Φ) = 0 .
+
+while Gh = ( ∂xx )h. We used the stabilising term C = −2( ∂xx )h. The estimator and stabilising term, along with the the MLP Nf (Φ , θ f ), are then fed into the extended linear SPINN loss function (3.7) solved with a pseudo-spectral method and trained on 
+
+N random snapshot pairs from data in the form of 3.6 taken suitably after the initial random state has settled when the problem is in its dynamic stage. We tested the method on the bulk chemical potentials 
+
+f (ϕ) = ϕ3 − ϕ and f (ϕ) = log( ϕ) − log(1 − ϕ) + 52 − 5ϕ, 
+
+which are derivatives of the homogeneous free energies (2.2) and (2.3), respectively. For training, we used Adam for 20,000 epochs, followed by L-BFGS, given that the ESPINNS FOR PHASE-FIELD MODELS 11 data are smooth, with a maximum of 3,000 epochs. For our spatial and temporal parameters, we use dx = 0 .01 and dt = 10 −4. Due to the size of dx , we chose reasonable limits on the gradient coefficient γ of [γlb , γ ub ] = [10 −4, 0.1] .
+
+We report the mean and variance over 100 runs, each initialised with a different seed. For each run, the seed randomises the N snapshots used as the training data, the parameter initialisation Θ, and, in the case of noisy data, the noise applied to the data before training. Such randomisation was chosen to demonstrate the model’s robustness. The model is tested on ϕ values in the possible domain of the bulk chemical potential f (ϕ). A test run was first performed with C0 = 10 10 , which was then adjusted as necessary such that the final loss L ∼ O (10 −4). The training is then run using the adjusted C0. To find our overall errors, we first define the outputs of our trained neural network and parameter estimator as ˆf := Nf (Φ , θ f ), ˆε := 
+
+q
+
+Nγ (θγ ), Φ ∈ [a, b ],
+
+where [ a, b ] is our domain space. Furthermore, let the relative errors between the predicted ˆf and ˆ ε and that of the actual bulk chemical potential f and interfacial thickness parameter ε as 
+
+Ef := || ˆf − f || L2
+
+|| f || L2
+
+, Eε := |ˆε − ε|
+
+ε
+
+In Sections 4.1, 4.2 and 4.4, we trained the model with the neural network Nf
+
+having 2 layers of 20 neurons each with a SiLU activation function. In Section 4.3, we perform extensive testing of the activation functions described in Section 3.1 with varying widths and layers to the neural network Nf .
+
+4.1. Application on noiseless data. Due to the lack of stochasticity, we found that using a large loss function multiplier of C0 = 10 16 to be optimal. Once Adam has brought the parameters into a suitable basin, the subsequent application of L-BFGS significantly accelerates convergence and refines the solution. In the absence of noise, the L-BFGS stage is particularly effective, as it exploits the smoothness of the objective landscape to achieve rapid and precise convergence to a low-residual solution. Remarkably, even with only a single snapshot pair ( N = 1), the predicted chemical potential already closely matches the true function with an almost perfect prediction for the interfacial width parameter. The qualitative structure of f (ϕ), including the location of extrema and overall curvature, is recovered. The small shaded regions on either side of the ensemble mean indicate that some variability remains across randomly selected points and initialisations. Increasing to only two snapshot pairs (N = 2) leads to a tighter concentration of inferred ˆf (ϕ) around f (ϕ) such that there is no longer any visible variance in the reconstruction. The associated estimates for the interfacial thickness parameter ε remain closely centred around the true value. These results suggest that substantial constitutive information is already encoded in even a single evolutionary step and that the Extended SPINN framework can use this to accurately and stably recover the functional and scalar constitutive compo-nents. The additional snapshot pair primarily improves statistical stability rather than correcting any systemic bias. 12 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+Fig. 4: Bulk chemical potential predictions from 100 seeds on Cahn-Hilliard data for 
+
+N = 1 , 2. The upper panel corresponds to the polynomial free energy (2 .2) and the lower panel to the logarithmic free energy (2 .3) .
+
+Fig. 5: Scatter graph showing the errors Ef and Eε from 100 seeds for various N . The left panel corresponds to the polynomial free energy (2 .2) and the right panel to the logarithmix free energy (2 .3) . The red line is the best fit solution of all points, while the blue line represents the best fit solution of the 40 points with the largest Eε/E f .
+
+Figure 5 quantifies the reconstruction accuracy across the 100 independent train-ing runs by showing the joint distribution of the relative L2 error in the bulk chemical potential, Ef , and the relative error in the interfacial thickness parameter, Eε, for varying numbers of snapshot pairs N . Across both models, the method performs reliably even in low-data regimes. For N = 1, a substantial proportion of runs al-ESPINNS FOR PHASE-FIELD MODELS 13 
+
+Fig. 6: Bar charts showing the errors Ef and Eε from 100 seeds as we increase N .The left panel corresponds to the polynomial free energy (2 .2) and the right panel to the logarithmic free energy (2 .3) .
+
+ready achieve small errors in both Ef and Eε, confirming that the extended SPINN framework can recover accurate constitutive information from minimal temporal in-put. As N increases, the distribution of errors contracts markedly and shifts towards the lower-left corner of the plots, demonstrating systematic improvement in both the functional and parametric reconstruction. The reduction in spread with increasing N
+
+indicates improved robustness with respect to the data points chosen, initialisation of the bulk free energy network and general optimisation variability up to N = 64. In particular, the variance across seeds decreased significantly for larger N , while the mean error continues to decline. The behaviour is consistent across both free energy models. Figure 6 initially shows that reconstruction accuracy improves substantially and variance decreases as more data points are added. However, increasing the number of data points beyond N = 64 does not yield significant improvements in reconstruction quality. This suggests a limit on the number of additional data points required to achieve our best possible results. Overall, these results demonstrate that the proposed method achieves accurate and stable recovery of both the bulk chemical potential and interfacial thickness parameter on noiseless data, with performance improving predictably as additional snapshot information is provided. 
+
+4.2. Application on noisy data. To assess robustness, we next trained the model on noisy data. We introduce multiplicative noise to the data pre-training, where noise for each spatio-temporal data point is sampled from the uniform distri-bution [ −δL, δ L]. Note that, in contrast to the noiseless experiments, the optimisation strategy was modified for the noisy data regime. When observational noise is present, aggressively scaling the loss can amplify fluctuations in the residual and encourage overfitting to noise rather than recovery of the underlying constitutive structure. For this reason, we employed smaller loss multipliers specified, C0, in Figure 9, thereby moderating gradient magnitudes and reducing sensitivity to stochastic perturbations in the data. Furthermore, we did not apply a subsequent L-BFGS refinement stage. While L-BFGS is highly effective for smooth, well-conditioned objectives, its quasi-Newton updates can become unstable or overly sensitive to noise, leading to overfitting and degraded results. Instead, we relied solely on Adam, which provides more robust stochastic updates and implicitly regularises the optimisation trajectory. These ad-justments are made to ensure that the learned bulk chemical potential and interfacial 14 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+Fig. 7: Scatter graphs showing the errors Ef and Eε from 100 seeds for various N
+
+from data with applied noise of amplitude δL = 10 −3 and C0 = 10 3. The left graph shows results corresponding to the polynomial free energy (2 .2) , while the right graph shows results for the logarithmic free energy (2 .3) . The red line is the best fit solution of all points, while the blue line represents the best fit solution of the 40 points with the largest Eε/E f .
+
+Fig. 8: Bar charts showing the errors Ef and Eε from 100 seeds as we increase N
+
+trained on data with δL = 10 −3. The left panel corresponds to the polynomial free energy (2 .2) and the right panel to the logarithmic free energy (2 .3) .
+
+thickness parameter reflect the dominant deterministic structure of the data rather than fitting to high-frequency noise components. Figure 7 shows the joint distribution of relative errors Ef and Eε across 100 independent training runs when a multiplicative noise amplitude of δL = 10 −3 is added to the data. The loss multiplier is reduced to C0 = 10 3, and optimisation is performed using Adam alone. As expected, the errors Ef and Eε are significantly higher than in the noiseless case. On an absolute scale, the spread in errors across seeds is more pronounced. However, after adjusting for scale, we observe a similar spread to that in the noiseless case. For small N , the errors in both bulk chemical potential and the interfacial thickness parameter exhibit poor reconstruction (greater than O(1) errors for N = 1) and a substantial variability. This shows that, unlike the noiseless case, limited noisy data impairs the method’s ability to accurately and consistently reconstruct the free energy function and the interfacial thickness parameter. ESPINNS FOR PHASE-FIELD MODELS 15               
+
+> (a) δL= 10 −4,C0= 10 5(b) δL= 10 −3,C0= 10 3(c) δL= 10 −2,C0= 10 1
+
+Fig. 9: Bulk chemical potential predictions from 100 training runs on Cahn-Hilliard data with various noise levels and N = 16 . The first row corresponds to the polynomial bulk chemical potential (2 .2) , and the second row to the logarithmic bulk chemical potential (2 .3) .
+
+Nevertheless, the method remains stable: even in the presence of noise, a clear re-duction in both Ef and Eε is observed as N increases. The error clouds systematically shift to the lower-left region of the plots and become more concentrated for larger N ,demonstrating that additional snapshot pairs improve both accuracy and robustness. This is consistent with what we would expect for noisy data, since each snapshot pair contains both the deterministic dynamical information (which we seek) and stochastic perturbations. With only a few snapshot pairs, the optimisation process may partially fit these perturbations, leading to variance across seeds. As N increases, however, the influence of noise averages out across multiple temporal constraints, while the deter-ministic behaviour of the governing equations remains consistent. Consequently, the inverse problem becomes less sensitive to noise, and the learned quantities align more closely to their true value. In a sense, the additional snapshot pairs can be seen as an implicit regularisation mechanism, improving statistical stability without modifying the deterministic features. This behaviour is consistent between both the polyno-mial (2.2) and logarithmic (2.3) free energy models, although the latter again exhibits slightly larger variability. Figure 8 shows how the trend of increasing N continues to produce more accurate reconstructions. Unlike in the smooth data case, we continue to observe improved results for datasets with more than N = 64 data points. The blue line in Figures 5 and 7 represent the linear fit to the 10% of points with the largest Eε/E f , thereby approximating the upper envelope of the data. This reveals an effective limiting relation Eε ≈ Ef + C, suggesting that Eε sets a baseline error scale. We suggest that points lying close to this line represent cases where the framework is operating close to its best possible performance, whereas the points lying below this bound exhibit additional degradation in the solution for Ef . Equivalently, we can view the blue line as the worst possible performance of Eε for a given Ef .Figure 9 illustrates the effect of increasing δL on the reconstruction of the bulk chemical potential ˆf and the associated interfacial thickness parameter ˆ ε with the 16 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+[n1, n2, . . . , nℓ]
+
+ω sigmoid σ tanh ReLU [10, 10] 3.71 × 10 −6 3.71 × 10 −6 5.13 × 10 −2
+
+[20, 20] 5.38 × 10 −6 4.89 × 10 −6 1.78 × 10 −2
+
+[32, 32] 4.72 × 10 −6 4.05 × 10 −6 1.33 × 10 −2
+
+[32, 32, 32, 32] 3.44 × 10 −6 7.97 × 10 −6 1.73 × 10 −2
+
+[64, 64, 64, 64] 6.06 × 10 −6 1.40 × 10 −5 1.17 × 10 −2
+
+[n1, n2, . . . , nℓ]
+
+ω SiLU ELU GELU [10, 10] 4.11 × 10 −6 2.70 × 10 −4 4.92 × 10 −6
+
+[20, 20] 4.63 × 10 −6 2.21 × 10 −4 3.82 × 10 −6
+
+[32, 32] 5.55 × 10 −6 2.02 × 10 −4 3.79 × 10 −6
+
+[32, 32, 32, 32] 3.44 × 10 −6 2.03 × 10 −4 2.12 × 10 −5
+
+[64, 64, 64, 64] 3.71 × 10 −6 1.71 × 10 −4 1.07 × 10 −5
+
+Table 1: Ef on the polynomial free energy model (2 .2) for different network sizes and activation functions over 100 initial seeds with N = 16 .
+
+snapshot pairs fixed at N = 16. For δL = 10 −4, the ensemble means are nearly indistinguishable from the ground truth and variability across seeds is minimal. For 
+
+δL = 10 −3, the method continues to recover the correct functional structure. We observe an increased (but controlled) variance and a reasonably accurate estimate of the interfacial thickness parameter. The accurate mean and smooth curve suggest that the deviations are primarily stochastic rather than systematic at this noise level. For 
+
+NL = 10 −2, error increases with a visible bias in the learned function and thickness parameter. 
+
+4.3. Architectural sensitivity. We evaluated how architectural choices influ-ence the accuracy of the reconstructed bulk chemical potential and interfacial thick-ness parameter. Tables 1 and 2 report the final Ef and Eε, respectively, after Adam + L-BFGS, averaged over 100 seeds, for a range of activation functions and network sizes. Across all experiments, the choice of activation function had a markedly greater impact on reconstruction accuracy than network depth or width. In particular, net-works with ReLU activations consistently yielded larger reconstruction errors for both the bulk chemical potential and the interfacial thickness parameter, by up to four or-ders of magnitude relative to smooth activation functions. In contrast, the smooth activations sigmoid, tanh, SiLU, and GELU yielded comparable, consistently low er-rors across all tested architectures, whereas ELU performed slightly worse. Increasing the number of hidden layers or the number of neurons per layer had little consistent effect on the final accuracy of the construction (in some cases, the deeper network appeared to be a hindrance), suggesting that the inverse problem is not strongly capacity-limited. Instead, accurate reconstruction appears to rely primarily on the smoothness and differentiability properties of the activation function, rather than on increased network expressivity. ESPINNS FOR PHASE-FIELD MODELS 17 [n1, n2, . . . , nℓ]
+
+ω sigmoid σ tanh ReLU [10, 10] 8.01 × 10 −7 8.51 × 10 −7 6.75 × 10 −3
+
+[20, 20] 1.13 × 10 −6 8.13 × 10 −7 1.92 × 10 −3
+
+[32, 32] 9.09 × 10 −7 8.35 × 10 −7 7.88 × 10 −4
+
+[32, 32, 32, 32] 8.89 × 10 −7 6.40 × 10 −7 1.30 × 10 −3
+
+[64, 64, 64, 64] 8.39 × 10 −7 6.70 × 10 −7 7.79 × 10 −4
+
+[n1, n2, . . . , nℓ]
+
+ω SiLU ELU GELU [10, 10] 8.73 × 10 −7 8.26 × 10 −6 1.31 × 10 −6
+
+[20, 20] 1.03 × 10 −6 6.84 × 10 −6 1.02 × 10 −6
+
+[32, 32] 1.44 × 10 −6 5.31 × 10 −6 9.25 × 10 −6
+
+[32, 32, 32, 32] 6.68 × 10 −7 4.55 × 10 −6 7.17 × 10 −7
+
+[64, 64, 64, 64] 6.69 × 10 −7 4.29 × 10 −6 7.58 × 10 −7
+
+Table 2: Eε on the polynomial free energy model (2 .2) for different network sizes and activation functions over 100 initial seeds with N = 16 .
+
+4.4. Learning rate sensitivity. Figure 10 shows the mean Ef and Eε through-out the network training process for several fixed learning rates along with an expo-nentially decaying learning rate. The method is somewhat sensitive to the choice of learning rate in Adam optimisation. Firstly, we observe that using a smaller learning rate yields smooth decay of the errors Ef and Eε, suggesting that these learning rates are well-conditioned in the loss landscape and that the optimisation proceeds through a stable basin rather than oscillatory or chaotic regimes. Conversely, larger learning rates lead to visibly unstable training dynamics and oscillatory curves. Choosing a learning rate that is too small (10 −4 in the graphs) leads to slow learning and a poor reconstruction after 20 , 000 epochs, while choosing a learning rate that is too large (10 −1 in the graphs) results in Adam failing to converge, suggesting that it over-shoots the actual minima. Comparing the learning rates that converge correctly in the Adam stage, we observe that although a learning rate of 10 −2 converges faster than the default, it produces visible oscillations. To exploit the fast convergence achieved with a learning rate of 10 −2 while mitigat-ing instability in the learning curve, we tested an exponential learning rate initialised at 10 −2 and decaying to 10 −4. This resulted in a quicker convergence and lower er-rors at the end of Adam training. It is noted that once L-BFGS has been applied to noiseless data, it typically converges even with non-converging Adam learning rates. However, since we cannot rely on L-BFGS for noisy data, it was important to assess how the learning rates performed with Adam alone. 
+
+5. Discussion. In this work, we have developed the ESPINN framework for the inverse identification of constitutive structure in phase-field models. Building on the SPINN methodology of Zhao [31], the proposed extension enables the simultaneous recovery of the bulk chemical potential and unknown gradient coefficients, including the interfacial thickness parameter ε, from dynamically evolving snapshot data. In 18 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH 
+
+Fig. 10: Graphs showing the mean trajectory of Ef and Eε of 10 seeds throughout the training process for several learning rates, as well as an exponentially decaying learning rate for N = 16 . The top row shows the trajectory for Adam and L-BFGS training, while the bottom row shows only Adam training. 
+
+the context of phase separation, these quantities determine the free-energy landscape and interfacial structure that govern the pattern formation and coarsening dynamics. Our numerical experiments on the Cahn-Hilliard model (2.5) demonstrate that the ESPINN framework accurately reconstructs both the functional form of the bulk chemical potential and the associated interfacial thickness parameter in the noiseless regime. Even a single snapshot pair contains sufficient dynamical information to re-cover the free-energy landscape with additional temporal data, thereby systematically improving statistical stability and reducing variance across random seed initialisations. This highlights the method’s ability to extract the information encoded in transient phase dynamics. In the presence of noise, reconstruction accuracy degrades, but in a controlled manner, and the method remains robust over a broad range of noise am-plitudes. Increasing the number of snapshot pairs significantly mitigates the impact of noise, effectively averaging out the stochastic perturbations while preserving the deterministic structure [9]. This indicates that the transient dynamical data provide a reliable basis for learning the constitutive information, even when observations are imperfect. PINNs have traditionally been used not only for inverse problems, where unknown parameters in PDEs are inferred from time-series data [8, 31], but also for solving PDEs with known governing equations. In this setting, an alternative approach for the Allen–Cahn and Cahn–Hilliard equations is based on using physics-informed neural operators (PINOs), which are capable of learning solution operators across a range of PDE settings [12]. Although such methods typically require more training data, they ESPINNS FOR PHASE-FIELD MODELS 19 could, in principle, also be adapted to inverse problems when trained on data from related trajectories. In the presented numerical tests, attention was restricted to the one-dimensional Cahn-Hilliard model with constant mobility to isolate the core mechanisms relevant to inverse identification and coarse-graining. 9This setting enables detailed numerical diagnostics and clear comparisons across different modelling and learning approaches, while avoiding the additional complexities of higher-dimensional geometries. Exten-sions to higher spatial dimensions, more general mobility laws, and direct application to experimental data are beyond the scope of the present work and are left for future investigation. The ESPINN framework, therefore, offers a practical and data-efficient approach to inferring free-energy structure and interfacial parameters in continuum phase-field models. While the current study is restricted to one-dimensional models with constant mobility, the methodology naturally extends to higher-dimensional settings and more complex free-energy functionals. Such extensions are particularly relevant for coarse-grained models of biomolecular condensates, polymer blends and alloy systems, where accurate identification of the free-energy landscapes is central to predictive modelling. 
+
+Acknowledgements. We thank Georg Meyerhofer, Giulia Celora and Ruth Baker for useful discussions. 
+
+Data Availability. In compliance with EPSRC’s open access initiative, the data in this paper is available from: https://doi.org/10.5281/zenodo.20797058 
+
+Ethics. This study did not involve human participants, animals, or sensitive data requiring ethical approval or consent to participate. 
+
+Conflicts of interest. The authors declare no conflicts of interest. 
+
+REFERENCES [1] J. An, Y. Ran, J. Lin, and L. Zhang , Prediction of microstructural evolution of multicom-ponent polymers by physics-informed neural networks , Computational Materials Science, 246 (2025), p. 113502. [2] R. Bongiovanni and A. Vitale , 8 - smart multiphase polymer coatings for the protection of materials , in Smart Composite Coatings and Membranes, M. Montemor, ed., Woodhead Publishing Series in Composites Science and Engineering, Woodhead Publishing, 2016, pp. 213–234. [3] C. P. Brangwynne, C. R. Eckmann, D. S. Courson, A. Rybarska, C. Hoege, J. Gharakhani, F. J¨ ulicher, and A. A. Hyman , Germline P granules are liquid droplets that localize by controlled dissolution/condensation , Science, 324 (2009), pp. 1729–1732. [4] J. Cahn and J. Hilliard , Free energy of a nonuniform system. I. interfacial free energy ,Journal of Chemical Physics, 28 (1958), pp. 258–267. [5] J. W. Cahn , On spinodal decomposition , Acta Metallurgica, 9 (1961), pp. 795–801. [6] S. Cai, Z. Mao, Z. Wang, M. Yin, and G. E. Karniadakis , Physics-informed neural networks 
+
+(PINNs ) for fluid mechanics: A review , Acta Mechanica Sinica, 37 (2021), pp. 1727–1738. [7] S. Cuomo, V. S. Di Cola, F. Giampaolo, G. Rozza, M. Raissi, and F. Piccialli , Scientific machine learning through physics–informed neural networks: Where we are and what’s next , Journal of Scientific Computing, 92 (2022), p. 88. [8] R. Erban , Neural networks for learning macroscopic chemotactic sensitivity from microscopic models , SIAM Journal on Life Sciences, 1 (2026), pp. 121–141. [9] R. Erban and S. Chapman , Stochastic Modelling of Reaction–Diffusion Processes , vol. 60, Cambridge University Press, 2020. [10] P. J. Flory , Thermodynamics of high polymer solutions , Journal of Chemical Physics, 10 (1942), pp. 51–61. [11] P. Fratzl, O. Penrose, and J. L. Lebowitz , Modeling of phase separation in alloys with coherent elastic misfit , Journal of Statistical Physics, (1999), pp. 1429–1503. 20 CALLUM MARSH, RADEK ERBAN, ANDREAS M ¨UNCH [12] G. Gangmei, S. Rana, B. Rolfe, K. Mitra, and S. Bhattacharyya , Learning coupled Allen-Cahn and Cahn-Hilliard phase-field equations using physics-informed neural opera-tor (PINO ), arXiv preprint arXiv:2507.18731, (2025). [13] K. Glasner , Optimization algorithms for parameter identification in parabolic partial differ-ential equations , Computational and Applied Mathematics, 40 (2021), p. 146. [14] I. Goodfellow, Y. Bengio, and A. Courville , Deep Learning , MIT Press, 2016. [15] C. F. Higham and D. J. Higham , Deep learning: An introduction for applied mathematicians ,SIAM Review, 61 (2019), pp. 860–891. [16] M. Hillert , A solid-solution model for inhomogeneous systems , Acta Metallurgica, 9 (1961), pp. 525–535. [17] M. L. Huggins , Solutions of long chain compounds , Journal of Chemical Physics, 9 (1941), pp. 440–440. [18] K. Kawasaki, T. Ohta, and M. Kohrogui , Equilibrium morphology of block copolymer melts. 2, Macromolecules, 21 (1988), pp. 2972–2980. [19] D. P. Kingma and J. Ba , Adam: A method for stochastic optimization . 15 pages, available as arXiv:1412.6980, 2017. [20] D. C. Liu and J. Nocedal , On the limited memory bfgs method for large scale optimization ,Mathematical programming, 45 (1989), pp. 503–528. [21] A. Manzoni, H. Daoud, R. V¨ olkl, U. Glatzel, and N. Wanderka , Phase separation in equiatomic AlCoCrFeNi high-entropy alloy , Ultramicroscopy, 132 (2013), pp. 212–215. IFES 2012. [22] T. Ohta and K. Kawasaki , Equilibrium morphology of block copolymer melts , Macromolecules, 19 (1986), pp. 2621–2632. [23] J. T. G. Overbeek and M. J. Voorn , Phase separation in polyelectrolyte solutions. Theory of complex coacervation , Journal of Cellular and Comparative Physiology, 49 (1957), pp. 7–26. [24] M. Raissi, P. Perdikaris, and G. E. Karniadakis , Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations , Journal of Computational Physics, 378 (2019), pp. 686–707. [25] P. Rathore, W. Lei, Z. Frangella, L. Lu, and M. Udell , Challenges in training PINNs: A loss landscape perspective , in International Conference on Machine Learning, PMLR, 2024, pp. 42159–42191. [26] J. Rodr´ ıguez-Hern´ andez , Wrinkled interfaces: Taking advantage of surface instabilities to pattern polymer surfaces , Progress in Polymer Science, 42 (2015), pp. 1–41. Topical Issue on Polymer Physics. [27] P. J. Spencer , A brief history of CALPHAD , Calphad, 32 (2008), pp. 1–8. [28] S. Wang, S. Sankaran, and P. Perdikaris , Respecting causality for training physics-informed neural networks , Computer Methods in Applied Mechanics and Engineering, 421 (2024), p. 116813. [29] H. Zhao, R. D. Braatz, and M. Z. Bazant , Image inversion and uncertainty quantification for constitutive laws of pattern formation , Journal of Computational Physics, 436 (2021), p. 110279. [30] H. Zhao, B. D. Storey, R. D. Braatz, and M. Z. Bazant , Learning the physics of pattern formation from images , Physical Review Letters, 124 (2020), p. 060201. [31] J. Zhao , Discovering phase field models from image data with the pseudo-spectral physics informed neural networks , Communications on Applied Mathematics and Computation, 3 (2021), pp. 357–369.

@@ -1,0 +1,760 @@
+Title: Influence of Park's Two-Temperature Model Control Temperature on the Flow Properties in Hypersonic Reentry Conditions
+
+URL Source: https://arxiv.org/pdf/2606.26906v1
+
+Published Time: Fri, 26 Jun 2026 01:05:16 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# INFLUENCE OF PARK’S TWO-TEMPERATURE MODEL CONTROL TEMPERATURE ON THE FLOW PROPERTIES IN HYPERSONIC REENTRY CONDITIONS 
+
+## Gibson De Marchi Poltronieri ∗1 , Farney C. Moreira †1 , and João Luiz F. Azevedo ‡2 1Instituto Tecnológico de Aeronáutica, São José dos Campos, SP, 12228–900, Brazil 
+
+> 2
+
+Instituto de Aeronáutica e Espaço, São José dos Campos, SP, 12228–904, Brazil 
+
+Abstract 
+
+Numerical simulations of reactive hypersonic flows under thermochemical non-equilibrium con-ditions are presented for the FIRE II and Mars Pathfinder capsules. An 11-species chemical model is employed to simulate Earth’s atmosphere, while an 8-species chemical model simulates Mars’ atmosphere. The current formulation uses Park’s two-temperature model to account for the non-equilibrium phenomena. The present work analyzes the impact of different sets of weight factors used in Park’s model to calculate the control temperature. The code used to simulate the hypersonic flow addressed in this work solves the Navier-Stokes equations for reacting gas flows. The findings are depicted in terms of the Mach number, temperature modes, and mass fraction distributions along the stagnation streamline in a region closer to the shock wave. The study also includes results regarding the stagnation point convective heat flux. The results presented are encouraging and show that the weight factors significantly impact the FIRE II test cases while having little impact on the Mars Pathfinder flows. In all cases, it is possible to observe some effect of the weight factor selection on property distributions. In summary, the weight factors influence the flow behavior with varying intensities depending on the flow conditions. 
+
+Keywords: Hypersonic flow , CFD , Thermochemical non-equilibrium , Heat transfer , Chemical reactions 
+
+# 1 INTRODUCTION 
+
+Atmospheric entry/reentry is one of the most challenging topics for engineers in space exploration. In recent years, public agencies and private corporations have reignited the interest in investing in space ex-ploration. The National Aeronautics and Space Administration contracted with private organizations for the research, design, and testing of spacecraft for future space missions, for example. The entry/reentry spacecraft needs to perform maneuvers in high-speed conditions, typically at speeds of the order of 
+
+10 km /s. The atmospheric entry/reentry procedure aims to use the atmosphere itself to decelerate the vehicles to suitable lower speeds for a safe landing. During this procedure, the spacecraft must withstand the severe flow conditions imposed by the high-speed flow and the varying density regimes imposed by the different atmospheric layers. The physicochemical complexity of the flow increases significantly due to high temperature, leading to the appearance of non-equilibrium phenomena. Chemical reactions, such as dissociation, recombination, and ionization, occurring within the flow change the gas mixture composition and, consequently, the physicochemical properties of the flow. Therefore, the design of hy-personic vehicles, including the Thermal Protection System (TPS), must account for those many complex phenomena accordingly. The present work aims to evaluate the impact of the weight factors of the control temperature from Park’s two-temperature model on the flow behavior. The authors are motivated by the fact that the literature has little in-depth work about those weight factors. The present work assesses the impact of the weight factors in two different configurations, addressing different gas mixture compositions. 
+
+> ∗Corresponding author: gibsondemarchi@gmail.com
+> †farney.coutinho@gmail.com
+> ‡joaoluiz.azevedo@gmail.com
+
+1
+
+> arXiv:2606.26906v1 [physics.flu-dyn] 25 Jun 2026
+
+The first configuration is the FIRE II reentry capsule reentering Earth’s atmosphere. The second case considers the Mars Pathfinder capsule entering Mars’ atmosphere. The present work obtained the results through the LeMANS parallel code [1], which solves the Navier-Stokes equations and accounts for both thermodynamic and chemical non-equilibrium. The work compares the present numerical results with numerical and experimental data available in the literature [2–5]. To assess the impact of the weight factors, the present work uses a set of weight factors that encompass the values regarded as good choices by the literature [5–8]. This study presents the numerical results in terms of the Mach number, temperature modes, and mass fraction distributions along the stagnation streamline, focusing on the non-equilibrium phenomena occurring near the shock wave. Moreover, the present analysis includes data for the stagnation point convective heat flux. Therefore, the present work aims to provide a broader understanding of the influence of the weight factors of the control temperature of Park’s two-temperature model on the behavior of reactive hypersonic flows. 
+
+# 2 THEORETICAL FORMULATION 
+
+## 2.1 General Considerations 
+
+The freestream density is a function of the altitude in the atmosphere. Therefore, the entry/reentry ve-hicle experiences different flow regimes based on the freestream density throughout the trajectory. The Knudsen number is a dimensionless parameter often employed to differentiate flow regimes in continuum, transition, and free-molecule. This classification is of utmost importance to define the physicomathe-matical formulation most suited to model the flow [9, 10]. The Knudsen number is defined as 
+
+Kn = λL , (1) where λ is the mean free path, which means the average distance traveled by a molecule, or atom, between successive collisions, and the L is the characteristic length, which is a representative measure of the dimension of the fluid-immersed body [11]. The Knudsen number can also be rewritten as a function of the Reynolds number, Mach number, and ratio of specific heats as 
+
+Kn = Ma Re 
+
+√ γπ 
+
+2 , (2) by assuming the Hard-Sphere (H-S) model for particle collision cross section [9]. In the above equation, 
+
+Re is the Reynolds number, Ma is the Mach number, and γ is the ratio of specific heats. As stated, the Knudsen number is used to differentiate flow regimes. Therefore, sufficiently low Knudsen number values indicate that the flow is in a continuum regime, while very high Knudsen number values imply the free-molecule regime. The transition regime is between the continuum and the free-molecule regime. The literature often proposes varying Knudsen number values to differentiate these flow regimes. Reference [12] defines the transition regime as the region between the slip and free-molecule flow regimes. Reference [9] states that the transition regime lies between 10 −2 ≤ Kn < 10 , whereas Ref. [13] defines the transition regime within 3 × 10 −2 ≤ Kn < 1. Reference [10] uses 10 −1 ≤ Kn < 10 
+
+to define the transition regime. These differences indicate that the limiting Knudsen number values that define the transition flow regime remain unsettled in the literature. The well-known Navier-Stokes equations can accurately model the continuum regime, including high-enthalpy flows. Additionally, the Navier-Stokes equations are also suited to model the slip flow regime, which is a subset of the continuum flow regime that is closer to the transition regime. For Knudsen number values within the transition and free-molecule regimes, the Navier-Stokes equations lose their capabilities of representing the physics of the flow accurately. In these cases, higher-order continuum transport formulations may be used to extend the viability of the continuum formulations for higher Knudsen number values. Reference [10] presents the Burnett, super-Burnett, Grad, and Onsager-Burnett equations as some examples of high-order continuum formulations. Alternatively, the transition and free-molecule flow regimes are modeled by discrete formulations. The Boltzmann equation and its variants are widely employed to describe the transition regime. The collisionless Boltzmann equation, for example, is appropriate for solving the free-molecule regime, where energy changes may occur without collisions. Moreover, the discrete approach is not limited to high Knudsen number values and can accurately represent the physics of the flow in the continuum flow regime. The Direct Simulation Monte Carlo (DSMC) is a collision-based method to solve flow regimes in the transition and free-molecule regimes [11, 12]. 2The hypersonic flows addressed in the present study have characteristic freestream Knudsen num-ber values sufficiently low [8]. Therefore, the flows studied in this work are within the continuum regime, allowing the use of the Navier-Stokes equations. Furthermore, the present work uses Park’s two-temperature model to account for thermodynamic non-equilibrium and weak ionization effects [14]. Park’s model couples the temperatures of the translational and rotational energy modes into a sin-gle translational-rotational temperature mode, called Ttr . The second temperature of Park’s model is the vibrational-electronic temperature mode, Tve , associated with the coupling of the vibrational and electronic energy modes, along with the electron energy [1, 15]. 
+
+## 2.2 Conservation Equations and Related Models 
+
+The present analysis employs the Navier-Stokes equations for chemically reacting gas flows. The system of conservation equations contains two source terms representing the chemical reactions, including non-equilibrium phenomena, Sc,v , and axisymmetric flow configuration, Saxi . Therefore, the Navier-Stokes equations can be written in a multi-dimensional form using the index notation as 
+
+∂Q ∂t + ∂(Fj − Fvj )
+
+∂x j
+
+= Sc,v + Saxi , (3) where Q is the vector of conserved variables 
+
+Q = {ρ1 . . . ρns ρu i E Eve 
+
+}T . (4) In the index notation, a free index represents a vectorial equation, and repeated indices indicate a summation. Therefore, in the definition of Q, ρ1, . . . , ρ ns are the density of the ns chemical species, ρ
+
+is the gas mixture density, ui are the velocity components, E is the total energy per unit volume of the gas mixture, and Eve is the vibrational-electronic energy per unit volume of the gas mixture. The inviscid and viscous flux terms, Fj and Fvj , respectively, are defined as 
+
+Fj =
+
+
+
+ρ1uj
+
+...
+
+ρns uj
+
+ρu iuj + pδ ij 
+
+(E + p) uj
+
+Eve uj
+
+
+
+and Fvj =
+
+
+
+−J1,j 
+
+...
+
+−Jns,j 
+
+τij 
+
+τij − (qtr,j + qve,j ) − ∑ (Js,j hs)
+
+−qve,j − ∑ (Js,j eve,s )
+
+
+
+. (5) In the definition of Fj , p is the gas mixture pressure and δij is the Kronecker’s delta function. In the definition of Fvj , J1,j , . . . , J ns,j are the diffusion flux of the ns chemical species in the j-th direction, τij 
+
+is the viscous stress tensor components, qtr,j is the translational-rotational heat flux in the j-th direction, 
+
+qve,j is the vibrational-electronic heat flux in the j-th direction, hs is the enthalpy of the s-th chemical species, and eve,s is the specific vibrational-electronic energy of the s-th chemical species. The diffusion flux, Jns,j , is given by Fick’s Law as 
+
+Js̸ =e,j = ρD s
+
+∂Y s
+
+∂x j
+
+, (6) where Ds is the diffusion coefficient and Ys is the mass fraction of the s-th chemical species, except the electron. The diffusion flux for the electrons is calculated by considering ambipolar diffusion to guarantee charge neutrality [1]. Considering that Dalton’s Law of partial pressure is valid and that each chemical species behaves as an ideal gas, the gas mixture pressure, p, can be written as 
+
+p = ∑ 
+
+> s̸=e
+
+( ρsRu
+
+Ms
+
+Ttr 
+
+)
+
++ ρeRu
+
+Me
+
+Tve , (7) where Ru is the universal gas constant [16]. The viscous stress tensor, for a Newtonian fluid, is given by 
+
+τij = μ
+
+( ∂u i
+
+∂x j
+
++ ∂u j
+
+∂x i
+
+)
+
+−
+
+( 23 μ − β
+
+) ∂u k
+
+∂x k
+
+δij , (8) where μ is the mixture coefficient of viscosity and β is the bulk viscosity. The bulk viscosity arises from the momentum exchange between colliding molecules and their internal degrees of freedom, contributing to 3the dilatational term that appears in the normal stress. Therefore, the bulk viscosity could directly impact the calculations in the present formulation, especially in carbon dioxide flows. The literature presents some methods to calculate the bulk viscosity under different temperature ranges [17–19]. However, those models are usually for low-temperature values. Therefore, the present formulation assumes the Stokes’ hypothesis, β = 0 . This assumption aims to avoid inaccuracies during the bulk viscosity calculations, which could consequently degrade the numerical results obtained. The present formulation employs Fourier’s Law to model the heat fluxes as 
+
+qtr,j = −κtr 
+
+∂T tr 
+
+∂x j
+
+and qve,j = −κve 
+
+∂T ve 
+
+∂x j
+
+, (9) where κtr and κve are the thermal conductivity coefficients of the gas mixture associated with the translational-rotational and vibrational-electronic temperature modes, respectively. This work employs two approaches to calculate the transport properties [1]. The first approach uses Ref. [20] semi-empirical mixing rule, Ref. [21] curve fits, and Eucken’s relation [13, 22]. The second approach is the one proposed in Ref. [23]. The first approach is suited for low velocity flows with maximum temperatures around 10 000 K and is not designed for ionized flows. The second model is suitable for high-speed, around 10 km /s, and weakly ionized flows. Considering the first approach, the gas mixture viscosity and thermal conductivity coefficients are given by [20] 
+
+μ =
+
+> ns
+
+∑
+
+> s
+
+Xsμs
+
+ϕs
+
+and κ =
+
+> ns
+
+∑
+
+> s
+
+Xsκs
+
+ϕs
+
+, (10) respectively. In the above equation, the ϕs term is given by 
+
+ϕs =
+
+> nr
+
+∑
+
+> r
+
+Xr
+
+[
+
+1 + 
+
+√ μs
+
+μr
+
+( Mr
+
+Ms
+
+)1/4]2 [√ 
+
+8
+
+(
+
+1 + Ms
+
+Mr
+
+)]−1
+
+, (11) where X is the molar fraction and M is the molar weight of the s-th and r-th chemical species. The dynamic viscosity coefficients, μs, are calculated by Blottner’s curve fits for each chemical species as 
+
+μs = 0 .1 exp {[As ln( T ) + Bs] ln( T ) + Cs} , (12) where As, Bs, and Cs are constants [21]. The thermal conductivity coefficients, κtr and κve , are calcu-lated, also for each chemical species, by Eucken’s relation as 
+
+κtr,s = μs
+
+( 52 Cvt,s + Cvr,s 
+
+)
+
+and κve,s = μsCvve,s , (13) where Cv is the specific heat at constant volume for different internal energy modes of the chemical species [13, 22]. The diffusion coefficient for each chemical species, Ds, is calculated simply by a single binary coefficient D, which ensures that the sum of the diffusion fluxes is zero. Thus, given by 
+
+D = κtr 
+
+ρC ptr 
+
+Le , (14) where Cptr is the gas mixture specific heat at constant pressure associated with the translational-rotational temperature mode and Le is the Lewis number, a dimensionless number that represents the ratio between thermal diffusivity and mass diffusivity. As stated, this approach is not accurate for velocities above 10 km /s [1]. For the sake of brevity, the present work will not describe the second approach to calculate the transport properties. References [1, 23] provide more details about the second approach. In Eq. (3), the source term, Saxi , represents the additional surface stress that appears by an ax-isymmetric formulation. The contribution is only to the y-momentum equation to counterbalance the pressure and viscous forces acting on the side of the surface of the control volume. Therefore, the Saxi 
+
+term is given by 
+
+Saxi =
+
+{
+
+0 . . . 0 0
+
+[
+
+−p + 2 μ
+
+( u2
+
+¯x2
+
+− 13
+
+∂u k
+
+∂x k
+
+)] δi2
+
+¯x2
+
+0 0
+
+}T
+
+, (15) where 
+
+∂u k
+
+∂x k
+
+= ∂u 1
+
+∂x 1
+
++ ∂u 2
+
+∂x 2
+
++ u2
+
+¯x2
+
+. (16) 4In the above formulation, the ¯x2 is the radial coordinate measure from the axis of symmetry to the cell centroid and x1 and x2 are the axial and radial directions, respectively. The source term Sc,v in Eq. (3) is associated with the rate of production or consumption of mass of the chemical species in the reacting flow and the energy related to the vibrational energy mode. Therefore, the Sc,v source term is written as 
+
+Sc,v = { ˙w1 . . . ˙wns 0 0 0 0 ˙wv
+
+}T , (17) where ˙w1, . . . , ˙wns are the rate of mass production of the ns chemical species and ˙wv is the vibrational energy source term. 
+
+## 2.3 Chemical Species and Model of Chemical Reactions 
+
+The flow gas mixture composition changes due to chemical reactions occurring in high-enthalpy hyper-sonic flows. These changes impact the physicochemical properties of the flow. Therefore, chemical models have been developed to represent those high-enthalpy flow phenomena according to the flow physico-chemical complexity [24]. The present work uses an 11-species chemical model to represent Earth’s atmosphere and an 8-species chemical model to represent the Mars atmosphere. Table 1 presents the chemical species that compose the chemical models used for the Earth and Mars atmospheres. Table 1: Chemical species of Earth and Mars atmosphere models. Chemical Model Chemical Species 11-species (Earth) N2, O 2, NO, N, O, NO +, N 2+, O 2+, N +, O +, and e –
+
+8-species (Mars) CO 2, CO, N 2, O 2, NO, N, O, and C The present work considers a finite-rate chemistry model for the reacting gas mixture of the hypersonic entry/reentry flows studied [1]. The chemical reactions are generically written as 
+
+∑ αs,r [S] −−⇀↽−−
+
+∑ βs,r [S] , (18) where [S] represents the chemical species listed in Table 1 and αs,r and βs,r represents the stoichiometric coefficients of the s-th chemical species that balance the r-th chemical reaction considered in the chemistry model. The detailed list of chemical reactions considered in the chemical models for the Earth and Mars atmospheres are found in Refs. [1, 4]. The present work standardizes the forward reactions as endothermic reactions and the backward chemical reactions as exothermic reactions. The endothermic chemical reactions absorb energy from the surroundings while exothermic chemical reactions release energy to the surroundings [25]. The rate of mass production, or consumption, of the s-th chemical species, in Eq. (17), is given by [1] 
+
+˙ws = Msnr ∑
+
+> r
+
+(βs,r − αs,r )
+
+[
+
+kf,r ns ∏
+
+> s
+
+( ρs
+
+Ms
+
+)αs,r 
+
+− kb,r ns ∏
+
+> s
+
+( ρs
+
+Ms
+
+)βs,r 
+
+]
+
+, (19) where nr represents the number of chemical reactions that the s-th chemical species participates and kf,r 
+
+and kb,r are the forward and backward chemical reaction rates of the r-th chemical reaction, respectively. The thermodynamic and chemical non-equilibrium phenomena occur when the characteristic time scale of the flow is in the same order of magnitude as the relaxation time of the system to the equi-librium state. The thermodynamic and chemical non-equilibrium in the flow affects the forward and backward chemical reaction rates. The present work uses Park’s two-temperature model, Ref. [14], to account for the non-equilibrium phenomena in the hypersonic entry/reentry flows studied. In Park’s model, the translational and rotational temperature modes are coupled into the translational-rotational temperature mode, Ttr , and the vibrational, electronic, and electron translational temperature modes are coupled into the vibrational-electronic temperature mode, Tve . Moreover, Park’s model defines the control temperature, Tc, given as a combination of Ttr and Tve by an geometric weighted mean as 
+
+Tc = T atr T bve , (20) where a and b = 1 − a are weight factors that control the energy transfer between dissociation and ionization reactions. It must be noted that the control temperature, Tc, can assume the value of Ttr ,5Tve , or T atr T bve depending on the of chemical reaction [1, 5]. This formulation accounts for the fact that vibrationally excited molecules are more likely to dissociate [14]. The typical values for a and b indicated by the literature are a = b = 0 .5 or a = 0 .7, b = 0 .3 [1, 6]. The forward reaction rate of the r-th chemical reaction, kf,r , is a function of the control temperature, 
+
+Tc, and is calculated by Arrhenius curve fits of the form 
+
+kf,r (Tc) = Cf,r T ηr 
+
+> c
+
+exp 
+
+(
+
+− θr
+
+Tc
+
+)
+
+, (21) where Cf,r is the pre-exponential factor, ηr is the temperature dependence, and θr is the activation energy. The forward chemical kinetic rate coefficients are constants proposed in Ref. [26]. The backward reaction rate, kb,r , is given by 
+
+kb,r (Tc) = kf,r (Tc)
+
+keq,r (Tc) , (22) where keq,r is the equilibrium constant of the r-th chemical reaction [25]. The equilibrium constant, keq ,is calculated by curve fits as follows 
+
+keq,r (Tc) = exp 
+
+[
+
+A1
+
+( Tc
+
+10 4
+
+)
+
++ A2 + A3 ln 
+
+( 10 4
+
+Tc
+
+)
+
++ A4
+
+( 10 4
+
+Tc
+
+)
+
++ A5
+
+( 10 4
+
+Tc
+
+)2]
+
+, (23) where the coefficients A1, A2, A3, A4, and A5 are functions of the local number density of the flow within the range of data tabulated in Ref. [14]. In cases where the number density value is outside the tabulated data, the formulation uses the maximum and minimum values of the tabulated data accordingly. This approach may create numerical instabilities and errors, particularly in edge cases. 
+
+# 3 NUMERICAL FORMULATION 
+
+The present work uses the LeMANS Navier-Stokes solver, a parallel code for unstructured meshes devel-oped at the University of Michigan [1]. The code solves the Navier-Stokes equations, including chemical reactions and energy transfer between different energy modes, using a finite volume method with a cell-centered approach. Furthermore, the LeMANS solver is capable of handling axisymmetric flow con-figurations using meshes composed solely of quadrilaterals to better resolve the boundary layers and shock waves [1]. LEMANS uses a modified Steger-Warming flux vector splitting (FVS) scheme to discretize the inviscid fluxes across the cell faces [27]. The modified method switches to the original Steger-Warming FVS scheme, Ref. [28], in the vicinity of shock waves or other discontinuities by the action of a pressure switch. According to Ref. [27], the original Steger-Warming FVS scheme is highly dissipative and suitable for high-gradient regions, such as shock waves. The modified Steger-Warming FVS scheme is less dissipative and suitable for resolving flows within the boundary layer. Moreover, LeMANS implements a second-order reconstruction scheme for the inviscid fluxes [1]. The present formulation employs a second-order centered scheme to calculate the viscous fluxes at the cell faces using the property values of the centroid and nodes that compose the face. The values of the properties at the nodes are calculated using a simple average of the cell values of the cells that share the node. This approach increases the stencil employed in the derivative calculations, avoiding loss of accuracy in unstructured meshes. The current formulation employs no-slip and catalytic isothermal wall boundary conditions for the wall-type surfaces for simulations regarding Earth’s atmosphere. The present work uses the no-slip and non-catalytic isothermal wall boundary conditions for the Mars Pathfinder test cases. Reference [4] presents a detailed analysis of the influence of catalytic and non-catalytic wall boundary conditions for the configurations used in this work. Reference [29] studies reacting gas-surface interactions for carbon dioxide flows, which provide a good model for applications involving Mars’ atmosphere. The axisymmetric source term is spatially discretized with the same approach used for the viscous terms. The present formulation calculates the values of properties on the left and right sides of a cell face using the value of the respective cell centroid and the nodes that compose the control volume [30]. Numerical instabilities may arise related to chemical reactions included in the chemical source term. The first problem that may appear is that the chemical reaction rates may achieve large values depend-ing on the control temperature, Tc, especially for the low equilibrium constant values [31]. Another 6problem that may arise is that the density of the chemical species can assume negative values during the convergence process of the numerical solver. Negative density values yield negative values for the source terms, thus numerical instabilities. Reference [1] proposes a modified temperature to overcome the problem related to the source term calculations. Numerical instabilities may appear due to the use of explicit methods for the time integration of the Navier-Stokes equations with chemical source terms. Moreover, the time step restriction due to the stiffness of the formulation presented does not allow an adequate convergence rate to the solution [32]. Implicit time integration schemes are better suited for a stiff system of equations, allowing larger time steps while avoiding the growth of numerical instabilities. Therefore, the current formulation uses point and line implicit time integration schemes [1, 33]. 
+
+# 4 RESULTS AND DISCUSSION 
+
+This section addresses the results of the hypersonic flow calculation performed for the Earth and Mars atmospheres. The simulations performed for the Earth atmosphere use the FIRE II reentry capsule as a test vehicle, while the simulations performed for the Mars atmosphere use the Mars Pathfinder entry capsule as the test vehicle. In both cases, the present work evaluates the impact of the weight factors of Park’s two-temperature model control temperature, Tc, in the flow behavior in terms of the Mach number distributions, temperature modes distributions, stagnation point convective heat flux, and chemical species mass fractions. The present work uses a set of values, including the often proposed good choices, to assess the impact of the weight factors, which are a = 0 .4, 0.5, 0.6, 0.7, and 0.8.
+
+## 4.1 FIRE II 
+
+4.1.1 Flow Conditions 
+
+The freestream conditions are based on the experimental data from the FIRE II reentry trajectory, described in Table 2. In the referenced table, H is the altitude relative to the sea level, ρ∞ is the freestream density, T∞ is the freestream temperature, Tw is the FIRE II wall surface temperature, U∞
+
+is the flow speed, Rn is the largest curvature radius of the thermal shield, R is the thermal shield circumference radius used as characteristic length, Ma ∞ is the freestream Mach number, Re ∞ is the freestream Reynolds number, and Kn ∞ is the freestream Knudsen number. The freestream gas mixture of Earth’s atmosphere is approximately 76 .3 % of N 2 and 23 .7 % of O 2 in terms of mass fraction. Table 2: FIRE II freestream conditions.                                                        
+
+> H[km] ρ∞[kg /m3]T∞[K] Tw[K] U∞[m /s] Rn[m] R[m] Ma ∞Re ∞Kn ∞
+> 71 .02 8.57 ×10 −5210 810 11 310 0.935 0.335 75 38 .85 2.19 ×10 42.63 ×10 −3
+> 48 .37 1.32 ×10 −3285 1520 9830 0.8052 0.314 95 28 .99 2.17 ×10 51.97 ×10 −4
+> 41 .60 3.25 ×10 −5267 503 8100 0.7021 0.293 95 24 .68 4.32 ×10 58.46 ×10 −5
+
+The FIRE II reentry capsule has three thermal shields. The first thermal shield is the one active for the case of altitude H = 71 .02 km and is ejected at an altitude of approximately H = 59 .62 km .The second thermal shield protects the capsule until the altitude of approximately H = 48 .37 km . The third and last thermal shield protects the FIRE II capsule until landing. Therefore, each case chosen represents one of the different thermal shields of the FIRE II capsule. 
+
+4.1.2 Computational Grid 
+
+The grids used for the numerical simulations performed in the present work are composed solely of quadrilaterals in axisymmetric configuration. The computational grids for each thermal shield of the FIRE II capsule have two distinct refinement regions. The first refinement region is near the shock wave, where the non-equilibrium phenomena occur with the highest intensity. This region includes the shock wave and the non-equilibrium phenomena immediately behind the shock. The present work has used the experience acquired and the results available in Refs. [4, 7] to define this region. Moreover, this work refers to the refinement region, including the shock wave and the non-equilibrium phenomena, as the “non-equilibrium region.” The second region of mesh refinement is at the vehicle wall. The mesh refinement at the vehicle wall allows for better capture of wall temperature gradients, thus allowing the correct calculation of the convective heat flux at the vehicle surface. The computational grids used for 7the FIRE II reentry capsule simulations are presented in Fig. 1. In those figures, the names of the axes are X/D and Y/D, where D is the same as R in Table 2. Hence, X/D and Y/D means the same as X/R and Y/R for the following discussions. Figure 2 presents the computational grids zoomed in the stagnation streamline, allowing better visualization of the mesh refinement approach.         
+
+> (a) H= 71 .02 km .(b) H= 48 .37 km .(c) H= 41 .60 km .
+
+Figure 1: FIRE II computational grids.         
+
+> (a) H= 71 .02 km .(b) H= 48 .37 km .(c) H= 41 .60 km .
+
+Figure 2: FIRE II computational grids zoomed in the stagnation streamline. The work refines the mesh regions using a refinement parameter called cell Reynolds number, Re cell .The mesh in the non-equilibrium region is uniformly spaced with a stretching factor of 10 % to create a smooth transition to other regions in the computational grid. Based on the mesh convergence analysis, we identified that Re cell ≈ 5 is sufficient to create a mesh with good numerical convergence performance that also yields good results. This study refines the mesh at the vehicle wall by specifying the first and smallest grid distance and applying a stretch factor of 5 % . The smallest grid distance must follow 
+
+Re cell < 1, as shown in Ref. [7]. To fulfill this condition, the present work defines the first grid distance at the vehicle wall as ∆n = 5 × 10 −7 m. Table 3 presents the details of each of the three meshes used in this study. In the table, n represents the number of cells in the wall-normal and stream-wise direction, respectively. Table 3: FIRE II mesh parameters. 
+
+H[km] nwall-normal nstreamwise 
+
+71 .02 490 148 48 .37 739 148 41 .60 1130 138 
+
+84.1.3 Mach Number and Shock Wave Position 
+
+Figure 3 shows the Mach number contours for each thermal shield, considering a weight factor a = 0 .5.The shock standoff distance from the vehicle wall agrees with the results presented by Ref. [7]. The bow shock seems well defined where no intermediate colors are visible. However, this may be due to the scale of the computational domain.         
+
+> (a) H= 71 .02 km .(b) H= 48 .37 km .(c) H= 41 .60 km .
+
+Figure 3: FIRE II Mach contours for each computational grid considering a = 0 .5.To better visualize the shock structure and standoff distance to the vehicle wall, Fig. 4 presents the Mach number distributions along the stagnation streamline in the non-equilibrium region for the weight factor a = 0 .4, 0.5, 0.6, 0.7, and 0.8. The results presented show that the Mach number distributions decrease rapidly from the freestream Mach number values to almost zero in a small region, as depicted in Fig. 4. Moreover, the results show that changes in the weight factor values impact the position of the shock wave. In this case, the results indicate that the shock wave tends to move away from the FIRE II wall as the a weight factor increases. The results in Fig. 4 are a consequence of the fact that an increase of the a weight factor influences the calculation of the control temperature, Tc, yielding a temperature distribution closer to the Ttr profile. Since Ttr is typically considerably higher than Tve , the increase of a changes the shape and location of the maximum value of the control temperature, Tc, and its distribution, typically increasing Tc in the non-equilibrium region. These changes affect the calculations of the forward reaction rates, tend to increase the dissociation reactions. Thus, the chemical species mass fraction distributions inside the non-equilibrium region are also going to be affected. However, the changes in the position of the shock waves are small compared to the length of the stagnation streamline. 
+
+4.1.4 Temperature Modes 
+
+Figure 5 presents the translational-rotational, Ttr , temperature mode distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors addressed in this work. The results shown in this figure indicate that the maximum temperature values decrease with an increase in the a
+
+weight factor value. There are also slight changes in the shape and location of the Ttr temperature mode distributions. The changes in the Ttr distributions for Figs. 5(b) and 5(c) follow the same behavior observed in the Mach number distributions, Fig. 4. In general, the position of the shock wave and the non-equilibrium region agree with numerical data in Refs. [1, 4, 7]. However, the present work shows that the Ttr temper-ature mode distributions in the non-equilibrium region have higher maximum temperature values than those observed in the literature. Reference [7] predicts maximum values of Ttr closer to the temperature values found in the present work due to a similar approach to refine the mesh near the shock wave and non-equilibrium region. The difference between temperature peaks for a = 0 .4 and a = 0 .8 is around 
+
+3200 K in Fig. 5(a). The same comparison for Figs. 5(b) and 5(c) yields temperature differences around 
+
+2300 K and 1700 K , respectively. These results indicate that the temperature variations caused by the weight factors are not small in the non-equilibrium region for the FIRE II test cases. 9−0.146 −0.144 −0.142 −0.140 X/R 0510 15 20 25 30 35 40 Mach Number 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) H = 71 .02 km .−0.1362 −0.1360 −0.1358 −0.1356 −0.1354 −0.1352 X/R 0510 15 20 25 30 Mach Number (b) H = 48 .37 km .−0.1235 −0.1234 −0.1233 −0.1232 −0.1231 X/R 0510 15 20 25 Mach Number 
+
+(c) H = 41 .60 km .
+
+Figure 4: FIRE II Mach number distributions along the stagnation streamline in the non-equilibrium region. Figure 6presents the vibrational-electronic, Tve , temperature mode distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors addressed in this work. The Tve 
+
+temperature mode distributions in Fig. 6 show similar behavior observed for Ttr distributions in Fig. 5, in which the increase the a weight factor yields lower values of temperature peaks in the non-equilibrium region. Different from the Ttr temperature mode distributions, the Tve temperature mode distributions show no clear difference in the position of the curves when varying the weight factors. Moreover, the predicted maximum temperature peaks for the Tve temperature mode are also higher than the values predicted in the literature [1, 4, 7]. The difference between temperature peaks for a = 0 .4 and a = 0 .8
+
+is around 800 K in Fig. 6(a). The translational-rotational, Ttr , temperature mode have temperature values higher than the vibra-tional-electronic, Tve , temperature mode in the non-equilibrium region. This behavior relates to the fact that the Ttr temperature mode requires lower energy values to excite one energy level when compared to the Tve temperature mode. Therefore, increasing the a weight factor yields a control temperature, Tc,mainly governed by the Ttr temperature mode. Reference [5] compares the impact of different temperature models, including Park’s two-temperature model, for reactive hypersonic flows in non-equilibrium conditions. Reference [5] observes the same behavior identified in the present work for the vibrational-electronic temperature mode when comparing 
+
+a = 0 .5 and a = 0 .7 weight factors. However, Ref. [5] does not observe differences regarding the Ttr 
+
+temperature mode distributions when changing the weight factor values. This result is in contrast with the behavior observed in Fig. 5, which shows that varying the weight factor values impacts the Ttr 
+
+distributions. The differences in the results of the present work and those in Ref. [5] could be related to geometry and freestream conditions. Reference [5] simulated hypersonic flows over the BUSV and RAM-C II blunt body geometries. Moreover, the freestream conditions are different. Reference [4] used the same numerical tool, LeMANS, and obtained results similar to Ref. [5] for a = 0 .5 and a = 0 .7. Therefore, it 10 −0.145 −0.140 −0.135 −0.130 −0.125 −0.120 −0.115 X/R 010000 20000 30000 40000 Temperature ( Ttr ) [K] 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) H = 71 .02 km .−0.1360 −0.1355 −0.1350 −0.1345 −0.1340 −0.1335 X/R 05000 10000 15000 20000 25000 30000 35000 Temperature ( Ttr ) [K] (b) H = 48 .37 km .−0.1235 −0.1230 −0.1225 −0.1220 X/R 05000 10000 15000 20000 25000 Temperature ( Ttr ) [K] 
+
+(c) H = 41 .60 km .
+
+Figure 5: FIRE II translational-rotational temperature mode distributions along the stagnation stream-line in the non-equilibrium region. is plausible to state that the conditions used for the FIRE II simulation performed in this work may be sufficiently harsh to show the impact of the weight factors in the Ttr temperature mode distributions. The change in the weight factor values does not impact the flow regions in the equilibrium state. These regions are the freestream flow and the flow between the non-equilibrium and near-wall regions. According to the literature, the different temperature modes assume the same value in the equilibrium regions. The flow region near the vehicle wall presents a non-equilibrium behavior. However, the non-equilibrium intensity is small and does not significantly cause a visible impact on distributions of properties, as shown in Ref. [34]. Therefore, the present work does not include any specific analysis of the equilibrium and near-wall regions. 
+
+4.1.5 Stagnation Point Convective Heat Flux 
+
+Figure 7 shows the stagnation convective heat flux for each case presented for the FIRE II and each set of weight factors proposed in this work. This figure also includes experimental data for the stagnation point heat flux from Ref. [2]. The experimental data used as a reference represents the total heat flux at the stagnation point, considering both convective and radiative portions. Moreover, the experimental data has a margin of error of ±20 % , represented by the black diamond and error bars in Fig. 7. The stagnation point convective heat fluxes predicted in this work are within the error margin of the experimental data. The variation of the weight factor values causes small differences in the stagnation point convective heat flux values obtained in the simulations. The differences between the highest and lowest values of stagnation point convective heat flux predicted are, at maximum, 0.9 % of the average values of the stagnation point convective heat flux simulated for each case. However, the numerical tool used in the present work is not capable of coupling radiative phenomena to assess the impact of the weight factor on the total stagnation point heat flux. Data on the literature indicate that the radiative portion of the total stagnation point heat flux may be affected by the chemical species composing the flow [9]. 11 −0.145 −0.140 −0.135 −0.130 −0.125 −0.120 X/R 02500 5000 7500 10000 12500 15000 17500 Temperature ( Tve ) [K] 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) H = 71 .02 km .−0.1360 −0.1355 −0.1350 −0.1345 X/R 02000 4000 6000 8000 10000 12000 14000 16000 Temperature ( Tve ) [K] (b) H = 48 .37 km .−0.1235 −0.1230 −0.1225 −0.1220 −0.1215 X/R 02000 4000 6000 8000 10000 12000 14000 Temperature ( Tve ) [K] 
+
+(c) H = 41 .60 km .
+
+Figure 6: FIRE II vibrational-electronic temperature mode distributions along the stagnation streamline in the non-equilibrium region. 71 .02 Altitude (H) [km] 240 260 280 300 320 340 Heat Flux (q) [W /cm 2]
+
+> 71 .02 316 .4316 .6
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8Exp. 
+
+(a) H = 71 .02 km .48 .37 Altitude (H) [km] 900 1000 1100 1200 1300 Heat Flux (q) [W /cm 2] 
+
+> 48 .37 913 .1913 .2913 .3
+
+(b) H = 48 .37 km .41 .6Altitude (H) [km] 600 650 700 750 800 850 900 Heat Flux (q) [W /cm 2] 
+
+> 41 .6878 .00 878 .25 878 .50
+
+(c) H = 41 .60 km .
+
+Figure 7: FIRE II stagnation point convective heat flux. 
+
+4.1.6 Chemical Species Mass Fraction 
+
+As mentioned, the present study models Earth’s atmosphere by an 11-species chemical model and con-siders three different test cases for the FIRE II reentry vehicle. Thus, presenting all the data gathered for the distributions of mass fractions for each chemical species is not feasible. Therefore, the present study will focus on presenting the mass fraction distributions of the chemical species that showed the largest changes by varying Park’s two-temperature model weight factors. Moreover, the chosen chemical species are also strong radiators [9, 35]. Therefore, this work presents data for the chemical species N and NO. Figure 9 shows the N mass fraction distributions along the stagnation streamline in the non-equilibrium 12 region for the set of weight factors a = 0 .4, 0.5, 0.7, 0.8, and 0.8.−0.145 −0.140 −0.135 −0.130 −0.125 −0.120 X/R 0.00.10.20.30.40.50.6Mass Fraction of N 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8
+
+(a) H = 71 .02 km .−0.136 −0.135 −0.134 −0.133 X/R 0.00.10.20.30.40.50.60.7Mass Fraction of N (b) H = 48 .37 km .−0.1235 −0.1230 −0.1225 −0.1220 X/R 0.00.10.20.30.40.5Mass Fraction of N 
+
+(c) H = 41 .60 km .
+
+Figure 8: N mass fraction distributions along the stagnation streamline in the non-equilibrium region for the FIRE II capsule. Figure 8 shows that the increase of the a weight factor accelerates the production of N, which agrees with the expected chemical behavior. The N is the product of the N 2 dissociation reaction, 
+
+N2 + M −−⇀↽−− 2 N + M , (24) which is an endothermic reaction. The increase in the overall value of the control temperature, Tc,distributions, caused by the increased value of the a weight factor, favors the endothermic reactions. Therefore, it favors the production of N. The lines of the distributions seem evenly spaced, indicating that there is no “convergence” to a single set of weight factor values. Analyzing Fig. 8(c) closely in the region X/R > −0.1227 , it is possible to observe an inversion in the influence of the weight factors’ value. The lower the a weight factor values, the higher the magnitude of the mass fraction distributions of N for this particular region. The behavior observed for the region X/R > −0.1227 is unintuitive, and it also relates to the control temperature, Tc. In this particular condition, the Tve temperature mode distributions assume values higher than the Ttr temperature mode distributions because of its “inertia” to relax to the equilibrium state. This condition allows for the control temperature, Tc, to assume higher temperature distributions for lower values of the a weight factor for a small part of the non-equilibrium region. Note that the differences caused by the change in the weight factor values have a consistent gap between them, and it seems that they do not “converge” to a unique solution within the non-equilibrium region. Continuing the analysis on the chemical species mass fraction distributions, Fig. 9 presents the NO mass fraction distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors 
+
+a = 0 .4, 0.5, 0.7, 0.8, and 0.8.The results in Fig. 9 indicate that the NO is produced and consumed almost entirely in the non-equilibrium region of the case of altitude H = 71 .02 km , Fig. 9(a), where the same does not occur in lower altitudes, Figs. 9(b) and 9(c). This behavior relates to the shock layer temperature distributions. 13 −0.145 −0.140 −0.135 −0.130 −0.125 −0.120 X/R 0.00000 0.00025 0.00050 0.00075 0.00100 0.00125 0.00150 0.00175 Mass Fraction of NO 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) H = 71 .02 km .−0.1360 −0.1355 −0.1350 −0.1345 −0.1340 −0.1335 X/R 0.0000 0.0005 0.0010 0.0015 0.0020 Mass Fraction of NO (b) H = 48 .37 km .−0.123 −0.122 −0.121 −0.120 X/R 0.0000 0.0005 0.0010 0.0015 0.0020 0.0025 0.0030 0.0035 0.0040 Mass Fraction of NO 
+
+(c) H = 41 .60 km .
+
+Figure 9: NO mass fraction distributions along the stagnation streamline in the non-equilibrium region for the FIRE II capsule. Depending on the shock layer temperature, chemical reactions with NO as reactant may be favored, such as the dissociation of NO. The temperature mode distribution analysis indicates that cases with higher altitudes and flow speeds yield higher temperature mode profiles in the shock layer. Figure 9(c) shows a different behavior than the other two cases considered for the FIRE II reentry capsule. The NO mass fraction distributions have a first peak closer to the freestream flow. Then, there is a local minimum of NO mass fraction value, different for each set of weight factors. For X/R ≈ − 0.1227 and larger, the NO mass fraction distributions increase in value until the shock layer equilibrium condition, defined by the shock layer temperature. The increase of the a weight factor accelerates the consumption of NO by favoring the dissociation reaction of NO. This behavior governs the peaks of NO mass fraction observed in the mass fraction distributions presented in Fig. 9. The increase of the a weight factor yields, in general, lower magnitude NO mass fraction distributions. As mentioned, Fig. 9(c) shows a different behavior for a small length within the non-equilibrium region near the transition to the shock layer region. In this region, lower values of the a weight factor “delay” the production of NO towards the shock layer. This “inversion” in the expected behavior occurs in a similar area as discussed previously for the N chemical species. The control temperature, Tc, calculated in this area, has temperature distributions with higher magnitude for lower values of the a weight factor. The changes caused by varying the weight factors are significant for the NO mass fraction distributions within the non-equilibrium region. Moreover, the different sets of weight factors do not “converge” to a unique NO mass fraction distribution. Instead, the changes in the weight factors cause the solution to produce significantly different mass fraction distributions. The other chemical species considered in the chemical model for Earth’s atmosphere also showed behavior following the same physicochemical principles discussed here. The chemical species mass fraction distributions vary with the weight factor changes, a consequence of the control temperature calculation and the type of chemical reactions. 14 4.2 Mars Pathfinder 
+
+4.2.1 Flow Conditions 
+
+This work considers two types of freestream flow gas mixtures to simulate Mars’ atmosphere. One of the mixtures is composed, at freestream conditions, solely of carbon dioxide, CO 2, while the other is a mixture of 95 % of CO 2 and 5 % of molecular nitrogen, N 2. The percentages are based on the mass fraction. The freestream conditions mimic the experimental data available for the Mars Pathfinder capsule, obtained in the HYPULSE expansion tube for carbon dioxide flows. Table 4 presents the freestream conditions used for the Mars Pathfinder hypersonic flow simulations. The term “Run 749” refers to a particular experiment reported in Ref. [3]. Table 4: Mars Pathfinder “Run 749” freestream conditions. Gas Mixture ρ∞[kg /m3] T∞[K] Tw[K] U∞[m /s] R[m] Ma ∞ Re ∞ Kn ∞
+
+CO 2 5.75 × 10 −3 1045 300 4769 0.0254 9.89 2.03 × 10 4 6.63 × 10 −4
+
+CO 2 + N 2 5.75 × 10 −3 1045 300 4769 0.0254 9.89 2.03 × 10 4 6.64 × 10 −4
+
+In the table, ρ∞ is the freestream density, T∞ is the freestream temperature, Tw is the Mars Pathfinder capsule wall surface temperature, U∞ is the flow speed, R is the thermal shield circumference radius used as characteristic length, Ma ∞ is the freestream Mach number, Re ∞ is the freestream Reynolds number, and Kn ∞ is the freestream Knudsen number. Moreover, the HYPULSE experiment was only conducted for CO 2 flows. However, Mars’ atmosphere composition is, approximately, 95 % of CO 2, 3 % of N 2, and 
+
+2 % of Ar. Therefore, the assumption of 95 % of CO 2 and 5 % of N 2 for the Mars atmosphere gas mixture composition is not unreasonable. 
+
+4.2.2 Computational Grids 
+
+The computational grids used for the numerical simulations performed in the present work are also composed solely of quadrilaterals in axisymmetric configuration. Similar to the computational grids for the FIRE II capsule, the meshes used for the Mars Pathfinder test case have two different refinement regions. The first refinement region includes the shock wave and the non-equilibrium phenomena and is defined by two internal grid lines. The second refinement region is at the vehicle wall surface. Likewise, the first refinement region is called the “non-equilibrium region” and aims to better resolve the shock wave and property gradients related to non-equilibrium phenomena. The refinement region near the vehicle wall allows better capture of temperature gradients, aiming for the correct calculation of the wall convective heat flux. The definition of the non-equilibrium region follows previous results in Refs. [8, 36]. Moreover, the non-equilibrium refinement region is uniformly spaced and based on the parameter Re cell ≈ 1, where a stretching factor of 10 % guarantees a smooth transition to other mesh regions. This study refines the mesh at the vehicle wall with the same properties as the grid for the FIRE II capsule, where the smallest grid distance is ∆n = 5 × 10 −7 m and the stretching factor is 5 % . The mesh used in the present work simulation regarding the Mars Pathfinder capsule has 160 cells in the streamwise direction and 460 cells in the wall-normal direction. Figure 10 shows the Mars Pathfinder computational grid used for the calculation of the results presented here. A mesh convergence analysis performed in the context of the present effort indicated that the Re cell ≈
+
+5 is not sufficient to allow the correct refinement of the non-equilibrium region. This result differs from the analysis performed for the FIRE II computational grids. The mesh that yielded good property distributions was the one with Re cell ≈ 1 in the non-equilibrium region. Reference [34] provides more details about the mesh convergence analysis performed for the Mars Pathfinder capsule. 
+
+4.2.3 Mach Number and Shock Wave Position 
+
+Figure 11 shows the Mach number contours for each Mars Pathfinder case considering a = 0 .5. The shock standoff distance from the vehicle wall agrees with the results in Refs. [8, 36] The bow shock seems well defined where no intermediate color are visible. However, the absence of intermediate colors may be due to the scale of the computational domain compared to the scale of the Mach number distribution changes. Hence, zooming in on the non-equilibrium region along the stagnation streamline allows better visualization of the shock structure. In addition to the Mach number results already presented, this work 15 (a) Computational grid. (b) Mesh zoomed in the stagnation streamline. 
+
+Figure 10: Mars Pathfinder computational grid. also included the results for the Mach number distributions along the stagnation streamline for all sets of weight factor chosen by the present work.     
+
+> (a) CO 2flow. (b) CO 2+ N 2flow.
+
+Figure 11: Mars Pathfinder Mach number distributions along the stagnation streamline in the non-equilibrium region. Therefore, Figure 12 shows the Mach number distributions along the stagnation streamline in the non-equilibrium region for each set of weight factors proposed in the present work. Figure 12(a) represents the Mach number distributions for the flow composed solely of CO 2 while Fig. 12(b) represents results for the gas mixture of CO 2 + N 2. The results indicate a rapid decrease in the Mach number values from the freestream condition to almost zero. The results obtained for the shock wave position in this analysis are in good agreement with the numerical data in Refs. [8, 36]. The position of the shock wave seems to move away from the vehicle body as the a weight factor value increases. This behavior is similar to the one observed in the FIRE II results regarding the Mach number distributions. However, this trend breaks down for a = 0 .7 and a = 0 .8, where the latter predicts a shock wave closer to the vehicle body. The magnitude of the movement of the shock wave standoff position is significantly small when compared to the length of the stagnation streamline. The change in the behavior of the shock wave position with the increase of the a weight factor can arise from numerical fluctuations during the solution process. However, more analyses are needed to fully understand the root cause of the modification of the trend in the shock motion with the increase of the a factor. Furthermore, it is also possible that the flow conditions allow for such reversion in the trend of the shock wave position. 16 −0.028 −0.027 −0.026 −0.025 X/R 02468Mach Number       
+
+> −0.0272 −0.0271 6.00 6.25 6.50 6.75 7.00
+> a= 0 .4
+> a= 0 .5
+> a= 0 .6
+> a= 0 .7
+> a= 0 .8
+
+(a) CO 2 flow. −0.028 −0.027 −0.026 X/R 02468Mach Number   
+
+> −0.0280 −0.0279 6.25 6.50 6.75
+
+(b) CO 2 + N 2 flow. 
+
+Figure 12: Mars Pathfinder Mach number distributions along the stagnation streamline in the non-equilibrium region. 
+
+4.2.4 Temperature Modes 
+
+Figure 13 presents the translational-rotational, Ttr , temperature mode distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors addressed in this work. Figure 13(a) represents the Ttr temperature mode distributions for the flow composed solely of CO 2 while Fig. 13(b) represents results for the gas mixture of CO 2 + N 2. The results shown in this figure indicate that the maximum temperature values decrease with an increase in the a weight factor value. The Ttr 
+
+temperature mode distributions obtained in the present work show higher maximum temperature values than the maxima observed in the literature [1, 8] for somewhat similar calculations. This result seems to be a direct consequence of the mesh refinement used for the non-equilibrium region in the present calculations. −0.028 −0.026 −0.024 −0.022 X/R 2000 4000 6000 8000 10000 12000 Temperature ( Ttr ) [K] 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8
+
+(a) CO 2 flow. −0.028 −0.026 −0.024 −0.022 X/R 2000 4000 6000 8000 10000 12000 Temperature ( Ttr ) [K] (b) CO 2 + N 2 flow. 
+
+Figure 13: Mars Pathfinder translational-rotational temperature mode distributions along the stagnation streamline in the non-equilibrium region. The difference between the maximum Ttr value for a = 0 .4 and a = 0 .8 in Fig. 13 is around 1000 K 
+
+in both cases. The difference between the CO 2 and CO 2 + N 2 gas mixtures seems only to be related to the position of the non-equilibrium region, more specifically, the position of the “ramp up” of the Ttr 
+
+temperature mode distributions. Figure 14 presents the vibrational-electronic, Tve , temperature mode distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors here used. Figure 14(a) represents the Tve temperature mode distributions for the flow composed solely of CO 2, whereas Fig. 14(b) represents results for the gas mixture of CO 2 + N 2.The same behavior observed for the temperature modes in previous results is present in the Tve tem-perature mode distributions shown in Fig. 14. The vibrational-electronic temperature mode distributions indicate no significant differences when including the N 2 chemical species in the flow gas mixture. This result may relate to the fact that only 5 % of N 2 exists in the flow gas mixture. Therefore, the energy 17 −0.028 −0.026 −0.024 −0.022 −0.020 X/R 1000 2000 3000 4000 5000 6000 7000 Temperature ( Tve ) [K] 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) CO 2 flow. −0.028 −0.026 −0.024 −0.022 X/R 1000 2000 3000 4000 5000 6000 7000 Temperature ( Tve ) [K] (b) CO 2 + N 2 flow. 
+
+Figure 14: Mars Pathfinder vibrational-electronic temperature mode distributions along the stagnation streamline in the non-equilibrium region. absorbed by the dissociation reactions of N 2 is not sufficiently large to imply significant changes in the flow behavior. The simulations regarding the Mars Pathfinder, in both gas mixture conditions, show that the Ttr and 
+
+Tve temperature modes do change when varying the weight factors of Park’s wo-temperature model. This result is consistent with the behavior observed for the FIRE II reentry capsule in previous discussions. However, as stated, this behavior is inconsistent with the results presented in Ref. [5]. The conditions for the Mars Pathfinder simulations in the present work are less severe than those studied in Ref. [5]. This difference in behavior observed, when compared with the literature, indicates that further analyses regarding Park’s control temperature weight factors are necessary. 
+
+4.2.5 Stagnation Point Convective Heat Flux 
+
+Figure 15 shows the stagnation point convective heat flux for the different sets of weight factors proposed in the present work. Figure 15(a) presents the results for the flow composed solely of CO 2, and Fig. 15(b) has the results for the flow gas mixture of CO 2 + N 2. The experimental data used as reference are from Ref. [3], represented by the black diamond-shaped symbol. The margin of error, represented by the black bars, is approximately 12 .7 % for the total stagnation heat flux. As stated, this experimental data is only for carbon dioxide flows. 749 Test 700 750 800 850 900 Heat Flux (q) [W /cm 2]
+
+> 749 872 .5873 .0873 .5
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8Exp. 
+
+(a) CO 2 flow. 749 Test 700 750 800 850 900 Heat Flux (q) [W /cm 2] 
+
+> 749 867 .5868 .0868 .5
+
+(b) CO 2 + N 2 flow. 
+
+Figure 15: Mars Pathfinder stagnation point convective heat flux. The results obtained in this work for both flow conditions are within the margin of error of the experimental data, as shown in Fig. 15. The differences between the results for each set of weight factors are less than 0.15 % of the average predicted value for both gas mixtures. The present simulations 18 overpredict the stagnation point convective heat flux when compared to the experimental data. The flow with the CO 2 + N 2 gas mixture yields lower stagnation point convective heat flux values. This difference is due to dissociation reactions of the N 2, which absorb energy available in the flowfield. Note that the present analysis does not include the radiative phenomena. Therefore, the impact of Park’s control temperature weight factors in predicting the stagnation point convective heat flux is significantly small and can be considered negligible. 
+
+4.2.6 Chemical Species Mass Fraction 
+
+The present study considers an 8-species chemical model to simulate Mars’ atmosphere. Moreover, this work proposed an analysis of two different flow gas mixture compositions. Therefore, presenting the mass fraction distributions for all chemical species considered in this study would be excessive detail for the present conference paper. Thus, the results presented in this section are related to the chemical species considered strong radiators by the literature [9, 35, 37, 38]. The chemical species chosen are CO 2, CO, N, and NO. The mass fraction distributions for N and NO are only present in the gas mixture composition of CO 2 + N 2. Figure 16 shows the CO 2 mass fraction distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors a = 0 .4, 0.5, 0.7, 0.8, and 0.8. The left graph in Fig. 16 refers to the gas mixture composition of CO 2, whereas the right one refers to the CO 2 + N 2 gas mixture composition. −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.30.40.50.60.70.80.91.0Mass Fraction of CO 2
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8         
+
+> (a) CO 2flow. −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.30.40.50.60.70.80.91.0Mass Fraction of CO 2(b) CO 2+ N 2flow.
+
+Figure 16: Mars Pathfinder CO 2 mass fraction distributions along the stagnation streamline in the non-equilibrium region. The CO 2 mass fraction distributions in Fig. 16 are very similar between the two different gas mixture compositions. This result indicates that the addition of N 2 does not impact the behavior of the CO 2
+
+mass fraction distributions. Figure 16 shows that, in both gas mixture compositions, the increase of the 
+
+a weight factor accelerates the consumption of CO 2 in the non-equilibrium region. This result follows the expected behavior of endothermic reactions, where control temperature distributions, Tc, of higher magnitudes favor dissociation reactions, which are endothermic chemical reactions. Moreover, these results agree with the observed behavior in the simulation for the FIRE II reentry capsule. Inside the shock layer, the mass fraction distributions tend to “converge” to a unique solution with different sets of weight factors. These results indicate that even with the flow gas mixture changing along the stagnation streamline, the flow has sufficient relaxation time to achieve the equilibrium state. Estimating the CO 2
+
+mass fraction distributions is of interest because it influences radiative phenomena. Figure 17 shows the CO 2 mass fraction distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors a = 0 .4, 0.5, 0.7, 0.8, and 0.8. the left graph in Fig. 17 refers to the gas mixture composition of CO 2 and the right graph refers to the CO 2 + N 2 gas mixture composition. The CO mass fraction distributions, Fig. 17, are, in a metaphorical way, a specular reflection of the CO 2 mass fraction distributions, Fig. 16. This behavior is expected because the CO 2 dissociates into CO + O by the chemical reaction 
+
+CO 2 + M −−⇀↽−− CO + O + M , (25) where M represents the reaction partner that can be any other chemical species considered in the chemical model. The increase in the a weight factor value accelerates the production of CO. The changes in the 19 −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.00.10.20.30.4Mass Fraction of CO 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8(a) CO 2 flow. −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.00.10.20.30.4Mass Fraction of CO (b) CO 2 + N 2 flow. 
+
+Figure 17: Mars Pathfinder CO mass fraction distributions along the stagnation streamline in the non-equilibrium region. weight factor values do not impact the shock layer, as expected for a fluid in the equilibrium state. Note that the differences caused by the different values of the weight factor in the mass fraction distributions in the non-equilibrium region are small in both Figs. 16 and 17. However, the gap between the mass fraction distributions within the non-equilibrium region is consistent, meaning that there is no unique solution. Figure 18 shows the N and NO mass fraction distributions along the stagnation streamline in the non-equilibrium region for the set of weight factors a = 0 .4, 0.5, 0.7, 0.8, and 0.8. The left graph, Fig. 18(a), refers to the mass fraction distributions of atomic nitrogen, and the right one, Fig. 18(b), refers to the NO mass fraction distributions. −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.0000 0.0002 0.0004 0.0006 0.0008 0.0010 0.0012 Mass Fraction of N 
+
+a = 0 .4
+
+a = 0 .5
+
+a = 0 .6
+
+a = 0 .7
+
+a = 0 .8
+
+(a) N mass fraction distributions. −0.025 −0.020 −0.015 −0.010 −0.005 0.000 X/R 0.000 0.002 0.004 0.006 0.008 0.010 Mass Fraction of NO (b) NO mass fraction distributions. 
+
+Figure 18: Mars Pathfinder N and NO mass fraction distributions along the stagnation streamline in the non-equilibrium region for the CO 2 + N 2 freestream gas mixture composition. Figure 18(a) shows the production and consumption of N in the non-equilibrium region and shock layer. The increase of the a weight factor value accelerates the production of N by favoring the dissociation of N 2. The maximum value of N increases with the increase of the a value. However, the differences among the maximum values of N mass fraction for a = 0 .6, 0.7, and 0.8 are quite small. Moreover, the gap between the mass fraction distributions of different sets of weight factors is also small. The mass fraction distributions in the shock layer “converge” to a unique solution, indicating the equilibrium state. Figure 18(b) shows that the increase in the a weight factor value yields higher mass fraction values. The differences between the mass fraction distributions are consistent, indicating that the different sets of weight factors do not “converge” to a unique solution. The NO mass fraction increases along the shock layer. The results observed for the N and NO chemical species are consistent with the theoretical formulation adopted by the numerical tool. 20 5 CONCLUDING REMARKS 
+
+The present study investigated hypersonic entry/reentry flows in thermodynamic non-equilibrium con-ditions. The Navier-Stokes equations with source terms accounting for chemical reactions and non-equilibrium phenomena are solved numerically. The present work simulated flow conditions for Earth reentry and Mars entry hypersonic flows in thermodynamic non-equilibrium. An 11-species chemical model simulates Earth’s atmosphere, and an 8-species chemical model simulates Mars’ atmosphere. The present work used a numerical tool with Park’s two-temperature model implemented to account for the thermal non-equilibrium. The weight factors used to calculate the control temperature, Tc, in Park’s two-temperature model, “controls” the energy transfer between dissociation and ionization reactions. The present work analyzed the influence of the choice of the set of weight factors of Park’s two-temperature model on the flow behavior of Mars and Earth’s hypersonic entry/reentry flows. The results presented in this study are in terms of the Mach number, translational-rotational and vibrational-electronic tempera-ture modes, and chemical species mass fraction distributions along the stagnation streamline. Moreover, the present study also presents results for the stagnation point convective heat flux on the vehicle body. The present work results agree with experimental and numerical data in the literature. The present study aims to broaden the understanding regarding the influence of Park’s two-temperature model weight factors on the flow behavior. A better understanding of Park’s weight factors allows for better use of Park’s model. The results observed in the present study show the impact of the choice of the set of weight factors of Park’s two-temperature model on the flow behavior. The changes caused by the weight factors occur in regions of the domain with high-intensity non-equilibrium behavior, such as the region around the shock wave. The increase of the a weight factor tends to move the shock wave away from the vehicle body in all cases tested. However, the changes are small compared to the position of the shock wave in relation to the vehicle body. The present work shows that the weight factors greatly influence the Ttr and Tve temperature mode distributions for both Earth and Mars hypersonic flows. There is a slight change in the position of the temperature mode distributions, where the temperature mode distributions tend to move away from the vehicle body. Moreover, the increase of the a weight factor causes a decrease in the maximum temperature values observed. The magnitude of the tempera-ture mode maximum values can vary by thousands of Kelvin. The changes in the temperature profiles are closely related to chemical reactions. The control temperature directly affects the mass fraction distributions of the chemical species consid-ered in the flow. As presented in the theoretical formulation, Park’s control temperature is the reference to calculate the chemical reaction rates and the equilibrium constant. The increase of the a weight factor value increases the rate of consumption or production of the chemical species that participate in dissociation reactions. The present work found that the different sets of weight factors affect each chemical species’ mass fraction distributions differently based on the chemical reactions involved with the chemical species. The impact of the choice of the set of weight factors is more visible and significant in the hypersonic flow regarding the FIRE II reentry capsule. In the simulations performed for the FIRE II capsule, the present work found that the weight factors significantly influence the NO mass fraction distributions. This behavior is mainly by the dissociation reaction of NO, favored by higher values of the 
+
+a weight factor, and the production of NO limited by chemical reactions not influenced by the changes in the weight factor values. The present work also evaluated the stagnation point convective heat flux for the FIRE II and Mars Pathfinder flow conditions. The results show good agreement with the experimental data used as a reference. The changes in the weight factors seem to follow a consistent behavior for the simulations performed for the FIRE II reentry capsule at the conditions of H = 71 .02 km and 41 .60 km , while the same is not valid for H = 48 .37 km . For the Mars Pathfinder simulations, the results regarding the stagnation point convective heat flux do not seem to follow a pattern. Therefore, the variations in the temperature distributions along the stagnation line and closer to the stagnation point may arise from numerical fluctuations for the Mars Pathfinder simulations. For the FIRE II cases, the authors are still investigating the patterns observed in the stagnation point convective heat flux results for the FIRE II simulations. In both FIRE II and Mars Pathfinder simulations, the differences between the stagnation point convective heat flux results are less than 0.1 % of the average value of the results for each case. Thus, the impact of the weight factor values is not of the same significance when compared with the changes observed in the non-equilibrium region. Reference [6] indicate that there is no advantage of using a = 0 .7 over a = 0 .5. Moreover, Ref. [5] found that the comparison between a = 0 .7 and a = 0 .5 produces visible differences in the vibrational-electronic temperature mode while no changes are observed for the translational-rotational temperature 21 mode distributions. The present work results show significant changes in the property distributions within the non-equilibrium region. Therefore, the choice of the set of weight factors may be important, depending on the flow conditions and research goals. However, considering the data collected in the present work, the authors cannot recommend any specific weight factor values for the correct solution of the non-equilibrium region. It seems that the sets of the weight factors, typically suggested by the literature, are indeed adequate for some simulations. However, as shown in the results for the FIRE II, there are some cases where the weight factor values significantly impact the property distributions. With this in mind, more data would be necessary to specify the correct sets of weight factors. Moreover, the flow conditions must be accounted for when choosing the weight factor values. 
+
+# 6 ACKNOWLEDGEMENTS 
+
+The authors gratefully acknowledge the support for the present research provided by Fundação de Amparo à Pesquisa do Estado de São Paulo, FAPESP, under the Research Grants No. 2013/07375-0, 2021/02705-8, 2022/07604-8, and 2024/07590-2. The availability of computational resources from the National Laboratory for Scientific Computing, LNCC/MCTI, under the HFWBTF Project at the SDumont supercomputer, and from the Center for Mathematical Sciences Applied to Industry, CEPID-CeMEAI, also funded by FAPESP under the Research Grant No. 2013/07375-0, are also gratefully acknowledged. Partial support for the present research was also provided by Conselho Nacional de De-senvolvimento Científico e Tecnológico, CNPq, under the Research Grant No. 315411/2023-6. This study was financed in part by Coordenação de Aperfeiçoamento de Pessoal de Nível Superior - Brasil (CAPES) - Finance Code 001. 
+
+# 7 REFERENCES 
+
+[1] Scalabrin, L. C., “Numerical Simulation of Weakly Ionized Hypersonic Flow Over Reentry Capsules,” Ph.D. thesis, University of Michigan, Ann Arbor, Michigan, 2007. [2] Cornette, E. S., Forebody Temperatures and Calorimeter Heating Rates Measured During Project Fire II Reentry at 11.35 Kilometers per Second , NASA Technical Memorandum, NASA-TM-X-1305, NASA, 1966. [3] Hollis, B. R., Experimental and Computational Aerothermodynamics of a Mars Entry Vehicle , NASA Contractor Report, NASA-CR-201633, NASA, 1996. [4] Moreira, F. C., “Análise de Escoamentos Hipersônicos em Condições de Não-Equilíbrio Ter-modinâmico com Aplicações em Reentrada Atmosférica,” Ph.D. thesis, Faculdade de Engenharia Mecânica, Universidade Estadual de Campinas, Campinas, São Paulo, 2020. [5] Niu, Q., Yuan, Z., Dong, S., and Tan, H., “Assessment of Nonequilibrium Air-Chemistry Models on Species Formation in Hypersonic Layer,” International Journal of Heat and Mass Transfer , Vol. 165, 2018, pp. 703–716. https://doi.org/https://doi.org/10.1016/j.ijheatmasstransfer.2018.07.007. [6] Park, C., “The Limits of Two-Temperature Kinetic Model in Air,” 48th AIAA Aerospace Sciences Meeting Including the New Horizons Forum and Aerospace Exposition , AIAA, Orlando, Florida, USA, 2010, p. 13. https://doi.org/10.2514/6.2010-911. [7] Moreira, F. C., Wolf, W. R., and Azevedo, J. L. F., “Numerical Simulations of Hypersonic Flows over the Fire II Capsule: Impact of Mesh Resolution and Boundary Conditions on Convective Heat Transfer,” AIAA SciTech 2023 Forum , AIAA, National Harbor, Maryland, USA & Online, 2023, p. 12. https://doi.org/10.2514/6.2023-1387. [8] Moreira, F. C., Wolf, W. R., and Azevedo, J. L. F., “Thermal Analysis of Hypersonic Flows of Carbon Dioxide and Air in Thermodynamic Non-Equilibrium,” International Jour-nal of Heat and Mass Transfer , Vol. 165, Part A, 2021, pp. 120670.1–120670.19. https://doi.org/10.1016/j.ijheatmasstransfer.2020.120670. 22 [9] Boyd, I. D., and Schwartzentruber, T. E., Nonequilibrium Gas Dynamics and Molecular Simulation ,Cambridge Aerospace Series, Cambridge University Press, Cambridge, 2017. [10] Agrawal, A., Kushwaha, H. M., and Jadhav, R. S., Microscale Flow and Heat Transfer , Mechanical Engineering Series, Springer International Publishing, 2020. https://doi.org/10.1007/978-3-030-10662-1. [11] Bird, G. A., Molecular Gas Dynamics and the Direct Simulation of Gas Flows , Oxford Engineering Science Series, Oxford University Press, Oxford, 1994. [12] Bird, G. A., The DSMC Method , CreateSpace Independent Publishing Platform, 2013. [13] Anderson, J. D., Hypersonic and High Temperature Gas Dynamics , 2 nd ed., AIAA Education Series, AIAA, 2006. [14] Park, C., “Assessment of Two-Temperature Kinetic Model for Ionizing Air,” Jour-nal of Thermophysics and Heat Transfer , Vol. 3, No. 3, 1989, pp. 233–244. https://doi.org/https://doi.org/10.2514/3.28771. [15] Martin, A., Scalabrin, L. C., and Boyd, I. D., “High Performance Modeling of Atmospheric Re-entry Vehicles,” Journal of Physics: Conference Series , Vol. 341, No. 1, 2012, pp. 012002.1–012002.12. https://doi.org/https://dx.doi.org/10.1088/1742-6596/341/1/012002. [16] Gillespie, L. J., “The Gibbs–Dalton Law of Partial Pressures,” Physical Review , Vol. 36, No. 1, 1930, pp. 121–131. https://doi.org/https://doi.org/10.1103/physrev.36.121. [17] Cramer, M. S., “Numerical Estimates for the Bulk Viscosity of Ideal Gases,” Physics of Fluids ,Vol. 24, No. 6, 2012, pp. 066102.1–066102.23. https://doi.org/https://doi.org/10.1063/1.4729611. [18] Jaeger, F., Matar, O. K., and Müller, E. A., “Bulk Viscosity of Molecular Flu-ids,” Journal of Chemical Physics , Vol. 148, No. 6, 2018, pp. 174504.1–174504.12. https://doi.org/https://doi.org/10.1063/1.5022752. [19] Sharma, B., and Kumar, R., “A Brief Introduction to Bulk Viscosity of Fluids,” 2023. https://doi.org/10.48550/ARXIV.2303.08400. [20] Wilke, C. R., “A Viscosity Equation for Gas Mixtures,” The Journal of Chemical Physics , Vol. 18, No. 4, 1950, pp. 517–519. https://doi.org/https://doi.org/10.1063/1.1747673. [21] Blottner, F. G., Johnson, M., and Ellis, M., “Chemically Reacting Viscous Flow Program for Multi-component Gas Mixtures,” Tech. rep., Sandia National Lab. (SNL-NM), Albuquerque, New Mexico, Jan. 1971. https://doi.org/10.2172/4658539. [22] Vincenti, W. G., and Kruger, C. H., Introduction to Physical Gas Dynamics , John Wiley & Sons, New York, 1982. [23] Gupta, R. N., Yos, J. M., Thompson, R. A., and Lee, K.-P., A Review of Reactions Rates and Thermodynamic and Transport Properties for an 11-species Air Model for Chemical and Thermal Nonequilibrium Calculations to 30 , 000 K, NASA Reference Publication, NASA-RP-1232, NASA, 1990. [24] Gnoffo, P. A., Gupta, R. N., and Shinn, J. L., Conservation Equations and Physical Models for Hypersonic Air Flows in Thermal and Chemical Nonequilibrium , NASA Technical Publication, NASA-TP-2867, NASA Langley, Hampton, Virginia, 1989. [25] Atkins, P. W., and de Paula, J., Physical Chemistry for the Life Sciences , Oxford University Press, 2006. [26] Park, C., Nonequilibrium Hypersonic Aerothermodynamics , Wiley, 1990. [27] MacCormack, R. W., and Candler, G. V., “The Solution of the Navier-Stokes Equations Us-ing Gauss-Seidel Line Relaxation,” Computers and Fluids , Vol. 17, No. 1, 1989, pp. 135–150. https://doi.org/https://doi.org/10.1016/0045-7930(89)90012-1. 23 [28] Steger, J. L., and Warming, R. F., “Flux Vector Splitting of the Inviscid Gasdynamic Equations with Application to Finite-Difference Methods,” Journal of Computational Physics , Vol. 40, No. 2, 1981, pp. 263–293. https://doi.org/https://doi.org/10.1016/0021-9991(81)90210-2. [29] Yang, X., Gui, Y., Xiao, G., Du, Y., Liu, L., and Wei, D., “Reacting Gas-Surface Interac-tion and Heat Transfer Characteristics for High-Enthalpy and Hypersonic Dissociated Carbon Dioxide Flow,” International Journal of Heat and Mass Transfer , Vol. 146, 2020, p. 118869. https://doi.org/10.1016/j.ijheatmasstransfer.2019.118869. [30] Jawahar, P., and Kamath, H., “A High-Resolution Procedure for Euler and Navier–Stokes Com-putations on Unstructured Grids,” Journal of Computational Physics , Vol. 164, No. 1, 2000, pp. 165–203. https://doi.org/https://doi.org/10.1006/jcph.2000.6596. [31] Park, C., “Assessment of a Two-Temperature Kinetic Model for Dissociating and Weakly Ioniz-ing Nitrogen,” Journal of Thermophysics and Heat Transfer , Vol. 2, No. 1, 1988, pp. 8–16. https://doi.org/https://doi.org/10.2514/3.55. [32] Hirsch, C., Numerical Computation of Internal and External Flows: The Fundamentals of Compu-tational Fluid Dynamics , Elsevier, Oxford, 2007. [33] Venkatakrishnan, V., Implicit Schemes and Parallel Computing in Unstructured Grid CFD , NASA Contractor Report, NASA-CR-195071, NASA, 1995. [34] Poltronieri, G. M., “Analysis of Reactive Hypersonic Flows Under Thermochemical Non-Equilibrium Conditions: Influence of the Control Temperature of Park’s Two-Temperature Model on the Flow Behavior,” Master’s thesis, Instituto Tecnológico de Aeronáutica – ITA, São José dos Campos, São Paulo, 2024. [35] Priyadarshini Sharma, M., Munafò, A., Panesi, M., Brandis, A. M., and Cruden, B. A., “One-Dimensional Modeling Methodology for Shock Tubes: Application to the EAST Facility,” 2018 Joint Thermophysics and Heat Transfer Conference , AIAA Paper No. 2018-4181, Atlanta, Georgia, 2018, p. 12. https://doi.org/10.2514/6.2018-4181. [36] Moreira, F. C., Wolf, W. R., and Azevedo, J. L. F., “Investigation of Thermodynamic Non-Equilibrium in Hypersonic Flows Over the Mars Pathfinder Capsule,” AIAA SciTech 2021 Forum ,AIAA, Virtual Event, 2021, p. 16. https://doi.org/10.2514/6.2021-0491. [37] Modest, M. F., Radiative Heat Transfer , 3 rd ed., Elsevier, 2013. https://doi.org/10.1016/c2010-0-65874-3. [38] Moreira, F. C., Levin, D. A., Thirani, S., Wolf, W. R., and Azevedo, J. L. F., “A Study on the Impact of Radiative Heat Transfer for Hypersonic Nonequilibrium Flows over a Cylin-der,” AIAA SciTech 2024 Forum , AIAA Paper No. 2024-0884, Orlando, Florida, USA, 2024. https://doi.org/10.2514/6.2024-0884. 24

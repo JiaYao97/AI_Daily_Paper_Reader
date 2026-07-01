@@ -1,0 +1,712 @@
+Title: Mitigating adjoint chaos in wall turbulence
+
+URL Source: https://arxiv.org/pdf/2606.25399v1
+
+Published Time: Thu, 25 Jun 2026 00:31:31 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+> Under consideration for publication in J. Fluid Mech.
+
+Banner appropriate to article type will appear here in typeset article 
+
+# Mitigating adjoint chaos in wall turbulence 
+
+Qi Wang 1,2 and Tamer A. Zaki 1 
+
+> 1Department of Mechanical Engineering, Johns Hopkins University, Baltimore, MD 21218, USA
+> 2Department of Aerospace Engineering, San Diego State University, San Diego, CA 92182, USA
+> Corresponding author: Tamer A. Zaki, t.zaki@jhu.edu (Received xx; revised xx; accepted xx)
+
+Estimating past events in wall turbulence based solely on surface measurements and first principles is an ill-posed problem that is complicated by chaos. The sensitivity of a measurement to the earlier flow state is described by the adjoint Navier-Stokes equations, which are solved in reverse time starting from the measurement kernel at the sensing position and time. The resulting adjoint field is the spatio-temporal domain of dependence (DOD) of the sensor, which is a dual to the concept of the domain of influence (DOI) of an actuator in the linearized forward equations. In channel turbulence, the energy of each adjoint realization grows exponentially in backward time according to the Lyapunov exponent, even though the energy of the ensemble average should decay. We introduce a linear eddy-viscosity closure model in the ensemble-averaged adjoint equations, and directly compute the mean DOD and compare our prediction to the ensemble average. Furthermore, we demonstrate that the DOD of a wall-stress measurement and the DOI resulting from a wall-stress perturbation exhibit respective universal behaviors across Reynolds numbers. However, their spatio-temporal structures differ qualitatively, due to the time-asymmetry of the governing equations. The DOD field has a two-part structure: one component is associated with the Orr mechanism, characterized by rapid reorientation under mean shear, and the other is related to self-similar expanding streaky structures. These two components jointly define the sensitivity of the wall-stress measurement to past flow events. 
+
+1. Introduction 
+
+In turbulent channel flow, the wall plays an important role as a net source of vorticity injection into the domain. When considered from an observer’s perspective, the wall vorticity depends on the earlier-in-time flow state. Previous efforts have examined the contributions to the spanwise wall-vorticity, or the streamwise surface stress, by stretching and tiling of earlier vorticity (Xiang et al. 2025). In the present work, we are concerned with the utility of measurements of the wall stress to estimate the earlier flow state. Our objective is to determine the domain of dependence (DOD) of the measurement (Wang & Zaki 2025 b), which is defined as the earlier-in-time spatio-temporal state that can optimally alter the recorded surface stress. We develop an eddy-viscosity model to 
+
+Abstract must not spill onto p.2 0 X0-1 
+
+> arXiv:2606.25399v1 [physics.flu-dyn] 24 Jun 2026
+
+Qi Wang and Tamer A. Zaki 
+
+efficiently estimate the ensemble-averaged DOD in turbulent channel flow, compare it to the computationally expensive ensemble average, and demonstrate its universality and dynamics across Reynolds numbers. The concept of a domain of dependence originates from the theory of hyperbolic partial differential equations, where the solution at a given space-time point depends only on the initial condition within a characteristic cone with boundaries defined by the characteristic speeds of the system (Courant & Hilbert 1963). For the Navier-Stokes equations, which are parabolic-elliptic and propagate information at infinite speed of sound, a sensitivity-based analog is more appropriate: one seeks not which points affect the measurement, but the ones that have a strong causal influence. Identifying earlier flow events causally affecting a surface measurement is central to state estimation, model-based flow control, and the physical interpretation of dynamics. The adjoint framework is powerful for data assimilation and, closely related, the evaluation of the sensitivity of measurements to past flow events. In data assimilation, the adjoint field yields the gradient of the cost function with respect to the unknown parameters, and thus guides the minimization of the mismatch between the simulation and measurements (Wang et al. 2019; Zaki 2025; Wang & Zaki 2025 a). In sensitivity analysis, the adjoint field is the flow state that has the greatest impact on an observable, and offers profound physical insight, particularly in linear, non-chaotic settings such as passive scalar transport in laminar flows (Pudykiewicz 1998; Keats et al. 
+
+2007; Neupauer & Wilson 2001; Wang & You 2026). In turbulent flows, adjoint methods have demonstrated the inherent difficulty of reconstructing the full flow field from limited measurements. When the observations are the wall stresses, only near-wall structures and the largest outer-layer motions can be reliably recovered (Wang et al. 2022). A key challenge in turbulent flows is the exponential amplification of the adjoint field in backward time, which is the dual to the classical butterfly effect (Lorenz 2000; Deissler 1987). Infinitesimally close measurements can arise due to entirely different flow states (Zaki & Wang 2021). The exponential growth of each adjoint realization in backward time can render both data assimilation and sensitivity analyses unstable or infeasible. The problem is especially acute when the target quantities are long-time averages (Yuan 
+
+et al. 2023; Garai & Murman 2021; Xu et al. 2023). The difficulty has its roots in the fluctuation-response relations of statistical mechanics. Kubo’s theorem (Kubo 1957) states that the linear response of an equilibrium observable to a small perturbation equals an equilibrium time-correlation function of the unperturbed system. In the present context, the statistically stationary turbulent channel flow is the equilibrium ensemble, and Kubo’s theorem identifies the ensemble-averaged adjoint as a two-point space-time velocity correlation of the unperturbed turbulence. Two consequences follow. First, the mean adjoint must be smooth and well-behaved even though individual realizations diverge exponentially, because the underlying equilibrium correlations of stationary turbulence are finite and regular. Second, any closure that accurately captures the dominant space-time correlations of the turbulence should yield a faithful approximation of the mean DOD without requiring direct ensemble averaging of chaotic trajectories. To address these difficulties, stabilization strategies have been developed. Least-Squares Shadowing (LSS) replaces the ill-conditioned initial-value problem with a well-posed variational problem, yielding accurate sensitivities of long-time averages in a simple, chaotic system (Wang et al. 2014; Wang 2014; Chater et al. 2017; Ni & Wang 2017). The primal trajectory is replaced by a shadow trajectory that remains as close as possible to the original chaotic orbit while satisfying the linearized governing equations. The ill-posed backward-time initial-value problem is then converted into a coupled forward-backward boundary-value problem with a well-conditioned normal equation, eliminating the exponential divergence at the cost of a global time-window solve. LSS yields accurate  
+
+> 0X0-2
+
+Journal of Fluid Mechanics 
+
+sensitivities for low-dimensional chaotic systems such as the Lorenz equations and the Kuramoto-Sivashinsky equation (Wang et al. 2014; Chater et al. 2017), but its computational cost scales with both the state dimension and the time horizon, making direct application to turbulent flows prohibitive. Non-intrusive least-squares shadowing (NILSS) (Ni & Wang 2017) reduces this cost by restricting the shadow correction to the unstable subspace of the flow, requiring only a number of additional forward simulations equal to the number of positive Lyapunov exponents. However, the dimension of the unstable subspace grows with Reynolds number in turbulent shear flows, limiting the practical usage (Chandramoorthy et al. 2019). Adjoint-energy-based stabilization introduces artificial damping motivated by the adjoint energy budget, and offers a cheaper alternative for turbulent flows (Blonigan et al. 2012; Garai & Murman 2021). In the context of the present work, the mean DOD requires an ensemble average of the adjoint fields (Wang et al. 2022), evaluated from different realizations of the forward trajectory. However, due to a power-law tail in the histogram of adjoint gradients, ensemble averaging converges very slowly (Eyink et al. 2004). A potential remedy to this slow convergence is sought, and is inspired by the literature on the forward-time linearized dynamics in turbulent channel flow. Rather than study the forward evolution of perturbations to the full turbulent state, which are exponentially unstable, Del Alamo & Jimenez (2006) and Cossu et al. (2009) considered the mean turbulent profile and adopted an eddy-viscosity model for the analysis. They demonstrated that, despite the damping of all eigenmodes, perturbations can exhibit significant transient energy growth that closely mirrors the organization and scaling of coherent structures observed in wall turbulence. Vadarevu et al. (2019) showed that an impulsive body force in the linearized Navierˆ a=C“Stokes system, augmented with an eddy-viscosity model, produces vortexˆ a=C“streak structures that exhibit geometric self-similarity and decay predictably with time. These analyses predict an inner and outer peak in the optimal energy amplification, and a self-similar evolution of streamwise streaks. In addition to the growth of streaks by lift-up (Landahl 1980; Liu et al. 2024 b), Orr amplification is another important non-modal mechanism where perturbations that are initially tilted against the mean shear grow as they are rotated toward the direction of maximum strain. Encinar & Jim´ enez (2020) demonstrated that conditionally averaged burst structures in fully nonlinear direct numerical simulations (DNS) are consistent with the Orr reorientation of upstream-tilted perturbations. Their results establish a direct connection between observed turbulent structures and the non-normal amplification of linearized dynamics. While the above studies focus on the forward-time evolution and statistical interpretation of coherent structures, the present work addresses the complementary problem of backward-time sensitivity: namely, which earlier perturbations most strongly influence a given wall-stress measurement. The rest of the paper is structured as follows. In §2, we present the mathematical formulation for the eddy-viscosity closure of the ensemble-averaged linear forward and adjoint equations, and provide a physical interpretation of the mean adjoint fields. In §3, we contrast the forward and adjoint fields, and demonstrate their respective self-similar behaviors. We compare the adjoint model to ensemble averaging of realizations, and examine the forward-time dynamics of the computed adjoint DOD to aid the interpretation. Conclusions are provided in §4. 
+
+> 2. Mathematical Formulation
+
+We start from the linearized incompressible Navierˆ a=C“Stokes (NS) equations for turbulent channel flow, and perform Reynolds-averaging to evaluate the ensemble statistics. This  
+
+> 0X0-3
+
+Qi Wang and Tamer A. Zaki 
+
+leads to the Reynolds-averaged linearized Navierˆ a=C“Stokes equations (RA-LNS). With an appropriate closure model, we obtain the forward formulation and then derive the associated Reynolds-averaged adjoint Navier-Stokes (RA-ANS) system for backward-time sensitivity analysis. The reasoning and limitations of eddy-viscosity closure are discussed. The physical interpretations of these equations are then presented: the RA-LNS describes the forward-in-time domain of influence (DOI) of a disturbance, while the RA-ANS quantifies the back-in-time domain of dependence (DOD) of an observation. All the numerical solutions of the forward and adjoint Reynolds-averaged equations reported herein are performed in spectral space, using standard Fourier-Fourier-Chebyshev discretization of the governing equations. 2.1. The Reynolds-averaged linearized Navier-Stokes equations 
+
+Suppose the incompressible velocity field 𝑼 (𝒙 , 𝑡 ) is a realization of statistically stationary turbulent channel flow. Variables are non-dimensionalized by the half-channel height ℎ★,the ensemble-averaged bulk velocity 𝑈 ★𝑏 , and the fluid density 𝜌 ★, where superscript ★
+
+marks dimensional quantities and ⟨•⟩ is the ensemble average defined below. The non-dimensional Navier-Stokes equations are, 
+
+𝜕 𝑡 𝑼 + ( 𝑼 · ∇) 𝑼 = −∇𝑃 + 𝜈 ∇2𝑼 , ∇ · 𝑼 = 0, (2.1 a)where the non-dimensional kinematic viscosity and bulk Reynolds number are related by 𝑅𝑒 = 1/𝜈 := 𝑈 ★𝑏 ℎ★/𝜈 ★. Superscript + denotes normalization by viscous scales, specifically, the ensemble-averaged friction velocity 𝑈 ★𝜏 :=√︃ 𝜈 ★ (𝜕 ⟨𝑈 ★⟩/ 𝜕𝑦 ★)𝑦 ★=0 and lengthscale 𝜈 ★/ 𝑈 ★𝜏 . The friction Reynolds number is defined as 𝑅𝑒 𝜏 := 𝑈 ★𝜏 ℎ★/𝜈 ★.We introduce a small perturbation field (𝒖 , 𝑝 ) superimposed on top of (𝑼 , 𝑃 ). This perturbation is thus governed by the linearized Navier-Stokes equations, 
+
+𝜕 𝑡 𝒖 + ( 𝑼 · ∇) 𝒖 + ( 𝒖 · ∇) 𝑼 = −∇𝑝 + 𝜈 ∇2𝒖 , ∇ · 𝒖 = 0, 𝒖 0 = 𝝓 , (2.2) where 𝝓 is the initial velocity perturbation. The ensemble average of the above equations over different realizations of the turbulent field 𝑼 yields, 
+
+𝜕 𝑡 ⟨𝒖 ⟩ + ⟨ 𝑼 ⟩ · ∇ ⟨𝒖 ⟩ + (⟨ 𝒖 ⟩ · ∇) ⟨ 𝑼 ⟩ = −∇ · (⟨ 𝑼 ′𝒖 ′ + 𝒖 ′𝑼 ′⟩) − ∇ ⟨𝑝 ⟩ + 𝜈 ∇2 ⟨𝒖 ⟩ , (2.3 a)
+
+∇ · ⟨ 𝒖 ⟩ = 0, ⟨𝒖 ⟩0 = 𝝓 . (2.3 b)The ensemble average ⟨•⟩ is computed using realizations of statistically stationary turbulent base flows, and exploiting ergodicity. Specifically, a long trajectory of the forward flow is sampled evenly in time, with circular translation in the homogeneous 𝑥 and 𝑧 directions, to construct an ensemble of base flows 𝑼 (𝒙 , 𝑡 ). Each member of this ensemble is then adopted as the base flow to advance the perturbation fields 𝒖 . In (2.3), the terms 𝑼 ′𝒖 ′ +𝒖 ′𝑼 ′ are outer (dyadic) products, with components (𝑈 ′ 
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑗
+
++ 𝑢 ′
+
+> 𝑖
+
+𝑈 ′ 
+
+> 𝑗
+
+). The primed variables 𝑼 ′ ≡ 𝑼 − ⟨ 𝑼 ⟩ is the deviation away from the mean turbulent velocity field, and 𝒖 ′ ≡ 𝒖 − ⟨ 𝒖 ⟩ is the deviation from the mean perturbation field. Both deviations satisfy the divergence-free condition. We note from (2.2) and (2.3) the distinct dynamics of the evolution of an individual perturbation 𝒖 and of the mean ⟨𝒖 ⟩ evaluated over different realizations of 𝑼 . As shown in previous studies (Nikitin 2018; Wang et al. 2022), the instantaneous perturbation field grows exponentially in forward time at the Lyapunov rate. If we take a perturbed initial condition 𝑼 𝛿  
+
+> 0
+
+= 𝑼 0 + 𝒖 0, the evolution of this new field would gradually converge to the same statistically stationary channel-flow turbulence with the same mean, i.e. 𝑼 𝛿 = ⟨𝑼 ⟩  
+
+> 0X0-4
+
+Focus on Fluids articles must not exceed this page length Journal of Fluid Mechanics 
+
+as time 𝑡 → ∞ , or equivalently ⟨𝑼 ′⟩ = 0. As such, the ensemble-averaged difference between the perturbed and the original fields must decay at long forward times. As for the linear perturbations, each realization 𝒖 amplifies exponentially while the ensemble average ⟨𝒖 ⟩ ( 𝑡 ) decays in time (Malkus 1956; Markeviciute & Kerswell 2023; Zhu et al. 
+
+2024). This distinction between fluctuation growth and mean decay underlies the difficulty of computing the ensemble average in order to evaluate the mean of the linearized fields, which requires an exponentially growing number of samples as the time of interest is increased. We proceed to introduce a linear eddy-viscosity model (LEVM) to close ⟨𝑼 ′𝒖 ′ + 𝒖 ′𝑼 ′⟩.In the original LEVM, the turbulent stress tensor ⟨𝑼 ′𝑼 ′⟩ is modelled as, 
+
+−
+
+D
+
+𝑈 ′ 
+
+> 𝑖
+
+𝑈 ′
+
+> 𝑗
+
+E
+
+= 2𝜈 𝑡 ⟨𝑆 ⟩𝑖 𝑗 − 23 ⟨𝐾 ⟩ 𝛿 𝑖 𝑗 , (2.4) where 𝜈 𝑡 is the effective turbulent viscosity, ⟨𝑆 ⟩𝑖 𝑗 = 12
+
+
+
+𝜕 𝑗 ⟨𝑈 ⟩𝑖 + 𝜕 𝑖 ⟨𝑈 ⟩ 𝑗 
+
+
+
+is the mean strain-rate tensor for the base state 𝑼 , and ⟨𝐾 ⟩ = 12 𝑈 ′ 
+
+> 𝑖
+
+𝑈 ′ 
+
+> 𝑖
+
+is the fluctuation kinetic energy in the base state. Here 𝜖 ≪ 1 is an order parameter characterizing the magnitude of the velocity perturbation 𝒖 relative to the base-flow scale, i.e., |𝒖 | = 𝑂 (𝜖 |𝑼 |) ; the same 𝒖 
+
+appearing in equations (2.2-2.3) is used throughout. Introducing this perturbation into the eddy-viscosity relation yields the same statistical pattern at leading order in 𝜖 ,
+
+−
+
+D
+
+(𝑈 ′ 
+
+> 𝑖
+
++ 𝜖𝑢 𝑖 )( 𝑈 ′ 
+
+> 𝑗
+
++ 𝜖𝑢 𝑗 )
+
+E
+
+= 2𝜈 𝑡 (⟨ 𝑆 ⟩𝑖 𝑗 + 𝜖 ⟨𝑠 ⟩𝑖 𝑗 ) − 23 (⟨ 𝐾 ⟩ + 𝜖 𝑈 ′ 
+
+> 𝑙
+
+𝑢 𝑙 + 𝜖 2 ⟨𝑘 ⟩) 𝛿 𝑖 𝑗 . (2.5) Here ⟨𝑠 ⟩𝑖 𝑗 = 12
+
+
+
+𝜕 𝑗 ⟨𝑢 ⟩𝑖 + 𝜕 𝑖 ⟨𝑢 ⟩ 𝑗 
+
+
+
+is the mean strain-rate tensor for the perturbation field and ⟨𝑘 ⟩ = 12 𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+is the fluctuation kinetic energy for the perturbation field 𝒖 . Subtracting equations (2.4) and (2.5), and dividing by 𝜖 , yields, 
+
+−
+
+D
+
+𝑈 ′ 
+
+> 𝑖
+
+𝑢 𝑗 + 𝑈 ′ 
+
+> 𝑗
+
+𝑢 𝑖 
+
+E
+
+= 2𝜈 𝑡 ⟨𝑠 ⟩𝑖 𝑗 − 23 𝑈 ′ 
+
+> 𝑙
+
+𝑢 𝑙 𝛿 𝑖 𝑗 + O( 𝜖 ). (2.6) For clarity, we note that the repeated 𝑙 index implies summation (Einstein convention). Ignoring the higher-order terms, and applying 𝜕 𝑥 ⟨𝑈 ⟩ = 𝜕 𝑧 ⟨𝑈 ⟩ = ⟨𝑉 ⟩ = ⟨𝑊 ⟩ = 0 in a turbulent channel flow leads to equations for the modelled mean base flow 𝑈 and mean perturbations 𝒖 and 𝑝 , as approximations of ⟨𝑈 ⟩, ⟨𝒖 ⟩ and ⟨𝑝 ⟩,
+
+𝜕 𝑡 𝒖 +𝑈𝜕 𝑥 𝒖 +𝑣 𝑑 𝑦 𝑈 𝒆 𝑥 = −∇𝑝 +𝜈 𝑡 ∇2𝒖 + 𝑑 𝑦 𝜈 𝑡 
+
+   𝜕 𝑦 𝒖 + ∇ 𝑣  , ∇·𝒖 = 0, 𝒖 0 = 𝝓 . (2.7) In the above expression, the pressure 𝑝 includes the 𝑈 ′ 
+
+> 𝑙
+
+𝑢 𝑙 term. This set of equations can be termed the Reynolds-averaged linearized Navier-Stokes (RA-LNS), and they have the same form as the linearized Reynolds-averaged Navier-Stokes. In other words, the ensemble average of linear perturbations to different realizations of the base flow is the same as the linear perturbation to the ensemble-averaged base flow. The closure above implicitly assumes that the correlation term ⟨𝑼 ′𝒖 ′ + 𝒖 ′𝑼 ′⟩ depends instantaneously on the mean perturbation strain 𝜕 𝑦 𝒖 + ∇ 𝑣 through an eddy viscosity (Liu et al. 2024 a; Hamba 1995, 2004). In principle, the interaction between the turbulent fluctuations 𝑼 ′ and the perturbation field 𝒖 may involve a nonlocal dependence in time, so that the effective turbulent stress would contain a memory kernel that depends on the past history of the perturbation. In the present work, we neglect such memory effects and adopt a steady eddy-viscosity closure that depends only on the instantaneous mean strain. 
+
+0 X0-5 Qi Wang and Tamer A. Zaki 
+
+The herein adopted eddy-viscosity model is an approximation to the true Reynolds stress dynamics, and linearization about this model introduces an additional simplification. Nonetheless, this approach has been successful in capturing the linear dynamics, including transient growth, and in explaining the organization and scaling of coherent structures in turbulent flows (Del Alamo & Jimenez 2006; Cossu et al. 2009; Vadarevu et al. 2019). For the present purposes, we model the eddy viscosity using the analytic expression by Cess (1958), 
+
+𝜈 𝑡 (𝑦 )
+
+𝜈 = 12
+
+
+
+1 + 𝜅 2 Re 2
+
+> 𝜏
+
+9
+
+
+
+2𝑦 − 𝑦 22 
+
+3 − 4𝑦 + 2𝑦 22 h
+
+1 − exp [(| 1 − 𝑦 | − 1) Re 𝜏 /𝐴 ]
+
+i 1/2
+
++ 12 .
+
+(2.8) The von K´ arm´ an constant is 𝜅 = 0.426 and 𝐴 = 25 .4. The computation of the turbulent mean velocity profile 𝑈 (𝑦 ) involves integration of (𝑦 − 1)𝑈 𝜏 𝑅𝑒 𝜏 /( 𝜈 𝑡 /𝜈 ) from 0 to 𝑦 .2.2. The Reynolds-averaged adjoint equations and the mean DOD 
+
+The solution of the averaged linearized forward equations (2.7) from the previous section can be written as the linear map, 
+
+⟨𝒖 ⟩𝑡 𝑚 = A ⟨ 𝒖 ⟩0 , (2.9) where A is a linear operator acting on the space of divergence-free vector fields with sufficient smoothness, representing the evolution of the perturbation from the initial condition ⟨𝒖 ⟩0 to the measurement time 𝑡 𝑚 . The adjoint evolution A† is then derived from the forward-adjoint duality relation, 
+
+I
+
+
+
+A ⟨ 𝒖 ⟩0 , ⟨𝒖 ⟩†
+
+> 𝑡 𝑚
+
+
+
+= I
+
+
+
+⟨𝒖 ⟩0 , A† ⟨𝒖 ⟩†
+
+> 𝑡 𝑚
+
+
+
+, (2.10) where the inner product is defined as I ( 𝒇 , 𝒈 ) := ∫ 
+
+> 𝑉
+
+𝒇 𝐻 𝒈 𝑑𝑉 and ⟨𝒖 ⟩† is the adjoint of the ensemble-averaged velocity perturbation. The Reynolds-averaged adjoint Navier-Stokes (RA-ANS) equations for the modelled mean perturbation fields 𝒖 , are derived from this duality relation using integration by parts, and are given by, 
+
+𝜕 𝜁 𝒖 † − 𝑈𝜕 𝑥 𝒖 † + 𝑑 𝑦 𝑈𝑢 † 𝒆 𝑦 = ∇𝑝 † + 𝜈 𝑡 ∇2𝒖 † +  𝑑 𝑦 𝜈 𝑡 
+
+ 𝜕 𝑦 𝒖 † −
+
+
+
+𝑑 2 
+
+> 𝑦
+
+𝜈 𝑡 
+
+
+
+𝑣 † 𝒆 𝑦 , (2.11 a)
+
+∇ · 𝒖 † = 0, 𝒖 † 
+
+> 𝑡 𝑚
+
+= 𝝓 †. (2.11 b)The first equation is thus the eddy-viscosity modelled version of the ensemble-averaged adjoint momentum equation, 
+
+𝜕 𝜁 ⟨𝒖 ⟩† − ⟨ 𝑼 ⟩ ·∇ ⟨ 𝒖 ⟩† +∇ ⟨ 𝑼 ⟩ · ⟨ 𝒖 ⟩† = ∇ ⟨𝑝 ⟩† +𝜈 ∇2 ⟨𝒖 ⟩† + 𝑼 ′ · ∇ 𝒖 † − ∇ 𝑼 ′ · 𝒖 † . (2.12) The adjoint equations are solved in backward time, 𝜁 = 𝑡 𝑚 − 𝑡 . The appearance of the transposed advection operator ∇ ⟨ 𝑼 ⟩ · ⟨ 𝒖 ⟩† fundamentally distinguishes the adjoint dynamics from the forward system (Wang et al. 2022). In addition, the correlation term 
+
+𝑼 ′ · ∇ 𝒖 † − ∇ 𝑼 ′ · 𝒖 † represents the interaction between forward fluctuations and the adjoint field. Such forwardˆ a=C“adjoint correlations are rarely considered in turbulence modeling, and their statistical closure remains largely unexplored. A comparison of equations (2.7) and (2.11) reveals that the eddy-viscosity closure is not self-adjoint in the presence of mean shear. The forward eddy-viscosity term in (2.7) is 𝜈 𝑡 ∇2𝒖 +  𝑑 𝑦 𝜈 𝑡 
+
+ (𝜕 𝑦 𝒖 +∇𝑣 ), whereas the corresponding term in the adjoint (2.11) is 𝜈 𝑡 ∇2𝒖 † +  𝑑 𝑦 𝜈 𝑡 
+
+ 𝜕 𝑦 𝒖 † −
+
+𝑑 2 
+
+> 𝑦
+
+𝜈 𝑡 
+
+
+
+𝑣 † 𝒆 𝑦 . The extra term −
+
+
+
+𝑑 2 
+
+> 𝑦
+
+𝜈 𝑡 
+
+
+
+𝑣 † 𝒆 𝑦 arises from integration by parts of the wall-
+
+0 X0-6 Journal of Fluid Mechanics  
+
+> Figure 1. Examples of the instantaneous and mean domains of influence (DOI) from the linearized Navier-Stokes and domain of dependence (DOD) from the adjoint. Opaque isosurfaces: DOI and DOD computed from one realization of channel flow turbulence. Transparent isosurfaces: mean DOI and DOD.
+
+normal gradient contribution and reflects the wall-normal inhomogeneity of 𝜈 𝑡 (𝑦 ). In the limiting case of a spatially uniform eddy viscosity ( 𝑑 𝑦 𝜈 𝑡 = 0), both operators reduce to 
+
+𝜈 𝑡 ∇2, which is self-adjoint; it is the wall-normal variation of 𝜈 𝑡 driven by mean shear that breaks the self-adjoint structure of the closure. To demonstrate the physical meaning of the adjoint field, we prescribe its terminal condition 𝒖 † 
+
+> 𝑡 𝑚
+
+= 𝝓 † as the measurement kernel, i.e. I  ⟨𝒖 ⟩𝑡 𝑚 , 𝝓 † = ⟨𝑚 ⟩, and substitute into the duality relation. We obtain, 
+
+I
+
+
+
+⟨𝒖 ⟩𝑡 𝑚 , 𝝓 †
+
+= I
+
+
+
+A ⟨ 𝒖 ⟩0 , 𝝓 †
+
+= I
+
+
+
+⟨𝒖 ⟩0 , A†𝝓 †
+
+= I
+
+
+
+⟨𝒖 ⟩0 , ⟨𝒖 ⟩†
+
+> 0
+
+
+
+. (2.13) As such, the mean variation in the measurement, ⟨𝑚 ⟩, is proportional to the mean initial perturbation ⟨𝒖 ⟩0, and the proportionality is given by the mean adjoint field ⟨𝒖 ⟩†
+
+> 0
+
+. The mean adjoint can therefore be interpreted as the mean DOD for the measurement kernel 
+
+𝝓 †. This idea is demonstrated schematically in figure 1, where the DOI and DOD using one realization of channel flow turbulence are plotted, along with their ensemble averages, which are shown in transparent iso-surfaces. 
+
+3. Results 
+
+3.1. The mean domain of dependence 
+
+We solve both the Reynolds-averaged linearized and adjoint Navierˆ a=C“Stokes equations, RA-LNS (2.7) and RA-ANS (2.11) respectively, initialized using wall-stress data. The forward equations provide the mean domain of influence (DOI) of a wall-stress pertur-bation, and the adjoint equations provide the mean domain of dependence (DOD) of a wall-stress measurement kernel in backward time. The base state for both the RA-LNS and RA-ANS equations is the mean base-flow profile 𝑈 (𝑦 ), computed using the Cess eddy-viscosity model (2.8). This profile satisfies the steady Reynolds-averaged Navier-Stokes equations for fully developed and statistically stationary channel flow, and not the instantaneous Navier-Stokes equations (2.1). The initial wall-stress kernel at the wall is the derivative of a narrow Gaussian that represents 𝜕𝑢 /𝜕𝑦 𝑦 =0. Specifically, we use 𝜙 (𝒙 ) =
+
+
+
+𝑦 +/𝜎 5 (2𝜋 )3/2
+
+exp  −| 𝒙 |2/2𝜎 2, where 𝜎 is defined as the width of the Gaussian in viscous units. A projection operator that enforces the solenoidal and boundary conditions is applied to the initial condition. The forward solver is validated against the results from Pujals et al. (2009), including optimal transient growth curves. The adjoint solver is validated using the forwardˆ a=C“adjoint duality relation described in §2. The friction Reynolds numbers that were examined are 𝑅𝑒 𝜏 = {180 , 590 , 10 3, 10 4}. For a given friction Reynolds number, the linearized and adjoint fields are evaluated for streamwise 
+
+0 X0-7 Qi Wang and Tamer A. Zaki            
+
+> Figure 2. Comparison of the mean DOI and DOD at 𝑅𝑒 𝜏 =10 3. (a) The DOI (left column) and the DOD (right column) starting from the measurement kernel of 𝜕𝑢 𝜕𝑦 at the wall ( 𝑦 =0). Iso-surfaces of the streamwise velocity components of these structures are shown at selected forward and backward time instances. The scale in the upper-left corner applies to all panels. (b) Contours of the energy in different wave numbers (𝑘 +
+> 𝑥 , 𝑘 +
+> 𝑧 ),and vertically integrated across the channel, are shown for the DOI (left column) and DOD (right column) at the corresponding instances.
+
+wavenumbers 𝑘 + 
+
+> 𝑥
+
+∈ [ 0, 0.4775 ] sampled at intervals of 𝛥𝑘 + 
+
+> 𝑥
+
+= 2.5 × 10 −3, and spanwise wavenumbers 𝑘 + 
+
+> 𝑧
+
+∈ [− 0.5, 0.5] sampled at intervals of 𝛥𝑘 + 
+
+> 𝑧
+
+= 4 × 10 −3.Iso-surfaces of the normalized mean DOI and DOD are shown in figure 2 (𝑎 ), and their energy spectra are reported in panel (𝑏 ). The results are for 𝑅𝑒 𝜏 = 10 3, and those for the other Reynolds numbers are visually indistinguishable when plotted in viscous units. The DOI and DOD expand in forward and reverse time, respectively, while largely preserving their shapes (figure 2 (𝑎 )). The qualitative difference in their form in physical space reinforces that the forward influence of a perturbation of wall stress and the sensitivity of a wall-stress measurement are not mirror images of each other. In wavenumber space (panel 
+
+(𝑏 )), the energy distribution of the DOI is concentrated in a single, simply connected region, characterized by a dominant wave number. In contrast, the DOD energy is distributed across two distinct regions: One region is associated with upstream-leaning 𝑢 -velocity sheets, which correspond to low 𝑘 𝑧 in the spectra. This region is dominant at early backward times and persists at longer backward times. The second region is associated with streamwise streaky structures. These are low 𝑘 𝑥 in the spectra, and become appreciable at longer backward times. The dynamics of these two regions will be examined after a comparison of the mean DOD and the ensemble-average from adjoint realizations. To verify the eddy-viscosity adjoint model, we compare its prediction of the mean adjoint field to an ensemble average of 5,000 realizations from adjoint Navier-Stokes simulations. 
+
+0 X0-8 Journal of Fluid Mechanics 
+
+Figure 3. Comparison of the isosurfaces (a) 𝑢 †/𝑢 † 
+
+> 𝑚𝑎𝑥
+
+= ±0.01 and (b) 𝑢 † / 𝑢 † 
+
+> 𝑚𝑎𝑥
+
+= ±0.01, computed from the RA-ANS and the ensemble adjoint approach (5000 samples) respectively, for backward times 𝜁 + =
+
+{4, 8, 12 , 16 , 20 , 50 } for 𝑅𝑒 𝜏 = 180. The background gray color shows a sample of the underlying turbulent streamwise wall-shear stress. 
+
+Figure 4. (a.i-iv) Instances of the domain of dependence, shown by isosurfaces of 𝑢 †/𝑢 † 
+
+> 𝑚𝑎𝑥
+
+= ±0.01, for four different realizations of the turbulent base flow, at the backward times 𝜁 + = {4, 8, 12 , 16 , 20 , 50 } for 𝑅𝑒 𝜏 = 180. (b) Averaged adjoint structure using ten ensemble members. 
+
+For each ensemble member, the adjoint computation adopts an independent realization of the turbulent base flow 𝑼 (𝒙 , 𝑡 ), sampled from a long statistically stationary DNS of channel flow. The base states were sampled at fifty instants separated by 𝛥𝑡 + = 20, and the fields were circularly translated ten times in each of the horizontal 𝑥 and 𝑧 directions. Figure 3 shows the isosurfaces of the streamwise adjoint-velocity from both approaches. 
+
+0 X0-9 Qi Wang and Tamer A. Zaki      
+
+> Figure 5. Spatial correlation coefficient between the RA-ANS adjoint field ¯ 𝒖 †and the ensemble-averaged adjoint ⟨𝒖 †⟩obtained from 5000 realizations (black line), and ten representative individual adjoint realizations
+> 𝒖 †(𝑛 )without averaging (gray lines). The strong positive correlation (approximately 0 .7) with the ensemble mean, contrasted with the weak correlation with individual realizations, demonstrates that RA-ANS captures the ensemble-averaged sensitivity direction while filtering the chaotic fluctuations of single adjoint trajectories.
+
+The structures exhibit strong visual similarity, particularly for short backward times ( 𝜁 + ≤
+
+20). At longer times, such as 𝜁 + = 50, the ensemble-averaged adjoint field features high-frequency oscillations which are indicative of a lack of statistical convergence. In figure 4( 𝑎 ), we report four realizations of the adjoint from the ANS simulations, which should be viewed in contrast to the ensemble average in figure 3. The individual realizations exhibit appreciable variability among themselves, with complex small-scale structures due to the chaotic backward-time evolution. These small scales are, however, absent from the ensemble average in figure 3, which captures the coherent mean structure. Figure 4( 𝑏 ) is the ensemble-average of ten realizations only, which should again be viewed with reference to the converged average using 5000 samples in figure 3. The comparison underscores that the statistical convergence of the ensemble average becomes progressively more challenging at longer backward time. In order to further quantify the alignment, or similarity, between adjoint fields, we define the spatial correlation coefficient, 
+
+R ( 𝒂 , 𝒃 ) =
+
+∫ 
+
+> 𝑉
+
+𝒂 · 𝒃 𝑑𝑉 
+
+∫  
+
+> 𝑉
+
+|𝒂 |2 𝑑𝑉 
+
+1/2 ∫  
+
+> 𝑉
+
+|𝒃 |2 𝑑𝑉 
+
+1/2 . (3.1) In figure 5, we report the correlation between the RA-ANS ¯ 𝒖 † and ten adjoint realizations 𝒖 †
+
+(gray curves). These correlations are weak, often on the order of 0 .1 and at most about 0 .5, which is due to the chaotic backward-time evolution of individual adjoint realizations. The figure also reports the correlation between the RA-ANS ¯ 𝒖 † and the ensemble average ⟨𝒖 †⟩
+
+from 5000 realizations (black line). This correlation remains strongly positive, reaching approximately 0 .7 over the time interval where the ensemble statistics are converged. This result demonstrates that while individual adjoint trajectories are highly variable, the RA-ANS formulation successfully captures the dominant direction of the ensemble-averaged sensitivity. The alignment between the RA-ANS ¯ 𝒖 † and the ensemble average ⟨𝒖 †⟩ has implications for adjoint-variational data assimilation, where the gradient of the cost functional is 
+
+0 X0-10 Rapids articles must not exceed this page length Journal of Fluid Mechanics            
+
+> Figure 6. Energy spectra of the DOD as a function of 𝒌 +=(𝑘 +
+> 𝑥 , 𝑘 +
+> 𝑧 ), integrated in the wall-normal direction for
+> 𝑅𝑒 𝜏 =180. The energy is normalized by the maximum value among all wavenumber pairs. Top: Normalized energy spectra from RA-ANS. Bottom: Normalized energy spectra from averaging 5 ×10 3samples of adjoint Navier-Stokes.
+
+furnished by the adjoint field. In that context, the adjoint field establishes the direction of steepest ascent (or descent) of the cost functional. Although individual adjoint realizations exhibit chaotic divergence and are poorly correlated with the RA-ANS field, the strong positive correlation between ¯ 𝒖 † and the ensemble-averaged adjoint ⟨𝒖 †⟩ indicates that the RA-ANS solution captures the dominant gradient direction associated with the mean sensitivity. As a result, updates proportional to ¯ 𝒖 † are expected to produce a positive ensemble-averaged first-order variation of the measurement functional. In this sense, the RA-ANS formulation can be viewed as a regularized approximation of the ensemble sensitivity direction, analogous to a regularized gradient (Protas et al. 2004), or a preconditioned gradient that filters out unstable fluctuations (Ke et al. 2026). While the eddy-viscosity approach does not reproduce the detailed structure of individual adjoint trajectories, it captures the large-scale sensitivity structure, which may be useful for interpreting the dependence of measurements. A comparison in spectral space is presented in figure 6. The RA-ANS prediction (top) and the ensemble-averaged adjoint spectra (bottom) exhibit similar large-scale organization, with energy concentrated in comparable regions of (𝑘 + 
+
+> 𝑥
+
+, 𝑘 + 
+
+> 𝑧
+
+) space. At long times, the low wavenumbers show good agreement. These modes correspond to the dominant large-scale structures that are most robust under ensemble averaging. In contrast, the high-wavenumber components, which are difficult to converge in the ensemble-averaged adjoint approach, show significant discrepancies in their energy. This discrepancy reflects the strong sensitivity of small-scale adjoint structures to chaos, which also leads to slow statistical convergence. In figure 7( 𝑎 ), we report the norm of the ensemble-averaged adjoint field (red) and of their energy (black), plotted versus backward time. Convergence is shown with the number of realizations (thin-to-thick lines). Even though each adjoint trajectory is amplifying exponentially, the ensemble-averaged adjoint field from five thousand realizations decays through 𝜁 + ≈ 50. A smaller number of samples is insufficient to yield converged statistics throughout the reported backward time horizon. The RA-ANS prediction of the energy 
+
+∥𝑢 † ∥2 is shown by the red dash-dotted line, and exhibits convincing agreement with the 
+
+0 X0-11 Qi Wang and Tamer A. Zaki 
+
+.                  
+
+> Figure 7. (a) Convergence of the ensemble adjoint method. Squared norm of the ensemble-averaged adjoint fields ( ∥𝒖 †∥2, red solid lines), and ensemble average of the adjoint energy ( || 𝒖 †|| 2, black solid lines). Thicker lines indicate {1,2,3,4,5} × 10 3samples. Dashed black line marks the best exponential fit 𝑒 0.0134 𝜁 +
+> for the averaged adjoint energy. The mean energy decay using RA-ANS is marked by the red dash-dotted line. (b) Ratio between the energy of the mean and mean energy for the adjoint field using 5 ×10 3samples
+
+converged ensemble-averaged adjoint energy ∥ 𝒖 † ∥2 over the time interval 20 ≤ 𝜁 + ≤ 50. This agreement indicates that the model captures the dominant large-scale sensitivity despite the chaotic growth of individual realizations. In contrast, the ensemble-averaged energy ⟨∥ 𝒖 † ∥2⟩ grows exponentially with time, at twice the Lyapunov exponent. In panel (𝑏 ), we plot the ratio of the two quantities, ∥ 𝒖 † ∥2/ || 𝒖 † || 2 , which shows an exponential decay, thus indicating that convergence of the ensemble average becomes exponentially more difficult for longer backward times. We verified that the RA-ANS predictions are not strongly influenced by the magnitude of the eddy viscosity by performing additional computations in which 𝜈 𝑡 (𝑦 ) was uniformly scaled by factors of 0 .8 and 1 .2 relative to the nominal Cess profile. The resulting mean DOD fields exhibit no noticeable qualitative differences from the baseline case. This test supports the view that the dominant spatio-temporal organization of the mean DOD is primarily governed by the underlying mean-shear dynamics, rather than by the precise magnitude of the turbulent diffusivity. 3.2. Forward dynamics of the mean DOD 
+
+To understand the dynamics of the mean DOD of a wall-stress measurement, we initialize a forward simulation with the adjoint state from a measurement at time 𝑡 + 
+
+> 𝑚
+
+= 200, by setting 
+
+𝒖 0 = 𝒖 †. We then compute the forward evolution using the RA-LNS, and the results are reported in figure 8. The DOD can be clearly separated into two components: The first is comprised of upstream-tilted structures and the second features streaky structures. The upstream-tilted structures evolve rapidly under the influence of the mean shear, and the dependence of the wall-stress measurement on Orr amplification in the earlier flow. The corresponding wavenumbers in the energy spectra are identified as region 𝐴 in figure 9( 𝑎 ). The peak streamwise wavenumber 𝑘 + 
+
+> 𝑥
+
+remains nearly constant over time, consistent with localized non-modal amplification processes. On the other hand, the streaky structures have small spanwise wavenumber 𝑘 + 
+
+> 𝑧
+
+, and are identified in the spectra (figure 9( 𝑎 )) as region 𝐵 .The peak 𝑘 + 
+
+> 𝑧
+
+becomes smaller throughout the forward evolution, indicating an elongation of the streaks. Such structures align with the most energetic modes of the forward dynamics. 
+
+0 X0-12 Journal of Fluid Mechanics       
+
+> Figure 8. Forward evolution of DOD of a late-time streamwise wall shear measurement ( 𝑡 +
+> 𝑚 =200) in a turbulent channel with 𝑅𝑒 𝜏 =1000, shown using isosurfaces of streamwise velocity perturbation. Measurement location is marked by a vertical dashed line.
+
+Together, these two parts combine in an optimal manner to influence the measurement data at the measurement time. To further distinguish these two components, we isolate each of them by averaging the evolved fields in the spanwise 9( 𝑏.𝑖 ) and streamwise 9( 𝑏.𝑖𝑖 ) directions. This averaging effectively spectrally filters the field along the 𝑘 + 
+
+> 𝑧
+
+= 0 and 𝑘 + 
+
+> 𝑥
+
+= 0 axes, respectively. These two cases highlight the dominant contributions associated with the Orr-type structures and streaky motions. The spanwise averaged [𝑢 ]𝑧 in figure 9 (𝑏.𝑖 ) exhibits initial alignment against the mean shear and gradually rotates towards vertical alignment as time evolves, which is consistent with the Orr mechanism. The streamwise averaged [𝑢 ] 𝑥 in figure 9 (𝑏.𝑖𝑖 )
+
+shows a self-similar expansion while maintaining its overall shape, characteristic of streak growth dynamics. For the Orr amplification, we compute the dominant orientation of the flow field from the phase of the streamwise velocity in Fourier space. Specifically, we consider the complex-valued mode shape ˆ𝑢 (𝑦, 𝑡 ) associated with the wavenumber 𝐾 + 
+
+> 𝑥
+
+corresponding to the maximum energy along the line 𝑘 + 
+
+> 𝑧
+
+= 0. The local phase is then defined as 
+
+𝜙 (𝑦, 𝑡 ) = arg   ˆ𝑢 (𝑦, 𝑡 ). The wall-normal wavenumber is obtained from the phase gradient as 𝐾 + 
+
+> 𝑦
+
+= 𝜕𝜙 /𝜕𝑦 , which together with 𝐾 + 
+
+> 𝑥
+
+defines the local wavevector 𝑲 + = (𝐾 + 
+
+> 𝑥
+
+, 𝐾 + 
+
+> 𝑦
+
+).The inclination angle is defined as 
+
+𝜃 =
+
+∫ 𝑦 𝑐  
+
+> 0
+
+arctan 
+
+ 𝐾 +
+
+> 𝑦
+> 𝐾 +
+> 𝑥
+
+
+
+|| ˆ𝑢 (𝑦, 𝑡 )|| 2𝑑𝑦 
+
+∫ 𝑦 𝑐  
+
+> 0
+
+|| ˆ𝑢 (𝑦, 𝑡 )|| 2𝑑𝑦 , (3.2) using || ˆ𝑢 || 2 as weights to suppress contributions from low-amplitude regions, with inte-gration from the wall to the cut-off range 𝑦 𝑐 = 0.2. This procedure yields a time-resolved estimate of the dominant orientation of [𝑢 ]𝑧 in the (𝑥, 𝑦 ) plane. As shown in figure 
+
+0 X0-13 Qi Wang and Tamer A. Zaki                
+
+> Figure 9. (a) The normalized energy spectra at three selected times 𝑡 +={40 ,120 ,200 }. Regions 𝐴 and 𝐵
+> denote the spectral ranges associated with the Orr-mechanism and streaky structures, respectively. (b) Forward evolution of DOD of a late-time measurement ( 𝑡 +
+> 𝑚 =200). Contours of (b.i) spanwise and (b.ii) streamwise averages of 𝑢 , illustrating the contribution of the Orr mechanism and streaky structures to the perturbation dynamics in a turbulent channel of 𝑅𝑒 𝜏 =1000. White dashed lines in the side view mark the inclination angle of the structure.
+
+10 (𝑎 ), the extracted orientation angles from forward evolution of DOD from two different measurement times exhibit similar temporal dynamics: The structure is initially upstream-tilted relative to the mean shear, then progressively rotates toward a near-vertical alignment at the measurement time. The time dependence of the wall-shear-stress at the measurement locations, 𝑚 = 𝜈 (𝜕𝑢 (𝑡 )/ 𝜕𝑦 ) 𝒙 𝑚 
+
+, are plotted in figure 10(b) normalized by the values at the measurement times, 𝑡 + 
+
+> 𝑚
+
+= 200 and 𝑡 + 
+
+> 𝑚
+
+= 160. The curves reflect the transient amplification of the fields as they approach the measurement times, where the peak stress is recorded. The earlier-in-time amplification takes place as the adjoint structure undergoes reorientation by the mean shear, consistent with the Orr mechanism. These observations are qualitatively similar to the findings by Encinar & Jim´ enez (2020), where conditionally averaged ejection and sweep events display a rotation from upstream-tilt to near-vertical configurations. Note, however, that the adjoint DOD computes the optimal precursor structure to maximize the measurement data (Wang & Zaki 2025 b), here the wall-shear stress and not the perturbation kinetic energy. As such, there is no a priori justification for an agreement. For example, unlike energy-based optimal growth, the peak amplification occurs near 𝜃 ≈ − 30 ◦, shortly after the structure passes through vertical alignment. The difference is amply justified by the difference in the objectives, and arguably more important is the persistent importance of Orr amplification. The two-component decomposition of the mean adjoint field is effectively a distinction of two types of information contained in wall shear-stress measurements, each associated 
+
+0 X0-14 Journal of Fluid Mechanics             
+
+> Figure 10. (a) Temporal evolution of the near-wall orientation angle 𝜃 , computed from the local phase gradient of [¯𝑢 ]𝑧 . (b) Wall shear stress at the sensor location, normalized by its value at 𝑡 𝑚 , from forward evolution of the DOD associated with (solid) 𝑡 +
+> 𝑚 =200 and (dashed) 𝑡 +
+> 𝑚 =160.
+
+with a different physical mechanism. Together, Orr amplification and lift-up define the flow regions and mechanisms, or information, that are observable from the measurements in an averaged sense, which are typically obscure in the chaotic dynamics of individual realizations of the adjoint fields. 
+
+4. Conclusion 
+
+Estimating the domain of dependence (DOD) of a measurement in turbulent channel flow is challenging due to the exponential growth of adjoint fields in backward time, which reflects the inherent difficulty of data assimilation in turbulence. While ensemble averaging of adjoint trajectories can, in theory, yield the mean DOD, this approach suffers from prohibitively slow convergence and overwhelming computational cost. Specifically, while the ensemble-averaged adjoint field should decay, the energy of individual adjoint realizations amplifies at twice the Lyapunov exponent and, as such, a very large number of adjoint trajectories are required in the ensemble averaging for convergence. We overcome these obstacles by introducing a linear eddy-viscosity closure to approximate the forwardˆ a=C“adjoint correlation in the Reynolds-averaged adjoint Navierˆ a=C“Stokes equations (RA-ANS), thus enabling a direct and efficient computation of the mean DOD. This model bypasses the exponential divergence of individual adjoint trajectories, and its accuracy was demonstrated against the expensive ensemble average sensitivity up to a backward time 𝜁 + = O( 40 ).The present work establishes a connection between several concepts that are typically considered separately: adjoint-based sensitivity analysis, the Lyapunov-driven divergence of chaotic trajectories, and the non-normal transient growth mechanisms that organize turbulent structures. In particular, the results highlight how the loss of information associated with long adjoint time horizons coexists with a coherent ensemble-averaged sensitivity that can be captured through appropriate regularization using eddy viscosity for the ensemble-averaged adjoint equations. Our results reveal that the mean DOD exhibits a universal structure across a wide range of Reynolds numbers, which comprises two distinct dynamical components: an upstream-tilted part associated with the Orr mechanism, which is rapidly reoriented by the mean shear to influence wall observations, and streamwise-elongated streaks that reflect optimal energy 
+
+0 X0-15 Qi Wang and Tamer A. Zaki 
+
+growth over longer timescales. These components combine in a dynamically optimal way to shape the DOD. The DOD displays a marked asymmetry relative to its forward counterpart, the domain of influence (DOI), reflecting the non-self-adjoint nature of the governing operator in the presence of Reynolds stresses. This asymmetry highlights the limitations of interpreting observations based solely on forward dynamics. In contrast, the mean DOD provides a more appropriate framework for identifying the flow structures that influence a given measurement, as directly quantifies the backward-time sensitivity to earlier flow states. Furthermore, the spatio-temporal and spectral characteristics of the DOD are important because they describe the information content in wall-stress measurement, which can be extracted using data assimilation. 
+
+Funding. The authors acknowledge financial support from the National Science Foundation (grant 2332057) and the Office of Naval Research (grant N00014-25-1-2290). 
+
+Declaration of interests. The authors report no conflict of interest. 
+
+Author ORCIDs. 
+
+Qi Wang https://orcid.org/0000-0001-7393-9922 
+
+Tamer A. Zaki https://orcid.org/0000-0002-1979-7748 
+
+REFERENCES 
+
+Blonigan, P, Chen, R, Wang, Q & Larsson, J 2012 Towards adjoint sensitivity analysis of statistics in turbulent flow simulation. In Proceedings of the Summer Program , p. 229. Center for Turbulence Research, Stanford Univ. 
+
+Cess, RD 1958 A survey of the literature on heat transfer in turbulent tube flow. Res. Rep pp. 8–0529. 
+
+Chandramoorthy, Nisha, Fernandez, Pablo, Talnikar, Chaitanya & Wang, Qiqi 2019 Feasibility analysis of ensemble sensitivity computation in turbulent flows. AIAA Journal 57 (10), 4514–4526. 
+
+Chater, Mario, Ni, Angxiu, Blonigan, Patrick J & Wang, Qiqi 2017 Least squares shadowing method for sensitivity analysis of differential equations. SIAM Journal on Numerical Analysis 55 (6), 3030–3046. 
+
+Cossu, Carlo, Pujals, Gregory & Depardon, Sebastien 2009 Optimal transient growth and very large–scale structures in turbulent boundary layers. J. Fluid Mech. 619 , 79–94. 
+
+Courant & Hilbert 1963 Methods of mathematical physics, vol. ii. partial differential equations . 
+
+Deissler, Robert J 1987 Spatially growing waves, intermittency, and convective chaos in an open-flow system. 
+
+Physica D: Nonlinear Phenomena 25 (1-3), 233–260. 
+
+Del Alamo, Juan C & Jimenez, Javier 2006 Linear energy amplification in turbulent channels. J. Fluid Mech. 
+
+559 , 205–213. 
+
+Encinar, Miguel P & Jim´ enez, Javier 2020 Momentum transfer by linearised eddies in turbulent channel flows. Journal of Fluid Mechanics 895 , A23. 
+
+Eyink, GL, Haine, TWN & Lea, DJ 2004 Ruelle’s linear response formula, ensemble adjoint schemes and L´ evy flights. Nonlinearity 17 (5), 1867. 
+
+Garai, Anirban & Murman, Scott M 2021 Stabilization of the adjoint for turbulent flows. AIAA Journal 
+
+59 (6), 2001–2013. 
+
+Hamba, Fujihiro 1995 An analysis of nonlocal scalar transport in the convective boundary layer using the green’s function. Journal of Atmospheric Sciences 52 (8), 1084–1095. 
+
+Hamba, Fujihiro 2004 Nonlocal expression for scalar flux in turbulent shear flow. Physics of Fluids 16 (5), 1493–1508. 
+
+Ke, Hongyi, You, Zejian & Wang, Qi 2026 Preconditioned adjoint data assimilation for two-dimensional decaying isotropic turbulence. arXiv preprint arXiv:2602.14016 .
+
+Keats, Andrew, Yee, Eugene & Lien, Fue-Sang 2007 Bayesian inference for source determination with applications to a complex urban environment. Atmospheric environment 41 (3), 465–479. 
+
+Kubo, Ryogo 1957 Statistical-mechanical theory of irreversible processes. i. general theory and simple applications to magnetic and conduction problems. Journal of the physical society of Japan 12 (6), 570–586. 
+
+Landahl, M ˚ arten T 1980 A note on an algebraic instability of inviscid parallel shear flows. Journal of Fluid Mechanics 98 (2), 243–251. 
+
+Liu, Jessie, Sch ¨ afer, Florian, Bryngelson, Spencer H., Zaki, Tamer A. & Mani, Ali 2024 a Adjoint-based computation of nonlocal eddy viscosity in turbulent channel flow. Phys. Rev. Fluids 9, 094606. 
+
+0 X0-16 Journal of Fluid Mechanics 
+
+Liu, Tao, Semin, Benoˆ ıt, Godoy-Diana, Ramiro & Wesfreid, Jos´ e Eduardo 2024 b Lift-up and streak waviness drive the self-sustained process in wall-bounded transition to turbulence. Physical Review Fluids 
+
+9 (3), 033901. 
+
+Lorenz, Edward 2000 The butterfly effect. In The chaos avant-garde: Memories of the early days of chaos theory , pp. 91–94. World Scientific. 
+
+Malkus, WVR 1956 Outline of a theory of turbulent shear flow. Journal of Fluid Mechanics 1 (5), 521–539. 
+
+Markeviciute, Vilda K & Kerswell, Rich R 2023 Improved assessment of the statistical stability of turbulent flows using extended orr–sommerfeld stability analysis. Journal of Fluid Mechanics 955 , A1. 
+
+Neupauer, Roseanna M & Wilson, John L 2001 Adjoint-derived location and travel time probabilities for a multidimensional groundwater system. Water Resources Research 37 (6), 1657–1668. 
+
+Ni, Angxiu & Wang, Qiqi 2017 Sensitivity analysis on chaotic dynamical systems by non-intrusive least squares shadowing (nilss). J. Comput. Phys. 347 , 56–77. 
+
+Nikitin, Nikolay 2018 Characteristics of the leading Lyapunov vector in a turbulent channel flow. J. Fluid Mech. 849 , 942–967. 
+
+Protas, Bartosz, Bewley, Thomas R & Hagen, Greg 2004 A computational framework for the regularization of adjoint analysis in multiscale pde systems. Journal of Computational Physics 195 (1), 49–89. 
+
+Pudykiewicz, Janusz A 1998 Application of adjoint tracer transport equations for evaluating source parameters. 
+
+Atmospheric environment 32 (17), 3039–3050. 
+
+Pujals, Gregory, Garc´ ıa-Villalba, Manuel, Cossu, Carlo & Depardon, Sebastien 2009 A note on optimal transient growth in turbulent channel flows. Phys. Fluids 21 (1). 
+
+Vadarevu, Sabarish B, Symon, Sean, Illingworth, Simon J & Marusic, Ivan 2019 Coherent structures in the linearized impulse response of turbulent channel flow. J. Fluid Mech. 863 , 1190–1203. 
+
+Wang, Mengze & Zaki, Tamer A 2025 a Variational data assimilation in wall turbulence: from outer observations to wall stress and pressure. Journal of Fluid Mechanics 1008 , A26. 
+
+Wang, Qiqi 2014 Convergence of the least squares shadowing method for computing derivative of ergodic averages. SIAM Journal on Numerical Analysis 52 (1), 156–170. 
+
+Wang, Qi, Hasegawa, Yosuke & Zaki, Tamer A. 2019 Spatial reconstruction of steady scalar sources from remote measurements in turbulent flow. J. Fluid Mech. 870 , 316 –352. 
+
+Wang, Qiqi, Hu, Rui & Blonigan, Patrick 2014 Least squares shadowing sensitivity analysis of chaotic limit cycle oscillations. J. Comput. Phys. 267 , 210–224. 
+
+Wang, Qi, Wang, Mengze & Zaki, Tamer A. 2022 What is observable from wall data in turbulent channel flow? J. Fluid Mech. 941 , A48. 
+
+Wang, Qi & You, Zejian 2026 Localization of sources in weakly nonlinear fluid systems using linear and quadratic sensitivity analysis. Phys. Rev. Fluids .
+
+Wang, Qi & Zaki, Tamer A 2025 b Domain of dependence for wall-pressure measurements in high-speed boundary layers. J. Fluid Mech. 1009 , A67. 
+
+Xiang, Tianrui, Eyink, Gregory L & Zaki, Tamer A 2025 The origin of vorticity in viscous incompressible flows. J. Fluid Mech. 1011 , A33. 
+
+Xu, Shenren, Zhao, Jiazi, Wu, Hangkong, Zhang, Sen, M ¨ uller, Jens-Dominik, Huang, Huang, Rahmati, Mohammad & Wang, Dingxi 2023 A review of solution stabilization techniques for rans cfd solvers. 
+
+Aerospace 10 (3), 230. 
+
+Yuan, Zelong, Wang, Yunpeng, Wang, Xiaoning & Wang, Jianchun 2023 Adjoint-based variational optimal mixed models for large-eddy simulation of turbulence. arXiv:2301.08423 .
+
+Zaki, Tamer A. 2025 Turbulence from an observer perspective. Annu. Rev. Fluid Mech. 57 , 311–334. 
+
+Zaki, Tamer A. & Wang, Mengze 2021 From limited observations to the state of turbulence: Fundamental difficulties of flow reconstruction. Phys. Rev. Fluids 6, 100501. 
+
+Zhu, Wenkai, Chen, Xianliang & Fu, Lin 2024 Resolvent analyses of incompressible turbulent channel, pipe and boundary-layer flows. International Journal of Heat and Fluid Flow 106 , 109331. 
+
+0 X0-17

@@ -1,0 +1,1402 @@
+Title: How is the free surface influence transported in turbulent open channel flows?
+
+URL Source: https://arxiv.org/pdf/2606.24630v1
+
+Published Time: Wed, 24 Jun 2026 01:17:00 GMT
+
+Number of Pages: 30
+
+Markdown Content:
+> Under consideration for publication in J. Fluid Mech.
+
+1Banner appropriate to article type will appear here in typeset article 
+
+# How is the free surface influence transported in turbulent open channel flows? 
+
+Yoshiyuki Sakai 1† and Christian Bauer 2
+
+> 1
+
+Technical University of Munich, TUM School of Engineering and Design, TUM Department of Civil, Geo and Environmental Engineering, Arcisstr. 21, 80333 Munich, Germany 
+
+> 2
+
+German Aerospace Center (DLR), Institute of Aerodynamics and Flow Technology, Bunsenstr. 10, 37073 G¨ ottingen, Germany (Received xx; revised xx; accepted xx) 
+
+We investigate how the influence of a free surface is transported in turbulent open channel flow by analysing matched open- and closed-channel direct numerical simulations up to 
+
+Re 𝜏 ≈ 900 in a domain large enough to accommodate very-large-scale motions (VLSMs). The turbulent kinetic energy (TKE) budget shows that the surface influence is communicated primarily through transport terms. Near the free surface, pressure transport supplies energy towards the interface, whereas turbulent transport and dissipation are reduced; the resulting energy surplus is exported away from the surface predominantly by viscous diffusion. The near-surface budget terms do not exhibit a single universal similarity scaling: viscous diffusion is organised over the near-surface viscous scale ℓV, dissipation over the Kolmogorov sublayer scale ℓK, and pressure-related terms require the mixed velocity scale 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ.The pressure–strain redistribution further reveals outer–inner coupling: although intense pressure–strain events remain small-scale, their magnitude and directional bias are organised by low-velocity VLSM streaks. The free-surface influence is therefore best understood as a coupled multi-scale process involving local kinematic constraints, Reynolds-number-dependent surface layers, and outer-layer coherent motions. 
+
+Key words: To be added during the typesetting process. 
+
+1. Introduction 
+
+Turbulent open channel flow (OCF) is a canonical configuration for many free-surface flows, thus of direct relevance in natural science and engineering applications. The OCF configuration features a free-slip rigid-lid on the upper boundary, which is much less kinematically constrained than the no-slip wall on the bottom boundary. Conversely, the closed channel flow configuration (CCF, also known as plane Poiseuille flows) features no-slip walls on both boundaries. This boundary condition difference significantly modifies turbulence dynamics near the upper boundary, and introduces measurable changes over the full channel depth (Bauer et al. 2025). The free-slip boundary constrains wall-normal motion only, and it is known to alter the 
+
+† Email address for correspondence: yoshiyuki.sakai@tum.de 
+
+# Abstract must not spill onto p.2 
+
+> arXiv:2606.24630v1 [physics.flu-dyn] 23 Jun 2026
+
+2turbulent kinetic energy (TKE) redistribution pathways via the pressure-strain term (Swean 
+
+et al. 1991; Leighton et al. 1991; Handler et al. 1993; Komori et al. 1993; Pan & Banerjee 1995). If we view this localised modification in the redistribution mechanism as the entry point of the difference between the two channel types, the resulting near-surface effects need to be communicated into and from the channel interior, and it could be possible to trace the energy flow by means of the transport terms in the TKE budget equation. In this view, the energy budgets can serve as essential diagnostics, since the mean and the second-order statistics alone cannot identify mechanisms. Mean streamwise velocity distributions in the two channel types are qualitatively similar, except that a clear wake region is absent in OCF (Swean et al. 1991). Quantitatively, a significantly lower von K` arm` an constant in law of the wall was reported for OCF (Pirozzoli 2023). Whilst the distributions of wall-normal and the spanwise components of Reynolds normal stresses between the two channel types differ only in the near-surface region, the streamwise component exceeds the corresponding CCF level almost throughout the entire channel depth (Pirozzoli 2023; Bauer et al. 2025). This accumulation of energy in the streamwise component is associated with emergence of very-large-scale motions (VLSMs) (Bauer 2015; Duan et al. 2020, 2021; Pinelli et al. 
+
+2022), which were found to be even larger and more energetic than the CCF counterparts (Yao et al. 2022; Bauer et al. 2025). This unique feature demands notably larger numerical domains for OCF to accommodate the enlarged VLSMs. In CCF, the emergence of VLSMs is responsible for the failure of the wall scaling (i.e. similarity with respect to wall-friction-based velocity) in the streamwise component of Reynolds normal stress (Hoyas & Jim´ enez 2006) and appearance of a mixed-velocity scaling (Wei 2020). In OCF, more energetic VLSMs cause the streamwise turbulent intensity to be scaled purely with bulk velocity away from the wall and the free-surface (Bauer et al. 2024). By revisiting the pioneering work of Calmet & Magnaudet (2003), our recent contribution (Bauer et al. 2025) showed that the surface influence appears through a four-layer structure attached to the free surface. The thickness of the top two layers is Reynolds-number dependent, implying that a near-surface spatial resolution comparable to the level used near the no-slip wall is required to resolve them truthfully. Since the inception of the direct numerical simulation of CCF by Kim et al. (1987), the corresponding TKE budgets have been investigated repeatedly (Mansour et al. 1988). Despite the long history, however, Reynolds-number dependence of the term-by-term one-point budgets is only sparsely documented (e.g. Hoyas & Jim´ enez 2008). Moreover, such investigation is even rarer for the OCF type (Swean et al. 1991), and the budgets near the free surface are particularly under-characterised. This motivates a systematic budget-level comparison of OCF and CCF across Reynolds number, with particular emphasis on the near-surface region. Based on the above, we define the following research questions (RQs): (i) Which budget terms transmit the surface influence into the channel interior? (ii) Does a unified similarity scaling exist for the budget terms? (iii) Are pressure-driven inter-component transfer events purely local? Or are they macro-scopically organised by outer-layer large-scale motions? We address these questions using matched OCF/CCF DNS data (Bauer et al. 2023) up to friction Reynolds number Re 𝜏 = 900 in a large domain that accommodates VLSMs. We quantify the full TKE transport budgets, identify term-specific near-surface similarity scalings, and connect pressure–strain redistribution to VLSM organisation via conditional averaging. Those results can provide useful benchmarks and constraints for future modelling efforts. The remainder of this paper is organised as follows. Section 2 describes the DNS database, 3numerical method, and near-surface layer structure used in the analysis. Section 3 presents the results, beginning with the OCF/CCF comparison of the TKE budgets ( §3.1), followed by the similarity analysis of the near-surface budget terms ( §3.2), and the VLSM organisation of pressure–strain redistribution ( §3.3). Section 4 discusses the resulting physical picture and its implications for turbulence modelling, and §5 concludes the paper. 
+
+2. Methodology 
+
+2.1. Numerical methods and DNS database 
+
+This study analyses our open-source DNS database (Bauer et al. 2023), previously investi-gated in Bauer et al. (2024, 2025). Nevertheless, we summarise the numerical methods and the case specifications for completeness as follows. The incompressible Navier–Stokes equations are solved in a wall-normal velocity–vorticity formulation using a pseudo-spectral method corresponding to the one employed by Kim 
+
+et al. (1987), in which the flow variables are expanded in Fourier series in the homogeneous streamwise ( 𝑥 ) and spanwise ( 𝑧 ) directions over equidistant grid points. In the wall-normal (𝑦 ) direction, the discretisation is based on Chebyshev polynomials on Chebyshev-Gauss-Lobatto points, where the grid resolution is refined towards the no-slip and the free-slip boundaries. The discretised governing equations are integrated in time with a semi-implicit scheme, where the viscous terms are treated by an implicit Euler approach, whereas a third-order low-storage Runge-Kutta scheme integrates the nonlinear terms explicitly. By convention, we define a velocity vector u = 𝑢 𝑖 = 𝑢 𝑣 𝑤 ⊤ in the above Cartesian coordinate system, as well as pressure 𝑝 . According to the Reynolds decomposition, the flow variables can be decomposed into the mean component (the temporal and the spatial average in the homogeneous directions) represented by the operator ⟨𝜙 ⟩, and the temporal fluctuations with respect to the mean, which is indicated by the superscript 𝜙 ′, where 𝜙 is an arbitrary variable. For example, the above velocity field becomes: u(𝑥, 𝑦, 𝑧, 𝑡 ) = ⟨u⟩( 𝑦 ) + u′ (𝑥, 𝑦, 𝑧, 𝑡 ).The computational domain is doubly periodic in 𝑥 - and 𝑧 -directions. In the OCF set up, a smooth no-slip wall condition is imposed at the lower boundary ( u = 0 at 𝑦 = 0), whilst the free surface is approximated by a free-slip, impermeable surface, enforcing zero wall-normal velocity and wall-normal gradients of the tangential velocity components ( 𝜕𝑢 /𝜕𝑦 = 0, 
+
+𝜕𝑤 /𝜕𝑦 = 0, 𝑣 = 0 at 𝑦 = ℎ, where ℎ is the channel full height in OCF). In CCF, the upper boundary is substituted by an additional no-slip wall. A constant volume flow rate is imposed in 𝑥 -direction by adaptive body force. To characterise the channel flows, two important velocity scales need to be defined, namely the friction velocity 𝑢 𝜏 and the bulk velocity 𝑢 b as: 
+
+𝑢 𝜏 =√︄ ⟨𝜏 w⟩
+
+𝜌 , (2.1) 
+
+𝑢 b = 1
+
+ℎ
+
+∫ ℎ
+
+> 0
+
+⟨𝑢 ⟩ d𝑦 , (2.2) where 𝜏 w is wall shear stress at the solid boundaries ( 𝜏 w = 𝜌𝜈 (𝜕𝑢 /𝜕𝑦 )wall ), 𝜌 and 𝜈 are fluid density and kinematic viscosity, ℎ is the channel full height for OCF whilst the semi-height for CCF. The database comprises four OCF and four CCF cases at matched friction Reynolds numbers Re 𝜏 = 𝑢 𝜏 ℎ/𝜈 ≈ { 200 , 400 , 600 , 900 }. Alternatively, bulk Reynolds numbers Re b =
+
+𝑢 b ℎ/𝜈 can also be used. All cases were simulated in a consistent computational domain of size 𝐿 𝑥 = 12 𝜋ℎ and 𝐿 𝑧 = 4𝜋ℎ . This domain size is sufficient to accommodate VLSMs and 4                                                                                                       
+
+> Table 1: Direct numerical simulation cases analysed in the present study. All simulations are taken from the DNS database of Bauer et al. (2023). Case Re 𝜏 Re b𝐿 𝑥 /ℎ𝐿 𝑧 /ℎ𝑁 𝑥 𝑁 𝑦 𝑁 𝑧 Δ𝑥 +Δ𝑧 +Δ𝑦 +
+> max Δ𝑇 𝑢 b/ℎ
+> O200 200 3170 12 𝜋 4𝜋 768 129 512 9.8 4.9 2.5 8660 O400 399 6969 12 𝜋 4𝜋 1536 193 1024 9.8 4.9 3.3 1925 O600 596 11047 12 𝜋 4𝜋 1536 257 1536 14.6 4.8 3.7 1460 O900 895 17512 12 𝜋 4𝜋 3072 385 2048 11.0 5.5 3.7 1054 C200 200 3170 12 𝜋 4𝜋 768 129 512 9.8 4.9 4.9 8600 C400 397 6969 12 𝜋 4𝜋 1536 193 1024 9.8 4.9 6.5 3260 C600 593 11047 12 𝜋 4𝜋 1536 257 1536 14.6 4.8 7.3 1757 C900 889 17512 12 𝜋 4𝜋 3072 385 2048 11.0 5.5 7.3 1013
+
+to avoid artificial suppression of outer-layer dynamics. Details of grid resolution, domain dimensions, Reynolds numbers, and averaging intervals are summarised in table 1. Statistical quantities are obtained from long-time averaging after the flow has reached a statistically steady-state. In addition to one-point statistics accumulated during runtime, full three-dimensional velocity fields are stored at regular intervals and used for the post-processing of second-order moments and TKE budget terms. Quantities are normalised either in viscous (wall) units using the friction velocity 𝑢 𝜏 and viscous length scale 𝛿 𝜈 = 𝜈 /𝑢 𝜏 
+
+being denoted with the superscript 𝜙 +, or in outer units using the bulk velocity 𝑢 b and ℎ, as appropriate. 2.2. Near-surface multi-layer structure 
+
+As it will be shown, the OCF–CCF discrepancies are confined to the vicinity of the free surface. To organise this region and to facilitate Reynolds-number comparisons, we briefly summarise the near-surface multi-layer structure which we refer throughout the remainder of this study. In our recent contribution (Bauer et al. 2025) we showed that the surface influence appears through a four-layer structure attached to the free surface, consisting of: surface-influenced layer 𝛿 SIL , normal-velocity-dumping layer 𝛿 NVD , near-surface viscous sublayer 𝛿 V, and 
+
+Kolmogorov sublayer 𝛿 K, listed in descending order of thickness. First, the surface-influenced layer characterises the extent of the surface influence in the streamwise component of TKE, and it is in order of the full channel depth ( 𝛿 SIL ≈ ℎ). Second, the normal-velocity-dumping layer, characterising the deviation of 𝑣 rms ≡√︁ ⟨𝑣 ′𝑣 ′⟩ from the CCF profile, is much thinner than the first layer ( 𝛿 NVD ≈ 0.3ℎ, e.g. Nagaosa (1999); Duan et al. (2021)). Third, the near-surface viscous sublayer is where 𝑣 rms grows linearly as moving away from the free surface, whose thickness is characterised by a viscous characteristic length scale ℓV ≡ ℎRe −1/2b , as 
+
+𝛿 V ≈ ℓV. Finally, the Kolmogorov sublayer, which is the inner-most layer and characterised by another length scale ℓK ≡ ℎRe −3/4b with 𝛿 K ≈ 20 ℓK, is where the surface-normal gradients of the mean velocity ( 𝑑 ⟨𝑢 ⟩/ 𝑑𝑦 ) as well as the intensity of the surface-parallel vorticity components ( 𝜔 𝑥 /𝑧, rms ) are damped to zero. 
+
+# Focus on Fluids articles must not exceed this page length 5
+
+3. Results 
+
+3.1. TKE budget and baseline comparison 
+
+To address RQ1 defined in §1, namely: “ Which budget terms transmit the surface influence into the channel interior? ”, we analyse the TKE budget in the viscous normalisation for each Reynolds number. The comparison is made between open- and closed-channel configurations at matched Re 𝜏 . Generally, some degree of OCF–CCF discrepancies are expected due to the difference in the boundary condition: in OCF the surface-normal component of turbulent kinetic energy vanishes at 𝑦 = ℎ to satisfy the impermeable boundary condition, which also facilitates inter-component energy transfer from the surface-normal to the surface-parallel directions via the pressure-strain term in the component-wise budget equations (Swean et al. 
+
+1991; Leighton et al. 1991; Handler et al. 1993; Komori et al. 1993; Pan & Banerjee 1995). Conversely, impermeability is not enforced at the channel semi-height in CCF, therefore such energy transfer is not relevant. Note that this pressure–strain redistribution term in the component budgets is distinct from the pressure transport in the TKE budget presented below. Due to its importance, however, the pressure-strain term will be further analysed in a separate section. The turbulent kinetic energy budget for fully-developed channel flows can be written as: 
+
+𝜈 d2 𝑘 
+
+d𝑦 2
+
+|{z} 
+
+> (i)
+
+− 1
+
+𝜌 
+
+d⟨𝑣 ′ 𝑝 ′⟩
+
+d𝑦 
+
+| {z }
+
+> (ii)
+
+− 12d⟨𝑣 ′𝑢 ′ 
+
+> 𝑗
+
+𝑢 ′ 
+
+> 𝑗
+
+⟩
+
+d𝑦 
+
+| {z }
+
+> (iii)
+
+−⟨ 𝑢 ′𝑣 ′⟩ d⟨𝑢 ⟩
+
+d𝑦 
+
+| {z }
+
+> P
+
+−𝜈 
+
+* 𝜕𝑢 ′
+
+> 𝑖
+
+𝜕𝑥 𝑗 
+
+2+| {z } 
+
+> −˜𝜀
+
+= 0 , (3.1) where 𝑘 = ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩/ 2 defines TKE, (i-iii) represent the transport terms, namely: (i) viscous diffusion, (ii) pressure transport, and (iii) turbulent transport, whereas P and ˜ 𝜀 are production and (pseudo-)dissipation, respectively. Notice that the above TKE budget equation is in the pseudo-dissipation form. In the present statistically one-dimensional configuration, true dissipation 𝜀 differs from ˜ 𝜀 by a wall-normal viscous-transport correction involving d 2 ⟨𝑣 ′2⟩/ d𝑦 2. Rewriting the budget in terms of true dissipation therefore preserves the total balance but redistributes part of the near-surface viscous contribution between dissipation and diffusion. Since this regrouping combines terms associated with different near-surface length scales, the pseudo-dissipation form is retained for the following term-wise similarity analysis. For simplicity, we refer to ˜ 𝜀 
+
+as dissipation in the rest of this paper. Figure 1 depicts the TKE budget terms normalised by 𝑢 4 
+
+> 𝜏
+
+/𝜈 as functions of 𝑦 +. The wall-normal coordinate is shown on a logarithmic scale to emphasise the near-wall region and the channel interior. Figure 2 shows the same budget terms in a near-surface representation, using a linear 𝑦 /ℎ coordinate and a smaller spatial range. In figure 1, it is visible that the OCF budget term profiles generally match their CCF counterparts very closely in the vicinity of the wall and throughout most of the flow domain, to the extent that the CCF lines are barely visible in the graph. Conversely, in the near-surface region approximately above 𝑦 /ℎ ≈ 0.7 shown in figure 2, the profiles between the two channel types differ fundamentally. It appears that all the budget terms except the production term are qualitatively altered. The positive peak in the pressure transport profile directly at the free surface shown in figure 2 is a clear signature of the altered pressure-induced transport, since it is entirely absent in the CCF counterpart, which indicates that a substantial amount of energy is transported from the interior towards the free surface. The turbulent transport term in this region also deviates from the CCF level significantly as the magnitude drops notably. Similarly, the magnitude of the dissipation term drops sharply as 6−0.2
+
+−0.1
+
+0
+
+0.1
+
+0.2
+
+10 −1 10 0 10 1 10 2
+
+−0.2
+
+−0.1
+
+0
+
+0.1
+
+0.2
+
+y+
+
+10 −1 10 0 10 1 10 2
+
+y+
+
+(a) (b) 
+
+(c) (d)         
+
+> Figure 1: TKE budget for OCF in the near-wall region. , production; ,pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport. The magnitudes of the terms are normalised by 𝑢 4
+> 𝜏 /𝜈 , whereas the normalised distance from the no-slip wall is 𝑦 +. (a) O200; (b) O400; (c) O600; (d) O900. Grey lines indicate the corresponding CCF data.
+
+the near-surface velocity field adapts to the free-slip boundary condition. This local reduction of dissipation results in an excess of energy to be transported away from the free surface, which is done predominantly by viscous diffusion. Conversely, the same viscous diffusion term is entirely inactive outside of the near-surface region. As mentioned, the production term remains qualitatively similar between the two channel types even in the limit 𝑦 → ℎ. By definition, the production term needs to disappear at 𝑦 = ℎ
+
+in both configurations, since a kinematic condition d ⟨𝑢 ⟩/ d𝑦 = 0 is enforced by the free-slip boundary condition (OCF), and by the geometric symmetry (CCF). Despite the similarity, however, the production appears to be consistently higher in OCF slightly below the free surface before dropping to zero, whereas the opposite is true in the channel interior. The corresponding crossover points between the two channel types appear to be highly Reynolds number dependent. The observed trend can be attributed to a localised increase of the mean shear slightly below the free surface before converging to zero, which was first discussed by Shen et al. (2000). Subsequently, our recent study showed that the local mean shear peak appears at the outer edge of so-called Kolmogorov sublayer (cf. Bauer et al. 2025, Fig. 2). To assess whether the observed OCF/CCF differences in the production term translate into a materially different local balance, we additionally examined the ratio P/ ˜𝜀 in the near-surface region (cf. figure 3). Before focusing on the near-surface region, we confirmed that the usual approximate local-equilibrium behaviour is recovered in the logarithmic layer: 7-0.008 
+
+-0.004 
+
+0.000 
+
+0.004 
+
+0.008 
+
+-0.004 
+
+-0.002 
+
+0.000 
+
+0.002 
+
+0.004 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0.000 
+
+0.002 
+
+0.004 
+
+y/h 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0.000 
+
+0.002 
+
+0.004 
+
+y/h 
+
+(a) (b) 
+
+(c) (d)         
+
+> Figure 2: TKE budget for OCF in the near-surface region as a function of free surface distance. , production; , pseudo-dissipation; , viscous diffusion; ,turbulent transport; , pressure transport. The magnitudes of the terms are normalised by 𝑢 4
+> 𝜏 /𝜈 , whereas the vertical positions are normalised by the outer scale ℎ. (a) O200; (b) O400; (c) O600; (d) O900. Grey lines indicate the corresponding CCF data. Notice a difference in the vertical axis limits in (a) compared to the rest.
+
+at Re 𝜏 > 200, P/ ˜𝜀 approaches unity in both OCF and CCF (not shown). The behaviour shown in figure 3 therefore represents the breakdown of this interior production–dissipation balance as the free surface is approached. In both OCF and CCF, P/ ˜𝜀 remains below unity throughout 0 .7 ⩽ 𝑦 /ℎ ⩽ 1 and decreases towards zero in the limit 𝑦 → ℎ, consistent with the requirement that production vanishes at the free-slip boundary (OCF) and at the symmetry plane (CCF). Moreover, the ratio-of-ratios [P/ ˜𝜀 ]OCF /[P/ ˜𝜀 ]CCF stays close to unity over most of the interval and only rises considerably in the immediate vicinity of the surface where both numerator and denominator become small. This indicates that, whilst P exhibits a modest OCF/CCF deviation slightly below the free surface, the local production-dissipation partitioning does not provide an additional discriminating mechanism beyond what is already evident from the transport terms. In summary, the free-surface influence enters the TKE budget through the kinematic constraint at 𝑦 = ℎ, which suppresses wall-normal motions and induces a strong near-surface inter-component energy redistribution. Meanwhile, the vertical energy flux towards the free surface due to pressure transport increases significantly, whilst the local dissipation and turbulent transport decrease. Consequently, this results in a near-surface energy surplus that must be exported into the interior. This energy export away from the surface is realised predominantly by viscous diffusion, which becomes the dominant transport mechanism in 80.7 0.8 0.9 1
+
+0
+
+0.2
+
+0.4
+
+0.6
+
+y/h 
+
+> P/˜ε
+
+0.7 0.8 0.9 1
+
+0
+
+5
+
+10 
+
+y/h 
+
+> (P/˜ε)OCF  /(P/˜ε)CCF
+
+(a) (b)                   
+
+> Figure 3: Near-surface production–dissipation ratio P/ ˜𝜀 for OCF (solid lines) and CCF (dashed lines) (a) the ratio [P/ ˜𝜀 ]OCF /[P/ ˜𝜀 ]CCF (b). , Re 𝜏 ≈200; , Re 𝜏 ≈400; , Re 𝜏 ≈600; , Re 𝜏 ≈900.
+
+the immediate vicinity of the free surface whilst remaining negligible outside the surface layer. 3.2. Surface-layer similarity of transport terms 
+
+To address RQ2: “ Does a unified similarity scaling exist for the budget terms? ”, here we investigate whether the near-surface budget term profiles exhibit a Reynolds-number similarity when expressed in interface-based coordinates. In particular, we seek a scaling for the surface-normal distance and the transport-term amplitudes that makes the OCF profiles across the Reynolds numbers similar. Before focusing on the near-surface similarity, however, we need to establish another baseline by evaluating whether the outer flow similarity observed for CCF applies to the current OCF data. For CCF, Hoyas & Jim´ enez (2008) showed that all the TKE budget terms can be made similar under the (𝑢 3 
+
+> 𝜏
+
+/ℎ)-scaling. Since Re 𝜏 = 𝑢 𝜏 ℎ/𝜈 , this normalisation by 
+
+𝑢 3 
+
+> 𝜏
+
+/ℎ is equivalent to multiplying the wall-scaled budget amplitude by Re 𝜏 . Correspondingly, figure 4 presents the TKE budget terms in OCF normalised by this scaling in their amplitude, whilst the vertical locations are scaled by ℎ. Apart from the expected low-Reynolds-number effect, which are mainly visible on the production and turbulent transport terms, all terms scale well in the outer flow region away from the wall and the free surface. Focusing on the near-surface region, it appears that the viscous diffusion and the pressure transport profiles become similar in the region slightly away from the free surface when the surface distances are normalised by the near-surface viscous scale ℓV (cf. figure 5a, 
+
+(ℎ − 𝑦 )/ ℓV ⩾ 0.4). In contrast, Reynolds number dependencies in the amplitudes of those terms remain in the immediate vicinity of the free surface, signalling that different scales control the amplitudes in this region. The dissipation profiles in the direct vicinity of the free surface, on the other hand, can be made similar when the free-surface distances are normalised by the Kolmogorov scale 
+
+ℓK whilst keeping the amplitude scaling as before (cf. figure 5b, (ℎ − 𝑦 )/ ℓK ⩽ 4). The observed trend is consistent with a conjecture made by Calmet & Magnaudet (2003) that the near-surface dissipation should be linked to the local enstrophy, whilst our previous work (Bauer et al. 2025) showed that the variation length scale of the quantity is indeed ℓK.In figure 6, the amplitudes of the budget terms are normalised by 𝑢 3b/ℎ. With this bulk scaling, a clear similarity is obtained for the viscous diffusion term in the immediate proximity 9of the free surface (ℎ − 𝑦 )/ ℓV ⩽ 0.4. This amplitude scaling property can be attributed to the emergence of significantly more energetic VLSMs in OCF compared with CCF. In Bauer 
+
+et al. (2024), we showed that OCF VLSMs appear at Reynolds numbers as low as Re 𝜏 = 400, causing 𝑢 rms ≡√︁ ⟨𝑢 ′𝑢 ′⟩ to scale with 𝑢 b for 𝑦 ≳ 0.3ℎ. Consistently, the component-wise budget analysis in Appendix B shows that the viscous diffusion term in the ⟨𝑢 ′𝑢 ′⟩-budget collapses well under 𝑢 3b/ℎ scaling. The length scale controlling the near-surface profile variation remains ℓV.The above combined amplitude and length scaling can also be interpreted from the balance between a viscous diffusion time scale and an advective time scale determining the thickness of the interfacial boundary layer. The viscous diffusion time over a wall-normal distance ℓ
+
+is 𝜏 𝜈 ∼ ℓ2/𝜈 . Equating this with the advective time scale 𝜏 adv ∼ ℎ/𝑢 b, which is assumed to scale with the bulk quantities due to the presence of VLSMs, gives 
+
+ℓ ∼
+
+ 𝜈ℎ 𝑢 b
+
+1/2
+
+= ℎRe −1/2b = ℓV . (3.2) If the surface-parallel turbulent energy participating in this balance is set by the VLSM-induced streamwise fluctuations, it should be of order 𝑢 2b and the following estimate can be made 
+
+𝜈 d2 𝑘 
+
+d𝑦 2 ∼ 𝜈 𝑢 2b
+
+ℓ2
+
+> 𝑉
+
+∼ 𝑢 3b
+
+ℎ . (3.3) Hence, this order-of-magnitude estimate explains why the viscous diffusion term collapses with ℓV in distance and 𝑢 3b/ℎ in amplitude. As visible in figures 4, 5, and 6, the amplitudes of the pressure transport term cannot be made similar either by 𝑢 3 
+
+> 𝜏
+
+/ℎ, or 𝑢 3b/ℎ. Instead, a significantly improved collapse is obtained when the term is normalised by a mixed velocity scale, namely 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ, as shown in figure 7. A possible origin of this scaling trend will be discussed in the subsequent subsection. Whilst we could successfully identify the appropriate scales for the rest of the transport terms and the dissipation term, the turbulent transport term exhibits only partial similarity under the same set of normalisations. Among the tested scales, the mixed (𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ)-scaling provides the most competitive reduction of Reynolds-number dependence when it is com-bined with ℓV-normalised free surface distance, however a non-negligible residual separation remains. In particular, in the immediate vicinity of the free surface, (ℎ − 𝑦 )/ ℓV ⩽ 0.4, the residual Reynolds number dependence is the most notable. The corresponding component-wise Reynolds-normal-stress budgets, reported in Appendix B, show that this partial similarity of the TKE turbulent-transport term reflects heterogeneous scaling behaviour among the individual normal-stress components. In summary, the budget terms in the free-surface region do not exhibit a single near-surface similarity scaling. Instead, the similarity is both distance-specific ℓV versus ℓK and velocity-scale-specific ( 𝑢 𝜏 , 𝑢 b, or mixed). In particular, dissipation collapses on ℓK, whereas viscous diffusion and pressure transport are controlled by ℓV; however, their amplitudes scale differently, with pressure transport requiring the mixed velocity scale 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ. To organise these key results, the identified scaling properties of the individual terms are summarised in table 2. 3.3. VLSM organisation of near-surface pressure-strain 
+
+Here, we address RQ3: “ Are pressure-driven inter-component transfer events purely local? Or are they macroscopically organised by outer-layer large-scale motions? ”, focusing primarily 10 0.4 0.6 0.8 1
+
+−4
+
+−2
+
+0
+
+2
+
+4
+
+y/h 
+
+Figure 4: TKE budget for open channel flow as a function of distance from the wall normalised with the channel height ℎ. The amplitudes of the budget terms are normalised by 𝑢 3 
+
+> 𝜏
+
+/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. , production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport. 0123
+
+-1.0 
+
+-0.5 
+
+0.0 
+
+0.5 
+
+1.0 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+Figure 5: TKE budget for open channel flow as a function of free surface distance. The amplitudes of the budget terms are normalised by 𝑢 3 
+
+> 𝜏
+
+/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. , production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport. The distance from the free surface is normalised with (a) the near-surface viscous length scale ℓV and (b) the near-surface Kolmogorov length scale ℓK.
+
+on the OCF configuration where the VLSMs are more energetic and directly relevant to the near-surface dynamics. The pressure-strain tensor is defined as: 
+
+Π𝑖 𝑗 =
+
+*
+
+𝑝 ′
+
+𝜌 
+
+𝜕𝑢 ′
+
+> 𝑖
+
+𝜕𝑥 𝑗 
+
++ 𝜕𝑢 ′
+
+> 𝑗
+
+𝜕𝑥 𝑖 
+
+!+ 
+
+, (3.4) 
+
+# Rapids articles must not exceed this page length 11 0123
+
+-0.0003 
+
+-0.0002 
+
+-0.0001 
+
+0
+
+0.0001 
+
+0.0002 
+
+0.0003 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+Figure 6: TKE budget for open channel flow as a function of free surface distance. Here normalised by 𝑢 3b/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( )lines, O600; dotted ( ) lines, O900. , production; , pseudo-dissipation; ,viscous diffusion; , turbulent transport; , pressure transport. The distance from the free surface is normalised with (a) the near-surface viscous length scale ℓV; (b) the near-surface Kolmogorov length scale ℓK.0123
+
+-0.10 
+
+-0.05 
+
+0
+
+0.05 
+
+0.10 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+Figure 7: TKE budget for open channel flow as a function of free surface distance. Here normalised by 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( )lines, O600; dotted ( ) lines, O900. , production; , pseudo-dissipation; ,viscous diffusion; , turbulent transport; , pressure transport. The distance from the free surface is normalised with (a) the near-surface viscous length scale ℓV; (b) the near-surface Kolmogorov length scale ℓK.
+
+whose trace sums up to zero due to incompressibility, and it does not appear in equation 3.1, as mentioned. Still, the pressure-strain term plays an important role in the overall dynamics of turbulent kinetic energy, as the diagonal terms redistribute the energy between the components. In OCF, this mechanism transfers the surface-normal component of turbulent kinetic energy ( ⟨𝑣 ′𝑣 ′⟩) into the surface-parallel components ( ⟨𝑢 ′𝑢 ′⟩, ⟨𝑤 ′𝑤 ′⟩) below the free surface, resulting an increased anisotropy in the region (Calmet & Magnaudet (2003) termed it 12                               
+
+> viscous (i) pressure (ii) turbulent (iii) production ( P)dissipation ( −˜𝜀 )near-surface 𝑢 3b/ℎ,ℓV𝑢 b𝑢 2
+> 𝜏 /ℎ,ℓVpartial –𝑢 3
+> 𝜏 /ℎ,ℓK
+> bulk (interior) 𝑢 3
+> 𝜏 /ℎ,ℎ𝑢 3
+> 𝜏 /ℎ,ℎ𝑢 3
+> 𝜏 /ℎ,ℎ𝑢 3
+> 𝜏 /ℎ,ℎ𝑢 3
+> 𝜏 /ℎ,ℎ
+> Table 2: Result table of identified scales of TKE budget terms
+
+0.4 0.6 0.8 1
+
+−4
+
+−2
+
+0
+
+2
+
+y/h 
+
+> Π+
+> ii  Re τ
+
+00.511.52
+
+−1.2
+
+−0.8
+
+−0.4
+
+0
+
+0.4
+
+0.8
+
+(h − y)/ℓ V
+
+(a) (b)               
+
+> Figure 8: Diagonal components of the pressure-strain term, here normalised by 𝑢 3
+> 𝜏 /ℎ.Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( )lines, O900. ,Π11 ;,Π22 ;,Π33 . The distance from the free surface is normalised with (a) the channel height ℎ; (b) the near-surface viscous length scale ℓV.
+
+as mechanism II ). Conversely, the same mechanism was found to be responsible for reducing the anisotropy of the normal stresses generally above the buffer layer in CCF (Mansour 
+
+et al. 1988; Hoyas & Jim´ enez 2008), which is commonly referred to as return-to-isotropy 
+
+effect ( mechanism I in Calmet & Magnaudet (2003)). This return-to-isotropy effect is also significant in OCF away from the wall and the free surface, as demonstrated below. In figure 8, the profiles of the diagonal components of the pressure-strain tensor are shown. The amplitudes of the diagonal terms are normalised by the basic (𝑢 3 
+
+> 𝜏
+
+/ℎ)-scaling, which leads to a satisfactory collapse throughout the visible vertical extent. In the channel interior ( 𝑦 /ℎ < 0.85), it is evident from negative Π11 and positive Π22 /33 that the return-to-isotropy effect is active as expected, redistributing energy from the streamwise direction to the spanwise and the surface-normal directions. A subtle Reynolds number dependency in the amplitudes can be observed, which we attribute to the emergence of VLSMs in the current data at around Re 𝜏 = 400 (Bauer et al. 2024), progressively biasing the energy content into the streamwise direction with increasing Reynolds number, making the turbulent stresses more anisotropic as the result. Recall that the emergence VLSMs and the increased anisotropy is not a unique feature of OCF, as it also appears in CCF (Hoyas & Jim´ enez 2006), though it only becomes energetically significant from Reynolds numbers much higher than the above limit. The pressure-strain term responds to the increased anisotropy, and based on the magnitudes of Π22 /33 in figure 8, it appears that the energy is redistributed to the surface-normal and the spanwise directions fairly equally. 13 In contrast, the surface-normal energy is redistributed to the surface-parallel components within 𝑦 /ℎ ⩾ 0.85, which is evident from negative Π22 and the corresponding positive 
+
+Π11 /33 . Based on the magnitudes, it is clear that the energy is redistributed more in the spanwise component than in the streamwise counterpart, independent of Reynolds number. Whilst this directional bias is consistent with the findings in the earlier low-Reynolds number DNS studies (Swean et al. 1991; Komori et al. 1993; Nagaosa 1999), it contradicts with a conjecture by Calmet & Magnaudet (2003), who stated that the ratio between the spanwise and streamwise pressure-strain terms should approach to unity at high Reynolds numbers. A plausible contributor for this contradiction is that the above statement was made based on the higher degree of isotropy observed in their LES data, which was simulated in a computational domain that is too small for VLSMs to exist (Bauer et al. 2024). Beside the uncertainties linked to the use of a sub-grid-scale model, the contribution of the above limitation is supported by the data that the magnitude of their streamwise Reynolds stress component (Calmet & Magnaudet 2003) lies notably below the corresponding OCF data of this study, as well as the CCF data of Hoyas & Jim´ enez (2006). As the results of a more recent LES study in highly restricted numerical domains (Ahmed et al. 2021) coincide with this trend, it indicates a persistent nature of this particular constraint. Next, we examine potential significance of VLSMs on the pressure-strain terms, directly addressing RQ3. Figure 9 depicts a near-surface instantaneous streamwise velocity fluctuation (𝑢 ′) field primarily visualising VLSMs, and the corresponding normal components of the instantaneous pressure-strain products. Recall that the channel-flow VLSMs generally emerge in a form of large-scale low-velocity streaks (cf. the highly-elongated blue regions in figure 9), associated with underlying large-scale streamwise vortices, commonly referred to as super-streamwise vortices (SSVs) (Zhong et al. 2016; Duan et al. 2021; Scherer et al. 2022; Bauer et al. 2025). Distributions of the individual components of the pressure-strain products clearly show that they are explicitly coupled (cf. the region marked by a dotted-line rectangle, ranging from 
+
+𝑥 /ℎ ≈ 12) as expected. Moreover, whilst the high-intensity pressure-strain events themselves are small-scale phenomena, which is evident in the finely detailed individual structures, it appears that their positions are macroscopically organised by the large-scale low-velocity streaks (cf. the region marked by a dashed-line rectangle, ranging from 𝑥 /ℎ ≈ 23). To confirm, figure 10 shows the profiles of the pressure-strain products conditionally averaged with respect to the sign of the underlying 𝑢 ′. As expected from the visual impression in figure 9, the magnitudes of the pressure-strain terms are found to be significantly larger (≈ 3× at the surface) within the low-velocity streak regions. Moreover, notice that the profile in the spanwise component inside the high-velocity streaks does not feature a distinct localised increase towards the free surface, but it remains approximately constant throughout the near-surface region instead (cf. figure 10b). This indicates that the surface-normal energy component in the high-velocity streaks is preferentially redistributed towards the streamwise direction (cf. the blue lines above the orange lines in figure 10b), whereas in the low-velocity streak region the energy is transferred mainly to the spanwise component (figure 10d), being consistent with the statistics without conditional averaging (figure 9). This observed qualitative difference in the dominant direction of the energy redistribution can be linked to the underlying near-surface vortical structures and their interaction with the free surface. As mentioned, VLSMs are known to coexist with the large-scale super-streamwise vortices (SSVs) spanning over the entire channel height, and we suppose that those SSVs residing inside the VLSMs guide the fluctuating velocity in the direction perpendicular to the rotational axis on the free surface plane (i.e. 𝑧 -direction, cf. figure 11 for a conceptual sketch). On the other hand, inside the large-scale high-velocity streaks, the current data indicate that the dominant vortical motions are around the spanwise axis, guiding the surface 14 velocity fluctuations in the streamwise direction. The above conceptual model was inspired by, and analogous to the streamwise vortical tubes and the associated splats/anti-splats discussed in Nagaosa (1999, Fig. 10, 11). Here, it is important to point out a key difference: Nagaosa (1999) simulated OCF at a marginal Reynolds number of Re 𝜏 = 150, in which scales are not separated (i.e. no VLSMs) and their near-wall buffer-layer turbulent structures spanned over 
+
+ℎ, interacting directly with the free surface instead. Finally, we focus on the similarity in the pressure-strain components. Figure 12 depicts the same pressure-strain term profiles under the mixed-velocity scaling of 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ, which was determined for the pressure transport term (cf. §3.2). Under this normalisation, the similarity of the profiles both in the interior as well as the near-surface region improves drastically. The most appropriate variation length scale of the profiles seems to be ℓV, as for the pressure transport term. This scaling behaviour can be explained by examining the definition of the streamwise component of the pressure-strain term: 2 ⟨𝑝 ′𝜕𝑢 ′/𝜕𝑥 ⟩ (note: 𝜌 is omitted since it is constant). Whilst the root-mean-square of pressure fluctuation scales with 𝑢 2 
+
+> 𝜏
+
+away from the wall (cf. figure 13), the amplitude of 𝑢 ′ scales with 𝑢 b and the variation length scale is ℎ at the free surface due to the emergence of VLSMs, leading to the (𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ)-scaling. Since all the diagonal components are tightly coupled, the 2 ⟨𝑝 ′𝜕𝑣 ′/𝜕𝑦 ⟩ and the 2 ⟨𝑝 ′𝜕𝑤 ′/𝜕𝑧 ⟩ components should also scale in 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ. Additional pressure–strain scalings are provided in Appendix C to document the comparison with alternative velocity normalisations. In summary, the near-surface pressure–strain field is not only a local redistribution mechanism imposed by the free-surface boundary condition, but is also organised by outer-layer coherent motions. In the channel interior, pressure–strain retains its usual return-to-isotropy role, redistributing energy from the streamwise component towards the spanwise and surface-normal components. Near the free surface, this direction reverses: surface-normal energy is transferred into the surface-parallel components, with a persistent bias towards the spanwise direction. Instantaneous fields and conditional averages show that this redistribution is strongly amplified within low-velocity VLSM streaks, where the magnitude of the pressure–strain terms is substantially larger than in high-speed regions. The conditional statistics further suggest a streak-dependent redistribution pathway: low-velocity streaks favour transfer into the spanwise component, whereas high-speed regions show relatively stronger transfer into the streamwise component. This behaviour is consistent with a picture in which VLSM-associated large-scale vortical motions organise the otherwise small-scale pressure–strain events. Finally, the pressure–strain profiles collapse substantially better under the mixed velocity scaling 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ and the surface-normal length scale ℓV, consistent with the corresponding pressure-transport scaling. 
+
+4. Discussion 
+
+The results above suggest that the free-surface influence should not be viewed as a purely local boundary adjustment. Instead, the near-surface budget behaviour reflects an interaction between the kinematic constraints at the interface, Reynolds-number-dependent surface-layer scales, and the energetic outer-layer motions characteristic of OCF. A perhaps counter-intuitive outcome is that viscous diffusion becomes the dominant transport mechanism in the limit 𝑦 → ℎ. The dominance of viscous diffusion near the free surface should therefore be interpreted together with the Reynolds-number-dependent surface-layer structure. The budget analysis in §3.1 identifies viscous diffusion as the principal outward transport pathway for the surface-induced TKE surplus, whilst the scaling analysis in §3.2 shows that this pathway is organised over the near-surface viscous length scale ℓV.Thus, the near-surface viscous layer is not only visible in the wall-normal velocity statistics 15     
+
+> Figure 9: Instantaneous: (a) streamwise velocity fluctuation 𝑢 ′, and (b-d) pressure-strain components from the same instance. OC600 at 𝑦 /ℎ=0.95.
+
+reported previously, but also appears directly in the TKE budget as the finite-thickness region through which molecular diffusion exports energy away from the interface. In contrast, the dissipation adjustment occurs on the smaller Kolmogorov sublayer scale ℓK, indicating that 16 −4
+
+−2
+
+0
+
+2
+
+> Π+
+> ii  Re τ
+
+−2
+
+−1.5
+
+−1
+
+−0.5
+
+0
+
+0.5
+
+1
+
+1.5
+
+0.4 0.6 0.8 1
+
+−4
+
+−2
+
+0
+
+2
+
+y/h 
+
+> Π+
+> ii  Re τ
+
+00.511.52
+
+−2
+
+−1.5
+
+−1
+
+−0.5
+
+0
+
+0.5
+
+1
+
+1.5
+
+(h − y)/ℓ V
+
+(a) (b) 
+
+u′ > 0 u′ > 0
+
+(c) (d) 
+
+u′ < 0 u′ < 0
+
+Figure 10: Conditional average of the diagonal components of the pressure-strain term 
+
+Π𝑖𝑖 , here normalised by 𝑢 3 
+
+> 𝜏
+
+/ℎ. Legend see figure 8. (a,b) 𝑢 ′ > 0; (c,d) 𝑢 ′ < 0. The distance from the free surface is normalised with (a,c) the channel height ℎ; (b,d) the near-surface viscous length scale ℓV.
+
+Figure 11: Conceptual sketch of super-streamwise vortex preferentially inducing inter-component energy transfer in the spanwise direction. Arrows with dashed line represent the preferential directions of energy redistribution at different heights. 17 0.4 0.6 0.8 1
+
+-0.4 
+
+-0.3 
+
+-0.2 
+
+-0.1 
+
+0
+
+0.1 
+
+0.2 
+
+y/h 
+
+> Πii h/u b/u 2
+> τ
+
+00.511.52
+
+-0.10 
+
+-0.05 
+
+0
+
+0.05 
+
+(h − y)/ℓ V
+
+(a) (b)                            
+
+> Figure 12: Diagonal components of the pressure-strain term, here normalised by 𝑢 b𝑢 2
+> 𝜏 /ℎ.Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( )lines, O900. ,Π11 ;,Π22 ;,Π33 . The distance from the free surface is normalised with (a) the channel height ℎ; (b) the near-surface viscous length scale ℓV.00.20.40.60.81
+> 0
+> 1
+> 2
+> 3
+> y/h
+> p+
+> rms
+> Figure 13: OCF 𝑝 rms normalised by 𝑢 2
+> 𝜏 ., O200; , O400; , O600; , O900.
+
+transport and dissipation respond to the free-surface constraint on distinct Reynolds-number-dependent length scales. The conditional pressure–strain statistics further indicate that the redistribution process cannot be regarded as a purely local near-surface adjustment. Although the instantaneous pressure–strain events remain small-scale, their occurrence and directional bias are organised by the large-scale streak structure. This provides a direct link between the enhanced stream-wise energy content associated with OCF VLSMs and the near-surface inter-component energy transfer imposed by the free-surface constraint. In this sense, the pressure–strain term acts as a bridge between outer-layer organisation and local surface-layer anisotropy. The Reynolds-number dependence observed in the near-surface TKE budget also has implications for turbulence modelling. The free-surface region cannot be treated as a trivial counterpart of either the near-wall region or the symmetry plane of a closed channel. The present results show that near-surface transport, dissipation, and pressure redistribution are governed by distinct length and velocity scales: viscous diffusion is organised over the near-surface viscous scale ℓV, dissipation adjusts over the smaller Kolmogorov sublayer scale ℓK,and pressure-related terms involve a mixed bulk/friction-velocity scaling. This poses a serious challenge for closures based on a single local turbulence length scale or a single velocity 18 scale. In particular, eddy-viscosity RANS closures and conventional LES subgrid-scale models may reproduce the mean flow or second-order statistics whilst still misrepresenting the partitioning of TKE transport near the surface, especially when pressure transport and pressure–strain redistribution are not modelled explicitly. The present DNS results therefore provide useful constraints for free-surface turbulence closures: models should account for the Reynolds-number-dependent surface-layer thickness, the non-universal scaling of the individual budget terms, and the organisation of pressure-driven redistribution by large-scale coherent motions. 
+
+5. Conclusion 
+
+We analysed the turbulent kinetic energy (TKE) budget and pressure–strain redistribution in matched open- and closed-channel DNS up to Re 𝜏 ≈ 900, using a computational domain sufficiently large to accommodate the energetic VLSMs characteristic of OCF. The aim was to determine how the free-surface influence is transported into the channel interior, whether the near-surface budget terms admit a unified similarity scaling, and whether pressure-driven inter-component transfer is organised by outer-layer coherent motions. The free-surface influence is found to be communicated primarily through the transport terms of the TKE budget and through pressure–strain redistribution in the component-wise energy balance. Near the free surface, pressure transport supplies energy towards the interface, while turbulent transport and dissipation are reduced. The resulting energy surplus is exported away from the surface predominantly by viscous diffusion, which becomes the dominant outward transport pathway within the immediate surface layer. The corresponding similarity analysis shows that this region does not admit a single universal scaling: viscous diffusion is organised over the near-surface viscous scale ℓV, dissipation adjusts over the smaller Kolmogorov sublayer scale ℓK, and pressure-related terms require the mixed velocity scale 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ.The pressure–strain results further show that inter-component redistribution near the free surface is not purely local. Away from the surface, pressure–strain retains its usual return-to-isotropy role, whereas near the surface it transfers energy from the surface-normal component into the surface-parallel components, with a persistent spanwise bias. Instantaneous fields and conditional averages demonstrate that this redistribution is amplified in low-velocity VLSM streaks and that its directional character depends on the underlying large-scale streak structure. Overall, the free-surface influence is best understood as a coupled multi-scale process: local kinematic constraints suppress wall-normal motion and turbulent transport, Reynolds-number-dependent surface layers set the transport and dissipation length scales, and VLSMs organise the pressure-related redistribution. These findings provide benchmark constraints for free-surface turbulence modelling, particularly for closures based on a single local turbulence scale or closures that do not explicitly represent pressure transport and pressure–strain redistribution. 
+
+Supplementary data. The data supporting the findings of this study are available at: 
+
+https://doi.org/10.4121/88678f02-2a34-4452-8534-6361fc34d06b .
+
+Acknowledgements. The authors thank Dr. M. Uhlmann for his important role in initiating the DNS database used in this study, for supporting the earlier open-channel-flow work 19 from which the present study developed, and for helpful scientific discussions. The authors also gratefully acknowledge the initial funding support provided through the DFG project led by Dr. M. Uhlmann, under which parts of the database and earlier related work were developed. Y.S. also thanks Dr. M. Manhart for a fruitful discussion and valuable suggestions in the interpretation of scaling behaviours. During preparation of this manuscript, the corresponding author used DeepL and ChatGPT (OpenAI) solely to identify potential English-language issues (e.g. grammar, phrasing, and readability) and to suggest alternative wording. These tools were not used to generate scientific content, analyse data, create figures, or draw conclusions. All changes were reviewed and approved by the corresponding author, who takes full responsibility for the manuscript content. 
+
+Funding. The authors gratefully acknowledge the financial support of the DFG under grant no. UH 242/3-1. The simulations were carried out at the HPC clusters UC2 and CARA. Thus, the authors gratefully acknowledge the scientific support and HPC resources provided by the SCC Karlsruhe, the German Aerospace Center (DLR), and the state of Baden-Wuerttemberg through bwHPC. The HPC system CARA is partially funded by “Saxon State Ministry for Economic Affairs, Labour and Transport” and “Federal Ministry for Economic Affairs and Climate Action”. 
+
+Declaration of Interests . The authors report no conflict of interest. 
+
+Author ORCID. Y. Sakai, https://orcid.org/0000-0001-8125-6566 ;C. Bauer, https://orcid.org/0000-0003-1838-6194 
+
+Author contributions. Both authors contributed to the study conception and design. C.B. performed the numerical simulations and post-processing. Y.S. wrote the first draft of the manuscript, and both authors contributed to revisions. Both authors approved the final manuscript. 20 0123
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+Figure 14: TKE budget for open channel flow as a function of free surface distance. Here normalised by 𝑢 2b𝑢 𝜏 /ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( )lines, O600; dotted ( ) lines, O900. , production; , pseudo-dissipation; ,viscous diffusion; , turbulent diffusion; , pressure diffusion. The distance from the free surface is normalised with (a) the near-surface viscous length scale ℓV; (b) the near-surface Kolmogorov length scale ℓK.
+
+Appendix A. Additional scaling of TKE budget terms 
+
+Here, we present an additional mixed velocity scaling for the TKE budget terms in figure 14, for completeness. 21 
+
+Appendix B. Scaling of ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget terms 
+
+Here, we present the distributions of the terms in the ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget equations under different normalisations. The steady-state Reynolds-stress budget equation in the present configuration reads: 0 = 𝑃 𝑖 𝑗 + Π𝑖 𝑗 − ˜𝜀 𝑖 𝑗 + 𝐷 𝜈 𝑖 𝑗 + 𝐷 t 
+
+> 𝑖 𝑗
+
++ 𝐷 𝑝 𝑖 𝑗 (B 1) where 𝑃 𝑖 𝑗 represents production, Π𝑖 𝑗 is pressure-strain, and ˜ 𝜀 𝑖 𝑗 denotes pseudo dissipation. Furthermore, 𝐷 𝜈 𝑖 𝑗 , 𝐷 t 
+
+> 𝑖 𝑗
+
+and 𝐷 𝑝 𝑖 𝑗 are the viscous diffusion, turbulent transport, and pressure transport terms, respectively. Individual definitions of these terms are as follows: 
+
+𝑃 𝑖 𝑗 = −
+
+
+
+⟨𝑢 ′ 
+
+> 𝑖
+
+𝑣 ′⟩𝛿 𝑗 1 + ⟨ 𝑢 ′ 
+
+> 𝑗
+
+𝑣 ′⟩𝛿 𝑖 1
+
+ d⟨𝑢 ⟩
+
+d𝑦 
+
+
+
+,
+
+Π𝑖 𝑗 =
+
+*
+
+𝑝 ′
+
+𝜌 
+
+𝜕𝑢 ′
+
+> 𝑖
+
+𝜕𝑥 𝑗 
+
++ 𝜕𝑢 ′
+
+> 𝑗
+
+𝜕𝑥 𝑖 
+
+!+ 
+
+,
+
+˜𝜀 𝑖 𝑗 = 2𝜈 
+
+* 𝜕𝑢 ′
+
+> 𝑖
+
+𝜕𝑥 𝑘 
+
+𝜕𝑢 ′
+
+> 𝑗
+
+𝜕𝑥 𝑘 
+
++
+
+,𝐷 𝜈 𝑖 𝑗 = 𝜈 d2 ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑗
+
+⟩
+
+d𝑦 2 ,𝐷 t 
+
+> 𝑖 𝑗
+
+= − d⟨𝑣 ′𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑗
+
+⟩
+
+d𝑦 ,𝐷 𝑝 𝑖 𝑗 = − 1
+
+𝜌 
+
+d⟨𝑢 ′ 
+
+> 𝑖
+
+𝑝 ′⟩
+
+d𝑦 𝛿 𝑗 2 + d⟨𝑢 ′ 
+
+> 𝑗
+
+𝑝 ′⟩
+
+d𝑦 𝛿 𝑖 2
+
+!
+
+.
+
+(B 2) Focusing on the normal stress components (i.e. 𝑖 = 𝑗 ), the production term is only active in the streamwise component ⟨𝑢 ′𝑢 ′⟩, whereas the pressure transport term is only active in the surface-(wall-)normal component ⟨𝑣 ′𝑣 ′⟩ by definition. As discussed in the main text, the pressure-strain term is responsible for inter-component energy transfer. Figures 15, 16 and 17 depict the budget terms of the Reynolds normal stresses normalised by 𝑢 4 
+
+> 𝜏
+
+/𝜈 as a function of 𝑦 /ℎ. The coloured lines are from OCF, whereas the grey lines are from CCF. The distributions of the ⟨𝑢 ′𝑢 ′⟩-budget terms, shown in figure 15, largely resemble the ones from the TKE budget: the production profile, which is slightly elevated from the CCF baseline, combined with a sharp reduction in the dissipation, creates localised energy component surplus in the near-surface region, which needs to be transported away from the free surface predominantly by the viscous diffusion term. Though the level is significantly lower than the CCF counterpart, the turbulent diffusion term also contributes positively to the near-surface energy component balance by transporting the normal stress from the channel interior. Additionally, the positive inter-component energy transfer from the surface-normal component by the pressure-strain term contributes to the underlying local energy component surplus, which needs to be countered solely by the viscous term. A similar observation can be made for the ⟨𝑤 ′𝑤 ′⟩-budget (cf. figure 17), except the fact that the production is absent in this component, which implies that the energy component needs to be transferred from somewhere else to exist. As discussed in the main text, the pressure-strain term is responsible for this, converting noticeably more surface-normal energy to the spanwise component than to the streamwise counterpart. Note that the reported sharp 22 -0.010 
+
+-0.005 
+
+0.000 
+
+0.005 
+
+0.010 
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+y/h 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+y/h 
+
+(a) (b) 
+
+(c) (d)          
+
+> Figure 15: ⟨𝑢 ′𝑢 ′⟩budget for OCF in the near-surface region as a function of free surface distance. , production; , pseudo-dissipation; , viscous diffusion; ,turbulent transport; , pressure-strain. The magnitudes of the terms are normalised by
+> 𝑢 4
+> 𝜏 /𝜈 , whereas the vertical positions are normalised by the outer scale ℎ. (a) O200; (b) O400; (c) O600; (d) O900. Grey lines indicate the corresponding CCF data. Notice a difference in the vertical axis limits in (a) compared to the rest.
+
+reductions of 𝜀 11 and 𝜀 33 in the close proximity of the free surface are consistent with the observations of Handler et al. (1993). The ⟨𝑣 ′𝑣 ′⟩-budget depicted by figure 16 shows a qualitatively different picture from the surface-parallel counterparts. The production term is again inactive in this component, whilst the pressure-strain term is a negative (sink) contributor to the energy component balance in this direction. This implies that there is no in-situ energy component source in the near-surface region, thus it needs to be transported from the channel interior by other means. The largest transporter in this case is the pressure (diffusion) transport term, whilst the turbulent transport and the viscous diffusion terms also contribute positively to the local energy component balance. On the other hand, negative (sink) contribution by the dissipation term is not negligible but moderate, whilst most of the energy component is removed from the near-surface region by the pressure-strain term, and distributed to the surface-parallel components, as discussed. Furthermore, the viscous diffusion term 𝐷 𝜈  
+
+> 22
+
+and the dissipation rate ˜ 𝜀 22 in balance at the free surface, whilst the pressure transport and pressure-strain terms ( 𝐷 𝑝  
+
+> 22
+
+and Π22 ) cancel each other also at the interface. Since these observations hold independently of Re 𝜏 , the present results support and extend the corresponding findings of Handler et al. (1993), which were obtained at Re 𝜏 = 125. In figure 15, it appears that the free surface influence in the production and the turbulent 23 -0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+y/h 
+
+0.7 0.8 0.9 1
+
+y/h 
+
+(a) (b) 
+
+(c) (d)          
+
+> Figure 16: ⟨𝑣 ′𝑣 ′⟩budget for OCF in the near-surface region as a function of free surface distance. , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport; , pressure-strain. The magnitudes of the terms are normalised by 𝑢 4
+> 𝜏 /𝜈 , whereas the vertical positions are normalised by the outer scale ℎ. (a) O200; (b) O400; (c) O600; (d) O900. Grey lines indicate the corresponding CCF data. Notice a difference in the vertical axis limits in (a) compared to the rest.
+
+transport terms of the ⟨𝑢 ′𝑢 ′⟩-budget persists deep inside the channel interior even at higher Reynolds numbers, whereas the OCF-CCF discrepancies in the rest of the terms diminish with increasing Re 𝜏 in the channel interior. Conversely, the OCF-CCF discrepancies generally disappear at higher Reynolds numbers for ⟨𝑣 ′𝑣 ′⟩- (cf. figure 16) and ⟨𝑤 ′𝑤 ′⟩- (cf. figure 17) budget terms. Since the footprint of VLSMs mainly appear in ⟨𝑢 ′𝑢 ′⟩, the persistent OCF-CCF discrepancies in the corresponding production and the turbulent transport budget terms can be attributed to the emergence of the highly energetic OCF VLSMs. Figure 18 shows the ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget terms from the OCF cases, where the near-surface profiles from all four Reynolds numbers are plotted together. Here, the amplitude of each budget term is normalised with 𝑢 3 
+
+> 𝜏
+
+/ℎ, whereas the free surface distance is normalised by ℓV
+
+and ℓK. The same profiles but in different amplitude normalisations are shown in: figures 19 with 𝑢 3b/ℎ, 20 with 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ, and 21 with 𝑢 2b𝑢 𝜏 /ℎ normalisations, respectively. As for the TKE budget, the dissipation terms in the ⟨𝑢 ′
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budgets in the free surface region collapse very well when they are normalised by 𝑢 3 
+
+> 𝜏
+
+/ℎ and ℓK (cf. figure 18b,d,f). Similarly, the viscous diffusion term of the ⟨𝑢 ′𝑢 ′⟩ collapses very well under 𝑢 3b/ℎ and ℓV normalisation. However, the viscous diffusion terms in ⟨𝑣 ′𝑣 ′⟩ and ⟨𝑤 ′𝑤 ′⟩ budget exhibit different scaling behaviours, where the ⟨𝑣 ′𝑣 ′⟩ diffusion term becomes similar under 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ–ℓK normalisation 24 -0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+0.7 0.8 0.9 1
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+y/h 
+
+0.7 0.8 0.9 1
+
+y/h 
+
+(a) (b) 
+
+(c) (d)         
+
+> Figure 17: ⟨𝑤 ′𝑤 ′⟩budget for OCF in the near-surface region as a function of free surface distance. , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure-strain. The magnitudes of the terms are normalised by 𝑢 4
+> 𝜏 /𝜈 , whereas the vertical positions are normalised by the outer scale ℎ. (a) O200; (b) O400; (c) O600; (d) O900. Grey lines indicate the corresponding CCF data. Notice a difference in the vertical axis limits in (a) compared to the rest.
+
+(cf. figure 20d), whereas the ⟨𝑤 ′𝑤 ′⟩ viscous diffusion term shows 𝑢 3b/ℎ–ℓK scaling (cf. figure 19f). The turbulent transport term in the ⟨𝑣 ′𝑣 ′⟩ budget exhibits 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ–ℓV scaling behaviour (cf. figure 20c), whilst no clear scaling behaviours were found for the turbulent transport terms in the ⟨𝑢 ′𝑢 ′⟩- and the ⟨𝑤 ′𝑤 ′⟩-budgets. Recall that, in the near-surface region, the turbulent transport term in the TKE budget scales only partially with 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ–ℓV. The component-wise scaling analysis therefore indicates that the partial collapse of the TKE turbulent-transport term reflects heterogeneous scaling behaviour among the individual Reynolds-normal-stress components. 25 -1.0 
+
+-0.5 
+
+0.0 
+
+0.5 
+
+1.0 
+
+-1.0 
+
+-0.5 
+
+0.0 
+
+0.5 
+
+1.0 
+
+0123
+
+-1.0 
+
+-0.5 
+
+0.0 
+
+0.5 
+
+1.0 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+(c) (d) 
+
+(e) (f) 
+
+Figure 18: ⟨𝑢 ′ 
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget for open channel flow as a function of free surface distance. (a,b) 
+
+⟨𝑢 ′𝑢 ′⟩; (c,d) ⟨𝑣 ′𝑣 ′⟩; (e,f) ⟨𝑤 ′𝑤 ′⟩. Here normalised by 𝑢 3 
+
+> 𝜏
+
+/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. ,production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport; , pressure-strain. The distance from the free surface is normalised with (a,c,e) the near-surface viscous length scale ℓV; (b,d,f) the near-surface Kolmogorov length scale ℓK.26 -0.0002 
+
+-0.0001 
+
+0
+
+0.0001 
+
+0.0002 
+
+-0.0002 
+
+-0.0001 
+
+0
+
+0.0001 
+
+0.0002 
+
+0123
+
+-0.0002 
+
+-0.0001 
+
+0
+
+0.0001 
+
+0.0002 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+(c) (d) 
+
+(e) (f) 
+
+Figure 19: ⟨𝑢 ′ 
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget for open channel flow as a function of free surface distance. (a,b) 
+
+⟨𝑢 ′𝑢 ′⟩; (c,d) ⟨𝑣 ′𝑣 ′⟩; (e,f) ⟨𝑤 ′𝑤 ′⟩. Here normalised by 𝑢 3b/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. ,production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport; , pressure-strain. The distance from the free surface is normalised with (a,c,e) the near-surface viscous length scale ℓV; (b,d,f) the near-surface Kolmogorov length scale ℓK.27 -0.10 
+
+-0.05 
+
+0
+
+0.05 
+
+0.10 
+
+-0.10 
+
+-0.05 
+
+0
+
+0.05 
+
+0.10 
+
+0123
+
+-0.10 
+
+-0.05 
+
+0
+
+0.05 
+
+0.10 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+(c) (d) 
+
+(e) (f) 
+
+Figure 20: ⟨𝑢 ′ 
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget for open channel flow as a function of free surface distance. (a,b) 
+
+⟨𝑢 ′𝑢 ′⟩; (c,d) ⟨𝑣 ′𝑣 ′⟩; (e,f) ⟨𝑤 ′𝑤 ′⟩. Here normalised by 𝑢 b𝑢 2 
+
+> 𝜏
+
+/ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. ,production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport. , pressure-strain. The distance from the free surface is normalised with (a,c,e) the near-surface viscous length scale ℓV; (b,d,f) the near-surface Kolmogorov length scale ℓK.28 -0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+0123
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+0.004 
+
+(h − y)/ℓ V
+
+0246810 
+
+(h − y)/ℓ K
+
+(a) (b) 
+
+(c) (d) 
+
+(e) (f) 
+
+Figure 21: ⟨𝑢 ′ 
+
+> 𝑖
+
+𝑢 ′ 
+
+> 𝑖
+
+⟩ budget for open channel flow as a function of free surface distance. (a,b) 
+
+⟨𝑢 ′𝑢 ′⟩; (c,d) ⟨𝑣 ′𝑣 ′⟩; (e,f) ⟨𝑤 ′𝑤 ′⟩. Here normalised by 𝑢 2b𝑢 𝜏 /ℎ. Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( ) lines, O900. ,production; , pseudo-dissipation; , viscous diffusion; , turbulent transport; , pressure transport. , pressure-strain. The distance from the free surface is normalised with (a,c,e) the near-surface viscous length scale ℓV; (b,d,f) the near-surface Kolmogorov length scale ℓK.29 0.4 0.6 0.8 1
+
+-0.0010 
+
+-0.0005 
+
+0
+
+0.0005 
+
+y/h 
+
+> Πii h/u 3
+> b
+
+00.511.52
+
+-0.0003 
+
+-0.0002 
+
+-0.0001 
+
+0
+
+0.0001 
+
+0.0002 
+
+(h − y)/ℓ V
+
+(a) (b) 
+
+Figure 22: Diagonal components of the pressure-strain term, here normalised by 𝑢 3b/ℎ.Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( )lines, O900. , Π11 ; , Π22 ; , Π33 . The distance from the free surface is normalised with (a) the channel height ℎ; (b) the near-surface viscous length scale ℓV.0.4 0.6 0.8 1
+
+-0.020 
+
+-0.015 
+
+-0.010 
+
+-0.005 
+
+0
+
+0.005 
+
+0.010 
+
+y/h 
+
+> Πii h/u 2
+> b /u τ
+
+00.511.52
+
+-0.004 
+
+-0.002 
+
+0
+
+0.002 
+
+(h − y)/ℓ V
+
+(a) (b) 
+
+Figure 23: Diagonal components of the pressure-strain term, here normalised by 𝑢 2b𝑢 𝜏 /ℎ.Solid ( ) lines, O200; dashed ( ) lines, O400; dash-dotted ( ) lines, O600; dotted ( )lines, O900. , Π11 ; , Π22 ; , Π33 . The distance from the free surface is normalised with (a) the channel height ℎ; (b) the near-surface viscous length scale ℓV.
+
+Appendix C. Additional scaling of pressure-strain terms 
+
+Here, we present the bulk scaling (figure 22) and an additional mixed velocity scaling (figure 23) for the pressure-strain terms, for completeness. 30 
+
+REFERENCES Ahmed, Umair, Apsley, David, Stallard, Timothy, Stansby, Peter & Afgan, Imran 2021 Turbulent length scales and budgets of reynolds stress-transport for open-channel flows; friction reynolds numbers Re 𝜏 = 150, 400 and 1020. J. Hydraul. Res. 59 (1), 36–50. 
+
+Bauer, Christian 2015 Direct numerical simulation of turbulent open channel flow. Master’s thesis, Karlsruher Institut f¨ ur Technologie. 
+
+Bauer, Christian, Sakai, Yoshiyuki & Uhlmann, Markus 2023 Data underlying the publication: Direct numerical simulation of turbulent open channel flow, https://doi.org/10.4121/88678f02-2a34-4452-8534-6361fc34d06b. 
+
+Bauer, C., Sakai, Y. & Uhlmann, M. 2024 Direct numerical simulation of turbulent open channel flow: Streamwise turbulence intensity scaling and its relation to large-scale coherent motions. In Progress in Turbulence X (ed. Ramis ¨ Orl¨ u, Alessandro Talamelli, Joachim Peinke & Martin Oberlack), pp. 311–317. Cham: Springer Nature Switzerland. 
+
+Bauer, Christian, Sakai, Yoshiyuki & Uhlmann, Markus 2025 How far does the influence of the free surface extend in turbulent open channel flow? Flow Turbul. Combust. 115 , 447–468. 
+
+Calmet, Isabelle & Magnaudet, Jacques 2003 Statistical structure of high-Reynolds-number turbulence close to the free surface of an open-channel flow. J. Fluid Mech. 474 , 355–378. 
+
+Duan, Yanchong, Chen, Qigang, Li, Danxun & Zhong, Qiang 2020 Contributions of very large-scale motions to turbulence statistics in open channel flows. J. Fluid Mech. 892 , A3. 
+
+Duan, Yanchong, Zhong, Qiang, Wang, Guiquan, Zhang, Peng & Li, Danxun 2021 Contributions of different scales of turbulent motions to the mean wall-shear stress in open channel flows at low-to-moderate Reynolds numbers. J. Fluid Mech. 918 , A40. 
+
+Handler, R A, Swean, T F, Leighton, R I & Swearingen, J D 1993 Length scales and the energy balance for turbulence near a free surface. AIAA J. 31 (11), 1998–2007. 
+
+Hoyas, Sergio & Jim´ enez, Javier 2006 Scaling of the velocity fluctuations in turbulent channels up to Re 𝜏 =2003. Phys. Fluids. 18 (1), 11702. 
+
+Hoyas, Sergio & Jim´ enez, Javier 2008 Reynolds number effects on the Reynolds-stress budgets in turbulent channels. Phys. Fluids. 20 (10), 101511. 
+
+Kim, John, Moin, Parviz & Moser, Robert 1987 Turbulence statistics in fully developed channel flow at low Reynolds number. J. Fluid Mech. 177 , 133–166. 
+
+Komori, Satoru, Nagaosa, Ryuichi, Murakami, Yasuhiro, Chiba, Satoshi, Ishii, Katsuya & Kuwahara, Kunio 1993 Direct numerical simulation of three-dimensional open-channel flow with zero-shear gas–liquid interface. Phys. Fluids. A: Fluid Dynamics 5 (1), 115–125. 
+
+Leighton, R I, Swean Jr, T F, Handler, R A & Swearingen, J D 1991 Interaction of vorticity with a free surface in turbulent open channel flow. In 29th AIAA Aerospace Sciences Meeting , , vol. 1. 
+
+Mansour, N. N., Kim, J. & Moin, Parviz 1988 Reynolds-stress and dissipation-rate budgets in a turbulent channel flow. J. Fluid Mech. 194 , 15–44. 
+
+Nagaosa, Ryuichi 1999 Direct numerical simulation of vortex structures and turbulent scalar transfer across a free surface in a fully developed turbulence. Phys. Fluids. 11 (6), 1581–1595. 
+
+Pan, Y. & Banerjee, S. 1995 A numerical study of free-surface turbulence in channel flow. Phys. Fluids. 
+
+7 (7), 1649–1664. 
+
+Pinelli, Michele, Herlina, H., Wissink, J.G. & Uhlmann, M. 2022 Direct numerical simulation of turbulent mass transfer at the surface of an open channel flow. J. Fluid Mech. 933 , A49. 
+
+Pirozzoli, Sergio 2023 Searching for the log law in open channel flow. J. Fluid Mech. 971 , A15. 
+
+Scherer, M., Uhlmann, M., Kidanemariam, A.G. & Krayer, M. 2022 On the role of turbulent streaks in generating sediment ridges. J. Fluid Mech. 930 , A11. 
+
+Shen, Lian, Triantafyllou, George S. & Yue, Dick K. P. 2000 Turbulent diffusion near a free surface. 
+
+J. Fluid Mech. 407 , 145–166. 
+
+Swean, T F, Leighton, R I & Handler, R A 1991 Turbulence Modeling Near the Free Surface in an Open Channel Flow. In 29th AIAA Aerospace Sciences Meeting .
+
+Wei, Tie 2020 Scaling of turbulent kinetic energy and dissipation in turbulent wall-bounded flows. Phys. Rev. Fluids 5 (9), 094602. 
+
+Yao, Jie, Chen, Xi & Hussain, Fazle 2022 Direct numerical simulation of turbulent open channel flows at moderately high Reynolds numbers. J. Fluid Mech. 953 , A19. 
+
+Zhong, Qiang, Chen, Qigang, Wang, Hao, Li, Danxun & Wang, Xingkui 2016 Statistical analysis of turbulent super-streamwise vortices based on observations of streaky structures near the free surface in the smooth open channel flow. Water Resour. Res. 52 (5), 3563–3578.

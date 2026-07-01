@@ -1,0 +1,233 @@
+Title: Silent Failures in Physics-Informed Neural Networks: Parameter Poisoning and the Limits of Loss-Based Validation
+
+URL Source: https://arxiv.org/pdf/2606.25151v1
+
+Published Time: Thu, 25 Jun 2026 00:13:00 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Silent Failures in Physics-Informed Neural Networks: Parameter Poisoning and the Limits of Loss-Based Validation 
+
+## David McShannon Nicholas Dietrich 
+
+Abstract. Physics-informed neural networks (PINNs) embed governing equations in their loss function, enabling mesh-free solutions to partial differential equations. Low training loss is treated as evidence that the learned solution is physically correct. This paper shows that assumption breaks down when encoded physics are incorrect. By perturbing PDE parameters before training, a setting we describe as physics parameter poisoning or parameter misspecification, we produce models that train to low loss but give incorrect answers; we treat the perturbation schedule as sensitivity analysis rather than only as a security threat, and none of our claims requires an adversary. Achieving low residual loss does not discriminate accurate from inaccurate solutions: poisoned models reach losses at or below the clean baseline yet differ by large margins, so driving the residual down is not evidence of physical accuracy. Across three PDE systems (Burgers equation, Navier-Stokes cavity, and convection-diffusion), poisoned models match or beat the clean-model training loss while their solutions differ by up to 71% in the fixed sweep and up to 128% under adversarial search; at Cavity Re=400 the poisoned loss falls below the clean baseline. We define a detection difficulty ratio R (solution error divided by training loss) to summarize how invisible the corruption is, though cross-PDE comparison is complicated by differences in loss scale. We test six candidate defenses, none of which reliably detects corruption across all regimes. We propose a post-hoc defense: sweeping the PDE residual loss across parameter values without retraining. The loss minimum recovers the true training parameter without external data, and generalizes across all three PDE systems. The effect holds across five network architectures (8.7K to 133K parameters), is bidirectional, and is confirmed across multiple random seeds. 
+
+## 1 Introduction 
+
+Physics-informed neural networks (PINNs) solve partial differential equations by embedding the governing PDE directly into the training loss [ 11 ]. PINNs do not re-quire labeled data or mesh generation, and have been applied widely across fluid dynamics, heat transfer, solid mechanics, and inverse problems. A critical assumption in PINN workflows is that suc-cessful training (measured by low PDE residual loss) implies that the learned solution is physically correct. Recent high-profile work has extended this trust to math-ematical discovery. Wang et al. [14] used PINNs to char-acterize unstable singularities in fluid equations related to the Navier-Stokes regularity question, with residual minimization as one component of the validation pipeline. This paper asks what happens when the physics are incorrect. If the PDE parameters encoded in the loss function are incorrect, whether through misconfigura-tion, pipeline error, or intentional tampering, the trained model can still reach low loss while producing a solution that is physically incorrect. We call this physics parame-ter poisoning , or equivalently parameter misspecification: the trained model exhibits a silent failure in which train-ing diagnostics look normal but the solution is incorrect. We adopt the poisoning terminology to connect with the machine learning security literature, but the same setup equally describes ordinary misconfiguration or a parame-ter sensitivity analysis, and none of our claims requires an adversary. Unlike prior work on adversarial input perturbations, which perturb evaluation coordinates at inference time, physics parameter poisoning operates at training time by corrupting the equations themselves, making it invisible to any loss-based monitoring that uses the same corrupted equations. Our contributions: 1. We formalize the physics parameter poisoning threat model for PINNs, distinguishing it from input-space attacks. 2. We demonstrate silent failures across three PDE systems at two complexity levels, showing that vulnerability is PDE-dependent but architecture-independent. 3. We introduce the detection difficulty ratio as a quan-titative metric for poisoning severity and show it varies dramatically across PDE types. 4. We evaluate six candidate defenses, demonstrating that no single defense suffices across all regimes. 5. We propose a post-hoc loss landscape sweep that de-tects poisoning by revealing the true training param-eter without retraining or external data, validated across all three PDE systems and multiple seeds. 1
+
+> arXiv:2606.25151v1 [cs.LG] 23 Jun 2026
+
+## 2 Related Work 
+
+PINN robustness. Several works have examined the relia-bility of PINNs under perturbation, including sensitivity to errors in boundary and initial condition training data [ 1] and extensions of classical adversarial ML [ 6 , 8 ] to the scientific computing setting. Our work characterizes a different failure mode: corruption of the physics itself. 
+
+Data poisoning in ML. Training-time attacks have been extensively studied in supervised learning [ 3, 12 ]. In the PINN setting, the analogous attack surface is the physics itself: the PDE coefficients, boundary conditions, and domain geometry that define the loss function. 
+
+PINN failure modes. The broader PINN literature has identified several failure modes including spectral bias [10 ], causality violations in time-dependent problems [ 13 ], and sensitivity to hyperparameters. Parameter corrup-tion has not been systematically characterized in this setting. 
+
+PINNs for scientific discovery. Wang et al. [14] used PINNs to characterize fluid singularities, validating through residual evaluation alongside self-similarity and eigenvalue checks; pipelines of this kind still rest in part on the assumption that low residuals indicate correctness. 
+
+Inverse PINNs and parameter recovery. Inverse PINNs treat PDE parameters as learnable variables and recover them jointly with the solution [ 11 ]. Our post-hoc loss sweep is related in spirit: both ask which parameter value best explains the model’s behavior. The key difference is that inverse PINNs optimize over the parameter using gradient descent on a trainable network, which in our experiments fails because the network absorbs the data-fitting signal (Section 5.3). Our sweep instead evaluates the residual of a frozen network over a discrete parameter grid, which is more robust to the over-parameterization that causes gradient-based recovery to fail. 
+
+## 3 Threat Model 
+
+We consider a scenario in which a PINN is trained to solve a boundary value problem: 
+
+N [u; λ] = 0 on Ω , B[u] = g on ∂Ω, u(·, 0) = u0, (1) where u is the solution, N is the differential operator, 
+
+B is the boundary operator, and λ denotes the physical parameters (e.g., Reynolds number, viscosity, diffusivity). The PINN loss is 
+
+L = 1
+
+NrNrX
+
+> i=1
+
+|N [ˆ u; λ]( xi)|2 + 1
+
+NbNbX
+
+> j=1
+
+|B [ˆ u]( xj ) − gj |2
+
++ 1
+
+N0
+
+> N0
+
+X
+
+> k=1
+
+|ˆu(xk, 0) − u0,k |2,
+
+(2) where ˆu is the neural network approximation. All loss terms are weighted equally; no adaptive weighting is used. 
+
+Attacker capability. The attacker modifies λ → λ′ =
+
+λ(1 + δ) before training, where δ is the fractional per-turbation. This models misconfiguration in automated pipelines, parameter drift in shared PINN libraries, or intentional tampering in collaborative settings. 
+
+Defender capability. The defender observes only the trained model and its training loss L(λ′). The defender does not have access to ground truth solutions or external validation data. 
+
+Silent failure. We define a silent failure as L(λ′) < τ loss 
+
+and ∥ˆuλ′ − ˆuλ∥L2 /∥ˆuλ∥L2 > τ error , where ˆuλ denotes the PINN solution trained with parameter λ, distinct from the analytical or numerical ground truth, τloss = 0 .01 (chosen as a round-number threshold near the clean cavity baseline loss of ∼0.003, representing a loss that would not raise concern in practice), and τerror = 0 .05. This thresh-old is a heuristic anchored to the cavity baseline rather than normalized across PDEs, and cross-PDE loss scales differ substantially; we therefore treat threshold-based silent-failure counts as illustrative and rely primarily on the more robust observation that poisoned models can match or beat the clean-model loss while producing large solution differences (Section 5). 
+
+Detection difficulty ratio. We define R = ( ∥ˆuλ′ −
+
+ˆuλ∥L2 /∥ˆuλ∥L2 )/L(λ′). A high R indicates that solution error is large relative to training loss. R is the ratio of a dimensionless quantity to the training loss, whose absolute scale depends on the PDE; direct comparison across PDEs should be interpreted with care, as some variation reflects intrinsic differences in loss scale rather than vulnerability alone (Section 6). 
+
+## 4 Experimental Setup 
+
+PDE systems. We test three systems of increasing com-plexity: (1) Burgers’ equation (1D, time-dependent, 
+
+ν = 0 .01 /π ); (2) Navier-Stokes lid-driven cavity (2D, steady, Re=100 and Re=400); (3) Convection-diffusion (2D, time-dependent, D = 0 .01, Pe ≈33.5). For each PDE, the poisoned parameter ( ν, Re, or D) enters only the interior equation. Ground truths are finite-difference solutions (Burgers, conv-diff; an analytical Cole-Hopf solution exists for Burgers but we use FD for pipeline consistency) and the Ghia et al. [5] benchmark (cavity). For the cavity, pressure is unconstrained (no gauge fixing) and no corner smoothing is applied, contributing to the clean baseline’s 19.7% v-velocity error against Ghia. 
+
+Architecture and training. All PINNs use fully-connected networks with tanh activation and Glorot uniform initialization, implemented in DeepXDE [ 7] with PyTorch backend in float32. Training follows Adam ( lr = 10 −3) with L-BFGS-B refinement (ftol = 2 .2×10 −15 ,gtol = 10 −5, maxiter = 15 ,000). All experiments ran on NVIDIA T4 and RTX 4000 Ada GPUs; total compute was approximately 300 GPU-hours. 
+
+Attack protocol. For each PDE, we train a clean base-line with the true parameter, then train poisoned models with δ ∈ { 0.05 , 0.10 , 0.20 , 0.50 , 1.0} (and δ = 2 .0 for Burg-2ers and conv-diff). Bidirectional poisoning is tested for the cavity. Solution error is the relative L2 norm between poisoned and clean predictions. Unless otherwise stated, solution error is measured relative to the clean PINN trained with the intended parameter, not directly against an analytical or numerical ground truth; the external comparison against the Ghia et al. [5] benchmark in Section 5.6 is the one exception. 
+
+## 5 Results 
+
+5.1 Parameter Poisoning Produces Silent Fail-ures 
+
+Table 1 summarizes poisoning results across all PDE systems. Poisoned models consistently reach low training loss while producing incorrect solutions. The most severe case is the Navier-Stokes cavity at Re=400, where all five perturbation levels produce large solution errors (0 .26–0 .71 L2) with poisoned losses at or below the clean baseline. At δ = 1 .0 (Re doubled from 400 to 800), the poisoned model’s training loss (0 .0071 ± 0.0005) is below the clean baseline (0 .0088 ± 0.0003), yet the solution is 71% incorrect. 
+
+R spans four orders of magnitude across PDE types (Figure 1). Burgers is the most resistant: error reaches only 8% even at δ = +200%, and no perturbation in either direction produces a silent failure, consistent with spectral bias [ 10 ] making smoother (higher-ν) solutions easy to fit. The cavity is more vulnerable, especially at higher Re. Convection-diffusion is the worst case, with 
+
+R above 10 4. Training losses in the 10 −5 to 10 −6 range approach the float32 precision floor; the large R values for conv-diff are partly driven by small denominators and should be interpreted with caution. At Re=400, L2 error variance decreases with perturbation magnitude, suggesting that small perturbations land near bifurca-tion points where seed-dependent convergence dominates, while large perturbations overwhelm the solution struc-ture consistently. 
+
+5.2 Adversarial Search 
+
+To characterize worst-case vulnerability, we performed a coarse search over δ ∈ [−65% , +100%] for the cavity at Re=100, training a poisoned model at each δ and recording L2 error subject to the constraint L < τ loss =0.01. The worst case is δ = −60% (Re=40): the model achieves loss 0.004 (well below τ ) while producing 128% L2 error, substantially worse than the 71% found in the fixed-δ sweep (Table 1). At this perturbation level, the flow regime is qualitatively different from Re=100 (L2 >
+
+1 indicates the prediction is worse than predicting zero), so the failure is severe rather than subtle. All negative perturbations produce feasible silent failures ( L < τ for every δ < 0 tested), while positive perturbations above +5% frequently exceed τ . This asymmetry reflects PINN spectral bias: lower Re produces smoother flow that the network fits easily with low loss, even though the solution differs dramatically from Re=100. 
+
+5.3 Six Defenses: None Suffices 
+
+We tested six candidate defenses. 
+
+PDE residual monitoring produces a partial signal: the poisoned model satisfies its own (incorrect) PDE with high fidelity, but evaluating it against the stated PDE (Re=100) produces a 3 .3× residual elevation (0.0112 vs 0.0034). The defender knows which equation was in-tended, so this check is available in principle. However, it requires a baseline expectation for the residual mag-nitude, and the signal diminishes at higher Re where training variance is large. The post-hoc loss sweep (Sec-tion 5.4) generalizes this idea: instead of checking the residual at a single stated parameter, it sweeps across parameter values and uses the location of the minimum as the diagnostic. 
+
+Same-parameter ensemble (three independent poisoned models) fails: members disagree with each other more than they deviate from the clean baseline (ensemble std 0.470 vs error 0.175), reflecting training stochasticity rather than detection of poisoning. Disagreement is measured on velocity ( u, v ) only; pressure is excluded due to gauge ambiguity. 
+
+Parameter-jitter ensemble (±2%, ±5%, ±10% around stated Re): the poisoned model disagrees with the ensem-ble less than members disagree with each other (ratios 0.81 ×, 0.44 ×, 0.57 ×). PINN training variance at nearby Reynolds numbers exceeds the systematic shift from poi-soning, rendering this defense ineffective. 
+
+Inverse parameter recovery (freeze network, learn λ)fails: recovered Re tracks initialization, not truth. The network absorbs data-fitting through its weights, leaving the parameter with negligible gradient pressure. 
+
+Incompressibility checking (∇ · u = 0) is Re-dependent: poisoned models show higher divergence at Re=100/150 but lower divergence at Re=400/800, making it unreliable as a standalone defense. 
+
+Loss elevation against clean baseline is regime-dependent: detectable at Cavity Re=100 (2 .7× elevation) but the poisoned loss falls below the clean baseline at Re=400, making it ineffective. Multi-seed architecture experiments show elevation ranges from 1 .03 × (small network, essentially invisible) to 2 .0× (wide network, detectable). At moderate Re, the defense is further weak-ened by seed variance: roughly 38% of seeds at Cavity Re=100 produce losses above τloss = 0 .01, blurring the boundary between detectable and silent. 
+
+5.4 Post-Hoc Loss Landscape Defense 
+
+The naive defenses above either operate within the cor-rupted physics framework or require a clean-baseline reference that may not be available. We propose a self-contained approach: post-hoc parameter-space loss sweep .Given a trained model and a stated parameter value λ0,evaluate the PDE residual loss at a range of parameter values λ ∈ [λmin , λ max ] without retraining. If the model was genuinely trained at λ0, the residual loss should be minimized near λ0. If the model was trained at a differ-3Table 1: Physics parameter poisoning results (mean ± std, n = 3 seeds for cavity and Burgers; Conv-Diff single-seed except                                                                                             
+
+> δ= 200%). R= detection difficulty ratio. Training losses are highly variable across seeds (in some cases σ≥μ), reflecting the stochasticity of PINN optimization rather than Gaussian sampling; L2 errors are more stable. PDE δTrain Loss L2 Error R
+> Burgers ( ν)Clean 0.011 ±0.010 ——5% 0.0006 ±0.0006 0.006 ±0.001 42 ±28 10% 0.006 ±0.008 0.016 ±0.002 34 ±31 20% 0.0009 ±0.0008 0.013 ±0.002 27 ±16 50% 0.003 ±0.003 0.028 ±0.002 44 ±48 100% 0.0007 ±0.0001 0.048 ±0.001 66 ±10 200% 0.0001 ±0.0001 0.080 ±0.000 1413 ±1156 NS Cavity Re=100 Clean 0.0033 ±0.0006 ——5% 0.0127 ±0.0066 0.241 ±0.090 28 ±23 10% 0.0051 ±0.0013 0.131 ±0.070 24 ±11 20% 0.0119 ±0.0055 0.248 ±0.139 19 ±450% 0.0089 ±0.0035 0.279 ±0.014 36 ±12 100% 0.0080 ±0.0025 0.415 ±0.112 53 ±8NS Cavity Re=400 Clean 0.0088 ±0.0003 ——5% 0.0089 ±0.0008 0.320 ±0.189 38 ±24 10% 0.0082 ±0.0002 0.256 ±0.179 32 ±23 20% 0.0084 ±0.0008 0.401 ±0.151 49 ±22 50% 0.0089 ±0.0016 0.563 ±0.117 63 ±6100% 0.0071 ±0.0005 0.706 ±0.123 101 ±23 Conv-Diff ( D)Clean 0.000006 ——5% 0.000008 0.019 2,400 10% 0.000008 0.035 4,362 20% 0.000010 0.063 6,330 50% 0.000011 0.148 13,427 100% 0.000021 0.260 12,362 200% 0.000025 ±0.000015 0.405 ±0.002 36,757 ±35,814
+
+ent λ′, the loss minimum will shift toward λ′. Crucially, this requires no clean-baseline comparison: the location of the loss minimum is informative on its own. Figure 2 shows this defense across three seeds. The clean model’s mean loss minimum falls at Re=100 (the stated value), while the poisoned model’s mean minimum falls at Re=150 (the true training value). Individual seed minima range Re=100–105 (clean) and Re=145– 155 (poisoned), with zero overlap. A defender checking whether the loss minimum falls within ±25% of the stated parameter would clear every clean model and flag every poisoned model. The defense generalizes across all three PDE systems. For Burgers ( δ = +100%, ν doubled), the sweep recovers the exact training viscosity. For convection-diffusion (δ = +200%, D tripled), the sweep again recovers the exact training diffusivity. In both cases the clean model’s loss minimum falls at the stated parameter value. The defense is not specific to the Navier-Stokes equations or to any particular parameter type. Two supporting checks corroborate the finding. The gradient ∂L/∂ Re at stated Re=100 is 5 .9× steeper for the poisoned model, indicating it is far from its loss minimum. The spectral content of the velocity field differs: the poisoned model’s high-to-low frequency energy ratio is 6.9× that of the clean model. By contrast, mean kinetic energy is nearly identical (ratio 0.989), indicating bulk energy is not a useful discriminator. This defense requires no retraining, no external refer-ence data, and no modification to the training pipeline; only the ability to evaluate the PDE residual at alter-native parameter values, which is trivially available in any PINN framework. The cost is O(k) forward passes through the residual evaluator, where k is the number of sweep points (we used k = 31). The main limitation is that the defender must know which parameter might be corrupted and have a plausible range to sweep. 
+
+5.5 Bidirectional Poisoning 
+
+Poisoning works in both directions. We perturbed the cavity Reynolds number above and below Re=100. Six of eight non-trivial perturbations produce silent failures (Table 2). At Re=90, a 10% reduction produces approxi-mately 60% solution error with a training loss (0.00324) comparable to the clean baseline (0.00334). The 3% gap is within single-seed noise, but the training loss alone would not flag this model under any reasonable threshold. In a matched single-run comparison, negative Burgers perturbations produce slightly higher errors than positive perturbations, with higher training losses. No Burgers 40 25 50 75 100 125 150 175 200                   
+
+> Parameter perturbation (%)
+> 10 5
+> 10 4
+> 10 3
+> 10 2
+> Training loss
+> Loss stays low
+> Burgers ( )
+> NS Cavity Re=100
+> NS Cavity Re=400
+> Conv-Diff (D)
+> 025 50 75 100 125 150 175 200
+> Parameter perturbation (%)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> L2 solution error
+> 5% threshold
+> Error grows silently
+> 050 100 150 200
+> Parameter perturbation (%)
+> 10 1
+> 10 2
+> 10 3
+> 10 4
+> Detection difficulty ratio R
+> Detection difficulty
+> Burgers ( )
+> NS Cavity Re=100
+> NS Cavity Re=400
+> Conv-Diff (D)
+
+Figure 1: The Danger Zone: physics parameter poisoning across PDEs. Left: Training loss remains low regardless of perturbation magnitude. Center: Solution error grows silently; squares mark silent failures. Right: Detection difficulty ratio varies by orders of magnitude across PDE types. 80 100 120 140 160 180 200 220  
+
+> Reynolds number used for residual evaluation
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> 0.04
+> 0.05
+> PDE residual loss (no retraining)
+> Clean min
+> Re=100 Poison min
+> Re=150
+> Post-hoc loss landscape defense (3 seeds)
+> Clean (trained Re=100)
+> Poisoned (trained Re=150)
+> Stated Re=100
+
+Figure 2: Post-hoc loss landscape defense ( n = 3 seeds). The PDE residual loss is evaluated at a range of Re values without retraining. Thin lines show individual seeds; thick lines show the mean. The clean model’s mean minimum falls at Re=100 (the stated value); the poisoned model’s mean minimum falls at Re=150 (the true training value). Individual seed minima range Re=100–105 (clean) and Re=145–155 (poisoned), with zero overlap. 
+
+perturbation in either direction produces a silent failure, confirming resistance regardless of direction. 
+
+5.6 External Validation 
+
+We evaluated the poisoned cavity model (Re=150) against the Ghia et al. [5] benchmark. The poisoned model shows approximately 2 × degradation in u-velocity accuracy and 1 .7× in v-velocity accuracy relative to the clean baseline. The clean baseline itself carries non-trivial error against Ghia (4.8% in u, 19.7% in v), reflecting known limitations of standard PINNs for cavity flow. The relative degradation from poisoning is clearly de-tectable: the external benchmark reveals a discrepancy that loss monitoring misses entirely. 
+
+Table 2: Bidirectional poisoning of the Navier-Stokes cavity (true Re=100). Single-seed. Six of the eight non-trivial perturbations are silent. The clearest case is Re=90, where a 10% reduction yields 62.5% L2 error at a training loss (0.00324) indistinguishable from the clean baseline (0.00334). The two non-silent cases, Re=105 and Re=200, carry the highest training losses in the sweep. Re Used Train Loss L2 Error Silent 50 0.00392 0.134 Yes 75 0.00389 0.274 Yes 90 0.00324 0.625 Yes 100 0.00334 0.000 —105 0.01066 0.085 No 110 0.00861 0.090 Yes 120 0.00691 0.250 Yes 150 0.00376 0.431 Yes 200 0.01113 0.560 No 
+
+5.7 Architecture Independence and Multi-Seed Validation 
+
+Five architectures (8.7K to 133K parameters, tanh and sinusoidal activations) all produce large solution errors under identical poisoning (Table 3). Loss elevation varies from 1 .03 × ([64] × 3 tanh) to 2 .0× ([256] × 3 tanh), mean-ing some architectures give the defender a detectable signal while others do not. The [64] × 3 network shows the largest L2 error (1 .30 ± 0.41) with negligible loss ele-vation; the poisoning is both severe and invisible to loss monitoring. The sinusoidal-activation network, which ap-peared uniquely silent when tested with one seed, shows 1.6× elevation across three seeds. The single-seed result was not representative. Table 1 reports multi-seed mean ± std ( n = 3) for all cavity and Burgers configurations. L2 errors are con-sistent across seeds for most cases (e.g., cavity Re=400 
+
+δ = 100%: 0 .706 ± 0.123). At Re=400, the multi-seed poisoned loss is below the clean baseline, confirming gen-uine silent failures. Training losses show higher variance at Re=100, where some seeds converge to qualitatively 5Table 3: Architecture independence of physics parameter poisoning (NS cavity, δ = 50%). Mean ± std, n = 3 seeds. Architecture Params Clean Loss Poison Loss L2 Error R                                   
+
+> [128] ×5, tanh 66.8K 0.0042 ±0.0010 0.0066 ±0.0013 0.405 ±0.057 66 ±25 [64] ×3, tanh 8.7K 0.0147 ±0.0005 0.0151 ±0.0004 1.302 ±0.410 87 ±29 [256] ×3, tanh 133K 0.0065 ±0.0007 0.0129 ±0.0004 0.265 ±0.017 21 ±1[64] ×8, tanh 29.5K 0.0064 ±0.0031 0.0076 ±0.0026 0.486 ±0.265 61 ±15 [128] ×5, sin 66.8K 0.0047 ±0.0010 0.0075 ±0.0002 0.266 ±0.163 36 ±23
+
+different solutions. At Re=400, L2 error variance de-creases with perturbation magnitude: small perturba-tions land near bifurcation points where the outcome is seed-dependent, while large perturbations overwhelm the flow structure consistently. 
+
+## 6 Discussion 
+
+The PINN loss measures only how well the model satisfies the equations it was given, so when those equations are incorrect a low loss certifies nothing more than that the model has learned the incorrect physics well. This appears to be the mechanism behind the silent failures we observe: the optimizer is faithful to a corrupted target, and the diagnostic the practitioner trusts is computed against that same corrupted target. The detection difficulty ratio R should be read within each PDE system rather than across them, since its four-order-of-magnitude spread is driven mostly by dif-ferences in absolute loss scale rather than by differ-ences in how dangerous the poisoning is. Convection-diffusion illustrates the problem: its training losses sit near 10 −5 to 10 −6, so even a modest solution error di-vides by a tiny denominator and inflates R into the thousands, making it appear the most vulnerable sys-tem when it is in fact the least. Normalizing by each system’s own clean baseline removes this artifact. Defin-ing R′ = ( relative L2 error )/(Lpoisoned /Lclean ), the cross-PDE ordering inverts: at δ = 100%, R′ is 0 .88 for the cavity at Re=400, 0 .17 for the cavity at Re=100, and only 0 .07 for convection-diffusion, which may suggest that the cavity is the most vulnerable system and convection-diffusion the most benign. Burgers is the exception under either ratio; its training loss collapses well below its clean value at large perturbations, which makes R′ unstable (0 .75 at δ = 100%) even though its absolute solution error never exceeds 8%. We therefore report R as a within-system severity indicator and treat R′ as the appropriate quantity for any cross-system claim, while noting that both ratios remain sensitive to the seed-to-seed variability of PINN training loss. We frame these experiments as parameter poisoning to connect with the machine learning security literature, but the same results describe ordinary model misspecification, and the perturbation schedule is better understood as a sensitivity analysis than as an adversarial optimization. The practical concern is identical under either reading: a PINN user cannot distinguish correct from incorrect physics through training loss alone. These failures matter because PINNs are being applied to gas turbine monitoring [ 2], cardiac modeling [ 4 ], and turbomachinery flow reconstruction [ 9], where parameter corruption, even accidental, could produce confident but incorrect predictions with no diagnostic warning. As pretrained PINN models begin to circulate through pub-lic repositories, the provenance of the encoded physics becomes a trust question in its own right. The variation in detection difficulty across PDE types reflects both equation structure and PINN spectral bias. For Burgers, positive perturbations raise the viscosity and produce smoother solutions that the network fits eas-ily while staying close to the clean solution in L2 norm. For convection-diffusion, the linearity of the operator means parameter changes produce proportional solution changes with little loss penalty. For the cavity, the non-linear coupling between velocity components produces complex flow structures that change substantially with Reynolds number, which may explain why it appears most vulnerable once the loss-scale artifact is removed. The bidirectional asymmetry at Re=100, where a 10% decrease in Re produces a qualitatively larger error than a 10% increase, likely reflects the same spectral bias: the network converges readily to the smoother Re=90 solution and reproduces it at low loss even though it differs substantially from the Re=100 reference. 
+
+## 7 Limitations 
+
+Table 1 reports multi-seed ( n = 3) for cavity and Burg-ers; other tables remain single-seed. Ideally n ≥ 5 seeds would be used. The six defenses test increasingly so-phisticated but still naive formulations; Bayesian PINNs [ 15 ] and adaptive loss weighting were not tested. All architectures are standard feedforward networks; Fourier neural operators and PirateNet are untested. We sweep 
+
+δ over fixed values in Table 1 and additionally perform a coarse adversarial search over δ ∈ [−65% , +100%]; the worst case found ( δ = −60%, Re=40, L2=1.28) may not be the global optimum. The post-hoc loss landscape defense has been validated across all three PDE systems and across three random seeds for the cavity case, with zero false positives or false negatives. 
+
+## 8 Conclusion 
+
+Corrupted PDE coefficients produce PINNs that con-verge to low training loss while giving incorrect solutions. 6This failure mode, whether interpreted as parameter poisoning or model misspecification, is systematic, bidi-rectional, PDE-dependent, and architecture-independent. Six naive defenses provide only partial signals; none works across all regimes. Post-hoc loss landscape analy-sis, sweeping the PDE residual across parameter values without retraining, successfully reveals the true training parameter across all three PDE systems tested. This defense requires no external data, no retraining, and no modification to the training pipeline. Low training loss does not certify physical correctness. 
+
+## References 
+
+[1] Chandrajit Bajaj, Luke McLennan, Timothy An-deen, and Avik Roy. Recipes for when physics fails: Recovering robust learning of physics informed neu-ral networks. Machine Learning: Science and Tech-nology , 4(1):015013, 2023. [2] Atuahene Kwasi Barimah, Ogwo Precious Onu, Octavian Niculita, Andrew Cowell, and Don McGlinchey. Scalable data transformation mod-els for physics-informed neural networks (PINNs) in digital twin-enabled prognostics and health manage-ment (PHM) applications. Computers , 14(4):121, 2025. [3] Battista Biggio, Blaine Nelson, and Pavel Laskov. Poisoning attacks against support vector machines. In International Conference on Machine Learning ,2012. [4] Stefano Buoso, Thomas Joyce, and Sebastian Koz-erke. Personalising left-ventricular biophysical mod-els of the heart using parametric physics-informed neural networks. Medical Image Analysis , 71:102066, 2021. [5] Urmila Ghia, Kirti N Ghia, and CT Shin. High-Re solutions for incompressible flow using the Navier-Stokes equations and a multigrid method. Journal of Computational Physics , 48(3):387–411, 1982. [6] Ian J Goodfellow, Jonathon Shlens, and Christian Szegedy. Explaining and harnessing adversarial ex-amples. arXiv preprint arXiv:1412.6572 , 2014. [7] Lu Lu, Xuhui Meng, Zhiping Mao, and George Em Karniadakis. DeepXDE: A deep learning library for solving differential equations. SIAM Review , 63(1): 208–228, 2021. [8] Aleksander Madry, Aleksandar Makelov, Ludwig Schmidt, Dimitris Tsipras, and Adrian Vladu. To-wards deep learning models resistant to adversarial attacks. In International Conference on Learning Representations , 2018. [9] Ezra O. McNichols, Paht Juangphanich, Mallory S. Hawke, Ethan J. Shoemaker, Mackinnon J. Poul-son, Meghan E. Brandt, and Jeffrey P. Bons. Flow reconstruction in a transonic turbine cascade us-ing physics-informed neural networks (PINNs). In 
+
+ASME Turbo Expo 2024 , 2024. GT2024-128885. [10] Nasim Rahaman, Aristide Baratin, Devansh Arpit, Felix Draxler, Min Lin, Fred Hamprecht, Yoshua Bengio, and Aaron Courville. On the spectral bias of neural networks. In International Conference on Machine Learning , 2019. [11] Maziar Raissi, Paris Perdikaris, and George E Kar-niadakis. Physics-informed neural networks: Adeep learning framework for solving forward and inverse problems involving nonlinear partial differ-ential equations. Journal of Computational Physics ,378:686–707, 2019. [12] Ali Shafahi, W Ronny Huang, Mahyar Najibi, Octa-vian Suciu, Christoph Studer, Tudor Dumitras, and Tom Goldstein. Poison frogs! targeted clean-label poisoning attacks on neural networks. In Advances in Neural Information Processing Systems , 2018. [13] Sifan Wang, Shyam Sankaran, and Paris Perdikaris. Respecting causality is all you need for training physics-informed neural networks. arXiv preprint arXiv:2203.07404 , 2022. [14] Yongji Wang, Mehdi Bennani, James Martens, S´ ebastien Racani` ere, Sam Blackwell, Alex Matthews, Stanislav Nikolov, Gonzalo Cao-Labora, Daniel S Park, Martin Arjovsky, et al. Discovery of unsta-ble singularities. arXiv preprint arXiv:2509.14185 ,2025. [15] Liu Yang, Xuhui Meng, and George Em Karniadakis. B-PINNs: Bayesian physics-informed neural net-works for forward and inverse PDE problems with noisy data. Journal of Computational Physics , 425: 109913, 2021. 7
